@@ -105,24 +105,15 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   let result: string
 
   if (onStreamChunk) {
-    // 注册中断监听
-    const abortHandler = () => {
-      // OpenRouter fetch 会自然中断
-    }
-    signal.addEventListener('abort', abortHandler)
-
-    try {
-      result = await openRouter.chatStream({
-        model,
-        messages,
-        temperature,
-        maxTokens,
-        apiKey,
-        onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
-      })
-    } finally {
-      signal.removeEventListener('abort', abortHandler)
-    }
+    result = await openRouter.chatStream({
+      model,
+      messages,
+      temperature,
+      maxTokens,
+      apiKey,
+      signal,
+      onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
+    })
   } else {
     result = await openRouter.chat({
       model,
@@ -130,6 +121,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
       temperature,
       maxTokens,
       apiKey,
+      signal,
     })
   }
 

@@ -33,7 +33,7 @@ export class OpenRouterClient {
   /* ── Single-shot chat ─────────────────────────────── */
 
   async chat(params: ChatParams): Promise<string> {
-    const { model, messages, temperature, maxTokens, apiKey } = params
+    const { model, messages, temperature, maxTokens, apiKey, signal } = params
 
     const body: ChatRequest = {
       model,
@@ -45,7 +45,7 @@ export class OpenRouterClient {
 
     log.debug('Chat request', { model, messageCount: messages.length })
 
-    const res = await this.fetchWithErrorHandling(body, apiKey)
+    const res = await this.fetchWithErrorHandling(body, apiKey, signal)
     const data = (await res.json()) as ChatResponse
 
     if (!data.choices?.[0]?.message?.content) {
@@ -63,7 +63,7 @@ export class OpenRouterClient {
   /* ── Streaming chat ───────────────────────────────── */
 
   async chatStream(params: ChatStreamParams): Promise<string> {
-    const { model, messages, temperature, maxTokens, apiKey, onChunk } = params
+    const { model, messages, temperature, maxTokens, apiKey, signal, onChunk } = params
 
     const body: ChatRequest = {
       model,
@@ -75,7 +75,7 @@ export class OpenRouterClient {
 
     log.debug('Stream request', { model, messageCount: messages.length })
 
-    const res = await this.fetchWithErrorHandling(body, apiKey)
+    const res = await this.fetchWithErrorHandling(body, apiKey, signal)
 
     if (!res.body) {
       throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Response body is null', { model })
@@ -138,7 +138,11 @@ export class OpenRouterClient {
 
   /* ── Internal ─────────────────────────────────────── */
 
-  private async fetchWithErrorHandling(body: ChatRequest, apiKey: string): Promise<Response> {
+  private async fetchWithErrorHandling(
+    body: ChatRequest,
+    apiKey: string,
+    signal?: AbortSignal,
+  ): Promise<Response> {
     if (!apiKey) {
       throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'API key is required', {})
     }
@@ -153,6 +157,7 @@ export class OpenRouterClient {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(body),
+        signal,
       })
     } catch (err) {
       throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Network request failed', {

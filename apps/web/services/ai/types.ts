@@ -54,6 +54,7 @@ export interface ChatParams {
   temperature?: number
   maxTokens?: number
   apiKey: string
+  signal?: AbortSignal
 }
 
 export interface ChatStreamParams extends ChatParams {
