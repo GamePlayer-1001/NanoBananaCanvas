@@ -1,0 +1,122 @@
+/**
+ * [INPUT]: 依赖 zustand 的 create，依赖 @xyflow/react 的 Node/Edge/Connection 类型及工具函数
+ * [OUTPUT]: 对外提供 useFlowStore (nodes/edges/viewport CRUD + ReactFlow 事件处理)
+ * [POS]: stores 的画布核心状态，被 Canvas/BaseNode/CustomEdge/CanvasControls 消费
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import {
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
+  type Connection,
+  type Edge,
+  type EdgeChange,
+  type Node,
+  type NodeChange,
+  type Viewport,
+} from '@xyflow/react'
+import { create } from 'zustand'
+import type { WorkflowNodeData } from '@/types'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('FlowStore')
+
+/* ─── Types ───────────────────────────────────────────── */
+
+export interface FlowState {
+  /* ── Data ────────────────────────────────────────────── */
+  nodes: Node<WorkflowNodeData>[]
+  edges: Edge[]
+  viewport: Viewport
+
+  /* ── ReactFlow Event Handlers ────────────────────────── */
+  onNodesChange: (changes: NodeChange<Node<WorkflowNodeData>>[]) => void
+  onEdgesChange: (changes: EdgeChange<Edge>[]) => void
+  onConnect: (connection: Connection) => void
+  setViewport: (viewport: Viewport) => void
+
+  /* ── Node CRUD ───────────────────────────────────────── */
+  addNode: (node: Node<WorkflowNodeData>) => void
+  updateNodeData: (nodeId: string, data: Partial<WorkflowNodeData>) => void
+  removeNode: (nodeId: string) => void
+
+  /* ── Edge CRUD ───────────────────────────────────────── */
+  removeEdge: (edgeId: string) => void
+
+  /* ── Bulk ─────────────────────────────────────────────── */
+  setFlow: (nodes: Node<WorkflowNodeData>[], edges: Edge[], viewport?: Viewport) => void
+  clear: () => void
+}
+
+/* ─── Initial State ───────────────────────────────────── */
+
+const INITIAL_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 }
+
+/* ─── Store ───────────────────────────────────────────── */
+
+export const useFlowStore = create<FlowState>((set, get) => ({
+  nodes: [],
+  edges: [],
+  viewport: INITIAL_VIEWPORT,
+
+  /* ── ReactFlow Event Handlers ────────────────────────── */
+
+  onNodesChange: (changes) => {
+    set({ nodes: applyNodeChanges(changes, get().nodes) })
+  },
+
+  onEdgesChange: (changes) => {
+    set({ edges: applyEdgeChanges(changes, get().edges) })
+  },
+
+  onConnect: (connection) => {
+    log.debug('Edge connected', { source: connection.source, target: connection.target })
+    set({ edges: addEdge({ ...connection, type: 'custom' }, get().edges) })
+  },
+
+  setViewport: (viewport) => set({ viewport }),
+
+  /* ── Node CRUD ───────────────────────────────────────── */
+
+  addNode: (node) => {
+    log.debug('Node added', { id: node.id, type: node.type })
+    set((state) => ({ nodes: [...state.nodes, node] }))
+  },
+
+  updateNodeData: (nodeId, data) => {
+    set((state) => ({
+      nodes: state.nodes.map((n) =>
+        n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n,
+      ),
+    }))
+  },
+
+  removeNode: (nodeId) => {
+    log.debug('Node removed', { id: nodeId })
+    set((state) => ({
+      nodes: state.nodes.filter((n) => n.id !== nodeId),
+      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+    }))
+  },
+
+  /* ── Edge CRUD ───────────────────────────────────────── */
+
+  removeEdge: (edgeId) => {
+    set((state) => ({
+      edges: state.edges.filter((e) => e.id !== edgeId),
+    }))
+  },
+
+  /* ── Bulk ─────────────────────────────────────────────── */
+
+  setFlow: (nodes, edges, viewport) => {
+    log.info('Flow loaded', { nodes: nodes.length, edges: edges.length })
+    set({ nodes, edges, viewport: viewport ?? INITIAL_VIEWPORT })
+  },
+
+  clear: () => {
+    log.info('Flow cleared')
+    set({ nodes: [], edges: [], viewport: INITIAL_VIEWPORT })
+  },
+}))
