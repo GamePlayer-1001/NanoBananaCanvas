@@ -1,4 +1,5 @@
 # apps/web/styles/
+
 > L2 | 父级: apps/web/CLAUDE.md
 
 额外样式文件 (非 globals.css 的独立 CSS)

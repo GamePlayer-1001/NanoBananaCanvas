@@ -10,16 +10,16 @@
 
 ### 1.1 页面级 SEO 策略
 
-| 页面 | 渲染 | SEO 重要性 | 策略 |
-|------|------|-----------|------|
-| Landing Page | SSG | **极高** | 精心优化 meta + 结构化数据 |
-| 定价页 | SSG | 高 | 套餐结构化数据 |
-| 作品广场 | SSR | 高 | 动态 meta + 分页 SEO |
-| 作品详情 | SSR | **极高** | 动态 OG 图 + 结构化数据 |
-| 服务条款/隐私 | SSG | 低 | 基础 meta |
-| 画布编辑器 | CSR | 无 | `noindex` |
-| 创作空间 | SSR | 无 | `noindex`（私有页面） |
-| 个人页面 | SSR | 中 | 公开资料页可被索引 |
+| 页面          | 渲染 | SEO 重要性 | 策略                       |
+| ------------- | ---- | ---------- | -------------------------- |
+| Landing Page  | SSG  | **极高**   | 精心优化 meta + 结构化数据 |
+| 定价页        | SSG  | 高         | 套餐结构化数据             |
+| 作品广场      | SSR  | 高         | 动态 meta + 分页 SEO       |
+| 作品详情      | SSR  | **极高**   | 动态 OG 图 + 结构化数据    |
+| 服务条款/隐私 | SSG  | 低         | 基础 meta                  |
+| 画布编辑器    | CSR  | 无         | `noindex`                  |
+| 创作空间      | SSR  | 无         | `noindex`（私有页面）      |
+| 个人页面      | SSR  | 中         | 公开资料页可被索引         |
 
 ### 1.2 Next.js Metadata API
 
@@ -292,15 +292,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
     { url: 'https://nanobananacanvas.com/en', changeFrequency: 'weekly', priority: 1.0 },
     { url: 'https://nanobananacanvas.com/zh', changeFrequency: 'weekly', priority: 1.0 },
-    { url: 'https://nanobananacanvas.com/en/pricing', changeFrequency: 'monthly', priority: 0.8 },
-    { url: 'https://nanobananacanvas.com/zh/pricing', changeFrequency: 'monthly', priority: 0.8 },
-    { url: 'https://nanobananacanvas.com/en/explore', changeFrequency: 'daily', priority: 0.9 },
-    { url: 'https://nanobananacanvas.com/zh/explore', changeFrequency: 'daily', priority: 0.9 },
+    {
+      url: 'https://nanobananacanvas.com/en/pricing',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://nanobananacanvas.com/zh/pricing',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://nanobananacanvas.com/en/explore',
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: 'https://nanobananacanvas.com/zh/explore',
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
   ] as MetadataRoute.Sitemap
 
   // 动态页面：公开的作品
   const workflows = await getPublicWorkflows()
-  const workflowPages = workflows.flatMap(w => [
+  const workflowPages = workflows.flatMap((w) => [
     {
       url: `https://nanobananacanvas.com/en/explore/${w.id}`,
       lastModified: new Date(w.updated_at),
@@ -331,8 +347,24 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/en/', '/zh/', '/en/explore/', '/zh/explore/', '/en/pricing', '/zh/pricing'],
-        disallow: ['/api/', '/en/workspace/', '/zh/workspace/', '/en/profile/', '/zh/profile/', '/en/billing/', '/zh/billing/'],
+        allow: [
+          '/',
+          '/en/',
+          '/zh/',
+          '/en/explore/',
+          '/zh/explore/',
+          '/en/pricing',
+          '/zh/pricing',
+        ],
+        disallow: [
+          '/api/',
+          '/en/workspace/',
+          '/zh/workspace/',
+          '/en/profile/',
+          '/zh/profile/',
+          '/en/billing/',
+          '/zh/billing/',
+        ],
       },
     ],
     sitemap: 'https://nanobananacanvas.com/sitemap.xml',
@@ -360,6 +392,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 ```
 
 **`hreflang` 标签** 由 Next.js `alternates.languages` 自动生成：
+
 ```html
 <link rel="alternate" hreflang="en" href="https://nanobananacanvas.com/en" />
 <link rel="alternate" hreflang="zh" href="https://nanobananacanvas.com/zh" />
@@ -372,12 +405,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 ### 5.1 分享场景与 OG 图
 
-| 分享场景 | OG 图来源 | 尺寸 |
-|---------|---------|------|
-| 首页链接 | 静态 `/og/home.png` | 1200×630 |
-| 定价页 | 静态 `/og/pricing.png` | 1200×630 |
+| 分享场景 | OG 图来源                    | 尺寸     |
+| -------- | ---------------------------- | -------- |
+| 首页链接 | 静态 `/og/home.png`          | 1200×630 |
+| 定价页   | 静态 `/og/pricing.png`       | 1200×630 |
 | 作品详情 | 动态 `/api/og/workflow/{id}` | 1200×630 |
-| 广场首页 | 静态 `/og/explore.png` | 1200×630 |
+| 广场首页 | 静态 `/og/explore.png`       | 1200×630 |
 
 ### 5.2 静态 OG 图设计规范
 
@@ -393,11 +426,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 ### 6.1 Core Web Vitals 目标
 
-| 指标 | 目标 | 策略 |
-|------|------|------|
-| LCP | < 2.5s | SSG 页面 + CDN + 图片优化 |
-| FID/INP | < 100ms | 延迟加载非关键 JS |
-| CLS | < 0.1 | 预留图片/动画占位空间 |
+| 指标    | 目标    | 策略                      |
+| ------- | ------- | ------------------------- |
+| LCP     | < 2.5s  | SSG 页面 + CDN + 图片优化 |
+| FID/INP | < 100ms | 延迟加载非关键 JS         |
+| CLS     | < 0.1   | 预留图片/动画占位空间     |
 
 ### 6.2 图片优化
 
@@ -424,7 +457,7 @@ import { Inter } from 'next/font/google'
 
 const inter = Inter({
   subsets: ['latin'],
-  display: 'swap',  // 避免 FOIT
+  display: 'swap', // 避免 FOIT
   variable: '--font-inter',
 })
 ```
@@ -433,8 +466,8 @@ const inter = Inter({
 
 ## 七、更新日志
 
-| 日期 | 版本 | 变更内容 |
-|------|------|---------|
+| 日期       | 版本 | 变更内容                                                          |
+| ---------- | ---- | ----------------------------------------------------------------- |
 | 2026-03-04 | v1.0 | 初始版本：SEO 架构、动态 OG 图生成、结构化数据、Sitemap、i18n SEO |
 
 ---

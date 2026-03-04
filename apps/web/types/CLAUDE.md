@@ -1,4 +1,5 @@
 # apps/web/types/
+
 > L2 | 父级: apps/web/CLAUDE.md
 
 前端类型定义

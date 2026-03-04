@@ -9,9 +9,7 @@ export default function WorkspacePage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold">My Workflows</h1>
-      <p className="mt-2 text-muted-foreground">
-        Your creative workspace — coming soon
-      </p>
+      <p className="text-muted-foreground mt-2">Your creative workspace — coming soon</p>
     </div>
   )
 }

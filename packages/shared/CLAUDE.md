@@ -1,4 +1,5 @@
 # packages/shared/
+
 > L2 | 父级: /CLAUDE.md
 
 共享类型、常量、工具函数 · 被 web 和 worker 消费

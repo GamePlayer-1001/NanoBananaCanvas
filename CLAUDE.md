@@ -14,21 +14,21 @@ e2e/             — Playwright E2E 测试
 
 ## 技术栈
 
-| 层 | 技术 |
-|---|---|
-| 框架 | Next.js 16.1.6 (App Router + Turbopack) |
-| UI | React 19 + shadcn/ui (Lux 主题) + Tailwind CSS v4 |
-| 画布 | @xyflow/react v12 (ReactFlow) |
-| 状态 | Zustand v5 (客户端) + TanStack Query v5 (服务端) |
-| 表单 | React Hook Form + Zod v4 |
-| API | Hono (Cloudflare Workers) |
-| 数据库 | Cloudflare D1 (SQLite) |
-| 存储 | Cloudflare R2 |
-| 认证 | Clerk (P1 接入) |
-| 支付 | Stripe (P1 接入) |
-| i18n | next-intl (P1 接入) |
-| 部署 | @opennextjs/cloudflare → Cloudflare Pages |
-| 测试 | Vitest (单元) + Playwright (E2E) |
+| 层     | 技术                                              |
+| ------ | ------------------------------------------------- |
+| 框架   | Next.js 16.1.6 (App Router + Turbopack)           |
+| UI     | React 19 + shadcn/ui (Lux 主题) + Tailwind CSS v4 |
+| 画布   | @xyflow/react v12 (ReactFlow)                     |
+| 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
+| 表单   | React Hook Form + Zod v4                          |
+| API    | Hono (Cloudflare Workers)                         |
+| 数据库 | Cloudflare D1 (SQLite)                            |
+| 存储   | Cloudflare R2                                     |
+| 认证   | Clerk (P1 接入)                                   |
+| 支付   | Stripe (P1 接入)                                  |
+| i18n   | next-intl (P1 接入)                               |
+| 部署   | @opennextjs/cloudflare → Cloudflare Pages         |
+| 测试   | Vitest (单元) + Playwright (E2E)                  |
 
 ## 开发命令
 

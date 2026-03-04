@@ -78,17 +78,17 @@ export interface AIProvider {
 
 ### 2.1 协议差异矩阵
 
-| Provider | 协议 | 认证方式 | 执行模式 | 响应格式 | 特殊处理 |
-|----------|------|---------|---------|---------|---------|
-| **OpenRouter** | REST (OpenAI 兼容) | Bearer Token | 同步/流式 SSE | OpenAI 格式 | 模型路由前缀 `provider/model` |
-| **DeepSeek** | REST (OpenAI 兼容) | Bearer Token | 同步/流式 SSE | OpenAI 格式 | 中国区域优化，支持 FIM |
-| **Google Gemini** | REST (Google AI) | API Key query param | 同步/流式 SSE | Google 私有格式 | `generateContent` / `streamGenerateContent` |
-| **Kling (快影)** | REST | Bearer Token | **异步**（提交→轮询） | 私有格式 | 视频生成需轮询 `task_id`，耗时 2-5 min |
-| **Runway** | REST + **WebSocket** | Bearer Token | **异步**（WS 推送） | 私有格式 | Gen-3 用 WS 接收进度，HTTP 提交 |
-| **Sora** | REST (OpenAI) | Bearer Token | **异步**（提交→轮询） | OpenAI 格式 | 排队机制，有等待时间 |
-| **FLUX (BFL)** | REST | API Key Header | **异步**（提交→轮询） | 私有格式 | 图片生成，result_url 返回 |
-| **ElevenLabs** | REST | API Key Header | 同步（流式音频） | 音频流 Binary | 返回 audio/mpeg 流 |
-| **Stable Diffusion** | REST (多平台) | 因平台而异 | 同步/异步 | 因平台而异 | 通过 Stability AI API 或 Replicate |
+| Provider             | 协议                 | 认证方式            | 执行模式              | 响应格式        | 特殊处理                                    |
+| -------------------- | -------------------- | ------------------- | --------------------- | --------------- | ------------------------------------------- |
+| **OpenRouter**       | REST (OpenAI 兼容)   | Bearer Token        | 同步/流式 SSE         | OpenAI 格式     | 模型路由前缀 `provider/model`               |
+| **DeepSeek**         | REST (OpenAI 兼容)   | Bearer Token        | 同步/流式 SSE         | OpenAI 格式     | 中国区域优化，支持 FIM                      |
+| **Google Gemini**    | REST (Google AI)     | API Key query param | 同步/流式 SSE         | Google 私有格式 | `generateContent` / `streamGenerateContent` |
+| **Kling (快影)**     | REST                 | Bearer Token        | **异步**（提交→轮询） | 私有格式        | 视频生成需轮询 `task_id`，耗时 2-5 min      |
+| **Runway**           | REST + **WebSocket** | Bearer Token        | **异步**（WS 推送）   | 私有格式        | Gen-3 用 WS 接收进度，HTTP 提交             |
+| **Sora**             | REST (OpenAI)        | Bearer Token        | **异步**（提交→轮询） | OpenAI 格式     | 排队机制，有等待时间                        |
+| **FLUX (BFL)**       | REST                 | API Key Header      | **异步**（提交→轮询） | 私有格式        | 图片生成，result_url 返回                   |
+| **ElevenLabs**       | REST                 | API Key Header      | 同步（流式音频）      | 音频流 Binary   | 返回 audio/mpeg 流                          |
+| **Stable Diffusion** | REST (多平台)        | 因平台而异          | 同步/异步             | 因平台而异      | 通过 Stability AI API 或 Replicate          |
 
 ### 2.2 关键差异详解
 
@@ -116,6 +116,7 @@ Kling / Runway / Sora / FLUX
 ```
 
 **统一处理**：
+
 1. Worker 提交任务，拿到 external_task_id
 2. 存入 D1 `async_tasks` 表
 3. Cloudflare Queues 调度轮询
@@ -162,7 +163,7 @@ export abstract class BaseAIProvider implements AIProvider {
   protected async httpPost(
     path: string,
     body: unknown,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
   ): Promise<Response> {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.timeout)
@@ -282,7 +283,7 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   protected authHeaders() {
-    return {}  // Gemini 用 query param
+    return {} // Gemini 用 query param
   }
 
   async execute(req: AIRequest): Promise<AIResponse> {
@@ -294,7 +295,7 @@ export class GeminiProvider extends BaseAIProvider {
         body: JSON.stringify({
           contents: this.convertMessages(req.input.messages as any[]),
         }),
-      }
+      },
     )
 
     const data = await res.json()
@@ -312,7 +313,7 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   private convertMessages(messages: Array<{ role: string; content: string }>) {
-    return messages.map(m => ({
+    return messages.map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }))
@@ -360,10 +361,9 @@ export class KlingProvider extends BaseAIProvider {
   }
 
   async checkTaskStatus(externalTaskId: string): Promise<AIResponse> {
-    const res = await fetch(
-      `${this.baseUrl}/videos/generations/${externalTaskId}`,
-      { headers: this.authHeaders() }
-    )
+    const res = await fetch(`${this.baseUrl}/videos/generations/${externalTaskId}`, {
+      headers: this.authHeaders(),
+    })
 
     const data = await res.json()
     const task = data.data
@@ -418,20 +418,17 @@ export class ElevenLabsProvider extends BaseAIProvider {
 
   async execute(req: AIRequest): Promise<AIResponse> {
     const voiceId = (req.input.voice_id as string) ?? 'default'
-    const res = await fetch(
-      `${this.baseUrl}/text-to-speech/${voiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          ...this.authHeaders(),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: req.input.text,
-          model_id: req.model,
-        }),
-      }
-    )
+    const res = await fetch(`${this.baseUrl}/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        ...this.authHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: req.input.text,
+        model_id: req.model,
+      }),
+    })
 
     if (!res.ok) {
       return { id: '', status: 'failed', error: 'TTS generation failed' }
@@ -461,15 +458,12 @@ const providers = new Map<ProviderName, new (config: AIProviderConfig) => AIProv
 
 export function registerProvider(
   name: ProviderName,
-  ctor: new (config: AIProviderConfig) => AIProvider
+  ctor: new (config: AIProviderConfig) => AIProvider,
 ) {
   providers.set(name, ctor)
 }
 
-export function createProvider(
-  name: ProviderName,
-  apiKey: string
-): AIProvider {
+export function createProvider(name: ProviderName, apiKey: string): AIProvider {
   const Ctor = providers.get(name)
   if (!Ctor) throw new Error(`Unknown provider: ${name}`)
   return new Ctor({ provider: name, apiKey })
@@ -523,21 +517,17 @@ Cloudflare Queue Consumer (Worker)
 
 ### 5.2 轮询策略
 
-| Provider | 轮询间隔 | 最大等待 | 重试次数 |
-|----------|---------|---------|---------|
-| Kling | 5s → 10s → 15s（指数退避） | 10min | 3 |
-| Runway | WS 推送（无需轮询） | 5min | 2 |
-| Sora | 10s → 20s → 30s | 15min | 3 |
-| FLUX | 3s → 5s → 8s | 2min | 3 |
+| Provider | 轮询间隔                   | 最大等待 | 重试次数 |
+| -------- | -------------------------- | -------- | -------- |
+| Kling    | 5s → 10s → 15s（指数退避） | 10min    | 3        |
+| Runway   | WS 推送（无需轮询）        | 5min     | 2        |
+| Sora     | 10s → 20s → 30s            | 15min    | 3        |
+| FLUX     | 3s → 5s → 8s               | 2min     | 3        |
 
 ### 5.3 结果存储流程
 
 ```typescript
-async function handleTaskCompletion(
-  task: AsyncTask,
-  result: AIResponse,
-  env: Env
-) {
+async function handleTaskCompletion(task: AsyncTask, result: AIResponse, env: Env) {
   const { output } = result
 
   // 异步 Provider 返回的是外部 URL，需要下载到 R2
@@ -583,15 +573,15 @@ async function handleTaskCompletion(
 
 ## 六、错误处理策略
 
-| 错误类型 | HTTP Code | 处理 | 积分 |
-|---------|-----------|------|------|
-| 余额不足 | 402 | 前端提示充值 | 不冻结 |
-| API Key 无效 | 401 | 清除缓存的 Key 状态 | 退还 |
-| 模型不可用 | 503 | 重试 1 次，失败则报错 | 退还 |
-| 速率限制 | 429 | 指数退避重试 | 保持冻结 |
-| 内容违规 | 400 | 返回具体违规原因 | 退还 |
-| 生成超时 | 408/504 | 异步任务标记失败 | 退还 |
-| 未知错误 | 500 | 记录日志，通知 Sentry | 退还 |
+| 错误类型     | HTTP Code | 处理                  | 积分     |
+| ------------ | --------- | --------------------- | -------- |
+| 余额不足     | 402       | 前端提示充值          | 不冻结   |
+| API Key 无效 | 401       | 清除缓存的 Key 状态   | 退还     |
+| 模型不可用   | 503       | 重试 1 次，失败则报错 | 退还     |
+| 速率限制     | 429       | 指数退避重试          | 保持冻结 |
+| 内容违规     | 400       | 返回具体违规原因      | 退还     |
+| 生成超时     | 408/504   | 异步任务标记失败      | 退还     |
+| 未知错误     | 500       | 记录日志，通知 Sentry | 退还     |
 
 ---
 
@@ -612,8 +602,8 @@ async function handleTaskCompletion(
 
 ## 八、更新日志
 
-| 日期 | 版本 | 变更内容 |
-|------|------|---------|
+| 日期       | 版本 | 变更内容                                                                           |
+| ---------- | ---- | ---------------------------------------------------------------------------------- |
 | 2026-03-04 | v1.0 | 初始版本：统一接口设计、各 Provider SDK 差异分析、实现示例、异步任务集成、错误处理 |
 
 ---

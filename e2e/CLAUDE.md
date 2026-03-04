@@ -1,4 +1,5 @@
 # e2e/
+
 > L2 | 父级: /CLAUDE.md
 
 Playwright E2E 测试 · 面向 apps/web 的端到端验证

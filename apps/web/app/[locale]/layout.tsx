@@ -5,11 +5,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-export default async function LocaleLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function LocaleLayout({ children }: { children: React.ReactNode }) {
   // TODO: P1 阶段接入 NextIntlClientProvider
   return children
 }

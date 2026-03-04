@@ -10,8 +10,7 @@ export const queryKeys = {
     all: ['workflows'] as const,
     list: (filters?: Record<string, unknown>) =>
       [...queryKeys.workflows.all, 'list', filters] as const,
-    detail: (id: string) =>
-      [...queryKeys.workflows.all, 'detail', id] as const,
+    detail: (id: string) => [...queryKeys.workflows.all, 'detail', id] as const,
   },
   user: {
     all: ['user'] as const,

@@ -10,17 +10,17 @@ import Link from 'next/link'
 export default function LandingPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
-      <h1 className="bg-gradient-to-r from-brand-500 to-[#8B5CF6] bg-clip-text text-center text-5xl font-bold text-transparent md:text-7xl">
+      <h1 className="from-brand-500 bg-gradient-to-r to-[#8B5CF6] bg-clip-text text-center text-5xl font-bold text-transparent md:text-7xl">
         Nano Banana Canvas
       </h1>
       <p className="mt-6 max-w-2xl text-center text-lg text-white/60">
-        Visual AI Workflow Platform — Build, share, and run AI workflows with
-        drag &amp; drop
+        Visual AI Workflow Platform — Build, share, and run AI workflows with drag &amp;
+        drop
       </p>
       <div className="mt-10 flex gap-4">
         <Link
           href="/en/sign-up"
-          className="rounded-lg bg-brand-500 px-6 py-3 font-medium text-white transition-colors hover:bg-brand-600"
+          className="bg-brand-500 hover:bg-brand-600 rounded-lg px-6 py-3 font-medium text-white transition-colors"
         >
           Get Started Free
         </Link>

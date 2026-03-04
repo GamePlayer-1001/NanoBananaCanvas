@@ -1,4 +1,5 @@
 # apps/web/stores/
+
 > L2 | 父级: apps/web/CLAUDE.md
 
 Zustand 客户端状态管理

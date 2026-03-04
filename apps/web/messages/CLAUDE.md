@@ -1,4 +1,5 @@
 # apps/web/messages/
+
 > L2 | 父级: apps/web/CLAUDE.md
 
 i18n 翻译文件 · next-intl JSON 消息包

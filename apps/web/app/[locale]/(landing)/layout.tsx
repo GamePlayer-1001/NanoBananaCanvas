@@ -5,11 +5,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-export default function LandingLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function LandingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="landing-dark min-h-screen bg-[var(--landing-bg)] text-[var(--landing-text)]">
       {/* TODO: P1 LandingNav 导航栏 */}

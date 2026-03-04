@@ -18,9 +18,4 @@ export type ModelCategory = 'text' | 'image' | 'video' | 'audio'
 export type CreditTransactionType = 'earn' | 'spend' | 'refund'
 
 /** 积分来源 */
-export type CreditSource =
-  | 'subscription'
-  | 'topup'
-  | 'bonus'
-  | 'ai_call'
-  | 'refund'
+export type CreditSource = 'subscription' | 'topup' | 'bonus' | 'ai_call' | 'refund'

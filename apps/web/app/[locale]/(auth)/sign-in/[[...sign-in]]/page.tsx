@@ -10,7 +10,7 @@ export default function SignInPage() {
   return (
     <div className="text-center">
       <h1 className="text-2xl font-bold">Sign In</h1>
-      <p className="mt-2 text-muted-foreground">Coming soon</p>
+      <p className="text-muted-foreground mt-2">Coming soon</p>
     </div>
   )
 }

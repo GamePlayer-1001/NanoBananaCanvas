@@ -1,4 +1,5 @@
 # apps/web/
+
 > L2 | 父级: /CLAUDE.md
 
 Next.js 16 前端应用 · App Router + Turbopack + RSC

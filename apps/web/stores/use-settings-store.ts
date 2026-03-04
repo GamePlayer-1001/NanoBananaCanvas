@@ -20,6 +20,5 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   theme: 'system',
   sidebarCollapsed: false,
   setTheme: (theme) => set({ theme }),
-  toggleSidebar: () =>
-    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 }))

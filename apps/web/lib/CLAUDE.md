@@ -1,4 +1,5 @@
 # apps/web/lib/
+
 > L2 | 父级: apps/web/CLAUDE.md
 
 工具函数与配置

@@ -1,4 +1,5 @@
 # apps/web/app/
+
 > L2 | 父级: apps/web/CLAUDE.md
 
 App Router 路由树 · SSR/SSG 渲染
