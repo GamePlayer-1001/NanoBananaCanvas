@@ -10,7 +10,11 @@
     "clean": "rm -rf .next .turbo"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@nano-banana/shared": "workspace:*",
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-query-devtools": "^5.91.3",
+    "@xyflow/react": "^12.10.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.576.0",
@@ -19,8 +23,11 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-hook-form": "^7.71.2",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

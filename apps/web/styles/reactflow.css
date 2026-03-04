@@ -1,0 +1,31 @@
+/**
+ * [INPUT]: 依赖 @xyflow/react 内置样式
+ * [OUTPUT]: 对外提供 ReactFlow 自定义主题覆盖
+ * [POS]: styles 的画布引擎样式，被 Canvas 组件导入
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+@import '@xyflow/react/dist/style.css';
+
+/* ─── ReactFlow 品牌色覆盖 ────────────────────────────── */
+
+.react-flow__node {
+  border-radius: var(--radius);
+}
+
+.react-flow__edge-path {
+  stroke: var(--brand-400);
+  stroke-width: 2;
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--brand-500);
+  background: var(--background);
+}
+
+.react-flow__minimap {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
