@@ -1,9 +1,11 @@
 /**
- * [INPUT]: 无外部依赖
+ * [INPUT]: 依赖 next/link 的 Link
  * [OUTPUT]: 对外提供 Landing Page 首页
  * [POS]: (landing) 路由组的首页，SSG 渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
+
+import Link from 'next/link'
 
 export default function LandingPage() {
   return (
@@ -16,12 +18,12 @@ export default function LandingPage() {
         drag &amp; drop
       </p>
       <div className="mt-10 flex gap-4">
-        <a
+        <Link
           href="/en/sign-up"
           className="rounded-lg bg-brand-500 px-6 py-3 font-medium text-white transition-colors hover:bg-brand-600"
         >
           Get Started Free
-        </a>
+        </Link>
       </div>
     </main>
   )

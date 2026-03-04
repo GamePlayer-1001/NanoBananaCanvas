@@ -32,7 +32,7 @@ export interface WorkflowData {
 export type WorkflowNode = Node<WorkflowNodeData>
 export type WorkflowEdge = Edge
 
-export interface WorkflowNodeData {
+export type WorkflowNodeData = Record<string, unknown> & {
   label: string
   type: NodeCategory
   config: Record<string, unknown>
