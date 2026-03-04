@@ -1,12 +1,14 @@
 /**
- * [INPUT]: 依赖 @/app/globals.css 的全局样式, next/font/google 的字体
- * [OUTPUT]: 对外提供应用根布局（html/body 包裹）
+ * [INPUT]: 依赖 @/app/globals.css 的全局样式, next/font/google 的字体,
+ *          依赖 @/components/ui/sonner 的 Toast 通知容器
+ * [OUTPUT]: 对外提供应用根布局（html/body 包裹 + Toaster）
  * [POS]: App Router 的最顶层布局，所有页面的父级
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const geistSans = Geist({
@@ -36,6 +38,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   )

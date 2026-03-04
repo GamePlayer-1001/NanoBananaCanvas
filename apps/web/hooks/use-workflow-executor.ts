@@ -11,6 +11,7 @@
 'use client'
 
 import { useCallback, useRef } from 'react'
+import { toast } from 'sonner'
 import { WorkflowExecutor } from '@/lib/executor/workflow-executor'
 import { useExecutionStore } from '@/stores/use-execution-store'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -86,8 +87,14 @@ export function useWorkflowExecutor() {
         })
       },
 
-      onComplete: () => finishExecution(),
-      onError: (error) => failExecution(error),
+      onComplete: () => {
+        finishExecution()
+        toast.success('Workflow completed')
+      },
+      onError: (error) => {
+        failExecution(error)
+        toast.error(error)
+      },
 
       updateNodeStatus: (nodeId, status) => {
         updateNodeData(nodeId, { status })
