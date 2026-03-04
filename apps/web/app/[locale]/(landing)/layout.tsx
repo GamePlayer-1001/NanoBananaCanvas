@@ -11,7 +11,7 @@ export default function LandingLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-[#0B0B0F] text-white">
+    <div className="landing-dark min-h-screen bg-[var(--landing-bg)] text-[var(--landing-text)]">
       {/* TODO: P1 LandingNav 导航栏 */}
       {children}
     </div>
