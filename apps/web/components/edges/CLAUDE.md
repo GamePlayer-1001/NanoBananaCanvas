@@ -8,7 +8,7 @@
 
 ```
 registry.ts     — EDGE_TYPES 连线类型注册中心
-custom-edge.tsx — CustomEdge 贝塞尔曲线连线 (品牌色，选中加粗)
+custom-edge.tsx — CustomEdge 贝塞尔曲线连线 (品牌色/选中加粗/执行动画圆点)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

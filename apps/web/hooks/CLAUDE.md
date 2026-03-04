@@ -6,6 +6,8 @@
 
 ## 成员清单
 
-> M1 阶段为空目录，P1 阶段将新增: useWorkflow, useCanvas, useDebounce 等
+```
+use-context-menu.ts — useContextMenu 画布右键菜单状态管理 (pane/node 菜单切换，Escape 关闭)
+```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

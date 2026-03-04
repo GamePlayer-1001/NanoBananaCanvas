@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 Handle/Position/NodeProps，依赖 @/types 的 WorkflowNodeData
- * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件
+ * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件 (含 headerRight 插槽)
  * [POS]: components/nodes 的基础模板，所有具体节点类型继承此框架
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -19,6 +19,7 @@ export interface BaseNodeProps extends NodeProps {
   icon?: ReactNode
   inputs?: PortDefinition[]
   outputs?: PortDefinition[]
+  headerRight?: ReactNode
   children?: ReactNode
 }
 
@@ -40,6 +41,7 @@ export function BaseNode({
   icon,
   inputs,
   outputs,
+  headerRight,
   children,
 }: BaseNodeProps) {
   const status = data.status ?? 'idle'
@@ -56,7 +58,8 @@ export function BaseNode({
       <div className="border-border flex items-center gap-2 border-b px-3 py-2">
         <div className={cn('h-2 w-2 rounded-full', STATUS_COLORS[status])} />
         {icon && <span className="text-muted-foreground">{icon}</span>}
-        <span className="truncate text-sm font-medium">{data.label}</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">{data.label}</span>
+        {headerRight}
       </div>
 
       {/* ── Body ─────────────────────────────────────── */}
