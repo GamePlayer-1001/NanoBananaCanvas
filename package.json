@@ -12,6 +12,8 @@
     "clean": "turbo run clean"
   },
   "devDependencies": {
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.4.0"
   }
 }
