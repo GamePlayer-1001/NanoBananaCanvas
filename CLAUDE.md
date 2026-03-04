@@ -33,11 +33,12 @@ e2e/             — Playwright E2E 测试
 ## 开发命令
 
 ```bash
-pnpm dev          # 启动所有开发服务器
-pnpm build        # 构建所有包
-pnpm lint         # ESLint 检查
-pnpm test         # Vitest 单元测试
-pnpm format       # Prettier 格式化
+pnpm dev              # 启动所有开发服务器 (Turborepo 并行)
+pnpm build            # 构建所有包
+pnpm lint             # ESLint 检查 (eslint .)
+pnpm test             # Vitest 单元测试
+pnpm format           # Prettier 格式化
+pnpm format:check     # Prettier 检查 (CI 用)
 ```
 
 ## 架构约定

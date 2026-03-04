@@ -21,14 +21,15 @@ public/             — 静态资源
 ## 配置文件
 
 ```
-next.config.ts      — Next.js 构建配置
+next.config.ts      — Next.js 构建配置 (Clerk 图片白名单)
 tsconfig.json       — TypeScript 配置
-eslint.config.mjs   — ESLint flat config + Prettier
-postcss.config.mjs  — PostCSS (Tailwind v4)
-vitest.config.ts    — Vitest 单元测试
-components.json     — shadcn/ui 组件注册
-open-next.config.ts — Cloudflare 适配
-wrangler.jsonc      — Cloudflare Pages 部署
+eslint.config.mjs   — ESLint 9 flat config + Prettier
+postcss.config.mjs  — PostCSS (@tailwindcss/postcss)
+vitest.config.ts    — Vitest 单元测试配置
+vitest.setup.ts     — Vitest setup (@testing-library/jest-dom)
+components.json     — shadcn/ui 组件注册 (New York 风格)
+open-next.config.ts — @opennextjs/cloudflare 适配
+wrangler.jsonc      — Cloudflare Pages 部署描述
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
