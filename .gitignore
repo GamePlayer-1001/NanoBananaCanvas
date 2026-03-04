@@ -1,0 +1,43 @@
+# ============================================
+#  Nano Banana Canvas — Git Ignore
+# ============================================
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+.next/
+.turbo/
+dist/
+.wrangler/
+.open-next/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# IDE
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# Sentry
+.sentryclirc
+
+# Misc
+*.tsbuildinfo
