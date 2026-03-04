@@ -14,7 +14,7 @@ stores/             — Zustand 客户端状态
 hooks/              — 自定义 React Hooks
 types/              — 前端类型定义 (workflow/node/user)
 styles/             — 额外样式文件 (reactflow.css)
-services/           — API 调用层 (P1)
+services/           — API 调用层 (ai/openrouter + storage/持久化)
 messages/           — i18n 翻译文件 (P1)
 public/             — 静态资源
 ```
