@@ -13,7 +13,9 @@
   "landing": {
     "title": "Nano Banana Canvas",
     "subtitle": "Visual AI Workflow Platform — Build, share, and run AI workflows with drag & drop",
-    "cta": "Get Started Free"
+    "cta": "Get Started Free",
+    "signIn": "Sign In",
+    "dashboard": "Dashboard"
   },
   "workspace": {
     "title": "My Workflows",

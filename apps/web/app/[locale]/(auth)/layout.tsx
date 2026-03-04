@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 无外部依赖 (P1 阶段接入 Clerk)
- * [OUTPUT]: 对外提供认证页面布局（左右分栏）
- * [POS]: (auth) 路由组布局，包裹 sign-in/sign-up
+ * [INPUT]: 无外部依赖（ClerkProvider 已在上层 [locale]/layout.tsx 提供）
+ * [OUTPUT]: 对外提供认证页面居中布局
+ * [POS]: (auth) 路由组布局，包裹 sign-in/sign-up Clerk 组件
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

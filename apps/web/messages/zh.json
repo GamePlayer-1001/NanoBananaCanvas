@@ -13,7 +13,9 @@
   "landing": {
     "title": "Nano Banana Canvas",
     "subtitle": "可视化 AI 工作流平台 — 拖拽构建、分享和运行 AI 工作流",
-    "cta": "免费开始使用"
+    "cta": "免费开始使用",
+    "signIn": "登录",
+    "dashboard": "控制台"
   },
   "workspace": {
     "title": "我的工作流",

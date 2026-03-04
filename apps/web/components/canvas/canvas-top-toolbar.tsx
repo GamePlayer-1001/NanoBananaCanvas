@@ -4,6 +4,7 @@
  *          依赖 @/services/storage 的导入导出，
  *          依赖 sonner 的 toast 通知，
  *          依赖 next-intl 的 useTranslations，
+ *          依赖 @clerk/nextjs 的 UserButton，
  *          依赖 ./api-key-dialog 的 API Key 配置，
  *          依赖 @/components/locale-switcher 的语言切换
  * [OUTPUT]: 对外提供 CanvasTopToolbar 顶部工具栏组件
@@ -14,6 +15,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import { UserButton } from '@clerk/nextjs'
 import { useTranslations } from 'next-intl'
 import { Download, Loader2, Play, Upload } from 'lucide-react'
 import { toast } from 'sonner'
@@ -158,6 +160,15 @@ export function CanvasTopToolbar() {
 
         {/* ── API Key ─────────────────────────────────── */}
         <ApiKeyDialog />
+
+        <Separator orientation="vertical" className="mx-1 !h-6" />
+
+        {/* ── User ───────────────────────────────────── */}
+        <UserButton
+          appearance={{
+            elements: { avatarBox: 'w-7 h-7' },
+          }}
+        />
       </div>
     </TooltipProvider>
   )
