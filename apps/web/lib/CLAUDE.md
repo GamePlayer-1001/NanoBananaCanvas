@@ -7,6 +7,8 @@
 ## 成员清单
 
 ```
+errors.ts              — AppError 统一错误类型体系 (NetworkError/AuthError/AIServiceError/WorkflowError)
+logger.ts              — 轻量级日志工具 (开发彩色终端/生产结构化 JSON)，后期可对接 Sentry/Logpush
 utils.ts               — cn() 样式合并工具 (shadcn 管理)
 query/client.ts        — TanStack QueryClient 工厂 (SSR 安全)
 query/provider.tsx     — QueryProvider 客户端组件
