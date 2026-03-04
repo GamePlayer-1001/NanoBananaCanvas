@@ -12,7 +12,7 @@
     "clean": "turbo run clean"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver", "workerd"]
   },
   "devDependencies": {
     "prettier": "^3.8.1",

@@ -1,0 +1,31 @@
+/**
+ * [INPUT]: 依赖 @opennextjs/cloudflare 运行时
+ * [OUTPUT]: 对外提供 Cloudflare Pages 部署配置
+ * [POS]: apps/web 的 Wrangler 部署描述文件
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+{
+  "name": "nano-banana-web",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "main": ".open-next/worker.js",
+
+  // KV 绑定 — 用于增量缓存
+  // "kv_namespaces": [
+  //   { "binding": "NEXT_CACHE_KV", "id": "<your-kv-id>" }
+  // ],
+
+  // D1 绑定 — 主数据库（由 Worker 层操作）
+  // "d1_databases": [
+  //   { "binding": "DB", "database_name": "nano-banana-db", "database_id": "<your-d1-id>" }
+  // ],
+
+  // R2 绑定 — 用户上传资源存储
+  // "r2_buckets": [
+  //   { "binding": "UPLOADS", "bucket_name": "nano-banana-uploads" }
+  // ]
+}
