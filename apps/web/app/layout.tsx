@@ -1,25 +1,11 @@
 /**
- * [INPUT]: 依赖 @/app/globals.css 的全局样式, next/font/google 的字体,
- *          依赖 @/components/ui/sonner 的 Toast 通知容器
- * [OUTPUT]: 对外提供应用根布局（html/body 包裹 + Toaster）
- * [POS]: App Router 的最顶层布局，所有页面的父级
+ * [INPUT]: 无外部依赖 (html/body 委托给 [locale]/layout.tsx)
+ * [OUTPUT]: 对外提供应用根布局（透传容器 + fallback metadata）
+ * [POS]: App Router 的最顶层布局，将渲染职责委托给 [locale]/layout.tsx
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { Toaster } from '@/components/ui/sonner'
-import './globals.css'
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
 
 export const metadata: Metadata = {
   title: {
@@ -34,12 +20,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <Toaster position="bottom-right" richColors />
-      </body>
-    </html>
-  )
+  return children
 }

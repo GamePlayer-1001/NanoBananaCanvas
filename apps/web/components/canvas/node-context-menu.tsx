@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 lucide-react 图标，依赖 @/lib/utils 的 cn()
+ * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next-intl 的 useTranslations，依赖 lucide-react 图标，依赖 @/lib/utils 的 cn()
  * [OUTPUT]: 对外提供 NodeContextMenu 节点右键菜单
  * [POS]: components/canvas 的节点右键菜单，被 Canvas 组件内嵌渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,6 +8,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { Copy, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +31,7 @@ export function NodeContextMenu({
   onDelete,
   onClose,
 }: NodeContextMenuProps) {
+  const t = useTranslations('contextMenu')
   const ref = useRef<HTMLDivElement>(null)
 
   /* ── 点击外部关闭 ──────────────────────────────────── */
@@ -72,7 +74,7 @@ export function NodeContextMenu({
         }}
       >
         <Copy className="h-4 w-4 opacity-60" />
-        Duplicate
+        {t('duplicate')}
       </button>
 
       <div className="bg-border mx-2 my-1 h-px" />
@@ -89,7 +91,7 @@ export function NodeContextMenu({
         }}
       >
         <Trash2 className="h-4 w-4 opacity-60" />
-        Delete
+        {t('delete')}
       </button>
     </div>
   )

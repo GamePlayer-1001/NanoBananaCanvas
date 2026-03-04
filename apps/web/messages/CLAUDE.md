@@ -1,11 +1,24 @@
-# apps/web/messages/
-
+# messages/
 > L2 | 父级: apps/web/CLAUDE.md
 
-i18n 翻译文件 · next-intl JSON 消息包
+i18n 翻译文件 · next-intl JSON 消息包，按命名空间组织翻译 key。
 
 ## 成员清单
 
-> M1 阶段为空目录，P1 阶段将新增: en.json, zh.json
+en.json: 英文翻译，包含 common/metadata/landing/workspace/canvas/toolbar/contextMenu/apiKey/nodes/executor 命名空间
+zh.json: 中文翻译，与 en.json 结构完全对称
+
+## 命名空间约定
+
+- `common` — 跨页面通用文本
+- `metadata` — 页面 SEO 元数据
+- `landing` — Landing Page 内容
+- `workspace` — 工作空间页面
+- `canvas` — 画布操作 (Run/Stop/Import/Export/toast)
+- `toolbar` — 底部工具栏标签
+- `contextMenu` — 右键菜单项
+- `apiKey` — API Key 配置对话框
+- `nodes` — 节点组件标签/占位符
+- `executor` — 执行引擎错误消息
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

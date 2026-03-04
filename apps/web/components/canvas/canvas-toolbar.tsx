@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/stores/use-canvas-tool-store 的 activeTool/setActiveTool，
- *          依赖 @/components/ui 的 Button/Tooltip，依赖 lucide-react 图标
+ *          依赖 @/components/ui 的 Button/Tooltip，依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
  * [OUTPUT]: 对外提供 CanvasToolbar 底部浮动工具栏组件
  * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，支持点击切换工具和拖拽创建节点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +9,7 @@
 'use client'
 
 import { type DragEvent, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { BrainCircuit, Hand, MonitorPlay, MousePointer2, Type } from 'lucide-react'
 import { useCanvasToolStore, type CanvasTool } from '@/stores/use-canvas-tool-store'
 import { Button } from '@/components/ui/button'
@@ -25,7 +26,7 @@ import { cn } from '@/lib/utils'
 
 interface ToolDef {
   id: CanvasTool
-  label: string
+  labelKey: string
   icon: React.ReactNode
   /** 是否为节点工具 (支持拖拽创建) */
   nodeType?: string
@@ -34,14 +35,14 @@ interface ToolDef {
 /* ─── Tool Definitions ────────────────────────────────── */
 
 const POINTER_TOOLS: ToolDef[] = [
-  { id: 'select', label: 'Select', icon: <MousePointer2 size={16} /> },
-  { id: 'hand', label: 'Hand', icon: <Hand size={16} /> },
+  { id: 'select', labelKey: 'select', icon: <MousePointer2 size={16} /> },
+  { id: 'hand', labelKey: 'hand', icon: <Hand size={16} /> },
 ]
 
 const NODE_TOOLS: ToolDef[] = [
-  { id: 'text-input', label: 'Text Input', icon: <Type size={16} />, nodeType: 'text-input' },
-  { id: 'llm', label: 'LLM', icon: <BrainCircuit size={16} />, nodeType: 'llm' },
-  { id: 'display', label: 'Display', icon: <MonitorPlay size={16} />, nodeType: 'display' },
+  { id: 'text-input', labelKey: 'textInput', icon: <Type size={16} />, nodeType: 'text-input' },
+  { id: 'llm', labelKey: 'llm', icon: <BrainCircuit size={16} />, nodeType: 'llm' },
+  { id: 'display', labelKey: 'display', icon: <MonitorPlay size={16} />, nodeType: 'display' },
 ]
 
 /* ─── Drag Data Type ──────────────────────────────────── */
@@ -108,6 +109,8 @@ interface ToolButtonProps {
 }
 
 function ToolButton({ tool, isActive, onClick, draggable, onDragStart }: ToolButtonProps) {
+  const t = useTranslations('toolbar')
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -126,7 +129,7 @@ function ToolButton({ tool, isActive, onClick, draggable, onDragStart }: ToolBut
         </Button>
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={8}>
-        {tool.label}
+        {t(tool.labelKey)}
       </TooltipContent>
     </Tooltip>
   )

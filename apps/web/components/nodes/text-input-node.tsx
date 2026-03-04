@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store
+ * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
+ *          依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 TextInputNode 文本输入节点组件
  * [POS]: components/nodes 的 MVP 输入节点，被 registry 注册并在画布中渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +10,7 @@
 
 import { useCallback, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
+import { useTranslations } from 'next-intl'
 import { Type } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -25,6 +27,7 @@ const OUTPUTS = [
 export function TextInputNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
+  const t = useTranslations('nodes')
 
   const onChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -38,7 +41,7 @@ export function TextInputNode(props: NodeProps) {
       <textarea
         value={(data.config.text as string) ?? ''}
         onChange={onChange}
-        placeholder="Enter text..."
+        placeholder={t('enterText')}
         rows={3}
         className="nodrag nowheel border-input bg-background w-full resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />

@@ -1,0 +1,86 @@
+{
+  "common": {
+    "loading": "Loading..."
+  },
+  "metadata": {
+    "title": "Nano Banana Canvas",
+    "description": "Visual AI Workflow Platform — Build, share, and run AI workflows"
+  },
+  "notFound": {
+    "title": "404",
+    "description": "Page not found"
+  },
+  "landing": {
+    "title": "Nano Banana Canvas",
+    "subtitle": "Visual AI Workflow Platform — Build, share, and run AI workflows with drag & drop",
+    "cta": "Get Started Free"
+  },
+  "workspace": {
+    "title": "My Workflows",
+    "subtitle": "Your creative workspace — coming soon",
+    "loadingCanvas": "Loading canvas..."
+  },
+  "canvas": {
+    "run": "Run",
+    "stop": "Stop",
+    "runTooltip": "Run workflow (Ctrl+Enter)",
+    "stopTooltip": "Stop execution (Esc)",
+    "importTooltip": "Import (Ctrl+O)",
+    "exportTooltip": "Export (Ctrl+S)",
+    "executionAborted": "Execution aborted",
+    "addNodesFirst": "Add some nodes first",
+    "runningWorkflow": "Running workflow...",
+    "nothingToExport": "Nothing to export",
+    "workflowExported": "Workflow exported",
+    "importedName": "Imported \"{name}\"",
+    "importFailed": "Import failed — invalid file",
+    "workflowCompleted": "Workflow completed"
+  },
+  "toolbar": {
+    "select": "Select",
+    "hand": "Hand",
+    "textInput": "Text Input",
+    "llm": "LLM",
+    "display": "Display"
+  },
+  "contextMenu": {
+    "addTextInput": "Add Text Input",
+    "addLLM": "Add LLM",
+    "addDisplay": "Add Display",
+    "duplicate": "Duplicate",
+    "delete": "Delete"
+  },
+  "apiKey": {
+    "setApiKey": "Set API Key",
+    "apiKeySet": "API Key ✓",
+    "dialogTitle": "OpenRouter API Key",
+    "dialogDescription": "Configure your OpenRouter API key to enable LLM inference. Your key is stored locally in the browser and never sent to our servers.",
+    "label": "API Key",
+    "placeholder": "sk-or-v1-...",
+    "keyValid": "Key is valid — connection successful.",
+    "keyInvalid": "Invalid key or network error. Please check and try again.",
+    "test": "Test",
+    "save": "Save"
+  },
+  "nodes": {
+    "enterText": "Enter text...",
+    "model": "Model",
+    "temperature": "Temperature: {value}",
+    "maxTokens": "Max Tokens",
+    "systemPrompt": "System Prompt",
+    "systemPromptPlaceholder": "You are a helpful assistant...",
+    "output": "Output",
+    "tokens": "{count} tokens",
+    "generating": "Generating...",
+    "precise": "Precise",
+    "creative": "Creative",
+    "waitingForInput": "Waiting for input...",
+    "copied": "Copied!",
+    "copyResult": "Copy result"
+  },
+  "executor": {
+    "workflowEmpty": "Workflow is empty",
+    "executionAborted": "Execution aborted",
+    "sortFailed": "Failed to sort workflow"
+  }
+}

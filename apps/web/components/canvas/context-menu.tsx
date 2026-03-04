@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 lucide-react 图标，依赖 @/lib/utils 的 cn()
+ * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next-intl 的 useTranslations，依赖 lucide-react 图标，依赖 @/lib/utils 的 cn()
  * [OUTPUT]: 对外提供 CanvasContextMenu 画布空白区域右键菜单
  * [POS]: components/canvas 的画布右键菜单，被 Canvas 组件内嵌渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,6 +8,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { BrainCircuit, MonitorPlay, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -23,14 +24,15 @@ interface CanvasContextMenuProps {
 /* ─── Menu Item Definition ───────────────────────────── */
 
 const MENU_ITEMS = [
-  { type: 'text-input', label: 'Add Text Input', icon: Type },
-  { type: 'llm', label: 'Add LLM', icon: BrainCircuit },
-  { type: 'display', label: 'Add Display', icon: MonitorPlay },
+  { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
+  { type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit },
+  { type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay },
 ] as const
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMenuProps) {
+  const t = useTranslations('contextMenu')
   const ref = useRef<HTMLDivElement>(null)
 
   /* ── 点击外部关闭 ──────────────────────────────────── */
@@ -61,7 +63,7 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
       )}
       style={{ left: adjustedX, top: adjustedY }}
     >
-      {MENU_ITEMS.map(({ type, label, icon: Icon }) => (
+      {MENU_ITEMS.map(({ type, labelKey, icon: Icon }) => (
         <button
           key={type}
           className={cn(
@@ -75,7 +77,7 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
           }}
         >
           <Icon className="h-4 w-4 opacity-60" />
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </div>

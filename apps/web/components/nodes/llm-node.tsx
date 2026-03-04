@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 @/stores/use-settings-store (apiKey)
+ *          依赖 @/stores/use-settings-store (apiKey)，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 LLMNode 大语言模型节点组件
  * [POS]: components/nodes 的核心 AI 节点，被 registry 注册并在画布中渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
+import { useTranslations } from 'next-intl'
 import { BrainCircuit, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -86,6 +87,7 @@ const INPUT_CLASS =
 export function LLMNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
+  const t = useTranslations('nodes')
 
   /* ── Config values with defaults ──────────────────── */
   const model = (data.config.model as string) ?? DEFAULT_MODEL
@@ -148,7 +150,7 @@ export function LLMNode(props: NodeProps) {
     >
       <div className="space-y-3">
         {/* ── Model selector (grouped) ──────────────── */}
-        <ConfigField label="Model">
+        <ConfigField label={t('model')}>
           <select value={model} onChange={onModelChange} className={SELECT_CLASS}>
             {MODEL_GROUPS.map((group) => (
               <optgroup key={group.provider} label={group.provider}>
@@ -163,7 +165,7 @@ export function LLMNode(props: NodeProps) {
         </ConfigField>
 
         {/* ── Temperature slider ────────────────────── */}
-        <ConfigField label={`Temperature: ${temperature.toFixed(1)}`}>
+        <ConfigField label={t('temperature', { value: temperature.toFixed(1) })}>
           <input
             type="range"
             min={0}
@@ -174,13 +176,13 @@ export function LLMNode(props: NodeProps) {
             className="nodrag nowheel w-full accent-[var(--brand-500)]"
           />
           <div className="text-muted-foreground flex justify-between text-[10px]">
-            <span>Precise</span>
-            <span>Creative</span>
+            <span>{t('precise')}</span>
+            <span>{t('creative')}</span>
           </div>
         </ConfigField>
 
         {/* ── Max tokens input ──────────────────────── */}
-        <ConfigField label="Max Tokens">
+        <ConfigField label={t('maxTokens')}>
           <input
             type="number"
             min={1}
@@ -199,14 +201,14 @@ export function LLMNode(props: NodeProps) {
             className="nodrag text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
           >
             {showSystemPrompt ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            System Prompt
+            {t('systemPrompt')}
           </button>
 
           {showSystemPrompt && (
             <textarea
               value={systemPrompt}
               onChange={onSystemPromptChange}
-              placeholder="You are a helpful assistant..."
+              placeholder={t('systemPromptPlaceholder')}
               rows={3}
               className={`nodrag nowheel mt-1 resize-y ${INPUT_CLASS}`}
             />
@@ -219,14 +221,14 @@ export function LLMNode(props: NodeProps) {
             {/* Header */}
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
-                Output
+                {t('output')}
               </span>
               <div className="flex items-center gap-1.5">
                 {status === 'running' && (
                   <Loader2 size={10} className="text-[var(--brand-500)] animate-spin" />
                 )}
                 {tokenCount > 0 && (
-                  <span className="text-muted-foreground text-[10px]">{tokenCount} tokens</span>
+                  <span className="text-muted-foreground text-[10px]">{t('tokens', { count: tokenCount })}</span>
                 )}
               </div>
             </div>
@@ -237,7 +239,7 @@ export function LLMNode(props: NodeProps) {
               className="max-h-32 overflow-auto p-2 text-xs leading-relaxed whitespace-pre-wrap"
             >
               {output || (
-                <span className="text-muted-foreground italic">Generating...</span>
+                <span className="text-muted-foreground italic">{t('generating')}</span>
               )}
               {status === 'running' && (
                 <span className="bg-foreground ml-0.5 inline-block h-3 w-1 animate-pulse rounded-sm" />

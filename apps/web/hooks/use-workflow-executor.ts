@@ -2,7 +2,8 @@
  * [INPUT]: 依赖 @/lib/executor/workflow-executor 的执行引擎，
  *          依赖 @/stores/use-flow-store 的节点/边数据，
  *          依赖 @/stores/use-execution-store 的执行状态，
- *          依赖 @/stores/use-settings-store 的 API Key
+ *          依赖 @/stores/use-settings-store 的 API Key，
+ *          依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting)
  * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,10 +13,19 @@
 
 import { useCallback, useRef } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { WorkflowExecutor } from '@/lib/executor/workflow-executor'
 import { useExecutionStore } from '@/stores/use-execution-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { useSettingsStore } from '@/stores/use-settings-store'
+
+/* ─── Executor Error → i18n Key 映射 ────────────────────── */
+
+const ERROR_KEY_MAP: Record<string, string> = {
+  'Workflow is empty': 'workflowEmpty',
+  'Execution aborted': 'executionAborted',
+  'Failed to sort workflow': 'sortFailed',
+}
 
 /* ─── Store Helpers (非响应式，直接读快照) ────────────── */
 
@@ -47,6 +57,8 @@ function syncOutputsToNodeData(
 
 export function useWorkflowExecutor() {
   const executorRef = useRef(new WorkflowExecutor())
+  const t = useTranslations('canvas')
+  const tExec = useTranslations('executor')
 
   const nodes = useFlowStore((s) => s.nodes)
   const edges = useFlowStore((s) => s.edges)
@@ -89,11 +101,12 @@ export function useWorkflowExecutor() {
 
       onComplete: () => {
         finishExecution()
-        toast.success('Workflow completed')
+        toast.success(t('workflowCompleted'))
       },
       onError: (error) => {
         failExecution(error)
-        toast.error(error)
+        const key = ERROR_KEY_MAP[error]
+        toast.error(key ? tExec(key) : error)
       },
 
       updateNodeStatus: (nodeId, status) => {
@@ -101,7 +114,7 @@ export function useWorkflowExecutor() {
       },
     })
   }, [
-    nodes, edges, apiKey, isExecuting,
+    nodes, edges, apiKey, isExecuting, t, tExec,
     startExecution, setCurrentNode, setNodeResult, finishExecution, failExecution,
     updateNodeData,
   ])

@@ -3,7 +3,9 @@
  *          依赖 @/stores/use-flow-store 的节点/边/视口数据，
  *          依赖 @/services/storage 的导入导出，
  *          依赖 sonner 的 toast 通知，
- *          依赖 ./api-key-dialog 的 API Key 配置
+ *          依赖 next-intl 的 useTranslations，
+ *          依赖 ./api-key-dialog 的 API Key 配置，
+ *          依赖 @/components/locale-switcher 的语言切换
  * [OUTPUT]: 对外提供 CanvasTopToolbar 顶部工具栏组件
  * [POS]: components/canvas 的顶部操作栏，被 Canvas 组件内嵌
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,6 +14,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Download, Loader2, Play, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -26,11 +29,13 @@ import {
 } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ApiKeyDialog } from './api-key-dialog'
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function CanvasTopToolbar() {
+  const t = useTranslations('canvas')
   const { execute, abort, isExecuting } = useWorkflowExecutor()
   const nodes = useFlowStore((s) => s.nodes)
   const edges = useFlowStore((s) => s.edges)
@@ -41,39 +46,39 @@ export function CanvasTopToolbar() {
   const handleExecute = useCallback(async () => {
     if (isExecuting) {
       abort()
-      toast.info('Execution aborted')
+      toast.info(t('executionAborted'))
       return
     }
 
     if (nodes.length === 0) {
-      toast.warning('Add some nodes first')
+      toast.warning(t('addNodesFirst'))
       return
     }
 
-    toast.info('Running workflow...')
+    toast.info(t('runningWorkflow'))
     await execute()
-  }, [isExecuting, nodes.length, execute, abort])
+  }, [isExecuting, nodes.length, execute, abort, t])
 
   /* ── Export ──────────────────────────────────────────── */
   const handleExport = useCallback(() => {
     if (nodes.length === 0) {
-      toast.warning('Nothing to export')
+      toast.warning(t('nothingToExport'))
       return
     }
     exportWorkflow(nodes, edges, viewport)
-    toast.success('Workflow exported')
-  }, [nodes, edges, viewport])
+    toast.success(t('workflowExported'))
+  }, [nodes, edges, viewport, t])
 
   /* ── Import ──────────────────────────────────────────── */
   const handleImport = useCallback(async () => {
     try {
       const result = await importWorkflow()
       setFlow(result.nodes, result.edges, result.viewport)
-      toast.success(`Imported "${result.name}"`)
+      toast.success(t('importedName', { name: result.name }))
     } catch {
-      toast.error('Import failed — invalid file')
+      toast.error(t('importFailed'))
     }
-  }, [setFlow])
+  }, [setFlow, t])
 
   return (
     <TooltipProvider>
@@ -95,18 +100,18 @@ export function CanvasTopToolbar() {
               {isExecuting ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  <span className="hidden sm:inline">Stop</span>
+                  <span className="hidden sm:inline">{t('stop')}</span>
                 </>
               ) : (
                 <>
                   <Play size={14} />
-                  <span className="hidden sm:inline">Run</span>
+                  <span className="hidden sm:inline">{t('run')}</span>
                 </>
               )}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={8}>
-            {isExecuting ? 'Stop execution (Esc)' : 'Run workflow (Ctrl+Enter)'}
+            {isExecuting ? t('stopTooltip') : t('runTooltip')}
           </TooltipContent>
         </Tooltip>
 
@@ -125,7 +130,7 @@ export function CanvasTopToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={8}>
-            Import (Ctrl+O)
+            {t('importTooltip')}
           </TooltipContent>
         </Tooltip>
 
@@ -142,11 +147,14 @@ export function CanvasTopToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={8}>
-            Export (Ctrl+S)
+            {t('exportTooltip')}
           </TooltipContent>
         </Tooltip>
 
         <Separator orientation="vertical" className="mx-1 !h-6" />
+
+        {/* ── Locale ──────────────────────────────────── */}
+        <LocaleSwitcher />
 
         {/* ── API Key ─────────────────────────────────── */}
         <ApiKeyDialog />

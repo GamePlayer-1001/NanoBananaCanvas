@@ -1,0 +1,86 @@
+{
+  "common": {
+    "loading": "加载中..."
+  },
+  "metadata": {
+    "title": "Nano Banana Canvas",
+    "description": "可视化 AI 工作流平台 — 拖拽构建、分享和运行 AI 工作流"
+  },
+  "notFound": {
+    "title": "404",
+    "description": "页面未找到"
+  },
+  "landing": {
+    "title": "Nano Banana Canvas",
+    "subtitle": "可视化 AI 工作流平台 — 拖拽构建、分享和运行 AI 工作流",
+    "cta": "免费开始使用"
+  },
+  "workspace": {
+    "title": "我的工作流",
+    "subtitle": "你的创作空间 — 即将上线",
+    "loadingCanvas": "加载画布中..."
+  },
+  "canvas": {
+    "run": "运行",
+    "stop": "停止",
+    "runTooltip": "运行工作流 (Ctrl+Enter)",
+    "stopTooltip": "停止执行 (Esc)",
+    "importTooltip": "导入 (Ctrl+O)",
+    "exportTooltip": "导出 (Ctrl+S)",
+    "executionAborted": "执行已中断",
+    "addNodesFirst": "请先添加节点",
+    "runningWorkflow": "正在运行工作流...",
+    "nothingToExport": "没有可导出的内容",
+    "workflowExported": "工作流已导出",
+    "importedName": "已导入「{name}」",
+    "importFailed": "导入失败 — 无效文件",
+    "workflowCompleted": "工作流执行完成"
+  },
+  "toolbar": {
+    "select": "选择",
+    "hand": "抓手",
+    "textInput": "文本输入",
+    "llm": "LLM",
+    "display": "展示"
+  },
+  "contextMenu": {
+    "addTextInput": "添加文本输入",
+    "addLLM": "添加 LLM",
+    "addDisplay": "添加展示",
+    "duplicate": "复制",
+    "delete": "删除"
+  },
+  "apiKey": {
+    "setApiKey": "设置 API Key",
+    "apiKeySet": "API Key ✓",
+    "dialogTitle": "OpenRouter API Key",
+    "dialogDescription": "配置 OpenRouter API Key 以启用 LLM 推理。密钥仅存储在本地浏览器中，不会发送到我们的服务器。",
+    "label": "API Key",
+    "placeholder": "sk-or-v1-...",
+    "keyValid": "密钥有效 — 连接成功。",
+    "keyInvalid": "密钥无效或网络错误，请检查后重试。",
+    "test": "测试",
+    "save": "保存"
+  },
+  "nodes": {
+    "enterText": "输入文本...",
+    "model": "模型",
+    "temperature": "温度: {value}",
+    "maxTokens": "最大 Token 数",
+    "systemPrompt": "系统提示词",
+    "systemPromptPlaceholder": "你是一个有用的助手...",
+    "output": "输出",
+    "tokens": "{count} tokens",
+    "generating": "生成中...",
+    "precise": "精确",
+    "creative": "创意",
+    "waitingForInput": "等待输入...",
+    "copied": "已复制!",
+    "copyResult": "复制结果"
+  },
+  "executor": {
+    "workflowEmpty": "工作流为空",
+    "executionAborted": "执行已中断",
+    "sortFailed": "工作流排序失败"
+  }
+}

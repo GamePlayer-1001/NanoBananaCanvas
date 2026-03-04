@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 @/hooks/use-workflow-executor 的执行控制，
  *          依赖 @/stores/use-flow-store 的节点/边/视口，
- *          依赖 @/services/storage 的导入导出
+ *          依赖 @/services/storage 的导入导出，
+ *          依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 useCanvasShortcuts hook (画布全局快捷键)
  * [POS]: hooks 的快捷键桥梁，在 Canvas 组件中激活
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,6 +12,7 @@
 
 import { useEffect } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
 import { exportWorkflow, importWorkflow } from '@/services/storage'
@@ -19,6 +21,7 @@ import { exportWorkflow, importWorkflow } from '@/services/storage'
 
 export function useCanvasShortcuts() {
   const { execute, abort, isExecuting } = useWorkflowExecutor()
+  const t = useTranslations('canvas')
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -36,7 +39,7 @@ export function useCanvasShortcuts() {
       if (e.key === 'Escape' && isExecuting) {
         e.preventDefault()
         abort()
-        toast.info('Execution aborted')
+        toast.info(t('executionAborted'))
         return
       }
 
@@ -45,11 +48,11 @@ export function useCanvasShortcuts() {
         e.preventDefault()
         const { nodes, edges, viewport } = useFlowStore.getState()
         if (nodes.length === 0) {
-          toast.warning('Nothing to export')
+          toast.warning(t('nothingToExport'))
           return
         }
         exportWorkflow(nodes, edges, viewport)
-        toast.success('Workflow exported')
+        toast.success(t('workflowExported'))
         return
       }
 
@@ -59,15 +62,15 @@ export function useCanvasShortcuts() {
         importWorkflow()
           .then((result) => {
             useFlowStore.getState().setFlow(result.nodes, result.edges, result.viewport)
-            toast.success(`Imported "${result.name}"`)
+            toast.success(t('importedName', { name: result.name }))
           })
           .catch(() => {
-            toast.error('Import failed — invalid file')
+            toast.error(t('importFailed'))
           })
       }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [execute, abort, isExecuting])
+  }, [execute, abort, isExecuting, t])
 }

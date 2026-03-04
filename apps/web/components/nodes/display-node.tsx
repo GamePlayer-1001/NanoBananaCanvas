@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/lib/utils/simple-markdown
+ * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/lib/utils/simple-markdown，
+ *          依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 DisplayNode 结果展示节点组件 (Markdown 渲染 + 复制按钮)
  * [POS]: components/nodes 的 MVP 输出节点，被 registry 注册并在画布中渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +10,7 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react'
 import type { NodeProps } from '@xyflow/react'
+import { useTranslations } from 'next-intl'
 import { MonitorPlay, Copy, Check } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { renderSimpleMarkdown } from '@/lib/utils/simple-markdown'
@@ -23,6 +25,7 @@ const INPUTS = [
 /* ─── Copy Button ─────────────────────────────────────── */
 
 function CopyButton({ text }: { text: string }) {
+  const t = useTranslations('nodes')
   const [copied, setCopied] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -47,7 +50,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="text-muted-foreground hover:text-foreground nodrag rounded p-0.5 transition-colors"
-      title={copied ? 'Copied!' : 'Copy result'}
+      title={copied ? t('copied') : t('copyResult')}
     >
       {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
     </button>
@@ -58,6 +61,7 @@ function CopyButton({ text }: { text: string }) {
 
 export function DisplayNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
+  const t = useTranslations('nodes')
   const content = data.config.content as string | undefined
 
   return (
@@ -73,7 +77,7 @@ export function DisplayNode(props: NodeProps) {
           {renderSimpleMarkdown(content)}
         </div>
       ) : (
-        <p className="text-muted-foreground text-center text-xs">Waiting for input...</p>
+        <p className="text-muted-foreground text-center text-xs">{t('waitingForInput')}</p>
       )}
     </BaseNode>
   )
