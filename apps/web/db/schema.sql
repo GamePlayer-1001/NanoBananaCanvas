@@ -1,7 +1,7 @@
 -- ============================================
 --  Nano Banana Canvas — D1 Database Schema
 --  Engine: SQLite (Cloudflare D1)
---  Version: 1.0 (M8)
+--  Version: 2.0 (M8 + M7)
 -- ============================================
 
 PRAGMA foreign_keys = ON;
@@ -111,3 +111,131 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
+
+-- ============================================
+--  M7: 积分 / 支付 / AI 执行
+-- ============================================
+
+-- ── CREDIT-001: credit_balances ───────────────
+-- 三池余额 (monthly 月度订阅 / permanent 永久 / frozen 冻结中)
+CREATE TABLE IF NOT EXISTS credit_balances (
+  user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  monthly_balance   INTEGER NOT NULL DEFAULT 200,
+  permanent_balance INTEGER NOT NULL DEFAULT 0,
+  frozen            INTEGER NOT NULL DEFAULT 0,
+  total_earned      INTEGER NOT NULL DEFAULT 200,
+  total_spent       INTEGER NOT NULL DEFAULT 0,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── CREDIT-002: credit_transactions ───────────
+-- 积分审计日志 (不可变，只追加)
+CREATE TABLE IF NOT EXISTS credit_transactions (
+  id                TEXT PRIMARY KEY,
+  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type              TEXT NOT NULL CHECK(type IN ('earn','spend','freeze','unfreeze','refund')),
+  pool              TEXT NOT NULL DEFAULT 'permanent' CHECK(pool IN ('monthly','permanent')),
+  amount            INTEGER NOT NULL,
+  balance_after     INTEGER NOT NULL,
+  source            TEXT NOT NULL,
+  reference_id      TEXT,
+  description       TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_credit_tx_ref ON credit_transactions(reference_id);
+
+-- ── CREDIT-003: subscriptions ─────────────────
+-- Stripe 订阅记录 (每用户最多一条有效)
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id                    TEXT PRIMARY KEY,
+  user_id               TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  stripe_subscription_id TEXT,
+  stripe_customer_id    TEXT,
+  plan                  TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free','standard','pro','ultimate')),
+  billing_period        TEXT DEFAULT 'monthly' CHECK(billing_period IN ('monthly','yearly')),
+  status                TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','canceled','past_due','trialing')),
+  current_period_start  TEXT,
+  current_period_end    TEXT,
+  monthly_credits       INTEGER NOT NULL DEFAULT 200,
+  cancel_at_period_end  INTEGER NOT NULL DEFAULT 0,
+  created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at            TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_customer_id);
+
+-- ── CREDIT-004: model_pricing ─────────────────
+-- 模型定价表 (积分/次)
+CREATE TABLE IF NOT EXISTS model_pricing (
+  id                TEXT PRIMARY KEY,
+  provider          TEXT NOT NULL,
+  model_id          TEXT NOT NULL,
+  model_name        TEXT NOT NULL,
+  category          TEXT NOT NULL CHECK(category IN ('text','image','video','audio')),
+  credits_per_call  INTEGER NOT NULL,
+  tier              TEXT NOT NULL DEFAULT 'basic' CHECK(tier IN ('basic','standard','premium','flagship')),
+  min_plan          TEXT NOT NULL DEFAULT 'free' CHECK(min_plan IN ('free','standard','pro','ultimate')),
+  is_active         INTEGER NOT NULL DEFAULT 1,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(provider, model_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
+
+-- ── CREDIT-005: credit_packages ───────────────
+-- 积分包配置 (一次性购买)
+CREATE TABLE IF NOT EXISTS credit_packages (
+  id                TEXT PRIMARY KEY,
+  name              TEXT NOT NULL,
+  credits           INTEGER NOT NULL,
+  price_cents       INTEGER NOT NULL,
+  bonus_credits     INTEGER NOT NULL DEFAULT 0,
+  stripe_price_id   TEXT,
+  is_active         INTEGER NOT NULL DEFAULT 1,
+  sort_order        INTEGER NOT NULL DEFAULT 0,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── user_api_keys ─────────────────────────────
+-- 用户 API Key 加密存储 (AES-256-GCM)
+CREATE TABLE IF NOT EXISTS user_api_keys (
+  id                TEXT PRIMARY KEY,
+  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider          TEXT NOT NULL,
+  encrypted_key     TEXT NOT NULL,
+  label             TEXT,
+  is_active         INTEGER NOT NULL DEFAULT 1,
+  last_used_at      TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, provider)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
+
+-- ── ai_usage_logs ─────────────────────────────
+-- AI 调用日志 (分析 + 调试)
+CREATE TABLE IF NOT EXISTS ai_usage_logs (
+  id                TEXT PRIMARY KEY,
+  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workflow_id       TEXT,
+  node_id           TEXT,
+  provider          TEXT NOT NULL,
+  model_id          TEXT NOT NULL,
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
+  credits_charged   INTEGER NOT NULL DEFAULT 0,
+  input_tokens      INTEGER,
+  output_tokens     INTEGER,
+  duration_ms       INTEGER,
+  status            TEXT NOT NULL CHECK(status IN ('success','failed')),
+  error_message     TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON ai_usage_logs(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_workflow ON ai_usage_logs(workflow_id);

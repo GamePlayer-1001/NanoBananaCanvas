@@ -1,0 +1,39 @@
+/**
+ * [INPUT]: 依赖 zod
+ * [OUTPUT]: 对外提供 aiExecuteSchema / apiKeySchema / modelsQuerySchema
+ * [POS]: lib/validations 的 AI 执行验证，被 ai API 路由消费
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import { z } from 'zod'
+
+/* ─── AI 执行请求 ────────────────────────────────────── */
+
+export const aiExecuteSchema = z.object({
+  provider: z.string().min(1),
+  modelId: z.string().min(1),
+  messages: z.array(
+    z.object({
+      role: z.enum(['system', 'user', 'assistant']),
+      content: z.string(),
+    }),
+  ).min(1),
+  executionMode: z.enum(['credits', 'user_key']).default('credits'),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(1).max(32768).optional(),
+  workflowId: z.string().optional(),
+  nodeId: z.string().optional(),
+})
+
+/* ─── API Key 管理 ───────────────────────────────────── */
+
+export const apiKeySchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  label: z.string().max(100).optional(),
+})
+
+/* ─── 模型列表查询 ───────────────────────────────────── */
+
+export const modelsQuerySchema = z.object({
+  category: z.enum(['text', 'image', 'video', 'audio']).optional(),
+})
