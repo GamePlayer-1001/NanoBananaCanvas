@@ -10,6 +10,9 @@ Zod 表单验证 Schema
 workflow.ts — createWorkflowSchema / updateWorkflowSchema / publishWorkflowSchema 工作流表单验证
 report.ts   — reportSchema 举报表单验证 (reason enum: spam/nsfw/copyright/other)
 explore.ts  — exploreQuerySchema / searchQuerySchema 广场查询验证
+credits.ts  — creditTransactionsQuerySchema / topupSchema 积分查询验证
+billing.ts  — checkoutSchema 计费操作验证 (plan + billingPeriod)
+ai.ts       — aiExecuteSchema / apiKeySchema / modelsQuerySchema AI 执行验证
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
