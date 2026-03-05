@@ -19,10 +19,10 @@
   //   { "binding": "NEXT_CACHE_KV", "id": "<your-kv-id>" }
   // ],
 
-  // D1 绑定 — 主数据库（由 Worker 层操作）
-  // "d1_databases": [
-  //   { "binding": "DB", "database_name": "nano-banana-db", "database_id": "<your-d1-id>" }
-  // ],
+  // D1 绑定 — 主数据库
+  "d1_databases": [
+    { "binding": "DB", "database_name": "nano-banana-db", "database_id": "<your-d1-id>" }
+  ],
 
   // R2 绑定 — 用户上传资源存储
   // "r2_buckets": [

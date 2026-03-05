@@ -39,6 +39,10 @@ export const ErrorCode = {
   WORKFLOW_NODE_ERROR: 'WORKFLOW_NODE_ERROR',
   WORKFLOW_ABORTED: 'WORKFLOW_ABORTED',
 
+  // 资源层
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+
   // 通用
   UNKNOWN: 'UNKNOWN',
 } as const
@@ -140,6 +144,13 @@ export class WorkflowError extends AppError {
   ) {
     super(code, message, meta)
     this.name = 'WorkflowError'
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(resource: string, id: string) {
+    super(ErrorCode.NOT_FOUND, `${resource} not found: ${id}`, { resource, id })
+    this.name = 'NotFoundError'
   }
 }
 
