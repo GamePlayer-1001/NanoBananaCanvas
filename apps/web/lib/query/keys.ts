@@ -43,4 +43,12 @@ export const queryKeys = {
     subscription: () => [...queryKeys.billing.all, 'subscription'] as const,
     packages: () => [...queryKeys.billing.all, 'packages'] as const,
   },
+  ai: {
+    all: ['ai'] as const,
+    models: (category?: string) => [...queryKeys.ai.all, 'models', category] as const,
+  },
+  settings: {
+    all: ['settings'] as const,
+    apiKeys: () => [...queryKeys.settings.all, 'api-keys'] as const,
+  },
 } as const

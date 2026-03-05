@@ -16,3 +16,5 @@ export {
 } from './engine'
 
 export { encryptApiKey, decryptApiKey, maskApiKey } from './crypto'
+
+export { getModelPricing, checkModelAccess, type ModelPricing } from './pricing'
