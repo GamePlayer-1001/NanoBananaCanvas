@@ -17,4 +17,19 @@ export const queryKeys = {
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     credits: () => [...queryKeys.user.all, 'credits'] as const,
   },
+  explore: {
+    all: ['explore'] as const,
+    list: (filters?: Record<string, unknown>) =>
+      [...queryKeys.explore.all, 'list', filters] as const,
+    search: (q: string, page?: number) =>
+      [...queryKeys.explore.all, 'search', q, page] as const,
+  },
+  categories: {
+    all: ['categories'] as const,
+    list: (locale?: string) => [...queryKeys.categories.all, 'list', locale] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (page?: number) => [...queryKeys.notifications.all, 'list', page] as const,
+  },
 } as const
