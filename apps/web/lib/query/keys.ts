@@ -32,4 +32,15 @@ export const queryKeys = {
     all: ['notifications'] as const,
     list: (page?: number) => [...queryKeys.notifications.all, 'list', page] as const,
   },
+  credits: {
+    all: ['credits'] as const,
+    balance: () => [...queryKeys.credits.all, 'balance'] as const,
+    transactions: (filters?: Record<string, unknown>) =>
+      [...queryKeys.credits.all, 'transactions', filters] as const,
+  },
+  billing: {
+    all: ['billing'] as const,
+    subscription: () => [...queryKeys.billing.all, 'subscription'] as const,
+    packages: () => [...queryKeys.billing.all, 'packages'] as const,
+  },
 } as const
