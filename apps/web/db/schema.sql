@@ -4,7 +4,6 @@
 --  Version: 1.0 (M8)
 -- ============================================
 
-PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
 -- ── DB-001: users ────────────────────────────

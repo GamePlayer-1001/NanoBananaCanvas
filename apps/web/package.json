@@ -13,8 +13,8 @@
     "deploy:preview": "npx wrangler pages dev",
     "deploy": "npx wrangler pages deploy",
     "dev:cf": "npx wrangler pages dev --compatibility-date=2025-04-01 --compatibility-flags=nodejs_compat --d1=DB -- npx next dev --turbopack",
-    "db:init": "npx wrangler d1 execute nano-banana-db --local --file=./db/schema.sql",
-    "db:seed": "npx wrangler d1 execute nano-banana-db --local --file=./db/seed.sql",
+    "db:init": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/schema.sql",
+    "db:seed": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed.sql",
     "clean": "rm -rf .next .turbo .open-next"
   },
   "dependencies": {

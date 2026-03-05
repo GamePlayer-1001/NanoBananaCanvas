@@ -21,7 +21,7 @@
 
   // D1 绑定 — 主数据库
   "d1_databases": [
-    { "binding": "DB", "database_name": "nano-banana-db", "database_id": "<your-d1-id>" }
+    { "binding": "DB", "database_name": "nano-banana-canvas-db", "database_id": "8a9c60d1-9797-4ea4-8fa6-2d55a1176b0a" }
   ],
 
   // R2 绑定 — 用户上传资源存储
