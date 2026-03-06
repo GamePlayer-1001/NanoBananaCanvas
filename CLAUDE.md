@@ -41,10 +41,25 @@ pnpm format           # Prettier 格式化
 pnpm format:check     # Prettier 检查 (CI 用)
 ```
 
+## 前端页面路由
+
+```
+[locale]/(landing)/           — Landing Page (Hero + CTA + Footer)
+[locale]/(auth)/sign-in       — 分屏登录页 (左玫瑰图 + 右 Clerk 卡片)
+[locale]/(auth)/sign-up       — 分屏注册页
+[locale]/(app)/explore        — 社区广场 (视频卡片网格 + 标签筛选)
+[locale]/(app)/workflows      — 工作流分享 (分类 + 搜索 + 工作流卡片)
+[locale]/(app)/video-analysis — 视频分析 (上传 + AI 模型 + 历史)
+[locale]/(app)/workspace      — 工作区 (项目卡片网格 + 新建弹窗)
+[locale]/(app)/workspace/[id] — 画布编辑器 (ReactFlow)
+[locale]/(app)/elements       — 元素库 (占位)
+```
+
 ## 架构约定
 
 - **Monorepo**: pnpm workspace + Turborepo
 - **路由**: `[locale]/(landing|auth|app)` 三路由组
+- **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
