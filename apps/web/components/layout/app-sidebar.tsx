@@ -1,14 +1,15 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
- *          依赖 @/stores/use-settings-store 的 sidebarCollapsed，
- *          依赖 lucide-react 图标，依赖 @clerk/nextjs 的 UserButton
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件
+ *          依赖 lucide-react 图标，依赖 @clerk/nextjs 的 UserButton，
+ *          依赖 @/components/profile/profile-modal
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (含 ProfileModal)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { UserButton } from '@clerk/nextjs'
 import {
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
+import { ProfileModal } from '@/components/profile/profile-modal'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -97,8 +99,10 @@ function SidebarNavItem({
 export function AppSidebar() {
   const t = useTranslations('sidebar')
   const pathname = usePathname()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
+    <>
     <aside className="flex h-screen w-[200px] flex-col border-r border-border bg-background">
       {/* ── Header ────────────────────────────────────── */}
       <div className="px-4 pt-5 pb-2">
@@ -192,7 +196,10 @@ export function AppSidebar() {
           <MessageCircle size={12} />
           100
         </span>
-        <div className="ml-auto">
+        <button
+          onClick={() => setProfileOpen(true)}
+          className="ml-auto"
+        >
           <UserButton
             appearance={{
               elements: {
@@ -200,8 +207,11 @@ export function AppSidebar() {
               },
             }}
           />
-        </div>
+        </button>
       </div>
     </aside>
+
+    <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+    </>
   )
 }
