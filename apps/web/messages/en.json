@@ -160,7 +160,15 @@
     "deleteWarning": "This will permanently delete \"{name}\" and all its data. This action cannot be undone.",
     "deleted": "Project deleted",
     "deleteFailed": "Failed to delete project",
-    "published": "Published"
+    "published": "Published",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "publishToExplore": "Publish to Explore",
+    "selectCategory": "Select a category",
+    "publishSuccess": "Published to Explore",
+    "publishFailed": "Failed to publish",
+    "unpublished": "Unpublished",
+    "unpublishFailed": "Failed to unpublish"
   },
   "profile": {
     "account": "Account",

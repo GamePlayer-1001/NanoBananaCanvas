@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 @/i18n/navigation 的 useRouter，依赖 lucide-react 图标，
- *          依赖 @/components/ui/dropdown-menu，
- *          依赖 ./rename-dialog 和 ./delete-dialog 的弹窗组件
- * [OUTPUT]: 对外提供 ProjectCard 项目卡片组件 (含三点菜单: 重命名/删除)
+ *          依赖 @/components/ui/dropdown-menu，依赖 @/hooks/use-workflows 的 useUnpublishWorkflow，
+ *          依赖 ./rename-dialog, ./delete-dialog, ./publish-dialog 弹窗组件，
+ *          依赖 sonner 的 toast
+ * [OUTPUT]: 对外提供 ProjectCard 项目卡片组件 (含三点菜单: 重命名/删除/发布/取消发布)
  * [POS]: workspace 的项目卡片，被 workspace-grid.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -11,17 +12,21 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Clock, Image as ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Clock, Globe, GlobeLock, Image as ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useRouter } from '@/i18n/navigation'
+import { useUnpublishWorkflow } from '@/hooks/use-workflows'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { RenameDialog } from './rename-dialog'
 import { DeleteDialog } from './delete-dialog'
+import { PublishDialog } from './publish-dialog'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -40,9 +45,18 @@ export function ProjectCard({ data }: { data: ProjectCardData }) {
   const router = useRouter()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
+  const { mutate: unpublish } = useUnpublishWorkflow(data.id)
 
   const handleNavigate = () => {
     router.push(`/workspace/${data.id}`)
+  }
+
+  const handleUnpublish = () => {
+    unpublish(undefined, {
+      onSuccess: () => toast.success(t('unpublished')),
+      onError: () => toast.error(t('unpublishFailed')),
+    })
   }
 
   return (
@@ -85,11 +99,28 @@ export function ProjectCard({ data }: { data: ProjectCardData }) {
                   <MoreHorizontal size={14} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={() => setRenameOpen(true)}>
                   <Pencil size={14} className="mr-2" />
                   {t('rename')}
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {data.isPublic ? (
+                  <DropdownMenuItem onClick={handleUnpublish}>
+                    <GlobeLock size={14} className="mr-2" />
+                    {t('unpublish')}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setPublishOpen(true)}>
+                    <Globe size={14} className="mr-2" />
+                    {t('publish')}
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   onClick={() => setDeleteOpen(true)}
                   className="text-destructive focus:text-destructive"
@@ -126,6 +157,11 @@ export function ProjectCard({ data }: { data: ProjectCardData }) {
         workflowName={data.name}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
+      />
+      <PublishDialog
+        workflowId={data.id}
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
       />
     </>
   )

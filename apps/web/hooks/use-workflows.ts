@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useWorkflows / useWorkflow / useCreateWorkflow / useUpdateWorkflow / useDeleteWorkflow
+ * [OUTPUT]: 对外提供 useWorkflows / useWorkflow / useCreateWorkflow / useUpdateWorkflow / useDeleteWorkflow / usePublishWorkflow / useUnpublishWorkflow
  * [POS]: hooks 的工作流数据层，被 workspace/canvas 页面消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -105,6 +105,36 @@ export function useDeleteWorkflow() {
       fetchJson(`/api/workflows/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
+    },
+  })
+}
+
+export function usePublishWorkflow(id: string) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { categoryId: string }) =>
+      fetchJson(`/api/workflows/${id}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
+      qc.invalidateQueries({ queryKey: queryKeys.explore.all })
+    },
+  })
+}
+
+export function useUnpublishWorkflow(id: string) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      fetchJson(`/api/workflows/${id}/publish`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
+      qc.invalidateQueries({ queryKey: queryKeys.explore.all })
     },
   })
 }

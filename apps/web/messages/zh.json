@@ -160,7 +160,15 @@
     "deleteWarning": "这将永久删除「{name}」及其所有数据，此操作不可撤销。",
     "deleted": "项目已删除",
     "deleteFailed": "删除失败",
-    "published": "已发布"
+    "published": "已发布",
+    "publish": "发布",
+    "unpublish": "取消发布",
+    "publishToExplore": "发布到广场",
+    "selectCategory": "选择分类",
+    "publishSuccess": "已发布到广场",
+    "publishFailed": "发布失败",
+    "unpublished": "已取消发布",
+    "unpublishFailed": "取消发布失败"
   },
   "profile": {
     "account": "账户",
