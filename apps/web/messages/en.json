@@ -214,7 +214,10 @@
     "upgrade": "Upgrade",
     "manage": "Manage Subscription",
     "transactions": "Transaction History",
-    "topUp": "Top Up Credits"
+    "topUp": "Top Up Credits",
+    "noTransactions": "No transactions yet",
+    "creditsLabel": "credits",
+    "purchaseCredits": "Purchase Credits"
   },
   "canvas": {
     "run": "Run",

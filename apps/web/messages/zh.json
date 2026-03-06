@@ -214,7 +214,10 @@
     "upgrade": "升级",
     "manage": "管理订阅",
     "transactions": "交易记录",
-    "topUp": "充值积分"
+    "topUp": "充值积分",
+    "noTransactions": "暂无交易记录",
+    "creditsLabel": "积分",
+    "purchaseCredits": "购买积分"
   },
   "canvas": {
     "run": "运行",

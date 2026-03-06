@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useSubscription / usePackages / useCheckout / usePortal / useCancelSubscription
+ * [OUTPUT]: 对外提供 useSubscription / usePackages / useCheckout / usePortal / useCancelSubscription / useTransactions / useTopup
  * [POS]: hooks 的账单数据层，被 profile/billing 页面消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -67,5 +67,34 @@ export function useCancelSubscription() {
   return useMutation({
     mutationFn: () =>
       fetchJson('/api/billing/cancel', { method: 'POST' }),
+  })
+}
+
+export function useTransactions() {
+  return useQuery({
+    queryKey: queryKeys.credits.transactions(),
+    queryFn: () =>
+      fetchJson<{
+        items: Array<{
+          id: string
+          type: string
+          amount: number
+          description: string
+          created_at: string
+        }>
+      }>('/api/credits/transactions'),
+  })
+}
+
+export function useTopup() {
+  return useMutation({
+    mutationFn: async (packageId: string) => {
+      const data = await fetchJson<{ url: string }>('/api/billing/topup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId }),
+      })
+      window.location.href = data.url
+    },
   })
 }

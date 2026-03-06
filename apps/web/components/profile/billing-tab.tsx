@@ -1,22 +1,27 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/hooks/use-user 的 useCreditsBalance
- * [OUTPUT]: 对外提供 BillingTab 账单面板 (积分余额 + 交易历史)
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/hooks/use-user 的 useCreditsBalance，
+ *          依赖 ./payment-history, ./topup-dialog
+ * [OUTPUT]: 对外提供 BillingTab 账单面板 (积分余额 + 充值 + 交易历史)
  * [POS]: profile 的账单 Tab，被 profile-modal.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CreditCard, ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 
 import { useCreditsBalance } from '@/hooks/use-user'
+import { PaymentHistory } from './payment-history'
+import { TopupDialog } from './topup-dialog'
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function BillingTab() {
   const t = useTranslations('billing')
   const { data: balance } = useCreditsBalance()
+  const [topupOpen, setTopupOpen] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -34,7 +39,10 @@ export function BillingTab() {
               {t('remaining', { count: (balance as { balance?: number })?.balance ?? 0 })}
             </p>
           </div>
-          <button className="flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600">
+          <button
+            onClick={() => setTopupOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+          >
             <ArrowUpRight size={14} />
             {t('topUp')}
           </button>
@@ -43,12 +51,12 @@ export function BillingTab() {
 
       {/* 交易历史 */}
       <div>
-        <h4 className="text-sm font-medium text-foreground">{t('transactions')}</h4>
-        <div className="mt-3 flex flex-col items-center rounded-xl border border-dashed border-border py-10">
-          <CreditCard size={28} className="text-muted-foreground/30" />
-          <p className="mt-2 text-sm text-muted-foreground">No transactions yet</p>
-        </div>
+        <h4 className="mb-3 text-sm font-medium text-foreground">{t('transactions')}</h4>
+        <PaymentHistory />
       </div>
+
+      {/* 充值弹窗 */}
+      <TopupDialog open={topupOpen} onOpenChange={setTopupOpen} />
     </div>
   )
 }
