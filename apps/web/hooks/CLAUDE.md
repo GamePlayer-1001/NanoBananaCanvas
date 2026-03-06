@@ -18,6 +18,8 @@ use-billing.ts           — useSubscription / usePackages / useCheckout / usePo
 use-categories.ts        — useCategories 分类数据 (TanStack Query, 5min staleTime)
 use-ai-models.ts         — useAIModels AI 模型目录 (TanStack Query, 10min staleTime)
 use-mobile.ts            — useIsMobile 移动端断点检测 (768px, matchMedia 监听)
+use-notifications.ts     — useNotifications / useMarkAsRead 通知数据 (TanStack Query)
+use-upload.ts            — useUpload 文件上传 hook (XMLHttpRequest + progress 追踪)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

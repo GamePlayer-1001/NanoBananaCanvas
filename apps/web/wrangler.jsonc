@@ -25,7 +25,7 @@
   ],
 
   // R2 绑定 — 用户上传资源存储
-  // "r2_buckets": [
-  //   { "binding": "UPLOADS", "bucket_name": "nano-banana-uploads" }
-  // ]
+  "r2_buckets": [
+    { "binding": "UPLOADS", "bucket_name": "nano-banana-uploads" }
+  ]
 }

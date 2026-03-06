@@ -13,6 +13,7 @@ explore.ts  — exploreQuerySchema / searchQuerySchema 广场查询验证
 credits.ts  — creditTransactionsQuerySchema / topupSchema 积分查询验证
 billing.ts  — checkoutSchema 计费操作验证 (plan + billingPeriod)
 ai.ts       — aiExecuteSchema / apiKeySchema / modelsQuerySchema AI 执行验证
+upload.ts   — UPLOAD_LIMITS / validateUpload 文件上传校验 (类型+大小)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

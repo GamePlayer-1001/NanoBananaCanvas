@@ -46,6 +46,8 @@ function errorCodeToStatus(code: string): number {
   if (code === 'AUTH_FORBIDDEN') return 403
   if (code.startsWith('AUTH_')) return 401
   if (code.startsWith('VALIDATION_')) return 400
+  if (code === 'UPLOAD_TOO_LARGE') return 413
+  if (code.startsWith('UPLOAD_')) return 400
   if (code.startsWith('CREDITS_')) return 402
   if (code === 'NOT_FOUND') return 404
   if (code === 'CONFLICT') return 409

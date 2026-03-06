@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/CreditFreezeError)
+ * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/CreditFreezeError) + UPLOAD_* 错误码
  * [POS]: lib 的统一错误类型体系，被所有业务模块消费，是错误处理的唯一真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -38,6 +38,11 @@ export const ErrorCode = {
   WORKFLOW_EXECUTION_FAILED: 'WORKFLOW_EXECUTION_FAILED',
   WORKFLOW_NODE_ERROR: 'WORKFLOW_NODE_ERROR',
   WORKFLOW_ABORTED: 'WORKFLOW_ABORTED',
+
+  // 上传层
+  UPLOAD_TOO_LARGE: 'UPLOAD_TOO_LARGE',
+  UPLOAD_INVALID_TYPE: 'UPLOAD_INVALID_TYPE',
+  UPLOAD_FAILED: 'UPLOAD_FAILED',
 
   // 资源层
   NOT_FOUND: 'NOT_FOUND',

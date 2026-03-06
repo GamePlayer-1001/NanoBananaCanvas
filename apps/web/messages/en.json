@@ -177,7 +177,14 @@
     "publishSuccess": "Published to Explore",
     "publishFailed": "Failed to publish",
     "unpublished": "Unpublished",
-    "unpublishFailed": "Failed to unpublish"
+    "unpublishFailed": "Failed to unpublish",
+    "coverImage": "Cover Image"
+  },
+  "upload": {
+    "dragOrClick": "Drag & drop or click to upload",
+    "maxSize": "Max 10MB · JPG, PNG, WebP, GIF",
+    "uploading": "Uploading...",
+    "uploadFailed": "Upload failed"
   },
   "profile": {
     "account": "Account",

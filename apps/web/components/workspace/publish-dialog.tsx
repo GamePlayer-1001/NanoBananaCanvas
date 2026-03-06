@@ -2,6 +2,7 @@
  * [INPUT]: 依赖 @/components/ui/dialog, @/components/ui/button, @/components/ui/label,
  *          依赖 @/hooks/use-workflows 的 usePublishWorkflow,
  *          依赖 @/hooks/use-categories 的 useCategories,
+ *          依赖 @/components/shared/image-upload 的 ImageUpload,
  *          依赖 next-intl 的 useTranslations/useLocale, 依赖 sonner 的 toast
  * [OUTPUT]: 对外提供 PublishDialog 发布弹窗组件
  * [POS]: workspace 的发布交互，被 project-card.tsx 消费
@@ -15,6 +16,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { toast } from 'sonner'
 import { usePublishWorkflow } from '@/hooks/use-workflows'
 import { useCategories, type Category } from '@/hooks/use-categories'
+import { ImageUpload } from '@/components/shared/image-upload'
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ export function PublishDialog({ workflowId, open, onOpenChange }: PublishDialogP
   const tc = useTranslations('common')
   const locale = useLocale()
   const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [coverUrl, setCoverUrl] = useState<string | undefined>()
   const { data: categories, isLoading: categoriesLoading } = useCategories(locale)
   const { mutate, isPending } = usePublishWorkflow(workflowId)
 
@@ -46,7 +49,7 @@ export function PublishDialog({ workflowId, open, onOpenChange }: PublishDialogP
     if (!selectedCategory) return
 
     mutate(
-      { categoryId: selectedCategory },
+      { categoryId: selectedCategory, thumbnail: coverUrl },
       {
         onSuccess: () => {
           toast.success(t('publishSuccess'))
@@ -66,6 +69,16 @@ export function PublishDialog({ workflowId, open, onOpenChange }: PublishDialogP
         </DialogHeader>
 
         <div className="py-4 space-y-4">
+          {/* 封面上传 */}
+          <div className="space-y-2">
+            <Label>{t('coverImage')}</Label>
+            <ImageUpload
+              value={coverUrl}
+              onChange={setCoverUrl}
+              className="h-32"
+            />
+          </div>
+
           {/* 分类选择 */}
           <div className="space-y-2">
             <Label>{t('selectCategory')}</Label>

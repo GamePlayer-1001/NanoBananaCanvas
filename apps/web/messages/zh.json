@@ -177,7 +177,14 @@
     "publishSuccess": "已发布到广场",
     "publishFailed": "发布失败",
     "unpublished": "已取消发布",
-    "unpublishFailed": "取消发布失败"
+    "unpublishFailed": "取消发布失败",
+    "coverImage": "封面图片"
+  },
+  "upload": {
+    "dragOrClick": "拖拽或点击上传",
+    "maxSize": "最大 10MB · JPG, PNG, WebP, GIF",
+    "uploading": "上传中...",
+    "uploadFailed": "上传失败"
   },
   "profile": {
     "account": "账户",
