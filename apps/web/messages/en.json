@@ -151,7 +151,16 @@
     "projectName": "Project Name",
     "projectDescription": "Description (optional)",
     "noProjects": "No projects yet",
-    "noProjectsDesc": "Create your first project to get started"
+    "noProjectsDesc": "Create your first project to get started",
+    "rename": "Rename",
+    "renameProject": "Rename Project",
+    "renamed": "Project renamed",
+    "renameFailed": "Failed to rename project",
+    "deleteProject": "Delete",
+    "deleteWarning": "This will permanently delete \"{name}\" and all its data. This action cannot be undone.",
+    "deleted": "Project deleted",
+    "deleteFailed": "Failed to delete project",
+    "published": "Published"
   },
   "profile": {
     "account": "Account",

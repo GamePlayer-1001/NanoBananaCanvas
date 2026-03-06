@@ -25,12 +25,13 @@ export function WorkspaceContent() {
 
   /* 将 API 数据映射为 ProjectCard 格式 */
   const projects: ProjectCardData[] | undefined = data
-    ? (data as { id: string; name: string; thumbnailUrl?: string; updatedAt: string }[]).map(
+    ? (data as { id: string; name: string; thumbnailUrl?: string; updatedAt: string; is_public?: number }[]).map(
         (w) => ({
           id: w.id,
           name: w.name,
           thumbnailUrl: w.thumbnailUrl,
           updatedAt: w.updatedAt,
+          isPublic: !!w.is_public,
         }),
       )
     : undefined

@@ -151,7 +151,16 @@
     "projectName": "项目名称",
     "projectDescription": "描述（可选）",
     "noProjects": "还没有项目",
-    "noProjectsDesc": "创建你的第一个项目开始使用"
+    "noProjectsDesc": "创建你的第一个项目开始使用",
+    "rename": "重命名",
+    "renameProject": "重命名项目",
+    "renamed": "项目已重命名",
+    "renameFailed": "重命名失败",
+    "deleteProject": "删除",
+    "deleteWarning": "这将永久删除「{name}」及其所有数据，此操作不可撤销。",
+    "deleted": "项目已删除",
+    "deleteFailed": "删除失败",
+    "published": "已发布"
   },
   "profile": {
     "account": "账户",
