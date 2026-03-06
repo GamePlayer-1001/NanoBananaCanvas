@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，
- *          依赖 @/components/profile 的各 Tab 组件，
+ *          依赖 @/components/profile 的各 Tab 组件 (6 个)，
  *          依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 ProfileModal 个人中心弹窗
+ * [OUTPUT]: 对外提供 ProfileModal 个人中心弹窗 (含 作品 + 通知 Tab)
  * [POS]: profile 的入口容器，由 sidebar footer avatar 触发
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -11,17 +11,21 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { X, User, CreditCard, Crown, Settings2 } from 'lucide-react'
+import { X, User, CreditCard, Crown, Settings2, BookOpen, Bell } from 'lucide-react'
 
 import { ProfileTab } from './profile-tab'
 import { BillingTab } from './billing-tab'
 import { SubscriptionTab } from './subscription-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
+import { WorksTab } from './works-tab'
+import { NotificationsTab } from './notifications-tab'
 
 /* ─── Tab Config ─────────────────────────────────────── */
 
 const TABS = [
   { id: 'profile', icon: User, labelKey: 'personalInfo' },
+  { id: 'works', icon: BookOpen, labelKey: 'works' },
+  { id: 'notifications', icon: Bell, labelKey: 'notifications' },
   { id: 'billing', icon: CreditCard, labelKey: 'billing' },
   { id: 'subscription', icon: Crown, labelKey: 'subscription' },
   { id: 'modelPreferences', icon: Settings2, labelKey: 'modelPreferences' },
@@ -33,6 +37,8 @@ type TabId = (typeof TABS)[number]['id']
 
 const TAB_CONTENT: Record<TabId, React.FC> = {
   profile: ProfileTab,
+  works: WorksTab,
+  notifications: NotificationsTab,
   billing: BillingTab,
   subscription: SubscriptionTab,
   modelPreferences: ModelPreferencesTab,

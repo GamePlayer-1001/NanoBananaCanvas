@@ -192,7 +192,20 @@
     "changePassword": "Change Password",
     "deleteAccount": "Delete Account",
     "deleteAccountDesc": "This will permanently delete your account and all associated data.",
-    "deleteButton": "Delete"
+    "deleteButton": "Delete",
+    "works": "My Works",
+    "notifications": "Notifications"
+  },
+  "profileWorks": {
+    "title": "My Works",
+    "all": "All",
+    "shared": "Published",
+    "empty": "No works yet"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllAsRead": "Mark all as read"
   },
   "billing": {
     "currentPlan": "Current Plan",

@@ -192,7 +192,20 @@
     "changePassword": "更改密码",
     "deleteAccount": "删除账户",
     "deleteAccountDesc": "这将永久删除你的账户和所有相关数据。",
-    "deleteButton": "删除"
+    "deleteButton": "删除",
+    "works": "我的作品",
+    "notifications": "通知"
+  },
+  "profileWorks": {
+    "title": "我的作品",
+    "all": "全部",
+    "shared": "已发布",
+    "empty": "还没有作品"
+  },
+  "notifications": {
+    "title": "通知",
+    "empty": "暂无通知",
+    "markAllAsRead": "全部标记已读"
   },
   "billing": {
     "currentPlan": "当前套餐",
