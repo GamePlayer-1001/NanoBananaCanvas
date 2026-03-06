@@ -23,14 +23,14 @@ export function WorkspaceContent() {
   const [showNewProject, setShowNewProject] = useState(false)
   const { data, isLoading } = useWorkflows()
 
-  /* 将 API 数据映射为 ProjectCard 格式 */
+  /* 将 API 数据 (snake_case) 映射为 ProjectCard 格式 (camelCase) */
   const projects: ProjectCardData[] | undefined = data
-    ? (data as { id: string; name: string; thumbnailUrl?: string; updatedAt: string; is_public?: number }[]).map(
+    ? (data as { id: string; name: string; thumbnail?: string; updated_at: string; is_public?: number }[]).map(
         (w) => ({
           id: w.id,
           name: w.name,
-          thumbnailUrl: w.thumbnailUrl,
-          updatedAt: w.updatedAt,
+          thumbnailUrl: w.thumbnail,
+          updatedAt: w.updated_at,
           isPublic: !!w.is_public,
         }),
       )
