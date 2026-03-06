@@ -1,13 +1,13 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors, @/lib/validations/workflow
+ * [INPUT]: 依赖 @/lib/api/auth (requireAuth + optionalAuth), @/lib/api/response, @/lib/db, @/lib/errors, @/lib/validations/workflow
  * [OUTPUT]: 对外提供 GET/PUT/DELETE /api/workflows/:id
- * [POS]: api/workflows/[id] 的单个工作流 CRUD
+ * [POS]: api/workflows/[id] 的单个工作流 CRUD，GET 支持公开访问 (explore 详情页)
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { NextRequest } from 'next/server'
 
-import { requireAuth } from '@/lib/api/auth'
+import { optionalAuth, requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError, ValidationError } from '@/lib/errors'
@@ -21,20 +21,52 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
-    const { userId } = await requireAuth()
+    const authUser = await optionalAuth()
     const { id } = await params
     const db = await getDb()
 
-    const workflow = await db
-      .prepare('SELECT * FROM workflows WHERE id = ? AND user_id = ?')
-      .bind(id, userId)
-      .first()
+    /* 优先匹配 owner (私有+公开均可) */
+    if (authUser) {
+      const owned = await db
+        .prepare('SELECT * FROM workflows WHERE id = ? AND user_id = ?')
+        .bind(id, authUser.userId)
+        .first()
 
-    if (!workflow) {
-      throw new NotFoundError('Workflow', id)
+      if (owned) return apiOk(owned)
     }
 
-    return apiOk(workflow)
+    /* 非 owner → 仅允许公开作品，附带作者信息 */
+    const pub = await db
+      .prepare(
+        `SELECT w.*, u.name AS author_name, u.avatar_url AS author_avatar
+         FROM workflows w JOIN users u ON u.id = w.user_id
+         WHERE w.id = ? AND w.is_public = 1`,
+      )
+      .bind(id)
+      .first()
+
+    if (!pub) throw new NotFoundError('Workflow', id)
+
+    /* 异步递增浏览量 */
+    db.prepare('UPDATE workflows SET view_count = view_count + 1 WHERE id = ?')
+      .bind(id)
+      .run()
+
+    /* 查询当前用户的互动状态 */
+    let liked = false
+    let favorited = false
+    if (authUser) {
+      const [likeRow, favRow] = await Promise.all([
+        db.prepare('SELECT 1 FROM likes WHERE user_id = ? AND workflow_id = ?')
+          .bind(authUser.userId, id).first(),
+        db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND workflow_id = ?')
+          .bind(authUser.userId, id).first(),
+      ])
+      liked = !!likeRow
+      favorited = !!favRow
+    }
+
+    return apiOk({ ...pub, liked, favorited })
   } catch (error) {
     return handleApiError(error)
   }

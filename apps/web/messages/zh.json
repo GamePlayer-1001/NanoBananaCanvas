@@ -263,5 +263,32 @@
     "workflowEmpty": "工作流为空",
     "executionAborted": "执行已中断",
     "sortFailed": "工作流排序失败"
+  },
+  "exploreDetail": {
+    "backToExplore": "返回广场",
+    "notFound": "工作流不存在",
+    "views": "{count} 浏览",
+    "likes": "{count} 点赞",
+    "clones": "{count} 克隆",
+    "author": "创作者",
+    "publishedOn": "发布于 {date}",
+    "like": "点赞",
+    "liked": "已点赞",
+    "favorite": "收藏",
+    "favorited": "已收藏",
+    "cloneAndOpen": "克隆并打开",
+    "cloneSuccess": "已克隆到你的工作区",
+    "cloneFailed": "克隆失败",
+    "actionFailed": "操作失败",
+    "report": "举报",
+    "reportTitle": "举报工作流",
+    "reportDescription": "请选择举报原因",
+    "reason_spam": "垃圾内容",
+    "reason_nsfw": "不良内容",
+    "reason_copyright": "侵权",
+    "reason_other": "其他",
+    "submitReport": "提交举报",
+    "reportSubmitted": "举报已提交",
+    "reportFailed": "举报提交失败"
   }
 }

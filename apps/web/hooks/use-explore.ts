@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow
- * [POS]: hooks 的社区广场数据层，被 explore 页面消费
+ * [OUTPUT]: 对外提供 useExplore / useExploreDetail / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow / useReportWorkflow
+ * [POS]: hooks 的社区广场数据层，被 explore 页面 + explore 详情页消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -84,14 +84,33 @@ export function useToggleFavorite() {
   })
 }
 
+export function useExploreDetail(id: string) {
+  return useQuery({
+    queryKey: queryKeys.explore.detail(id),
+    queryFn: () => fetchJson(`/api/workflows/${id}`),
+    enabled: !!id,
+  })
+}
+
 export function useCloneWorkflow() {
   const qc = useQueryClient()
 
   return useMutation({
     mutationFn: (id: string) =>
-      fetchJson(`/api/workflows/${id}/clone`, { method: 'POST' }),
+      fetchJson<{ id: string; clonedFrom: string }>(`/api/workflows/${id}/clone`, { method: 'POST' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
     },
+  })
+}
+
+export function useReportWorkflow() {
+  return useMutation({
+    mutationFn: (input: { id: string; reason: string; description?: string }) =>
+      fetchJson(`/api/workflows/${input.id}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: input.reason, description: input.description }),
+      }),
   })
 }

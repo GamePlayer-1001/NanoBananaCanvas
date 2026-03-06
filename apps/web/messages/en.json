@@ -263,5 +263,32 @@
     "workflowEmpty": "Workflow is empty",
     "executionAborted": "Execution aborted",
     "sortFailed": "Failed to sort workflow"
+  },
+  "exploreDetail": {
+    "backToExplore": "Back to Explore",
+    "notFound": "Workflow not found",
+    "views": "{count} views",
+    "likes": "{count} likes",
+    "clones": "{count} clones",
+    "author": "Creator",
+    "publishedOn": "Published {date}",
+    "like": "Like",
+    "liked": "Liked",
+    "favorite": "Favorite",
+    "favorited": "Favorited",
+    "cloneAndOpen": "Clone & Open",
+    "cloneSuccess": "Cloned to your workspace",
+    "cloneFailed": "Failed to clone",
+    "actionFailed": "Action failed",
+    "report": "Report",
+    "reportTitle": "Report Workflow",
+    "reportDescription": "Why are you reporting this workflow?",
+    "reason_spam": "Spam",
+    "reason_nsfw": "NSFW Content",
+    "reason_copyright": "Copyright",
+    "reason_other": "Other",
+    "submitReport": "Submit Report",
+    "reportSubmitted": "Report submitted",
+    "reportFailed": "Failed to submit report"
   }
 }
