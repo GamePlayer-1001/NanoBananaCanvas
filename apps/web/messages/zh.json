@@ -312,5 +312,33 @@
     "submitReport": "提交举报",
     "reportSubmitted": "举报已提交",
     "reportFailed": "举报提交失败"
+  },
+  "pricing": {
+    "title": "简洁透明的定价",
+    "subtitle": "选择适合你创作工作流的套餐",
+    "monthly": "月付",
+    "yearly": "年付",
+    "savePercent": "省 16%",
+    "perMonth": "/月",
+    "perYear": "/年",
+    "free": "免费",
+    "standard": "标准",
+    "pro": "专业",
+    "ultimate": "旗舰",
+    "popular": "最受欢迎",
+    "creditsIncluded": "{count} 积分/月",
+    "unlimitedCredits": "无限积分",
+    "currentPlan": "当前套餐",
+    "upgrade": "升级",
+    "getStarted": "开始使用",
+    "feature_basic": "基础工作流编辑器",
+    "feature_community": "社区访问",
+    "feature_export": "导出工作流",
+    "feature_priority": "优先执行",
+    "feature_history": "版本历史",
+    "feature_api": "API 访问",
+    "feature_team": "团队协作",
+    "feature_unlimited": "无限工作流",
+    "feature_dedicated": "专属支持"
   }
 }

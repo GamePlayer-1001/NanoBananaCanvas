@@ -44,7 +44,7 @@ export function LandingNav() {
             <Link href="/" className="text-sm text-white/70 transition-colors hover:text-white">
               {t('nav.enterprise')}
             </Link>
-            <Link href="/" className="text-sm text-white/70 transition-colors hover:text-white">
+            <Link href="/pricing" className="text-sm text-white/70 transition-colors hover:text-white">
               {t('nav.pricing')}
             </Link>
             <button className="flex items-center gap-1 text-sm text-white/70 transition-colors hover:text-white">

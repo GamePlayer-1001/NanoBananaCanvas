@@ -312,5 +312,33 @@
     "submitReport": "Submit Report",
     "reportSubmitted": "Report submitted",
     "reportFailed": "Failed to submit report"
+  },
+  "pricing": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Choose the plan that fits your creative workflow",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "savePercent": "Save 16%",
+    "perMonth": "/month",
+    "perYear": "/year",
+    "free": "Free",
+    "standard": "Standard",
+    "pro": "Pro",
+    "ultimate": "Ultimate",
+    "popular": "Most Popular",
+    "creditsIncluded": "{count} credits/month",
+    "unlimitedCredits": "Unlimited credits",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "getStarted": "Get Started",
+    "feature_basic": "Basic workflow editor",
+    "feature_community": "Community access",
+    "feature_export": "Export workflows",
+    "feature_priority": "Priority execution",
+    "feature_history": "Version history",
+    "feature_api": "API access",
+    "feature_team": "Team collaboration",
+    "feature_unlimited": "Unlimited workflows",
+    "feature_dedicated": "Dedicated support"
   }
 }
