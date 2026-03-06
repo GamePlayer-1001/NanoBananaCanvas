@@ -2,8 +2,9 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/components/explore/explore-tabs，
  *          依赖 @/components/explore/explore-grid，
- *          依赖 @/hooks/use-explore 的 useExplore
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器
+ *          依赖 @/hooks/use-explore 的 useExplore，
+ *          依赖 @/components/ui/button
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (含分页)
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,11 +13,12 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { ExploreTabs, type ExploreTab } from './explore-tabs'
 import { ExploreGrid } from './explore-grid'
 import { useExplore } from '@/hooks/use-explore'
-import { Link } from '@/i18n/navigation'
+import { Button } from '@/components/ui/button'
 
 /* ─── Tab → API Sort Mapping ─────────────────────────── */
 
@@ -30,30 +32,63 @@ const TAB_SORT: Record<ExploreTab, string> = {
 /* ─── Component ──────────────────────────────────────── */
 
 export function ExploreContent() {
-  const t = useTranslations('common')
+  const t = useTranslations('explore')
   const [activeTab, setActiveTab] = useState<ExploreTab>('hot')
+  const [page, setPage] = useState(1)
 
-  const { data, isLoading } = useExplore({ sort: TAB_SORT[activeTab] })
+  const { data, isLoading } = useExplore({
+    sort: TAB_SORT[activeTab],
+    page,
+  })
+
+  /* 切换 tab 时重置分页 */
+  const handleTabChange = (tab: ExploreTab) => {
+    setActiveTab(tab)
+    setPage(1)
+  }
+
+  const response = data as { items?: unknown[]; pagination?: { page: number; totalPages: number } } | undefined
+  const videos = response?.items
+  const pagination = response?.pagination
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-5">
       {/* 标签栏 */}
-      <ExploreTabs active={activeTab} onChange={setActiveTab} />
-
-      {/* 查看全部 */}
-      <div className="mt-4 flex justify-end">
-        <Link
-          href="/explore"
-          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {t('viewAll')} →
-        </Link>
-      </div>
+      <ExploreTabs active={activeTab} onChange={handleTabChange} />
 
       {/* 视频网格 */}
       <div className="mt-4">
-        <ExploreGrid videos={data as never} isLoading={isLoading} />
+        <ExploreGrid videos={videos as never} isLoading={isLoading} />
       </div>
+
+      {/* 分页 */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            <ChevronLeft size={14} className="mr-1" />
+            {t('prev')}
+          </Button>
+
+          <span className="text-sm text-muted-foreground">
+            {page} / {pagination.totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            {t('next')}
+            <ChevronRight size={14} className="ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,15 +1,15 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，依赖 @clerk/nextjs 的 UserButton，
- *          依赖 @/components/profile/profile-modal
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (含 ProfileModal)
+ *          依赖 @/components/profile/profile-modal，依赖 @/components/shared/search-command
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (含 ProfileModal + SearchCommand)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { UserButton } from '@clerk/nextjs'
 import {
@@ -22,10 +22,12 @@ import {
   Play,
   UserPlus,
   MessageCircle,
+  Search,
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
 import { ProfileModal } from '@/components/profile/profile-modal'
+import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -100,6 +102,9 @@ export function AppSidebar() {
   const t = useTranslations('sidebar')
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const openSearch = useCallback(() => setSearchOpen(true), [])
+  useSearchShortcut(openSearch)
 
   return (
     <>
@@ -112,6 +117,18 @@ export function AppSidebar() {
           </h1>
         </Link>
         <p className="mt-0.5 text-xs text-muted-foreground">{t('personal')}</p>
+      </div>
+
+      {/* ── Search ─────────────────────────────────────── */}
+      <div className="px-3 pt-1 pb-1">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+        >
+          <Search size={13} />
+          <span className="flex-1 text-left">{t('search')}</span>
+          <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px]">⌘K</kbd>
+        </button>
       </div>
 
       {/* ── Main Nav ──────────────────────────────────── */}
@@ -212,6 +229,7 @@ export function AppSidebar() {
     </aside>
 
     <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+    <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   )
 }

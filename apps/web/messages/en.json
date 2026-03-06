@@ -88,6 +88,7 @@
   },
   "sidebar": {
     "personal": "Personal",
+    "search": "Search...",
     "explore": "Explore",
     "elements": "Elements",
     "workflows": "Workflows",
@@ -110,7 +111,15 @@
     "myVideos": "My Videos",
     "uploadVideo": "Upload Video",
     "views": "{count} views",
-    "uses": "{count} uses"
+    "uses": "{count} uses",
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search workflows...",
+    "hint": "Type to search published workflows",
+    "noResults": "No results found"
   },
   "workflows": {
     "title": "Workflows",

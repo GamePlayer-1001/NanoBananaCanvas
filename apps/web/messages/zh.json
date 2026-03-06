@@ -88,6 +88,7 @@
   },
   "sidebar": {
     "personal": "个人",
+    "search": "搜索...",
     "explore": "探索",
     "elements": "元素",
     "workflows": "工作流",
@@ -110,7 +111,15 @@
     "myVideos": "我的视频",
     "uploadVideo": "上传视频",
     "views": "{count} 次观看",
-    "uses": "{count} 次使用"
+    "uses": "{count} 次使用",
+    "prev": "上一页",
+    "next": "下一页"
+  },
+  "search": {
+    "title": "搜索",
+    "placeholder": "搜索工作流...",
+    "hint": "输入关键词搜索已发布的工作流",
+    "noResults": "没有找到结果"
   },
   "workflows": {
     "title": "工作流",

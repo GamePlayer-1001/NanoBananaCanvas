@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
 
@@ -45,6 +45,7 @@ export function useExplore(params?: ExploreParams) {
   return useQuery({
     queryKey: queryKeys.explore.list(params as Record<string, unknown>),
     queryFn: () => fetchJson(`/api/explore${query ? `?${query}` : ''}`),
+    placeholderData: keepPreviousData,
   })
 }
 
