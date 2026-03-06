@@ -60,8 +60,8 @@ export function LandingFooter() {
         { label: t('about'), href: '/' },
         { label: t('joinUs'), href: '/' },
         { label: t('trustSafety'), href: '/' },
-        { label: t('terms'), href: '/' },
-        { label: t('privacy'), href: '/' },
+        { label: t('terms'), href: '/terms' },
+        { label: t('privacy'), href: '/privacy' },
       ],
     },
     {
