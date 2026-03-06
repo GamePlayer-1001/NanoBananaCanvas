@@ -17,6 +17,7 @@ use-user.ts              — useCurrentUser / useCreditsBalance / useCreditsUsag
 use-billing.ts           — useSubscription / usePackages / useCheckout / usePortal / useCancelSubscription (TanStack Query)
 use-categories.ts        — useCategories 分类数据 (TanStack Query, 5min staleTime)
 use-ai-models.ts         — useAIModels AI 模型目录 (TanStack Query, 10min staleTime)
+use-mobile.ts            — useIsMobile 移动端断点检测 (768px, matchMedia 监听)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

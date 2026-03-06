@@ -40,14 +40,19 @@ api/ai/models/              — GET /api/ai/models 模型目录 + 定价
 api/settings/api-keys/      — GET+PUT API Key 管理 (加密存储)
 api/settings/api-keys/[provider]/ — DELETE+POST Key 删除/测试
 
-[locale]/layout.tsx                         — i18n 语言布局 (P1 接入 next-intl)
-[locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark)
-[locale]/(landing)/page.tsx                 — Landing 首页 (渐变标题 + CTA)
-[locale]/(auth)/layout.tsx                  — 认证居中布局
-[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx  — 登录页占位 (P1 接 Clerk)
-[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx  — 注册页占位 (P1 接 Clerk)
-[locale]/(app)/layout.tsx                   — 应用布局 (侧边栏 + 顶栏骨架)
-[locale]/(app)/workspace/page.tsx           — 工作空间列表页占位
+[locale]/layout.tsx                         — i18n 语言布局 (next-intl + ClerkProvider + QueryProvider)
+[locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
+[locale]/(landing)/page.tsx                 — Landing 首页 (HeroSection + CtaSection + Footer)
+[locale]/(auth)/layout.tsx                  — 认证分屏布局 (左 50% 玫瑰渐变 + 右 50% 深色背景 + 语言切换)
+[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx  — 登录页 (AuthHeader + Clerk SignIn + AuthFooter)
+[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx  — 注册页 (AuthHeader + Clerk SignUp + AuthFooter)
+[locale]/(app)/layout.tsx                   — 应用布局 (AppSidebar 200px + main flex-1)
+[locale]/(app)/explore/page.tsx             — 社区广场 (ExploreContent: tabs + 视频卡片网格)
+[locale]/(app)/workflows/page.tsx           — 工作流分享 (WorkflowsContent: 分类 + 搜索 + 工作流卡片)
+[locale]/(app)/video-analysis/page.tsx      — 视频分析 (VideoAnalysisContent: 上传 + AI 模型 + 历史)
+[locale]/(app)/elements/page.tsx            — 元素库 (Coming Soon 占位)
+[locale]/(app)/workspace/page.tsx           — 工作区 (WorkspaceContent: 项目卡片网格 + 新建弹窗)
+[locale]/(app)/workspace/[id]/page.tsx      — 画布编辑器 (ReactFlowProvider + Canvas CSR)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
