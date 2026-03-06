@@ -16,7 +16,11 @@ import {
   BackgroundVariant,
   ReactFlow,
   ReactFlowProvider,
+  type Node,
+  type Edge,
 } from '@xyflow/react'
+
+import type { WorkflowNodeData } from '@/types'
 
 import { NODE_TYPES } from '@/components/nodes/registry'
 import { EDGE_TYPES } from '@/components/edges/registry'
@@ -34,13 +38,16 @@ interface WorkflowPreviewProps {
 
 function PreviewInner({ data }: WorkflowPreviewProps) {
   const { nodes, edges, viewport } = useMemo(() => {
-    if (!data || data === '{}') {
-      return { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }
+    const empty = {
+      nodes: [] as Node<WorkflowNodeData>[],
+      edges: [] as Edge[],
+      viewport: { x: 0, y: 0, zoom: 1 },
     }
+    if (!data || data === '{}') return empty
     try {
       return deserializeWorkflow(JSON.parse(data))
     } catch {
-      return { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }
+      return empty
     }
   }, [data])
 

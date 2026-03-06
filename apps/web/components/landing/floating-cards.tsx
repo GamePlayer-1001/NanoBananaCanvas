@@ -13,6 +13,7 @@ interface FloatingCard {
   sublabel?: string
   className: string
   gradient: string
+  delay: string
 }
 
 const FLOATING_CARDS: FloatingCard[] = [
@@ -22,18 +23,21 @@ const FLOATING_CARDS: FloatingCard[] = [
     sublabel: 'Midjourney v6',
     className: 'left-[18%] top-[-1%] w-[192px] h-[108px] rotate-[-2deg]',
     gradient: 'from-amber-600/40 to-purple-600/40',
+    delay: '0.3s',
   },
   {
     id: 'profile',
     label: 'Mood',
     className: 'left-[-1%] top-[-8%] w-[192px] h-[256px] rotate-[1deg]',
     gradient: 'from-orange-500/40 to-red-600/40',
+    delay: '1.1s',
   },
   {
     id: 'necklace',
     label: 'Necklace',
     className: 'left-[8%] bottom-[-5%] w-[192px] h-[192px] rotate-[-3deg]',
     gradient: 'from-emerald-500/40 to-cyan-600/40',
+    delay: '0.7s',
   },
   {
     id: 'girl3d',
@@ -41,12 +45,14 @@ const FLOATING_CARDS: FloatingCard[] = [
     sublabel: 'Flux [dev]',
     className: 'right-[15%] top-[-10%] w-[224px] h-[298px] rotate-[2deg]',
     gradient: 'from-pink-400/40 to-rose-500/40',
+    delay: '1.5s',
   },
   {
     id: 'anime',
     label: 'blink',
     className: 'right-[-1%] bottom-[5%] w-[192px] h-[256px] rotate-[-1deg]',
     gradient: 'from-indigo-500/40 to-violet-600/40',
+    delay: '0.5s',
   },
 ]
 
@@ -59,7 +65,7 @@ export function FloatingCards() {
         <div
           key={card.id}
           className={`absolute animate-float rounded-lg border border-white/10 shadow-2xl ${card.className}`}
-          style={{ animationDelay: `${Math.random() * 2}s` }}
+          style={{ animationDelay: card.delay }}
         >
           {/* 渐变占位图 */}
           <div

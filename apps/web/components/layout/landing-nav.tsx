@@ -9,7 +9,7 @@
 
 'use client'
 
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import { Show, SignInButton, UserButton } from '@clerk/nextjs'
 import { ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 

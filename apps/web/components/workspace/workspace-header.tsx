@@ -33,8 +33,6 @@ export function WorkspaceHeader({
   const { viewMode, setViewMode, sortBy, setSortBy, searchQuery, setSearchQuery } =
     useWorkspaceStore()
 
-  const currentSort = SORT_OPTIONS.find((o) => o.value === sortBy)
-
   return (
     <div className="flex items-center justify-between gap-4">
       {/* 面包屑 */}

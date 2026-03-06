@@ -113,7 +113,7 @@ export function usePublishWorkflow(id: string) {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { categoryId: string }) =>
+    mutationFn: (input: { categoryId: string; thumbnail?: string }) =>
       fetchJson(`/api/workflows/${id}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

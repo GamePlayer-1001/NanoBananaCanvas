@@ -20,6 +20,21 @@ import { ActionButtons } from './action-buttons'
 
 /* ─── Types ──────────────────────────────────────────── */
 
+interface WorkflowDetail {
+  id: string
+  name: string
+  description?: string
+  data?: string
+  author_name: string
+  author_avatar?: string
+  published_at?: string
+  view_count: number
+  like_count: number
+  clone_count: number
+  liked: boolean
+  favorited: boolean
+}
+
 interface ExploreDetailContentProps {
   workflowId: string
 }
@@ -51,7 +66,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
     )
   }
 
-  const workflow = data as Record<string, unknown>
+  const workflow = data as WorkflowDetail
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-5">
@@ -67,11 +82,11 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
       {/* 标题区 */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">
-          {workflow.name as string}
+          {workflow.name}
         </h1>
         {workflow.description && (
           <p className="mt-2 text-sm text-muted-foreground">
-            {workflow.description as string}
+            {workflow.description}
           </p>
         )}
       </div>
@@ -80,28 +95,28 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         {/* 左: 只读画布预览 */}
         <div className="aspect-[16/10] overflow-hidden rounded-xl border border-border bg-muted">
-          <WorkflowPreview data={workflow.data as string | undefined} />
+          <WorkflowPreview data={workflow.data} />
         </div>
 
         {/* 右: 作者 + 统计 + 操作 */}
         <div className="space-y-4">
           <AuthorInfo
-            name={workflow.author_name as string}
-            avatar={workflow.author_avatar as string | undefined}
-            publishedAt={workflow.published_at as string | undefined}
+            name={workflow.author_name}
+            avatar={workflow.author_avatar}
+            publishedAt={workflow.published_at}
           />
 
           {/* 统计数据 */}
           <div className="flex gap-4 text-sm text-muted-foreground">
-            <span>{t('views', { count: (workflow.view_count as number) ?? 0 })}</span>
-            <span>{t('likes', { count: (workflow.like_count as number) ?? 0 })}</span>
-            <span>{t('clones', { count: (workflow.clone_count as number) ?? 0 })}</span>
+            <span>{t('views', { count: workflow.view_count ?? 0 })}</span>
+            <span>{t('likes', { count: workflow.like_count ?? 0 })}</span>
+            <span>{t('clones', { count: workflow.clone_count ?? 0 })}</span>
           </div>
 
           <ActionButtons
             workflowId={workflowId}
-            liked={(workflow.liked as boolean) ?? false}
-            favorited={(workflow.favorited as boolean) ?? false}
+            liked={workflow.liked ?? false}
+            favorited={workflow.favorited ?? false}
           />
         </div>
       </div>
