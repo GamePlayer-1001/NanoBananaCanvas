@@ -191,7 +191,11 @@
     "workflowExported": "Workflow exported",
     "importedName": "Imported \"{name}\"",
     "importFailed": "Import failed — invalid file",
-    "workflowCompleted": "Workflow completed"
+    "workflowCompleted": "Workflow completed",
+    "backToWorkspace": "Back to Workspace",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "saveFailed": "Save failed"
   },
   "toolbar": {
     "select": "Select",

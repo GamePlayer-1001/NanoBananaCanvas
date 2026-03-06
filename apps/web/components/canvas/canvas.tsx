@@ -1,11 +1,11 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 ReactFlow 引擎，依赖 @/stores/use-flow-store 的画布状态，
  *          依赖 @/stores/use-canvas-tool-store 的工具状态，依赖 @/hooks/use-context-menu 的菜单状态，
- *          依赖 @/hooks/use-auto-save 的自动保存，
+ *          依赖 @/hooks/use-auto-save 的自动保存 (localStorage + 云端双轨)，
  *          依赖 @/lib/utils/create-node 的节点工厂，依赖 @/lib/utils/get-helper-lines 的对齐计算，
  *          依赖 @/lib/utils/validate-connection 的连接验证，依赖 @/types 的 WorkflowNode/WorkflowEdge
  * [OUTPUT]: 对外提供 Canvas 主画布组件 (含右键菜单 + 拖拽连线创建节点 + 辅助线 + 顶部/底部工具栏)
- * [POS]: components/canvas 的核心渲染器，被 workspace/[id] 页面消费
+ * [POS]: components/canvas 的核心渲染器，被 workspace/[id] 页面消费，接收 workflowId 驱动云端保存
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -54,9 +54,15 @@ const MIN_ZOOM = 0.1
 const MAX_ZOOM = 2
 const DUPLICATE_OFFSET = 50
 
+/* ─── Types ──────────────────────────────────────────── */
+
+interface CanvasProps {
+  workflowId?: string
+}
+
 /* ─── Inner Component (needs ReactFlowProvider context) ─ */
 
-function CanvasInner() {
+function CanvasInner({ workflowId }: CanvasProps) {
   const rfInstance = useRef<FlowInstance | null>(null)
   const connectingFrom = useRef<{ nodeId: string; handleId: string | null } | null>(null)
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setViewport, addNode, removeNode } =
@@ -65,8 +71,8 @@ function CanvasInner() {
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
   const { screenToFlowPosition } = useReactFlow()
 
-  /* ── 自动保存 + 页面恢复 ────────────────────────────── */
-  useAutoSave()
+  /* ── 自动保存 (localStorage + 云端双轨) ────────────── */
+  useAutoSave(workflowId)
 
   /* ── 全局快捷键 (Ctrl+Enter/Esc/Ctrl+S/Ctrl+O) ───── */
   useCanvasShortcuts()
@@ -301,7 +307,7 @@ function CanvasInner() {
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
         <HelperLines horizontal={helperLines.horizontal} vertical={helperLines.vertical} />
-        <CanvasTopToolbar />
+        <CanvasTopToolbar workflowId={workflowId} />
         <CanvasToolbar />
         <CanvasControls />
       </ReactFlow>
@@ -330,10 +336,10 @@ function CanvasInner() {
 
 /* ─── Exported Component ─────────────────────────────── */
 
-export function Canvas() {
+export function Canvas({ workflowId }: CanvasProps) {
   return (
     <ErrorBoundary>
-      <CanvasInner />
+      <CanvasInner workflowId={workflowId} />
     </ErrorBoundary>
   )
 }
