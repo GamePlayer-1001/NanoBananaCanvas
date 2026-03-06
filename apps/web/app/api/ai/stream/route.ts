@@ -118,6 +118,8 @@ export async function POST(req: Request) {
     const reader = upstreamRes.body.getReader()
 
     // 后台处理流
+    // NOTE: SSE 流必须先返回 Response，扣费在流结束后异步完成
+    // 安全保证: freeze 在返回前同步完成，失败必退还
     ;(async () => {
       try {
         while (true) {
@@ -128,13 +130,29 @@ export async function POST(req: Request) {
 
         // 流结束 → 确认扣费
         if (freezeTxId) {
-          await confirmSpend(db, userId, freezeTxId, creditsToCharge)
+          try {
+            await confirmSpend(db, userId, freezeTxId, creditsToCharge)
+          } catch (spendErr) {
+            // 扣费失败 → 退还冻结积分，保证用户不亏
+            log.error('confirmSpend failed after stream, refunding', {
+              userId, freezeTxId, error: spendErr instanceof Error ? spendErr.message : String(spendErr),
+            })
+            await refundCredits(db, userId, freezeTxId)
+          }
         }
 
         await writeUsageLog(db, userId, params, 'success', creditsToCharge, Date.now() - startTime)
       } catch (err) {
-        // 流错误 → 退还积分
-        if (freezeTxId) await refundCredits(db, userId, freezeTxId)
+        // 流传输错误 → 退还积分
+        if (freezeTxId) {
+          try {
+            await refundCredits(db, userId, freezeTxId)
+          } catch (refundErr) {
+            log.error('Refund failed after stream error', {
+              userId, freezeTxId, error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+            })
+          }
+        }
 
         await writeUsageLog(db, userId, params, 'failed', 0, Date.now() - startTime,
           err instanceof Error ? err.message : String(err))

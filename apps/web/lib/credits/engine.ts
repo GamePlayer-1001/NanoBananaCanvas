@@ -143,13 +143,18 @@ export async function freezeCredits(
 
   const results = await db.batch(stmts)
 
-  // 验证更新是否成功 (并发防超扣)
-  const updateResult = results[0]
-  if (!updateResult.meta.changes || updateResult.meta.changes === 0) {
-    throw new AppError(ErrorCode.CREDITS_FROZEN_FAILED, 'Failed to freeze credits — concurrent modification', {
-      userId,
-      amount,
-    })
+  // 验证所有 UPDATE 是否成功 (并发防超扣)
+  // stmts 结构: [monthly UPDATE?, permanent UPDATE?, INSERT]
+  // UPDATE 语句带 WHERE balance >= ? 条件，并发竞争时 changes=0
+  const updateCount = stmts.length - 1 // 最后一条是 INSERT
+  for (let i = 0; i < updateCount; i++) {
+    if (!results[i].meta.changes || results[i].meta.changes === 0) {
+      throw new AppError(ErrorCode.CREDITS_FROZEN_FAILED, 'Failed to freeze credits — concurrent modification', {
+        userId,
+        amount,
+        failedStmt: i,
+      })
+    }
   }
 
   log.info('Credits frozen', { userId, amount, txId, fromMonthly, fromPermanent })
@@ -174,9 +179,33 @@ export async function confirmSpend(
     return
   }
 
+  // 查原始冻结事务 — 校验金额上限
+  const freezeTx = await db
+    .prepare('SELECT amount, pool FROM credit_transactions WHERE id = ? AND type = ?')
+    .bind(freezeTxId, 'freeze')
+    .first<{ amount: number; pool: string }>()
+
+  if (!freezeTx) {
+    log.error('Freeze transaction not found for confirm', { freezeTxId })
+    throw new AppError(ErrorCode.VALIDATION_FAILED, 'Freeze transaction not found')
+  }
+
+  if (actualAmount > freezeTx.amount) {
+    log.error('Actual spend exceeds frozen amount', {
+      actualAmount, frozenAmount: freezeTx.amount, freezeTxId,
+    })
+    throw new AppError(ErrorCode.VALIDATION_FAILED, 'Actual spend exceeds frozen amount')
+  }
+
+  const refundAmount = freezeTx.amount - actualAmount
   const txId = nanoid()
 
-  await db.batch([
+  // 计算 balance_after: 当前可用余额 + 退还差额
+  const balance = await getBalance(db, userId)
+  const balanceAfter = balance.monthlyBalance + balance.permanentBalance + refundAmount
+
+  const stmts: D1PreparedStatement[] = [
+    // 释放冻结 (全部), 记录实际消耗
     db
       .prepare(
         `UPDATE credit_balances
@@ -185,16 +214,36 @@ export async function confirmSpend(
              updated_at = datetime('now')
          WHERE user_id = ?`,
       )
-      .bind(actualAmount, actualAmount, userId),
+      .bind(freezeTx.amount, actualAmount, userId),
+    // 事务日志
     db
       .prepare(
         `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, reference_id, description)
-         VALUES (?, ?, 'spend', 'permanent', ?, 0, 'ai_execution', ?, ?)`,
+         VALUES (?, ?, 'spend', ?, ?, ?, 'ai_execution', ?, ?)`,
       )
-      .bind(txId, userId, actualAmount, freezeTxId, `Confirmed spend of ${actualAmount} credits`),
-  ])
+      .bind(txId, userId, freezeTx.pool, actualAmount, balanceAfter, freezeTxId,
+        `Confirmed spend of ${actualAmount} credits`),
+  ]
 
-  log.info('Spend confirmed', { userId, actualAmount, freezeTxId })
+  // 部分退还: 实际消耗 < 冻结金额时，差额返还原始池
+  if (refundAmount > 0) {
+    const balanceField = freezeTx.pool === 'monthly' ? 'monthly_balance' : 'permanent_balance'
+    stmts.push(
+      db
+        .prepare(
+          `UPDATE credit_balances
+           SET ${balanceField} = ${balanceField} + ?,
+               updated_at = datetime('now')
+           WHERE user_id = ?`,
+        )
+        .bind(refundAmount, userId),
+    )
+    log.info('Partial refund in confirmSpend', { userId, refundAmount, pool: freezeTx.pool })
+  }
+
+  await db.batch(stmts)
+
+  log.info('Spend confirmed', { userId, actualAmount, frozenAmount: freezeTx.amount, freezeTxId })
 }
 
 /* ─── Refund: 退还冻结 (调用失败后) ──────────────────── */
@@ -229,6 +278,10 @@ export async function refundCredits(
   const txId = nanoid()
   const balanceField = pool === 'monthly' ? 'monthly_balance' : 'permanent_balance'
 
+  // 计算退还后的可用余额
+  const balance = await getBalance(db, userId)
+  const balanceAfter = balance.monthlyBalance + balance.permanentBalance + amount
+
   await db.batch([
     db
       .prepare(
@@ -242,9 +295,9 @@ export async function refundCredits(
     db
       .prepare(
         `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, reference_id, description)
-         VALUES (?, ?, 'refund', ?, ?, 0, 'ai_execution', ?, ?)`,
+         VALUES (?, ?, 'refund', ?, ?, ?, 'ai_execution', ?, ?)`,
       )
-      .bind(txId, userId, pool, amount, freezeTxId, `Refund ${amount} credits`),
+      .bind(txId, userId, pool, amount, balanceAfter, freezeTxId, `Refund ${amount} credits`),
   ])
 
   log.info('Credits refunded', { userId, amount, freezeTxId })
@@ -271,6 +324,10 @@ export async function addCredits(
     .bind(userId)
     .run()
 
+  // 计算充值后的可用余额
+  const balance = await getBalance(db, userId)
+  const balanceAfter = balance.monthlyBalance + balance.permanentBalance + amount
+
   await db.batch([
     db
       .prepare(
@@ -284,9 +341,9 @@ export async function addCredits(
     db
       .prepare(
         `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, reference_id, description)
-         VALUES (?, ?, 'earn', ?, ?, 0, ?, ?, ?)`,
+         VALUES (?, ?, 'earn', ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(txId, userId, pool, amount, source, referenceId ?? null, `Add ${amount} ${pool} credits`),
+      .bind(txId, userId, pool, amount, balanceAfter, source, referenceId ?? null, `Add ${amount} ${pool} credits`),
   ])
 
   log.info('Credits added', { userId, amount, pool, source })
@@ -300,6 +357,10 @@ export async function resetMonthlyCredits(
   amount: number,
 ): Promise<void> {
   const txId = nanoid()
+
+  // 计算重置后的可用余额 (monthly 被替换为 amount，permanent 不变)
+  const balance = await getBalance(db, userId)
+  const balanceAfter = amount + balance.permanentBalance
 
   await db.batch([
     db
@@ -316,7 +377,7 @@ export async function resetMonthlyCredits(
         `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, description)
          VALUES (?, ?, 'earn', 'monthly', ?, ?, 'subscription_renewal', ?)`,
       )
-      .bind(txId, userId, amount, amount, `Monthly reset to ${amount} credits`),
+      .bind(txId, userId, amount, balanceAfter, `Monthly reset to ${amount} credits`),
   ])
 
   log.info('Monthly credits reset', { userId, amount })

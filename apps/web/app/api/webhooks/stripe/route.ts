@@ -134,20 +134,17 @@ async function handleInvoicePaid(db: D1Database, invoice: Stripe.Invoice) {
   // 月度积分重置 (不累加，是重置)
   await resetMonthlyCredits(db, sub.user_id, sub.monthly_credits)
 
-  // 更新订阅周期
-  const stripeSubId = (invoice.parent?.subscription_details?.subscription ?? null) as string | null
-  if (stripeSubId) {
-    await db
-      .prepare(
-        `UPDATE subscriptions
-         SET current_period_start = datetime('now'),
-             status = 'active',
-             updated_at = datetime('now')
-         WHERE stripe_customer_id = ?`,
-      )
-      .bind(customerId)
-      .run()
-  }
+  // 更新订阅周期 — 已通过 customer_id 定位，无需依赖 invoice.subscription 字段
+  await db
+    .prepare(
+      `UPDATE subscriptions
+       SET current_period_start = datetime('now'),
+           status = 'active',
+           updated_at = datetime('now')
+       WHERE stripe_customer_id = ?`,
+    )
+    .bind(customerId)
+    .run()
 
   log.info('Invoice paid — monthly credits reset', { userId: sub.user_id, credits: sub.monthly_credits })
 }
@@ -187,11 +184,18 @@ async function handleSubscriptionDeleted(db: D1Database, subscription: Stripe.Su
 async function handleSubscriptionUpdated(db: D1Database, subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string
 
-  // 同步状态
-  const status = subscription.status === 'active' ? 'active'
-    : subscription.status === 'past_due' ? 'past_due'
-    : subscription.status === 'canceled' ? 'canceled'
-    : 'active'
+  // 同步状态 — 覆盖 Stripe 全部合法状态
+  const statusMap: Record<string, string> = {
+    active: 'active',
+    past_due: 'past_due',
+    canceled: 'canceled',
+    trialing: 'trialing',
+    unpaid: 'unpaid',
+    incomplete: 'incomplete',
+    incomplete_expired: 'canceled',
+    paused: 'paused',
+  }
+  const status = statusMap[subscription.status] ?? 'active'
 
   await db
     .prepare(
