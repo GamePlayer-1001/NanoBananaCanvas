@@ -1,6 +1,17 @@
 {
   "common": {
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "search": "搜索",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "create": "创建",
+    "edit": "编辑",
+    "confirm": "确认",
+    "back": "返回",
+    "viewAll": "查看全部",
+    "noResults": "未找到结果",
+    "retry": "重试"
   },
   "metadata": {
     "title": "Nano Banana Canvas",
@@ -15,12 +26,156 @@
     "subtitle": "可视化 AI 工作流平台 — 拖拽构建、分享和运行 AI 工作流",
     "cta": "免费开始使用",
     "signIn": "登录",
-    "dashboard": "控制台"
+    "dashboard": "控制台",
+    "nav": {
+      "features": "功能",
+      "enterprise": "企业版",
+      "pricing": "定价",
+      "resources": "资源",
+      "startCreating": "立即创作"
+    },
+    "hero": {
+      "heading": "Nano Banana Canvas",
+      "tagline": "无限画布，无限想象",
+      "description": "从剧本到银幕，开启您的创意之旅\n随心创作，画布由你掌控",
+      "cta": "立即开始",
+      "models": "汇聚全球领先模型"
+    },
+    "ctaSection": {
+      "heading1": "你的下一个作品",
+      "heading2": "从这里开始",
+      "subtitle": "在 Nano Banana Canvas，将创意变为现实",
+      "button": "免费试用"
+    },
+    "footer": {
+      "tagline": "为电影人打造的 AI 创意平台",
+      "product": "产品",
+      "features": "功能",
+      "pricing": "定价",
+      "enterprise": "企业版",
+      "getStarted": "立即开始",
+      "company": "公司",
+      "about": "关于我们",
+      "joinUs": "加入我们",
+      "trustSafety": "信任与安全",
+      "terms": "服务条款",
+      "privacy": "隐私政策",
+      "contact": "联系我们",
+      "creatorCommunity": "创作者社区",
+      "creativePartners": "创意合作伙伴",
+      "copyright": "© 2026 StoryFlow AI, Inc. 版权所有",
+      "builtFor": "为电影人创作者而生"
+    }
+  },
+  "auth": {
+    "welcome": "欢迎来到",
+    "brandName": "Martini",
+    "createAccount": "创建账号",
+    "signIn": "登录",
+    "captcha": "我是真实访客",
+    "continueWithGoogle": "使用 Google 继续",
+    "continueWithDiscord": "使用 Discord 继续",
+    "continueWithEmail": "使用邮箱继续",
+    "haveReferral": "有推荐码?",
+    "alreadyHaveAccount": "已经有账号？",
+    "noAccount": "还没有账号？",
+    "login": "登录",
+    "register": "注册",
+    "termsPrefix": "创建账号即表示你同意我们的",
+    "termsLink": "服务条款",
+    "and": "和",
+    "privacyLink": "隐私政策"
+  },
+  "sidebar": {
+    "personal": "个人",
+    "explore": "探索",
+    "elements": "元素",
+    "workflows": "工作流",
+    "videoAnalysis": "视频分析",
+    "alpha": "Alpha",
+    "workspace": "工作区",
+    "all": "全部",
+    "noFolders": "还没有文件夹",
+    "community": "Martini 用户交流群",
+    "watchTutorial": "观看教程",
+    "invite": "邀请",
+    "joinDiscord": "加入 Discord",
+    "freePlan": "免费版",
+    "credits": "积分"
+  },
+  "explore": {
+    "hot": "热门",
+    "latest": "最新",
+    "myLiked": "我点赞的",
+    "myVideos": "我的视频",
+    "uploadVideo": "上传视频",
+    "views": "{count} 次观看",
+    "uses": "{count} 次使用"
+  },
+  "workflows": {
+    "title": "工作流",
+    "description": "浏览社区分享的工作流，一键创建项目。",
+    "community": "社区",
+    "myWorkflows": "我的工作流",
+    "searchPlaceholder": "搜索工作流...",
+    "sortHot": "热门",
+    "publishWorkflow": "发布工作流",
+    "all": "全部",
+    "featured": "精选",
+    "categories": "分类"
+  },
+  "videoAnalysis": {
+    "title": "视频分析",
+    "description": "使用 Gemini AI 从视频中自动生成分镜表和剧本。视频仅用于本次分析，不会被保存。",
+    "uploadVideo": "上传视频",
+    "uploadHint": "上传视频（最长 10 分钟，最大 2048MB）进行分析",
+    "aiModel": "AI 模型",
+    "analysisHistory": "分析历史",
+    "analyzing": "分析中...",
+    "noHistory": "暂无分析历史"
   },
   "workspace": {
     "title": "我的工作流",
     "subtitle": "你的创作空间 — 即将上线",
-    "loadingCanvas": "加载画布中..."
+    "loadingCanvas": "加载画布中...",
+    "personalProjects": "个人项目",
+    "searchPlaceholder": "搜索项目...",
+    "sortRecent": "最近更新",
+    "sortName": "名称",
+    "sortCreated": "创建时间",
+    "newProject": "新建项目",
+    "gridView": "网格视图",
+    "listView": "列表视图",
+    "untitledProject": "未命名项目",
+    "createProject": "创建项目",
+    "projectName": "项目名称",
+    "projectDescription": "描述（可选）",
+    "noProjects": "还没有项目",
+    "noProjectsDesc": "创建你的第一个项目开始使用"
+  },
+  "profile": {
+    "account": "账户",
+    "personalInfo": "个人资料",
+    "billing": "账单",
+    "subscription": "订阅",
+    "workspaceSettings": "工作区",
+    "modelPreferences": "模型偏好设置",
+    "name": "姓名",
+    "email": "邮箱",
+    "password": "密码",
+    "changePassword": "更改密码",
+    "deleteAccount": "删除账户",
+    "deleteAccountDesc": "这将永久删除你的账户和所有相关数据。",
+    "deleteButton": "删除"
+  },
+  "billing": {
+    "currentPlan": "当前套餐",
+    "credits": "积分",
+    "remaining": "剩余 {count}",
+    "upgrade": "升级",
+    "manage": "管理订阅",
+    "transactions": "交易记录",
+    "topUp": "充值积分"
   },
   "canvas": {
     "run": "运行",

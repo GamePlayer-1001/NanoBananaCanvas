@@ -8,7 +8,7 @@
 export const queryKeys = {
   workflows: {
     all: ['workflows'] as const,
-    list: (filters?: Record<string, unknown>) =>
+    list: (filters?: object) =>
       [...queryKeys.workflows.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.workflows.all, 'detail', id] as const,
   },
@@ -19,7 +19,7 @@ export const queryKeys = {
   },
   explore: {
     all: ['explore'] as const,
-    list: (filters?: Record<string, unknown>) =>
+    list: (filters?: object) =>
       [...queryKeys.explore.all, 'list', filters] as const,
     search: (q: string, page?: number) =>
       [...queryKeys.explore.all, 'search', q, page] as const,
@@ -35,7 +35,7 @@ export const queryKeys = {
   credits: {
     all: ['credits'] as const,
     balance: () => [...queryKeys.credits.all, 'balance'] as const,
-    transactions: (filters?: Record<string, unknown>) =>
+    transactions: (filters?: object) =>
       [...queryKeys.credits.all, 'transactions', filters] as const,
   },
   billing: {

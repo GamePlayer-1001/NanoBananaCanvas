@@ -4,7 +4,8 @@
  *          依赖 next-intl/server 的 getMessages / setRequestLocale，
  *          依赖 @/i18n/routing 的 routing 配置，
  *          依赖 next/font/google 的 Geist 字体，
- *          依赖 @/components/ui/sonner 的 Toaster
+ *          依赖 @/components/ui/sonner 的 Toaster，
+ *          依赖 @/lib/query/provider 的 QueryProvider
  * [OUTPUT]: 对外提供带 locale 参数的语言布局 (html/body + Clerk + i18n Provider)
  * [POS]: [locale] 动态路由布局，包裹所有语言相关页面，认证 + i18n 的枢纽
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -17,6 +18,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { QueryProvider } from '@/lib/query/provider'
 import { routing } from '@/i18n/routing'
 import '@/app/globals.css'
 
@@ -61,7 +63,9 @@ export default async function LocaleLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider {...(locale === 'zh' ? { localization: zhCN } : {})}>
           <NextIntlClientProvider messages={messages}>
-            {children}
+            <QueryProvider>
+              {children}
+            </QueryProvider>
           </NextIntlClientProvider>
           <Toaster position="bottom-right" richColors />
         </ClerkProvider>
