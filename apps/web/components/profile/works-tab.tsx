@@ -26,7 +26,8 @@ export function WorksTab() {
   const [subTab, setSubTab] = useState<SubTab>('all')
   const { data, isLoading } = useWorkflows()
 
-  const workflows = (data as Array<Record<string, unknown>>) ?? []
+  const response = data as { items?: Array<Record<string, unknown>> } | undefined
+  const workflows = response?.items ?? []
   const filtered = subTab === 'shared'
     ? workflows.filter((w) => w.is_public === 1)
     : workflows

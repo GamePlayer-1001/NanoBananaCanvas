@@ -24,17 +24,21 @@ export function WorkspaceContent() {
   const { data, isLoading } = useWorkflows()
 
   /* 将 API 数据 (snake_case) 映射为 ProjectCard 格式 (camelCase) */
-  const projects: ProjectCardData[] | undefined = data
-    ? (data as { id: string; name: string; thumbnail?: string; updated_at: string; is_public?: number }[]).map(
-        (w) => ({
-          id: w.id,
-          name: w.name,
-          thumbnailUrl: w.thumbnail,
-          updatedAt: w.updated_at,
-          isPublic: !!w.is_public,
-        }),
-      )
-    : undefined
+  interface WorkflowApiItem {
+    id: string
+    name: string
+    thumbnail?: string
+    updated_at: string
+    is_public?: number
+  }
+  const response = data as { items?: WorkflowApiItem[] } | undefined
+  const projects: ProjectCardData[] | undefined = response?.items?.map((w) => ({
+    id: w.id,
+    name: w.name,
+    thumbnailUrl: w.thumbnail,
+    updatedAt: w.updated_at,
+    isPublic: !!w.is_public,
+  }))
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-5">

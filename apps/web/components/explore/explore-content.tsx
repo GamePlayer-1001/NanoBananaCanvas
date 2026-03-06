@@ -3,7 +3,8 @@
  *          依赖 @/components/explore/explore-tabs，
  *          依赖 @/components/explore/explore-grid，
  *          依赖 @/hooks/use-explore 的 useExplore，
- *          依赖 @/components/ui/button
+ *          依赖 @/components/ui/button，
+ *          依赖 @/components/shared/video-card 的 VideoCardData
  * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (含分页)
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -19,14 +20,50 @@ import { ExploreTabs, type ExploreTab } from './explore-tabs'
 import { ExploreGrid } from './explore-grid'
 import { useExplore } from '@/hooks/use-explore'
 import { Button } from '@/components/ui/button'
+import type { VideoCardData } from '@/components/shared/video-card'
 
 /* ─── Tab → API Sort Mapping ─────────────────────────── */
 
 const TAB_SORT: Record<ExploreTab, string> = {
-  hot: 'hot',
+  hot: 'popular',
   latest: 'latest',
-  myLiked: 'liked',
+  myLiked: 'most-liked',
   myVideos: 'mine',
+}
+
+/* ─── D1 → VideoCardData 映射 ────────────────────────── */
+
+interface ExploreApiItem {
+  id: string
+  name: string
+  description?: string
+  thumbnail?: string
+  like_count: number
+  clone_count: number
+  view_count: number
+  published_at?: string
+  category_id?: string
+  author_name: string
+  author_avatar?: string
+}
+
+interface ExploreApiResponse {
+  items?: ExploreApiItem[]
+  pagination?: { page: number; limit: number; total: number; totalPages: number }
+}
+
+function toVideoCard(item: ExploreApiItem): VideoCardData {
+  return {
+    id: item.id,
+    title: item.name,
+    thumbnailUrl: item.thumbnail,
+    author: {
+      name: item.author_name,
+      avatarUrl: item.author_avatar,
+    },
+    views: item.view_count,
+    createdAt: item.published_at,
+  }
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -47,8 +84,8 @@ export function ExploreContent() {
     setPage(1)
   }
 
-  const response = data as { items?: unknown[]; pagination?: { page: number; totalPages: number } } | undefined
-  const videos = response?.items
+  const response = data as ExploreApiResponse | undefined
+  const videos = response?.items?.map(toVideoCard)
   const pagination = response?.pagination
 
   return (
@@ -58,7 +95,7 @@ export function ExploreContent() {
 
       {/* 视频网格 */}
       <div className="mt-4">
-        <ExploreGrid videos={videos as never} isLoading={isLoading} />
+        <ExploreGrid videos={videos} isLoading={isLoading} />
       </div>
 
       {/* 分页 */}
