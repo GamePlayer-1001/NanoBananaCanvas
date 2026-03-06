@@ -41,11 +41,11 @@ export function usePackages() {
 
 export function useCheckout() {
   return useMutation({
-    mutationFn: async (priceId: string) => {
+    mutationFn: async (input: { plan: string; billingPeriod?: 'monthly' | 'yearly' }) => {
       const data = await fetchJson<{ url: string }>('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify(input),
       })
       window.location.href = data.url
     },

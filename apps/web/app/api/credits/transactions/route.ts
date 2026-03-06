@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       .all()
 
     return apiOk({
-      data: rows.results,
+      items: rows.results,
       total: countResult?.total ?? 0,
       page,
       limit,

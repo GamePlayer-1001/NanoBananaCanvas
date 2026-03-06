@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @clerk/nextjs 的 useAuth，
  *          依赖 @/i18n/navigation 的 Link，依赖 @/components/ui/button，
- *          依赖 ./plan-comparison
+ *          依赖 @/hooks/use-billing 的 useCheckout
  * [OUTPUT]: 对外提供 PricingContent 定价页客户端容器
  * [POS]: pricing 的主容器，被 pricing/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -16,6 +16,7 @@ import { Check } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
+import { useCheckout } from '@/hooks/use-billing'
 
 /* ─── Plan Data ───────────────────────────────────────── */
 
@@ -35,7 +36,7 @@ const PLANS: Plan[] = [
     nameKey: 'free',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    credits: 100,
+    credits: 200,
     features: ['feature_basic', 'feature_community', 'feature_export'],
   },
   {
@@ -71,6 +72,7 @@ export function PricingContent() {
   const t = useTranslations('pricing')
   const { isSignedIn } = useAuth()
   const [yearly, setYearly] = useState(false)
+  const { mutate: checkout, isPending } = useCheckout()
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 pb-20 pt-28">
@@ -155,6 +157,12 @@ export function PricingContent() {
                       ? 'bg-brand-500 hover:bg-brand-600 text-white'
                       : 'bg-white/10 hover:bg-white/20 text-white'
                   }`}
+                  disabled={plan.id === 'free' || isPending}
+                  onClick={() => {
+                    if (plan.id !== 'free') {
+                      checkout({ plan: plan.id, billingPeriod: yearly ? 'yearly' : 'monthly' })
+                    }
+                  }}
                 >
                   {plan.id === 'free' ? t('currentPlan') : t('upgrade')}
                 </Button>

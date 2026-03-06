@@ -38,7 +38,15 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
   const { mutate: topup, isPending } = useTopup()
   const [selected, setSelected] = useState<string>('')
 
-  const packages = (data as Array<{ id: string; name: string; credits: number; price: number }>) ?? []
+  interface CreditPackage {
+    id: string
+    name: string
+    credits: number
+    price_cents: number
+    bonus_credits: number
+  }
+  const response = data as { packages?: CreditPackage[] } | undefined
+  const packages = response?.packages ?? []
 
   const handlePurchase = () => {
     if (!selected) return
@@ -71,10 +79,17 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
                     : 'border-border hover:bg-muted'
                 }`}
               >
-                <p className="text-2xl font-bold text-foreground">{pkg.credits}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {pkg.credits + pkg.bonus_credits}
+                </p>
+                {pkg.bonus_credits > 0 && (
+                  <p className="text-[10px] text-emerald-500">
+                    +{pkg.bonus_credits} bonus
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">{t('creditsLabel')}</p>
                 <p className="mt-2 text-sm font-medium text-brand-600">
-                  ${pkg.price}
+                  ${(pkg.price_cents / 100).toFixed(2)}
                 </p>
               </button>
             ))}
