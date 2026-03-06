@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/stripe, @/lib/validations/billing
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/stripe, @/lib/validations/billing
  * [OUTPUT]: 对外提供 POST /api/billing/checkout (创建 Stripe Checkout Session)
  * [POS]: api/billing 的订阅购买入口，返回 Stripe Checkout URL
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { getOrCreateCustomer, getStripe, getStripePriceId } from '@/lib/stripe'
@@ -16,6 +17,11 @@ import { checkoutSchema } from '@/lib/validations/billing'
 export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
+
+    // 限流: 5 req/min per user
+    const rl = checkRateLimit(`billing:${userId}`, 5, 60_000)
+    if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
     const db = await getDb()
     const body = await req.json()
     const { plan, billingPeriod } = checkoutSchema.parse(body)

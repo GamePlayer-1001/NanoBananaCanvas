@@ -78,7 +78,10 @@
     "creative": "创意",
     "waitingForInput": "等待输入...",
     "copied": "已复制!",
-    "copyResult": "复制结果"
+    "copyResult": "复制结果",
+    "executionMode": "执行模式",
+    "creditsMode": "积分",
+    "userKeyMode": "API Key"
   },
   "executor": {
     "workflowEmpty": "工作流为空",

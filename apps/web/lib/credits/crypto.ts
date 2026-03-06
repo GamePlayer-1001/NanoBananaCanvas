@@ -14,9 +14,9 @@ export async function encryptApiKey(plainKey: string, encryptionKey: string): Pr
   const encoded = new TextEncoder().encode(plainKey)
 
   const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
+    { name: 'AES-GCM', iv: iv as BufferSource },
     key,
-    encoded,
+    encoded as BufferSource,
   )
 
   return bufToHex(iv) + ':' + bufToHex(new Uint8Array(encrypted))
@@ -34,9 +34,9 @@ export async function decryptApiKey(encrypted: string, encryptionKey: string): P
   const ciphertext = hexToBuf(cipherHex)
 
   const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
+    { name: 'AES-GCM', iv: iv as BufferSource },
     key,
-    ciphertext,
+    ciphertext as BufferSource,
   )
 
   return new TextDecoder().decode(decrypted)
@@ -54,7 +54,7 @@ export function maskApiKey(key: string): string {
 
 async function importKey(hexKey: string): Promise<CryptoKey> {
   const raw = hexToBuf(hexKey)
-  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+  return crypto.subtle.importKey('raw', raw as BufferSource, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 
 function bufToHex(buf: Uint8Array): string {

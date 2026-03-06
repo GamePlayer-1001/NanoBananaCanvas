@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
+import { BrainCircuit, ChevronDown, ChevronRight, Coins, KeyRound, Loader2 } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
@@ -93,6 +93,7 @@ export function LLMNode(props: NodeProps) {
   const model = (data.config.model as string) ?? DEFAULT_MODEL
   const temperature = (data.config.temperature as number) ?? DEFAULT_TEMPERATURE
   const maxTokens = (data.config.maxTokens as number) ?? DEFAULT_MAX_TOKENS
+  const executionMode = (data.config.executionMode as string) ?? 'credits'
   const systemPrompt = (data.config.systemPrompt as string) ?? ''
   const output = (data.config.output as string) ?? ''
   const tokenCount = (data.config.tokenCount as number) ?? 0
@@ -162,6 +163,24 @@ export function LLMNode(props: NodeProps) {
               </optgroup>
             ))}
           </select>
+        </ConfigField>
+
+        {/* ── Execution mode toggle ────────────────── */}
+        <ConfigField label={t('executionMode')}>
+          <div className="nodrag flex gap-1">
+            <ModeButton
+              active={executionMode === 'credits'}
+              onClick={() => updateConfig({ executionMode: 'credits' })}
+              icon={<Coins size={12} />}
+              label={t('creditsMode')}
+            />
+            <ModeButton
+              active={executionMode === 'user_key'}
+              onClick={() => updateConfig({ executionMode: 'user_key' })}
+              icon={<KeyRound size={12} />}
+              label={t('userKeyMode')}
+            />
+          </div>
         </ConfigField>
 
         {/* ── Temperature slider ────────────────────── */}
@@ -260,5 +279,32 @@ function ConfigField({ label, children }: { label: string; children: React.React
       <label className="text-muted-foreground mb-1 block text-xs">{label}</label>
       {children}
     </div>
+  )
+}
+
+function ModeButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+        active
+          ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/10 text-[var(--brand-500)]'
+          : 'border-input text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 zod
- * [OUTPUT]: 对外提供 creditTransactionsQuerySchema / topupSchema
+ * [OUTPUT]: 对外提供 creditTransactionsQuerySchema / topupSchema / usageQuerySchema
  * [POS]: lib/validations 的积分查询验证，被 credits API 路由消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -19,4 +19,10 @@ export const creditTransactionsQuerySchema = z.object({
 
 export const topupSchema = z.object({
   packageId: z.string().min(1, 'Package ID is required'),
+})
+
+/* ─── 使用统计查询 ───────────────────────────────────── */
+
+export const usageQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(30).default(7),
 })

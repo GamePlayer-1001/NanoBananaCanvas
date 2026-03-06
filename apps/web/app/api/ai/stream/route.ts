@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/credits, @/lib/db, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/credits, @/lib/db, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/stream (双模式 SSE 流式 AI 执行)
  * [POS]: api/ai 的流式端点，冻结在流开始前，确认扣费在流结束后
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { handleApiError } from '@/lib/api/response'
 import {
   checkModelAccess,
@@ -29,6 +30,11 @@ const AI_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
+
+    // 限流: 30 req/min per user
+    const rl = checkRateLimit(`ai:${userId}`, 30, 60_000)
+    if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
     const db = await getDb()
     const body = await req.json()
     const params = aiExecuteSchema.parse(body)

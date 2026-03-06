@@ -11,7 +11,7 @@ import { z } from 'zod'
 
 export const checkoutSchema = z.object({
   plan: z.enum(['standard', 'pro', 'ultimate'], {
-    required_error: 'Plan is required',
+    error: 'Plan is required',
   }),
   billingPeriod: z.enum(['monthly', 'yearly']).default('monthly'),
 })

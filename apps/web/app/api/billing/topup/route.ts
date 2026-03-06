@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/stripe, @/lib/validations/credits
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/stripe, @/lib/validations/credits
  * [OUTPUT]: 对外提供 POST /api/billing/topup (积分包购买 Checkout)
  * [POS]: api/billing 的一次性积分购买入口，创建 Stripe payment Checkout
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { getOrCreateCustomer, getStripe } from '@/lib/stripe'
@@ -16,6 +17,11 @@ import { topupSchema } from '@/lib/validations/credits'
 export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
+
+    // 限流: 5 req/min per user
+    const rl = checkRateLimit(`billing:${userId}`, 5, 60_000)
+    if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
     const db = await getDb()
     const body = await req.json()
     const { packageId } = topupSchema.parse(body)

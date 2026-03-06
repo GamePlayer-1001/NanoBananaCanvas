@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const { userId } = await requireAuth()
-    const body = await req.json()
+    const body = (await req.json()) as { id?: string }
     const db = await getDb()
 
     if (body.id) {

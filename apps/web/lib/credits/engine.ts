@@ -164,6 +164,16 @@ export async function confirmSpend(
   freezeTxId: string,
   actualAmount: number,
 ): Promise<void> {
+  // 幂等校验: 防止重复扣费
+  const existing = await db
+    .prepare('SELECT id FROM credit_transactions WHERE reference_id = ? AND type = ?')
+    .bind(freezeTxId, 'spend')
+    .first()
+  if (existing) {
+    log.warn('Spend already confirmed, idempotent skip', { freezeTxId })
+    return
+  }
+
   const txId = nanoid()
 
   await db.batch([
@@ -194,6 +204,16 @@ export async function refundCredits(
   userId: string,
   freezeTxId: string,
 ): Promise<void> {
+  // 幂等校验: 防止重复退款
+  const existing = await db
+    .prepare('SELECT id FROM credit_transactions WHERE reference_id = ? AND type = ?')
+    .bind(freezeTxId, 'refund')
+    .first()
+  if (existing) {
+    log.warn('Refund already processed, idempotent skip', { freezeTxId })
+    return
+  }
+
   // 查原始冻结事务获取金额
   const freezeTx = await db
     .prepare('SELECT amount, pool FROM credit_transactions WHERE id = ? AND type = ?')

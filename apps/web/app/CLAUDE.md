@@ -26,6 +26,7 @@ api/categories/route.ts     — GET /api/categories 分类列表 (i18n)
 api/notifications/route.ts  — GET+PATCH /api/notifications 通知列表+标记已读
 api/credits/balance/        — GET /api/credits/balance 积分余额 (三池 + 套餐)
 api/credits/transactions/   — GET /api/credits/transactions 交易历史 (分页+筛选)
+api/credits/usage/          — GET /api/credits/usage AI 使用统计 (摘要/模型/日趋势)
 api/billing/subscription/   — GET /api/billing/subscription 当前订阅信息
 api/billing/checkout/       — POST /api/billing/checkout Stripe Checkout 订阅
 api/billing/portal/         — POST /api/billing/portal Stripe Customer Portal

@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/stripe
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/stripe
  * [OUTPUT]: 对外提供 POST /api/billing/cancel (取消订阅，保持到期)
  * [POS]: api/billing 的取消端点，设置 cancel_at_period_end
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { getStripe } from '@/lib/stripe'
@@ -15,6 +16,11 @@ import { getStripe } from '@/lib/stripe'
 export async function POST() {
   try {
     const { userId } = await requireAuth()
+
+    // 限流: 5 req/min per user
+    const rl = checkRateLimit(`billing:${userId}`, 5, 60_000)
+    if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
     const db = await getDb()
     const stripe = getStripe()
 

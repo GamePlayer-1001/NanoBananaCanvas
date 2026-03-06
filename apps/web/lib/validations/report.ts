@@ -11,7 +11,7 @@ import { z } from 'zod'
 
 export const reportSchema = z.object({
   reason: z.enum(['spam', 'nsfw', 'copyright', 'other'], {
-    required_error: 'Reason is required',
+    error: 'Reason is required',
   }),
   description: z
     .string()

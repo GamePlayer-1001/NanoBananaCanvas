@@ -1,12 +1,13 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/nanoid,
- *          @/services/ai/openrouter, @/lib/validations/ai
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/credits, @/lib/db,
+ *          @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/execute (双模式 AI 执行)
  * [POS]: api/ai 的核心执行端点，实现积分模式 (freeze→call→confirm/refund) 和 Key 模式
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import {
   checkModelAccess,
@@ -29,6 +30,11 @@ const log = createLogger('ai:execute')
 export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
+
+    // 限流: 30 req/min per user
+    const rl = checkRateLimit(`ai:${userId}`, 30, 60_000)
+    if (!rl.ok) return rateLimitResponse(rl.resetAt)
+
     const db = await getDb()
     const body = await req.json()
     const params = aiExecuteSchema.parse(body)

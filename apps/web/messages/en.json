@@ -78,7 +78,10 @@
     "creative": "Creative",
     "waitingForInput": "Waiting for input...",
     "copied": "Copied!",
-    "copyResult": "Copy result"
+    "copyResult": "Copy result",
+    "executionMode": "Execution Mode",
+    "creditsMode": "Credits",
+    "userKeyMode": "API Key"
   },
   "executor": {
     "workflowEmpty": "Workflow is empty",

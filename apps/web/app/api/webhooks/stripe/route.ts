@@ -135,7 +135,7 @@ async function handleInvoicePaid(db: D1Database, invoice: Stripe.Invoice) {
   await resetMonthlyCredits(db, sub.user_id, sub.monthly_credits)
 
   // 更新订阅周期
-  const stripeSubId = invoice.subscription as string
+  const stripeSubId = (invoice.parent?.subscription_details?.subscription ?? null) as string | null
   if (stripeSubId) {
     await db
       .prepare(
