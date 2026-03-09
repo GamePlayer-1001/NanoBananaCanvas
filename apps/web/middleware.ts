@@ -25,6 +25,11 @@ const isProtectedRoute = createRouteMatcher([
 /* ─── Combined Proxy ─────────────────────────────────── */
 
 export default clerkMiddleware(async (auth, req) => {
+  // API 路由: clerkMiddleware 设置 auth 状态，但跳过 intl 重写
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    return
+  }
+
   if (isProtectedRoute(req)) {
     await auth.protect()
   }
@@ -32,5 +37,5 @@ export default clerkMiddleware(async (auth, req) => {
 })
 
 export const config = {
-  matcher: '/((?!api|trpc|_next|_vercel|.*\\..*).*)',
+  matcher: '/((?!_next|_vercel|.*\\..*).*)',
 }
