@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/nanoid，依赖 @/lib/errors，依赖 @/lib/logger
- * [OUTPUT]: 对外提供 getBalance / freezeCredits / confirmSpend / refundCredits / addCredits / resetMonthlyCredits
- * [POS]: lib/credits 的核心引擎，实现冻结-扣费-退还三阶段事务
+ * [OUTPUT]: 对外提供 getBalance / freezeCredits / confirmSpend / refundCredits / addCredits / resetMonthlyCredits / unfreezeStaleCredits
+ * [POS]: lib/credits 的核心引擎，实现冻结-扣费-退还三阶段事务 + 冻结超时清理
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -55,6 +55,15 @@ export async function getBalance(db: D1Database, userId: string): Promise<Credit
       frozen: 0,
       totalEarned: 200,
       totalSpent: 0,
+    }
+  }
+
+  // 被动清理超时冻结 (仅在有冻结积分时触发，避免无谓查询)
+  if (row.frozen > 0) {
+    const recovered = await unfreezeStaleCredits(db, userId)
+    if (recovered > 0) {
+      // 重新查询，返回清理后的准确余额
+      return getBalance(db, userId)
     }
   }
 
@@ -381,4 +390,64 @@ export async function resetMonthlyCredits(
   ])
 
   log.info('Monthly credits reset', { userId, amount })
+}
+
+/* ─── Unfreeze Stale: 清理超时冻结 (防积分永久卡死) ── */
+
+const FREEZE_TTL_MINUTES = 5
+
+export async function unfreezeStaleCredits(
+  db: D1Database,
+  userId: string,
+): Promise<number> {
+  // 找出超时的孤立冻结事务: 超过 TTL 且无对应 spend/refund
+  const staleFreezes = await db
+    .prepare(
+      `SELECT t.id, t.amount, t.pool
+       FROM credit_transactions t
+       WHERE t.user_id = ? AND t.type = 'freeze'
+         AND t.created_at < datetime('now', ?)
+         AND NOT EXISTS (
+           SELECT 1 FROM credit_transactions r
+           WHERE r.reference_id = t.id AND r.type IN ('spend', 'refund')
+         )`,
+    )
+    .bind(userId, `-${FREEZE_TTL_MINUTES} minutes`)
+    .all<{ id: string; amount: number; pool: string }>()
+
+  if (!staleFreezes.results || staleFreezes.results.length === 0) return 0
+
+  let totalUnfrozen = 0
+
+  for (const freeze of staleFreezes.results) {
+    const txId = nanoid()
+    const balanceField = freeze.pool === 'monthly' ? 'monthly_balance' : 'permanent_balance'
+
+    await db.batch([
+      db
+        .prepare(
+          `UPDATE credit_balances
+           SET ${balanceField} = ${balanceField} + ?,
+               frozen = MAX(frozen - ?, 0),
+               updated_at = datetime('now')
+           WHERE user_id = ?`,
+        )
+        .bind(freeze.amount, freeze.amount, userId),
+      db
+        .prepare(
+          `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, reference_id, description)
+           VALUES (?, ?, 'unfreeze', ?, ?, 0, 'stale_cleanup', ?, ?)`,
+        )
+        .bind(txId, userId, freeze.pool, freeze.amount, freeze.id,
+          `Auto-unfreeze stale ${freeze.amount} credits after ${FREEZE_TTL_MINUTES}min timeout`),
+    ])
+
+    totalUnfrozen += freeze.amount
+  }
+
+  if (totalUnfrozen > 0) {
+    log.warn('Stale frozen credits recovered', { userId, totalUnfrozen, count: staleFreezes.results.length })
+  }
+
+  return totalUnfrozen
 }

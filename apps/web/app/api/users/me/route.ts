@@ -28,7 +28,7 @@ export async function GET() {
       .bind(clerkId)
       .first()
 
-    // SYNC-001: 首次登录自动创建
+    // SYNC-001: 首次登录自动创建 (INSERT OR IGNORE — 幂等，防并发/Webhook 竞态)
     if (!user) {
       const clerkUser = await currentUser()
       if (!clerkUser) {
@@ -42,15 +42,16 @@ export async function GET() {
 
       await db
         .prepare(
-          `INSERT INTO users (id, clerk_id, email, name, avatar_url, plan)
+          `INSERT OR IGNORE INTO users (id, clerk_id, email, name, avatar_url, plan)
            VALUES (?, ?, ?, ?, ?, 'free')`,
         )
         .bind(id, clerkId, email, name, avatarUrl)
         .run()
 
+      // 无论是本次插入还是已存在，统一用 clerk_id 查询
       user = await db
-        .prepare('SELECT * FROM users WHERE id = ?')
-        .bind(id)
+        .prepare('SELECT * FROM users WHERE clerk_id = ?')
+        .bind(clerkId)
         .first()
     }
 

@@ -12,6 +12,7 @@ export {
   refundCredits,
   addCredits,
   resetMonthlyCredits,
+  unfreezeStaleCredits,
   type CreditBalance,
 } from './engine'
 

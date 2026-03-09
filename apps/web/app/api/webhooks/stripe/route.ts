@@ -109,8 +109,26 @@ async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.
 
     log.info('Subscription created', { userId, plan, credits })
   } else if (type === 'topup') {
-    const credits = parseInt(session.metadata?.credits ?? '0', 10)
     const packageId = session.metadata?.packageId
+    if (!packageId) {
+      log.error('Missing packageId in topup webhook', { sessionId: session.id })
+      return
+    }
+
+    // 从 DB 查询真实积分数，不信任 metadata.credits
+    const pkg = await db
+      .prepare(
+        'SELECT credits, bonus_credits FROM credit_packages WHERE id = ? AND is_active = 1',
+      )
+      .bind(packageId)
+      .first<{ credits: number; bonus_credits: number }>()
+
+    if (!pkg) {
+      log.error('Package not found in topup webhook', { packageId })
+      return
+    }
+
+    const credits = pkg.credits + pkg.bonus_credits
 
     if (credits > 0) {
       await addCredits(db, userId, credits, 'permanent', 'topup_purchase', packageId)

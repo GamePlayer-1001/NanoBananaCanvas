@@ -42,5 +42,9 @@ blob-report/
 # Sentry
 .sentryclirc
 
+# Secrets / Tokens
+*.tokens.txt
+cloudflare-tokens.txt
+
 # Misc
 *.tsbuildinfo
