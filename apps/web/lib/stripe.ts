@@ -35,9 +35,10 @@ export const PLAN_CREDITS: Record<string, number> = Object.fromEntries(
 
 export const PLAN_ORDER = Object.keys(PLANS) as PlanType[]
 
-/** 获取 Stripe Price ID (从 env var) */
-export function getStripePriceId(plan: string, period: string): string {
-  const key = `STRIPE_PRICE_${plan.toUpperCase()}_${period.toUpperCase()}`
+/** 获取 Stripe Price ID (从 env var, 支持 USD/CNY) */
+export function getStripePriceId(plan: string, period: string, currency: string = 'usd'): string {
+  const suffix = currency === 'cny' ? '_CNY' : ''
+  const key = `STRIPE_PRICE_${plan.toUpperCase()}_${period.toUpperCase()}${suffix}`
   const priceId = process.env[key]
   if (!priceId) throw new Error(`Missing env var: ${key}`)
   return priceId

@@ -14,4 +14,5 @@ export const checkoutSchema = z.object({
     error: 'Plan is required',
   }),
   billingPeriod: z.enum(['monthly', 'yearly']).default('monthly'),
+  currency: z.enum(['usd', 'cny']).default('usd'),
 })

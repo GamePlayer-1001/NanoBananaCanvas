@@ -24,10 +24,10 @@ export async function POST(req: Request) {
 
     const db = await getDb()
     const body = await req.json()
-    const { plan, billingPeriod } = checkoutSchema.parse(body)
+    const { plan, billingPeriod, currency } = checkoutSchema.parse(body)
 
     const stripe = getStripe()
-    const priceId = getStripePriceId(plan, billingPeriod)
+    const priceId = getStripePriceId(plan, billingPeriod, currency)
 
     // 获取用户邮箱
     const user = await db

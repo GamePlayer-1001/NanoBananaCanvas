@@ -24,12 +24,12 @@ export async function POST(req: Request) {
 
     const db = await getDb()
     const body = await req.json()
-    const { packageId } = topupSchema.parse(body)
+    const { packageId, currency } = topupSchema.parse(body)
 
-    // 查询积分包
+    // 查询积分包 (含双币种价格)
     const pkg = await db
       .prepare(
-        'SELECT id, name, credits, price_cents, bonus_credits, stripe_price_id FROM credit_packages WHERE id = ? AND is_active = 1',
+        'SELECT id, name, credits, price_cents, bonus_credits, stripe_price_id, stripe_price_id_cny FROM credit_packages WHERE id = ? AND is_active = 1',
       )
       .bind(packageId)
       .first<{
@@ -39,13 +39,15 @@ export async function POST(req: Request) {
         price_cents: number
         bonus_credits: number
         stripe_price_id: string | null
+        stripe_price_id_cny: string | null
       }>()
 
     if (!pkg) {
       return apiError('NOT_FOUND', 'Credit package not found', 404)
     }
 
-    if (!pkg.stripe_price_id) {
+    const priceId = currency === 'cny' ? pkg.stripe_price_id_cny : pkg.stripe_price_id
+    if (!priceId) {
       return apiError('VALIDATION_FAILED', 'Package not configured for purchase', 400)
     }
 
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'payment',
-      line_items: [{ price: pkg.stripe_price_id, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
         userId,
         type: 'topup',

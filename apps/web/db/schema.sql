@@ -187,18 +187,20 @@ CREATE TABLE IF NOT EXISTS model_pricing (
 CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
 
 -- ── CREDIT-005: credit_packages ───────────────
--- 积分包配置 (一次性购买)
+-- 积分包配置 (一次性购买, 双币种 USD/CNY)
 CREATE TABLE IF NOT EXISTS credit_packages (
-  id                TEXT PRIMARY KEY,
-  name              TEXT NOT NULL,
-  credits           INTEGER NOT NULL,
-  price_cents       INTEGER NOT NULL,
-  bonus_credits     INTEGER NOT NULL DEFAULT 0,
-  stripe_price_id   TEXT,
-  is_active         INTEGER NOT NULL DEFAULT 1,
-  sort_order        INTEGER NOT NULL DEFAULT 0,
-  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+  id                  TEXT PRIMARY KEY,
+  name                TEXT NOT NULL,
+  credits             INTEGER NOT NULL,
+  price_cents         INTEGER NOT NULL,
+  price_cents_cny     INTEGER,
+  bonus_credits       INTEGER NOT NULL DEFAULT 0,
+  stripe_price_id     TEXT,
+  stripe_price_id_cny TEXT,
+  is_active           INTEGER NOT NULL DEFAULT 1,
+  sort_order          INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- ── user_api_keys ─────────────────────────────

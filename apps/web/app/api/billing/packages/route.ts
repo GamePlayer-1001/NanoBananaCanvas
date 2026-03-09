@@ -16,7 +16,7 @@ export async function GET() {
 
     const packages = await db
       .prepare(
-        `SELECT id, name, credits, price_cents, bonus_credits, sort_order
+        `SELECT id, name, credits, price_cents, price_cents_cny, bonus_credits, sort_order
          FROM credit_packages
          WHERE is_active = 1
          ORDER BY sort_order ASC`,

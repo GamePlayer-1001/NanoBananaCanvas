@@ -8,28 +8,42 @@
 import type { PlanType } from '../types'
 
 /* ============================================ */
+/*  Currency                                    */
+/* ============================================ */
+
+export type CurrencyType = 'usd' | 'cny'
+
+export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
+  usd: '$',
+  cny: '¥',
+}
+
+/* ============================================ */
 /*  Plan Configuration                          */
 /* ============================================ */
 
-export const PLANS: Record<
-  PlanType,
-  {
-    name: string
-    nameKey: string
-    monthlyPrice: number
-    yearlyPrice: number
-    monthlyCredits: number
-    maxConcurrentTasks: number
-    storageGB: number
-    popular?: boolean
-    features: string[]
-  }
-> = {
+export interface PlanConfig {
+  name: string
+  nameKey: string
+  monthlyPrice: number
+  yearlyPrice: number
+  monthlyPriceCny: number
+  yearlyPriceCny: number
+  monthlyCredits: number
+  maxConcurrentTasks: number
+  storageGB: number
+  popular?: boolean
+  features: string[]
+}
+
+export const PLANS: Record<PlanType, PlanConfig> = {
   free: {
     name: 'Free',
     nameKey: 'free',
     monthlyPrice: 0,
     yearlyPrice: 0,
+    monthlyPriceCny: 0,
+    yearlyPriceCny: 0,
     monthlyCredits: 200,
     maxConcurrentTasks: 1,
     storageGB: 1,
@@ -40,6 +54,8 @@ export const PLANS: Record<
     nameKey: 'standard',
     monthlyPrice: 9,
     yearlyPrice: 90,
+    monthlyPriceCny: 29,
+    yearlyPriceCny: 299,
     monthlyCredits: 1000,
     maxConcurrentTasks: 2,
     storageGB: 10,
@@ -50,6 +66,8 @@ export const PLANS: Record<
     nameKey: 'pro',
     monthlyPrice: 29,
     yearlyPrice: 290,
+    monthlyPriceCny: 99,
+    yearlyPriceCny: 999,
     monthlyCredits: 5000,
     maxConcurrentTasks: 4,
     storageGB: 50,
@@ -61,6 +79,8 @@ export const PLANS: Record<
     nameKey: 'ultimate',
     monthlyPrice: 79,
     yearlyPrice: 790,
+    monthlyPriceCny: 269,
+    yearlyPriceCny: 2699,
     monthlyCredits: 17000,
     maxConcurrentTasks: 8,
     storageGB: 200,

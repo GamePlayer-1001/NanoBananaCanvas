@@ -41,7 +41,7 @@ export function usePackages() {
 
 export function useCheckout() {
   return useMutation({
-    mutationFn: async (input: { plan: string; billingPeriod?: 'monthly' | 'yearly' }) => {
+    mutationFn: async (input: { plan: string; billingPeriod?: 'monthly' | 'yearly'; currency?: 'usd' | 'cny' }) => {
       const data = await fetchJson<{ url: string }>('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,11 +88,11 @@ export function useTransactions() {
 
 export function useTopup() {
   return useMutation({
-    mutationFn: async (packageId: string) => {
+    mutationFn: async (input: { packageId: string; currency?: 'usd' | 'cny' }) => {
       const data = await fetchJson<{ url: string }>('/api/billing/topup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packageId }),
+        body: JSON.stringify(input),
       })
       window.location.href = data.url
     },

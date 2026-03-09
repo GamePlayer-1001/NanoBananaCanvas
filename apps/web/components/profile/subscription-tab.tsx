@@ -1,17 +1,19 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/hooks/use-billing 的 useSubscription/useCheckout/usePortal，
- *          依赖 @nano-banana/shared/constants 的 PLANS，依赖 @nano-banana/shared/types 的 PlanType
- * [OUTPUT]: 对外提供 SubscriptionTab 订阅面板 (套餐对比 + 升级)
+ * [INPUT]: 依赖 next-intl 的 useTranslations/useLocale，依赖 @/hooks/use-billing 的 useSubscription/useCheckout/usePortal，
+ *          依赖 @nano-banana/shared/constants 的 PLANS/CURRENCY_SYMBOLS，依赖 @nano-banana/shared/types 的 PlanType
+ * [OUTPUT]: 对外提供 SubscriptionTab 订阅面板 (套餐对比 + 升级 + 双币种)
  * [POS]: profile 的订阅 Tab，被 profile-modal.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { Check } from 'lucide-react'
 
-import { PLANS } from '@nano-banana/shared/constants'
+import { PLANS, CURRENCY_SYMBOLS } from '@nano-banana/shared/constants'
+import type { CurrencyType } from '@nano-banana/shared/constants'
 import type { PlanType } from '@nano-banana/shared/types'
 import { useSubscription, useCheckout, usePortal } from '@/hooks/use-billing'
 
@@ -27,31 +29,56 @@ const PLAN_LIST = (Object.keys(PLANS) as PlanType[]).map((id) => ({
 export function SubscriptionTab() {
   const t = useTranslations('billing')
   const tp = useTranslations('pricing')
+  const locale = useLocale()
+  const [currency, setCurrency] = useState<CurrencyType>(locale === 'zh' ? 'cny' : 'usd')
   const { data: subscription } = useSubscription()
   const { mutate: checkout, isPending: checkoutPending } = useCheckout()
   const { mutate: openPortal, isPending: portalPending } = usePortal()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const currentPlan = ((subscription as any)?.plan as PlanType) ?? 'free'
+  const sym = CURRENCY_SYMBOLS[currency]
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">{t('currentPlan')}</h3>
-        {currentPlan !== 'free' && (
-          <button
-            onClick={() => openPortal()}
-            disabled={portalPending}
-            className="text-sm text-brand-500 hover:text-brand-600 transition-colors"
-          >
-            {t('manageBilling')}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* 币种切换 */}
+          <div className="flex items-center rounded-full border border-border p-0.5">
+            <button
+              onClick={() => setCurrency('usd')}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                currency === 'usd' ? 'bg-brand-500 text-white' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              USD
+            </button>
+            <button
+              onClick={() => setCurrency('cny')}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                currency === 'cny' ? 'bg-brand-500 text-white' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              CNY
+            </button>
+          </div>
+          {currentPlan !== 'free' && (
+            <button
+              onClick={() => openPortal()}
+              disabled={portalPending}
+              className="text-sm text-brand-500 hover:text-brand-600 transition-colors"
+            >
+              {t('manageBilling')}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {PLAN_LIST.map((plan) => {
           const isCurrent = plan.id === currentPlan
+          const price = currency === 'cny' ? plan.monthlyPriceCny : plan.monthlyPrice
 
           return (
             <div
@@ -71,7 +98,7 @@ export function SubscriptionTab() {
                 )}
               </div>
               <p className="mt-1 text-2xl font-bold text-foreground">
-                ${plan.monthlyPrice}
+                {sym}{price}
                 <span className="text-sm font-normal text-muted-foreground">/mo</span>
               </p>
 
@@ -97,7 +124,7 @@ export function SubscriptionTab() {
                 disabled={isCurrent || checkoutPending}
                 onClick={() => {
                   if (!isCurrent) {
-                    checkout({ plan: plan.id, billingPeriod: 'monthly' })
+                    checkout({ plan: plan.id, billingPeriod: 'monthly', currency })
                   }
                 }}
               >
