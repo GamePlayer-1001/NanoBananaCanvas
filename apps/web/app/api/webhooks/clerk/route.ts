@@ -1,10 +1,11 @@
 /**
- * [INPUT]: 依赖 svix 的 Webhook，依赖 @/lib/db，依赖 @/lib/nanoid
+ * [INPUT]: 依赖 svix 的 Webhook，依赖 @/lib/db，依赖 @/lib/nanoid，依赖 @opennextjs/cloudflare
  * [OUTPUT]: 对外提供 POST /api/webhooks/clerk (Clerk Webhook 事件处理)
  * [POS]: api/webhooks 的 Clerk 端点，处理 user.created/updated/deleted
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { Webhook } from 'svix'
 
 import { getDb } from '@/lib/db'
@@ -29,7 +30,8 @@ interface ClerkWebhookEvent {
 /* ─── POST /api/webhooks/clerk ───────────────────────── */
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
+  const { env } = await getCloudflareContext()
+  const WEBHOOK_SECRET = (env as unknown as Record<string, string>).CLERK_WEBHOOK_SECRET
   if (!WEBHOOK_SECRET) {
     log.error('CLERK_WEBHOOK_SECRET not configured')
     return new Response('Webhook secret not configured', { status: 500 })
