@@ -26,8 +26,8 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { plan, billingPeriod, currency } = checkoutSchema.parse(body)
 
-    const stripe = getStripe()
-    const priceId = getStripePriceId(plan, billingPeriod, currency)
+    const stripe = await getStripe()
+    const priceId = await getStripePriceId(plan, billingPeriod, currency)
 
     // 获取用户邮箱
     const user = await db
@@ -37,13 +37,16 @@ export async function POST(req: Request) {
 
     const { customerId } = await getOrCreateCustomer(stripe, db, userId, user?.email ?? '')
 
+    const { env } = await import('@opennextjs/cloudflare').then((m) => m.getCloudflareContext())
+    const appUrl = (env as unknown as Record<string, string>).NEXT_PUBLIC_APP_URL ?? ''
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { userId, plan, billingPeriod, type: 'subscription' },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/billing?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/billing?canceled=true`,
+      success_url: `${appUrl}/billing?success=true`,
+      cancel_url: `${appUrl}/billing?canceled=true`,
     })
 
     return apiOk({ url: session.url })

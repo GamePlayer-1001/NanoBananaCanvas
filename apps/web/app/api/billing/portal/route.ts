@@ -16,7 +16,7 @@ export async function POST() {
   try {
     const { userId } = await requireAuth()
     const db = await getDb()
-    const stripe = getStripe()
+    const stripe = await getStripe()
 
     const sub = await db
       .prepare('SELECT stripe_customer_id FROM subscriptions WHERE user_id = ?')
@@ -27,9 +27,12 @@ export async function POST() {
       return apiError('NOT_FOUND', 'No active subscription found', 404)
     }
 
+    const { env } = await import('@opennextjs/cloudflare').then((m) => m.getCloudflareContext())
+    const appUrl = (env as unknown as Record<string, string>).NEXT_PUBLIC_APP_URL ?? ''
+
     const session = await stripe.billingPortal.sessions.create({
       customer: sub.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/billing`,
+      return_url: `${appUrl}/billing`,
     })
 
     return apiOk({ url: session.url })

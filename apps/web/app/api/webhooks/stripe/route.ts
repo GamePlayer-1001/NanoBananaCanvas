@@ -10,14 +10,14 @@ import type Stripe from 'stripe'
 import { addCredits, resetMonthlyCredits } from '@/lib/credits'
 import { getDb } from '@/lib/db'
 import { createLogger } from '@/lib/logger'
-import { getStripe, PLAN_CREDITS } from '@/lib/stripe'
+import { getStripe, getWebhookSecret, PLAN_CREDITS } from '@/lib/stripe'
 
 const log = createLogger('webhook:stripe')
 
 /* ─── POST /api/webhooks/stripe ──────────────────────── */
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
+  const WEBHOOK_SECRET = await getWebhookSecret().catch(() => null)
   if (!WEBHOOK_SECRET) {
     log.error('STRIPE_WEBHOOK_SECRET not configured')
     return new Response('Webhook secret not configured', { status: 500 })
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return new Response('Missing stripe-signature header', { status: 400 })
   }
 
-  const stripe = getStripe()
+  const stripe = await getStripe()
   let event: Stripe.Event
 
   try {

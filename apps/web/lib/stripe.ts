@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 stripe SDK，依赖 @/lib/db，依赖 @/lib/nanoid
- * [OUTPUT]: 对外提供 getStripe / getOrCreateCustomer / PLAN_CREDITS
+ * [INPUT]: 依赖 stripe SDK，依赖 @opennextjs/cloudflare，依赖 @/lib/db，依赖 @/lib/nanoid
+ * [OUTPUT]: 对外提供 getStripe / getOrCreateCustomer / getStripePriceId / PLAN_CREDITS
  * [POS]: lib 的 Stripe 客户端初始化 + 套餐配置，被 billing API 路由消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import Stripe from 'stripe'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 import { PLANS } from '@nano-banana/shared/constants'
 import type { PlanType } from '@nano-banana/shared/types'
@@ -14,13 +15,20 @@ import { nanoid } from '@/lib/nanoid'
 
 const log = createLogger('Stripe')
 
-/* ─── Singleton ──────────────────────────────────────── */
+/* ─── Env Helper ──────────────────────────────────────── */
+
+async function getEnv(key: string): Promise<string | undefined> {
+  const { env } = await getCloudflareContext()
+  return (env as unknown as Record<string, string>)[key]
+}
+
+/* ─── Stripe Client ──────────────────────────────────── */
 
 let _stripe: Stripe | null = null
 
-export function getStripe(): Stripe {
+export async function getStripe(): Promise<Stripe> {
   if (!_stripe) {
-    const key = process.env.STRIPE_SECRET_KEY
+    const key = await getEnv('STRIPE_SECRET_KEY')
     if (!key) throw new Error('STRIPE_SECRET_KEY not configured')
     _stripe = new Stripe(key, { apiVersion: '2026-02-25.clover' })
   }
@@ -35,13 +43,20 @@ export const PLAN_CREDITS: Record<string, number> = Object.fromEntries(
 
 export const PLAN_ORDER = Object.keys(PLANS) as PlanType[]
 
-/** 获取 Stripe Price ID (从 env var, 支持 USD/CNY) */
-export function getStripePriceId(plan: string, period: string, currency: string = 'usd'): string {
+/** 获取 Stripe Price ID (从 Cloudflare env, 支持 USD/CNY) */
+export async function getStripePriceId(plan: string, period: string, currency: string = 'usd'): Promise<string> {
   const suffix = currency === 'cny' ? '_CNY' : ''
   const key = `STRIPE_PRICE_${plan.toUpperCase()}_${period.toUpperCase()}${suffix}`
-  const priceId = process.env[key]
+  const priceId = await getEnv(key)
   if (!priceId) throw new Error(`Missing env var: ${key}`)
   return priceId
+}
+
+/** 获取 Webhook Secret */
+export async function getWebhookSecret(): Promise<string> {
+  const secret = await getEnv('STRIPE_WEBHOOK_SECRET')
+  if (!secret) throw new Error('STRIPE_WEBHOOK_SECRET not configured')
+  return secret
 }
 
 /* ─── Customer Management ────────────────────────────── */

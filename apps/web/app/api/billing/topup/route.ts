@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       return apiError('VALIDATION_FAILED', 'Package not configured for purchase', 400)
     }
 
-    const stripe = getStripe()
+    const stripe = await getStripe()
 
     // 获取用户邮箱
     const user = await db
@@ -60,6 +60,9 @@ export async function POST(req: Request) {
       .first<{ email: string }>()
 
     const { customerId } = await getOrCreateCustomer(stripe, db, userId, user?.email ?? '')
+
+    const { env } = await import('@opennextjs/cloudflare').then((m) => m.getCloudflareContext())
+    const appUrl = (env as unknown as Record<string, string>).NEXT_PUBLIC_APP_URL ?? ''
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -71,8 +74,8 @@ export async function POST(req: Request) {
         packageId: pkg.id,
         credits: String(pkg.credits + pkg.bonus_credits),
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/billing?topup=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/billing?topup=canceled`,
+      success_url: `${appUrl}/billing?topup=success`,
+      cancel_url: `${appUrl}/billing?topup=canceled`,
     })
 
     return apiOk({ url: session.url })

@@ -22,7 +22,7 @@ export async function POST() {
     if (!rl.ok) return rateLimitResponse(rl.resetAt)
 
     const db = await getDb()
-    const stripe = getStripe()
+    const stripe = await getStripe()
 
     const sub = await db
       .prepare('SELECT stripe_subscription_id FROM subscriptions WHERE user_id = ?')
