@@ -6,7 +6,7 @@
  */
 
 /** 套餐类型 */
-export type PlanType = 'free' | 'standard' | 'pro' | 'ultimate'
+export type PlanType = 'free' | 'pro'
 
 /** 任务状态 */
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed'

@@ -9,7 +9,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
-import { getOrCreateCustomer, getStripe, getStripePriceId } from '@/lib/stripe'
+import { getOrCreateCustomer, getStripe } from '@/lib/stripe'
 import { checkoutSchema } from '@/lib/validations/billing'
 
 /* ─── POST /api/billing/checkout ─────────────────────── */
@@ -24,10 +24,9 @@ export async function POST(req: Request) {
 
     const db = await getDb()
     const body = await req.json()
-    const { plan, billingPeriod, currency } = checkoutSchema.parse(body)
+    const { priceId } = checkoutSchema.parse(body)
 
     const stripe = await getStripe()
-    const priceId = await getStripePriceId(plan, billingPeriod)
 
     // 获取用户邮箱
     const user = await db
@@ -42,10 +41,9 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      currency,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { userId, plan, billingPeriod, type: 'subscription' },
+      metadata: { userId, plan: 'pro', type: 'subscription' },
       success_url: `${appUrl}/billing?success=true`,
       cancel_url: `${appUrl}/billing?canceled=true`,
     })

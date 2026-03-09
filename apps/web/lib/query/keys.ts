@@ -43,6 +43,7 @@ export const queryKeys = {
     all: ['billing'] as const,
     subscription: () => [...queryKeys.billing.all, 'subscription'] as const,
     packages: () => [...queryKeys.billing.all, 'packages'] as const,
+    plans: () => [...queryKeys.billing.all, 'plans'] as const,
   },
   ai: {
     all: ['ai'] as const,

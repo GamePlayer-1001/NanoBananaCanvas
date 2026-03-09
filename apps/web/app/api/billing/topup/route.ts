@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
     const db = await getDb()
     const body = await req.json()
-    const { packageId, currency } = topupSchema.parse(body)
+    const { packageId } = topupSchema.parse(body)
 
     // 查询积分包 (多货币由 Stripe Price 自动处理)
     const pkg = await db
@@ -64,7 +64,6 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      currency,
       mode: 'payment',
       line_items: [{ price: pkg.stripe_price_id, quantity: 1 }],
       metadata: {

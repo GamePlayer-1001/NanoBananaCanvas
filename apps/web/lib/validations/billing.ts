@@ -10,9 +10,5 @@ import { z } from 'zod'
 /* ─── Stripe Checkout 请求 ───────────────────────────── */
 
 export const checkoutSchema = z.object({
-  plan: z.enum(['standard', 'pro', 'ultimate'], {
-    error: 'Plan is required',
-  }),
-  billingPeriod: z.enum(['monthly', 'yearly']).default('monthly'),
-  currency: z.enum(['usd', 'cny']).default('usd'),
+  priceId: z.string().min(1, 'Price ID is required'),
 })

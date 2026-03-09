@@ -19,7 +19,6 @@ export const creditTransactionsQuerySchema = z.object({
 
 export const topupSchema = z.object({
   packageId: z.string().min(1, 'Package ID is required'),
-  currency: z.enum(['usd', 'cny']).default('usd'),
 })
 
 /* ─── 使用统计查询 ───────────────────────────────────── */
