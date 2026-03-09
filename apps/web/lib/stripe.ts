@@ -46,10 +46,9 @@ export const PLAN_CREDITS: Record<string, number> = Object.fromEntries(
 
 export const PLAN_ORDER = Object.keys(PLANS) as PlanType[]
 
-/** 获取 Stripe Price ID (从 Cloudflare env, 支持 USD/CNY) */
-export async function getStripePriceId(plan: string, period: string, currency: string = 'usd'): Promise<string> {
-  const suffix = currency === 'cny' ? '_CNY' : ''
-  const key = `STRIPE_PRICE_${plan.toUpperCase()}_${period.toUpperCase()}${suffix}`
+/** 获取 Stripe Price ID (多货币由 Stripe 自动处理，无需按币种区分) */
+export async function getStripePriceId(plan: string, period: string): Promise<string> {
+  const key = `STRIPE_PRICE_${plan.toUpperCase()}_${period.toUpperCase()}`
   const priceId = await getEnv(key)
   if (!priceId) throw new Error(`Missing env var: ${key}`)
   return priceId

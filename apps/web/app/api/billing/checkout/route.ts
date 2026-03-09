@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const { plan, billingPeriod, currency } = checkoutSchema.parse(body)
 
     const stripe = await getStripe()
-    const priceId = await getStripePriceId(plan, billingPeriod, currency)
+    const priceId = await getStripePriceId(plan, billingPeriod)
 
     // 获取用户邮箱
     const user = await db
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      currency,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { userId, plan, billingPeriod, type: 'subscription' },
