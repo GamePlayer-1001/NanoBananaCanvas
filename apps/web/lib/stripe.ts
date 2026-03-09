@@ -30,7 +30,10 @@ export async function getStripe(): Promise<Stripe> {
   if (!_stripe) {
     const key = await getEnv('STRIPE_SECRET_KEY')
     if (!key) throw new Error('STRIPE_SECRET_KEY not configured')
-    _stripe = new Stripe(key, { apiVersion: '2026-02-25.clover' })
+    _stripe = new Stripe(key, {
+      apiVersion: '2026-02-25.clover',
+      httpClient: Stripe.createFetchHttpClient(),
+    })
   }
   return _stripe
 }
