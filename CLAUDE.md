@@ -5,11 +5,12 @@
 ## 目录结构
 
 ```
-apps/web/        — Next.js 16 前端 (App Router, i18n, SSR/SSG)
-apps/worker/     — Hono API Worker (Cloudflare Workers, D1/R2/Queue)
-packages/shared/ — 共享类型、常量、工具函数
-e2e/             — Playwright E2E 测试
-.md/             — 项目规划文档 (非代码)
+apps/web/            — Next.js 16 前端 (App Router, i18n, SSR/SSG)
+apps/worker/         — Hono API Worker (Cloudflare Workers, D1/R2/Queue)
+packages/shared/     — 共享类型、常量、工具函数
+e2e/                 — Playwright E2E 测试
+.md/                 — 项目规划文档 (非代码)
+.github/workflows/   — CI/CD 管道 (GitHub Actions → Cloudflare)
 ```
 
 ## 技术栈
@@ -27,7 +28,8 @@ e2e/             — Playwright E2E 测试
 | 认证   | Clerk (P1 接入)                                   |
 | 支付   | Stripe (P1 接入)                                  |
 | i18n   | next-intl (P1 接入)                               |
-| 部署   | @opennextjs/cloudflare → Cloudflare Pages         |
+| 部署   | @opennextjs/cloudflare → Cloudflare Workers        |
+| CI/CD  | GitHub Actions → wrangler deploy                   |
 | 测试   | Vitest (单元) + Playwright (E2E)                  |
 
 ## 开发命令
@@ -63,5 +65,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
+- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (Web + Worker)
+- **域名**: nanobananacanvas.com → Cloudflare Workers (wrangler routes)
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

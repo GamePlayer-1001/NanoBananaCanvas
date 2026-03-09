@@ -14,6 +14,12 @@
   },
   "main": ".open-next/worker.js",
 
+  // 自定义域名路由
+  "routes": [
+    { "pattern": "nanobananacanvas.com/*", "zone_name": "nanobananacanvas.com" },
+    { "pattern": "www.nanobananacanvas.com/*", "zone_name": "nanobananacanvas.com" }
+  ],
+
   // KV 绑定 — 用于增量缓存
   // "kv_namespaces": [
   //   { "binding": "NEXT_CACHE_KV", "id": "<your-kv-id>" }
