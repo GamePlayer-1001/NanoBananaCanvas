@@ -84,6 +84,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/web
+          packageManager: pnpm
           command: deploy
 
       # ── 4. 部署 API → Cloudflare Workers ──────
@@ -93,4 +94,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/worker
+          packageManager: pnpm
           command: deploy
