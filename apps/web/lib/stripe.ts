@@ -7,6 +7,8 @@
 
 import Stripe from 'stripe'
 
+import { PLANS } from '@nano-banana/shared/constants'
+import type { PlanType } from '@nano-banana/shared/types'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 
@@ -25,16 +27,13 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-/* ─── Plan Config ────────────────────────────────────── */
+/* ─── Plan Config (derived from SSoT) ────────────────── */
 
-export const PLAN_CREDITS: Record<string, number> = {
-  free: 200,
-  standard: 1600,
-  pro: 5400,
-  ultimate: 17000,
-}
+export const PLAN_CREDITS: Record<string, number> = Object.fromEntries(
+  (Object.keys(PLANS) as PlanType[]).map((k) => [k, PLANS[k].monthlyCredits]),
+)
 
-export const PLAN_ORDER = ['free', 'standard', 'pro', 'ultimate'] as const
+export const PLAN_ORDER = Object.keys(PLANS) as PlanType[]
 
 /** 获取 Stripe Price ID (从 env var) */
 export function getStripePriceId(plan: string, period: string): string {

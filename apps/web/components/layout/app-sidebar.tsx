@@ -23,6 +23,7 @@ import {
   UserPlus,
   MessageCircle,
   Search,
+  Sparkles,
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
@@ -205,26 +206,39 @@ export function AppSidebar() {
       </div>
 
       {/* ── Footer ────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-t border-border px-4 py-3">
-        <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {t('freePlan')}
-        </span>
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <MessageCircle size={12} />
-          100
-        </span>
-        <button
-          onClick={() => setProfileOpen(true)}
-          className="ml-auto"
+      <div className="border-t border-border px-3 py-3 space-y-2">
+        {/* 升级套餐入口 */}
+        <Link
+          href="/pricing"
+          className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-100"
         >
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: { width: '28px', height: '28px' },
-              },
-            }}
-          />
-        </button>
+          <Sparkles size={14} />
+          <span className="flex-1">{t('upgrade')}</span>
+          <ChevronRight size={14} />
+        </Link>
+
+        {/* 用户信息 */}
+        <div className="flex items-center gap-2 px-1">
+          <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {t('freePlan')}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MessageCircle size={12} />
+            100
+          </span>
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="ml-auto"
+          >
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: { width: '28px', height: '28px' },
+                },
+              }}
+            />
+          </button>
+        </div>
       </div>
     </aside>
 

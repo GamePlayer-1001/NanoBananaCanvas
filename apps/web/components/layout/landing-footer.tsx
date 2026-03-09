@@ -48,9 +48,9 @@ export function LandingFooter() {
     {
       title: t('product'),
       links: [
-        { label: t('features'), href: '/' },
-        { label: t('pricing'), href: '/' },
-        { label: t('enterprise'), href: '/' },
+        { label: t('features'), href: '/#features' },
+        { label: t('pricing'), href: '/pricing' },
+        { label: t('enterprise'), href: '/pricing' },
         { label: t('getStarted'), href: '/sign-up' },
       ],
     },
@@ -83,7 +83,7 @@ export function LandingFooter() {
             <div className="mb-3 flex items-center gap-2">
               <span className="text-xl">🎨</span>
               <span className="font-serif text-lg font-bold italic text-white">
-                Martini
+                Nano Banana Canvas
               </span>
             </div>
             <p className="mb-4 text-sm text-white/40">{t('tagline')}</p>

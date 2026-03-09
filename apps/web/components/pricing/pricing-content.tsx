@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @clerk/nextjs 的 useAuth，
  *          依赖 @/i18n/navigation 的 Link，依赖 @/components/ui/button，
- *          依赖 @/hooks/use-billing 的 useCheckout
+ *          依赖 @/hooks/use-billing 的 useCheckout，依赖 @nano-banana/shared 的 PLANS/PlanType
  * [OUTPUT]: 对外提供 PricingContent 定价页客户端容器
  * [POS]: pricing 的主容器，被 pricing/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -17,54 +17,15 @@ import { Check } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import { useCheckout } from '@/hooks/use-billing'
+import { PLANS } from '@nano-banana/shared/constants'
+import type { PlanType } from '@nano-banana/shared/types'
 
-/* ─── Plan Data ───────────────────────────────────────── */
+/* ─── Derived Plan List ──────────────────────────────── */
 
-interface Plan {
-  id: string
-  nameKey: string
-  monthlyPrice: number
-  yearlyPrice: number
-  credits: number
-  features: string[]
-  popular?: boolean
-}
-
-const PLANS: Plan[] = [
-  {
-    id: 'free',
-    nameKey: 'free',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    credits: 200,
-    features: ['feature_basic', 'feature_community', 'feature_export'],
-  },
-  {
-    id: 'standard',
-    nameKey: 'standard',
-    monthlyPrice: 9,
-    yearlyPrice: 90,
-    credits: 1000,
-    features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history'],
-  },
-  {
-    id: 'pro',
-    nameKey: 'pro',
-    monthlyPrice: 29,
-    yearlyPrice: 290,
-    credits: 5000,
-    popular: true,
-    features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history', 'feature_api', 'feature_team'],
-  },
-  {
-    id: 'ultimate',
-    nameKey: 'ultimate',
-    monthlyPrice: 79,
-    yearlyPrice: 790,
-    credits: -1,
-    features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history', 'feature_api', 'feature_team', 'feature_unlimited', 'feature_dedicated'],
-  },
-]
+const PLAN_LIST = (Object.keys(PLANS) as PlanType[]).map((id) => ({
+  id,
+  ...PLANS[id],
+}))
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -109,7 +70,7 @@ export function PricingContent() {
 
       {/* 套餐卡片 */}
       <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {PLANS.map((plan) => {
+        {PLAN_LIST.map((plan) => {
           const price = yearly ? plan.yearlyPrice : plan.monthlyPrice
           const period = yearly ? t('perYear') : t('perMonth')
 
@@ -144,9 +105,7 @@ export function PricingContent() {
 
               {/* Credits */}
               <p className="mt-2 text-sm text-white/60">
-                {plan.credits === -1
-                  ? t('unlimitedCredits')
-                  : t('creditsIncluded', { count: plan.credits })}
+                {t('creditsIncluded', { count: plan.monthlyCredits })}
               </p>
 
               {/* CTA */}

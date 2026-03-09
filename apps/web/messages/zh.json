@@ -69,7 +69,7 @@
   },
   "auth": {
     "welcome": "欢迎来到",
-    "brandName": "Martini",
+    "brandName": "Nano Banana Canvas",
     "createAccount": "创建账号",
     "signIn": "登录",
     "captcha": "我是真实访客",
@@ -97,12 +97,13 @@
     "workspace": "工作区",
     "all": "全部",
     "noFolders": "还没有文件夹",
-    "community": "Martini 用户交流群",
+    "community": "Nano Banana Canvas 用户交流群",
     "watchTutorial": "观看教程",
     "invite": "邀请",
     "joinDiscord": "加入 Discord",
     "freePlan": "免费版",
-    "credits": "积分"
+    "credits": "积分",
+    "upgrade": "升级套餐"
   },
   "explore": {
     "hot": "热门",
@@ -224,7 +225,9 @@
     "topUp": "充值积分",
     "noTransactions": "暂无交易记录",
     "creditsLabel": "积分",
-    "purchaseCredits": "购买积分"
+    "purchaseCredits": "购买积分",
+    "current": "当前",
+    "manageBilling": "管理账单"
   },
   "canvas": {
     "run": "运行",

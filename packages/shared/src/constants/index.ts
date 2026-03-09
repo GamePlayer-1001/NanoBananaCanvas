@@ -15,44 +15,56 @@ export const PLANS: Record<
   PlanType,
   {
     name: string
+    nameKey: string
     monthlyPrice: number
     yearlyPrice: number
     monthlyCredits: number
     maxConcurrentTasks: number
     storageGB: number
+    popular?: boolean
+    features: string[]
   }
 > = {
   free: {
     name: 'Free',
+    nameKey: 'free',
     monthlyPrice: 0,
     yearlyPrice: 0,
     monthlyCredits: 200,
     maxConcurrentTasks: 1,
     storageGB: 1,
+    features: ['feature_basic', 'feature_community', 'feature_export'],
   },
   standard: {
     name: 'Standard',
-    monthlyPrice: 20,
-    yearlyPrice: 192,
-    monthlyCredits: 1600,
+    nameKey: 'standard',
+    monthlyPrice: 9,
+    yearlyPrice: 90,
+    monthlyCredits: 1000,
     maxConcurrentTasks: 2,
     storageGB: 10,
+    features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history'],
   },
   pro: {
     name: 'Pro',
-    monthlyPrice: 50,
-    yearlyPrice: 480,
-    monthlyCredits: 5400,
+    nameKey: 'pro',
+    monthlyPrice: 29,
+    yearlyPrice: 290,
+    monthlyCredits: 5000,
     maxConcurrentTasks: 4,
     storageGB: 50,
+    popular: true,
+    features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history', 'feature_api', 'feature_team'],
   },
   ultimate: {
     name: 'Ultimate',
-    monthlyPrice: 150,
-    yearlyPrice: 1440,
+    nameKey: 'ultimate',
+    monthlyPrice: 79,
+    yearlyPrice: 790,
     monthlyCredits: 17000,
     maxConcurrentTasks: 8,
     storageGB: 200,
+    features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history', 'feature_api', 'feature_team', 'feature_unlimited', 'feature_dedicated'],
   },
 }
 
