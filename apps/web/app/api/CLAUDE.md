@@ -11,17 +11,15 @@ ai/                     — AI 模型集成 (3 端点)
   execute/route.ts      — POST 双模式 AI 执行 (积分/自有 Key)
   stream/route.ts       — POST SSE 流式 AI 执行
 
-billing/                — Stripe 支付流程 (7 端点)
-  plans/route.ts        — GET  订阅套餐列表
-  packages/route.ts     — GET  积分包列表
+billing/                — Stripe 支付流程 (5 端点)
+  plans/route.ts        — GET  订阅套餐列表 (Free + Pro)
   checkout/route.ts     — POST 创建 Stripe Checkout Session (订阅)
-  topup/route.ts        — POST 创建 Stripe Checkout Session (积分包一次购)
   subscription/route.ts — GET  当前订阅信息
   cancel/route.ts       — POST 取消订阅 (period end)
   portal/route.ts       — POST 创建 Stripe Customer Portal URL
 
 credits/                — 积分系统 (3 端点)
-  balance/route.ts      — GET  积分余额 (三池: 订阅/充值/赠送 + 套餐信息)
+  balance/route.ts      — GET  积分余额 (三池: monthly/permanent/frozen + 套餐信息)
   usage/route.ts        — GET  AI 使用统计 (摘要/模型/日趋势)
   transactions/route.ts — GET  交易历史 (分页 + 类型筛选)
 

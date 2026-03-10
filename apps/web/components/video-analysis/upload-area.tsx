@@ -12,6 +12,10 @@ import { useCallback, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Upload, X } from 'lucide-react'
 
+/* ─── Constants ──────────────────────────────────────────── */
+
+const MAX_FILE_SIZE = 2048 * 1024 * 1024 // 2048 MB
+
 /* ─── Component ──────────────────────────────────────────── */
 
 export function UploadArea() {
@@ -22,6 +26,10 @@ export function UploadArea() {
 
   /* ── 文件处理 ──────────────────────────────────────── */
   const handleFile = useCallback((file: File) => {
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File too large: ${(file.size / (1024 * 1024)).toFixed(0)} MB (max 2048 MB)`)
+      return
+    }
     const sizeMB = (file.size / (1024 * 1024)).toFixed(1)
     const url = URL.createObjectURL(file)
     setPreview({ url, name: file.name, size: `${sizeMB} MB` })
