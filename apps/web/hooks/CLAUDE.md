@@ -14,7 +14,7 @@ use-canvas-shortcuts.ts  — useCanvasShortcuts 画布全局快捷键 (Ctrl+Ente
 use-workflows.ts         — useWorkflows / useWorkflow / useCreateWorkflow / useUpdateWorkflow / useDeleteWorkflow (TanStack Query)
 use-explore.ts           — useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow (TanStack Query)
 use-user.ts              — useCurrentUser / useCreditsBalance / useCreditsUsage (TanStack Query)
-use-billing.ts           — useSubscription / usePackages / useCheckout / usePortal / useCancelSubscription (TanStack Query)
+use-billing.ts           — useSubscription / usePlans / useCheckout / usePortal / useCancelSubscription (TanStack Query)
 use-categories.ts        — useCategories 分类数据 (TanStack Query, 5min staleTime)
 use-ai-models.ts         — useAIModels AI 模型目录 (TanStack Query, 10min staleTime)
 use-mobile.ts            — useIsMobile 移动端断点检测 (768px, matchMedia 监听)

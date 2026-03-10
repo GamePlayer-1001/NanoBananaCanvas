@@ -47,9 +47,13 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ```
 [locale]/(landing)/           — Landing Page (交互式 Hero Canvas + Footer)
+[locale]/(landing)/pricing    — 定价页 (套餐对比 + 积分包)
+[locale]/(landing)/privacy    — 隐私政策
+[locale]/(landing)/terms      — 服务条款
 [locale]/(auth)/sign-in       — 分屏登录页 (左玫瑰图 + 右 Clerk 卡片)
 [locale]/(auth)/sign-up       — 分屏注册页
 [locale]/(app)/explore        — 社区广场 (视频卡片网格 + 标签筛选)
+[locale]/(app)/explore/[id]   — 作品详情 (预览 + 作者 + 互动)
 [locale]/(app)/workflows      — 工作流分享 (分类 + 搜索 + 工作流卡片)
 [locale]/(app)/video-analysis — 视频分析 (上传 + AI 模型 + 历史)
 [locale]/(app)/workspace      — 工作区 (项目卡片网格 + 新建弹窗)

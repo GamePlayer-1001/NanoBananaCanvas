@@ -8,14 +8,17 @@
 /** 套餐类型 */
 export type PlanType = 'free' | 'pro'
 
+/** 计费周期 */
+export type BillingPeriod = 'weekly' | 'monthly' | 'yearly'
+
 /** 任务状态 */
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed'
 
 /** AI 模型分类 */
 export type ModelCategory = 'text' | 'image' | 'video' | 'audio'
 
-/** 积分交易类型 */
-export type CreditTransactionType = 'earn' | 'spend' | 'refund'
+/** 积分交易类型 (含冻结/解冻，与 D1 schema CHECK 一致) */
+export type CreditTransactionType = 'earn' | 'spend' | 'freeze' | 'unfreeze' | 'refund'
 
 /** 积分来源 */
-export type CreditSource = 'subscription' | 'topup' | 'bonus' | 'ai_call' | 'refund'
+export type CreditSource = 'subscription' | 'bonus' | 'ai_call' | 'refund'

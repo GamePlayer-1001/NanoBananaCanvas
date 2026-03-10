@@ -1,7 +1,7 @@
 -- ============================================
 --  Nano Banana Canvas — D1 Database Schema
 --  Engine: SQLite (Cloudflare D1)
---  Version: 2.0 (M8 + M7)
+--  Version: 2.1 (M8 + M7 — 套餐简化为 free/pro)
 -- ============================================
 
 PRAGMA foreign_keys = ON;
@@ -154,8 +154,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   user_id               TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   stripe_subscription_id TEXT,
   stripe_customer_id    TEXT,
-  plan                  TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free','standard','pro','ultimate')),
-  billing_period        TEXT DEFAULT 'monthly' CHECK(billing_period IN ('monthly','yearly')),
+  plan                  TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free','pro')),
+  billing_period        TEXT DEFAULT 'monthly' CHECK(billing_period IN ('weekly','monthly','yearly')),
   status                TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','canceled','past_due','trialing')),
   current_period_start  TEXT,
   current_period_end    TEXT,
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS model_pricing (
   category          TEXT NOT NULL CHECK(category IN ('text','image','video','audio')),
   credits_per_call  INTEGER NOT NULL,
   tier              TEXT NOT NULL DEFAULT 'basic' CHECK(tier IN ('basic','standard','premium','flagship')),
-  min_plan          TEXT NOT NULL DEFAULT 'free' CHECK(min_plan IN ('free','standard','pro','ultimate')),
+  min_plan          TEXT NOT NULL DEFAULT 'free' CHECK(min_plan IN ('free','pro')),
   is_active         INTEGER NOT NULL DEFAULT 1,
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
@@ -186,20 +186,15 @@ CREATE TABLE IF NOT EXISTS model_pricing (
 
 CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
 
--- ── CREDIT-005: credit_packages ───────────────
--- 积分包配置 (一次性购买, 多货币由 Stripe Price 自动处理)
-CREATE TABLE IF NOT EXISTS credit_packages (
-  id                  TEXT PRIMARY KEY,
-  name                TEXT NOT NULL,
-  credits             INTEGER NOT NULL,
-  price_cents         INTEGER NOT NULL,
-  bonus_credits       INTEGER NOT NULL DEFAULT 0,
-  stripe_price_id     TEXT,
-  is_active           INTEGER NOT NULL DEFAULT 1,
-  sort_order          INTEGER NOT NULL DEFAULT 0,
-  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+-- ── STRIPE-IDEMPOTENCY: processed_stripe_events ──
+-- Webhook 幂等性: 防止 Stripe 事件重放导致积分重复充值
+CREATE TABLE IF NOT EXISTS processed_stripe_events (
+  event_id            TEXT PRIMARY KEY,
+  event_type          TEXT NOT NULL,
+  processed_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_stripe_events_processed ON processed_stripe_events(processed_at);
 
 -- ── user_api_keys ─────────────────────────────
 -- 用户 API Key 加密存储 (AES-256-GCM)

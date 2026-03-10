@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 stripe SDK，依赖 @opennextjs/cloudflare，依赖 @/lib/db，依赖 @/lib/nanoid
- * [OUTPUT]: 对外提供 getStripe / getOrCreateCustomer / getMonthlyPrice / PLAN_CREDITS / STRIPE_PRODUCT_ID
+ * [OUTPUT]: 对外提供 getStripe / getOrCreateCustomer / getPrices / PLAN_CREDITS / STRIPE_PRODUCT_ID
  * [POS]: lib 的 Stripe 客户端初始化 + 套餐配置，被 billing API 路由消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -51,13 +51,11 @@ export const PLAN_ORDER = Object.keys(PLANS) as PlanType[]
 /** 当前唯一订阅产品 ID */
 export const STRIPE_PRODUCT_ID = 'prod_U7CZXZOYuOngZb'
 
-/** 动态获取产品的月付 Price (从 Stripe API，无需 env var) */
-export async function getMonthlyPrice(productId: string): Promise<Stripe.Price> {
+/** 获取产品的所有 active Price (weekly/monthly/yearly) */
+export async function getPrices(productId: string): Promise<Stripe.Price[]> {
   const stripe = await getStripe()
-  const prices = await stripe.prices.list({ product: productId, active: true, limit: 10 })
-  const monthly = prices.data.find((p) => p.recurring?.interval === 'month')
-  if (!monthly) throw new Error(`No active monthly price for product ${productId}`)
-  return monthly
+  const prices = await stripe.prices.list({ product: productId, active: true, limit: 20 })
+  return prices.data
 }
 
 /** 获取 Webhook Secret */

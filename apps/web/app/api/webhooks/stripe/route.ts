@@ -7,7 +7,7 @@
 
 import type Stripe from 'stripe'
 
-import { addCredits, resetMonthlyCredits } from '@/lib/credits'
+import { resetMonthlyCredits } from '@/lib/credits'
 import { getDb } from '@/lib/db'
 import { createLogger } from '@/lib/logger'
 import { getStripe, getWebhookSecret, PLAN_CREDITS } from '@/lib/stripe'
@@ -41,6 +41,17 @@ export async function POST(req: Request) {
 
   const db = await getDb()
 
+  // 幂等性: 防止事件重放导致重复处理
+  const already = await db
+    .prepare('SELECT 1 FROM processed_stripe_events WHERE event_id = ?')
+    .bind(event.id)
+    .first()
+
+  if (already) {
+    log.info('Duplicate webhook event, skipping', { eventId: event.id })
+    return new Response('ok', { status: 200 })
+  }
+
   switch (event.type) {
     case 'checkout.session.completed':
       await handleCheckoutCompleted(db, event.data.object as Stripe.Checkout.Session)
@@ -62,6 +73,12 @@ export async function POST(req: Request) {
       log.info('Unhandled webhook event', { type: event.type })
   }
 
+  // 标记事件已处理
+  await db
+    .prepare('INSERT OR IGNORE INTO processed_stripe_events (event_id, event_type) VALUES (?, ?)')
+    .bind(event.id, event.type)
+    .run()
+
   return new Response('ok', { status: 200 })
 }
 
@@ -69,72 +86,43 @@ export async function POST(req: Request) {
 
 async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId
-  const type = session.metadata?.type
   if (!userId) return
 
-  if (type === 'subscription') {
-    const plan = session.metadata?.plan ?? 'standard'
-    const billingPeriod = session.metadata?.billingPeriod ?? 'monthly'
-    const credits = PLAN_CREDITS[plan] ?? 200
+  const plan = session.metadata?.plan ?? 'pro'
+  const billingPeriod = session.metadata?.billingPeriod ?? 'monthly'
+  const credits = PLAN_CREDITS[plan] ?? 200
 
-    // 更新订阅记录
-    await db
-      .prepare(
-        `UPDATE subscriptions
-         SET stripe_subscription_id = ?,
-             plan = ?, billing_period = ?, status = 'active',
-             monthly_credits = ?,
-             current_period_start = datetime('now'),
-             cancel_at_period_end = 0,
-             updated_at = datetime('now')
-         WHERE user_id = ?`,
-      )
-      .bind(
-        session.subscription as string,
-        plan,
-        billingPeriod,
-        credits,
-        userId,
-      )
-      .run()
+  // 更新订阅记录
+  await db
+    .prepare(
+      `UPDATE subscriptions
+       SET stripe_subscription_id = ?,
+           plan = ?, billing_period = ?, status = 'active',
+           monthly_credits = ?,
+           current_period_start = datetime('now'),
+           cancel_at_period_end = 0,
+           updated_at = datetime('now')
+       WHERE user_id = ?`,
+    )
+    .bind(
+      session.subscription as string,
+      plan,
+      billingPeriod,
+      credits,
+      userId,
+    )
+    .run()
 
-    // 更新 users.plan
-    await db
-      .prepare("UPDATE users SET plan = ?, updated_at = datetime('now') WHERE id = ?")
-      .bind(plan, userId)
-      .run()
+  // 更新 users.plan
+  await db
+    .prepare("UPDATE users SET plan = ?, updated_at = datetime('now') WHERE id = ?")
+    .bind(plan, userId)
+    .run()
 
-    // 充值首月积分
-    await resetMonthlyCredits(db, userId, credits)
+  // 充值首月积分
+  await resetMonthlyCredits(db, userId, credits)
 
-    log.info('Subscription created', { userId, plan, credits })
-  } else if (type === 'topup') {
-    const packageId = session.metadata?.packageId
-    if (!packageId) {
-      log.error('Missing packageId in topup webhook', { sessionId: session.id })
-      return
-    }
-
-    // 从 DB 查询真实积分数，不信任 metadata.credits
-    const pkg = await db
-      .prepare(
-        'SELECT credits, bonus_credits FROM credit_packages WHERE id = ? AND is_active = 1',
-      )
-      .bind(packageId)
-      .first<{ credits: number; bonus_credits: number }>()
-
-    if (!pkg) {
-      log.error('Package not found in topup webhook', { packageId })
-      return
-    }
-
-    const credits = pkg.credits + pkg.bonus_credits
-
-    if (credits > 0) {
-      await addCredits(db, userId, credits, 'permanent', 'topup_purchase', packageId)
-      log.info('Topup completed', { userId, credits, packageId })
-    }
-  }
+  log.info('Subscription created', { userId, plan, credits })
 }
 
 async function handleInvoicePaid(db: D1Database, invoice: Stripe.Invoice) {

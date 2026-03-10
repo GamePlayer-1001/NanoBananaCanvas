@@ -7,9 +7,9 @@ D1 数据库 Schema 与种子数据
 ## 成员清单
 
 ```
-schema.sql       — D1 完整 Schema (14 表 + 索引: M8 基础 7 表 + M7 积分/支付 7 表)
+schema.sql       — D1 完整 Schema (13 表 + 索引: M8 基础 7 表 + M7 积分/支付 5 表 + Stripe 幂等性表)
 seed.sql         — 分类种子数据 (8 个 AI 工作流分类，双语 name_en/name_zh)
-seed-pricing.sql — 模型定价 (19 模型) + 积分包 (4 档) 种子数据
+seed-pricing.sql — 模型定价 (19 模型) 种子数据
 ```
 
 ## 设计决策

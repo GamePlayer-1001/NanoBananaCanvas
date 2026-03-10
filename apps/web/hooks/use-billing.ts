@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useSubscription / usePackages / usePlans / useCheckout / usePortal / useCancelSubscription / useTransactions / useTopup
+ * [OUTPUT]: 对外提供 useSubscription / usePlans / useCheckout / usePortal / useCancelSubscription / useTransactions
  * [POS]: hooks 的账单数据层，被 profile/billing 页面消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -13,13 +13,16 @@ import { queryKeys } from '@/lib/query/keys'
 
 /* ─── Types ──────────────────────────────────────────── */
 
-export interface StripePlan {
-  id: string
-  name: string
+export interface StripePriceEntry {
   priceId: string
+  interval: string
   unitAmount: number
   currency: string
-  interval: string
+}
+
+export interface PlansResponse {
+  productName: string
+  plans: StripePriceEntry[]
 }
 
 /* ─── Fetcher ────────────────────────────────────────── */
@@ -43,19 +46,12 @@ export function useSubscription() {
   })
 }
 
-export function usePackages() {
-  return useQuery({
-    queryKey: queryKeys.billing.packages(),
-    queryFn: () => fetchJson('/api/billing/packages'),
-  })
-}
-
-/** 从 Stripe 动态拉取当前产品定价 */
+/** 从 Stripe 动态拉取当前产品全部定价 (weekly/monthly/yearly) */
 export function usePlans() {
   return useQuery({
     queryKey: queryKeys.billing.plans(),
-    queryFn: () => fetchJson<{ plan: StripePlan }>('/api/billing/plans'),
-    staleTime: 5 * 60 * 1000, // 5 分钟缓存，减少 Stripe API 调用
+    queryFn: () => fetchJson<PlansResponse>('/api/billing/plans'),
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -106,15 +102,3 @@ export function useTransactions() {
   })
 }
 
-export function useTopup() {
-  return useMutation({
-    mutationFn: async (input: { packageId: string }) => {
-      const data = await fetchJson<{ url: string }>('/api/billing/topup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      })
-      window.location.href = data.url
-    },
-  })
-}

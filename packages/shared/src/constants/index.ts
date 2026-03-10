@@ -1,11 +1,11 @@
 /**
- * [INPUT]: 依赖 ../types 的 PlanType
- * [OUTPUT]: 对外提供套餐配置等共享常量
+ * [INPUT]: 依赖 ../types 的 PlanType, BillingPeriod
+ * [OUTPUT]: 对外提供套餐配置、定价、Locale 等共享常量
  * [POS]: packages/shared/constants 的入口桶文件
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import type { PlanType } from '../types'
+import type { BillingPeriod, PlanType } from '../types'
 
 /* ============================================ */
 /*  Plan Configuration                          */
@@ -39,6 +39,16 @@ export const PLANS: Record<PlanType, PlanConfig> = {
     popular: true,
     features: ['feature_basic', 'feature_community', 'feature_export', 'feature_priority', 'feature_history', 'feature_api', 'feature_team'],
   },
+}
+
+/* ============================================ */
+/*  Pricing (USD cents)                         */
+/* ============================================ */
+
+export const PRO_PRICING: Record<BillingPeriod, number> = {
+  weekly: 999,
+  monthly: 2999,
+  yearly: 9999,
 }
 
 /* ============================================ */
