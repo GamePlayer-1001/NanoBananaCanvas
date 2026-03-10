@@ -25,7 +25,11 @@
     "workflowsTitle": "Workflows",
     "workflowsDescription": "Browse and search community AI workflows by category.",
     "workspaceTitle": "Workspace",
-    "workspaceDescription": "Your personal AI workflow workspace. Create, edit, and manage projects."
+    "workspaceDescription": "Your personal AI workflow workspace. Create, edit, and manage projects.",
+    "videoAnalysisTitle": "Video Analysis",
+    "videoAnalysisDescription": "Upload videos and analyze them with AI models. Extract storyboards, scripts, and insights.",
+    "elementsTitle": "Elements",
+    "elementsDescription": "Browse and use pre-built elements for your AI workflows."
   },
   "notFound": {
     "title": "404",

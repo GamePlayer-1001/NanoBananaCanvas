@@ -417,11 +417,19 @@ export async function unfreezeStaleCredits(
 
   if (!staleFreezes.results || staleFreezes.results.length === 0) return 0
 
+  // 查询当前可用余额基线，累加计算每次解冻后的 balance_after
+  const currentBalance = await db
+    .prepare('SELECT monthly_balance, permanent_balance FROM credit_balances WHERE user_id = ?')
+    .bind(userId)
+    .first<{ monthly_balance: number; permanent_balance: number }>()
+
+  let runningAvailable = (currentBalance?.monthly_balance ?? 0) + (currentBalance?.permanent_balance ?? 0)
   let totalUnfrozen = 0
 
   for (const freeze of staleFreezes.results) {
     const txId = nanoid()
     const balanceField = freeze.pool === 'monthly' ? 'monthly_balance' : 'permanent_balance'
+    const balanceAfter = runningAvailable + freeze.amount
 
     await db.batch([
       db
@@ -436,12 +444,13 @@ export async function unfreezeStaleCredits(
       db
         .prepare(
           `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, reference_id, description)
-           VALUES (?, ?, 'unfreeze', ?, ?, 0, 'stale_cleanup', ?, ?)`,
+           VALUES (?, ?, 'unfreeze', ?, ?, ?, 'stale_cleanup', ?, ?)`,
         )
-        .bind(txId, userId, freeze.pool, freeze.amount, freeze.id,
+        .bind(txId, userId, freeze.pool, freeze.amount, balanceAfter, freeze.id,
           `Auto-unfreeze stale ${freeze.amount} credits after ${FREEZE_TTL_MINUTES}min timeout`),
     ])
 
+    runningAvailable = balanceAfter
     totalUnfrozen += freeze.amount
   }
 

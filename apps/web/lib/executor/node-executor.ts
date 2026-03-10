@@ -115,7 +115,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
       onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
     })
   } else {
-    result = await openRouter.chat({
+    const chatResult = await openRouter.chat({
       model,
       messages,
       temperature,
@@ -123,6 +123,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
       apiKey,
       signal,
     })
+    result = chatResult.content
   }
 
   // 检查是否被中断

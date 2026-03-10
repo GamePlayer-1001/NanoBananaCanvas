@@ -11,6 +11,7 @@ errors.ts    — AppError 统一错误类型体系 (NetworkError/AuthError/AISer
 logger.ts    — 轻量级日志工具 (开发彩色终端/生产结构化 JSON)
 utils.ts     — cn() 样式合并工具 (shadcn 管理)
 db.ts        — D1 数据库访问入口 (getDb → getCloudflareContext)
+env.ts       — 统一环境变量获取入口 (getEnv/requireEnv → getCloudflareContext，消除 process.env 混用)
 r2.ts        — R2 对象存储访问入口 (getR2 → getCloudflareContext)
 nanoid.ts    — 零依赖 ID 生成器 (CF Workers 兼容)
 stripe.ts            — Stripe SDK 客户端 (getStripe/getOrCreateCustomer/PLAN_CREDITS)

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/nanoid, @/lib/validations/ai
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env, @/lib/nanoid, @/lib/validations/ai
  * [OUTPUT]: 对外提供 GET (列表) / PUT (创建/更新) /api/settings/api-keys
  * [POS]: api/settings 的 API Key 管理端点，支持掩码列表 + 加密存储
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +9,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { encryptApiKey, maskApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
+import { requireEnv } from '@/lib/env'
 import { nanoid } from '@/lib/nanoid'
 import { apiKeySchema } from '@/lib/validations/ai'
 
@@ -59,8 +60,7 @@ export async function PUT(req: Request) {
 
     const { apiKey, label } = apiKeySchema.parse(body)
 
-    const encryptionKey = process.env.ENCRYPTION_KEY
-    if (!encryptionKey) throw new Error('ENCRYPTION_KEY not configured')
+    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
 
     const encrypted = await encryptApiKey(apiKey, encryptionKey)
 

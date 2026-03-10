@@ -1,26 +1,19 @@
 /**
- * [INPUT]: 依赖 stripe SDK，依赖 @opennextjs/cloudflare，依赖 @/lib/db，依赖 @/lib/nanoid
+ * [INPUT]: 依赖 stripe SDK，依赖 @/lib/env，依赖 @/lib/nanoid
  * [OUTPUT]: 对外提供 getStripe / getOrCreateCustomer / getPrices / PLAN_CREDITS / STRIPE_PRODUCT_ID
  * [POS]: lib 的 Stripe 客户端初始化 + 套餐配置，被 billing API 路由消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import Stripe from 'stripe'
-import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 import { PLANS } from '@nano-banana/shared/constants'
 import type { PlanType } from '@nano-banana/shared/types'
+import { getEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 
 const log = createLogger('Stripe')
-
-/* ─── Env Helper ──────────────────────────────────────── */
-
-async function getEnv(key: string): Promise<string | undefined> {
-  const { env } = await getCloudflareContext()
-  return (env as unknown as Record<string, string>)[key]
-}
 
 /* ─── Stripe Client ──────────────────────────────────── */
 

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/credits, @/lib/db, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/credits, @/lib/db, @/lib/env, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/stream (双模式 SSE 流式 AI 执行)
  * [POS]: api/ai 的流式端点，冻结在流开始前，确认扣费在流结束后
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -17,6 +17,7 @@ import {
   refundCredits,
 } from '@/lib/credits'
 import { getDb } from '@/lib/db'
+import { getEnv, requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import { aiExecuteSchema } from '@/lib/validations/ai'
@@ -66,8 +67,7 @@ export async function POST(req: Request) {
         return handleApiError(new Error(`No API key for provider: ${params.provider}`))
       }
 
-      const encryptionKey = process.env.ENCRYPTION_KEY
-      if (!encryptionKey) throw new Error('ENCRYPTION_KEY not configured')
+      const encryptionKey = await requireEnv('ENCRYPTION_KEY')
       apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
     } else {
       // 积分模式
@@ -77,8 +77,7 @@ export async function POST(req: Request) {
 
       freezeTxId = await freezeCredits(db, userId, creditsToCharge)
 
-      apiKey = process.env.OPENROUTER_API_KEY ?? ''
-      if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured')
+      apiKey = await requireEnv('OPENROUTER_API_KEY')
     }
 
     // 发起流式请求
@@ -87,7 +86,7 @@ export async function POST(req: Request) {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? '',
+        'HTTP-Referer': (await getEnv('NEXT_PUBLIC_APP_URL')) ?? '',
         'X-Title': 'Nano Banana Canvas',
       },
       body: JSON.stringify({

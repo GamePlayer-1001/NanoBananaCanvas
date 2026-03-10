@@ -46,6 +46,17 @@ export interface StreamChunk {
   }[]
 }
 
+/* ─── Chat Result ──────────────────────────────────────── */
+
+export interface ChatResult {
+  content: string
+  usage?: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
+}
+
 /* ─── Chat Params (internal convenience) ─────────────── */
 
 export interface ChatParams {

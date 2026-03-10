@@ -18,7 +18,6 @@ export interface Workflow {
   isPublic: boolean
   createdAt: string
   updatedAt: string
-  authorId: string
 }
 
 export interface WorkflowData {

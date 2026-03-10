@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/services/ai/openrouter
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env, @/services/ai/openrouter
  * [OUTPUT]: 对外提供 DELETE (删除) / POST (测试) /api/settings/api-keys/[provider]
  * [POS]: api/settings 的 API Key 单项操作端点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +9,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
+import { requireEnv } from '@/lib/env'
 import { openRouter } from '@/services/ai/openrouter'
 
 type Params = { params: Promise<{ provider: string }> }
@@ -55,8 +56,7 @@ export async function POST(_req: Request, { params }: Params) {
       return apiError('NOT_FOUND', `No API key found for provider: ${provider}`, 404)
     }
 
-    const encryptionKey = process.env.ENCRYPTION_KEY
-    if (!encryptionKey) throw new Error('ENCRYPTION_KEY not configured')
+    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
 
     const apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
 

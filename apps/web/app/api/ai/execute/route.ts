@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/credits, @/lib/db,
- *          @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
+ *          @/lib/env, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/execute (双模式 AI 执行)
  * [POS]: api/ai 的核心执行端点，实现积分模式 (freeze→call→confirm/refund) 和 Key 模式
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -18,6 +18,7 @@ import {
   refundCredits,
 } from '@/lib/credits'
 import { getDb } from '@/lib/db'
+import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import { openRouter } from '@/services/ai/openrouter'
@@ -75,10 +76,9 @@ async function executeWithCredits(
 
   try {
     // 使用平台 Key 调用 AI
-    const platformKey = process.env.OPENROUTER_API_KEY
-    if (!platformKey) throw new Error('OPENROUTER_API_KEY not configured')
+    const platformKey = await requireEnv('OPENROUTER_API_KEY')
 
-    const result = await openRouter.chat({
+    const chatResult = await openRouter.chat({
       model: params.modelId,
       messages: params.messages,
       temperature: params.temperature ?? 0.7,
@@ -98,11 +98,13 @@ async function executeWithCredits(
       modelId: params.modelId,
       executionMode: 'credits',
       creditsCharged: pricing.creditsPerCall,
+      inputTokens: chatResult.usage?.promptTokens ?? null,
+      outputTokens: chatResult.usage?.completionTokens ?? null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
 
-    return apiOk({ result, creditsCharged: pricing.creditsPerCall })
+    return apiOk({ result: chatResult.content, creditsCharged: pricing.creditsPerCall })
   } catch (error) {
     // 退还冻结积分
     await refundCredits(db, userId, freezeTxId)
@@ -148,13 +150,12 @@ async function executeWithUserKey(
     )
   }
 
-  const encryptionKey = process.env.ENCRYPTION_KEY
-  if (!encryptionKey) throw new Error('ENCRYPTION_KEY not configured')
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
 
   const apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
 
   try {
-    const result = await openRouter.chat({
+    const chatResult = await openRouter.chat({
       model: params.modelId,
       messages: params.messages,
       temperature: params.temperature ?? 0.7,
@@ -177,11 +178,13 @@ async function executeWithUserKey(
       modelId: params.modelId,
       executionMode: 'user_key',
       creditsCharged: 0,
+      inputTokens: chatResult.usage?.promptTokens ?? null,
+      outputTokens: chatResult.usage?.completionTokens ?? null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
 
-    return apiOk({ result, creditsCharged: 0 })
+    return apiOk({ result: chatResult.content, creditsCharged: 0 })
   } catch (error) {
     await writeUsageLog(db, {
       userId,
@@ -210,6 +213,8 @@ interface UsageLogParams {
   modelId: string
   executionMode: string
   creditsCharged: number
+  inputTokens?: number | null
+  outputTokens?: number | null
   durationMs: number
   status: string
   errorMessage?: string
@@ -220,8 +225,8 @@ async function writeUsageLog(db: D1Database, params: UsageLogParams) {
     await db
       .prepare(
         `INSERT INTO ai_usage_logs (id, user_id, workflow_id, node_id, provider, model_id,
-         execution_mode, credits_charged, duration_ms, status, error_message)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         execution_mode, credits_charged, input_tokens, output_tokens, duration_ms, status, error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -232,6 +237,8 @@ async function writeUsageLog(db: D1Database, params: UsageLogParams) {
         params.modelId,
         params.executionMode,
         params.creditsCharged,
+        params.inputTokens ?? null,
+        params.outputTokens ?? null,
         params.durationMs,
         params.status,
         params.errorMessage ?? null,

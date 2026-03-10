@@ -25,7 +25,11 @@
     "workflowsTitle": "工作流",
     "workflowsDescription": "按分类浏览和搜索社区 AI 工作流。",
     "workspaceTitle": "工作区",
-    "workspaceDescription": "你的个人 AI 工作流空间。创建、编辑和管理项目。"
+    "workspaceDescription": "你的个人 AI 工作流空间。创建、编辑和管理项目。",
+    "videoAnalysisTitle": "视频分析",
+    "videoAnalysisDescription": "上传视频并使用 AI 模型进行分析。提取分镜、剧本和洞察。",
+    "elementsTitle": "元素库",
+    "elementsDescription": "浏览和使用预构建的 AI 工作流元素。"
   },
   "notFound": {
     "title": "404",

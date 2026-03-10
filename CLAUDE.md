@@ -76,10 +76,12 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ## 环境模式
 
-> **当前状态: Development / Test Mode**
+> **当前状态: 混合模式 (基础设施生产级 + 认证/支付测试级)**
 >
-> Stripe 和 Clerk 均使用开发者模式密钥。域名已部署到生产环境 (nanobananacanvas.com)，
-> 但支付和认证走测试通道。等有真实用户时再迁移到 Production Mode。
-> 迁移步骤详见 `.md/生产环境迁移清单.md`。
+> - **基础设施**: D1 数据库、R2 存储、域名路由均已指向生产环境 (nanobananacanvas.com)
+> - **认证**: Clerk 使用测试密钥 (pk_test_/sk_test_)，功能完整但数据不迁移
+> - **支付**: Stripe 使用测试密钥，可完整模拟支付流程
+> - **环境变量**: 统一通过 `lib/env.ts` (getEnv/requireEnv) 获取，底层走 getCloudflareContext()
+> - **迁移**: 有真实用户时切换 Clerk/Stripe 生产密钥，详见 `.md/生产环境迁移清单.md`
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

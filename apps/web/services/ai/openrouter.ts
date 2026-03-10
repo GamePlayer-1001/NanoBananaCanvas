@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/errors 的 AIServiceError/ErrorCode，依赖 @/lib/logger 的 createLogger
- * [OUTPUT]: 对外提供 OpenRouterClient 类 (chat / chatStream / validateKey)
+ * [OUTPUT]: 对外提供 OpenRouterClient 类 (chat→ChatResult / chatStream / validateKey)
  * [POS]: services/ai 的核心 API 客户端，被 LLMNode 执行引擎消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -11,6 +11,7 @@ import type {
   ChatParams,
   ChatRequest,
   ChatResponse,
+  ChatResult,
   ChatStreamParams,
   StreamChunk,
 } from './types'
@@ -32,7 +33,7 @@ const HEADERS_BASE = {
 export class OpenRouterClient {
   /* ── Single-shot chat ─────────────────────────────── */
 
-  async chat(params: ChatParams): Promise<string> {
+  async chat(params: ChatParams): Promise<ChatResult> {
     const { model, messages, temperature, maxTokens, apiKey, signal } = params
 
     const body: ChatRequest = {
@@ -57,7 +58,16 @@ export class OpenRouterClient {
 
     const content = data.choices[0].message.content
     log.debug('Chat response', { model, length: content.length })
-    return content
+    return {
+      content,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            completionTokens: data.usage.completion_tokens,
+            totalTokens: data.usage.total_tokens,
+          }
+        : undefined,
+    }
   }
 
   /* ── Streaming chat ───────────────────────────────── */
