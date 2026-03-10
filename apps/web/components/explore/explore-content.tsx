@@ -45,6 +45,7 @@ interface ExploreApiItem {
   category_id?: string
   author_name: string
   author_avatar?: string
+  node_types?: string
 }
 
 interface ExploreApiResponse {
@@ -63,6 +64,7 @@ function toVideoCard(item: ExploreApiItem): VideoCardData {
     },
     views: item.view_count,
     createdAt: item.published_at,
+    nodeTypes: item.node_types?.split(',').filter(Boolean),
   }
 }
 

@@ -1,16 +1,15 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 setRequestLocale，
- *          依赖 @/components/landing/hero-section, cta-section，
+ *          依赖 @/components/landing/hero-section，
  *          依赖 @/components/layout/landing-footer
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，SSG 渲染
+ * [POS]: (landing) 路由组的首页，SSG 渲染，极简结构: Hero Canvas + Footer
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { CtaSection } from '@/components/landing/cta-section'
 import { HeroSection } from '@/components/landing/hero-section'
 import { LandingFooter } from '@/components/layout/landing-footer'
 
@@ -87,7 +86,6 @@ export default async function LandingPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <HeroSection />
-      <CtaSection />
       <LandingFooter />
     </main>
   )

@@ -46,7 +46,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 ## 前端页面路由
 
 ```
-[locale]/(landing)/           — Landing Page (Hero + CTA + Footer)
+[locale]/(landing)/           — Landing Page (交互式 Hero Canvas + Footer)
 [locale]/(auth)/sign-in       — 分屏登录页 (左玫瑰图 + 右 Clerk 卡片)
 [locale]/(auth)/sign-up       — 分屏注册页
 [locale]/(app)/explore        — 社区广场 (视频卡片网格 + 标签筛选)
@@ -61,11 +61,21 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 - **Monorepo**: pnpm workspace + Turborepo
 - **路由**: `[locale]/(landing|auth|app)` 三路由组
+- **Landing**: Hero 交互式画板 (可拖动节点 + SVG 连线) + Footer
 - **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
 - **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (Web + Worker)
 - **域名**: nanobananacanvas.com → Cloudflare Workers (wrangler routes)
+- **监控**: Cloudflare Analytics (零成本, Workers 内置)
+
+## 环境模式
+
+> **当前状态: Development / Test Mode**
+>
+> Stripe 和 Clerk 均使用开发者模式密钥。域名已部署到生产环境 (nanobananacanvas.com)，
+> 但支付和认证走测试通道。等有真实用户时再迁移到 Production Mode。
+> 迁移步骤详见 `.md/生产环境迁移清单.md`。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

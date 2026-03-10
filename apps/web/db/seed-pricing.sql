@@ -37,15 +37,15 @@ INSERT OR IGNORE INTO model_pricing (id, provider, model_id, model_name, categor
   ('mp-301', 'openrouter', 'edge-tts/standard',            'Edge TTS',           'audio', 5,  'basic',    'free'),
   ('mp-302', 'openrouter', 'elevenlabs/multilingual-v2',   'ElevenLabs V2',      'audio', 15, 'premium',  'standard');
 
--- ── 积分包 (双币种 USD/CNY) ──────────────────
+-- ── 积分包 (多货币由 Stripe Price 自动处理) ──────
 -- NOTE: stripe_price_id 需要在 Stripe Dashboard 创建 one-time Price 后回填
 -- 未配置时 POST /api/billing/topup 返回 400 (by design)
 
-INSERT OR IGNORE INTO credit_packages (id, name, credits, price_cents, price_cents_cny, bonus_credits, sort_order) VALUES
-  ('pack-500',  'Starter',    500,  500,  1900,  0,    1),
-  ('pack-1200', 'Popular',    1200, 1000, 3500,  200,  2),
-  ('pack-3500', 'Power',      3500, 2500, 8900,  1000, 3),
-  ('pack-8000', 'Ultimate',   8000, 5000, 17900, 3000, 4);
+INSERT OR IGNORE INTO credit_packages (id, name, credits, price_cents, bonus_credits, sort_order) VALUES
+  ('pack-500',  'Starter',    500,  500,  0,    1),
+  ('pack-1200', 'Popular',    1200, 1000, 200,  2),
+  ('pack-3500', 'Power',      3500, 2500, 1000, 3),
+  ('pack-8000', 'Ultimate',   8000, 5000, 3000, 4);
 
 -- ── 部署后: 配置 Stripe Price ID ─────────────
 -- 在 Stripe Dashboard 创建 4 个 one-time Price 后执行:

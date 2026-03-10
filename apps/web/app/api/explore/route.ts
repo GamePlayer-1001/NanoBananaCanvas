@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/validations/explore
- * [OUTPUT]: 对外提供 GET /api/explore
- * [POS]: api/explore 的广场列表端点，查询公开工作流并标记互动状态
+ * [OUTPUT]: 对外提供 GET /api/explore (含 node_types 字段)
+ * [POS]: api/explore 的广场列表端点，查询公开工作流并标记互动状态，提取节点类型
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -64,7 +64,9 @@ export async function GET(req: NextRequest) {
       .prepare(
         `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
                 w.view_count, w.published_at, w.category_id,
-                u.name as author_name, u.avatar_url as author_avatar
+                u.name as author_name, u.avatar_url as author_avatar,
+                (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
+                 FROM json_each(json_extract(w.data, '$.nodes')) j) as node_types
          FROM workflows w
          JOIN users u ON u.id = w.user_id
          WHERE ${where}

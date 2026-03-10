@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/hooks/use-user 的 useCreditsBalance，
- *          依赖 ./payment-history, ./topup-dialog
- * [OUTPUT]: 对外提供 BillingTab 账单面板 (积分余额 + 充值 + 交易历史)
+ *          依赖 ./payment-history, ./topup-dialog, ./usage-chart
+ * [OUTPUT]: 对外提供 BillingTab 账单面板 (积分余额 + 使用统计 + 充值 + 交易历史)
  * [POS]: profile 的账单 Tab，被 profile-modal.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -15,6 +15,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { useCreditsBalance } from '@/hooks/use-user'
 import { PaymentHistory } from './payment-history'
 import { TopupDialog } from './topup-dialog'
+import { UsageChart } from './usage-chart'
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -48,6 +49,9 @@ export function BillingTab() {
           </button>
         </div>
       </div>
+
+      {/* 使用统计图表 */}
+      <UsageChart />
 
       {/* 交易历史 */}
       <div>

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next/image (可选)，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用视频卡片组件
+ * [OUTPUT]: 对外提供 VideoCard 可复用视频卡片组件 (含节点类型 Badge)
  * [POS]: shared 的通用视频卡，被 explore/workspace 页面消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -22,6 +22,7 @@ export interface VideoCardData {
   }
   views?: number
   createdAt?: string
+  nodeTypes?: string[]
 }
 
 /* ─── Helpers ────────────────────────────────────────── */
@@ -56,6 +57,20 @@ export function VideoCard({ data }: { data: VideoCardData }) {
           <span className="absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
             {data.duration}
           </span>
+        )}
+
+        {/* 节点类型标签 */}
+        {data.nodeTypes && data.nodeTypes.length > 0 && (
+          <div className="absolute bottom-1.5 left-1.5 flex flex-wrap gap-1">
+            {data.nodeTypes.slice(0, 3).map((t) => (
+              <span
+                key={t}
+                className="rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white/90 backdrop-blur-sm"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
         )}
       </div>
 

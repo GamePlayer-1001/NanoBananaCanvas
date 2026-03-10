@@ -218,7 +218,8 @@
     "title": "My Works",
     "all": "All",
     "shared": "Published",
-    "empty": "No works yet"
+    "empty": "No works yet",
+    "favorites": "Favorites"
   },
   "notifications": {
     "title": "Notifications",
@@ -237,7 +238,11 @@
     "creditsLabel": "credits",
     "purchaseCredits": "Purchase Credits",
     "current": "Current",
-    "manageBilling": "Manage Billing"
+    "manageBilling": "Manage Billing",
+    "usageStats": "Usage Statistics",
+    "totalCalls": "Total Calls",
+    "creditsUsed": "Credits Used",
+    "successRate": "Success Rate"
   },
   "canvas": {
     "run": "Run",

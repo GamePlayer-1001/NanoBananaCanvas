@@ -218,7 +218,8 @@
     "title": "我的作品",
     "all": "全部",
     "shared": "已发布",
-    "empty": "还没有作品"
+    "empty": "还没有作品",
+    "favorites": "收藏"
   },
   "notifications": {
     "title": "通知",
@@ -237,7 +238,11 @@
     "creditsLabel": "积分",
     "purchaseCredits": "购买积分",
     "current": "当前",
-    "manageBilling": "管理账单"
+    "manageBilling": "管理账单",
+    "usageStats": "使用统计",
+    "totalCalls": "总调用",
+    "creditsUsed": "积分消耗",
+    "successRate": "成功率"
   },
   "canvas": {
     "run": "运行",

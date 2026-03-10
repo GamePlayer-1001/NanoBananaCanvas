@@ -46,5 +46,11 @@ blob-report/
 *.tokens.txt
 cloudflare-tokens.txt
 
+# Windows artifacts
+NUL
+
+# Debug logs
+tail_err.txt
+
 # Misc
 *.tsbuildinfo
