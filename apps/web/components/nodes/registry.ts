@@ -14,6 +14,8 @@ import { VideoGenNode } from './video-gen-node'
 import { AudioGenNode } from './audio-gen-node'
 import { NoteNode } from './note-node'
 import { GroupNode } from './group-node'
+import { ConditionalNode } from './conditional-node'
+import { LoopNode } from './loop-node'
 
 export const NODE_TYPES: NodeTypes = {
   'text-input': TextInputNode,
@@ -24,4 +26,6 @@ export const NODE_TYPES: NodeTypes = {
   'audio-gen': AudioGenNode,
   note: NoteNode,
   group: GroupNode,
+  conditional: ConditionalNode,
+  loop: LoopNode,
 }

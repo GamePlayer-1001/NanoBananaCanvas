@@ -44,6 +44,21 @@ export const NODE_PORT_TYPES: Record<string, { inputs: PortDefinition[]; outputs
     inputs: [{ id: 'text-in', label: 'Text', type: 'string', required: true }],
     outputs: [{ id: 'audio-out', label: 'Audio', type: 'audio' }],
   },
+  conditional: {
+    inputs: [{ id: 'value-in', label: 'Value', type: 'any', required: true }],
+    outputs: [
+      { id: 'true-out', label: 'True', type: 'any' },
+      { id: 'false-out', label: 'False', type: 'any' },
+    ],
+  },
+  loop: {
+    inputs: [{ id: 'items-in', label: 'Items', type: 'any', required: true }],
+    outputs: [
+      { id: 'item-out', label: 'Item', type: 'any' },
+      { id: 'index-out', label: 'Index', type: 'number' },
+      { id: 'results-out', label: 'Results', type: 'any' },
+    ],
+  },
 }
 
 /* ─── Helpers ─────────────────────────────────────────── */

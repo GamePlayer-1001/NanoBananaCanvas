@@ -281,7 +281,9 @@
     "videoGen": "Video Gen",
     "audioGen": "Audio Gen",
     "note": "Note",
-    "group": "Group"
+    "group": "Group",
+    "conditional": "Conditional",
+    "loop": "Loop"
   },
   "contextMenu": {
     "addTextInput": "Add Text Input",
@@ -292,6 +294,8 @@
     "addAudioGen": "Add Audio Gen",
     "addNote": "Add Note",
     "addGroup": "Add Group",
+    "addConditional": "Add Conditional",
+    "addLoop": "Add Loop",
     "duplicate": "Duplicate",
     "delete": "Delete"
   },
@@ -331,7 +335,12 @@
     "videoAspect": "Aspect Ratio",
     "videoMode": "Quality",
     "audioVoice": "Voice",
-    "audioSpeed": "Speed: {value}x"
+    "audioSpeed": "Speed: {value}x",
+    "conditionOperator": "Operator",
+    "conditionValue": "Compare Value",
+    "loopMode": "Mode",
+    "loopIterations": "Iterations",
+    "loopSeparator": "Separator"
   },
   "executor": {
     "workflowEmpty": "Workflow is empty",

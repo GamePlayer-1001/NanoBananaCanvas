@@ -57,6 +57,16 @@ const NODE_DEFAULTS: Record<string, NodeDefaults> = {
     category: 'transform',
     config: { bgColor: 'rgba(99,102,241,0.08)' },
   },
+  conditional: {
+    label: 'Conditional',
+    category: 'condition',
+    config: { operator: '==', compareValue: '' },
+  },
+  loop: {
+    label: 'Loop',
+    category: 'loop',
+    config: { mode: 'forEach', iterations: 3, separator: '\\n' },
+  },
 }
 
 /* ─── Factory ─────────────────────────────────────────── */

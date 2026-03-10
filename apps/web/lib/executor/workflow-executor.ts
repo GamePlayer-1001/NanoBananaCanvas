@@ -1,6 +1,5 @@
 /**
  * [INPUT]: 依赖 ./topological-sort 的排序能力，依赖 ./node-executor 的节点执行，
- *          依赖 @/stores/use-flow-store 和 @/stores/use-execution-store 的状态读写，
  *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
  * [OUTPUT]: 对外提供 WorkflowExecutor 类 (完整工作流执行编排)
  * [POS]: lib/executor 的顶层编排器，被 hooks/use-workflow-executor 消费
@@ -34,7 +33,7 @@ export interface ExecutionCallbacks {
 export class WorkflowExecutor {
   private abortController: AbortController | null = null
 
-  /* ── 全流程执行 (EXEC-005) ──────────────────────── */
+  /* ── 全流程执行 ──────────────────────────────────── */
 
   async execute(
     nodes: Node<WorkflowNodeData>[],
@@ -42,56 +41,53 @@ export class WorkflowExecutor {
     apiKey: string,
     callbacks: ExecutionCallbacks,
   ): Promise<void> {
-    /* ── 前置校验 ─────────────────────────────────── */
     if (nodes.length === 0) {
       callbacks.onError('Workflow is empty')
       return
     }
 
-    /* ── 中断控制器 (EXEC-007) ────────────────────── */
     this.abortController = new AbortController()
     const { signal } = this.abortController
 
-    /* ── 拓扑排序 (EXEC-001) ─────────────────────── */
+    /* ── 拓扑排序 ──────────────────────────────────── */
     let order: string[]
     try {
       order = topologicalSort(nodes, edges)
     } catch (err) {
-      const msg = isAppError(err) ? err.message : 'Failed to sort workflow'
-      callbacks.onError(msg)
+      callbacks.onError(isAppError(err) ? err.message : 'Failed to sort workflow')
       return
     }
 
     log.info('Execution plan', { order })
     callbacks.onStart(order)
 
-    /* ── 重置所有节点状态 ─────────────────────────── */
     for (const nodeId of order) {
       callbacks.updateNodeStatus(nodeId, 'idle')
     }
 
-    /* ── 节点结果缓存 (端口级) ────────────────────── */
+    /* ── 执行状态 ──────────────────────────────────── */
     const nodeOutputs: Record<string, Record<string, unknown>> = {}
+    const skippedNodes = new Set<string>()
 
-    /* ── 按拓扑序逐节点执行 ──────────────────────── */
+    /* ── 按拓扑序逐节点执行 ────────────────────────── */
     for (const nodeId of order) {
       if (signal.aborted) {
         callbacks.onError('Execution aborted')
         return
       }
 
+      /* 跳过被条件分支/循环标记的节点 */
+      if (skippedNodes.has(nodeId)) continue
+
       const node = nodes.find((n) => n.id === nodeId)
       if (!node) continue
 
-      /* ── 收集输入 (EXEC-003) ─────────────────── */
       const inputs = this.collectInputs(nodeId, edges, nodeOutputs)
 
-      /* ── 标记节点执行中 (EXEC-006) ───────────── */
       callbacks.onNodeStart(nodeId)
       callbacks.updateNodeStatus(nodeId, 'running')
 
       try {
-        /* ── 执行节点 (EXEC-004) ─────────────── */
         const result = await executeNode({
           nodeId,
           nodeType: node.type ?? 'unknown',
@@ -102,14 +98,27 @@ export class WorkflowExecutor {
           onStreamChunk: callbacks.onStreamChunk,
         })
 
-        /* ── 缓存输出 + 更新状态 ─────────────── */
         nodeOutputs[nodeId] = result.outputs
         callbacks.onNodeComplete(nodeId, result.outputs)
         callbacks.updateNodeStatus(nodeId, 'success')
 
+        /* ── 条件分支: 跳过 null 端口的独占下游 ── */
+        if (node.type === 'conditional') {
+          this.handleConditionalSkip(nodeId, result.outputs, edges, skippedNodes, callbacks)
+        }
+
+        /* ── 循环: 迭代执行 body 子图 ───────────── */
+        if (node.type === 'loop' && '__loop_items' in result.outputs) {
+          const items = result.outputs.__loop_items as unknown[]
+          const bodyResults = await this.executeLoopBody(
+            nodeId, items, nodes, edges, order, apiKey, signal, nodeOutputs, skippedNodes, callbacks,
+          )
+          nodeOutputs[nodeId] = { ...result.outputs, 'results-out': bodyResults }
+          callbacks.onNodeComplete(nodeId, nodeOutputs[nodeId])
+        }
+
         log.debug('Node completed', { nodeId, outputKeys: Object.keys(result.outputs) })
       } catch (err) {
-        /* ── 错误处理 (EXEC-008) ─────────────── */
         if (signal.aborted) {
           callbacks.updateNodeStatus(nodeId, 'error')
           callbacks.onError('Execution aborted')
@@ -121,8 +130,6 @@ export class WorkflowExecutor {
 
         callbacks.onNodeError(nodeId, errorMsg)
         callbacks.updateNodeStatus(nodeId, 'error')
-
-        // 标记下游节点为 skipped
         this.skipDownstream(nodeId, order, edges, callbacks)
 
         callbacks.onError(`Node "${(node.data as WorkflowNodeData).label}" failed: ${errorMsg}`)
@@ -130,13 +137,12 @@ export class WorkflowExecutor {
       }
     }
 
-    /* ── 执行完毕 ─────────────────────────────────── */
     callbacks.onComplete()
     this.abortController = null
     log.info('Execution completed successfully')
   }
 
-  /* ── 中断执行 (EXEC-007) ────────────────────────── */
+  /* ── 中断执行 ──────────────────────────────────────── */
 
   abort(): void {
     if (this.abortController) {
@@ -146,13 +152,11 @@ export class WorkflowExecutor {
     }
   }
 
-  /* ── 是否正在执行 ──────────────────────────────── */
-
   get isRunning(): boolean {
     return this.abortController !== null
   }
 
-  /* ── 输入收集 (EXEC-003) ────────────────────────── */
+  /* ── 输入收集 ──────────────────────────────────────── */
 
   private collectInputs(
     nodeId: string,
@@ -161,17 +165,13 @@ export class WorkflowExecutor {
   ): Record<string, unknown> {
     const inputs: Record<string, unknown> = {}
 
-    // 找到所有指向当前节点的边
-    const incomingEdges = edges.filter((e) => e.target === nodeId)
-
-    for (const edge of incomingEdges) {
+    for (const edge of edges) {
+      if (edge.target !== nodeId) continue
       const sourceOutputs = nodeOutputs[edge.source]
       if (!sourceOutputs) continue
 
-      // sourceHandle = 上游输出端口 ID, targetHandle = 当前输入端口 ID
       const sourcePort = edge.sourceHandle
       const targetPort = edge.targetHandle
-
       if (sourcePort && targetPort && sourcePort in sourceOutputs) {
         inputs[targetPort] = sourceOutputs[sourcePort]
       }
@@ -180,7 +180,183 @@ export class WorkflowExecutor {
     return inputs
   }
 
-  /* ── 标记下游节点跳过 ──────────────────────────── */
+  /* ── 条件分支: 跳过 null 端口的独占下游 ──────────── */
+
+  private handleConditionalSkip(
+    nodeId: string,
+    outputs: Record<string, unknown>,
+    edges: Edge[],
+    skippedNodes: Set<string>,
+    callbacks: ExecutionCallbacks,
+  ): void {
+    const nullPorts = Object.entries(outputs)
+      .filter(([, v]) => v === null)
+      .map(([port]) => port)
+
+    if (nullPorts.length === 0) return
+
+    /* 传播算法: 只跳过所有输入都来自 null 分支的节点 */
+    const toSkip = new Set<string>()
+    const queue: string[] = []
+
+    for (const edge of edges) {
+      if (edge.source === nodeId && nullPorts.includes(edge.sourceHandle ?? '')) {
+        queue.push(edge.target)
+      }
+    }
+
+    while (queue.length > 0) {
+      const candidate = queue.shift()!
+      if (toSkip.has(candidate)) continue
+
+      /* 检查: 该节点的所有输入是否都来自 null 分支或已跳过的节点 */
+      const incoming = edges.filter((e) => e.target === candidate)
+      const allFromNull = incoming.every((e) => {
+        if (e.source === nodeId) return nullPorts.includes(e.sourceHandle ?? '')
+        return toSkip.has(e.source)
+      })
+
+      if (!allFromNull) continue
+
+      toSkip.add(candidate)
+      skippedNodes.add(candidate)
+      callbacks.updateNodeStatus(candidate, 'skipped')
+
+      for (const edge of edges) {
+        if (edge.source === candidate && !toSkip.has(edge.target)) {
+          queue.push(edge.target)
+        }
+      }
+    }
+
+    log.debug('Conditional skip', { nodeId, nullPorts, skipped: [...toSkip] })
+  }
+
+  /* ── 循环: 迭代执行 body 子图 ──────────────────── */
+
+  private async executeLoopBody(
+    loopNodeId: string,
+    items: unknown[],
+    nodes: Node<WorkflowNodeData>[],
+    edges: Edge[],
+    order: string[],
+    apiKey: string,
+    signal: AbortSignal,
+    nodeOutputs: Record<string, Record<string, unknown>>,
+    skippedNodes: Set<string>,
+    callbacks: ExecutionCallbacks,
+  ): Promise<unknown[]> {
+    /* 找 body 子图: 从 item-out/index-out 可达的节点 */
+    const bodyPorts = ['item-out', 'index-out']
+    const bodyNodes = this.findBodyNodes(loopNodeId, bodyPorts, edges)
+
+    /* body 节点按拓扑序排列 */
+    const bodyOrder = order.filter((id) => bodyNodes.has(id))
+
+    /* 标记 body 节点: 主循环中跳过 (由循环驱动) */
+    for (const id of bodyNodes) {
+      skippedNodes.add(id)
+    }
+
+    log.debug('Loop body', { loopNodeId, bodyOrder, itemCount: items.length })
+
+    const allResults: unknown[] = []
+
+    for (let i = 0; i < items.length; i++) {
+      if (signal.aborted) break
+
+      /* 设置当前迭代的输出 */
+      nodeOutputs[loopNodeId] = {
+        ...nodeOutputs[loopNodeId],
+        'item-out': items[i],
+        'index-out': i,
+      }
+
+      /* 按拓扑序执行 body 子图 */
+      for (const bodyNodeId of bodyOrder) {
+        if (signal.aborted) break
+
+        const bodyNode = nodes.find((n) => n.id === bodyNodeId)
+        if (!bodyNode) continue
+
+        const inputs = this.collectInputs(bodyNodeId, edges, nodeOutputs)
+
+        callbacks.onNodeStart(bodyNodeId)
+        callbacks.updateNodeStatus(bodyNodeId, 'running')
+
+        try {
+          const result = await executeNode({
+            nodeId: bodyNodeId,
+            nodeType: bodyNode.type ?? 'unknown',
+            data: bodyNode.data as WorkflowNodeData,
+            inputs,
+            apiKey,
+            signal,
+            onStreamChunk: callbacks.onStreamChunk,
+          })
+
+          nodeOutputs[bodyNodeId] = result.outputs
+          callbacks.onNodeComplete(bodyNodeId, result.outputs)
+          callbacks.updateNodeStatus(bodyNodeId, 'success')
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err)
+          callbacks.onNodeError(bodyNodeId, errorMsg)
+          callbacks.updateNodeStatus(bodyNodeId, 'error')
+          log.error('Loop body node failed', { bodyNodeId, iteration: i, error: errorMsg })
+          break
+        }
+      }
+
+      /* 收集本次迭代的终端输出 */
+      const terminalNodes = this.findTerminalNodes(bodyOrder, edges)
+      const iterResult: Record<string, unknown> = {}
+      for (const tid of terminalNodes) {
+        if (nodeOutputs[tid]) Object.assign(iterResult, nodeOutputs[tid])
+      }
+      allResults.push(iterResult)
+    }
+
+    return allResults
+  }
+
+  /* ── 找 body 子图节点 (BFS) ──────────────────────── */
+
+  private findBodyNodes(loopNodeId: string, bodyPorts: string[], edges: Edge[]): Set<string> {
+    const body = new Set<string>()
+    const queue: string[] = []
+
+    for (const edge of edges) {
+      if (edge.source === loopNodeId && bodyPorts.includes(edge.sourceHandle ?? '')) {
+        queue.push(edge.target)
+      }
+    }
+
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      if (body.has(current)) continue
+      body.add(current)
+
+      for (const edge of edges) {
+        if (edge.source === current && !body.has(edge.target)) {
+          queue.push(edge.target)
+        }
+      }
+    }
+
+    return body
+  }
+
+  /* ── 找终端节点 (无出边或出边指向 body 外) ──────── */
+
+  private findTerminalNodes(bodyOrder: string[], edges: Edge[]): string[] {
+    const bodySet = new Set(bodyOrder)
+    return bodyOrder.filter((id) => {
+      const outEdges = edges.filter((e) => e.source === id)
+      return outEdges.length === 0 || outEdges.every((e) => !bodySet.has(e.target))
+    })
+  }
+
+  /* ── 标记下游节点跳过 (错误时) ──────────────────── */
 
   private skipDownstream(
     failedNodeId: string,
@@ -191,7 +367,6 @@ export class WorkflowExecutor {
     const failedIndex = order.indexOf(failedNodeId)
     const downstream = new Set<string>()
 
-    // BFS 找所有下游节点
     const queue = [failedNodeId]
     while (queue.length > 0) {
       const current = queue.shift()!
@@ -203,7 +378,6 @@ export class WorkflowExecutor {
       }
     }
 
-    // 只标记排序中在失败节点之后的下游
     for (let i = failedIndex + 1; i < order.length; i++) {
       if (downstream.has(order[i])) {
         callbacks.updateNodeStatus(order[i], 'skipped')

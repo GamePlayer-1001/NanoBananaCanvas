@@ -281,7 +281,9 @@
     "videoGen": "视频生成",
     "audioGen": "音频生成",
     "note": "备注",
-    "group": "分组"
+    "group": "分组",
+    "conditional": "条件分支",
+    "loop": "循环"
   },
   "contextMenu": {
     "addTextInput": "添加文本输入",
@@ -292,6 +294,8 @@
     "addAudioGen": "添加音频生成",
     "addNote": "添加备注",
     "addGroup": "添加分组",
+    "addConditional": "添加条件分支",
+    "addLoop": "添加循环",
     "duplicate": "复制",
     "delete": "删除"
   },
@@ -331,7 +335,12 @@
     "videoAspect": "画面比例",
     "videoMode": "画质",
     "audioVoice": "语音",
-    "audioSpeed": "语速: {value}x"
+    "audioSpeed": "语速: {value}x",
+    "conditionOperator": "运算符",
+    "conditionValue": "比较值",
+    "loopMode": "模式",
+    "loopIterations": "迭代次数",
+    "loopSeparator": "分隔符"
   },
   "executor": {
     "workflowEmpty": "工作流为空",

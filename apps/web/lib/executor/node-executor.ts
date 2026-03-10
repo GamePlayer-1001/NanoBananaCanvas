@@ -45,6 +45,8 @@ const executors: Record<string, NodeExecutorFn> = {
   'audio-gen': executeAudioGen,
   note: executeNoop,
   group: executeNoop,
+  conditional: executeConditional,
+  loop: executeLoop,
 }
 
 /* ─── Main Entry ─────────────────────────────────────── */
@@ -256,6 +258,81 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   log.debug('Audio gen complete', { nodeId: ctx.nodeId, provider })
   return { outputs: { 'audio-out': resultUrl } }
+}
+
+/* ─── Conditional: 条件分支 ─────────────────────────── */
+
+async function executeConditional(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const config = ctx.data.config
+  const value = ctx.inputs['value-in']
+  const operator = (config.operator as string) ?? '=='
+  const compareValue = (config.compareValue as string) ?? ''
+
+  const result = evaluateCondition(value, operator, compareValue)
+  log.debug('Conditional evaluated', { nodeId: ctx.nodeId, operator, result })
+
+  return {
+    outputs: {
+      'true-out': result ? value : null,
+      'false-out': result ? null : value,
+    },
+  }
+}
+
+function evaluateCondition(value: unknown, operator: string, compareValue: string): boolean {
+  const str = String(value ?? '')
+  const num = Number(str)
+  const cmpNum = Number(compareValue)
+
+  switch (operator) {
+    case '==': return str === compareValue
+    case '!=': return str !== compareValue
+    case '>': return num > cmpNum
+    case '<': return num < cmpNum
+    case '>=': return num >= cmpNum
+    case '<=': return num <= cmpNum
+    case 'contains': return str.includes(compareValue)
+    case 'empty': return str.length === 0
+    case 'notEmpty': return str.length > 0
+    default: return false
+  }
+}
+
+/* ─── Loop: 循环执行 (准备阶段，实际迭代由 WorkflowExecutor 驱动) */
+
+async function executeLoop(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const config = ctx.data.config
+  const mode = (config.mode as string) ?? 'forEach'
+  const iterations = (config.iterations as number) ?? 3
+  const separator = (config.separator as string) ?? '\\n'
+
+  let items: unknown[]
+
+  if (mode === 'repeat') {
+    items = Array.from({ length: iterations }, (_, i) => i)
+  } else {
+    const raw = ctx.inputs['items-in']
+    if (Array.isArray(raw)) {
+      items = raw
+    } else {
+      const text = String(raw ?? '')
+      const sep = separator.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+      items = text.split(sep).filter(Boolean)
+    }
+  }
+
+  log.debug('Loop prepared', { nodeId: ctx.nodeId, mode, itemCount: items.length })
+
+  /* 返回完整 items 列表 + 第一项作为初始值
+   * WorkflowExecutor 负责迭代逻辑 */
+  return {
+    outputs: {
+      'item-out': items[0] ?? null,
+      'index-out': 0,
+      'results-out': [],
+      __loop_items: items,
+    },
+  }
 }
 
 /* ─── Display: 透传内容 ──────────────────────────────── */
