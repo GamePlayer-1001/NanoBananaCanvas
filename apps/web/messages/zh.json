@@ -276,12 +276,16 @@
     "hand": "抓手",
     "textInput": "文本输入",
     "llm": "LLM",
-    "display": "展示"
+    "display": "展示",
+    "imageGen": "图片生成",
+    "videoGen": "视频生成"
   },
   "contextMenu": {
     "addTextInput": "添加文本输入",
     "addLLM": "添加 LLM",
     "addDisplay": "添加展示",
+    "addImageGen": "添加图片生成",
+    "addVideoGen": "添加视频生成",
     "duplicate": "复制",
     "delete": "删除"
   },
@@ -314,7 +318,12 @@
     "copyResult": "复制结果",
     "executionMode": "执行模式",
     "creditsMode": "积分",
-    "userKeyMode": "API Key"
+    "userKeyMode": "API Key",
+    "provider": "提供商",
+    "imageSize": "尺寸",
+    "videoDuration": "时长",
+    "videoAspect": "画面比例",
+    "videoMode": "画质"
   },
   "executor": {
     "workflowEmpty": "工作流为空",

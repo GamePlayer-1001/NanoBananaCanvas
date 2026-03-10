@@ -21,7 +21,7 @@ import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
-import { openRouter } from '@/services/ai/openrouter'
+import { getPlatformKey, getProvider } from '@/services/ai'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:execute')
@@ -75,10 +75,11 @@ async function executeWithCredits(
   const freezeTxId = await freezeCredits(db, userId, pricing.creditsPerCall)
 
   try {
-    // 使用平台 Key 调用 AI
-    const platformKey = await requireEnv('OPENROUTER_API_KEY')
+    // 使用平台 Key 调用 AI (按 Provider 路由)
+    const platformKey = await getPlatformKey(params.provider)
+    const provider = getProvider(params.provider)
 
-    const chatResult = await openRouter.chat({
+    const chatResult = await provider.chat({
       model: params.modelId,
       messages: params.messages,
       temperature: params.temperature ?? 0.7,
@@ -155,7 +156,8 @@ async function executeWithUserKey(
   const apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
 
   try {
-    const chatResult = await openRouter.chat({
+    const provider = getProvider(params.provider)
+    const chatResult = await provider.chat({
       model: params.modelId,
       messages: params.messages,
       temperature: params.temperature ?? 0.7,

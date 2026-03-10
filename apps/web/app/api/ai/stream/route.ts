@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/credits, @/lib/db, @/lib/env, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/credits, @/lib/db,
+ *          @/services/ai (Provider 注册表), @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/stream (双模式 SSE 流式 AI 执行)
  * [POS]: api/ai 的流式端点，冻结在流开始前，确认扣费在流结束后
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -17,14 +18,13 @@ import {
   refundCredits,
 } from '@/lib/credits'
 import { getDb } from '@/lib/db'
-import { getEnv, requireEnv } from '@/lib/env'
+import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import { getPlatformKey, getProvider } from '@/services/ai'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:stream')
-
-const AI_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 
 /* ─── POST /api/ai/stream ────────────────────────────── */
 
@@ -77,64 +77,43 @@ export async function POST(req: Request) {
 
       freezeTxId = await freezeCredits(db, userId, creditsToCharge)
 
-      apiKey = await requireEnv('OPENROUTER_API_KEY')
+      apiKey = await getPlatformKey(params.provider)
     }
 
-    // 发起流式请求
-    const upstreamRes = await fetch(AI_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': (await getEnv('NEXT_PUBLIC_APP_URL')) ?? '',
-        'X-Title': 'Nano Banana Canvas',
-      },
-      body: JSON.stringify({
-        model: params.modelId,
-        messages: params.messages,
-        temperature: params.temperature ?? 0.7,
-        max_tokens: params.maxTokens ?? 1024,
-        stream: true,
-      }),
-    })
-
-    if (!upstreamRes.ok || !upstreamRes.body) {
-      // 请求失败，退还积分
-      if (freezeTxId) await refundCredits(db, userId, freezeTxId)
-
-      await writeUsageLog(db, userId, params, 'failed', 0, Date.now() - startTime,
-        `Upstream error: ${upstreamRes.status}`)
-
-      return new Response(
-        JSON.stringify({ ok: false, error: { code: 'AI_PROVIDER_ERROR', message: `AI error: ${upstreamRes.status}` } }),
-        { status: 502, headers: { 'Content-Type': 'application/json' } },
-      )
-    }
-
-    // 代理 SSE 流
+    // 通过 Provider 抽象层发起流式调用，转为 SSE
+    const provider = getProvider(params.provider)
+    const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
-    const reader = upstreamRes.body.getReader()
 
-    // 后台处理流
-    // NOTE: SSE 流必须先返回 Response，扣费在流结束后异步完成
-    // 安全保证: freeze 在返回前同步完成，失败必退还
+    // 后台 chatStream → SSE 转发
     ;(async () => {
       try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          await writer.write(value)
-        }
+        await provider.chatStream({
+          model: params.modelId,
+          messages: params.messages,
+          temperature: params.temperature ?? 0.7,
+          maxTokens: params.maxTokens ?? 1024,
+          apiKey,
+          onChunk: async (chunk) => {
+            // 将 Provider 的 chunk 编码为 SSE 格式
+            const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`
+            await writer.write(encoder.encode(sseData))
+          },
+        })
+
+        // 发送 SSE 结束标记
+        await writer.write(encoder.encode('data: [DONE]\n\n'))
 
         // 流结束 → 确认扣费
         if (freezeTxId) {
           try {
             await confirmSpend(db, userId, freezeTxId, creditsToCharge)
           } catch (spendErr) {
-            // 扣费失败 → 退还冻结积分，保证用户不亏
             log.error('confirmSpend failed after stream, refunding', {
-              userId, freezeTxId, error: spendErr instanceof Error ? spendErr.message : String(spendErr),
+              userId,
+              freezeTxId,
+              error: spendErr instanceof Error ? spendErr.message : String(spendErr),
             })
             await refundCredits(db, userId, freezeTxId)
           }
@@ -148,13 +127,22 @@ export async function POST(req: Request) {
             await refundCredits(db, userId, freezeTxId)
           } catch (refundErr) {
             log.error('Refund failed after stream error', {
-              userId, freezeTxId, error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+              userId,
+              freezeTxId,
+              error: refundErr instanceof Error ? refundErr.message : String(refundErr),
             })
           }
         }
 
-        await writeUsageLog(db, userId, params, 'failed', 0, Date.now() - startTime,
-          err instanceof Error ? err.message : String(err))
+        await writeUsageLog(
+          db,
+          userId,
+          params,
+          'failed',
+          0,
+          Date.now() - startTime,
+          err instanceof Error ? err.message : String(err),
+        )
       } finally {
         await writer.close().catch(() => {})
       }
@@ -177,7 +165,13 @@ export async function POST(req: Request) {
 async function writeUsageLog(
   db: D1Database,
   userId: string,
-  params: { provider: string; modelId: string; executionMode: string; workflowId?: string; nodeId?: string },
+  params: {
+    provider: string
+    modelId: string
+    executionMode: string
+    workflowId?: string
+    nodeId?: string
+  },
   status: string,
   creditsCharged: number,
   durationMs: number,
@@ -191,12 +185,22 @@ async function writeUsageLog(
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
-        nanoid(), userId, params.workflowId ?? null, params.nodeId ?? null,
-        params.provider, params.modelId, params.executionMode,
-        creditsCharged, durationMs, status, errorMessage ?? null,
+        nanoid(),
+        userId,
+        params.workflowId ?? null,
+        params.nodeId ?? null,
+        params.provider,
+        params.modelId,
+        params.executionMode,
+        creditsCharged,
+        durationMs,
+        status,
+        errorMessage ?? null,
       )
       .run()
   } catch (err) {
-    log.warn('Failed to write usage log', { error: err instanceof Error ? err.message : String(err) })
+    log.warn('Failed to write usage log', {
+      error: err instanceof Error ? err.message : String(err),
+    })
   }
 }

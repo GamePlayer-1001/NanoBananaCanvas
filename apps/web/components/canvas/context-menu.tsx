@@ -9,7 +9,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, MonitorPlay, Type } from 'lucide-react'
+import { BrainCircuit, ImageIcon, MonitorPlay, Type, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -27,6 +27,8 @@ const MENU_ITEMS = [
   { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
   { type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit },
   { type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay },
+  { type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon },
+  { type: 'video-gen', labelKey: 'addVideoGen' as const, icon: Video },
 ] as const
 
 /* ─── Component ──────────────────────────────────────── */

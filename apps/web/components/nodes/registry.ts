@@ -9,9 +9,13 @@ import type { NodeTypes } from '@xyflow/react'
 import { TextInputNode } from './text-input-node'
 import { LLMNode } from './llm-node'
 import { DisplayNode } from './display-node'
+import { ImageGenNode } from './image-gen-node'
+import { VideoGenNode } from './video-gen-node'
 
 export const NODE_TYPES: NodeTypes = {
   'text-input': TextInputNode,
   llm: LLMNode,
   display: DisplayNode,
+  'image-gen': ImageGenNode,
+  'video-gen': VideoGenNode,
 }

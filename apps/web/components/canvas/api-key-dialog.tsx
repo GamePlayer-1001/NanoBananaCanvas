@@ -11,7 +11,7 @@ import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react'
 import { useSettingsStore } from '@/stores/use-settings-store'
-import { openRouter } from '@/services/ai/openrouter'
+import { getProvider } from '@/services/ai'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -65,7 +65,7 @@ export function ApiKeyDialog() {
     setTesting(true)
     setTestResult('idle')
     try {
-      const ok = await openRouter.validateKey(key)
+      const ok = await getProvider('openrouter').validateKey(key)
       setTestResult(ok ? 'success' : 'error')
     } catch {
       setTestResult('error')

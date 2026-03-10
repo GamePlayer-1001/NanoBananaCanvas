@@ -7,7 +7,8 @@ API 调用层 · 封装外部服务的客户端
 ## 成员清单
 
 ```
-ai/             — AI 推理服务层 (OpenRouter API 客户端，类型定义)
+ai/             — AI 推理服务层 (多 Provider: OpenRouter/DeepSeek/Gemini，可插拔架构)
+video/          — 视频生成服务层 (可灵 API 客户端，JWT 认证)
 storage/        — 工作流持久化服务 (序列化/localStorage/导入导出/API Key 加密)
 ```
 

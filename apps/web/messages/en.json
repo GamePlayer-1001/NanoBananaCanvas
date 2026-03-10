@@ -276,12 +276,16 @@
     "hand": "Hand",
     "textInput": "Text Input",
     "llm": "LLM",
-    "display": "Display"
+    "display": "Display",
+    "imageGen": "Image Gen",
+    "videoGen": "Video Gen"
   },
   "contextMenu": {
     "addTextInput": "Add Text Input",
     "addLLM": "Add LLM",
     "addDisplay": "Add Display",
+    "addImageGen": "Add Image Gen",
+    "addVideoGen": "Add Video Gen",
     "duplicate": "Duplicate",
     "delete": "Delete"
   },
@@ -314,7 +318,12 @@
     "copyResult": "Copy result",
     "executionMode": "Execution Mode",
     "creditsMode": "Credits",
-    "userKeyMode": "API Key"
+    "userKeyMode": "API Key",
+    "provider": "Provider",
+    "imageSize": "Size",
+    "videoDuration": "Duration",
+    "videoAspect": "Aspect Ratio",
+    "videoMode": "Quality"
   },
   "executor": {
     "workflowEmpty": "Workflow is empty",

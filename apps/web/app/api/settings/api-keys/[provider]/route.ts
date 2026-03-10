@@ -10,7 +10,7 @@ import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
-import { openRouter } from '@/services/ai/openrouter'
+import { getProvider } from '@/services/ai'
 
 type Params = { params: Promise<{ provider: string }> }
 
@@ -60,8 +60,8 @@ export async function POST(_req: Request, { params }: Params) {
 
     const apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
 
-    // 目前只支持 OpenRouter 验证
-    const valid = await openRouter.validateKey(apiKey)
+    // 按 Provider 路由验证
+    const valid = await getProvider(provider).validateKey(apiKey)
 
     // 更新 last_used_at
     if (valid) {

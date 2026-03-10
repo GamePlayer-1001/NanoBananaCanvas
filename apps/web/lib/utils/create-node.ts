@@ -25,12 +25,22 @@ const NODE_DEFAULTS: Record<string, NodeDefaults> = {
   llm: {
     label: 'LLM',
     category: 'ai-model',
-    config: { model: 'gpt-4o', temperature: 0.7 },
+    config: { provider: 'openrouter', model: 'openai/gpt-4o-mini', temperature: 0.7 },
   },
   display: {
     label: 'Display',
     category: 'output',
     config: {},
+  },
+  'image-gen': {
+    label: 'Image Gen',
+    category: 'ai-model',
+    config: { provider: 'openrouter', model: 'openai/dall-e-3', size: '1024x1024' },
+  },
+  'video-gen': {
+    label: 'Video Gen',
+    category: 'ai-model',
+    config: { provider: 'kling', model: 'kling-v2-0', duration: '5', aspectRatio: '16:9', mode: 'std' },
   },
 }
 

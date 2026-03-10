@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/services/ai/openrouter 的 AI 调用能力，
+ * [INPUT]: 依赖 @/services/ai 的 getProvider (Provider 注册表)，
  *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
  * [OUTPUT]: 对外提供 executeNode 函数 (按节点类型分发执行)
  * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用
@@ -8,7 +8,7 @@
 
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
-import { openRouter } from '@/services/ai/openrouter'
+import { getProvider } from '@/services/ai'
 import type { ChatMessage } from '@/services/ai/types'
 import type { WorkflowNodeData } from '@/types'
 
@@ -38,6 +38,8 @@ const executors: Record<string, NodeExecutorFn> = {
   'text-input': executeTextInput,
   llm: executeLLM,
   display: executeDisplay,
+  'image-gen': executeImageGen,
+  'video-gen': executeVideoGen,
 }
 
 /* ─── Main Entry ─────────────────────────────────────── */
@@ -70,6 +72,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   const { data, inputs, apiKey, signal, onStreamChunk } = ctx
   const config = data.config
 
+  const providerId = (config.provider as string) ?? 'openrouter'
   const model = (config.model as string) ?? 'openai/gpt-4o-mini'
   const temperature = (config.temperature as number) ?? 0.7
   const maxTokens = (config.maxTokens as number) ?? 1024
@@ -101,11 +104,12 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   }
   messages.push({ role: 'user', content: promptText })
 
-  /* ── 执行 AI 调用 (流式) ──────────────────────── */
+  /* ── 执行 AI 调用 (按 Provider 路由) ────────────── */
+  const provider = getProvider(providerId)
   let result: string
 
   if (onStreamChunk) {
-    result = await openRouter.chatStream({
+    result = await provider.chatStream({
       model,
       messages,
       temperature,
@@ -115,7 +119,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
       onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
     })
   } else {
-    const chatResult = await openRouter.chat({
+    const chatResult = await provider.chat({
       model,
       messages,
       temperature,
@@ -137,6 +141,81 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 
   log.debug('LLM execution complete', { nodeId: ctx.nodeId, length: result.length })
   return { outputs: { 'text-out': result } }
+}
+
+/* ─── ImageGen: 提交图片生成任务 ─────────────────────── */
+
+async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const { data, inputs, apiKey } = ctx
+  const config = data.config
+
+  const provider = (config.provider as string) ?? 'openrouter'
+  const model = (config.model as string) ?? 'openai/dall-e-3'
+  const size = (config.size as string) ?? '1024x1024'
+  const prompt = (inputs['prompt-in'] as string) ?? ''
+
+  if (!prompt) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Image gen node received empty prompt',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  const { ImageGenProcessor } = await import('@/lib/tasks/processors/image-gen')
+  const processor = new ImageGenProcessor(provider)
+  const submitResult = await processor.submit(
+    { model, params: { prompt, size } },
+    apiKey,
+  )
+
+  // 同步 Provider: submit 直接返回 URL，check 即完成
+  const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
+  const resultUrl = checkResult.result?.url ?? ''
+
+  log.debug('Image gen complete', { nodeId: ctx.nodeId, provider })
+  return { outputs: { 'image-out': resultUrl } }
+}
+
+/* ─── VideoGen: 提交视频生成任务 ─────────────────────── */
+
+async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const { data, inputs, apiKey } = ctx
+  const config = data.config
+
+  const provider = (config.provider as string) ?? 'kling'
+  const model = (config.model as string) ?? 'kling-v2-0'
+  const prompt = (inputs['prompt-in'] as string) ?? ''
+  const imageUrl = (inputs['image-in'] as string) || undefined
+
+  if (!prompt && !imageUrl) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Video gen node needs prompt or image input',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  const { VideoGenProcessor } = await import('@/lib/tasks/processors/video-gen')
+  const processor = new VideoGenProcessor(provider)
+
+  const submitResult = await processor.submit(
+    {
+      model,
+      params: {
+        prompt,
+        imageUrl,
+        duration: (config.duration as string) ?? '5',
+        aspectRatio: (config.aspectRatio as string) ?? '16:9',
+        mode: (config.mode as string) ?? 'std',
+      },
+    },
+    apiKey,
+  )
+
+  // 视频生成是异步的 — 返回任务 ID 供轮询
+  log.debug('Video gen submitted', { nodeId: ctx.nodeId, taskId: submitResult.externalTaskId })
+  return { outputs: { 'video-out': submitResult.externalTaskId } }
 }
 
 /* ─── Display: 透传内容 ──────────────────────────────── */

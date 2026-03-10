@@ -1,14 +1,14 @@
 # lib/tasks/processors/
 > L2 | 父级: apps/web/lib/tasks/CLAUDE.md
 
-Provider 处理器层 — TaskProcessor 接口的具体实现 (当前为骨架)
+Provider 处理器层 — TaskProcessor 接口的具体实现
 
 ## 成员清单
 
 - `types.ts`: TaskProcessor 接口 + SubmitInput/SubmitResult/CheckResult/TaskOutput 类型定义
 - `registry.ts`: getProcessor(taskType, provider) 工厂函数，路由到对应 Processor 实例
-- `video-gen.ts`: VideoGenProcessor 骨架 (throw not-implemented)
-- `image-gen.ts`: ImageGenProcessor 骨架 (throw not-implemented)
+- `video-gen.ts`: VideoGenProcessor (可灵完整实现 + 即梦骨架)
+- `image-gen.ts`: ImageGenProcessor (OpenRouter + Gemini Imagen 实现)
 - `audio-gen.ts`: AudioGenProcessor 骨架 (throw not-implemented)
 - `index.ts`: 桶文件，导出 getProcessor + 所有类型
 
@@ -20,8 +20,14 @@ checkStatus(externalTaskId, apiKey) → { status, progress, result?, error? }
 cancel(externalTaskId, apiKey) → void
 ```
 
-## 扩展方式
+## Provider 实现状态
 
-新增 Provider: 创建 `{provider-name}.ts` 实现 TaskProcessor → 在 registry.ts 注册工厂
+| 任务类型   | Provider    | 状态    |
+|-----------|-------------|---------|
+| image_gen | openrouter  | ✅ 完成  |
+| image_gen | gemini      | ✅ 完成  |
+| video_gen | kling       | ✅ 完成  |
+| video_gen | jimeng      | 🔲 骨架  |
+| audio_gen | *           | 🔲 骨架  |
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

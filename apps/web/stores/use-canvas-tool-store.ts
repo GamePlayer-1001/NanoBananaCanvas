@@ -9,7 +9,7 @@ import { create } from 'zustand'
 
 /* ─── Types ───────────────────────────────────────────── */
 
-export type CanvasTool = 'select' | 'hand' | 'text-input' | 'llm' | 'display'
+export type CanvasTool = 'select' | 'hand' | 'text-input' | 'llm' | 'display' | 'image-gen' | 'video-gen'
 
 interface CanvasToolState {
   activeTool: CanvasTool
