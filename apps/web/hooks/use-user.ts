@@ -36,10 +36,15 @@ export interface UserProfile {
 }
 
 export interface CreditsBalance {
-  subscription: number
-  topup: number
-  bonus: number
-  total: number
+  monthlyBalance: number
+  permanentBalance: number
+  available: number
+  frozen: number
+  totalEarned: number
+  totalSpent: number
+  plan: string
+  subscriptionStatus: string
+  currentPeriodEnd: string | null
 }
 
 /* ─── Hooks ──────────────────────────────────────────── */

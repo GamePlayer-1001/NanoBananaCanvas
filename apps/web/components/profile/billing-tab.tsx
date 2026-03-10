@@ -29,10 +29,10 @@ export function BillingTab() {
         <div>
           <p className="text-sm text-muted-foreground">{t('credits')}</p>
           <p className="mt-1 text-3xl font-bold text-foreground">
-            {(balance as { balance?: number })?.balance ?? 0}
+            {balance?.available ?? 0}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {t('remaining', { count: (balance as { balance?: number })?.balance ?? 0 })}
+            {t('remaining', { count: balance?.available ?? 0 })}
           </p>
         </div>
       </div>

@@ -6,7 +6,7 @@
 
 ```
 apps/web/            — Next.js 16 前端 (App Router, i18n, SSR/SSG)
-apps/worker/         — Hono API Worker (Cloudflare Workers, D1/R2/Queue)
+apps/worker/         — Hono Worker (P2 骨架, 当前仅 /health, Queues 消费端预留)
 packages/shared/     — 共享类型、常量、工具函数
 e2e/                 — Playwright E2E 测试
 .md/                 — 项目规划文档 (非代码)
@@ -22,8 +22,8 @@ e2e/                 — Playwright E2E 测试
 | 画布   | @xyflow/react v12 (ReactFlow)                     |
 | 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
 | 表单   | React Hook Form + Zod v4                          |
-| API    | Hono (Cloudflare Workers)                         |
-| 数据库 | Cloudflare D1 (SQLite)                            |
+| API    | Next.js Route Handlers (31 端点, 全部在 apps/web) |
+| 数据库 | Cloudflare D1 (SQLite, 14 张表)                   |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk (P1 接入)                                   |
 | 支付   | Stripe (P1 接入)                                  |
@@ -47,7 +47,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ```
 [locale]/(landing)/           — Landing Page (交互式 Hero Canvas + Footer)
-[locale]/(landing)/pricing    — 定价页 (套餐对比 + 积分包)
+[locale]/(landing)/pricing    — 定价页 (Free/Pro 双档 + 周/月/年切换)
 [locale]/(landing)/privacy    — 隐私政策
 [locale]/(landing)/terms      — 服务条款
 [locale]/(auth)/sign-in       — 分屏登录页 (左玫瑰图 + 右 Clerk 卡片)
