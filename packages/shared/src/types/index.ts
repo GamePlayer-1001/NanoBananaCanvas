@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: 对外提供前后端共享的类型定义
+ * [OUTPUT]: 对外提供前后端共享的类型定义 (含 P2 AsyncTask 类型)
  * [POS]: packages/shared/types 的入口桶文件
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -22,3 +22,14 @@ export type CreditTransactionType = 'earn' | 'spend' | 'freeze' | 'unfreeze' | '
 
 /** 积分来源 */
 export type CreditSource = 'subscription' | 'bonus' | 'ai_call' | 'refund'
+
+/* ─── P2: Async Task Queue ──────────────────────────── */
+
+/** 异步任务类型 */
+export type AsyncTaskType = 'video_gen' | 'image_gen' | 'audio_gen'
+
+/** 异步任务状态 (Method C: D1-as-Queue, 5 态状态机) */
+export type AsyncTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+
+/** AI 执行模式 */
+export type ExecutionMode = 'credits' | 'user_key'
