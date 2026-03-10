@@ -1,7 +1,9 @@
 /**
  * [INPUT]: 依赖 hono 的 Hono/cors/logger
  * [OUTPUT]: 对外提供 Cloudflare Worker API 入口
- * [POS]: apps/worker 的主入口，Hono 路由根节点
+ * [POS]: apps/worker 的主入口，P2 阶段用于 Cloudflare Queues 消费者
+ *        当前所有 API 逻辑在 apps/web 的 Next.js API Routes 中
+ *        本 Worker 保留为 P2 异步任务队列的消费端骨架
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

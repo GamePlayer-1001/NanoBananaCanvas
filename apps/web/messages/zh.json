@@ -15,7 +15,17 @@
   },
   "metadata": {
     "title": "Nano Banana Canvas",
-    "description": "可视化 AI 工作流平台 — 拖拽构建、分享和运行 AI 工作流"
+    "description": "可视化 AI 工作流平台 — 拖拽构建、分享和运行 AI 工作流",
+    "landingTitle": "Nano Banana Canvas — 可视化 AI 工作流平台",
+    "landingDescription": "拖拽构建 AI 工作流，连接大语言模型，生成图片和视频，与社区分享。免费开始。",
+    "pricingTitle": "定价",
+    "pricingDescription": "简洁透明的创作者定价。选择适合你 AI 工作流需求的套餐。",
+    "exploreTitle": "探索",
+    "exploreDescription": "发现社区分享的 AI 工作流。获取灵感，克隆和混搭。",
+    "workflowsTitle": "工作流",
+    "workflowsDescription": "按分类浏览和搜索社区 AI 工作流。",
+    "workspaceTitle": "工作区",
+    "workspaceDescription": "你的个人 AI 工作流空间。创建、编辑和管理项目。"
   },
   "notFound": {
     "title": "404",

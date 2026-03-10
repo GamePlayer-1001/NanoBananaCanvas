@@ -6,9 +6,36 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { setRequestLocale } from 'next-intl/server'
+import type { Metadata } from 'next'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { WorkflowsContent } from '@/components/workflows/workflows-content'
+
+const BASE_URL = 'https://nanobananacanvas.com'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'metadata' })
+  return {
+    title: t('workflowsTitle'),
+    description: t('workflowsDescription'),
+    alternates: {
+      canonical: `${BASE_URL}/${locale}/workflows`,
+      languages: { en: `${BASE_URL}/en/workflows`, zh: `${BASE_URL}/zh/workflows` },
+    },
+    openGraph: {
+      title: `${t('workflowsTitle')} | Nano Banana Canvas`,
+      description: t('workflowsDescription'),
+      url: `${BASE_URL}/${locale}/workflows`,
+      siteName: 'Nano Banana Canvas',
+      type: 'website',
+    },
+  }
+}
 
 /* ─── Page ───────────────────────────────────────────── */
 

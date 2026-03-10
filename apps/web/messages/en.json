@@ -15,7 +15,17 @@
   },
   "metadata": {
     "title": "Nano Banana Canvas",
-    "description": "Visual AI Workflow Platform — Build, share, and run AI workflows"
+    "description": "Visual AI Workflow Platform — Build, share, and run AI workflows",
+    "landingTitle": "Nano Banana Canvas — Visual AI Workflow Platform",
+    "landingDescription": "Drag & drop to build AI workflows. Connect LLMs, generate images and videos, share with the community. Start free.",
+    "pricingTitle": "Pricing",
+    "pricingDescription": "Simple, transparent pricing for creators. Choose the plan that fits your AI workflow needs.",
+    "exploreTitle": "Explore",
+    "exploreDescription": "Discover AI workflows shared by the community. Get inspired, clone, and remix.",
+    "workflowsTitle": "Workflows",
+    "workflowsDescription": "Browse and search community AI workflows by category.",
+    "workspaceTitle": "Workspace",
+    "workspaceDescription": "Your personal AI workflow workspace. Create, edit, and manage projects."
   },
   "notFound": {
     "title": "404",
