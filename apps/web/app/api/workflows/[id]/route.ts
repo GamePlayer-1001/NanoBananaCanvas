@@ -115,6 +115,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
       sets.push('data = ?')
       values.push(parsed.data.data)
     }
+    if (parsed.data.folder_id !== undefined) {
+      sets.push('folder_id = ?')
+      values.push(parsed.data.folder_id)
+    }
 
     if (sets.length === 0) {
       return apiOk({ id })

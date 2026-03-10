@@ -16,6 +16,7 @@ import { queryKeys } from '@/lib/query/keys'
 interface WorkflowListParams {
   page?: number
   limit?: number
+  folder?: string | null
 }
 
 interface CreateWorkflowInput {
@@ -54,6 +55,7 @@ export function useWorkflows(params?: WorkflowListParams) {
   const qs = new URLSearchParams()
   if (params?.page) qs.set('page', String(params.page))
   if (params?.limit) qs.set('limit', String(params.limit))
+  if (params?.folder) qs.set('folder', params.folder)
   const query = qs.toString()
 
   return useQuery({

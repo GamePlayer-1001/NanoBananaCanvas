@@ -119,7 +119,10 @@
     "credits": "积分",
     "upgrade": "升级套餐",
     "contactUs": "联系我们",
-    "newFolder": "新建文件夹"
+    "newFolder": "新建文件夹",
+    "deleteFolder": "删除文件夹",
+    "moveToFolder": "移动到文件夹",
+    "noFolder": "无文件夹"
   },
   "explore": {
     "hot": "热门",

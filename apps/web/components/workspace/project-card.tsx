@@ -1,9 +1,10 @@
 /**
  * [INPUT]: 依赖 @/i18n/navigation 的 useRouter，依赖 lucide-react 图标，
  *          依赖 @/components/ui/dropdown-menu，依赖 @/hooks/use-workflows 的 useUnpublishWorkflow，
+ *          依赖 @/hooks/use-folders 的 useFolders / useMoveWorkflowToFolder，
  *          依赖 ./rename-dialog, ./delete-dialog, ./publish-dialog 弹窗组件，
  *          依赖 sonner 的 toast
- * [OUTPUT]: 对外提供 ProjectCard 项目卡片组件 (含三点菜单: 重命名/删除/发布/取消发布)
+ * [OUTPUT]: 对外提供 ProjectCard 项目卡片组件 (含三点菜单: 重命名/删除/发布/取消发布/移动文件夹)
  * [POS]: workspace 的项目卡片，被 workspace-grid.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,15 +13,19 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Clock, Globe, GlobeLock, Image as ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Clock, Folder, FolderX, Globe, GlobeLock, Image as ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from '@/i18n/navigation'
 import { useUnpublishWorkflow } from '@/hooks/use-workflows'
+import { useFolders, useMoveWorkflowToFolder } from '@/hooks/use-folders'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
@@ -36,17 +41,21 @@ export interface ProjectCardData {
   thumbnailUrl?: string
   updatedAt: string
   isPublic?: boolean
+  folderId?: string | null
 }
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function ProjectCard({ data }: { data: ProjectCardData }) {
   const t = useTranslations('workspace')
+  const ts = useTranslations('sidebar')
   const router = useRouter()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
   const { mutate: unpublish } = useUnpublishWorkflow(data.id)
+  const { data: folders } = useFolders()
+  const moveToFolder = useMoveWorkflowToFolder()
 
   const handleNavigate = () => {
     router.push(`/canvas/${data.id}`)
@@ -104,6 +113,36 @@ export function ProjectCard({ data }: { data: ProjectCardData }) {
                   <Pencil size={14} className="mr-2" />
                   {t('rename')}
                 </DropdownMenuItem>
+
+                {/* 移动到文件夹 */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Folder size={14} className="mr-2" />
+                    {ts('moveToFolder')}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-36">
+                    {/* 无文件夹 (移出当前文件夹) */}
+                    {data.folderId && (
+                      <DropdownMenuItem
+                        onClick={() => moveToFolder.mutate({ workflowId: data.id, folderId: null })}
+                      >
+                        <FolderX size={14} className="mr-2" />
+                        {ts('noFolder')}
+                      </DropdownMenuItem>
+                    )}
+                    {(folders as { id: string; name: string }[] | undefined)
+                      ?.filter((f) => f.id !== data.folderId)
+                      .map((f) => (
+                        <DropdownMenuItem
+                          key={f.id}
+                          onClick={() => moveToFolder.mutate({ workflowId: data.id, folderId: f.id })}
+                        >
+                          <Folder size={14} className="mr-2" />
+                          <span className="truncate">{f.name}</span>
+                        </DropdownMenuItem>
+                      ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
 
                 <DropdownMenuSeparator />
 

@@ -23,7 +23,11 @@ credits/                — 积分系统 (3 端点)
   usage/route.ts        — GET  AI 使用统计 (摘要/模型/日趋势)
   transactions/route.ts — GET  交易历史 (分页 + 类型筛选)
 
-workflows/              — 工作流 CRUD + 社交 (见子 CLAUDE.md)
+folders/                — 文件夹 CRUD (2+2 端点)
+  route.ts              — GET 列表 / POST 创建
+  [id]/route.ts         — PUT 重命名 / DELETE 删除
+
+workflows/              — 工作流 CRUD + 社交 (见子 CLAUDE.md, 支持 folder 筛选/移动)
 
 explore/                — 社区广场 (2 端点)
   route.ts              — GET  公开列表 (分类/排序/分页/互动标记)

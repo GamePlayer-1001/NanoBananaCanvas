@@ -119,7 +119,10 @@
     "credits": "Credits",
     "upgrade": "Upgrade",
     "contactUs": "Contact Us",
-    "newFolder": "New Folder"
+    "newFolder": "New Folder",
+    "deleteFolder": "Delete Folder",
+    "moveToFolder": "Move to Folder",
+    "noFolder": "No Folder"
   },
   "explore": {
     "hot": "Hot",

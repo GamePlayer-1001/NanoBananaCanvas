@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，依赖 @clerk/nextjs 的 UserButton，
  *          依赖 @/components/profile/profile-modal，依赖 @/components/shared/search-command，
- *          依赖 @/hooks/use-folders 的 useFolders / useCreateFolder
+ *          依赖 @/hooks/use-folders 的 useFolders / useCreateFolder / useUpdateFolder / useDeleteFolder
  * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (含 ProfileModal + SearchCommand + 文件夹管理)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,7 +10,7 @@
 
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { UserButton } from '@clerk/nextjs'
@@ -29,7 +29,8 @@ import {
 import { Link, usePathname } from '@/i18n/navigation'
 import { ProfileModal } from '@/components/profile/profile-modal'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
-import { useFolders, useCreateFolder } from '@/hooks/use-folders'
+import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
+import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -83,6 +84,98 @@ function SidebarNavItem({
         </span>
       )}
     </Link>
+  )
+}
+
+/* ─── FolderItem ─────────────────────────────────────── */
+
+function FolderItem({
+  folder,
+  active,
+  deleteLabel,
+}: {
+  folder: { id: string; name: string }
+  active: boolean
+  deleteLabel: string
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(folder.name)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const updateFolder = useUpdateFolder()
+  const deleteFolder = useDeleteFolder()
+
+  useEffect(() => {
+    if (isEditing) inputRef.current?.select()
+  }, [isEditing])
+
+  /* 提交重命名 */
+  const commitRename = () => {
+    const trimmed = editName.trim()
+    if (trimmed && trimmed !== folder.name) {
+      updateFolder.mutate({ id: folder.id, name: trimmed })
+    } else {
+      setEditName(folder.name)
+    }
+    setIsEditing(false)
+  }
+
+  /* 编辑态 */
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
+        <Folder size={16} className="shrink-0 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitRename()
+            if (e.key === 'Escape') {
+              setEditName(folder.name)
+              setIsEditing(false)
+            }
+          }}
+          className="flex-1 bg-transparent text-sm outline-none border-b border-brand-400"
+          autoFocus
+        />
+      </div>
+    )
+  }
+
+  /* 正常态: 右键菜单 + 双击重命名 */
+  return (
+    <ContextMenuPrimitive.Root>
+      <ContextMenuPrimitive.Trigger asChild>
+        <Link
+          href={`/workspace?folder=${folder.id}`}
+          onDoubleClick={(e) => {
+            e.preventDefault()
+            setIsEditing(true)
+          }}
+          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+            active
+              ? 'bg-brand-50 text-brand-600 font-medium'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <Folder size={16} />
+          <span className="flex-1 truncate">{folder.name}</span>
+        </Link>
+      </ContextMenuPrimitive.Trigger>
+      <ContextMenuPrimitive.Portal>
+        <ContextMenuPrimitive.Content
+          className="z-50 min-w-[120px] rounded-md border border-border bg-popover p-1 shadow-md"
+        >
+          <ContextMenuPrimitive.Item
+            className="flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm text-destructive outline-none hover:bg-destructive/10"
+            onSelect={() => deleteFolder.mutate(folder.id)}
+          >
+            {deleteLabel}
+          </ContextMenuPrimitive.Item>
+        </ContextMenuPrimitive.Content>
+      </ContextMenuPrimitive.Portal>
+    </ContextMenuPrimitive.Root>
   )
 }
 
@@ -168,12 +261,11 @@ export function AppSidebar() {
 
             {/* 文件夹列表 */}
             {(folders as { id: string; name: string }[] | undefined)?.map((folder) => (
-              <SidebarNavItem
+              <FolderItem
                 key={folder.id}
-                href={`/workspace?folder=${folder.id}`}
-                icon={Folder}
-                label={folder.name}
+                folder={folder}
                 active={pathname === '/workspace' && activeFolderId === folder.id}
+                deleteLabel={t('deleteFolder')}
               />
             ))}
           </div>

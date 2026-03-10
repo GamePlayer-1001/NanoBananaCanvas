@@ -23,20 +23,25 @@ export async function GET(req: Request) {
     const page = Math.max(1, Number(url.searchParams.get('page') ?? 1))
     const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit') ?? 20)))
     const offset = (page - 1) * limit
+    const folderId = url.searchParams.get('folder')
+
+    // 构建文件夹筛选条件
+    const folderClause = folderId ? 'AND folder_id = ?' : ''
+    const baseBinds = folderId ? [userId, folderId] : [userId]
 
     const [workflows, countRow] = await Promise.all([
       db
         .prepare(
           `SELECT id, name, description, thumbnail, is_public, like_count,
-                  clone_count, view_count, created_at, updated_at
-           FROM workflows WHERE user_id = ?
+                  clone_count, view_count, folder_id, created_at, updated_at
+           FROM workflows WHERE user_id = ? ${folderClause}
            ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
         )
-        .bind(userId, limit, offset)
+        .bind(...baseBinds, limit, offset)
         .all(),
       db
-        .prepare('SELECT COUNT(*) as total FROM workflows WHERE user_id = ?')
-        .bind(userId)
+        .prepare(`SELECT COUNT(*) as total FROM workflows WHERE user_id = ? ${folderClause}`)
+        .bind(...baseBinds)
         .first<{ total: number }>(),
     ])
 
