@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/CreditFreezeError) + UPLOAD_* 错误码
+ * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/CreditFreezeError/TaskError) + UPLOAD_*/TASK_* 错误码
  * [POS]: lib 的统一错误类型体系，被所有业务模块消费，是错误处理的唯一真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -43,6 +43,13 @@ export const ErrorCode = {
   UPLOAD_TOO_LARGE: 'UPLOAD_TOO_LARGE',
   UPLOAD_INVALID_TYPE: 'UPLOAD_INVALID_TYPE',
   UPLOAD_FAILED: 'UPLOAD_FAILED',
+
+  // 异步任务层 (P2)
+  TASK_CONCURRENCY_EXCEEDED: 'TASK_CONCURRENCY_EXCEEDED',
+  TASK_NOT_FOUND: 'TASK_NOT_FOUND',
+  TASK_PROVIDER_ERROR: 'TASK_PROVIDER_ERROR',
+  TASK_TIMEOUT: 'TASK_TIMEOUT',
+  TASK_ALREADY_TERMINAL: 'TASK_ALREADY_TERMINAL',
 
   // 资源层
   NOT_FOUND: 'NOT_FOUND',
@@ -156,6 +163,24 @@ export class WorkflowError extends AppError {
   ) {
     super(code, message, meta)
     this.name = 'WorkflowError'
+  }
+}
+
+export class TaskError extends AppError {
+  constructor(
+    code: Extract<
+      ErrorCode,
+      | 'TASK_CONCURRENCY_EXCEEDED'
+      | 'TASK_NOT_FOUND'
+      | 'TASK_PROVIDER_ERROR'
+      | 'TASK_TIMEOUT'
+      | 'TASK_ALREADY_TERMINAL'
+    >,
+    message: string,
+    meta: Record<string, unknown> = {},
+  ) {
+    super(code, message, meta)
+    this.name = 'TaskError'
   }
 }
 

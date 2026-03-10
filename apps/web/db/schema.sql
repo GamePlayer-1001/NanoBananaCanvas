@@ -1,7 +1,7 @@
 -- ============================================
 --  Nano Banana Canvas — D1 Database Schema
 --  Engine: SQLite (Cloudflare D1)
---  Version: 2.2 (M8 + M7 + folders 工作区文件夹)
+--  Version: 3.0 (M8 + M7 + folders + P2 async_tasks)
 -- ============================================
 
 PRAGMA foreign_keys = ON;
@@ -249,3 +249,42 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
 
 CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON ai_usage_logs(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ai_usage_workflow ON ai_usage_logs(workflow_id);
+
+-- ============================================
+--  P2: 异步任务队列 (Method C: D1-as-Queue)
+-- ============================================
+
+-- ── QUEUE-001: async_tasks ──────────────────
+-- D1-as-Queue: 任务表既是持久化层又是调度层
+-- 客户端轮询驱动状态检查 (懒评估)
+CREATE TABLE IF NOT EXISTS async_tasks (
+  id                TEXT PRIMARY KEY,
+  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workflow_id       TEXT REFERENCES workflows(id) ON DELETE SET NULL,
+  node_id           TEXT,
+  task_type         TEXT NOT NULL CHECK(task_type IN ('video_gen','image_gen','audio_gen')),
+  provider          TEXT NOT NULL,
+  model_id          TEXT NOT NULL,
+  external_task_id  TEXT,
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
+  input_data        TEXT NOT NULL DEFAULT '{}',
+  output_data       TEXT,
+  status            TEXT NOT NULL DEFAULT 'pending'
+                    CHECK(status IN ('pending','running','completed','failed','cancelled')),
+  progress          INTEGER NOT NULL DEFAULT 0,
+  error_message     TEXT,
+  credits_charged   INTEGER NOT NULL DEFAULT 0,
+  freeze_tx_id      TEXT,
+  retry_count       INTEGER NOT NULL DEFAULT 0,
+  max_retries       INTEGER NOT NULL DEFAULT 2,
+  last_checked_at   TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  started_at        TEXT,
+  completed_at      TEXT,
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_async_tasks_user_status ON async_tasks(user_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_async_tasks_active ON async_tasks(user_id, status) WHERE status IN ('pending', 'running');
+CREATE INDEX IF NOT EXISTS idx_async_tasks_workflow ON async_tasks(workflow_id) WHERE workflow_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_async_tasks_external ON async_tasks(external_task_id) WHERE external_task_id IS NOT NULL;
