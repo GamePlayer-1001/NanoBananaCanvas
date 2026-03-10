@@ -22,7 +22,10 @@ export const NODE_PORT_TYPES: Record<string, { inputs: PortDefinition[]; outputs
     outputs: [{ id: 'text-out', label: 'Text', type: 'string' }],
   },
   llm: {
-    inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string', required: true }],
+    inputs: [
+      { id: 'prompt-in', label: 'Prompt', type: 'string', required: true },
+      { id: 'image-in', label: 'Image', type: 'image' },
+    ],
     outputs: [{ id: 'text-out', label: 'Response', type: 'string' }],
   },
   display: {

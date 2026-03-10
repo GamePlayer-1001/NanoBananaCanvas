@@ -9,7 +9,7 @@
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { getProvider } from '@/services/ai'
-import type { ChatMessage } from '@/services/ai/types'
+import type { ChatMessage, ContentPart } from '@/services/ai/types'
 import type { WorkflowNodeData } from '@/types'
 
 const log = createLogger('NodeExecutor')
@@ -104,12 +104,22 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
     )
   }
 
-  /* ── 构建消息列表 ─────────────────────────────── */
+  /* ── 构建消息列表 (支持多模态) ────────────────── */
   const messages: ChatMessage[] = []
   if (systemPrompt) {
     messages.push({ role: 'system', content: systemPrompt })
   }
-  messages.push({ role: 'user', content: promptText })
+
+  const imageUrl = inputs['image-in'] as string | undefined
+  if (imageUrl) {
+    const parts: ContentPart[] = [
+      { type: 'text', text: promptText },
+      { type: 'image_url', image_url: { url: imageUrl } },
+    ]
+    messages.push({ role: 'user', content: parts })
+  } else {
+    messages.push({ role: 'user', content: promptText })
+  }
 
   /* ── 执行 AI 调用 (按 Provider 路由) ────────────── */
   const provider = getProvider(providerId)

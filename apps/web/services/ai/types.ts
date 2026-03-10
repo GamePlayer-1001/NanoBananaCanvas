@@ -1,15 +1,21 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: 对外提供 AIProvider 接口 + ChatMessage/ChatParams/ChatResult 等核心类型
+ * [OUTPUT]: 对外提供 AIProvider 接口 + ChatMessage/ChatParams/ChatResult/ContentPart 等核心类型
  * [POS]: services/ai 的类型基石，被所有 Provider 实现和执行引擎消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
+
+/* ─── Content Parts (多模态) ────────────────────────── */
+
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
 
 /* ─── Message ────────────────────────────────────────── */
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
-  content: string
+  content: string | ContentPart[]
 }
 
 /* ─── Request ────────────────────────────────────────── */

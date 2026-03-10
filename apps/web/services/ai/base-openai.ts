@@ -65,7 +65,7 @@ export abstract class BaseOpenAICompatible implements AIProvider {
       })
     }
 
-    const content = data.choices[0].message.content
+    const content = data.choices[0].message.content as string
     this.log.debug('Chat response', { model, length: content.length })
 
     return {

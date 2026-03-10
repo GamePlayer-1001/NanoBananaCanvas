@@ -21,6 +21,7 @@ import { BaseNode } from './base-node'
 
 const INPUTS = [
   { id: 'prompt-in', label: 'Prompt', type: 'string' as const, required: true },
+  { id: 'image-in', label: 'Image', type: 'image' as const },
 ]
 const OUTPUTS = [
   { id: 'text-out', label: 'Response', type: 'string' as const, required: false },

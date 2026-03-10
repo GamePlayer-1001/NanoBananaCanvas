@@ -18,9 +18,11 @@ const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 
 /* ─── Gemini-specific Types ──────────────────────────── */
 
+type GeminiPart = { text: string } | { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } }
+
 interface GeminiContent {
   role: 'user' | 'model'
-  parts: { text: string }[]
+  parts: GeminiPart[]
 }
 
 interface GeminiResponse {
@@ -121,12 +123,14 @@ export class GeminiClient implements AIProvider {
     const contents: GeminiContent[] = []
 
     for (const msg of messages) {
+      const parts = this.contentToParts(msg.content)
+
       if (msg.role === 'system') {
-        systemInstruction = { parts: [{ text: msg.content }] }
+        systemInstruction = { parts: parts.filter((p): p is { text: string } => 'text' in p) }
       } else {
         contents.push({
           role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }],
+          parts,
         })
       }
     }
@@ -139,6 +143,29 @@ export class GeminiClient implements AIProvider {
         maxOutputTokens: maxTokens ?? 1024,
       },
     }
+  }
+
+  /* ── Content → Gemini Parts 转换 ──────────────────── */
+
+  private contentToParts(content: string | import('./types').ContentPart[]): GeminiPart[] {
+    if (typeof content === 'string') {
+      return [{ text: content }]
+    }
+
+    return content.map((part) => {
+      if (part.type === 'text') return { text: part.text }
+      if (part.type === 'image_url') {
+        const url = part.image_url.url
+        /* base64 data URI → inline_data */
+        if (url.startsWith('data:')) {
+          const match = url.match(/^data:([^;]+);base64,(.+)$/)
+          if (match) return { inline_data: { mime_type: match[1], data: match[2] } }
+        }
+        /* HTTP URL → file_data */
+        return { file_data: { mime_type: 'image/jpeg', file_uri: url } }
+      }
+      return { text: '' }
+    })
   }
 
   /* ── SSE Parser (Gemini 格式) ─────────────────────── */
