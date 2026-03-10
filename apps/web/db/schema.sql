@@ -1,7 +1,7 @@
 -- ============================================
 --  Nano Banana Canvas — D1 Database Schema
 --  Engine: SQLite (Cloudflare D1)
---  Version: 2.1 (M8 + M7 — 套餐简化为 free/pro)
+--  Version: 2.2 (M8 + M7 + folders 工作区文件夹)
 -- ============================================
 
 PRAGMA foreign_keys = ON;
@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS workflows (
   like_count    INTEGER NOT NULL DEFAULT 0,
   clone_count   INTEGER NOT NULL DEFAULT 0,
   view_count    INTEGER NOT NULL DEFAULT 0,
+  folder_id     TEXT REFERENCES folders(id) ON DELETE SET NULL,
   published_at  TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
@@ -58,6 +59,20 @@ CREATE TABLE IF NOT EXISTS workflows (
 CREATE INDEX IF NOT EXISTS idx_workflows_user_id ON workflows(user_id);
 CREATE INDEX IF NOT EXISTS idx_workflows_public ON workflows(is_public, published_at);
 CREATE INDEX IF NOT EXISTS idx_workflows_category ON workflows(category_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_folder ON workflows(folder_id);
+
+-- ── DB-007: folders ────────────────────────────
+-- 工作区文件夹（用户级组织单位，项目分组管理）
+CREATE TABLE IF NOT EXISTS folders (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL DEFAULT 'New Folder',
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_folders_user ON folders(user_id, sort_order);
 
 -- ── DB-003: likes ───────────────────────────
 -- 点赞（复合主键天然去重）

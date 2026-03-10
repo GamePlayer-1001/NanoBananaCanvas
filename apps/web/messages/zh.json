@@ -117,7 +117,9 @@
     "joinDiscord": "加入 Discord",
     "freePlan": "免费版",
     "credits": "积分",
-    "upgrade": "升级套餐"
+    "upgrade": "升级套餐",
+    "contactUs": "联系我们",
+    "newFolder": "新建文件夹"
   },
   "explore": {
     "hot": "热门",
@@ -369,6 +371,18 @@
     "feature_team": "团队协作",
     "feature_unlimited": "无限工作流",
     "feature_dedicated": "专属支持"
+  },
+  "contact": {
+    "title": "联系我们",
+    "subtitle": "通过你喜欢的平台与我们联系",
+    "telegram": "Telegram",
+    "telegramDesc": "加入 Telegram 群组获取即时动态",
+    "discord": "Discord",
+    "discordDesc": "加入 Discord 社区参与讨论",
+    "twitter": "X (Twitter)",
+    "twitterDesc": "关注我们的 X 获取最新资讯",
+    "instagram": "Instagram",
+    "instagramDesc": "关注 Instagram 获取视觉灵感"
   },
   "legal": {
     "termsTitle": "服务条款",

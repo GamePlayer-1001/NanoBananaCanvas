@@ -23,6 +23,12 @@ interface CreateWorkflowInput {
   description?: string
 }
 
+interface CreateWorkflowResult {
+  id: string
+  name: string
+  description: string
+}
+
 interface UpdateWorkflowInput {
   name?: string
   description?: string
@@ -69,7 +75,7 @@ export function useCreateWorkflow() {
 
   return useMutation({
     mutationFn: (input: CreateWorkflowInput) =>
-      fetchJson('/api/workflows', {
+      fetchJson<CreateWorkflowResult>('/api/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),

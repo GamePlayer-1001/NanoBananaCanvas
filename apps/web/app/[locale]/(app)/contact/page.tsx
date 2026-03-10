@@ -1,0 +1,44 @@
+/**
+ * [INPUT]: 依赖 next-intl/server 的 setRequestLocale/getTranslations，
+ *          依赖 @/components/contact/contact-content
+ * [OUTPUT]: 对外提供联系我们页面 + SEO metadata
+ * [POS]: (app) 路由组的联系页面，展示 Telegram/Discord/X/Instagram 四平台
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import type { Metadata } from 'next'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+
+import { ContactContent } from '@/components/contact/contact-content'
+
+const BASE_URL = 'https://nanobananacanvas.com'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'contact' })
+  return {
+    title: t('title'),
+    description: t('subtitle'),
+    alternates: {
+      canonical: `${BASE_URL}/${locale}/contact`,
+      languages: { en: `${BASE_URL}/en/contact`, zh: `${BASE_URL}/zh/contact` },
+    },
+  }
+}
+
+/* ─── Page ───────────────────────────────────────────── */
+
+export default async function ContactPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  setRequestLocale(locale)
+
+  return <ContactContent />
+}

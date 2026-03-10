@@ -23,7 +23,7 @@ e2e/                 — Playwright E2E 测试
 | 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
 | 表单   | React Hook Form + Zod v4                          |
 | API    | Next.js Route Handlers (31 端点, 全部在 apps/web) |
-| 数据库 | Cloudflare D1 (SQLite, 14 张表)                   |
+| 数据库 | Cloudflare D1 (SQLite, 15 张表)                   |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk (P1 接入)                                   |
 | 支付   | Stripe (P1 接入)                                  |
@@ -56,15 +56,16 @@ pnpm format:check     # Prettier 检查 (CI 用)
 [locale]/(app)/explore/[id]   — 作品详情 (预览 + 作者 + 互动)
 [locale]/(app)/workflows      — 工作流分享 (分类 + 搜索 + 工作流卡片)
 [locale]/(app)/video-analysis — 视频分析 (上传 + AI 模型 + 历史)
-[locale]/(app)/workspace      — 工作区 (项目卡片网格 + 新建弹窗)
-[locale]/(app)/workspace/[id] — 画布编辑器 (ReactFlow)
-[locale]/(app)/elements       — 元素库 (占位)
+[locale]/(app)/workspace      — 工作区 (项目卡片网格 + 文件夹分组 + 新建弹窗)
+[locale]/(app)/workspace/[id] — 重定向到 /canvas/[id] (兼容旧链接)
+[locale]/(app)/contact        — 联系我们 (Telegram/Discord/X/Instagram)
+[locale]/(editor)/canvas/[id] — 全屏画布编辑器 (ReactFlow, 无侧边栏)
 ```
 
 ## 架构约定
 
 - **Monorepo**: pnpm workspace + Turborepo
-- **路由**: `[locale]/(landing|auth|app)` 三路由组
+- **路由**: `[locale]/(landing|auth|app|editor)` 四路由组
 - **Landing**: Hero 交互式画板 (可拖动节点 + SVG 连线) + Footer
 - **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
 - **品牌色**: Indigo-500 (#6366F1)

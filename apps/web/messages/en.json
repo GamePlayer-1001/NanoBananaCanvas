@@ -117,7 +117,9 @@
     "joinDiscord": "Join Discord",
     "freePlan": "Free",
     "credits": "Credits",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "contactUs": "Contact Us",
+    "newFolder": "New Folder"
   },
   "explore": {
     "hot": "Hot",
@@ -369,6 +371,18 @@
     "feature_team": "Team collaboration",
     "feature_unlimited": "Unlimited workflows",
     "feature_dedicated": "Dedicated support"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Get in touch with us through your preferred platform",
+    "telegram": "Telegram",
+    "telegramDesc": "Join our Telegram group for instant updates",
+    "discord": "Discord",
+    "discordDesc": "Join our Discord community for discussions",
+    "twitter": "X (Twitter)",
+    "twitterDesc": "Follow us on X for the latest news",
+    "instagram": "Instagram",
+    "instagramDesc": "Follow us on Instagram for visual inspiration"
   },
   "legal": {
     "termsTitle": "Terms of Service",

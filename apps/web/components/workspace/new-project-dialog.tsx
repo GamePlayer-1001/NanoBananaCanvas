@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，
+ *          依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/hooks/use-workflows 的 useCreateWorkflow
  * [OUTPUT]: 对外提供 NewProjectDialog 创建项目弹窗
- * [POS]: workspace 的创建入口，被 workspace-content.tsx 消费
+ * [POS]: workspace 的创建入口，被 workspace-content.tsx 消费，创建后跳转全屏画布
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -12,6 +13,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { X } from 'lucide-react'
 
+import { useRouter } from '@/i18n/navigation'
 import { useCreateWorkflow } from '@/hooks/use-workflows'
 
 /* ─── Component ──────────────────────────────────────── */
@@ -24,6 +26,7 @@ export function NewProjectDialog({
   onClose: () => void
 }) {
   const t = useTranslations('workspace')
+  const router = useRouter()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const createWorkflow = useCreateWorkflow()
@@ -37,10 +40,11 @@ export function NewProjectDialog({
     createWorkflow.mutate(
       { name: name.trim(), description: description.trim() || undefined },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setName('')
           setDescription('')
           onClose()
+          router.push(`/canvas/${data.id}`)
         },
       },
     )

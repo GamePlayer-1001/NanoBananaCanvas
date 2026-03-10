@@ -20,6 +20,7 @@ const intlMiddleware = createIntlMiddleware(routing)
 const isProtectedRoute = createRouteMatcher([
   '/:locale/(app)(.*)',
   '/:locale/workspace(.*)',
+  '/:locale/canvas(.*)',
 ])
 
 /* ─── Combined Proxy ─────────────────────────────────── */

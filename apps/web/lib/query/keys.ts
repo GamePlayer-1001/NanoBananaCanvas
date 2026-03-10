@@ -12,6 +12,10 @@ export const queryKeys = {
       [...queryKeys.workflows.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.workflows.all, 'detail', id] as const,
   },
+  folders: {
+    all: ['folders'] as const,
+    list: () => [...queryKeys.folders.all, 'list'] as const,
+  },
   user: {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,

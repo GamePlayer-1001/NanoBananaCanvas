@@ -49,7 +49,7 @@ export function ProjectCard({ data }: { data: ProjectCardData }) {
   const { mutate: unpublish } = useUnpublishWorkflow(data.id)
 
   const handleNavigate = () => {
-    router.push(`/workspace/${data.id}`)
+    router.push(`/canvas/${data.id}`)
   }
 
   const handleUnpublish = () => {
