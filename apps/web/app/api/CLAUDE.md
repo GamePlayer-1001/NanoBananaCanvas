@@ -40,6 +40,11 @@ files/upload/route.ts   — POST 文件上传 (R2 存储)
 og/route.tsx            — GET  Open Graph 动态图片生成
 health/route.ts         — GET  健康检查端点
 
+tasks/                  — P2 异步任务队列 (3 端点)
+  route.ts              — POST 提交任务 / GET 任务列表
+  [id]/route.ts         — GET  任务状态查询 + 懒评估
+  [id]/cancel/route.ts  — POST 取消任务 + 积分退还
+
 settings/               — 用户设置 (2 端点)
   api-keys/route.ts             — GET+PUT API Key 管理 (加密存储)
   api-keys/[provider]/route.ts  — DELETE+POST Key 删除/连通测试

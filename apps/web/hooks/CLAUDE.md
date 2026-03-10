@@ -21,6 +21,7 @@ use-ai-models.ts         — useAIModels AI 模型目录 (TanStack Query, 10min 
 use-mobile.ts            — useIsMobile 移动端断点检测 (768px, matchMedia 监听)
 use-notifications.ts     — useNotifications / useMarkAsRead 通知数据 (TanStack Query)
 use-upload.ts            — useUpload 文件上传 hook (XMLHttpRequest + progress 追踪)
+use-tasks.ts             — useTasks / useTask / useTaskPolling / useSubmitTask / useCancelTask (TanStack Query, 动态轮询)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

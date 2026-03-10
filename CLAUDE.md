@@ -22,7 +22,8 @@ e2e/                 — Playwright E2E 测试
 | 画布   | @xyflow/react v12 (ReactFlow)                     |
 | 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
 | 表单   | React Hook Form + Zod v4                          |
-| API    | Next.js Route Handlers (31 端点, 全部在 apps/web) |
+| API    | Next.js Route Handlers (34 端点, 全部在 apps/web) |
+| 异步任务 | D1-as-Queue + 客户端驱动轮询 (Method C, P2)     |
 | 数据库 | Cloudflare D1 (SQLite, 15 张表)                   |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk (P1 接入)                                   |
