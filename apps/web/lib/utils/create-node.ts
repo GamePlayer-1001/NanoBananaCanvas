@@ -42,6 +42,11 @@ const NODE_DEFAULTS: Record<string, NodeDefaults> = {
     category: 'ai-model',
     config: { provider: 'kling', model: 'kling-v2-0', duration: '5', aspectRatio: '16:9', mode: 'std' },
   },
+  'audio-gen': {
+    label: 'Audio Gen',
+    category: 'ai-model',
+    config: { provider: 'openai', model: 'tts-1', voice: 'alloy', speed: 1.0 },
+  },
 }
 
 /* ─── Factory ─────────────────────────────────────────── */

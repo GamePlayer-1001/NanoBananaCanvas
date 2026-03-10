@@ -9,7 +9,7 @@ import type { NodeCategory } from './workflow'
 
 /* ─── Port (输入输出端口) ───────────────────────────────── */
 
-export type PortType = 'string' | 'number' | 'boolean' | 'image' | 'video' | 'any'
+export type PortType = 'string' | 'number' | 'boolean' | 'image' | 'video' | 'audio' | 'any'
 
 export interface PortDefinition {
   id: string

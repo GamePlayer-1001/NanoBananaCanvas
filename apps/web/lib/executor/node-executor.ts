@@ -40,6 +40,7 @@ const executors: Record<string, NodeExecutorFn> = {
   display: executeDisplay,
   'image-gen': executeImageGen,
   'video-gen': executeVideoGen,
+  'audio-gen': executeAudioGen,
 }
 
 /* ─── Main Entry ─────────────────────────────────────── */
@@ -216,6 +217,41 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
   // 视频生成是异步的 — 返回任务 ID 供轮询
   log.debug('Video gen submitted', { nodeId: ctx.nodeId, taskId: submitResult.externalTaskId })
   return { outputs: { 'video-out': submitResult.externalTaskId } }
+}
+
+/* ─── AudioGen: 调用 OpenAI TTS 合成语音 ────────────── */
+
+async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const { data, inputs, apiKey } = ctx
+  const config = data.config
+
+  const provider = (config.provider as string) ?? 'openai'
+  const model = (config.model as string) ?? 'tts-1'
+  const voice = (config.voice as string) ?? 'alloy'
+  const speed = (config.speed as number) ?? 1.0
+  const text = (inputs['text-in'] as string) ?? ''
+
+  if (!text) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Audio gen node received empty text',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  const { AudioGenProcessor } = await import('@/lib/tasks/processors/audio-gen')
+  const processor = new AudioGenProcessor(provider)
+  const submitResult = await processor.submit(
+    { model, params: { text, voice, speed } },
+    apiKey,
+  )
+
+  // 同步 Provider: submit 直接返回 data URL，check 即完成
+  const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
+  const resultUrl = checkResult.result?.url ?? ''
+
+  log.debug('Audio gen complete', { nodeId: ctx.nodeId, provider })
+  return { outputs: { 'audio-out': resultUrl } }
 }
 
 /* ─── Display: 透传内容 ──────────────────────────────── */

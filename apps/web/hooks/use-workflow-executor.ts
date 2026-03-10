@@ -51,6 +51,18 @@ function syncOutputsToNodeData(
   if (node.type === 'display' && 'content' in outputs) {
     updateNodeData(nodeId, { config: { ...config, content: outputs['content'] } })
   }
+
+  if (node.type === 'image-gen' && 'image-out' in outputs) {
+    updateNodeData(nodeId, { config: { ...config, resultUrl: outputs['image-out'] } })
+  }
+
+  if (node.type === 'video-gen' && 'video-out' in outputs) {
+    updateNodeData(nodeId, { config: { ...config, resultUrl: outputs['video-out'] } })
+  }
+
+  if (node.type === 'audio-gen' && 'audio-out' in outputs) {
+    updateNodeData(nodeId, { config: { ...config, resultUrl: outputs['audio-out'] } })
+  }
 }
 
 /* ─── Hook ───────────────────────────────────────────── */

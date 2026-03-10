@@ -29,6 +29,21 @@ export const NODE_PORT_TYPES: Record<string, { inputs: PortDefinition[]; outputs
     inputs: [{ id: 'content-in', label: 'Content', type: 'any', required: true }],
     outputs: [],
   },
+  'image-gen': {
+    inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string', required: true }],
+    outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+  },
+  'video-gen': {
+    inputs: [
+      { id: 'prompt-in', label: 'Prompt', type: 'string', required: true },
+      { id: 'image-in', label: 'Image', type: 'image' },
+    ],
+    outputs: [{ id: 'video-out', label: 'Video', type: 'video' }],
+  },
+  'audio-gen': {
+    inputs: [{ id: 'text-in', label: 'Text', type: 'string', required: true }],
+    outputs: [{ id: 'audio-out', label: 'Audio', type: 'audio' }],
+  },
 }
 
 /* ─── Helpers ─────────────────────────────────────────── */

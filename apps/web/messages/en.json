@@ -278,7 +278,8 @@
     "llm": "LLM",
     "display": "Display",
     "imageGen": "Image Gen",
-    "videoGen": "Video Gen"
+    "videoGen": "Video Gen",
+    "audioGen": "Audio Gen"
   },
   "contextMenu": {
     "addTextInput": "Add Text Input",
@@ -286,6 +287,7 @@
     "addDisplay": "Add Display",
     "addImageGen": "Add Image Gen",
     "addVideoGen": "Add Video Gen",
+    "addAudioGen": "Add Audio Gen",
     "duplicate": "Duplicate",
     "delete": "Delete"
   },
@@ -323,7 +325,9 @@
     "imageSize": "Size",
     "videoDuration": "Duration",
     "videoAspect": "Aspect Ratio",
-    "videoMode": "Quality"
+    "videoMode": "Quality",
+    "audioVoice": "Voice",
+    "audioSpeed": "Speed: {value}x"
   },
   "executor": {
     "workflowEmpty": "Workflow is empty",

@@ -10,7 +10,7 @@
 
 import { type DragEvent, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, Hand, ImageIcon, MonitorPlay, MousePointer2, Type, Video } from 'lucide-react'
+import { BrainCircuit, Hand, ImageIcon, MonitorPlay, MousePointer2, Music, Type, Video } from 'lucide-react'
 import { useCanvasToolStore, type CanvasTool } from '@/stores/use-canvas-tool-store'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -45,6 +45,7 @@ const NODE_TOOLS: ToolDef[] = [
   { id: 'display', labelKey: 'display', icon: <MonitorPlay size={16} />, nodeType: 'display' },
   { id: 'image-gen', labelKey: 'imageGen', icon: <ImageIcon size={16} />, nodeType: 'image-gen' },
   { id: 'video-gen', labelKey: 'videoGen', icon: <Video size={16} />, nodeType: 'video-gen' },
+  { id: 'audio-gen', labelKey: 'audioGen', icon: <Music size={16} />, nodeType: 'audio-gen' },
 ]
 
 /* ─── Drag Data Type ──────────────────────────────────── */
