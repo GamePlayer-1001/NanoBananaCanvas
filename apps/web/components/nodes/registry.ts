@@ -12,6 +12,8 @@ import { DisplayNode } from './display-node'
 import { ImageGenNode } from './image-gen-node'
 import { VideoGenNode } from './video-gen-node'
 import { AudioGenNode } from './audio-gen-node'
+import { NoteNode } from './note-node'
+import { GroupNode } from './group-node'
 
 export const NODE_TYPES: NodeTypes = {
   'text-input': TextInputNode,
@@ -20,4 +22,6 @@ export const NODE_TYPES: NodeTypes = {
   'image-gen': ImageGenNode,
   'video-gen': VideoGenNode,
   'audio-gen': AudioGenNode,
+  note: NoteNode,
+  group: GroupNode,
 }

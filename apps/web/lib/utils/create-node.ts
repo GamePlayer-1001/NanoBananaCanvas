@@ -47,6 +47,16 @@ const NODE_DEFAULTS: Record<string, NodeDefaults> = {
     category: 'ai-model',
     config: { provider: 'openai', model: 'tts-1', voice: 'alloy', speed: 1.0 },
   },
+  note: {
+    label: 'Note',
+    category: 'transform',
+    config: { text: '', bgColor: '#fef9c3' },
+  },
+  group: {
+    label: 'Group',
+    category: 'transform',
+    config: { bgColor: 'rgba(99,102,241,0.08)' },
+  },
 }
 
 /* ─── Factory ─────────────────────────────────────────── */
@@ -67,7 +77,7 @@ export function createNode(
     config: {},
   }
 
-  return {
+  const node: Node<WorkflowNodeData> = {
     id: crypto.randomUUID(),
     type,
     position,
@@ -78,4 +88,11 @@ export function createNode(
       status: 'idle',
     },
   }
+
+  /* group 节点需要初始尺寸以启用 NodeResizer */
+  if (type === 'group') {
+    node.style = { width: 400, height: 300 }
+  }
+
+  return node
 }

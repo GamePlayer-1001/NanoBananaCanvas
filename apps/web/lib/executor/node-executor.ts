@@ -34,6 +34,8 @@ export interface NodeExecutionResult {
 
 type NodeExecutorFn = (ctx: NodeExecutionContext) => Promise<NodeExecutionResult>
 
+const executeNoop: NodeExecutorFn = async () => ({ outputs: {} })
+
 const executors: Record<string, NodeExecutorFn> = {
   'text-input': executeTextInput,
   llm: executeLLM,
@@ -41,6 +43,8 @@ const executors: Record<string, NodeExecutorFn> = {
   'image-gen': executeImageGen,
   'video-gen': executeVideoGen,
   'audio-gen': executeAudioGen,
+  note: executeNoop,
+  group: executeNoop,
 }
 
 /* ─── Main Entry ─────────────────────────────────────── */

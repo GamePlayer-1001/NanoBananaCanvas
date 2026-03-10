@@ -279,7 +279,9 @@
     "display": "Display",
     "imageGen": "Image Gen",
     "videoGen": "Video Gen",
-    "audioGen": "Audio Gen"
+    "audioGen": "Audio Gen",
+    "note": "Note",
+    "group": "Group"
   },
   "contextMenu": {
     "addTextInput": "Add Text Input",
@@ -288,6 +290,8 @@
     "addImageGen": "Add Image Gen",
     "addVideoGen": "Add Video Gen",
     "addAudioGen": "Add Audio Gen",
+    "addNote": "Add Note",
+    "addGroup": "Add Group",
     "duplicate": "Duplicate",
     "delete": "Delete"
   },
