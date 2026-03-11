@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid, @/lib/validations/folder
  * [OUTPUT]: 对外提供 GET /api/folders (列表) + POST /api/folders (创建)
  * [POS]: api/folders 的文件夹 CRUD 入口，用于工作区项目分组
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +9,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { nanoid } from '@/lib/nanoid'
+import { createFolderSchema } from '@/lib/validations/folder'
 
 /* ─── GET /api/folders ──────────────────────────────── */
 
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
     const body = await req.json()
-    const name = (body.name as string)?.trim() || 'New Folder'
+    const { name } = createFolderSchema.parse(body)
 
     const db = await getDb()
     const id = nanoid()

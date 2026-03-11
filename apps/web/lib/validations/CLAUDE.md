@@ -8,6 +8,7 @@ Zod 表单验证 Schema
 
 ```
 workflow.ts — createWorkflowSchema / updateWorkflowSchema / publishWorkflowSchema 工作流表单验证
+folder.ts   — createFolderSchema / updateFolderSchema 文件夹表单验证 (name 1-50字符)
 report.ts   — reportSchema 举报表单验证 (reason enum: spam/nsfw/copyright/other)
 explore.ts  — exploreQuerySchema / searchQuerySchema 广场查询验证
 credits.ts  — creditTransactionsQuerySchema / topupSchema 积分查询验证
