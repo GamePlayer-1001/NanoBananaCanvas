@@ -10,7 +10,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
-import { handleApiError, withBodyLimit } from '@/lib/api/response'
+import { apiError, handleApiError, withBodyLimit } from '@/lib/api/response'
 import {
   checkModelAccess,
   confirmSpend,
@@ -28,6 +28,22 @@ import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:stream')
 
+/* ─── Retry Helper ──────────────────────────────────── */
+
+async function retryCreditOp(op: () => Promise<void>, maxAttempts = 2): Promise<boolean> {
+  for (let i = 1; i <= maxAttempts; i++) {
+    try {
+      await op()
+      return true
+    } catch (err) {
+      if (i === maxAttempts) {
+        log.error('Credit op failed after retries', err, { attempt: i })
+      }
+    }
+  }
+  return false
+}
+
 /* ─── POST /api/ai/stream ────────────────────────────── */
 
 export async function POST(req: Request) {
@@ -42,7 +58,12 @@ export async function POST(req: Request) {
     if (!rl.ok) return rateLimitResponse(rl.resetAt)
 
     const db = await getDb()
-    const body = await req.json()
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return apiError('VALIDATION_FAILED', 'Invalid JSON body', 400)
+    }
     const params = aiExecuteSchema.parse(body)
 
     const startTime = Date.now()
@@ -112,30 +133,29 @@ export async function POST(req: Request) {
 
         await writer.write(encoder.encode('data: [DONE]\n\n'))
 
-        // 流结束 → 确认扣费
+        // 流结束 → 确认扣费 (带重试，失败后退还，Cron 兜底)
         if (freezeTxId) {
-          try {
-            await confirmSpend(db, userId, freezeTxId, creditsToCharge)
-          } catch (spendErr) {
-            log.error('confirmSpend failed after stream, refunding', {
-              userId,
-              freezeTxId,
-              error: spendErr instanceof Error ? spendErr.message : String(spendErr),
-            })
-            await refundCredits(db, userId, freezeTxId)
+          const confirmed = await retryCreditOp(() =>
+            confirmSpend(db, userId, freezeTxId!, creditsToCharge),
+          )
+          if (!confirmed) {
+            log.error('confirmSpend failed, attempting refund', undefined, { userId, freezeTxId })
+            const refunded = await retryCreditOp(() => refundCredits(db, userId, freezeTxId!))
+            if (!refunded) {
+              log.error('CRITICAL: credits frozen, Cron unfreeze will recover', undefined, {
+                userId, freezeTxId, amount: creditsToCharge,
+              })
+            }
           }
         }
 
         await writeUsageLog(db, userId, params, 'success', creditsToCharge, Date.now() - startTime)
       } catch (err) {
         if (freezeTxId) {
-          try {
-            await refundCredits(db, userId, freezeTxId)
-          } catch (refundErr) {
-            log.error('Refund failed after stream error', {
-              userId,
-              freezeTxId,
-              error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+          const refunded = await retryCreditOp(() => refundCredits(db, userId, freezeTxId!))
+          if (!refunded) {
+            log.error('CRITICAL: refund failed, Cron unfreeze will recover', undefined, {
+              userId, freezeTxId,
             })
           }
         }

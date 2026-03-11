@@ -41,52 +41,59 @@ export async function POST(req: Request) {
 
   const db = await getDb()
 
-  // 幂等性: 防止事件重放导致重复处理
-  const already = await db
-    .prepare('SELECT 1 FROM processed_stripe_events WHERE event_id = ?')
-    .bind(event.id)
-    .first()
-
-  if (already) {
-    log.info('Duplicate webhook event, skipping', { eventId: event.id })
-    return new Response('ok', { status: 200 })
-  }
-
-  switch (event.type) {
-    case 'checkout.session.completed':
-      await handleCheckoutCompleted(db, event.data.object as Stripe.Checkout.Session)
-      break
-
-    case 'invoice.paid':
-      await handleInvoicePaid(db, event.data.object as Stripe.Invoice)
-      break
-
-    case 'customer.subscription.deleted':
-      await handleSubscriptionDeleted(db, event.data.object as Stripe.Subscription)
-      break
-
-    case 'customer.subscription.updated':
-      await handleSubscriptionUpdated(db, event.data.object as Stripe.Subscription)
-      break
-
-    default:
-      log.info('Unhandled webhook event', { type: event.type })
-  }
-
-  // 标记事件已处理
-  await db
+  // 幂等性: 原子 INSERT 抢占事件 (PK 约束保证唯一，消除 SELECT→INSERT 竞态窗口)
+  const claimed = await db
     .prepare('INSERT OR IGNORE INTO processed_stripe_events (event_id, event_type) VALUES (?, ?)')
     .bind(event.id, event.type)
     .run()
 
-  return new Response('ok', { status: 200 })
+  if (!claimed.meta.changes) {
+    log.info('Duplicate webhook event, skipping', { eventId: event.id })
+    return new Response('ok', { status: 200 })
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(db, event.data.object as Stripe.Checkout.Session)
+        break
+
+      case 'invoice.paid':
+        await handleInvoicePaid(db, event.data.object as Stripe.Invoice)
+        break
+
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(db, event.data.object as Stripe.Subscription)
+        break
+
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(db, event.data.object as Stripe.Subscription)
+        break
+
+      default:
+        log.info('Unhandled webhook event', { type: event.type })
+    }
+
+    return new Response('ok', { status: 200 })
+  } catch (err) {
+    // 处理失败 → 移除抢占标记，允许 Stripe 重试
+    await db.prepare('DELETE FROM processed_stripe_events WHERE event_id = ?').bind(event.id).run()
+    log.error('Webhook processing failed, allowing retry', err, { eventId: event.id, type: event.type })
+    return new Response('Processing failed', { status: 500 })
+  }
 }
 
 /* ─── Event Handlers ─────────────────────────────────── */
 
 async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId
-  if (!userId) return
+  if (!userId) {
+    log.error('checkout.session.completed missing userId in metadata', undefined, {
+      sessionId: session.id,
+      metadata: session.metadata as Record<string, unknown>,
+    })
+    return
+  }
 
   const plan = session.metadata?.plan ?? 'pro'
   const billingPeriod = session.metadata?.billingPeriod ?? 'monthly'

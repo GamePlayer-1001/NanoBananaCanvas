@@ -13,6 +13,18 @@ import { getBalance } from './query'
 
 const log = createLogger('CreditFreeze')
 
+/* ─── Pool SQL (静态字符串，消除字符串插值) ──────────── */
+
+const SQL_PARTIAL_REFUND: Record<string, string> = {
+  monthly: `UPDATE credit_balances SET monthly_balance = monthly_balance + ?, updated_at = datetime('now') WHERE user_id = ?`,
+  permanent: `UPDATE credit_balances SET permanent_balance = permanent_balance + ?, updated_at = datetime('now') WHERE user_id = ?`,
+}
+
+const SQL_FULL_REFUND: Record<string, string> = {
+  monthly: `UPDATE credit_balances SET monthly_balance = monthly_balance + ?, frozen = MAX(frozen - ?, 0), updated_at = datetime('now') WHERE user_id = ?`,
+  permanent: `UPDATE credit_balances SET permanent_balance = permanent_balance + ?, frozen = MAX(frozen - ?, 0), updated_at = datetime('now') WHERE user_id = ?`,
+}
+
 /* ─── Freeze: 冻结积分 (调用前) ──────────────────────── */
 
 export async function freezeCredits(
@@ -158,17 +170,7 @@ export async function confirmSpend(
 
   // 部分退还: 实际消耗 < 冻结金额时，差额返还原始池
   if (refundAmount > 0) {
-    const balanceField = freezeTx.pool === 'monthly' ? 'monthly_balance' : 'permanent_balance'
-    stmts.push(
-      db
-        .prepare(
-          `UPDATE credit_balances
-           SET ${balanceField} = ${balanceField} + ?,
-               updated_at = datetime('now')
-           WHERE user_id = ?`,
-        )
-        .bind(refundAmount, userId),
-    )
+    stmts.push(db.prepare(SQL_PARTIAL_REFUND[freezeTx.pool]).bind(refundAmount, userId))
     log.info('Partial refund in confirmSpend', { userId, refundAmount, pool: freezeTx.pool })
   }
 
@@ -205,20 +207,11 @@ export async function refundCredits(
 
   const { amount, pool } = freezeTx
   const txId = nanoid()
-  const balanceField = pool === 'monthly' ? 'monthly_balance' : 'permanent_balance'
   const balance = await getBalance(db, userId)
   const balanceAfter = balance.monthlyBalance + balance.permanentBalance + amount
 
   await db.batch([
-    db
-      .prepare(
-        `UPDATE credit_balances
-         SET ${balanceField} = ${balanceField} + ?,
-             frozen = MAX(frozen - ?, 0),
-             updated_at = datetime('now')
-         WHERE user_id = ?`,
-      )
-      .bind(amount, amount, userId),
+    db.prepare(SQL_FULL_REFUND[pool]).bind(amount, amount, userId),
     db
       .prepare(
         `INSERT INTO credit_transactions (id, user_id, type, pool, amount, balance_after, source, reference_id, description)

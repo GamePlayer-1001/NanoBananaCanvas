@@ -63,6 +63,18 @@ export async function POST(req: Request) {
 
   const db = await getDb()
 
+  // 幂等性: 用 svix-id 做事件去重 (复用 processed_stripe_events 表，clerk: 前缀避免冲突)
+  const eventKey = `clerk:${svixId}`
+  const claimed = await db
+    .prepare('INSERT OR IGNORE INTO processed_stripe_events (event_id, event_type) VALUES (?, ?)')
+    .bind(eventKey, event.type)
+    .run()
+
+  if (!claimed.meta.changes) {
+    log.info('Duplicate clerk webhook, skipping', { svixId })
+    return new Response('ok', { status: 200 })
+  }
+
   switch (event.type) {
     case 'user.created': {
       const { id: clerkId, email_addresses, first_name, last_name, image_url } = event.data

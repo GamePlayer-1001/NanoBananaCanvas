@@ -8,7 +8,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
-import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import {
   checkModelAccess,
   confirmSpend,
@@ -40,7 +40,12 @@ export async function POST(req: Request) {
     if (!rl.ok) return rateLimitResponse(rl.resetAt)
 
     const db = await getDb()
-    const body = await req.json()
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return apiError('VALIDATION_FAILED', 'Invalid JSON body', 400)
+    }
     const params = aiExecuteSchema.parse(body)
 
     const startTime = Date.now()

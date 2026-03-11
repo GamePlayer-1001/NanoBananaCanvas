@@ -38,10 +38,13 @@ export async function checkRateLimit(
   }
 
   // 窗口内递增
+  // NOTE: KV get+put 非原子操作，极端并发下可能多放行 1-2 个请求
+  //       这是 KV 限流的固有局限，对当前业务场景可接受
   const count = raw.count + 1
-  const ttlSeconds = Math.ceil((raw.resetAt - now) / 1000) + 1
+  const remainingMs = raw.resetAt - now
+  const ttlSeconds = Math.max(Math.ceil(remainingMs / 1000), 1)
   await kv.put(key, JSON.stringify({ count, resetAt: raw.resetAt }), {
-    expirationTtl: Math.max(ttlSeconds, 1),
+    expirationTtl: ttlSeconds,
   })
 
   if (count > limit) {
