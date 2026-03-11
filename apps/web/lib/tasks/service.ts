@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 PLANS/TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
- *          依赖 @/lib/credits/engine 的 freezeCredits/confirmSpend/refundCredits,
+ *          依赖 @/lib/credits 的 freezeCredits/confirmSpend/refundCredits,
  *          依赖 @/lib/credits/pricing 的 getModelPricing/checkModelAccess,
  *          依赖 @/lib/credits/crypto 的 decryptApiKey,
  *          依赖 @/lib/tasks/processors 的 getProcessor,
@@ -14,7 +14,7 @@ import { PLANS, TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
 
 import { decryptApiKey } from '@/lib/credits/crypto'
-import { confirmSpend, freezeCredits, refundCredits } from '@/lib/credits/engine'
+import { confirmSpend, freezeCredits, refundCredits } from '@/lib/credits'
 import { checkModelAccess, getModelPricing } from '@/lib/credits/pricing'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'

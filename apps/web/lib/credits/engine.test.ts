@@ -1,14 +1,17 @@
 /**
- * [INPUT]: 依赖 vitest，依赖 ./engine
+ * [INPUT]: 依赖 vitest，依赖 ./query, ./freeze
  * [OUTPUT]: credit engine 核心事务逻辑测试
  * [POS]: lib/credits 的引擎测试，验证冻结/确认/退还 + 幂等性 + 优先级消耗
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { describe, expect, it } from 'vitest'
-import { freezeCredits, confirmSpend, refundCredits, getBalance } from './engine'
+import { freezeCredits, confirmSpend, refundCredits } from './freeze'
+import { getBalance } from './query'
 
 /* ─── Minimal D1 Mock ────────────────────────────────── */
+
+type MockRow = Record<string, unknown>
 
 function createMockD1() {
   const tables: Record<string, MockRow[]> = {
