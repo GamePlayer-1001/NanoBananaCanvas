@@ -7,10 +7,10 @@
 ## 成员清单
 
 ```
-create-node.ts        — createNode() 节点工厂 (UUID 生成 + 默认 data/config)
+create-node.ts        — createNode() 节点工厂 (从 plugin-registry 获取 defaults)
 get-helper-lines.ts   — getHelperLines() 对齐辅助线计算 (5 种对齐 + 吸附)
 simple-markdown.tsx   — renderSimpleMarkdown() 轻量 Markdown→React 渲染器
-validate-connection.ts — isValidConnection() 连接验证 (禁自连/禁重复/端口兼容)
+validate-connection.ts — isValidConnection() 连接验证 (从 plugin-registry 获取 ports)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

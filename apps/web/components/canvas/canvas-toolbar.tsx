@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 @/stores/use-canvas-tool-store 的 activeTool/setActiveTool，
- *          依赖 @/components/ui 的 Button/Tooltip，依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
+ *          依赖 @/components/nodes/plugin-registry 的 getAllNodeMetas，
+ *          依赖 @/components/ui 的 Button/Tooltip，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 CanvasToolbar 底部浮动工具栏组件
  * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，支持点击切换工具和拖拽创建节点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,7 +11,9 @@
 
 import { type DragEvent, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, GitBranch, Group, Hand, ImageIcon, MonitorPlay, MousePointer2, Music, Repeat, StickyNote, Type, Video } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { Hand, MousePointer2 } from 'lucide-react'
+import { getAllNodeMetas } from '@/components/nodes/plugin-registry'
 import { useCanvasToolStore, type CanvasTool } from '@/stores/use-canvas-tool-store'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -27,7 +30,7 @@ import { cn } from '@/lib/utils'
 interface ToolDef {
   id: CanvasTool
   labelKey: string
-  icon: React.ReactNode
+  icon: LucideIcon
   /** 是否为节点工具 (支持拖拽创建) */
   nodeType?: string
 }
@@ -35,22 +38,17 @@ interface ToolDef {
 /* ─── Tool Definitions ────────────────────────────────── */
 
 const POINTER_TOOLS: ToolDef[] = [
-  { id: 'select', labelKey: 'select', icon: <MousePointer2 size={16} /> },
-  { id: 'hand', labelKey: 'hand', icon: <Hand size={16} /> },
+  { id: 'select', labelKey: 'select', icon: MousePointer2 },
+  { id: 'hand', labelKey: 'hand', icon: Hand },
 ]
 
-const NODE_TOOLS: ToolDef[] = [
-  { id: 'text-input', labelKey: 'textInput', icon: <Type size={16} />, nodeType: 'text-input' },
-  { id: 'llm', labelKey: 'llm', icon: <BrainCircuit size={16} />, nodeType: 'llm' },
-  { id: 'display', labelKey: 'display', icon: <MonitorPlay size={16} />, nodeType: 'display' },
-  { id: 'image-gen', labelKey: 'imageGen', icon: <ImageIcon size={16} />, nodeType: 'image-gen' },
-  { id: 'video-gen', labelKey: 'videoGen', icon: <Video size={16} />, nodeType: 'video-gen' },
-  { id: 'audio-gen', labelKey: 'audioGen', icon: <Music size={16} />, nodeType: 'audio-gen' },
-  { id: 'note', labelKey: 'note', icon: <StickyNote size={16} />, nodeType: 'note' },
-  { id: 'group', labelKey: 'group', icon: <Group size={16} />, nodeType: 'group' },
-  { id: 'conditional', labelKey: 'conditional', icon: <GitBranch size={16} />, nodeType: 'conditional' },
-  { id: 'loop', labelKey: 'loop', icon: <Repeat size={16} />, nodeType: 'loop' },
-]
+/* 节点工具从 plugin-registry 派生 (单一真相源) */
+const NODE_TOOLS: ToolDef[] = getAllNodeMetas().map((meta) => ({
+  id: meta.type as CanvasTool,
+  labelKey: meta.toolbar.labelKey,
+  icon: meta.icon,
+  nodeType: meta.type,
+}))
 
 /* ─── Drag Data Type ──────────────────────────────────── */
 
@@ -117,6 +115,7 @@ interface ToolButtonProps {
 
 function ToolButton({ tool, isActive, onClick, draggable, onDragStart }: ToolButtonProps) {
   const t = useTranslations('toolbar')
+  const Icon = tool.icon
 
   return (
     <Tooltip>
@@ -132,7 +131,7 @@ function ToolButton({ tool, isActive, onClick, draggable, onDragStart }: ToolBut
           draggable={draggable}
           onDragStart={onDragStart}
         >
-          {tool.icon}
+          <Icon size={16} />
         </Button>
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={8}>

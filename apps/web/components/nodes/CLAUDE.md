@@ -7,7 +7,8 @@
 ## 成员清单
 
 ```
-registry.ts              — NODE_TYPES 节点类型注册中心 (text-input/llm/display/image-gen/video-gen/audio-gen/note/group/conditional/loop)
+plugin-registry.ts       — NodePluginMeta 节点元数据注册中心 (ports/defaults/category/icon，单一真相源)
+registry.ts              — NODE_TYPES 节点类型→组件映射 (ReactFlow 消费)
 base-node.tsx       — BaseNode 节点基础框架 (状态指示/Handle/选中样式)
 text-input-node.tsx — TextInputNode 文本输入节点
 llm-node.tsx        — LLMNode 大语言模型节点 (多 Provider 选择/动态模型列表/温度/MaxTokens/SystemPrompt/流式输出)
