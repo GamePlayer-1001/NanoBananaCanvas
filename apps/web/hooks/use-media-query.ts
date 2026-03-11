@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useState/useEffect
+ * [INPUT]: 依赖 react 的 useCallback/useSyncExternalStore
  * [OUTPUT]: 对外提供 useMediaQuery hook (响应式媒体查询)
  * [POS]: hooks 的响应式工具，被布局组件消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -7,21 +7,23 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false)
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      const mql = window.matchMedia(query)
+      mql.addEventListener('change', onStoreChange)
+      return () => mql.removeEventListener('change', onStoreChange)
+    },
+    [query],
+  )
 
-  useEffect(() => {
-    const mql = window.matchMedia(query)
-    setMatches(mql.matches)
-
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [query])
-
-  return matches
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false,
+  )
 }
 
 /** 桌面端: >= 1024px */
