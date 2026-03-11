@@ -37,8 +37,8 @@ const DEFAULT_MODE = 'std'
 /* ─── Provider + Model Catalog ───────────────────────── */
 
 const VIDEO_PROVIDERS = [
-  { value: 'kling', label: '可灵 (Kling)' },
-  { value: 'jimeng', label: '即梦 (Jimeng)' },
+  { value: 'kling', label: '可灵 (Kling)', disabled: false },
+  { value: 'jimeng', label: '即梦 (Jimeng) — Coming Soon', disabled: true },
 ]
 
 const VIDEO_MODELS: Record<string, Array<{ value: string; label: string }>> = {
@@ -144,7 +144,7 @@ export function VideoGenNode(props: NodeProps) {
         <ConfigField label={t('provider')}>
           <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
             {VIDEO_PROVIDERS.map((p) => (
-              <option key={p.value} value={p.value}>
+              <option key={p.value} value={p.value} disabled={p.disabled}>
                 {p.label}
               </option>
             ))}

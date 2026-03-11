@@ -7,6 +7,13 @@
  *           对外提供 useCloudSaveStatus 状态原子
  * [POS]: hooks 的持久化桥梁，在画布页面挂载时激活
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ *
+ * [CONFLICT STRATEGY]: Last-Write-Wins (LWW)
+ *   当前为单用户编辑场景，云端 PUT 直接覆盖，无版本检测。
+ *   如果未来引入多用户协作 (P3 COLLAB)，需升级为:
+ *   - 乐观锁: PUT 携带 updated_at，服务端 WHERE updated_at = ? 校验
+ *   - 或 CRDT/OT 方案 (Durable Objects)
+ *   当前设计的合理性: 工作流仅归属 owner，不存在并发写入场景。
  */
 
 'use client'

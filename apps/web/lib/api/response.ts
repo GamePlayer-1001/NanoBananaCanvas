@@ -7,6 +7,8 @@
 
 import { NextResponse } from 'next/server'
 
+import { ZodError } from 'zod'
+
 import { isAppError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 
@@ -53,6 +55,12 @@ export function handleApiError(error: unknown) {
     const status = errorCodeToStatus(error.code)
     log.error(error.message, error, error.meta)
     return apiError(error.code, error.message, status)
+  }
+
+  /* Zod 校验失败 → 400 (非 500) */
+  if (error instanceof ZodError) {
+    const msg = error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
+    return apiError('VALIDATION_FAILED', msg, 400)
   }
 
   log.error('Unhandled API error', error instanceof Error ? error : undefined)

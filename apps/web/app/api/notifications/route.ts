@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server'
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 
 /* ─── GET /api/notifications ────────────────────────── */
@@ -69,11 +69,15 @@ export async function PATCH(req: NextRequest) {
     const db = await getDb()
 
     if (body.id) {
-      // 标记单条已读
-      await db
+      // 标记单条已读 — 校验存在性
+      const result = await db
         .prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?')
         .bind(body.id, userId)
         .run()
+
+      if (!result.meta.changes) {
+        return apiError('NOT_FOUND', 'Notification not found', 404)
+      }
     } else {
       // 标记全部已读
       await db

@@ -65,6 +65,14 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const db = await getDb()
 
+    /* 验证工作流归属 — 防止跨用户写入 */
+    const wf = await db
+      .prepare('SELECT id FROM workflows WHERE id = ? AND user_id = ?')
+      .bind(id, userId)
+      .first()
+
+    if (!wf) throw new NotFoundError('Workflow', id)
+
     await db
       .prepare(
         `INSERT INTO execution_history (id, user_id, workflow_id, status, node_count, duration_ms, error_message, summary)
