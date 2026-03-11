@@ -11,7 +11,7 @@
 
 'use client'
 
-import { useCallback, useRef, useState, type DragEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import {
   Background,
   BackgroundVariant,
@@ -30,8 +30,9 @@ import { useContextMenu } from '@/hooks/use-context-menu'
 import { createNode } from '@/lib/utils/create-node'
 import { getHelperLines } from '@/lib/utils/get-helper-lines'
 import { isValidConnection } from '@/lib/utils/validate-connection'
-import { useAutoSave } from '@/hooks/use-auto-save'
+import { useAutoSave, useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
+import { useThumbnailCapture } from '@/hooks/use-thumbnail-capture'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { CanvasControls } from './canvas-controls'
 import { CanvasToolbar, DRAG_DATA_TYPE } from './canvas-toolbar'
@@ -77,6 +78,14 @@ function CanvasInner({ workflowId }: CanvasProps) {
 
   /* ── 全局快捷键 (Ctrl+Enter/Esc/Ctrl+S/Ctrl+O) ───── */
   useCanvasShortcuts()
+
+  /* ── 云保存成功后自动生成缩略图 ──────────────────── */
+  const { capture } = useThumbnailCapture(workflowId)
+  const saveStatus = useCloudSaveStatus((s) => s.status)
+
+  useEffect(() => {
+    if (saveStatus === 'saved') capture()
+  }, [saveStatus, capture])
 
   /* ── Helper Lines State ────────────────────────────── */
   const [helperLines, setHelperLines] = useState<{

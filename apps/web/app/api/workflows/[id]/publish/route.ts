@@ -46,10 +46,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     await db
       .prepare(
         `UPDATE workflows
-         SET is_public = 1, category_id = ?, published_at = datetime('now'), updated_at = datetime('now')
+         SET is_public = 1, category_id = ?, thumbnail = COALESCE(?, thumbnail),
+             published_at = datetime('now'), updated_at = datetime('now')
          WHERE id = ? AND user_id = ?`,
       )
-      .bind(parsed.data.categoryId, id, userId)
+      .bind(parsed.data.categoryId, parsed.data.thumbnail ?? null, id, userId)
       .run()
 
     return apiOk({ id, published: true })

@@ -31,6 +31,7 @@ export const updateWorkflowSchema = z.object({
 
 export const publishWorkflowSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
+  thumbnail: z.string().optional(),
 })
 
 /* ─── Types ──────────────────────────────────────────── */
