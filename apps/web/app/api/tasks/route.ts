@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/tasks, @/lib/validations/task
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/tasks, @/lib/validations/task
  * [OUTPUT]: 对外提供 POST /api/tasks (提交任务) + GET /api/tasks (列表)
  * [POS]: api/tasks 的入口端点，编排 auth → validate → service → response
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { listTasks, submitTask } from '@/lib/tasks'
@@ -14,6 +15,10 @@ import { listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 /* ─── POST /api/tasks — 提交任务 ────────────────────── */
 
 export async function POST(req: Request) {
+  // 限流: 10 req/min per IP (异步任务创建是高成本操作)
+  const blocked = withRateLimit(req, 'task-submit', 10, 60_000)
+  if (blocked) return blocked
+
   try {
     const { userId } = await requireAuth()
     const db = await getDb()

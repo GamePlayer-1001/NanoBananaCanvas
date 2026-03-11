@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/r2 的 getR2，
- *          依赖 @/lib/storage 的 generateUploadPath/getStorageUsage，
+ * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/rate-limit 的 withRateLimit，
+ *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/getStorageUsage，
  *          依赖 @/lib/validations/upload
  * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含配额检查)
  * [POS]: api/files 的上传端点，被前端 useUpload hook 消费
@@ -10,6 +10,7 @@
 import { NextRequest } from 'next/server'
 
 import { requireAuth } from '@/lib/api/auth'
+import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getR2 } from '@/lib/r2'
 import { generateUploadPath, getStorageUsage } from '@/lib/storage'
@@ -18,6 +19,10 @@ import { UPLOAD_LIMITS } from '@/lib/validations/upload'
 /* ─── POST /api/files/upload ────────────────────────── */
 
 export async function POST(req: NextRequest) {
+  // 限流: 30 req/min per IP (文件上传)
+  const blocked = withRateLimit(req, 'file-upload', 30, 60_000)
+  if (blocked) return blocked
+
   try {
     const { userId } = await requireAuth()
 

@@ -8,7 +8,7 @@ API 路由公共基础设施
 
 ```
 auth.ts       — requireAuth() / optionalAuth() 认证守卫，Clerk → D1 用户映射
-rate-limit.ts — checkRateLimit / rateLimitResponse 内存滑动窗口限流器，AI/Billing 路由消费
+rate-limit.ts — checkRateLimit / rateLimitResponse / withRateLimit 内存滑动窗口限流器，AI/Billing/Tasks/Upload 路由消费
 response.ts   — apiOk / apiError / handleApiError 统一响应，AppError → HTTP 状态码映射
 ```
 
