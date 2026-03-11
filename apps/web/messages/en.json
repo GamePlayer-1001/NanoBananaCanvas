@@ -274,7 +274,9 @@
     "saveFailed": "Save failed",
     "executionHistory": "Execution History",
     "noHistory": "No executions yet",
-    "nodes": "nodes"
+    "nodes": "nodes",
+    "desktopOnly": "Desktop Only",
+    "desktopOnlyDesc": "The canvas editor requires a larger screen. Please use a desktop or laptop computer."
   },
   "toolbar": {
     "select": "Select",

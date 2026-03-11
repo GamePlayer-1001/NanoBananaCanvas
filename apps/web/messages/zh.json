@@ -274,7 +274,9 @@
     "saveFailed": "保存失败",
     "executionHistory": "执行历史",
     "noHistory": "暂无执行记录",
-    "nodes": "个节点"
+    "nodes": "个节点",
+    "desktopOnly": "仅支持桌面端",
+    "desktopOnlyDesc": "画布编辑器需要较大屏幕，请使用电脑或笔记本访问。"
   },
   "toolbar": {
     "select": "选择",

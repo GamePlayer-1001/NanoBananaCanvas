@@ -13,7 +13,8 @@
 
 import { use, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Monitor } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { ReactFlowProvider } from '@xyflow/react'
 import { useWorkflow } from '@/hooks/use-workflows'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -69,8 +70,30 @@ export default function CanvasPage({
   }
 
   return (
-    <ReactFlowProvider>
-      <Canvas workflowId={id} />
-    </ReactFlowProvider>
+    <>
+      {/* 移动端提示 (< lg) */}
+      <MobileGuard />
+
+      {/* 画布编辑器 (lg+) */}
+      <div className="hidden h-full lg:block">
+        <ReactFlowProvider>
+          <Canvas workflowId={id} />
+        </ReactFlowProvider>
+      </div>
+    </>
+  )
+}
+
+/* ─── Mobile Guard ──────────────────────────────────── */
+
+function MobileGuard() {
+  const t = useTranslations('canvas')
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center lg:hidden">
+      <Monitor size={48} className="text-muted-foreground" />
+      <h2 className="text-lg font-medium">{t('desktopOnly')}</h2>
+      <p className="text-sm text-muted-foreground">{t('desktopOnlyDesc')}</p>
+    </div>
   )
 }
