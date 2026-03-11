@@ -1,6 +1,7 @@
 /**
- * [INPUT]: 依赖 zustand 的 create，依赖 @xyflow/react 的 Node/Edge/Connection 类型及工具函数
- * [OUTPUT]: 对外提供 useFlowStore (nodes/edges/viewport CRUD + ReactFlow 事件处理)
+ * [INPUT]: 依赖 zustand 的 create，依赖 @xyflow/react 的 Node/Edge/Connection 类型及工具函数，
+ *          依赖 @/stores/use-history-store 的快照入栈 (undo/redo)
+ * [OUTPUT]: 对外提供 useFlowStore (nodes/edges/viewport CRUD + ReactFlow 事件处理 + history 集成)
  * [POS]: stores 的画布核心状态，被 Canvas/BaseNode/CustomEdge/CanvasControls 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -19,6 +20,7 @@ import {
 import { create } from 'zustand'
 import type { WorkflowNodeData } from '@/types'
 import { createLogger } from '@/lib/logger'
+import { debouncedPush, useHistoryStore } from '@/stores/use-history-store'
 
 const log = createLogger('FlowStore')
 
@@ -53,6 +55,20 @@ export interface FlowState {
 
 const INITIAL_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 }
 
+/* ─── History Helpers ─────────────────────────────────── */
+
+/** 记录当前快照到历史栈（立即） */
+function pushSnapshot() {
+  const { nodes, edges } = useFlowStore.getState()
+  useHistoryStore.getState().push({ nodes, edges })
+}
+
+/** 记录当前快照到历史栈（防抖，用于拖拽） */
+function pushSnapshotDebounced() {
+  const { nodes, edges } = useFlowStore.getState()
+  debouncedPush({ nodes, edges })
+}
+
 /* ─── Store ───────────────────────────────────────────── */
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -63,15 +79,29 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   /* ── ReactFlow Event Handlers ────────────────────────── */
 
   onNodesChange: (changes) => {
+    /* 拖拽结束时记录快照（dragEnd → position change with dragging=false） */
+    const hasDragEnd = changes.some(
+      (c) => c.type === 'position' && 'dragging' in c && c.dragging === false,
+    )
+    if (hasDragEnd) pushSnapshotDebounced()
+
+    /* 删除操作记录快照 */
+    const hasRemove = changes.some((c) => c.type === 'remove')
+    if (hasRemove) pushSnapshot()
+
     set({ nodes: applyNodeChanges(changes, get().nodes) })
   },
 
   onEdgesChange: (changes) => {
+    const hasRemove = changes.some((c) => c.type === 'remove')
+    if (hasRemove) pushSnapshot()
+
     set({ edges: applyEdgeChanges(changes, get().edges) })
   },
 
   onConnect: (connection) => {
     log.debug('Edge connected', { source: connection.source, target: connection.target })
+    pushSnapshot()
     set({ edges: addEdge({ ...connection, type: 'custom' }, get().edges) })
   },
 
@@ -81,6 +111,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   addNode: (node) => {
     log.debug('Node added', { id: node.id, type: node.type })
+    pushSnapshot()
     set((state) => ({ nodes: [...state.nodes, node] }))
   },
 
@@ -94,6 +125,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   removeNode: (nodeId) => {
     log.debug('Node removed', { id: nodeId })
+    pushSnapshot()
     set((state) => ({
       nodes: state.nodes.filter((n) => n.id !== nodeId),
       edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
@@ -103,6 +135,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   /* ── Edge CRUD ───────────────────────────────────────── */
 
   removeEdge: (edgeId) => {
+    pushSnapshot()
     set((state) => ({
       edges: state.edges.filter((e) => e.id !== edgeId),
     }))
@@ -117,6 +150,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   clear: () => {
     log.info('Flow cleared')
+    pushSnapshot()
     set({ nodes: [], edges: [], viewport: INITIAL_VIEWPORT })
   },
 }))

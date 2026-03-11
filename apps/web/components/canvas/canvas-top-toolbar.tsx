@@ -19,9 +19,10 @@
 import { useCallback } from 'react'
 import { UserButton } from '@clerk/nextjs'
 import { useTranslations } from 'next-intl'
-import { ArrowLeft, Check, Cloud, CloudOff, Download, Loader2, Play, Upload } from 'lucide-react'
+import { ArrowLeft, Check, Cloud, CloudOff, Download, Loader2, Play, Redo2, Undo2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { useHistoryStore } from '@/stores/use-history-store'
 import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
 import { useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { exportWorkflow, importWorkflow } from '@/services/storage'
@@ -82,6 +83,8 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const edges = useFlowStore((s) => s.edges)
   const viewport = useFlowStore((s) => s.viewport)
   const setFlow = useFlowStore((s) => s.setFlow)
+  const canUndo = useHistoryStore((s) => s.canUndo)
+  const canRedo = useHistoryStore((s) => s.canRedo)
 
   /* ── Execute / Abort ────────────────────────────────── */
   const handleExecute = useCallback(async () => {
@@ -109,6 +112,27 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
     exportWorkflow(nodes, edges, viewport)
     toast.success(t('workflowExported'))
   }, [nodes, edges, viewport, t])
+
+  /* ── Undo / Redo ────────────────────────────────────── */
+  const handleUndo = useCallback(() => {
+    const snapshot = useHistoryStore.getState().undo()
+    if (snapshot) {
+      useHistoryStore.setState((s) => ({
+        future: [...s.future, { nodes, edges }],
+      }))
+      setFlow(snapshot.nodes, snapshot.edges)
+    }
+  }, [nodes, edges, setFlow])
+
+  const handleRedo = useCallback(() => {
+    const snapshot = useHistoryStore.getState().redo()
+    if (snapshot) {
+      useHistoryStore.setState((s) => ({
+        past: [...s.past, { nodes, edges }],
+      }))
+      setFlow(snapshot.nodes, snapshot.edges)
+    }
+  }, [nodes, edges, setFlow])
 
   /* ── Import ──────────────────────────────────────────── */
   const handleImport = useCallback(async () => {
@@ -173,6 +197,43 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={8}>
             {isExecuting ? t('stopTooltip') : t('runTooltip')}
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="mx-1 !h-6" />
+
+        {/* ── Undo / Redo ─────────────────────────────── */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              onClick={handleUndo}
+              disabled={!canUndo}
+            >
+              <Undo2 size={14} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>
+            {t('undo')} (Ctrl+Z)
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              onClick={handleRedo}
+              disabled={!canRedo}
+            >
+              <Redo2 size={14} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>
+            {t('redo')} (Ctrl+Shift+Z)
           </TooltipContent>
         </Tooltip>
 

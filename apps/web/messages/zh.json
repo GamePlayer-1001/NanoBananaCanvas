@@ -258,6 +258,8 @@
     "stopTooltip": "停止执行 (Esc)",
     "importTooltip": "导入 (Ctrl+O)",
     "exportTooltip": "导出 (Ctrl+S)",
+    "undo": "撤销",
+    "redo": "重做",
     "executionAborted": "执行已中断",
     "addNodesFirst": "请先添加节点",
     "runningWorkflow": "正在运行工作流...",

@@ -258,6 +258,8 @@
     "stopTooltip": "Stop execution (Esc)",
     "importTooltip": "Import (Ctrl+O)",
     "exportTooltip": "Export (Ctrl+S)",
+    "undo": "Undo",
+    "redo": "Redo",
     "executionAborted": "Execution aborted",
     "addNodesFirst": "Add some nodes first",
     "runningWorkflow": "Running workflow...",

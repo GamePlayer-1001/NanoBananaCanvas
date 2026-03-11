@@ -1,10 +1,10 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 ReactFlow 引擎，依赖 @/stores/use-flow-store 的画布状态，
+ * [INPUT]: 依赖 @xyflow/react 的 ReactFlow/MiniMap 引擎，依赖 @/stores/use-flow-store 的画布状态，
  *          依赖 @/stores/use-canvas-tool-store 的工具状态，依赖 @/hooks/use-context-menu 的菜单状态，
  *          依赖 @/hooks/use-auto-save 的自动保存 (localStorage + 云端双轨)，
  *          依赖 @/lib/utils/create-node 的节点工厂，依赖 @/lib/utils/get-helper-lines 的对齐计算，
  *          依赖 @/lib/utils/validate-connection 的连接验证，依赖 @/types 的 WorkflowNode/WorkflowEdge
- * [OUTPUT]: 对外提供 Canvas 主画布组件 (含右键菜单 + 拖拽连线创建节点 + 辅助线 + 顶部/底部工具栏)
+ * [OUTPUT]: 对外提供 Canvas 主画布组件 (含右键菜单 + 拖拽连线创建节点 + 辅助线 + MiniMap + 顶部/底部工具栏)
  * [POS]: components/canvas 的核心渲染器，被 workspace/[id] 页面消费，接收 workflowId 驱动云端保存
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -16,6 +16,7 @@ import {
   Background,
   BackgroundVariant,
   type Connection,
+  MiniMap,
   type NodeChange,
   ReactFlow,
   type ReactFlowInstance,
@@ -307,6 +308,14 @@ function CanvasInner({ workflowId }: CanvasProps) {
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
         <HelperLines horizontal={helperLines.horizontal} vertical={helperLines.vertical} />
+        <MiniMap
+          position="bottom-right"
+          className="!bottom-16 !right-2"
+          pannable
+          zoomable
+          nodeColor="var(--brand-400)"
+          maskColor="rgba(0, 0, 0, 0.15)"
+        />
         <CanvasTopToolbar workflowId={workflowId} />
         <CanvasToolbar />
         <CanvasControls />
