@@ -8,7 +8,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
-import { handleApiError } from '@/lib/api/response'
+import { handleApiError, withBodyLimit } from '@/lib/api/response'
 import {
   checkModelAccess,
   confirmSpend,
@@ -29,6 +29,9 @@ const log = createLogger('ai:stream')
 /* ─── POST /api/ai/stream ────────────────────────────── */
 
 export async function POST(req: Request) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
 

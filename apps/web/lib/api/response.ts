@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next/server 的 NextResponse，依赖 @/lib/errors
- * [OUTPUT]: 对外提供 apiOk / apiError / handleApiError
+ * [OUTPUT]: 对外提供 apiOk / apiError / handleApiError / withBodyLimit
  * [POS]: lib/api 的统一响应工具，被所有 API route handlers 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -25,6 +25,25 @@ export function apiError(code: string, message: string, status: number) {
     { ok: false, error: { code, message } },
     { status },
   )
+}
+
+/* ─── Body Size Guard ───────────────────────────────── */
+
+const DEFAULT_MAX_BODY = 1_048_576 // 1 MB
+
+/**
+ * Pre-parse body size guard — returns 413 if Content-Length exceeds limit.
+ * Usage: const blocked = withBodyLimit(req); if (blocked) return blocked;
+ */
+export function withBodyLimit(req: Request, maxBytes = DEFAULT_MAX_BODY): Response | null {
+  const cl = req.headers.get('content-length')
+  if (cl && parseInt(cl, 10) > maxBytes) {
+    return NextResponse.json(
+      { ok: false, error: { code: 'PAYLOAD_TOO_LARGE', message: `Request body exceeds ${Math.round(maxBytes / 1024)}KB limit` } },
+      { status: 413 },
+    )
+  }
+  return null
 }
 
 /* ─── Catch-all Handler ──────────────────────────────── */

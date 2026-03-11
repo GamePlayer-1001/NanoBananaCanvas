@@ -7,7 +7,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { listTasks, submitTask } from '@/lib/tasks'
 import { listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
@@ -15,7 +15,8 @@ import { listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 /* ─── POST /api/tasks — 提交任务 ────────────────────── */
 
 export async function POST(req: Request) {
-  // 限流: 10 req/min per IP (异步任务创建是高成本操作)
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
   const blocked = withRateLimit(req, 'task-submit', 10, 60_000)
   if (blocked) return blocked
 

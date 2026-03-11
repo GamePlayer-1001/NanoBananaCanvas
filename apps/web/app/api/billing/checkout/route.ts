@@ -7,7 +7,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { getOrCreateCustomer, getStripe } from '@/lib/stripe'
 import { checkoutSchema } from '@/lib/validations/billing'
@@ -15,6 +15,9 @@ import { checkoutSchema } from '@/lib/validations/billing'
 /* ─── POST /api/billing/checkout ─────────────────────── */
 
 export async function POST(req: Request) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
 
