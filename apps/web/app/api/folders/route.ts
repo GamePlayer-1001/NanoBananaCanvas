@@ -6,7 +6,7 @@
  */
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { nanoid } from '@/lib/nanoid'
 import { createFolderSchema } from '@/lib/validations/folder'
@@ -36,6 +36,9 @@ export async function GET() {
 /* ─── POST /api/folders ─────────────────────────────── */
 
 export async function POST(req: Request) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const body = await req.json()

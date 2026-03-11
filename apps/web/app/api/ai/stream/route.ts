@@ -6,6 +6,8 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { getCloudflareContext } from '@opennextjs/cloudflare'
+
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { handleApiError, withBodyLimit } from '@/lib/api/response'
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
         .first<{ encrypted_key: string }>()
 
       if (!keyRow) {
-        return handleApiError(new Error(`No API key for provider: ${params.provider}`))
+        return handleApiError(new Error('No API key configured for this provider'))
       }
 
       const encryptionKey = await requireEnv('ENCRYPTION_KEY')
@@ -90,7 +92,11 @@ export async function POST(req: Request) {
     const writer = writable.getWriter()
 
     // 后台 chatStream → SSE 转发
-    ;(async () => {
+    // 使用 ctx.waitUntil() 保障 Worker 在流结束后仍存活
+    // 确保积分 confirm/refund 操作一定完成
+    const { ctx } = await getCloudflareContext()
+
+    const streamTask = (async () => {
       try {
         await provider.chatStream({
           model: params.modelId,
@@ -99,13 +105,11 @@ export async function POST(req: Request) {
           maxTokens: params.maxTokens ?? 1024,
           apiKey,
           onChunk: async (chunk) => {
-            // 将 Provider 的 chunk 编码为 SSE 格式
             const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`
             await writer.write(encoder.encode(sseData))
           },
         })
 
-        // 发送 SSE 结束标记
         await writer.write(encoder.encode('data: [DONE]\n\n'))
 
         // 流结束 → 确认扣费
@@ -124,7 +128,6 @@ export async function POST(req: Request) {
 
         await writeUsageLog(db, userId, params, 'success', creditsToCharge, Date.now() - startTime)
       } catch (err) {
-        // 流传输错误 → 退还积分
         if (freezeTxId) {
           try {
             await refundCredits(db, userId, freezeTxId)
@@ -150,6 +153,8 @@ export async function POST(req: Request) {
         await writer.close().catch(() => {})
       }
     })()
+
+    ctx.waitUntil(streamTask)
 
     return new Response(readable, {
       headers: {

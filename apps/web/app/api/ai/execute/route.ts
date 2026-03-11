@@ -150,7 +150,7 @@ async function executeWithUserKey(
 
   if (!keyRow) {
     return handleApiError(
-      new Error(`No API key configured for provider: ${params.provider}`),
+      new Error('No API key configured for this provider'),
     )
   }
 

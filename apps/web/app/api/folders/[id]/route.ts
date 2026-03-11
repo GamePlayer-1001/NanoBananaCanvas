@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server'
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 import { updateFolderSchema } from '@/lib/validations/folder'
@@ -20,6 +20,9 @@ type Params = { params: Promise<{ id: string }> }
 /* ─── PUT /api/folders/:id ───────────────────────────── */
 
 export async function PUT(req: NextRequest, { params }: Params) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const { id } = await params

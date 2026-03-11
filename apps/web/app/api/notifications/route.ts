@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server'
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 
 /* ─── GET /api/notifications ────────────────────────── */
@@ -60,6 +60,9 @@ export async function GET(req: NextRequest) {
 /* ─── PATCH /api/notifications ──────────────────────── */
 
 export async function PATCH(req: NextRequest) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const body = (await req.json()) as { id?: string }

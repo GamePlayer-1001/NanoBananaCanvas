@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server'
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { publishWorkflowSchema } from '@/lib/validations/workflow'
@@ -20,6 +20,9 @@ type Params = { params: Promise<{ id: string }> }
 /* ─── POST /api/workflows/:id/publish ────────────────── */
 
 export async function POST(req: NextRequest, { params }: Params) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const { id } = await params

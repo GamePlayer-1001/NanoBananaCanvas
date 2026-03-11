@@ -6,7 +6,7 @@
  */
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { ValidationError } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
@@ -59,6 +59,9 @@ export async function GET(req: Request) {
 /* ─── POST /api/workflows ────────────────────────────── */
 
 export async function POST(req: Request) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const body = await req.json()

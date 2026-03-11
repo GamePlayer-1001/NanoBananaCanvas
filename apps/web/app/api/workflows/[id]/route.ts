@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server'
 
 import { optionalAuth, requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
@@ -79,6 +79,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 /* ─── PUT /api/workflows/:id ─────────────────────────── */
 
 export async function PUT(req: NextRequest, { params }: Params) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const { id } = await params

@@ -24,7 +24,7 @@ e2e/                 — Playwright E2E 测试
 | 表单   | React Hook Form + Zod v4                          |
 | API    | Next.js Route Handlers (34 端点, 全部在 apps/web) |
 | 异步任务 | D1-as-Queue + 客户端驱动轮询 (Method C, P2)     |
-| 数据库 | Cloudflare D1 (SQLite, 15 张表)                   |
+| 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk (P1 接入)                                   |
 | 支付   | Stripe (P1 接入)                                  |

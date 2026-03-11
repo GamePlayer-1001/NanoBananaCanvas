@@ -6,7 +6,7 @@
  */
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { encryptApiKey, maskApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
@@ -47,6 +47,9 @@ export async function GET() {
 /* ─── PUT /api/settings/api-keys ─────────────────────── */
 
 export async function PUT(req: Request) {
+  const tooLarge = withBodyLimit(req)
+  if (tooLarge) return tooLarge
+
   try {
     const { userId } = await requireAuth()
     const db = await getDb()
