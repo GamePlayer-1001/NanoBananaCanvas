@@ -288,3 +288,23 @@ CREATE INDEX IF NOT EXISTS idx_async_tasks_user_status ON async_tasks(user_id, s
 CREATE INDEX IF NOT EXISTS idx_async_tasks_active ON async_tasks(user_id, status) WHERE status IN ('pending', 'running');
 CREATE INDEX IF NOT EXISTS idx_async_tasks_workflow ON async_tasks(workflow_id) WHERE workflow_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_async_tasks_external ON async_tasks(external_task_id) WHERE external_task_id IS NOT NULL;
+
+-- ============================================
+--  P2: 执行历史 (ADV-003)
+-- ============================================
+
+-- ── execution_history ─────────────────────────
+-- 记录每次工作流执行的结果摘要
+CREATE TABLE IF NOT EXISTS execution_history (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workflow_id     TEXT NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+  status          TEXT NOT NULL CHECK(status IN ('success','failed','aborted')),
+  node_count      INTEGER NOT NULL DEFAULT 0,
+  duration_ms     INTEGER,
+  error_message   TEXT,
+  summary         TEXT DEFAULT '{}',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_exec_history_workflow ON execution_history(workflow_id, created_at DESC);

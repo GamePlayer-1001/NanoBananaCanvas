@@ -77,7 +77,7 @@ function CanvasInner({ workflowId }: CanvasProps) {
   useAutoSave(workflowId)
 
   /* ── 全局快捷键 (Ctrl+Enter/Esc/Ctrl+S/Ctrl+O) ───── */
-  useCanvasShortcuts()
+  useCanvasShortcuts(workflowId)
 
   /* ── 云保存成功后自动生成缩略图 ──────────────────── */
   const { capture } = useThumbnailCapture(workflowId)

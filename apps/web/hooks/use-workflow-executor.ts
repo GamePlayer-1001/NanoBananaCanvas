@@ -4,8 +4,8 @@
  *          依赖 @/stores/use-execution-store 的执行状态，
  *          依赖 @/stores/use-settings-store 的 API Key，
  *          依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting)
- * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store
+ * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting + 执行历史记录)
+ * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store，执行完成后写入 execution_history
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -65,10 +65,32 @@ function syncOutputsToNodeData(
   }
 }
 
+/* ─── Record Execution History ────────────────────────── */
+
+function recordHistory(
+  workflowId: string,
+  status: 'success' | 'failed' | 'aborted',
+  startTime: number,
+  nodeCount: number,
+  errorMessage?: string,
+) {
+  fetch(`/api/workflows/${workflowId}/history`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      status,
+      nodeCount,
+      durationMs: Date.now() - startTime,
+      errorMessage: errorMessage ?? null,
+    }),
+  }).catch(() => { /* 历史记录失败不影响主流程 */ })
+}
+
 /* ─── Hook ───────────────────────────────────────────── */
 
-export function useWorkflowExecutor() {
+export function useWorkflowExecutor(workflowId?: string) {
   const executorRef = useRef(new WorkflowExecutor())
+  const startTimeRef = useRef(0)
   const t = useTranslations('canvas')
   const tExec = useTranslations('executor')
 
@@ -86,6 +108,7 @@ export function useWorkflowExecutor() {
 
   const execute = useCallback(async () => {
     if (isExecuting) return
+    startTimeRef.current = Date.now()
 
     await executorRef.current.execute(nodes, edges, apiKey, {
       onStart: (order) => startExecution(order),
@@ -114,11 +137,17 @@ export function useWorkflowExecutor() {
       onComplete: () => {
         finishExecution()
         toast.success(t('workflowCompleted'))
+        if (workflowId) {
+          recordHistory(workflowId, 'success', startTimeRef.current, nodes.length)
+        }
       },
       onError: (error) => {
         failExecution(error)
         const key = ERROR_KEY_MAP[error]
         toast.error(key ? tExec(key) : error)
+        if (workflowId) {
+          recordHistory(workflowId, 'failed', startTimeRef.current, nodes.length, error)
+        }
       },
 
       updateNodeStatus: (nodeId, status) => {
@@ -126,7 +155,7 @@ export function useWorkflowExecutor() {
       },
     })
   }, [
-    nodes, edges, apiKey, isExecuting, t, tExec,
+    nodes, edges, apiKey, isExecuting, t, tExec, workflowId,
     startExecution, setCurrentNode, setNodeResult, finishExecution, failExecution,
     updateNodeData,
   ])
@@ -134,7 +163,10 @@ export function useWorkflowExecutor() {
   const abort = useCallback(() => {
     executorRef.current.abort()
     failExecution('Execution aborted by user')
-  }, [failExecution])
+    if (workflowId) {
+      recordHistory(workflowId, 'aborted', startTimeRef.current, nodes.length)
+    }
+  }, [failExecution, workflowId, nodes.length])
 
   return { execute, abort, isExecuting }
 }

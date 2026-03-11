@@ -271,7 +271,10 @@
     "backToWorkspace": "返回工作区",
     "saving": "保存中...",
     "saved": "已保存",
-    "saveFailed": "保存失败"
+    "saveFailed": "保存失败",
+    "executionHistory": "执行历史",
+    "noHistory": "暂无执行记录",
+    "nodes": "个节点"
   },
   "toolbar": {
     "select": "选择",

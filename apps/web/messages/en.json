@@ -271,7 +271,10 @@
     "backToWorkspace": "Back to Workspace",
     "saving": "Saving...",
     "saved": "Saved",
-    "saveFailed": "Save failed"
+    "saveFailed": "Save failed",
+    "executionHistory": "Execution History",
+    "noHistory": "No executions yet",
+    "nodes": "nodes"
   },
   "toolbar": {
     "select": "Select",

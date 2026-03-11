@@ -21,8 +21,8 @@ import { exportWorkflow, importWorkflow } from '@/services/storage'
 
 /* ─── Hook ───────────────────────────────────────────── */
 
-export function useCanvasShortcuts() {
-  const { execute, abort, isExecuting } = useWorkflowExecutor()
+export function useCanvasShortcuts(workflowId?: string) {
+  const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
   const t = useTranslations('canvas')
 
   useEffect(() => {
