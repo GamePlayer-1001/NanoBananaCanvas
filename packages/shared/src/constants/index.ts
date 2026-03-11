@@ -60,6 +60,13 @@ export type Locale = (typeof LOCALES)[number]
 export const DEFAULT_LOCALE: Locale = 'en'
 
 /* ============================================ */
+/*  Credits                                     */
+/* ============================================ */
+
+/** 冻结积分超时清理 TTL (分钟) — 超过此时间的 freeze 被 Cron 自动解冻 */
+export const FREEZE_TTL_MINUTES = 5
+
+/* ============================================ */
 /*  P2: Async Task Configuration               */
 /* ============================================ */
 

@@ -10,6 +10,7 @@
     "clean": "rm -rf dist .wrangler"
   },
   "dependencies": {
+    "@nano-banana/shared": "workspace:*",
     "hono": "^4.7.0"
   },
   "devDependencies": {

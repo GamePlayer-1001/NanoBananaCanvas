@@ -88,15 +88,13 @@ jobs:
           wranglerVersion: '4'
           command: deploy
 
-      # ── 4. API Worker (P2 阶段启用: Queues 消费者) ───
-      # 当前所有 API 逻辑在 Next.js API Routes 中，Worker 为空壳
-      # P2 阶段启用后取消注释以部署 Queues 消费者
-      # - name: Deploy API
-      #   uses: cloudflare/wrangler-action@v3
-      #   with:
-      #     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      #     workingDirectory: apps/worker
-      #     packageManager: pnpm
-      #     wranglerVersion: '4'
-      #     command: deploy
+      # ── 4. 部署 API Worker → Cloudflare Workers ──
+      - name: Deploy API Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/worker
+          packageManager: pnpm
+          wranglerVersion: '4'
+          command: deploy

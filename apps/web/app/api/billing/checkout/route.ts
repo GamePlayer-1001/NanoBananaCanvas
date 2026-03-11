@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const { userId } = await requireAuth()
 
     // 限流: 5 req/min per user
-    const rl = checkRateLimit(`billing:${userId}`, 5, 60_000)
+    const rl = await checkRateLimit(`billing:${userId}`, 5, 60_000)
     if (!rl.ok) return rateLimitResponse(rl.resetAt)
 
     const db = await getDb()

@@ -17,7 +17,7 @@ import { listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 export async function POST(req: Request) {
   const tooLarge = withBodyLimit(req)
   if (tooLarge) return tooLarge
-  const blocked = withRateLimit(req, 'task-submit', 10, 60_000)
+  const blocked = await withRateLimit(req, 'task-submit', 10, 60_000)
   if (blocked) return blocked
 
   try {

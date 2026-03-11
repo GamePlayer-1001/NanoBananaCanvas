@@ -18,7 +18,6 @@ export interface CreditBalance {
 
 export type Pool = 'monthly' | 'permanent'
 
-/* ─── Constants ──────────────────────────────────────── */
+/* ─── Re-export from shared ────────────────────────── */
 
-/** 冻结积分超时清理 TTL (分钟) */
-export const FREEZE_TTL_MINUTES = 5
+export { FREEZE_TTL_MINUTES } from '@nano-banana/shared'

@@ -1,9 +1,7 @@
 /**
- * [INPUT]: 依赖 hono 的 Hono/cors/logger
- * [OUTPUT]: 对外提供 Cloudflare Worker API 入口
- * [POS]: apps/worker 的主入口，P2 阶段用于 Cloudflare Queues 消费者
- *        当前所有 API 逻辑在 apps/web 的 Next.js API Routes 中
- *        本 Worker 保留为 P2 异步任务队列的消费端骨架
+ * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的三个定时任务
+ * [OUTPUT]: 对外提供 Cloudflare Worker API 入口 (HTTP + Cron Scheduled)
+ * [POS]: apps/worker 的主入口，HTTP 路由 + 每 10 分钟 Cron 调度
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -11,13 +9,17 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 
-/* ─── Bindings 类型 (P1 阶段启用) ───────────────────────── */
+import { cleanupExpiredOutputs } from './cron/cleanup'
+import { markTimedOutTasks } from './cron/timeout'
+import { unfreezeStaleCredits } from './cron/unfreeze'
+
+/* ─── Bindings 类型 ──────────────────────────────────── */
 
 type Bindings = {
   ENVIRONMENT: string
-  // DB: D1Database
-  // UPLOADS: R2Bucket
-  // TASK_QUEUE: Queue
+  DB: D1Database
+  UPLOADS: R2Bucket
+  KV: KVNamespace
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -40,7 +42,7 @@ app.get('/health', (c) => {
   return c.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: '0.0.1',
+    version: '0.1.0',
     environment: c.env.ENVIRONMENT,
   })
 })
@@ -49,4 +51,44 @@ app.get('/', (c) => {
   return c.json({ message: 'Nano Banana Canvas API' })
 })
 
-export default app
+/* ─── Cron Scheduled Handler ────────────────────────────── */
+
+export default {
+  fetch: app.fetch,
+
+  async scheduled(
+    _event: ScheduledEvent,
+    env: Bindings,
+    ctx: ExecutionContext,
+  ) {
+    ctx.waitUntil(
+      (async () => {
+        const results = {
+          unfrozen: 0,
+          timedOut: 0,
+          cleaned: { deleted: 0, errors: 0 },
+        }
+
+        try {
+          results.unfrozen = await unfreezeStaleCredits(env.DB)
+        } catch (err) {
+          console.error('[cron] unfreeze failed:', err)
+        }
+
+        try {
+          results.timedOut = await markTimedOutTasks(env.DB)
+        } catch (err) {
+          console.error('[cron] timeout failed:', err)
+        }
+
+        try {
+          results.cleaned = await cleanupExpiredOutputs(env.DB, env.UPLOADS)
+        } catch (err) {
+          console.error('[cron] cleanup failed:', err)
+        }
+
+        console.log('[cron] completed:', JSON.stringify(results))
+      })(),
+    )
+  },
+}

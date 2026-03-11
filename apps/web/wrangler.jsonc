@@ -20,10 +20,10 @@
     { "pattern": "www.nanobananacanvas.com/*", "zone_name": "nanobananacanvas.com" }
   ],
 
-  // KV 绑定 — 用于增量缓存
-  // "kv_namespaces": [
-  //   { "binding": "NEXT_CACHE_KV", "id": "<your-kv-id>" }
-  // ],
+  // KV 绑定 — 限流 + 存储配额缓存
+  "kv_namespaces": [
+    { "binding": "KV", "id": "f8140250229b4287a07afedbf6170fcf" }
+  ],
 
   // D1 绑定 — 主数据库
   "d1_databases": [

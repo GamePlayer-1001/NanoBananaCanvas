@@ -6,8 +6,8 @@
 
 ```
 apps/web/            — Next.js 16 前端 (App Router, i18n, SSR/SSG)
-apps/worker/         — Hono Worker (P2 骨架, 当前仅 /health, Queues 消费端预留)
-packages/shared/     — 共享类型、常量、工具函数
+apps/worker/         — Hono Worker + Cron 运维核心 (积分解冻/超时扫描/文件清理)
+packages/shared/     — 共享类型、常量、工具函数 (nanoid/TASK_CONFIG/FREEZE_TTL)
 e2e/                 — Playwright E2E 测试
 .md/                 — 项目规划文档 (非代码)
 .github/workflows/   — CI/CD 管道 (GitHub Actions → Cloudflare)
@@ -22,9 +22,11 @@ e2e/                 — Playwright E2E 测试
 | 画布   | @xyflow/react v12 (ReactFlow)                     |
 | 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
 | 表单   | React Hook Form + Zod v4                          |
-| API    | Next.js Route Handlers (34 端点, 全部在 apps/web) |
+| API    | Next.js Route Handlers (38 端点, 全部在 apps/web) |
 | 异步任务 | D1-as-Queue + 客户端驱动轮询 (Method C, P2)     |
+| 定时任务 | Cloudflare Worker Cron (*/10 * * * *)            |
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
+| 缓存   | Cloudflare KV (限流/存储配额)                     |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk (P1 接入)                                   |
 | 支付   | Stripe (P1 接入)                                  |

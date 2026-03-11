@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const { userId } = await requireAuth()
 
     // 限流: 30 req/min per user
-    const rl = checkRateLimit(`ai:${userId}`, 30, 60_000)
+    const rl = await checkRateLimit(`ai:${userId}`, 30, 60_000)
     if (!rl.ok) return rateLimitResponse(rl.resetAt)
 
     const db = await getDb()

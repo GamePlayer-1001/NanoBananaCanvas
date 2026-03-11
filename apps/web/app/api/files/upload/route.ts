@@ -13,14 +13,14 @@ import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getR2 } from '@/lib/r2'
-import { generateUploadPath, getStorageUsage } from '@/lib/storage'
+import { generateUploadPath, getStorageUsage, invalidateStorageCache } from '@/lib/storage'
 import { UPLOAD_LIMITS } from '@/lib/validations/upload'
 
 /* ─── POST /api/files/upload ────────────────────────── */
 
 export async function POST(req: NextRequest) {
   // 限流: 30 req/min per IP (文件上传)
-  const blocked = withRateLimit(req, 'file-upload', 30, 60_000)
+  const blocked = await withRateLimit(req, 'file-upload', 30, 60_000)
   if (blocked) return blocked
 
   try {
@@ -58,6 +58,9 @@ export async function POST(req: NextRequest) {
       httpMetadata: { contentType: file.type },
       customMetadata: { userId, originalName: file.name },
     })
+
+    /* 主动失效存储配额缓存 */
+    await invalidateStorageCache(userId)
 
     return apiOk({
       key,

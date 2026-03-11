@@ -489,7 +489,7 @@ export async function listTasks(
   }
 }
 
-/* ─── Internal: Failure Handling (retry or final fail) ─ */
+/* ─── Internal: Failure Handling (fail-fast, no auto-retry) ─ */
 
 async function handleFailure(
   db: D1Database,
@@ -498,27 +498,6 @@ async function handleFailure(
 ): Promise<TaskDetail> {
   const nowIso = new Date().toISOString()
 
-  /* 有重试机会: 递增 retry_count，状态回 pending */
-  if (row.retry_count < row.max_retries) {
-    await db
-      .prepare(
-        `UPDATE async_tasks
-         SET status = 'pending', retry_count = retry_count + 1,
-             last_checked_at = ?, updated_at = ?
-         WHERE id = ?`,
-      )
-      .bind(nowIso, nowIso, row.id)
-      .run()
-
-    log.warn('Task retrying', { taskId: row.id, retry: row.retry_count + 1 })
-    return {
-      ...rowToDetail(row),
-      status: 'pending',
-      retryCount: row.retry_count + 1,
-    }
-  }
-
-  /* 重试耗尽: 标记 failed + 退还积分 */
   await db
     .prepare(
       `UPDATE async_tasks
@@ -533,7 +512,7 @@ async function handleFailure(
     await refundCredits(db, row.user_id, row.freeze_tx_id)
   }
 
-  log.error('Task failed permanently', undefined, { taskId: row.id, errorMsg })
+  log.error('Task failed', undefined, { taskId: row.id, errorMsg })
   return {
     ...rowToDetail(row),
     status: 'failed',
