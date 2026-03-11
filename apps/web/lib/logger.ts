@@ -29,7 +29,10 @@ interface Logger {
 
 /* ─── Config ──────────────────────────────────────────── */
 
-const IS_DEV = process.env.NODE_ENV === 'development'
+// NOTE: Next.js bundler statically replaces process.env.NODE_ENV at build time,
+// so this becomes a literal boolean in Cloudflare Workers runtime — safe to use.
+const IS_DEV =
+  typeof process !== 'undefined' && process.env?.NODE_ENV === 'development'
 const IS_SERVER = typeof window === 'undefined'
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
