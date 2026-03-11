@@ -15,6 +15,8 @@ favorites/route.ts        — GET 当前用户收藏的工作流列表
 [id]/like/route.ts        — POST toggle 点赞 (幂等切换)
 [id]/favorite/route.ts    — POST toggle 收藏 (幂等切换)
 [id]/report/route.ts      — POST 提交举报 (reason + description)
+[id]/thumbnail/route.ts   — PUT 上传画布截图缩略图 (FormData → R2 thumbnails/{id}.webp)
+[id]/history/route.ts     — GET 执行历史列表 / POST 记录执行结果
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

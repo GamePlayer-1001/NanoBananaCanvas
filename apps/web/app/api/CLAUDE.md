@@ -36,7 +36,10 @@ explore/                — 社区广场 (2 端点)
 categories/route.ts     — GET  分类列表 (i18n 本地化)
 notifications/route.ts  — GET+PATCH 通知列表 + 标记已读
 users/me/route.ts       — GET  当前用户信息 + 首次登录自动同步
-files/upload/route.ts   — POST 文件上传 (R2 存储)
+files/upload/route.ts   — POST 文件上传 (R2 存储, 配额检查)
+
+admin/                  — 运维管理 (1 端点)
+  cleanup/route.ts      — POST 手动触发过期文件清理 (Bearer token 认证)
 og/route.tsx            — GET  Open Graph 动态图片生成
 health/route.ts         — GET  健康检查端点
 
