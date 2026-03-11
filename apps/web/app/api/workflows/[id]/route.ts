@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth (requireAuth + optionalAuth), @/lib/api/response, @/lib/db, @/lib/errors, @/lib/validations/workflow
+ * [INPUT]: 依赖 @/lib/api/auth (requireAuth + optionalAuth), @/lib/api/response, @/lib/db, @/lib/errors, @/lib/logger, @/lib/validations/workflow
  * [OUTPUT]: 对外提供 GET/PUT/DELETE /api/workflows/:id
  * [POS]: api/workflows/[id] 的单个工作流 CRUD，GET 支持公开访问 (explore 详情页)
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,7 +11,10 @@ import { optionalAuth, requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { createLogger } from '@/lib/logger'
 import { updateWorkflowSchema } from '@/lib/validations/workflow'
+
+const log = createLogger('api:workflows:[id]')
 
 /* ─── Params ─────────────────────────────────────────── */
 
@@ -47,10 +50,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     if (!pub) throw new NotFoundError('Workflow', id)
 
-    /* 异步递增浏览量 */
+    /* 异步递增浏览量 (fire-and-forget — 不阻塞响应，失败仅记日志) */
     db.prepare('UPDATE workflows SET view_count = view_count + 1 WHERE id = ?')
       .bind(id)
       .run()
+      .catch((err) => log.warn('Failed to increment view_count', { workflowId: id, error: String(err) }))
 
     /* 查询当前用户的互动状态 */
     let liked = false
