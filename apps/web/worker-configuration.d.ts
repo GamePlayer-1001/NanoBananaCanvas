@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 由 wrangler.jsonc 绑定配置定义
- * [OUTPUT]: 对外提供 CloudflareEnv 类型 + Cloudflare 绑定类型 (D1/R2/Fetcher)
+ * [OUTPUT]: 对外提供 CloudflareEnv 类型 + Cloudflare 绑定类型 (D1/KV/R2/Fetcher)
  * [POS]: apps/web 的 Cloudflare Workers 绑定类型声明
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -39,6 +39,20 @@ interface D1Result<T = any> {
 interface D1ExecResult {
   count: number
   duration: number
+}
+
+interface KVNamespace {
+  get(key: string, type: 'text'): Promise<string | null>
+  get<T = unknown>(key: string, type: 'json'): Promise<T | null>
+  get(key: string, type: 'arrayBuffer'): Promise<ArrayBuffer | null>
+  get(key: string, type: 'stream'): Promise<ReadableStream | null>
+  get(key: string, options?: { type?: 'text' | 'json' | 'arrayBuffer' | 'stream' }): Promise<string | ArrayBuffer | ReadableStream | null>
+  put(
+    key: string,
+    value: string | ArrayBuffer | ArrayBufferView | ReadableStream | Blob,
+    options?: { expiration?: number; expirationTtl?: number; metadata?: unknown },
+  ): Promise<void>
+  delete(key: string): Promise<void>
 }
 
 interface R2Bucket {
@@ -101,6 +115,7 @@ interface R2HTTPMetadata {
 
 interface CloudflareEnv {
   DB: D1Database
+  KV: KVNamespace
   UPLOADS: R2Bucket
   ASSETS: Fetcher
 
