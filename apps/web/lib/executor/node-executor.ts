@@ -36,6 +36,7 @@ const executeNoop: NodeExecutorFn = async () => ({ outputs: {} })
 
 const executors: Record<string, NodeExecutorFn> = {
   'text-input': executeTextInput,
+  'image-input': executeImageInput,
   llm: executeLLM,
   display: executeDisplay,
   'image-gen': executeImageGen,
@@ -70,6 +71,21 @@ async function executeTextInput(ctx: NodeExecutionContext): Promise<NodeExecutio
   const raw = ctx.data.config.text
   const text = typeof raw === 'string' ? raw : raw == null ? '' : String(raw)
   return { outputs: { 'text-out': text } }
+}
+
+async function executeImageInput(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const raw = ctx.data.config.imageUrl
+  const imageUrl = typeof raw === 'string' ? raw : ''
+
+  if (!imageUrl) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Image input node received no image',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  return { outputs: { 'image-out': imageUrl } }
 }
 
 /* ─── LLM: 调用 AI 模型 ─────────────────────────────── */

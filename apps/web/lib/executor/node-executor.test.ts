@@ -36,6 +36,13 @@ describe('executeNode', () => {
     expect(result.outputs['text-out']).toBe('hello world')
   })
 
+  it('returns uploaded image url as image-out', async () => {
+    const result = await executeNode(
+      createContext('image-input', { imageUrl: '/api/files/uploads/demo/image.png' }),
+    )
+    expect(result.outputs['image-out']).toBe('/api/files/uploads/demo/image.png')
+  })
+
   it('supports typed equality in conditional node', async () => {
     const result = await executeNode(
       createContext('conditional', { operator: '==', compareValue: '3' }, { 'value-in': 3 }),

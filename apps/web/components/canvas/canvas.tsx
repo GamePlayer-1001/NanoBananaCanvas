@@ -60,11 +60,12 @@ const DUPLICATE_OFFSET = 50
 
 interface CanvasProps {
   workflowId?: string
+  canEdit?: boolean
 }
 
 /* ─── Inner Component (needs ReactFlowProvider context) ─ */
 
-function CanvasInner({ workflowId }: CanvasProps) {
+function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const rfInstance = useRef<FlowInstance | null>(null)
   const connectingFrom = useRef<{ nodeId: string; handleId: string | null } | null>(null)
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setViewport, addNode, removeNode } =
@@ -74,7 +75,7 @@ function CanvasInner({ workflowId }: CanvasProps) {
   const { screenToFlowPosition } = useReactFlow()
 
   /* ── 自动保存 (localStorage + 云端双轨) ────────────── */
-  useAutoSave(workflowId)
+  useAutoSave(workflowId, canEdit)
 
   /* ── 全局快捷键 (Ctrl+Enter/Esc/Ctrl+S/Ctrl+O) ───── */
   useCanvasShortcuts(workflowId)
@@ -354,10 +355,10 @@ function CanvasInner({ workflowId }: CanvasProps) {
 
 /* ─── Exported Component ─────────────────────────────── */
 
-export function Canvas({ workflowId }: CanvasProps) {
+export function Canvas({ workflowId, canEdit }: CanvasProps) {
   return (
     <ErrorBoundary>
-      <CanvasInner workflowId={workflowId} />
+      <CanvasInner workflowId={workflowId} canEdit={canEdit} />
     </ErrorBoundary>
   )
 }

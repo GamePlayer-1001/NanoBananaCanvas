@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next-intl 的 useTranslations，依赖 lucide-react 图标，依赖 @/lib/utils 的 cn()
+ * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next-intl 的 useTranslations，依赖 ./node-entry-config，依赖 @/lib/utils 的 cn()
  * [OUTPUT]: 对外提供 CanvasContextMenu 画布空白区域右键菜单
  * [POS]: components/canvas 的画布右键菜单，被 Canvas 组件内嵌渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,8 +9,8 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, GitBranch, ImageIcon, MonitorPlay, Repeat, Type, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CANVAS_CONTEXT_MENU_GROUPS, flattenNodeEntryGroups } from './node-entry-config'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -21,17 +21,8 @@ interface CanvasContextMenuProps {
   onClose: () => void
 }
 
-/* ─── Menu Item Definition ───────────────────────────── */
-
-const MENU_ITEMS = [
-  { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
-  { type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit },
-  { type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay },
-  { type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon },
-  { type: 'video-gen', labelKey: 'addVideoGen' as const, icon: Video },
-  { type: 'conditional', labelKey: 'addConditional' as const, icon: GitBranch },
-  { type: 'loop', labelKey: 'addLoop' as const, icon: Repeat },
-] as const
+/* 先隐藏分组 UI，只保留分组定义与排序语义 */
+const MENU_ITEMS = flattenNodeEntryGroups(CANVAS_CONTEXT_MENU_GROUPS)
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -67,7 +58,8 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
       )}
       style={{ left: adjustedX, top: adjustedY }}
     >
-      {MENU_ITEMS.map(({ type, labelKey, icon: Icon }) => (
+      {MENU_ITEMS.map(({ type, labelKey, icon: Icon }) => {
+        return (
         <button
           key={type}
           className={cn(
@@ -83,7 +75,8 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
           <Icon className="h-4 w-4 opacity-60" />
           {t(labelKey)}
         </button>
-      ))}
+        )
+      })}
     </div>
   )
 }

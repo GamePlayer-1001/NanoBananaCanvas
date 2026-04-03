@@ -42,6 +42,7 @@ export default function CanvasPage({
   const { id } = use(params)
   const { data, isLoading } = useWorkflow(id)
   const hasLoaded = useRef(false)
+  const canEdit = (data as Record<string, unknown> | undefined)?.canEdit === true
 
   /* ── 从 API 数据注入 FlowStore ──────────────────────── */
   useEffect(() => {
@@ -77,7 +78,7 @@ export default function CanvasPage({
       {/* 画布编辑器 (lg+) */}
       <div className="hidden h-full lg:block">
         <ReactFlowProvider>
-          <Canvas workflowId={id} />
+          <Canvas workflowId={id} canEdit={canEdit} />
         </ReactFlowProvider>
       </div>
     </>

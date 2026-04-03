@@ -314,6 +314,7 @@
     "select": "选择",
     "hand": "抓手",
     "textInput": "文本输入",
+    "imageInput": "图片输入",
     "llm": "LLM",
     "display": "展示",
     "imageGen": "图片生成",
@@ -326,6 +327,7 @@
   },
   "contextMenu": {
     "addTextInput": "添加文本输入",
+    "addImageInput": "添加图片输入",
     "addLLM": "添加 LLM",
     "addDisplay": "添加展示",
     "addImageGen": "添加图片生成",
@@ -340,6 +342,7 @@
   },
   "nodes": {
     "enterText": "输入文本...",
+    "imageInputHint": "上传一张图片，作为后续节点的输入源",
     "model": "模型",
     "temperature": "温度: {value}",
     "maxTokens": "最大 Token 数",
