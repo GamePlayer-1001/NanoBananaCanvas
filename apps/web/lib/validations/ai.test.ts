@@ -87,17 +87,23 @@ describe('aiExecuteSchema', () => {
 
 describe('apiKeySchema', () => {
   it('accepts valid api key', () => {
-    const result = apiKeySchema.parse({ apiKey: 'sk-or-v1-xxx' })
+    const result = apiKeySchema.parse({ apiKey: 'sk-or-v1-xxx', modelId: 'openai/gpt-4o-mini' })
     expect(result.apiKey).toBe('sk-or-v1-xxx')
   })
 
   it('rejects empty api key', () => {
-    expect(() => apiKeySchema.parse({ apiKey: '' })).toThrow()
+    expect(() => apiKeySchema.parse({ apiKey: '', modelId: 'openai/gpt-4o-mini' })).toThrow()
   })
 
-  it('accepts optional label', () => {
-    const result = apiKeySchema.parse({ apiKey: 'sk-test', label: 'My Key' })
+  it('accepts optional label and baseUrl', () => {
+    const result = apiKeySchema.parse({
+      apiKey: 'sk-test',
+      modelId: 'openai/gpt-4o-mini',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      label: 'My Key',
+    })
     expect(result.label).toBe('My Key')
+    expect(result.baseUrl).toBe('https://openrouter.ai/api/v1')
   })
 })
 

@@ -6,7 +6,6 @@
  *          依赖 sonner 的 toast 通知，
  *          依赖 next-intl 的 useTranslations，
  *          依赖 @clerk/nextjs 的 UserButton，
- *          依赖 ./api-key-dialog 的 API Key 配置，
  *          依赖 @/components/locale-switcher 的语言切换，
  *          依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 CanvasTopToolbar 顶部工具栏组件
@@ -38,7 +37,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { LocaleSwitcher } from '@/components/locale-switcher'
-import { ApiKeyDialog } from './api-key-dialog'
 
 /* ─── Save Status Indicator ───────────────────────────── */
 
@@ -367,11 +365,6 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
 
         {/* ── Locale ──────────────────────────────────── */}
         <LocaleSwitcher />
-
-        {/* ── API Key ─────────────────────────────────── */}
-        <ApiKeyDialog />
-
-        <Separator orientation="vertical" className="mx-1 !h-6" />
 
         {/* ── User ───────────────────────────────────── */}
         <UserButton

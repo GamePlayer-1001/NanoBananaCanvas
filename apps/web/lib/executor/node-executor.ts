@@ -188,12 +188,13 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 /* ─── ImageGen: 提交图片生成任务 ─────────────────────── */
 
 async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey } = ctx
+  const { data, inputs, apiKey, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'openrouter'
   const model = (config.model as string) ?? 'openai/dall-e-3'
   const size = (config.size as string) ?? '1024x1024'
+  const executionMode = (config.executionMode as string) ?? 'credits'
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const referenceImage = (inputs['image-in'] as string) || undefined
 
@@ -205,14 +206,21 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
+  if (executionMode === 'credits' || executionMode === 'user_key') {
+    const resultUrl = await executeImageGenViaTaskApi({
+      provider,
+      modelId: model,
+      executionMode,
+      input: { prompt, size, imageUrl: referenceImage },
+      signal,
+    })
+    log.debug('Image gen complete', { nodeId: ctx.nodeId, provider, executionMode })
+    return { outputs: { 'image-out': resultUrl } }
+  }
+
   const { ImageGenProcessor } = await import('@/lib/tasks/processors/image-gen')
   const processor = new ImageGenProcessor(provider)
-  const submitResult = await processor.submit(
-    { model, params: { prompt, size, imageUrl: referenceImage } },
-    apiKey,
-  )
-
-  // 同步 Provider: submit 直接返回 URL，check 即完成
+  const submitResult = await processor.submit({ model, params: { prompt, size, imageUrl: referenceImage } }, apiKey)
   const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
   const resultUrl = checkResult.result?.url ?? ''
 
@@ -580,4 +588,97 @@ async function createApiWorkflowError(response: Response): Promise<WorkflowError
   }
 
   return new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, message)
+}
+
+interface ExecuteImageGenTaskApiParams {
+  provider: string
+  modelId: string
+  executionMode: 'credits' | 'user_key'
+  input: Record<string, unknown>
+  signal: AbortSignal
+}
+
+async function executeImageGenViaTaskApi(params: ExecuteImageGenTaskApiParams): Promise<string> {
+  const submitResponse = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      taskType: 'image_gen',
+      provider: params.provider,
+      modelId: params.modelId,
+      executionMode: params.executionMode,
+      input: params.input,
+    }),
+    signal: params.signal,
+  })
+
+  if (!submitResponse.ok) {
+    throw await createApiWorkflowError(submitResponse)
+  }
+
+  const submitPayload = (await submitResponse.json()) as {
+    data?: { id?: string }
+  }
+
+  const taskId = submitPayload.data?.id
+  if (!taskId) {
+    throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Image task submission returned no task id')
+  }
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await delay(1000, params.signal)
+
+    const taskResponse = await fetch(`/api/tasks/${taskId}`, {
+      cache: 'no-store',
+      signal: params.signal,
+    })
+
+    if (!taskResponse.ok) {
+      throw await createApiWorkflowError(taskResponse)
+    }
+
+    const taskPayload = (await taskResponse.json()) as {
+      data?: {
+        status?: string
+        output?: { url?: string; error?: string } | null
+      }
+    }
+
+    const status = taskPayload.data?.status
+    const output = taskPayload.data?.output
+
+    if (status === 'completed' && output?.url) {
+      return output.url
+    }
+
+    if (status === 'failed' || status === 'cancelled') {
+      throw new WorkflowError(
+        ErrorCode.WORKFLOW_NODE_ERROR,
+        output?.error ?? `Image task ${status}`,
+      )
+    }
+  }
+
+  throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Image task polling timed out')
+}
+
+async function delay(ms: number, signal: AbortSignal): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup()
+      resolve()
+    }, ms)
+
+    const onAbort = () => {
+      cleanup()
+      reject(new WorkflowError(ErrorCode.WORKFLOW_ABORTED, 'Execution aborted'))
+    }
+
+    const cleanup = () => {
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', onAbort)
+    }
+
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
 }

@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @tanstack/react-query 的 query/mutation，
  *          依赖 sonner 的 toast，依赖 @/lib/query/keys
  * [OUTPUT]: 对外提供 ModelPreferencesTab 模型偏好设置面板
- * [POS]: profile 的模型偏好 Tab，被 profile-modal.tsx 消费，负责管理服务端 user_api_keys 闭环
+ * [POS]: profile 的模型偏好 Tab，被 profile-modal.tsx 消费，负责管理账号级模型配置槽位
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -16,8 +16,6 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/lib/query/keys'
 
-/* ─── Types ──────────────────────────────────────────── */
-
 interface ApiKeyItem {
   id: string
   provider: string
@@ -25,6 +23,11 @@ interface ApiKeyItem {
   isActive: boolean
   lastUsedAt: string | null
   createdAt: string | null
+  slotId?: string
+  capability?: string
+  providerKind?: string
+  modelId?: string
+  baseUrl?: string
 }
 
 interface ApiKeysResponse {
@@ -34,45 +37,58 @@ interface ApiKeysResponse {
   }
 }
 
-/* ─── Provider Config ────────────────────────────────── */
-
-const LLM_PROVIDER_CARDS = [
+const MODEL_CONFIG_CARDS = [
   {
-    id: 'openrouter',
-    titleKey: 'providerOpenRouter',
-    descriptionKey: 'providerOpenRouterDesc',
+    id: 'llm-openai',
+    titleKey: 'slotLlmOpenAI',
+    descriptionKey: 'slotLlmOpenAIDesc',
     placeholder: 'sk-or-v1-...',
+    showBaseUrl: true,
   },
   {
-    id: 'deepseek',
-    titleKey: 'providerDeepSeek',
-    descriptionKey: 'providerDeepSeekDesc',
-    placeholder: 'sk-...',
+    id: 'image-openai',
+    titleKey: 'slotImageOpenAI',
+    descriptionKey: 'slotImageOpenAIDesc',
+    placeholder: 'sk-or-v1-...',
+    showBaseUrl: true,
   },
   {
-    id: 'gemini',
-    titleKey: 'providerGemini',
-    descriptionKey: 'providerGeminiDesc',
+    id: 'image-google',
+    titleKey: 'slotImageGoogle',
+    descriptionKey: 'slotImageGoogleDesc',
     placeholder: 'AIza...',
+    showBaseUrl: false,
   },
 ] as const
 
-/* ─── Request Helpers ────────────────────────────────── */
+type SlotId = (typeof MODEL_CONFIG_CARDS)[number]['id']
+
+interface DraftState {
+  apiKey: string
+  baseUrl: string
+  modelId: string
+}
 
 async function fetchApiKeys(): Promise<ApiKeyItem[]> {
   const res = await fetch('/api/settings/api-keys', { cache: 'no-store' })
   const payload = (await res.json()) as ApiKeysResponse | { error?: { message?: string } }
   if (!res.ok || !('data' in payload)) {
-    throw new Error(payload.error?.message ?? 'Failed to load API keys')
+    const errorMessage = 'error' in payload ? payload.error?.message : undefined
+    throw new Error(errorMessage ?? 'Failed to load API keys')
   }
   return payload.data.keys
 }
 
-async function saveApiKey(provider: string, apiKey: string) {
+async function saveApiKey(
+  provider: string,
+  apiKey: string,
+  modelId: string,
+  baseUrl?: string,
+) {
   const res = await fetch(`/api/settings/api-keys?provider=${provider}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey }),
+    body: JSON.stringify({ apiKey, modelId, baseUrl }),
   })
 
   const payload = (await res.json()) as { error?: { message?: string } }
@@ -103,12 +119,10 @@ async function deleteApiKey(provider: string) {
   }
 }
 
-/* ─── Component ──────────────────────────────────────── */
-
 export function ModelPreferencesTab() {
   const t = useTranslations('profile')
   const queryClient = useQueryClient()
-  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [drafts, setDrafts] = useState<Record<string, DraftState>>({})
 
   const apiKeysQuery = useQuery({
     queryKey: queryKeys.settings.apiKeys(),
@@ -125,10 +139,22 @@ export function ModelPreferencesTab() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: ({ provider, apiKey }: { provider: string; apiKey: string }) =>
-      saveApiKey(provider, apiKey),
+    mutationFn: ({
+      provider,
+      apiKey,
+      modelId,
+      baseUrl,
+    }: {
+      provider: string
+      apiKey: string
+      modelId: string
+      baseUrl?: string
+    }) => saveApiKey(provider, apiKey, modelId, baseUrl),
     onSuccess: async (_data, variables) => {
-      setDrafts((current) => ({ ...current, [variables.provider]: '' }))
+      setDrafts((current) => ({
+        ...current,
+        [variables.provider]: { apiKey: '', baseUrl: '', modelId: '' },
+      }))
       await invalidateKeys()
       toast.success(t('apiKeySaved'))
     },
@@ -151,7 +177,10 @@ export function ModelPreferencesTab() {
   const deleteMutation = useMutation({
     mutationFn: (provider: string) => deleteApiKey(provider),
     onSuccess: async (_data, provider) => {
-      setDrafts((current) => ({ ...current, [provider]: '' }))
+      setDrafts((current) => ({
+        ...current,
+        [provider]: { apiKey: '', baseUrl: '', modelId: '' },
+      }))
       await invalidateKeys()
       toast.success(t('apiKeyDeleted'))
     },
@@ -164,9 +193,7 @@ export function ModelPreferencesTab() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-foreground">{t('modelPreferences')}</h3>
-        <p className="text-sm leading-6 text-muted-foreground">
-          {t('modelPreferencesDesc')}
-        </p>
+        <p className="text-sm leading-6 text-muted-foreground">{t('modelPreferencesDesc')}</p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/20 p-4">
@@ -186,27 +213,25 @@ export function ModelPreferencesTab() {
         </div>
       ) : (
         <div className="space-y-4">
-          {LLM_PROVIDER_CARDS.map((provider) => {
-            const saved = savedKeys.get(provider.id)
-            const draft = drafts[provider.id] ?? ''
-            const isSaving = saveMutation.isPending && saveMutation.variables?.provider === provider.id
-            const isTesting = testMutation.isPending && testMutation.variables === provider.id
-            const isDeleting = deleteMutation.isPending && deleteMutation.variables === provider.id
+          {MODEL_CONFIG_CARDS.map((card) => {
+            const saved = savedKeys.get(card.id)
+            const draft = drafts[card.id] ?? { apiKey: '', baseUrl: '', modelId: '' }
+            const isSaving = saveMutation.isPending && saveMutation.variables?.provider === card.id
+            const isTesting = testMutation.isPending && testMutation.variables === card.id
+            const isDeleting = deleteMutation.isPending && deleteMutation.variables === card.id
 
             return (
               <section
-                key={provider.id}
+                key={card.id}
                 className="space-y-4 rounded-xl border border-border bg-background p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <Key size={14} />
-                      {t(provider.titleKey)}
+                      {t(card.titleKey)}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {t(provider.descriptionKey)}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t(card.descriptionKey)}</p>
                   </div>
 
                   {saved?.isActive ? (
@@ -222,16 +247,20 @@ export function ModelPreferencesTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    {t('apiKeyLabel')}
-                  </label>
+                  <label className="text-sm font-medium text-foreground">{t('apiKeyLabel')}</label>
                   <input
                     type="password"
-                    value={draft}
+                    value={draft.apiKey}
                     onChange={(e) =>
-                      setDrafts((current) => ({ ...current, [provider.id]: e.target.value }))
+                      setDrafts((current) => ({
+                        ...current,
+                        [card.id]: {
+                          ...draft,
+                          apiKey: e.target.value,
+                        },
+                      }))
                     }
-                    placeholder={provider.placeholder}
+                    placeholder={card.placeholder}
                     className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -239,13 +268,67 @@ export function ModelPreferencesTab() {
                   </p>
                 </div>
 
+                {card.showBaseUrl ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">{t('baseUrlLabel')}</label>
+                    <input
+                      type="url"
+                      value={draft.baseUrl}
+                      onChange={(e) =>
+                        setDrafts((current) => ({
+                          ...current,
+                          [card.id]: {
+                            ...draft,
+                            baseUrl: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder={saved?.baseUrl ?? 'https://openrouter.ai/api/v1'}
+                      className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">{t('modelIdLabel')}</label>
+                  <input
+                    type="text"
+                    value={draft.modelId}
+                    onChange={(e) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [card.id]: {
+                          ...draft,
+                          modelId: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={saved?.modelId ?? getDefaultModelPlaceholder(card.id)}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
-                      saveMutation.mutate({ provider: provider.id, apiKey: draft.trim() })
+                      saveMutation.mutate({
+                        provider: card.id,
+                        apiKey: draft.apiKey.trim(),
+                        modelId: draft.modelId.trim() || saved?.modelId || '',
+                        baseUrl: card.showBaseUrl
+                          ? draft.baseUrl.trim() || saved?.baseUrl || ''
+                          : undefined,
+                      })
                     }
-                    disabled={!draft.trim() || isSaving || isTesting || isDeleting}
+                    disabled={
+                      !draft.apiKey.trim() ||
+                      !(draft.modelId.trim() || saved?.modelId) ||
+                      (card.showBaseUrl && !(draft.baseUrl.trim() || saved?.baseUrl)) ||
+                      isSaving ||
+                      isTesting ||
+                      isDeleting
+                    }
                     className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
@@ -254,7 +337,7 @@ export function ModelPreferencesTab() {
 
                   <button
                     type="button"
-                    onClick={() => testMutation.mutate(provider.id)}
+                    onClick={() => testMutation.mutate(card.id)}
                     disabled={!saved || isSaving || isTesting || isDeleting}
                     className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -264,7 +347,7 @@ export function ModelPreferencesTab() {
 
                   <button
                     type="button"
-                    onClick={() => deleteMutation.mutate(provider.id)}
+                    onClick={() => deleteMutation.mutate(card.id)}
                     disabled={!saved || isSaving || isTesting || isDeleting}
                     className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -274,9 +357,11 @@ export function ModelPreferencesTab() {
                 </div>
 
                 {saved?.lastUsedAt ? (
-                  <p className="text-xs text-muted-foreground">
-                    {t('lastUsedAt', { date: saved.lastUsedAt })}
-                  </p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p>{t('currentModelId', { modelId: saved.modelId ?? '-' })}</p>
+                    {saved.baseUrl ? <p>{t('currentBaseUrl', { baseUrl: saved.baseUrl })}</p> : null}
+                    <p>{t('lastUsedAt', { date: saved.lastUsedAt })}</p>
+                  </div>
                 ) : null}
               </section>
             )
@@ -285,4 +370,17 @@ export function ModelPreferencesTab() {
       )}
     </div>
   )
+}
+
+function getDefaultModelPlaceholder(slotId: SlotId): string {
+  switch (slotId) {
+    case 'llm-openai':
+      return 'openai/gpt-4o-mini'
+    case 'image-openai':
+      return 'openai/dall-e-3'
+    case 'image-google':
+      return 'imagen-3.0-generate-002'
+    default:
+      return ''
+  }
 }

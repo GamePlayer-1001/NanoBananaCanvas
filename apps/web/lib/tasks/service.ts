@@ -1,12 +1,11 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 PLANS/TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
- *          依赖 @/lib/credits 的 freezeCredits/confirmSpend/refundCredits,
+ *          依赖 @/lib/credits 的 freezeCredits/confirmSpend/refundCredits/decryptApiKey,
  *          依赖 @/lib/credits/pricing 的 getModelPricing/checkModelAccess,
- *          依赖 @/lib/credits/crypto 的 decryptApiKey,
- *          依赖 @/lib/tasks/processors 的 getProcessor,
+ *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env
  * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks
- * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Credits 三者协作
+ * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Credits + 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,6 +19,12 @@ import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import {
+  deserializeUserModelConfig,
+  isUserModelConfigSlotId,
+  toRuntimeUserModelConfig,
+  type UserModelRuntimeConfig,
+} from '@/lib/user-model-config'
 
 import { getProcessor } from './processors'
 
@@ -156,6 +161,9 @@ export async function submitTask(
 ): Promise<TaskDetail> {
   const { userId, userPlan, taskType, provider, modelId, executionMode, input, workflowId, nodeId } = params
   const config = TASK_CONFIG[taskType]
+  let resolvedProvider = provider
+  let resolvedModelId = modelId
+  let resolvedInput = input
 
   /* 并发检查 */
   await checkConcurrency(db, userId, userPlan)
@@ -174,30 +182,19 @@ export async function submitTask(
   /* user_key 模式: 获取解密后的 API Key */
   let apiKey = ''
   if (executionMode === 'user_key') {
-    const keyRow = await db
-      .prepare(
-        `SELECT encrypted_key FROM user_api_keys
-         WHERE user_id = ? AND provider = ? AND is_active = 1`,
-      )
-      .bind(userId, provider)
-      .first<{ encrypted_key: string }>()
-
-    if (!keyRow) {
-      throw new TaskError(
-        ErrorCode.TASK_PROVIDER_ERROR,
-        `No API key configured for provider: ${provider}`,
-        { provider },
-      )
-    }
-
-    const encryptionKey = await requireEnv('API_KEY_ENCRYPTION_KEY')
-    apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+    const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, provider)
+    apiKey = runtimeConfig.apiKey
+    resolvedProvider = runtimeConfig.providerId
+    resolvedModelId = runtimeConfig.modelId
+    resolvedInput = runtimeConfig.baseUrl
+      ? { ...input, baseUrl: runtimeConfig.baseUrl }
+      : input
   }
 
   /* 提交到 Provider */
-  const processor = getProcessor(taskType, provider)
+  const processor = getProcessor(taskType, resolvedProvider)
   const submitResult = await processor.submit(
-    { model: modelId, params: input },
+    { model: resolvedModelId, params: resolvedInput },
     apiKey,
   )
 
@@ -217,21 +214,21 @@ export async function submitTask(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
-      taskId, userId, taskType, provider, modelId,
-      submitResult.externalTaskId, executionMode, JSON.stringify(input),
+      taskId, userId, taskType, provider, resolvedModelId,
+      submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
       initialStatus, creditsCharged, freezeTxId,
       config.maxRetries, workflowId ?? null, nodeId ?? null,
       now, initialStatus === 'running' ? now : null, now,
     )
     .run()
 
-  log.info('Task submitted', { taskId, taskType, provider, executionMode, initialStatus })
+  log.info('Task submitted', { taskId, taskType, provider, resolvedProvider, executionMode, initialStatus })
 
   return {
     id: taskId,
     taskType,
     provider,
-    modelId,
+    modelId: resolvedModelId,
     executionMode,
     status: initialStatus,
     progress: 0,
@@ -245,6 +242,41 @@ export async function submitTask(
     startedAt: initialStatus === 'running' ? now : null,
     completedAt: null,
   }
+}
+
+async function getUserTaskRuntimeConfig(
+  db: D1Database,
+  userId: string,
+  provider: string,
+): Promise<UserModelRuntimeConfig> {
+  if (!isUserModelConfigSlotId(provider)) {
+    throw new TaskError(
+      ErrorCode.TASK_PROVIDER_ERROR,
+      `Unsupported user_key provider slot: ${provider}`,
+      { provider },
+    )
+  }
+
+  const keyRow = await db
+    .prepare(
+      `SELECT encrypted_key FROM user_api_keys
+       WHERE user_id = ? AND provider = ? AND is_active = 1`,
+    )
+    .bind(userId, provider)
+    .first<{ encrypted_key: string }>()
+
+  if (!keyRow) {
+    throw new TaskError(
+      ErrorCode.TASK_PROVIDER_ERROR,
+      `No API key configured for provider: ${provider}`,
+      { provider },
+    )
+  }
+
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+  const payload = deserializeUserModelConfig(provider, decrypted)
+  return toRuntimeUserModelConfig(provider, payload)
 }
 
 /* ─── 3. Check Task (Lazy Evaluation) ───────────────── */
@@ -291,19 +323,11 @@ export async function checkTask(
 
   /* 懒评估: 向 Provider 查询最新状态 */
   let apiKey = ''
+  let processorProvider = row.provider
   if (row.execution_mode === 'user_key' && row.external_task_id) {
-    const keyRow = await db
-      .prepare(
-        `SELECT encrypted_key FROM user_api_keys
-         WHERE user_id = ? AND provider = ? AND is_active = 1`,
-      )
-      .bind(userId, row.provider)
-      .first<{ encrypted_key: string }>()
-
-    if (keyRow) {
-      const encryptionKey = await requireEnv('API_KEY_ENCRYPTION_KEY')
-      apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-    }
+    const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
+    apiKey = runtimeConfig.apiKey
+    processorProvider = runtimeConfig.providerId
   }
 
   if (!row.external_task_id) {
@@ -311,7 +335,7 @@ export async function checkTask(
   }
 
   try {
-    const processor = getProcessor(row.task_type, row.provider)
+    const processor = getProcessor(row.task_type, processorProvider)
     const check = await processor.checkStatus(row.external_task_id, apiKey)
     const nowIso = new Date().toISOString()
 
@@ -403,21 +427,13 @@ export async function cancelTask(
   if (row.external_task_id) {
     try {
       let apiKey = ''
+      let processorProvider = row.provider
       if (row.execution_mode === 'user_key') {
-        const keyRow = await db
-          .prepare(
-            `SELECT encrypted_key FROM user_api_keys
-             WHERE user_id = ? AND provider = ? AND is_active = 1`,
-          )
-          .bind(userId, row.provider)
-          .first<{ encrypted_key: string }>()
-
-        if (keyRow) {
-          const encryptionKey = await requireEnv('API_KEY_ENCRYPTION_KEY')
-          apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-        }
+        const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
+        apiKey = runtimeConfig.apiKey
+        processorProvider = runtimeConfig.providerId
       }
-      const processor = getProcessor(row.task_type, row.provider)
+      const processor = getProcessor(row.task_type, processorProvider)
       await processor.cancel(row.external_task_id, apiKey)
     } catch (err) {
       log.warn('Provider cancel failed (best-effort)', { taskId, error: String(err) })

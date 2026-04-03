@@ -10,6 +10,7 @@ AI 推理服务层 · 多 Provider 可插拔架构 (OpenRouter + DeepSeek + Gemi
 types.ts        — ChatMessage/ChatParams/ChatResult/AIProvider/ModelOption/ModelGroup 类型定义
 provider.ts     — Provider 注册表 (registerProvider/getProvider/getPlatformKey/getAllModelGroups)
 base-openai.ts  — BaseOpenAICompatible 抽象基类 (OpenAI 兼容 API 的公共逻辑)
+openai-compatible.ts — OpenAICompatibleClient 动态 Provider (账号级自定义 baseUrl)
 openrouter.ts   — OpenRouterClient (extends BaseOpenAICompatible)，静态模型目录 OPENROUTER_MODELS
 deepseek.ts     — DeepSeekClient (extends BaseOpenAICompatible)，静态模型目录 DEEPSEEK_MODELS
 gemini.ts       — GeminiClient (独立实现，Google Generative AI API)，静态模型目录 GEMINI_MODELS

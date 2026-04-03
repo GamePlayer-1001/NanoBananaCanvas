@@ -12,29 +12,30 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { BrainCircuit, ChevronDown, ChevronRight, Coins, KeyRound, Loader2 } from 'lucide-react'
-import type { WorkflowNodeData } from '@/types'
-import { useFlowStore } from '@/stores/use-flow-store'
-import { getAllModelGroups } from '@/services/ai'
-import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ───────────────────────────────── */
+import { getAllModelGroups } from '@/services/ai'
+import { useFlowStore } from '@/stores/use-flow-store'
+import type { WorkflowNodeData } from '@/types'
+
+import { BaseNode } from './base-node'
 
 const INPUTS = [
   { id: 'prompt-in', label: 'Prompt', type: 'string' as const, required: true },
   { id: 'image-in', label: 'Image', type: 'image' as const },
 ]
+
 const OUTPUTS = [
   { id: 'text-out', label: 'Response', type: 'string' as const, required: false },
 ]
-
-/* ─── Defaults ───────────────────────────────────────── */
 
 const DEFAULT_PROVIDER = 'openrouter'
 const DEFAULT_MODEL = 'openai/gpt-4o-mini'
 const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_MAX_TOKENS = 1024
 
-/* ─── Shared Styles ──────────────────────────────────── */
+const USER_KEY_PROVIDER_OPTIONS = [
+  { value: 'llm-openai', label: 'OpenAI Compatible' },
+] as const
 
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
@@ -42,14 +43,11 @@ const SELECT_CLASS =
 const INPUT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
 
-/* ─── Component ──────────────────────────────────────── */
-
 export function LLMNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
 
-  /* ── Config values with defaults ──────────────────── */
   const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
   const model = (data.config.model as string) ?? DEFAULT_MODEL
   const temperature = (data.config.temperature as number) ?? DEFAULT_TEMPERATURE
@@ -60,27 +58,21 @@ export function LLMNode(props: NodeProps) {
   const tokenCount = (data.config.tokenCount as number) ?? 0
   const status = data.status ?? 'idle'
 
-  /* ── 从注册表获取模型列表 ─────────────────────────── */
   const modelGroups = useMemo(() => getAllModelGroups(), [])
-
-  /* ── 当前 Provider 下的模型 ────────────────────────── */
   const currentGroups = useMemo(
     () => modelGroups.filter((g) => g.provider === provider),
     [modelGroups, provider],
   )
 
-  /* ── Local UI state ───────────────────────────────── */
   const [showSystemPrompt, setShowSystemPrompt] = useState(!!systemPrompt)
   const outputRef = useRef<HTMLDivElement>(null)
 
-  /* ── Auto-scroll output to bottom ─────────────────── */
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight
     }
   }, [output])
 
-  /* ── Update helpers ───────────────────────────────── */
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
       updateNodeData(props.id, { config: { ...data.config, ...patch } })
@@ -88,15 +80,25 @@ export function LLMNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
+  useEffect(() => {
+    if (executionMode === 'user_key' && provider !== 'llm-openai') {
+      updateConfig({ provider: 'llm-openai' })
+    }
+  }, [executionMode, provider, updateConfig])
+
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const newProvider = e.target.value
-      // 切换 Provider 时自动选中该 Provider 的第一个模型
+      if (newProvider === 'llm-openai') {
+        updateConfig({ provider: newProvider })
+        return
+      }
+
       const groups = modelGroups.filter((g) => g.provider === newProvider)
       const firstModel = groups[0]?.models[0]?.value ?? ''
       updateConfig({ provider: newProvider, model: firstModel })
     },
-    [updateConfig, modelGroups],
+    [modelGroups, updateConfig],
   )
 
   const onModelChange = useCallback(
@@ -111,8 +113,10 @@ export function LLMNode(props: NodeProps) {
 
   const onMaxTokensChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const v = parseInt(e.target.value, 10)
-      if (!isNaN(v)) updateConfig({ maxTokens: Math.max(1, Math.min(128000, v)) })
+      const nextValue = parseInt(e.target.value, 10)
+      if (!Number.isNaN(nextValue)) {
+        updateConfig({ maxTokens: Math.max(1, Math.min(128000, nextValue)) })
+      }
     },
     [updateConfig],
   )
@@ -122,8 +126,11 @@ export function LLMNode(props: NodeProps) {
     [updateConfig],
   )
 
-  /* ── 可用的 Provider 列表 (去重) ────────────────────── */
   const providerOptions = useMemo(() => {
+    if (executionMode === 'user_key') {
+      return [...USER_KEY_PROVIDER_OPTIONS]
+    }
+
     const seen = new Set<string>()
     return modelGroups
       .filter((g) => {
@@ -132,7 +139,7 @@ export function LLMNode(props: NodeProps) {
         return true
       })
       .map((g) => ({ value: g.provider, label: g.providerName }))
-  }, [modelGroups])
+  }, [executionMode, modelGroups])
 
   return (
     <BaseNode
@@ -143,51 +150,61 @@ export function LLMNode(props: NodeProps) {
       outputs={OUTPUTS}
     >
       <div className="space-y-3">
-        {/* ── Provider selector ────────────────────── */}
         <ConfigField label={t('provider')}>
           <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
-            {providerOptions.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
+            {providerOptions.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </select>
         </ConfigField>
 
-        {/* ── Model selector (按 Provider 分组) ───── */}
         <ConfigField label={t('model')}>
-          <select value={model} onChange={onModelChange} className={SELECT_CLASS}>
-            {currentGroups.map((group) => (
-              <optgroup key={group.providerName} label={group.providerName}>
-                {group.models.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
+          <select
+            value={model}
+            onChange={onModelChange}
+            className={SELECT_CLASS}
+            disabled={executionMode === 'user_key'}
+          >
+            {executionMode === 'user_key' ? (
+              <option value={model}>{model || 'Use profile model config'}</option>
+            ) : (
+              currentGroups.map((group) => (
+                <optgroup key={group.providerName} label={group.providerName}>
+                  {group.models.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            )}
           </select>
         </ConfigField>
 
-        {/* ── Execution mode toggle ────────────────── */}
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
               active={executionMode === 'credits'}
-              onClick={() => updateConfig({ executionMode: 'credits' })}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'credits',
+                  provider: provider === 'llm-openai' ? DEFAULT_PROVIDER : provider,
+                })
+              }
               icon={<Coins size={12} />}
               label={t('creditsMode')}
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key' })}
+              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'llm-openai' })}
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
           </div>
         </ConfigField>
 
-        {/* ── Temperature slider ────────────────────── */}
         <ConfigField label={t('temperature', { value: temperature.toFixed(1) })}>
           <input
             type="range"
@@ -204,7 +221,6 @@ export function LLMNode(props: NodeProps) {
           </div>
         </ConfigField>
 
-        {/* ── Max tokens input ──────────────────────── */}
         <ConfigField label={t('maxTokens')}>
           <input
             type="number"
@@ -216,18 +232,17 @@ export function LLMNode(props: NodeProps) {
           />
         </ConfigField>
 
-        {/* ── System prompt (collapsible) ────────────── */}
         <div>
           <button
             type="button"
-            onClick={() => setShowSystemPrompt((v) => !v)}
+            onClick={() => setShowSystemPrompt((value) => !value)}
             className="nodrag text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
           >
             {showSystemPrompt ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             {t('systemPrompt')}
           </button>
 
-          {showSystemPrompt && (
+          {showSystemPrompt ? (
             <textarea
               value={systemPrompt}
               onChange={onSystemPromptChange}
@@ -235,23 +250,24 @@ export function LLMNode(props: NodeProps) {
               rows={3}
               className={`nodrag nowheel mt-1 resize-y ${INPUT_CLASS}`}
             />
-          )}
+          ) : null}
         </div>
 
-        {/* ── Output area (streaming) ────────────────── */}
-        {(status === 'running' || output) && (
+        {status === 'running' || output ? (
           <div className="border-border rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
                 {t('output')}
               </span>
               <div className="flex items-center gap-1.5">
-                {status === 'running' && (
+                {status === 'running' ? (
                   <Loader2 size={10} className="text-[var(--brand-500)] animate-spin" />
-                )}
-                {tokenCount > 0 && (
-                  <span className="text-muted-foreground text-[10px]">{t('tokens', { count: tokenCount })}</span>
-                )}
+                ) : null}
+                {tokenCount > 0 ? (
+                  <span className="text-muted-foreground text-[10px]">
+                    {t('tokens', { count: tokenCount })}
+                  </span>
+                ) : null}
               </div>
             </div>
 
@@ -262,18 +278,16 @@ export function LLMNode(props: NodeProps) {
               {output || (
                 <span className="text-muted-foreground italic">{t('generating')}</span>
               )}
-              {status === 'running' && (
+              {status === 'running' ? (
                 <span className="bg-foreground ml-0.5 inline-block h-3 w-1 animate-pulse rounded-sm" />
-              )}
+              ) : null}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </BaseNode>
   )
 }
-
-/* ─── Internal Components ────────────────────────────── */
 
 function ConfigField({ label, children }: { label: string; children: React.ReactNode }) {
   return (

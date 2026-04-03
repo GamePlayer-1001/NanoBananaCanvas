@@ -212,7 +212,9 @@ CREATE TABLE IF NOT EXISTS processed_stripe_events (
 CREATE INDEX IF NOT EXISTS idx_stripe_events_processed ON processed_stripe_events(processed_at);
 
 -- ── user_api_keys ─────────────────────────────
--- 用户 API Key 加密存储 (AES-256-GCM)
+-- 用户模型配置加密存储 (AES-256-GCM)
+-- provider 字段作为“配置槽位 ID”使用，例如 llm-openai / image-openai / image-google
+-- encrypted_key 内部保存 JSON 明文加密后的密文，结构见 lib/user-model-config.ts
 CREATE TABLE IF NOT EXISTS user_api_keys (
   id                TEXT PRIMARY KEY,
   user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
