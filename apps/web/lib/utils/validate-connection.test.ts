@@ -34,7 +34,12 @@ function mkConn(src: string, tgt: string, srcH = 'text-out', tgtH = 'prompt-in')
 /* ─── Tests ──────────────────────────────────────────── */
 
 describe('isValidConnection', () => {
-  const nodes = [mkNode('ti', 'text-input'), mkNode('llm', 'llm'), mkNode('disp', 'display')]
+  const nodes = [
+    mkNode('ti', 'text-input'),
+    mkNode('img', 'image-input'),
+    mkNode('llm', 'llm'),
+    mkNode('disp', 'display'),
+  ]
 
   it('allows valid text-input → llm connection', () => {
     expect(isValidConnection(mkConn('ti', 'llm', 'text-out', 'prompt-in'), nodes, [])).toBe(true)
@@ -44,6 +49,10 @@ describe('isValidConnection', () => {
     expect(
       isValidConnection(mkConn('llm', 'disp', 'text-out', 'content-in'), nodes, []),
     ).toBe(true)
+  })
+
+  it('allows valid image-input → llm image connection', () => {
+    expect(isValidConnection(mkConn('img', 'llm', 'image-out', 'image-in'), nodes, [])).toBe(true)
   })
 
   it('rejects self-connection', () => {

@@ -9,7 +9,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, GitBranch, ImageIcon, MonitorPlay, Repeat, Type, Video } from 'lucide-react'
+import { BrainCircuit, GitBranch, ImageIcon, ImagePlus, MonitorPlay, Repeat, Type, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -25,6 +25,7 @@ interface CanvasContextMenuProps {
 
 const MENU_ITEMS = [
   { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
+  { type: 'image-input', labelKey: 'addImageInput' as const, icon: ImagePlus },
   { type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit },
   { type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay },
   { type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon },

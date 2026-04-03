@@ -314,6 +314,7 @@
     "select": "Select",
     "hand": "Hand",
     "textInput": "Text Input",
+    "imageInput": "Image Input",
     "llm": "LLM",
     "display": "Display",
     "imageGen": "Image Gen",
@@ -326,6 +327,7 @@
   },
   "contextMenu": {
     "addTextInput": "Add Text Input",
+    "addImageInput": "Add Image Input",
     "addLLM": "Add LLM",
     "addDisplay": "Add Display",
     "addImageGen": "Add Image Gen",
@@ -340,6 +342,7 @@
   },
   "nodes": {
     "enterText": "Enter text...",
+    "imageInputHint": "Upload an image to use as an input source for downstream nodes",
     "model": "Model",
     "temperature": "Temperature: {value}",
     "maxTokens": "Max Tokens",

@@ -22,6 +22,14 @@ describe('createNode', () => {
     expect(node.data.status).toBe('idle')
   })
 
+  it('creates image-input with correct defaults', () => {
+    const node = createNode('image-input', { x: 80, y: 60 })
+    expect(node.type).toBe('image-input')
+    expect(node.data.label).toBe('Image Input')
+    expect(node.data.type).toBe('input')
+    expect(node.data.config).toEqual({ imageUrl: '' })
+  })
+
   it('creates llm with correct defaults', () => {
     const node = createNode('llm', { x: 0, y: 0 })
     expect(node.type).toBe('llm')

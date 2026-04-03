@@ -7,6 +7,7 @@
 
 import type { NodeTypes } from '@xyflow/react'
 import { TextInputNode } from './text-input-node'
+import { ImageInputNode } from './image-input-node'
 import { LLMNode } from './llm-node'
 import { DisplayNode } from './display-node'
 import { ImageGenNode } from './image-gen-node'
@@ -19,6 +20,7 @@ import { LoopNode } from './loop-node'
 
 export const NODE_TYPES: NodeTypes = {
   'text-input': TextInputNode,
+  'image-input': ImageInputNode,
   llm: LLMNode,
   display: DisplayNode,
   'image-gen': ImageGenNode,

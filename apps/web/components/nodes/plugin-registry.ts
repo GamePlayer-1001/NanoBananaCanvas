@@ -12,6 +12,7 @@ import {
   GitBranch,
   Group,
   ImageIcon,
+  ImagePlus,
   MonitorPlay,
   Music,
   Repeat,
@@ -76,6 +77,19 @@ register({
   },
   defaults: { text: '' },
   toolbar: { labelKey: 'textInput' },
+})
+
+register({
+  type: 'image-input',
+  category: 'input',
+  label: 'Image Input',
+  icon: ImagePlus,
+  ports: {
+    inputs: [],
+    outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+  },
+  defaults: { imageUrl: '' },
+  toolbar: { labelKey: 'imageInput' },
 })
 
 register({
