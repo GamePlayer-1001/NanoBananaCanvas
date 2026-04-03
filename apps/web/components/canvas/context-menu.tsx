@@ -9,7 +9,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, ImageIcon, MonitorPlay, Type, Video } from 'lucide-react'
+import { BrainCircuit, GitBranch, ImageIcon, MonitorPlay, Repeat, Type, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -29,6 +29,8 @@ const MENU_ITEMS = [
   { type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay },
   { type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon },
   { type: 'video-gen', labelKey: 'addVideoGen' as const, icon: Video },
+  { type: 'conditional', labelKey: 'addConditional' as const, icon: GitBranch },
+  { type: 'loop', labelKey: 'addLoop' as const, icon: Repeat },
 ] as const
 
 /* ─── Component ──────────────────────────────────────── */

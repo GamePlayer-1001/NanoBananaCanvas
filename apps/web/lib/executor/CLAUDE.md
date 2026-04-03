@@ -12,6 +12,8 @@ topological-sort.ts   — Kahn 算法 BFS 拓扑排序 + 环检测 (O(V+E))
 node-executor.ts      — 节点执行分发器 (12 种节点类型)，按 nodeType 路由到具体执行函数
 workflow-executor.ts  — 顶层编排器 WorkflowExecutor 类 (排序→执行→条件跳过→循环迭代→中断→错误处理)
 topological-sort.test.ts — 拓扑排序单元测试 (8 用例: 空图/线性/钻石/断连/环检测)
+node-executor.test.ts — 节点执行单元测试 (text-input/conditional/loop 的输入解析与输出语义)
+workflow-executor.test.ts — 执行器集成测试 (条件分支跳过传播 + 循环体迭代聚合)
 ```
 
 ## 架构
@@ -48,7 +50,7 @@ WorkflowExecutor.execute()
 1. executeLoop() 准备 items 数组 (forEach 分割文本 / repeat 生成索引)
 2. findBodyNodes() BFS 从 item-out/index-out 可达的节点集合
 3. 主循环标记 body 节点为 skipped，由 executeLoopBody() 独立驱动
-4. 每次迭代: 更新 item-out/index-out → 按拓扑序执行 body → 收集终端输出
+4. 每次迭代: 更新 item-out/index-out → 按拓扑序执行 body（支持 body 内 conditional/loop）→ 收集终端输出
 5. results-out = 所有迭代的聚合结果
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

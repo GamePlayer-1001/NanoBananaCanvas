@@ -69,7 +69,8 @@ export async function executeNode(ctx: NodeExecutionContext): Promise<NodeExecut
 /* ─── TextInput: 直接输出文本 ────────────────────────── */
 
 async function executeTextInput(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const text = (ctx.data.config.text as string) ?? ''
+  const raw = ctx.data.config.text
+  const text = typeof raw === 'string' ? raw : raw == null ? '' : String(raw)
   return { outputs: { 'text-out': text } }
 }
 
@@ -290,22 +291,99 @@ async function executeConditional(ctx: NodeExecutionContext): Promise<NodeExecut
 }
 
 function evaluateCondition(value: unknown, operator: string, compareValue: string): boolean {
-  const str = String(value ?? '')
-  const num = Number(str)
-  const cmpNum = Number(compareValue)
+  const normalizedValue = normalizeConditionValue(value)
+  const normalizedCompare = normalizeConditionValue(compareValue)
+  const leftText = stringifyConditionValue(normalizedValue)
+  const rightText = stringifyConditionValue(normalizedCompare)
+  const leftNumber = toComparableNumber(normalizedValue)
+  const rightNumber = toComparableNumber(normalizedCompare)
 
   switch (operator) {
-    case '==': return str === compareValue
-    case '!=': return str !== compareValue
-    case '>': return num > cmpNum
-    case '<': return num < cmpNum
-    case '>=': return num >= cmpNum
-    case '<=': return num <= cmpNum
-    case 'contains': return str.includes(compareValue)
-    case 'empty': return str.length === 0
-    case 'notEmpty': return str.length > 0
-    default: return false
+    case '==':
+      return areConditionValuesEqual(normalizedValue, normalizedCompare)
+    case '!=':
+      return !areConditionValuesEqual(normalizedValue, normalizedCompare)
+    case '>':
+      return leftNumber != null && rightNumber != null ? leftNumber > rightNumber : false
+    case '<':
+      return leftNumber != null && rightNumber != null ? leftNumber < rightNumber : false
+    case '>=':
+      return leftNumber != null && rightNumber != null ? leftNumber >= rightNumber : false
+    case '<=':
+      return leftNumber != null && rightNumber != null ? leftNumber <= rightNumber : false
+    case 'contains':
+      if (Array.isArray(normalizedValue)) {
+        return normalizedValue.some((item) => areConditionValuesEqual(item, normalizedCompare))
+      }
+      return leftText.includes(rightText)
+    case 'empty':
+      return isConditionValueEmpty(normalizedValue)
+    case 'notEmpty':
+      return !isConditionValueEmpty(normalizedValue)
+    default:
+      return false
   }
+}
+
+function normalizeConditionValue(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+
+  const trimmed = value.trim()
+  if (trimmed === '') return ''
+  if (trimmed === 'true') return true
+  if (trimmed === 'false') return false
+  if (trimmed === 'null') return null
+
+  if (!Number.isNaN(Number(trimmed))) {
+    return Number(trimmed)
+  }
+
+  if (
+    (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+    (trimmed.startsWith('{') && trimmed.endsWith('}'))
+  ) {
+    try {
+      return JSON.parse(trimmed) as unknown
+    } catch {
+      return value
+    }
+  }
+
+  return value
+}
+
+function stringifyConditionValue(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+function toComparableNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+    return Number(value)
+  }
+  return null
+}
+
+function areConditionValuesEqual(left: unknown, right: unknown): boolean {
+  if (typeof left === 'object' || typeof right === 'object') {
+    return stringifyConditionValue(left) === stringifyConditionValue(right)
+  }
+  return left === right
+}
+
+function isConditionValueEmpty(value: unknown): boolean {
+  if (value == null) return true
+  if (typeof value === 'string') return value.length === 0
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === 'object') return Object.keys(value).length === 0
+  return false
 }
 
 /* ─── Loop: 循环执行 (准备阶段，实际迭代由 WorkflowExecutor 驱动) */
@@ -324,10 +402,10 @@ async function executeLoop(ctx: NodeExecutionContext): Promise<NodeExecutionResu
     const raw = ctx.inputs['items-in']
     if (Array.isArray(raw)) {
       items = raw
+    } else if (typeof raw === 'string') {
+      items = parseLoopStringItems(raw, separator)
     } else {
-      const text = String(raw ?? '')
-      const sep = separator.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
-      items = text.split(sep).filter(Boolean)
+      items = raw == null ? [] : [raw]
     }
   }
 
@@ -343,6 +421,25 @@ async function executeLoop(ctx: NodeExecutionContext): Promise<NodeExecutionResu
       __loop_items: items,
     },
   }
+}
+
+function parseLoopStringItems(raw: string, separator: string): unknown[] {
+  const trimmed = raw.trim()
+
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown
+      if (Array.isArray(parsed)) return parsed
+    } catch {
+      /* fallback to separator mode */
+    }
+  }
+
+  const sep = separator.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+  return raw
+    .split(sep)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
 }
 
 /* ─── Display: 透传内容 ──────────────────────────────── */

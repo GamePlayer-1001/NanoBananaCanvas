@@ -11,7 +11,7 @@ canvas.tsx              — Canvas 主画布组件 (ReactFlow 包裹，右键菜
 canvas-controls.tsx     — CanvasControls 缩放/居中控制栏
 canvas-toolbar.tsx      — CanvasToolbar 底部节点拖放工具栏 (指针工具 + 从 plugin-registry 派生节点工具)
 canvas-top-toolbar.tsx  — CanvasTopToolbar 顶部操作栏 (Run/Stop/Import/Export/API Key)
-context-menu.tsx        — CanvasContextMenu 画布空白区右键菜单 (添加 Text Input/LLM/Display)
+context-menu.tsx        — CanvasContextMenu 画布空白区右键菜单 (添加 Text Input/LLM/Display/Image Gen/Video Gen/Conditional/Loop)
 node-context-menu.tsx   — NodeContextMenu 节点右键菜单 (复制/删除)
 helper-lines.tsx        — HelperLines 对齐辅助线渲染
 api-key-dialog.tsx      — ApiKeyDialog OpenRouter API Key 配置对话框 (保存/测试/密码显隐)

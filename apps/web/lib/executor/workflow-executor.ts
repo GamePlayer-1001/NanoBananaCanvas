@@ -188,6 +188,7 @@ export class WorkflowExecutor {
     edges: Edge[],
     skippedNodes: Set<string>,
     callbacks: ExecutionCallbacks,
+    allowedNodes?: Set<string>,
   ): void {
     const nullPorts = Object.entries(outputs)
       .filter(([, v]) => v === null)
@@ -201,6 +202,7 @@ export class WorkflowExecutor {
 
     for (const edge of edges) {
       if (edge.source === nodeId && nullPorts.includes(edge.sourceHandle ?? '')) {
+        if (allowedNodes && !allowedNodes.has(edge.target)) continue
         queue.push(edge.target)
       }
     }
@@ -208,9 +210,14 @@ export class WorkflowExecutor {
     while (queue.length > 0) {
       const candidate = queue.shift()!
       if (toSkip.has(candidate)) continue
+      if (allowedNodes && !allowedNodes.has(candidate)) continue
 
       /* 检查: 该节点的所有输入是否都来自 null 分支或已跳过的节点 */
-      const incoming = edges.filter((e) => e.target === candidate)
+      const incoming = edges.filter(
+        (e) =>
+          e.target === candidate &&
+          (!allowedNodes || e.source === nodeId || allowedNodes.has(e.source)),
+      )
       const allFromNull = incoming.every((e) => {
         if (e.source === nodeId) return nullPorts.includes(e.sourceHandle ?? '')
         return toSkip.has(e.source)
@@ -224,6 +231,7 @@ export class WorkflowExecutor {
 
       for (const edge of edges) {
         if (edge.source === candidate && !toSkip.has(edge.target)) {
+          if (allowedNodes && !allowedNodes.has(edge.target)) continue
           queue.push(edge.target)
         }
       }
@@ -264,6 +272,7 @@ export class WorkflowExecutor {
 
     for (let i = 0; i < items.length; i++) {
       if (signal.aborted) break
+      const iterationSkipped = new Set<string>()
 
       /* 设置当前迭代的输出 */
       nodeOutputs[loopNodeId] = {
@@ -275,6 +284,7 @@ export class WorkflowExecutor {
       /* 按拓扑序执行 body 子图 */
       for (const bodyNodeId of bodyOrder) {
         if (signal.aborted) break
+        if (iterationSkipped.has(bodyNodeId)) continue
 
         const bodyNode = nodes.find((n) => n.id === bodyNodeId)
         if (!bodyNode) continue
@@ -298,6 +308,38 @@ export class WorkflowExecutor {
           nodeOutputs[bodyNodeId] = result.outputs
           callbacks.onNodeComplete(bodyNodeId, result.outputs)
           callbacks.updateNodeStatus(bodyNodeId, 'success')
+
+          if (bodyNode.type === 'conditional') {
+            this.handleConditionalSkip(
+              bodyNodeId,
+              result.outputs,
+              edges,
+              iterationSkipped,
+              callbacks,
+              bodyNodes,
+            )
+          }
+
+          if (bodyNode.type === 'loop' && '__loop_items' in result.outputs) {
+            const nestedItems = result.outputs.__loop_items as unknown[]
+            const nestedResults = await this.executeLoopBody(
+              bodyNodeId,
+              nestedItems,
+              nodes,
+              edges,
+              order,
+              apiKey,
+              signal,
+              nodeOutputs,
+              skippedNodes,
+              callbacks,
+            )
+            nodeOutputs[bodyNodeId] = {
+              ...result.outputs,
+              'results-out': nestedResults,
+            }
+            callbacks.onNodeComplete(bodyNodeId, nodeOutputs[bodyNodeId])
+          }
         } catch (err) {
           const errorMsg = err instanceof Error ? err.message : String(err)
           callbacks.onNodeError(bodyNodeId, errorMsg)
@@ -311,7 +353,8 @@ export class WorkflowExecutor {
       const terminalNodes = this.findTerminalNodes(bodyOrder, edges)
       const iterResult: Record<string, unknown> = {}
       for (const tid of terminalNodes) {
-        if (nodeOutputs[tid]) Object.assign(iterResult, nodeOutputs[tid])
+        if (!nodeOutputs[tid] || iterationSkipped.has(tid)) continue
+        Object.assign(iterResult, this.stripInternalOutputs(nodeOutputs[tid]))
       }
       allResults.push(iterResult)
     }
@@ -354,6 +397,12 @@ export class WorkflowExecutor {
       const outEdges = edges.filter((e) => e.source === id)
       return outEdges.length === 0 || outEdges.every((e) => !bodySet.has(e.target))
     })
+  }
+
+  private stripInternalOutputs(outputs: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(outputs).filter(([key]) => !key.startsWith('__')),
+    )
   }
 
   /* ── 标记下游节点跳过 (错误时) ──────────────────── */
