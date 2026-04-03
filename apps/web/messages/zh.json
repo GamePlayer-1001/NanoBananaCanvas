@@ -137,6 +137,7 @@
   },
   "search": {
     "title": "搜索",
+    "description": "搜索社区中已发布的工作流并快速打开详情页。",
     "placeholder": "搜索工作流...",
     "hint": "输入关键词搜索已发布的工作流",
     "noResults": "没有找到结果"
@@ -183,6 +184,7 @@
     "noProjectsDesc": "创建你的第一个项目开始使用",
     "rename": "重命名",
     "renameProject": "重命名项目",
+    "renameProjectDescription": "修改当前项目名称并保存到你的工作区。",
     "renamed": "项目已重命名",
     "renameFailed": "重命名失败",
     "deleteProject": "删除",
@@ -193,6 +195,7 @@
     "publish": "发布",
     "unpublish": "取消发布",
     "publishToExplore": "发布到广场",
+    "publishDescription": "为当前工作流选择分类和封面后发布到社区广场。",
     "selectCategory": "选择分类",
     "publishSuccess": "已发布到广场",
     "publishFailed": "发布失败",
@@ -395,6 +398,7 @@
     "popular": "最受欢迎",
     "creditsIncluded": "{count} 积分/月",
     "unlimitedCredits": "无限积分",
+    "dialogDescription": "比较当前可用套餐并升级到更适合你创作流程的方案。",
     "currentPlan": "当前套餐",
     "upgrade": "升级",
     "getStarted": "开始使用",

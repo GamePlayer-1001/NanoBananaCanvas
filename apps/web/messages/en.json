@@ -137,6 +137,7 @@
   },
   "search": {
     "title": "Search",
+    "description": "Search published community workflows and open the detail page quickly.",
     "placeholder": "Search workflows...",
     "hint": "Type to search published workflows",
     "noResults": "No results found"
@@ -183,6 +184,7 @@
     "noProjectsDesc": "Create your first project to get started",
     "rename": "Rename",
     "renameProject": "Rename Project",
+    "renameProjectDescription": "Update the current project name and save it to your workspace.",
     "renamed": "Project renamed",
     "renameFailed": "Failed to rename project",
     "deleteProject": "Delete",
@@ -193,6 +195,7 @@
     "publish": "Publish",
     "unpublish": "Unpublish",
     "publishToExplore": "Publish to Explore",
+    "publishDescription": "Choose a category and cover image before publishing this workflow to the community.",
     "selectCategory": "Select a category",
     "publishSuccess": "Published to Explore",
     "publishFailed": "Failed to publish",
@@ -395,6 +398,7 @@
     "popular": "Most Popular",
     "creditsIncluded": "{count} credits/month",
     "unlimitedCredits": "Unlimited credits",
+    "dialogDescription": "Compare available plans and upgrade to the option that fits your workflow.",
     "currentPlan": "Current Plan",
     "upgrade": "Upgrade",
     "getStarted": "Get Started",
