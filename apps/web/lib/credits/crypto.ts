@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 Web Crypto API (AES-256-GCM)
  * [OUTPUT]: 对外提供 encryptApiKey / decryptApiKey (服务端 API Key 加解密)
- * [POS]: lib/credits 的服务端加密层，被 api-keys 路由消费。与前端 services/storage/crypto.ts 独立
+ * [POS]: lib/credits 的服务端加密层，被账号级模型配置 API 路由消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

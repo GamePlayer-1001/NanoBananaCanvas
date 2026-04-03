@@ -2,7 +2,6 @@
  * [INPUT]: 依赖 @/lib/executor/workflow-executor 的执行引擎，
  *          依赖 @/stores/use-flow-store 的节点/边数据，
  *          依赖 @/stores/use-execution-store 的执行状态，
- *          依赖 @/stores/use-settings-store 的 API Key，
  *          依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting + 执行历史记录)
  * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store，执行完成后写入 execution_history
@@ -17,7 +16,6 @@ import { useTranslations } from 'next-intl'
 import { WorkflowExecutor } from '@/lib/executor/workflow-executor'
 import { useExecutionStore } from '@/stores/use-execution-store'
 import { useFlowStore } from '@/stores/use-flow-store'
-import { useSettingsStore } from '@/stores/use-settings-store'
 
 /* ─── Executor Error → i18n Key 映射 ────────────────────── */
 
@@ -97,7 +95,6 @@ export function useWorkflowExecutor(workflowId?: string) {
   const nodes = useFlowStore((s) => s.nodes)
   const edges = useFlowStore((s) => s.edges)
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
-  const apiKey = useSettingsStore((s) => s.apiKey)
 
   const isExecuting = useExecutionStore((s) => s.isExecuting)
   const startExecution = useExecutionStore((s) => s.startExecution)
@@ -110,7 +107,7 @@ export function useWorkflowExecutor(workflowId?: string) {
     if (isExecuting) return
     startTimeRef.current = Date.now()
 
-    await executorRef.current.execute(nodes, edges, apiKey, {
+    await executorRef.current.execute(nodes, edges, {
       onStart: (order) => startExecution(order),
 
       onNodeStart: (nodeId) => {
@@ -155,7 +152,7 @@ export function useWorkflowExecutor(workflowId?: string) {
       },
     })
   }, [
-    nodes, edges, apiKey, isExecuting, t, tExec, workflowId,
+    nodes, edges, isExecuting, t, tExec, workflowId,
     startExecution, setCurrentNode, setNodeResult, finishExecution, failExecution,
     updateNodeData,
   ])

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 ./types 的 TaskProcessor 接口，依赖 @/lib/logger，依赖 @/lib/env
- * [OUTPUT]: 对外提供 ImageGenProcessor 类 (OpenRouter + Gemini 图片生成)
- * [POS]: lib/tasks/processors 的图片生成处理器，按 provider 分发到 OpenRouter 或 Gemini Imagen
+ * [OUTPUT]: 对外提供 ImageGenProcessor 类 (OpenAI 兼容 + Google 图片生成)
+ * [POS]: lib/tasks/processors 的图片生成处理器，按 provider 分发到 OpenAI 兼容接口或 Google Imagen
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -11,17 +11,22 @@ import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './ty
 
 const log = createLogger('processor:image-gen')
 
-/* ─── OpenRouter Image API ───────────────────────────── */
+/* ─── OpenAI-compatible Image API ────────────────────── */
 
-async function openrouterSubmit(
+async function openAICompatibleSubmit(
   input: SubmitInput,
   apiKey: string,
 ): Promise<{ url: string }> {
   const { model, params } = input
   const prompt = (params.prompt as string) ?? ''
   const size = (params.size as string) ?? '1024x1024'
+  const baseUrl = typeof params.baseUrl === 'string' ? params.baseUrl.trim().replace(/\/+$/, '') : ''
 
-  const res = await fetch('https://openrouter.ai/api/v1/images/generations', {
+  if (!baseUrl) {
+    throw new Error('OpenAI-compatible image provider requires baseUrl')
+  }
+
+  const res = await fetch(`${baseUrl}/images/generations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -32,7 +37,7 @@ async function openrouterSubmit(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`OpenRouter image API ${res.status}: ${text}`)
+    throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
 
   const data = (await res.json()) as { data?: Array<{ url?: string }> }
@@ -41,9 +46,9 @@ async function openrouterSubmit(
   return { url }
 }
 
-/* ─── Gemini Imagen API ──────────────────────────────── */
+/* ─── Google Imagen API ──────────────────────────────── */
 
-async function geminiSubmit(
+async function googleImageSubmit(
   input: SubmitInput,
   apiKey: string,
 ): Promise<{ url: string }> {
@@ -93,11 +98,11 @@ export class ImageGenProcessor implements TaskProcessor {
     let result: { url: string }
 
     switch (this.provider) {
-      case 'openrouter':
-        result = await openrouterSubmit(input, apiKey)
+      case 'openai-compatible':
+        result = await openAICompatibleSubmit(input, apiKey)
         break
       case 'gemini':
-        result = await geminiSubmit(input, apiKey)
+        result = await googleImageSubmit(input, apiKey)
         break
       default:
         throw new Error(`Provider "${this.provider}" not supported for image_gen`)

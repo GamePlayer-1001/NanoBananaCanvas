@@ -27,12 +27,11 @@ INSERT OR IGNORE INTO model_pricing (id, provider, model_id, model_name, categor
 -- ── 视频生成模型 ─────────────────────────────
 
 INSERT OR IGNORE INTO model_pricing (id, provider, model_id, model_name, category, credits_per_call, tier, min_plan) VALUES
-  ('mp-201', 'kling',      'kling/standard-5s',            'Kling Standard 5s',  'video', 50,  'standard', 'pro'),
-  ('mp-202', 'kling',      'kling/pro-10s',                'Kling Pro 10s',      'video', 150, 'premium',  'pro'),
-  ('mp-203', 'kling',      'kling/master-15s',             'Kling Master 15s',   'video', 300, 'flagship', 'pro');
+  ('mp-201', 'kling',      'kling-v2-0',                   'Kling V2.0',         'video', 15,  'premium',  'pro'),
+  ('mp-202', 'kling',      'kling-v1-6',                   'Kling V1.6',         'video', 10,  'standard', 'free');
 
 -- ── 音频生成模型 ─────────────────────────────
 
 INSERT OR IGNORE INTO model_pricing (id, provider, model_id, model_name, category, credits_per_call, tier, min_plan) VALUES
-  ('mp-301', 'openrouter', 'edge-tts/standard',            'Edge TTS',           'audio', 5,  'basic',    'free'),
-  ('mp-302', 'openrouter', 'elevenlabs/multilingual-v2',   'ElevenLabs V2',      'audio', 15, 'premium',  'pro');
+  ('mp-301', 'openai',     'tts-1',                        'OpenAI TTS-1',       'audio', 5,  'basic',    'free'),
+  ('mp-302', 'openai',     'tts-1-hd',                     'OpenAI TTS-1 HD',    'audio', 12, 'premium',  'pro');

@@ -11,9 +11,9 @@ plugin-registry.ts       — NodePluginMeta 节点元数据注册中心 (ports/d
 registry.ts              — NODE_TYPES 节点类型→组件映射 (ReactFlow 消费)
 base-node.tsx       — BaseNode 节点基础框架 (状态指示/Handle/选中样式)
 text-input-node.tsx — TextInputNode 文本输入节点
-llm-node.tsx        — LLMNode 大语言模型节点 (多 Provider 选择/动态模型列表/温度/MaxTokens/SystemPrompt/流式输出)
+llm-node.tsx        — LLMNode 大语言模型节点 (积分 Provider + 账号级 OpenAI 兼容槽位/温度/MaxTokens/SystemPrompt/流式输出)
 display-node.tsx    — DisplayNode 结果展示节点 (Markdown 渲染/复制按钮)
-image-gen-node.tsx  — ImageGenNode 图片生成节点 (OpenRouter+Gemini/尺寸选择/图片预览)
+image-gen-node.tsx  — ImageGenNode 图片生成节点 (积分 Provider + 账号级 OpenAI/Google 槽位/尺寸选择/图片预览)
 video-gen-node.tsx  — VideoGenNode 视频生成节点 (可灵+即梦/时长/画面比例/模式/视频播放/进度条)
 audio-gen-node.tsx  — AudioGenNode 音频生成节点 (OpenAI TTS/模型选择/语音选择/语速调节/音频播放)
 note-node.tsx       — NoteNode 备注节点 (可编辑文本+颜色选择器，纯视觉，不参与执行)

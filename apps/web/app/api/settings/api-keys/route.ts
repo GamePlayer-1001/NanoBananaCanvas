@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env, @/lib/nanoid, @/lib/validations/ai
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env, @/lib/nanoid,
+ *          @/lib/validations/ai, @/lib/user-model-config
  * [OUTPUT]: 对外提供 GET (列表) / PUT (创建/更新) /api/settings/api-keys
  * [POS]: api/settings 的 API Key 管理端点，支持掩码列表 + 加密存储
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -7,10 +8,17 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
-import { encryptApiKey, maskApiKey } from '@/lib/credits'
+import { decryptApiKey, encryptApiKey, maskApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { nanoid } from '@/lib/nanoid'
+import {
+  deserializeUserModelConfig,
+  isUserModelConfigSlotId,
+  normalizeOpenAIBaseUrl,
+  serializeUserModelConfig,
+  toPublicUserModelConfig,
+} from '@/lib/user-model-config'
 import { apiKeySchema } from '@/lib/validations/ai'
 
 /* ─── GET /api/settings/api-keys ─────────────────────── */
@@ -22,22 +30,43 @@ export async function GET() {
 
     const rows = await db
       .prepare(
-        `SELECT id, provider, label, is_active, last_used_at, created_at
+        `SELECT id, provider, encrypted_key, label, is_active, last_used_at, created_at
          FROM user_api_keys WHERE user_id = ?
          ORDER BY provider ASC`,
       )
       .bind(userId)
       .all()
 
+    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+
+    const keys = await Promise.all(
+      rows.results.map(async (row) => {
+        const provider = String(row.provider)
+        const base = {
+          id: row.id,
+          provider,
+          label: row.label,
+          isActive: !!row.is_active,
+          lastUsedAt: row.last_used_at,
+          createdAt: row.created_at,
+        }
+
+        if (!isUserModelConfigSlotId(provider) || typeof row.encrypted_key !== 'string') {
+          return base
+        }
+
+        const decrypted = await decryptApiKey(row.encrypted_key, encryptionKey)
+        const payload = deserializeUserModelConfig(provider, decrypted)
+
+        return {
+          ...base,
+          ...toPublicUserModelConfig(provider, payload),
+        }
+      }),
+    )
+
     return apiOk({
-      keys: rows.results.map((row) => ({
-        id: row.id,
-        provider: row.provider,
-        label: row.label,
-        isActive: !!row.is_active,
-        lastUsedAt: row.last_used_at,
-        createdAt: row.created_at,
-      })),
+      keys,
     })
   } catch (error) {
     return handleApiError(error)
@@ -57,15 +86,27 @@ export async function PUT(req: Request) {
 
     const url = new URL(req.url)
     const provider = url.searchParams.get('provider')
-    if (!provider) {
+    if (!provider || !isUserModelConfigSlotId(provider)) {
       return handleApiError(new Error('Provider query parameter is required'))
     }
 
-    const { apiKey, label } = apiKeySchema.parse(body)
+    const { apiKey, baseUrl, modelId, label } = apiKeySchema.parse(body)
 
     const encryptionKey = await requireEnv('ENCRYPTION_KEY')
 
-    const encrypted = await encryptApiKey(apiKey, encryptionKey)
+    const encrypted = await encryptApiKey(
+      serializeUserModelConfig({
+        version: 1,
+        providerKind: provider === 'image-google' ? 'google-image' : 'openai-compatible',
+        apiKey,
+        modelId,
+        baseUrl:
+          provider === 'image-google'
+            ? undefined
+            : normalizeOpenAIBaseUrl(baseUrl ?? ''),
+      }),
+      encryptionKey,
+    )
 
     // UPSERT: 按 (user_id, provider) 唯一约束
     await db
@@ -84,6 +125,11 @@ export async function PUT(req: Request) {
     return apiOk({
       provider,
       maskedKey: maskApiKey(apiKey),
+      modelId,
+      baseUrl:
+        provider === 'image-google'
+          ? null
+          : normalizeOpenAIBaseUrl(baseUrl ?? ''),
       saved: true,
     })
   } catch (error) {

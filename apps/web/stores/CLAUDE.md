@@ -8,7 +8,6 @@ Zustand 客户端状态管理
 
 ```
 use-flow-store.ts         — 画布核心状态 (nodes/edges/viewport CRUD + ReactFlow 事件)
-use-settings-store.ts     — 全局设置 (主题/侧边栏/API Key，localStorage 持久化)
 use-canvas-tool-store.ts  — 画布工具状态 (select/hand/text-input/llm/display 工具切换)
 use-execution-store.ts    — 工作流执行状态 (当前节点/执行顺序/结果/错误追踪)
 use-history-store.ts      — 撤销/重做快照栈 (past/future 各 50 条上限，防抖推入)

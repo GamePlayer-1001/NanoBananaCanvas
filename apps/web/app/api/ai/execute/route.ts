@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/credits, @/lib/db,
- *          @/lib/env, @/lib/nanoid, @/services/ai/openrouter, @/lib/validations/ai
+ *          @/lib/env, @/lib/nanoid, @/lib/user-model-config, @/services/ai, @/services/ai/openai-compatible,
+ *          @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/execute (双模式 AI 执行)
- * [POS]: api/ai 的核心执行端点，实现积分模式 (freeze→call→confirm/refund) 和 Key 模式
+ * [POS]: api/ai 的核心执行端点，实现积分模式 (freeze→call→confirm/refund) 和账号级模型槽位执行
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -21,7 +22,14 @@ import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import {
+  deserializeUserModelConfig,
+  isUserModelConfigSlotId,
+  toRuntimeUserModelConfig,
+  type UserModelRuntimeConfig,
+} from '@/lib/user-model-config'
 import { getPlatformKey, getProvider } from '@/services/ai'
+import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:execute')
@@ -141,36 +149,20 @@ async function executeWithCredits(
 async function executeWithUserKey(
   db: D1Database,
   userId: string,
-  userPlan: string,
+  _userPlan: string,
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
-  // 读取并解密用户 Key
-  const keyRow = await db
-    .prepare(
-      'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
-    )
-    .bind(userId, params.provider)
-    .first<{ encrypted_key: string }>()
-
-  if (!keyRow) {
-    return handleApiError(
-      new Error('No API key configured for this provider'),
-    )
-  }
-
-  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
-
-  const apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+  const runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider)
 
   try {
-    const provider = getProvider(params.provider)
+    const provider = getUserKeyProvider(runtimeConfig)
     const chatResult = await provider.chat({
-      model: params.modelId,
+      model: runtimeConfig.modelId,
       messages: params.messages,
       temperature: params.temperature ?? 0.7,
       maxTokens: params.maxTokens ?? 1024,
-      apiKey,
+      apiKey: runtimeConfig.apiKey,
     })
 
     // 更新 last_used_at
@@ -185,7 +177,7 @@ async function executeWithUserKey(
       workflowId: params.workflowId,
       nodeId: params.nodeId,
       provider: params.provider,
-      modelId: params.modelId,
+      modelId: runtimeConfig.modelId,
       executionMode: 'user_key',
       creditsCharged: 0,
       inputTokens: chatResult.usage?.promptTokens ?? null,
@@ -201,7 +193,7 @@ async function executeWithUserKey(
       workflowId: params.workflowId,
       nodeId: params.nodeId,
       provider: params.provider,
-      modelId: params.modelId,
+      modelId: runtimeConfig.modelId,
       executionMode: 'user_key',
       creditsCharged: 0,
       durationMs: Date.now() - startTime,
@@ -211,6 +203,43 @@ async function executeWithUserKey(
 
     throw error
   }
+}
+
+async function getUserRuntimeConfig(
+  db: D1Database,
+  userId: string,
+  provider: string,
+): Promise<UserModelRuntimeConfig> {
+  if (!isUserModelConfigSlotId(provider)) {
+    throw new Error(`Unsupported user_key provider slot: ${provider}`)
+  }
+
+  const keyRow = await db
+    .prepare(
+      'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
+    )
+    .bind(userId, provider)
+    .first<{ encrypted_key: string }>()
+
+  if (!keyRow) {
+    throw new Error('No API key configured for this provider')
+  }
+
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+  const payload = deserializeUserModelConfig(provider, decrypted)
+  return toRuntimeUserModelConfig(provider, payload)
+}
+
+function getUserKeyProvider(config: UserModelRuntimeConfig) {
+  if (config.providerKind === 'openai-compatible') {
+    if (!config.baseUrl) {
+      throw new Error('OpenAI-compatible provider requires a base URL')
+    }
+    return new OpenAICompatibleClient(config.baseUrl)
+  }
+
+  return getProvider(config.providerId)
 }
 
 /* ─── Usage Log ──────────────────────────────────────── */

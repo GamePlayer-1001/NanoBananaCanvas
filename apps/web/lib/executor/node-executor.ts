@@ -1,14 +1,13 @@
 /**
- * [INPUT]: 依赖 @/services/ai 的 getProvider (Provider 注册表)，
+ * [INPUT]: 依赖 /api/ai/* 与 /api/tasks/* 服务端执行链路，
  *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
  * [OUTPUT]: 对外提供 executeNode 函数 (按节点类型分发执行)
- * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用
+ * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用，统一衔接画布节点与服务端 AI/任务能力
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
-import { getProvider } from '@/services/ai'
 import type { ChatMessage, ContentPart } from '@/services/ai/types'
 import type { WorkflowNodeData } from '@/types'
 
@@ -21,7 +20,6 @@ export interface NodeExecutionContext {
   nodeType: string
   data: WorkflowNodeData
   inputs: Record<string, unknown>
-  apiKey: string
   signal: AbortSignal
   onStreamChunk?: (nodeId: string, chunk: string) => void
 }
@@ -69,14 +67,15 @@ export async function executeNode(ctx: NodeExecutionContext): Promise<NodeExecut
 /* ─── TextInput: 直接输出文本 ────────────────────────── */
 
 async function executeTextInput(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const text = (ctx.data.config.text as string) ?? ''
+  const raw = ctx.data.config.text
+  const text = typeof raw === 'string' ? raw : raw == null ? '' : String(raw)
   return { outputs: { 'text-out': text } }
 }
 
 /* ─── LLM: 调用 AI 模型 ─────────────────────────────── */
 
 async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey, signal, onStreamChunk } = ctx
+  const { data, inputs, signal, onStreamChunk } = ctx
   const config = data.config
 
   const providerId = (config.provider as string) ?? 'openrouter'
@@ -84,6 +83,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   const temperature = (config.temperature as number) ?? 0.7
   const maxTokens = (config.maxTokens as number) ?? 1024
   const systemPrompt = (config.systemPrompt as string) ?? ''
+  const executionMode = (config.executionMode as string) ?? 'credits'
 
   /* ── 收集 prompt：优先上游输入，其次 config ────── */
   const promptText = (inputs['prompt-in'] as string) ?? ''
@@ -92,14 +92,6 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       'LLM node received empty prompt',
-      { nodeId: ctx.nodeId },
-    )
-  }
-
-  if (!apiKey) {
-    throw new WorkflowError(
-      ErrorCode.WORKFLOW_NODE_ERROR,
-      'API key is required for LLM execution',
       { nodeId: ctx.nodeId },
     )
   }
@@ -122,29 +114,35 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   }
 
   /* ── 执行 AI 调用 (按 Provider 路由) ────────────── */
-  const provider = getProvider(providerId)
   let result: string
 
-  if (onStreamChunk) {
-    result = await provider.chatStream({
-      model,
-      messages,
-      temperature,
-      maxTokens,
-      apiKey,
-      signal,
-      onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
-    })
+  if (executionMode === 'credits' || executionMode === 'user_key') {
+    result = onStreamChunk
+      ? await executeLLMViaStreamApi({
+        provider: providerId,
+        modelId: model,
+        messages,
+        executionMode,
+        temperature,
+        maxTokens,
+        signal,
+        onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
+      })
+      : await executeLLMViaApi({
+        provider: providerId,
+        modelId: model,
+        messages,
+        executionMode,
+        temperature,
+        maxTokens,
+        signal,
+      })
   } else {
-    const chatResult = await provider.chat({
-      model,
-      messages,
-      temperature,
-      maxTokens,
-      apiKey,
-      signal,
-    })
-    result = chatResult.content
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for LLM node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
   }
 
   // 检查是否被中断
@@ -163,13 +161,15 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 /* ─── ImageGen: 提交图片生成任务 ─────────────────────── */
 
 async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey } = ctx
+  const { data, inputs, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'openrouter'
   const model = (config.model as string) ?? 'openai/dall-e-3'
   const size = (config.size as string) ?? '1024x1024'
+  const executionMode = (config.executionMode as string) ?? 'credits'
   const prompt = (inputs['prompt-in'] as string) ?? ''
+  const referenceImage = (inputs['image-in'] as string) || undefined
 
   if (!prompt) {
     throw new WorkflowError(
@@ -179,16 +179,23 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  const { ImageGenProcessor } = await import('@/lib/tasks/processors/image-gen')
-  const processor = new ImageGenProcessor(provider)
-  const submitResult = await processor.submit(
-    { model, params: { prompt, size } },
-    apiKey,
-  )
+  if (executionMode !== 'credits' && executionMode !== 'user_key') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for image node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
+  }
 
-  // 同步 Provider: submit 直接返回 URL，check 即完成
-  const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
-  const resultUrl = checkResult.result?.url ?? ''
+  const resultUrl = await executeTaskOutputViaApi({
+    taskType: 'image_gen',
+    provider,
+    modelId: model,
+    executionMode,
+    input: { prompt, size, imageUrl: referenceImage },
+    outputType: 'image',
+    signal,
+  })
 
   log.debug('Image gen complete', { nodeId: ctx.nodeId, provider })
   return { outputs: { 'image-out': resultUrl } }
@@ -197,11 +204,12 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
 /* ─── VideoGen: 提交视频生成任务 ─────────────────────── */
 
 async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey } = ctx
+  const { data, inputs, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'kling'
   const model = (config.model as string) ?? 'kling-v2-0'
+  const executionMode = (config.executionMode as string) ?? 'credits'
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const imageUrl = (inputs['image-in'] as string) || undefined
 
@@ -213,36 +221,43 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  const { VideoGenProcessor } = await import('@/lib/tasks/processors/video-gen')
-  const processor = new VideoGenProcessor(provider)
+  if (executionMode !== 'credits') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for video node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
+  }
 
-  const submitResult = await processor.submit(
-    {
-      model,
-      params: {
-        prompt,
-        imageUrl,
-        duration: (config.duration as string) ?? '5',
-        aspectRatio: (config.aspectRatio as string) ?? '16:9',
-        mode: (config.mode as string) ?? 'std',
-      },
+  const resultUrl = await executeTaskOutputViaApi({
+    taskType: 'video_gen',
+    provider,
+    modelId: model,
+    executionMode: 'credits',
+    input: {
+      prompt,
+      imageUrl,
+      duration: (config.duration as string) ?? '5',
+      aspectRatio: (config.aspectRatio as string) ?? '16:9',
+      mode: (config.mode as string) ?? 'std',
     },
-    apiKey,
-  )
+    outputType: 'video',
+    signal,
+  })
 
-  // 视频生成是异步的 — 返回任务 ID 供轮询
-  log.debug('Video gen submitted', { nodeId: ctx.nodeId, taskId: submitResult.externalTaskId })
-  return { outputs: { 'video-out': submitResult.externalTaskId } }
+  log.debug('Video gen complete', { nodeId: ctx.nodeId, provider })
+  return { outputs: { 'video-out': resultUrl } }
 }
 
 /* ─── AudioGen: 调用 OpenAI TTS 合成语音 ────────────── */
 
 async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey } = ctx
+  const { data, inputs, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'openai'
   const model = (config.model as string) ?? 'tts-1'
+  const executionMode = (config.executionMode as string) ?? 'credits'
   const voice = (config.voice as string) ?? 'alloy'
   const speed = (config.speed as number) ?? 1.0
   const text = (inputs['text-in'] as string) ?? ''
@@ -255,16 +270,23 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  const { AudioGenProcessor } = await import('@/lib/tasks/processors/audio-gen')
-  const processor = new AudioGenProcessor(provider)
-  const submitResult = await processor.submit(
-    { model, params: { text, voice, speed } },
-    apiKey,
-  )
+  if (executionMode !== 'credits') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for audio node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
+  }
 
-  // 同步 Provider: submit 直接返回 data URL，check 即完成
-  const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
-  const resultUrl = checkResult.result?.url ?? ''
+  const resultUrl = await executeTaskOutputViaApi({
+    taskType: 'audio_gen',
+    provider,
+    modelId: model,
+    executionMode: 'credits',
+    input: { text, voice, speed },
+    outputType: 'audio',
+    signal,
+  })
 
   log.debug('Audio gen complete', { nodeId: ctx.nodeId, provider })
   return { outputs: { 'audio-out': resultUrl } }
@@ -290,22 +312,99 @@ async function executeConditional(ctx: NodeExecutionContext): Promise<NodeExecut
 }
 
 function evaluateCondition(value: unknown, operator: string, compareValue: string): boolean {
-  const str = String(value ?? '')
-  const num = Number(str)
-  const cmpNum = Number(compareValue)
+  const normalizedValue = normalizeConditionValue(value)
+  const normalizedCompare = normalizeConditionValue(compareValue)
+  const leftText = stringifyConditionValue(normalizedValue)
+  const rightText = stringifyConditionValue(normalizedCompare)
+  const leftNumber = toComparableNumber(normalizedValue)
+  const rightNumber = toComparableNumber(normalizedCompare)
 
   switch (operator) {
-    case '==': return str === compareValue
-    case '!=': return str !== compareValue
-    case '>': return num > cmpNum
-    case '<': return num < cmpNum
-    case '>=': return num >= cmpNum
-    case '<=': return num <= cmpNum
-    case 'contains': return str.includes(compareValue)
-    case 'empty': return str.length === 0
-    case 'notEmpty': return str.length > 0
-    default: return false
+    case '==':
+      return areConditionValuesEqual(normalizedValue, normalizedCompare)
+    case '!=':
+      return !areConditionValuesEqual(normalizedValue, normalizedCompare)
+    case '>':
+      return leftNumber != null && rightNumber != null ? leftNumber > rightNumber : false
+    case '<':
+      return leftNumber != null && rightNumber != null ? leftNumber < rightNumber : false
+    case '>=':
+      return leftNumber != null && rightNumber != null ? leftNumber >= rightNumber : false
+    case '<=':
+      return leftNumber != null && rightNumber != null ? leftNumber <= rightNumber : false
+    case 'contains':
+      if (Array.isArray(normalizedValue)) {
+        return normalizedValue.some((item) => areConditionValuesEqual(item, normalizedCompare))
+      }
+      return leftText.includes(rightText)
+    case 'empty':
+      return isConditionValueEmpty(normalizedValue)
+    case 'notEmpty':
+      return !isConditionValueEmpty(normalizedValue)
+    default:
+      return false
   }
+}
+
+function normalizeConditionValue(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+
+  const trimmed = value.trim()
+  if (trimmed === '') return ''
+  if (trimmed === 'true') return true
+  if (trimmed === 'false') return false
+  if (trimmed === 'null') return null
+
+  if (!Number.isNaN(Number(trimmed))) {
+    return Number(trimmed)
+  }
+
+  if (
+    (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+    (trimmed.startsWith('{') && trimmed.endsWith('}'))
+  ) {
+    try {
+      return JSON.parse(trimmed) as unknown
+    } catch {
+      return value
+    }
+  }
+
+  return value
+}
+
+function stringifyConditionValue(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+function toComparableNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+    return Number(value)
+  }
+  return null
+}
+
+function areConditionValuesEqual(left: unknown, right: unknown): boolean {
+  if (typeof left === 'object' || typeof right === 'object') {
+    return stringifyConditionValue(left) === stringifyConditionValue(right)
+  }
+  return left === right
+}
+
+function isConditionValueEmpty(value: unknown): boolean {
+  if (value == null) return true
+  if (typeof value === 'string') return value.length === 0
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === 'object') return Object.keys(value).length === 0
+  return false
 }
 
 /* ─── Loop: 循环执行 (准备阶段，实际迭代由 WorkflowExecutor 驱动) */
@@ -324,10 +423,10 @@ async function executeLoop(ctx: NodeExecutionContext): Promise<NodeExecutionResu
     const raw = ctx.inputs['items-in']
     if (Array.isArray(raw)) {
       items = raw
+    } else if (typeof raw === 'string') {
+      items = parseLoopStringItems(raw, separator)
     } else {
-      const text = String(raw ?? '')
-      const sep = separator.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
-      items = text.split(sep).filter(Boolean)
+      items = raw == null ? [] : [raw]
     }
   }
 
@@ -345,9 +444,234 @@ async function executeLoop(ctx: NodeExecutionContext): Promise<NodeExecutionResu
   }
 }
 
+function parseLoopStringItems(raw: string, separator: string): unknown[] {
+  const trimmed = raw.trim()
+
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown
+      if (Array.isArray(parsed)) return parsed
+    } catch {
+      /* fallback to separator mode */
+    }
+  }
+
+  const sep = separator.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+  return raw
+    .split(sep)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+}
+
 /* ─── Display: 透传内容 ──────────────────────────────── */
 
 async function executeDisplay(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const content = (ctx.inputs['content-in'] as string) ?? ''
+  const content = ctx.inputs['content-in'] ?? ''
   return { outputs: { content } }
+}
+
+interface ExecuteLLMApiParams {
+  provider: string
+  modelId: string
+  messages: ChatMessage[]
+  executionMode: 'credits' | 'user_key'
+  temperature: number
+  maxTokens: number
+  signal: AbortSignal
+}
+
+async function executeLLMViaApi(params: ExecuteLLMApiParams): Promise<string> {
+  const { signal, ...body } = params
+  const response = await fetch('/api/ai/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok) {
+    throw await createApiWorkflowError(response)
+  }
+
+  const payload = (await response.json()) as {
+    ok?: boolean
+    data?: { result?: string }
+  }
+
+  const result = payload.data?.result
+  if (typeof result !== 'string') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'LLM API returned invalid result payload',
+    )
+  }
+
+  return result
+}
+
+interface ExecuteLLMStreamApiParams extends ExecuteLLMApiParams {
+  onChunk: (chunk: string) => void
+}
+
+async function executeLLMViaStreamApi(params: ExecuteLLMStreamApiParams): Promise<string> {
+  const { signal, onChunk, ...body } = params
+  const response = await fetch('/api/ai/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok || !response.body) {
+    throw await createApiWorkflowError(response)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let result = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const events = buffer.split('\n\n')
+    buffer = events.pop() ?? ''
+
+    for (const event of events) {
+      const lines = event
+        .split('\n')
+        .filter((line) => line.startsWith('data: '))
+        .map((line) => line.slice(6).trim())
+
+      for (const line of lines) {
+        if (!line || line === '[DONE]') continue
+
+        const payload = JSON.parse(line) as {
+          choices?: Array<{ delta?: { content?: string } }>
+        }
+        const chunk = payload.choices?.[0]?.delta?.content
+        if (!chunk) continue
+
+        result += chunk
+        onChunk(chunk)
+      }
+    }
+  }
+
+  return result
+}
+
+async function createApiWorkflowError(response: Response): Promise<WorkflowError> {
+  let message = `AI API request failed (${response.status})`
+
+  try {
+    const payload = (await response.json()) as {
+      error?: { message?: string }
+    }
+    message = payload.error?.message ?? message
+  } catch {
+    /* ignore malformed response body */
+  }
+
+  return new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, message)
+}
+
+interface ExecuteTaskOutputApiParams {
+  taskType: 'image_gen' | 'video_gen' | 'audio_gen'
+  provider: string
+  modelId: string
+  executionMode: 'credits' | 'user_key'
+  input: Record<string, unknown>
+  outputType: 'image' | 'video' | 'audio'
+  signal: AbortSignal
+}
+
+async function executeTaskOutputViaApi(params: ExecuteTaskOutputApiParams): Promise<string> {
+  const submitResponse = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      taskType: params.taskType,
+      provider: params.provider,
+      modelId: params.modelId,
+      executionMode: params.executionMode,
+      input: params.input,
+    }),
+    signal: params.signal,
+  })
+
+  if (!submitResponse.ok) {
+    throw await createApiWorkflowError(submitResponse)
+  }
+
+  const submitPayload = (await submitResponse.json()) as {
+    data?: { id?: string }
+  }
+
+  const taskId = submitPayload.data?.id
+  if (!taskId) {
+    throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Task submission returned no task id')
+  }
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await delay(1000, params.signal)
+
+    const taskResponse = await fetch(`/api/tasks/${taskId}`, {
+      cache: 'no-store',
+      signal: params.signal,
+    })
+
+    if (!taskResponse.ok) {
+      throw await createApiWorkflowError(taskResponse)
+    }
+
+    const taskPayload = (await taskResponse.json()) as {
+      data?: {
+        status?: string
+        output?: { url?: string; error?: string } | null
+      }
+    }
+
+    const status = taskPayload.data?.status
+    const output = taskPayload.data?.output
+
+    if (status === 'completed' && output?.url) {
+      return output.url
+    }
+
+    if (status === 'failed' || status === 'cancelled') {
+      throw new WorkflowError(
+        ErrorCode.WORKFLOW_NODE_ERROR,
+        output?.error ?? `${params.outputType} task ${status}`,
+      )
+    }
+  }
+
+  throw new WorkflowError(
+    ErrorCode.WORKFLOW_NODE_ERROR,
+    `${params.outputType} task polling timed out`,
+  )
+}
+
+async function delay(ms: number, signal: AbortSignal): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup()
+      resolve()
+    }, ms)
+
+    const onAbort = () => {
+      cleanup()
+      reject(new WorkflowError(ErrorCode.WORKFLOW_ABORTED, 'Execution aborted'))
+    }
+
+    const cleanup = () => {
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', onAbort)
+    }
+
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
 }

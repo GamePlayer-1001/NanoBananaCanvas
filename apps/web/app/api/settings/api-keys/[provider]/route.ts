@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env, @/services/ai/openrouter
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env,
+ *          @/lib/user-model-config, @/services/ai/openai-compatible
  * [OUTPUT]: 对外提供 DELETE (删除) / POST (测试) /api/settings/api-keys/[provider]
  * [POS]: api/settings 的 API Key 单项操作端点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,7 +11,14 @@ import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
-import { getProvider } from '@/services/ai'
+import {
+  deserializeUserModelConfig,
+  isUserModelConfigSlotId,
+  type UserModelConfigPayload,
+  type UserModelConfigSlotId,
+} from '@/lib/user-model-config'
+import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
+import { GeminiClient } from '@/services/ai/gemini'
 
 type Params = { params: Promise<{ provider: string }> }
 
@@ -20,6 +28,9 @@ export async function DELETE(_req: Request, { params }: Params) {
   try {
     const { userId } = await requireAuth()
     const { provider } = await params
+    if (!isUserModelConfigSlotId(provider)) {
+      return apiError('NOT_FOUND', `Unsupported provider slot: ${provider}`, 404)
+    }
     const db = await getDb()
 
     const result = await db
@@ -43,6 +54,9 @@ export async function POST(_req: Request, { params }: Params) {
   try {
     const { userId } = await requireAuth()
     const { provider } = await params
+    if (!isUserModelConfigSlotId(provider)) {
+      return apiError('NOT_FOUND', `Unsupported provider slot: ${provider}`, 404)
+    }
     const db = await getDb()
 
     const keyRow = await db
@@ -58,10 +72,9 @@ export async function POST(_req: Request, { params }: Params) {
 
     const encryptionKey = await requireEnv('ENCRYPTION_KEY')
 
-    const apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-
-    // 按 Provider 路由验证
-    const valid = await getProvider(provider).validateKey(apiKey)
+    const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+    const config = deserializeUserModelConfig(provider, decrypted)
+    const valid = await validateSlotConfig(provider, config)
 
     // 更新 last_used_at
     if (valid) {
@@ -75,4 +88,19 @@ export async function POST(_req: Request, { params }: Params) {
   } catch (error) {
     return handleApiError(error)
   }
+}
+
+async function validateSlotConfig(
+  provider: UserModelConfigSlotId,
+  config: UserModelConfigPayload,
+): Promise<boolean> {
+  if (provider === 'image-google') {
+    return new GeminiClient().validateKey(config.apiKey)
+  }
+
+  if (!config.baseUrl) {
+    return false
+  }
+
+  return new OpenAICompatibleClient(config.baseUrl).validateKey(config.apiKey)
 }

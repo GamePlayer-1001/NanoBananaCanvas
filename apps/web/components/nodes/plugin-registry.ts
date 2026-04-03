@@ -113,7 +113,10 @@ register({
   label: 'Image Gen',
   icon: ImageIcon,
   ports: {
-    inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string', required: true }],
+    inputs: [
+      { id: 'prompt-in', label: 'Prompt', type: 'string', required: true },
+      { id: 'image-in', label: 'Reference Image', type: 'image' },
+    ],
     outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },
   defaults: { provider: 'openrouter', model: 'openai/dall-e-3', size: '1024x1024' },

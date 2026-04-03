@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/credits, @/lib/db,
- *          @/services/ai (Provider 注册表), @/lib/validations/ai
+ *          @/lib/user-model-config, @/services/ai (Provider 注册表), @/services/ai/openai-compatible,
+ *          @/lib/validations/ai
  * [OUTPUT]: 对外提供 POST /api/ai/stream (双模式 SSE 流式 AI 执行)
- * [POS]: api/ai 的流式端点，冻结在流开始前，确认扣费在流结束后
+ * [POS]: api/ai 的流式端点，冻结在流开始前，确认扣费在流结束后，并支持账号级模型槽位
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -23,7 +24,14 @@ import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import {
+  deserializeUserModelConfig,
+  isUserModelConfigSlotId,
+  toRuntimeUserModelConfig,
+  type UserModelRuntimeConfig,
+} from '@/lib/user-model-config'
 import { getPlatformKey, getProvider } from '@/services/ai'
+import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:stream')
@@ -79,22 +87,13 @@ export async function POST(req: Request) {
     let apiKey: string
     let freezeTxId: string | null = null
     let creditsToCharge = 0
+    let resolvedModelId = params.modelId
+    let runtimeConfig: UserModelRuntimeConfig | null = null
 
     if (params.executionMode === 'user_key') {
-      // 用户 Key 模式
-      const keyRow = await db
-        .prepare(
-          'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
-        )
-        .bind(userId, params.provider)
-        .first<{ encrypted_key: string }>()
-
-      if (!keyRow) {
-        return handleApiError(new Error('No API key configured for this provider'))
-      }
-
-      const encryptionKey = await requireEnv('ENCRYPTION_KEY')
-      apiKey = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+      runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider)
+      apiKey = runtimeConfig.apiKey
+      resolvedModelId = runtimeConfig.modelId
     } else {
       // 积分模式
       const pricing = await getModelPricing(db, params.provider, params.modelId)
@@ -107,7 +106,10 @@ export async function POST(req: Request) {
     }
 
     // 通过 Provider 抽象层发起流式调用，转为 SSE
-    const provider = getProvider(params.provider)
+    const provider =
+      runtimeConfig
+        ? getUserKeyProvider(runtimeConfig)
+        : getProvider(params.provider)
     const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
     const streamTask = (async () => {
       try {
         await provider.chatStream({
-          model: params.modelId,
+          model: resolvedModelId,
           messages: params.messages,
           temperature: params.temperature ?? 0.7,
           maxTokens: params.maxTokens ?? 1024,
@@ -149,7 +151,14 @@ export async function POST(req: Request) {
           }
         }
 
-        await writeUsageLog(db, userId, params, 'success', creditsToCharge, Date.now() - startTime)
+        await writeUsageLog(
+          db,
+          userId,
+          { ...params, modelId: resolvedModelId },
+          'success',
+          creditsToCharge,
+          Date.now() - startTime,
+        )
       } catch (err) {
         if (freezeTxId) {
           const refunded = await retryCreditOp(() => refundCredits(db, userId, freezeTxId!))
@@ -163,7 +172,7 @@ export async function POST(req: Request) {
         await writeUsageLog(
           db,
           userId,
-          params,
+          { ...params, modelId: resolvedModelId },
           'failed',
           0,
           Date.now() - startTime,
@@ -186,6 +195,43 @@ export async function POST(req: Request) {
   } catch (error) {
     return handleApiError(error)
   }
+}
+
+async function getUserRuntimeConfig(
+  db: D1Database,
+  userId: string,
+  provider: string,
+): Promise<UserModelRuntimeConfig> {
+  if (!isUserModelConfigSlotId(provider)) {
+    throw new Error(`Unsupported user_key provider slot: ${provider}`)
+  }
+
+  const keyRow = await db
+    .prepare(
+      'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
+    )
+    .bind(userId, provider)
+    .first<{ encrypted_key: string }>()
+
+  if (!keyRow) {
+    throw new Error('No API key configured for this provider')
+  }
+
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+  const payload = deserializeUserModelConfig(provider, decrypted)
+  return toRuntimeUserModelConfig(provider, payload)
+}
+
+function getUserKeyProvider(config: UserModelRuntimeConfig) {
+  if (config.providerKind === 'openai-compatible') {
+    if (!config.baseUrl) {
+      throw new Error('OpenAI-compatible provider requires a base URL')
+    }
+    return new OpenAICompatibleClient(config.baseUrl)
+  }
+
+  return getProvider(config.providerId)
 }
 
 /* ─── Usage Log ──────────────────────────────────────── */
