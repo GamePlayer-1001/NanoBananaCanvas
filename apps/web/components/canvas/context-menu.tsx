@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next-intl 的 useTranslations，依赖 lucide-react 图标，依赖 @/lib/utils 的 cn()
+ * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next-intl 的 useTranslations，依赖 ./node-entry-config，依赖 @/lib/utils 的 cn()
  * [OUTPUT]: 对外提供 CanvasContextMenu 画布空白区域右键菜单
  * [POS]: components/canvas 的画布右键菜单，被 Canvas 组件内嵌渲染
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,7 +9,6 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, GitBranch, Group, ImageIcon, ImagePlus, MonitorPlay, Music, Repeat, StickyNote, Type, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CANVAS_CONTEXT_MENU_GROUPS, flattenNodeEntryGroups } from './node-entry-config'
 
@@ -21,22 +20,6 @@ interface CanvasContextMenuProps {
   onAddNode: (type: string) => void
   onClose: () => void
 }
-
-/* ─── Menu Item Definition ───────────────────────────── */
-
-const MENU_ITEM_ICONS = {
-  'text-input': Type,
-  'image-input': ImagePlus,
-  note: StickyNote,
-  llm: BrainCircuit,
-  'image-gen': ImageIcon,
-  'video-gen': Video,
-  'audio-gen': Music,
-  display: MonitorPlay,
-  conditional: GitBranch,
-  loop: Repeat,
-  group: Group,
-} as const
 
 /* 先隐藏分组 UI，只保留分组定义与排序语义 */
 const MENU_ITEMS = flattenNodeEntryGroups(CANVAS_CONTEXT_MENU_GROUPS)
@@ -75,9 +58,7 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
       )}
       style={{ left: adjustedX, top: adjustedY }}
     >
-      {MENU_ITEMS.map(({ type, labelKey }) => {
-        const Icon = MENU_ITEM_ICONS[type]
-
+      {MENU_ITEMS.map(({ type, labelKey, icon: Icon }) => {
         return (
         <button
           key={type}
