@@ -1,14 +1,15 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 setRequestLocale，
- *          依赖 @/components/pricing/pricing-content
- * [OUTPUT]: 对外提供 PricingPage 定价页 (SSG)
- * [POS]: (landing) 路由组的定价页
+ *          依赖 @/components/pricing/pricing-content，依赖 @/components/clerk-provider 的 AppClerkProvider
+ * [OUTPUT]: 对外提供 PricingPage 定价页 (SSG + 路由级 Clerk Provider)
+ * [POS]: (landing) 路由组的定价页，为定价交互单独补充认证上下文
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { AppClerkProvider } from '@/components/clerk-provider'
 import { PricingContent } from '@/components/pricing/pricing-content'
 
 const BASE_URL = 'https://nanobananacanvas.com'
@@ -47,5 +48,9 @@ export default async function PricingPage({
   const { locale } = await params
   setRequestLocale(locale)
 
-  return <PricingContent />
+  return (
+    <AppClerkProvider locale={locale}>
+      <PricingContent />
+    </AppClerkProvider>
+  )
 }
