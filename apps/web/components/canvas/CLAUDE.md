@@ -14,7 +14,6 @@ canvas-top-toolbar.tsx  — CanvasTopToolbar 顶部操作栏 (Run/Stop/Import/Ex
 context-menu.tsx        — CanvasContextMenu 画布空白区右键菜单 (添加 Text Input/LLM/Display/Image Gen/Video Gen/Conditional/Loop)
 node-context-menu.tsx   — NodeContextMenu 节点右键菜单 (复制/删除)
 helper-lines.tsx        — HelperLines 对齐辅助线渲染
-api-key-dialog.tsx      — ApiKeyDialog 旧本地 API Key 对话框，已从顶部工具栏退场，保留给遗留本地执行路径
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

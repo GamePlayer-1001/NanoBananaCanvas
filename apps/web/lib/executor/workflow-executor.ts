@@ -38,7 +38,6 @@ export class WorkflowExecutor {
   async execute(
     nodes: Node<WorkflowNodeData>[],
     edges: Edge[],
-    apiKey: string,
     callbacks: ExecutionCallbacks,
   ): Promise<void> {
     if (nodes.length === 0) {
@@ -93,7 +92,6 @@ export class WorkflowExecutor {
           nodeType: node.type ?? 'unknown',
           data: node.data as WorkflowNodeData,
           inputs,
-          apiKey,
           signal,
           onStreamChunk: callbacks.onStreamChunk,
         })
@@ -111,7 +109,7 @@ export class WorkflowExecutor {
         if (node.type === 'loop' && '__loop_items' in result.outputs) {
           const items = result.outputs.__loop_items as unknown[]
           const bodyResults = await this.executeLoopBody(
-            nodeId, items, nodes, edges, order, apiKey, signal, nodeOutputs, skippedNodes, callbacks,
+            nodeId, items, nodes, edges, order, signal, nodeOutputs, skippedNodes, callbacks,
           )
           nodeOutputs[nodeId] = { ...result.outputs, 'results-out': bodyResults }
           callbacks.onNodeComplete(nodeId, nodeOutputs[nodeId])
@@ -248,7 +246,6 @@ export class WorkflowExecutor {
     nodes: Node<WorkflowNodeData>[],
     edges: Edge[],
     order: string[],
-    apiKey: string,
     signal: AbortSignal,
     nodeOutputs: Record<string, Record<string, unknown>>,
     skippedNodes: Set<string>,
@@ -300,7 +297,6 @@ export class WorkflowExecutor {
             nodeType: bodyNode.type ?? 'unknown',
             data: bodyNode.data as WorkflowNodeData,
             inputs,
-            apiKey,
             signal,
             onStreamChunk: callbacks.onStreamChunk,
           })
@@ -328,7 +324,6 @@ export class WorkflowExecutor {
               nodes,
               edges,
               order,
-              apiKey,
               signal,
               nodeOutputs,
               skippedNodes,

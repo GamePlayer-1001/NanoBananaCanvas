@@ -80,7 +80,7 @@ describe('WorkflowExecutor', () => {
     const { callbacks, updates, completions } = createCallbacks()
     const executor = new WorkflowExecutor()
 
-    await executor.execute(nodes, edges, '', callbacks)
+    await executor.execute(nodes, edges, callbacks)
 
     expect(callbacks.onComplete).toHaveBeenCalled()
     expect(
@@ -111,7 +111,7 @@ describe('WorkflowExecutor', () => {
     const { callbacks, completions } = createCallbacks()
     const executor = new WorkflowExecutor()
 
-    await executor.execute(nodes, edges, '', callbacks)
+    await executor.execute(nodes, edges, callbacks)
 
     const loopCompletion = completions.filter((entry) => entry.nodeId === 'loop').at(-1)
     expect(loopCompletion?.outputs['results-out']).toEqual([

@@ -128,6 +128,9 @@ interface CloudflareEnv {
 
   // 平台 AI Key (积分模式)
   OPENROUTER_API_KEY: string
+  OPENAI_API_KEY: string
+  KLING_ACCESS_KEY: string
+  KLING_SECRET_KEY: string
 
   // Stripe Price IDs (Dashboard 手动创建)
   STRIPE_PRICE_STANDARD_MONTHLY: string

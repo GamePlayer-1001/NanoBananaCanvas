@@ -338,18 +338,6 @@
     "duplicate": "Duplicate",
     "delete": "Delete"
   },
-  "apiKey": {
-    "setApiKey": "Set API Key",
-    "apiKeySet": "API Key ✓",
-    "dialogTitle": "Local API Key (Legacy)",
-    "dialogDescription": "Use the model preferences panel in the profile modal for account-scoped API keys. This legacy entry is only kept for older local execution paths.",
-    "label": "API Key",
-    "placeholder": "sk-or-v1-...",
-    "keyValid": "Key is valid — connection successful.",
-    "keyInvalid": "Invalid key or network error. Please check and try again.",
-    "test": "Test",
-    "save": "Save"
-  },
   "nodes": {
     "enterText": "Enter text...",
     "model": "Model",

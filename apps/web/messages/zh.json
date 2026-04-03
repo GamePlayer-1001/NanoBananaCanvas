@@ -338,18 +338,6 @@
     "duplicate": "复制",
     "delete": "删除"
   },
-  "apiKey": {
-    "setApiKey": "设置 API Key",
-    "apiKeySet": "API Key ✓",
-    "dialogTitle": "本地 API Key（旧版）",
-    "dialogDescription": "主流程请改为在个人中心的模型偏好中配置账号级 API Key。这个旧入口仅保留给遗留本地执行路径。",
-    "label": "API Key",
-    "placeholder": "sk-or-v1-...",
-    "keyValid": "密钥有效 — 连接成功。",
-    "keyInvalid": "密钥无效或网络错误，请检查后重试。",
-    "test": "测试",
-    "save": "保存"
-  },
   "nodes": {
     "enterText": "输入文本...",
     "model": "模型",

@@ -26,10 +26,10 @@ WorkflowExecutor.execute()
     │   ├── collectInputs()              → 沿 edges 回溯上游输出
     │   ├── executeNode()                → 按 nodeType 分发
     │   │   ├── text-input → 直接输出 config.text
-    │   │   ├── llm → Provider chat/chatStream
-    │   │   ├── image-gen → ImageGenProcessor submit+check
-    │   │   ├── video-gen → VideoGenProcessor submit (异步轮询)
-    │   │   ├── audio-gen → AudioGenProcessor (OpenAI TTS) submit+check
+    │   │   ├── llm → /api/ai/execute or /api/ai/stream
+    │   │   ├── image-gen → /api/tasks 提交 + 轮询完成
+    │   │   ├── video-gen → /api/tasks 提交 + 轮询完成
+    │   │   ├── audio-gen → /api/tasks 提交 + 轮询完成
     │   │   ├── conditional → 评估条件 → true-out/false-out (null 端口)
     │   │   ├── loop → 准备 items → body 子图迭代执行
     │   │   ├── note/group → noop

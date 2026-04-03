@@ -25,6 +25,7 @@ import {
   toRuntimeUserModelConfig,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
+import { getPlatformKey } from '@/services/ai'
 
 import { getProcessor } from './processors'
 
@@ -171,16 +172,17 @@ export async function submitTask(
   /* 积分模式: 查定价 + 权限 + 冻结 */
   let creditsCharged = 0
   let freezeTxId: string | null = null
+  let apiKey = ''
 
   if (executionMode === 'credits') {
     const pricing = await getModelPricing(db, provider, modelId)
     checkModelAccess(userPlan, pricing.minPlan)
     creditsCharged = pricing.creditsPerCall
     freezeTxId = await freezeCredits(db, userId, creditsCharged)
+    apiKey = await getTaskPlatformKey(provider)
   }
 
   /* user_key 模式: 获取解密后的 API Key */
-  let apiKey = ''
   if (executionMode === 'user_key') {
     const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, provider)
     apiKey = runtimeConfig.apiKey
@@ -279,6 +281,28 @@ async function getUserTaskRuntimeConfig(
   return toRuntimeUserModelConfig(provider, payload)
 }
 
+async function getTaskPlatformKey(provider: string): Promise<string> {
+  switch (provider) {
+    case 'openrouter':
+    case 'deepseek':
+    case 'gemini':
+      return getPlatformKey(provider)
+    case 'openai':
+      return requireEnv('OPENAI_API_KEY')
+    case 'kling': {
+      const accessKey = await requireEnv('KLING_ACCESS_KEY')
+      const secretKey = await requireEnv('KLING_SECRET_KEY')
+      return `${accessKey}:${secretKey}`
+    }
+    default:
+      throw new TaskError(
+        ErrorCode.TASK_PROVIDER_ERROR,
+        `No platform key mapping for provider: ${provider}`,
+        { provider },
+      )
+  }
+}
+
 /* ─── 3. Check Task (Lazy Evaluation) ───────────────── */
 
 export async function checkTask(
@@ -328,6 +352,8 @@ export async function checkTask(
     const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
     apiKey = runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
+  } else if (row.execution_mode === 'credits' && row.external_task_id) {
+    apiKey = await getTaskPlatformKey(row.provider)
   }
 
   if (!row.external_task_id) {
@@ -432,6 +458,8 @@ export async function cancelTask(
         const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
         apiKey = runtimeConfig.apiKey
         processorProvider = runtimeConfig.providerId
+      } else if (row.execution_mode === 'credits') {
+        apiKey = await getTaskPlatformKey(row.provider)
       }
       const processor = getProcessor(row.task_type, processorProvider)
       await processor.cancel(row.external_task_id, apiKey)

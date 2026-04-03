@@ -26,7 +26,6 @@ function createContext(
       status: 'idle',
     } satisfies WorkflowNodeData,
     inputs,
-    apiKey: '',
     signal: new AbortController().signal,
   }
 }

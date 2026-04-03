@@ -1,14 +1,13 @@
 /**
- * [INPUT]: 依赖 @/services/ai 的 getProvider (Provider 注册表) 与 /api/ai/* 服务端执行链路，
+ * [INPUT]: 依赖 /api/ai/* 与 /api/tasks/* 服务端执行链路，
  *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
  * [OUTPUT]: 对外提供 executeNode 函数 (按节点类型分发执行)
- * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用，统一衔接本地节点与服务端 AI/任务能力
+ * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用，统一衔接画布节点与服务端 AI/任务能力
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
-import { getProvider } from '@/services/ai'
 import type { ChatMessage, ContentPart } from '@/services/ai/types'
 import type { WorkflowNodeData } from '@/types'
 
@@ -21,7 +20,6 @@ export interface NodeExecutionContext {
   nodeType: string
   data: WorkflowNodeData
   inputs: Record<string, unknown>
-  apiKey: string
   signal: AbortSignal
   onStreamChunk?: (nodeId: string, chunk: string) => void
 }
@@ -77,7 +75,7 @@ async function executeTextInput(ctx: NodeExecutionContext): Promise<NodeExecutio
 /* ─── LLM: 调用 AI 模型 ─────────────────────────────── */
 
 async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey, signal, onStreamChunk } = ctx
+  const { data, inputs, signal, onStreamChunk } = ctx
   const config = data.config
 
   const providerId = (config.provider as string) ?? 'openrouter'
@@ -140,36 +138,11 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
         signal,
       })
   } else {
-    if (!apiKey) {
-      throw new WorkflowError(
-        ErrorCode.WORKFLOW_NODE_ERROR,
-        'API key is required for LLM execution',
-        { nodeId: ctx.nodeId },
-      )
-    }
-
-    const provider = getProvider(providerId)
-    if (onStreamChunk) {
-      result = await provider.chatStream({
-        model,
-        messages,
-        temperature,
-        maxTokens,
-        apiKey,
-        signal,
-        onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
-      })
-    } else {
-      const chatResult = await provider.chat({
-        model,
-        messages,
-        temperature,
-        maxTokens,
-        apiKey,
-        signal,
-      })
-      result = chatResult.content
-    }
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for LLM node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
   }
 
   // 检查是否被中断
@@ -188,7 +161,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 /* ─── ImageGen: 提交图片生成任务 ─────────────────────── */
 
 async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey, signal } = ctx
+  const { data, inputs, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'openrouter'
@@ -206,23 +179,23 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  if (executionMode === 'credits' || executionMode === 'user_key') {
-    const resultUrl = await executeImageGenViaTaskApi({
-      provider,
-      modelId: model,
-      executionMode,
-      input: { prompt, size, imageUrl: referenceImage },
-      signal,
-    })
-    log.debug('Image gen complete', { nodeId: ctx.nodeId, provider, executionMode })
-    return { outputs: { 'image-out': resultUrl } }
+  if (executionMode !== 'credits' && executionMode !== 'user_key') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for image node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
   }
 
-  const { ImageGenProcessor } = await import('@/lib/tasks/processors/image-gen')
-  const processor = new ImageGenProcessor(provider)
-  const submitResult = await processor.submit({ model, params: { prompt, size, imageUrl: referenceImage } }, apiKey)
-  const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
-  const resultUrl = checkResult.result?.url ?? ''
+  const resultUrl = await executeTaskOutputViaApi({
+    taskType: 'image_gen',
+    provider,
+    modelId: model,
+    executionMode,
+    input: { prompt, size, imageUrl: referenceImage },
+    outputType: 'image',
+    signal,
+  })
 
   log.debug('Image gen complete', { nodeId: ctx.nodeId, provider })
   return { outputs: { 'image-out': resultUrl } }
@@ -231,11 +204,12 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
 /* ─── VideoGen: 提交视频生成任务 ─────────────────────── */
 
 async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey } = ctx
+  const { data, inputs, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'kling'
   const model = (config.model as string) ?? 'kling-v2-0'
+  const executionMode = (config.executionMode as string) ?? 'credits'
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const imageUrl = (inputs['image-in'] as string) || undefined
 
@@ -247,36 +221,43 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  const { VideoGenProcessor } = await import('@/lib/tasks/processors/video-gen')
-  const processor = new VideoGenProcessor(provider)
+  if (executionMode !== 'credits') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for video node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
+  }
 
-  const submitResult = await processor.submit(
-    {
-      model,
-      params: {
-        prompt,
-        imageUrl,
-        duration: (config.duration as string) ?? '5',
-        aspectRatio: (config.aspectRatio as string) ?? '16:9',
-        mode: (config.mode as string) ?? 'std',
-      },
+  const resultUrl = await executeTaskOutputViaApi({
+    taskType: 'video_gen',
+    provider,
+    modelId: model,
+    executionMode: 'credits',
+    input: {
+      prompt,
+      imageUrl,
+      duration: (config.duration as string) ?? '5',
+      aspectRatio: (config.aspectRatio as string) ?? '16:9',
+      mode: (config.mode as string) ?? 'std',
     },
-    apiKey,
-  )
+    outputType: 'video',
+    signal,
+  })
 
-  // 视频生成是异步的 — 返回任务 ID 供轮询
-  log.debug('Video gen submitted', { nodeId: ctx.nodeId, taskId: submitResult.externalTaskId })
-  return { outputs: { 'video-out': submitResult.externalTaskId } }
+  log.debug('Video gen complete', { nodeId: ctx.nodeId, provider })
+  return { outputs: { 'video-out': resultUrl } }
 }
 
 /* ─── AudioGen: 调用 OpenAI TTS 合成语音 ────────────── */
 
 async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const { data, inputs, apiKey } = ctx
+  const { data, inputs, signal } = ctx
   const config = data.config
 
   const provider = (config.provider as string) ?? 'openai'
   const model = (config.model as string) ?? 'tts-1'
+  const executionMode = (config.executionMode as string) ?? 'credits'
   const voice = (config.voice as string) ?? 'alloy'
   const speed = (config.speed as number) ?? 1.0
   const text = (inputs['text-in'] as string) ?? ''
@@ -289,16 +270,23 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  const { AudioGenProcessor } = await import('@/lib/tasks/processors/audio-gen')
-  const processor = new AudioGenProcessor(provider)
-  const submitResult = await processor.submit(
-    { model, params: { text, voice, speed } },
-    apiKey,
-  )
+  if (executionMode !== 'credits') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      `Unsupported execution mode for audio node: ${executionMode}`,
+      { nodeId: ctx.nodeId, executionMode },
+    )
+  }
 
-  // 同步 Provider: submit 直接返回 data URL，check 即完成
-  const checkResult = await processor.checkStatus(submitResult.externalTaskId, apiKey)
-  const resultUrl = checkResult.result?.url ?? ''
+  const resultUrl = await executeTaskOutputViaApi({
+    taskType: 'audio_gen',
+    provider,
+    modelId: model,
+    executionMode: 'credits',
+    input: { text, voice, speed },
+    outputType: 'audio',
+    signal,
+  })
 
   log.debug('Audio gen complete', { nodeId: ctx.nodeId, provider })
   return { outputs: { 'audio-out': resultUrl } }
@@ -590,20 +578,22 @@ async function createApiWorkflowError(response: Response): Promise<WorkflowError
   return new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, message)
 }
 
-interface ExecuteImageGenTaskApiParams {
+interface ExecuteTaskOutputApiParams {
+  taskType: 'image_gen' | 'video_gen' | 'audio_gen'
   provider: string
   modelId: string
   executionMode: 'credits' | 'user_key'
   input: Record<string, unknown>
+  outputType: 'image' | 'video' | 'audio'
   signal: AbortSignal
 }
 
-async function executeImageGenViaTaskApi(params: ExecuteImageGenTaskApiParams): Promise<string> {
+async function executeTaskOutputViaApi(params: ExecuteTaskOutputApiParams): Promise<string> {
   const submitResponse = await fetch('/api/tasks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      taskType: 'image_gen',
+      taskType: params.taskType,
       provider: params.provider,
       modelId: params.modelId,
       executionMode: params.executionMode,
@@ -622,7 +612,7 @@ async function executeImageGenViaTaskApi(params: ExecuteImageGenTaskApiParams): 
 
   const taskId = submitPayload.data?.id
   if (!taskId) {
-    throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Image task submission returned no task id')
+    throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Task submission returned no task id')
   }
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -654,12 +644,15 @@ async function executeImageGenViaTaskApi(params: ExecuteImageGenTaskApiParams): 
     if (status === 'failed' || status === 'cancelled') {
       throw new WorkflowError(
         ErrorCode.WORKFLOW_NODE_ERROR,
-        output?.error ?? `Image task ${status}`,
+        output?.error ?? `${params.outputType} task ${status}`,
       )
     }
   }
 
-  throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Image task polling timed out')
+  throw new WorkflowError(
+    ErrorCode.WORKFLOW_NODE_ERROR,
+    `${params.outputType} task polling timed out`,
+  )
 }
 
 async function delay(ms: number, signal: AbortSignal): Promise<void> {
