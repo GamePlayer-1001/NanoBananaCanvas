@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/lib/utils/simple-markdown，
  *          依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 DisplayNode 结果展示节点组件 (多模态渲染: 文本/图片/视频/音频)
- * [POS]: components/nodes 的 MVP 输出节点，被 registry 注册并在画布中渲染
+ * [OUTPUT]: 对外提供 DisplayNode 结果展示节点组件 (任意输入渲染: 文本/图片/视频/音频/JSON)
+ * [POS]: components/nodes 的输出节点，被 registry 注册并在画布中渲染，负责把上游任意结果安全落地为可视预览
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -64,10 +64,8 @@ function CopyButton({ text }: { text: string }) {
 export function DisplayNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const t = useTranslations('nodes')
-  const content = data.config.content as string | undefined
-
-  const contentType = detectContentType(content)
-  const copyText = contentType === 'text' ? content : undefined
+  const content = data.config.content
+  const copyText = getCopyText(content)
 
   return (
     <BaseNode
@@ -77,9 +75,9 @@ export function DisplayNode(props: NodeProps) {
       inputs={INPUTS}
       headerRight={copyText ? <CopyButton text={copyText} /> : undefined}
     >
-      {content ? (
+      {content != null && content !== '' ? (
         <div className="nodrag nowheel max-h-48 overflow-auto text-sm">
-          <ContentRenderer content={content} type={contentType} />
+          <ContentRenderer content={content} />
         </div>
       ) : (
         <p className="text-muted-foreground text-center text-xs">{t('waitingForInput')}</p>
@@ -92,8 +90,10 @@ export function DisplayNode(props: NodeProps) {
 
 type DisplayContentType = 'text' | 'image' | 'video' | 'audio' | 'json'
 
-function detectContentType(content: string | undefined): DisplayContentType {
-  if (!content) return 'text'
+function detectContentType(content: unknown): DisplayContentType {
+  if (typeof content !== 'string') {
+    return detectObjectContentType(content)
+  }
 
   /* data URI 检测 */
   if (content.startsWith('data:image/')) return 'image'
@@ -114,19 +114,68 @@ function detectContentType(content: string | undefined): DisplayContentType {
   return 'text'
 }
 
+function detectObjectContentType(content: unknown): DisplayContentType {
+  const media = extractMediaUrl(content)
+  if (media) return detectContentType(media.url)
+  return 'json'
+}
+
+function extractMediaUrl(content: unknown): { url: string; contentType?: string } | null {
+  if (!content || typeof content !== 'object') return null
+
+  if ('url' in content && typeof content.url === 'string') {
+    const contentType =
+      'contentType' in content && typeof content.contentType === 'string'
+        ? content.contentType
+        : undefined
+    return { url: content.url, contentType }
+  }
+
+  if ('files' in content && Array.isArray(content.files)) {
+    const firstFile = content.files.find(
+      (file): file is { url: string; type?: string } =>
+        !!file && typeof file === 'object' && 'url' in file && typeof file.url === 'string',
+    )
+    if (firstFile) {
+      return { url: firstFile.url, contentType: firstFile.type }
+    }
+  }
+
+  return null
+}
+
+function getCopyText(content: unknown): string | undefined {
+  if (typeof content === 'string') return content
+  if (typeof content === 'number' || typeof content === 'boolean') return String(content)
+  if (content == null) return undefined
+  return JSON.stringify(content, null, 2)
+}
+
 /* ─── Multi-Modal Renderer ────────────────────────────── */
 
-function ContentRenderer({ content, type }: { content: string; type: DisplayContentType }) {
+function ContentRenderer({ content }: { content: unknown }) {
+  const type = detectContentType(content)
+  const media = extractMediaUrl(content)
+  const stringContent = typeof content === 'string' ? content : media?.url
+
   switch (type) {
     case 'image':
-      return <img src={content} alt="Generated" className="max-h-40 w-full rounded object-contain" />
+      return stringContent
+        ? <img src={stringContent} alt="Generated" className="max-h-40 w-full rounded object-contain" />
+        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
     case 'video':
-      return <video src={content} controls className="max-h-40 w-full rounded" />
+      return stringContent
+        ? <video src={stringContent} controls className="max-h-40 w-full rounded" />
+        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
     case 'audio':
-      return <audio src={content} controls className="w-full" />
+      return stringContent
+        ? <audio src={stringContent} controls className="w-full" />
+        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
     case 'json':
-      return <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(JSON.parse(content), null, 2)}</pre>
+      return <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
     default:
-      return <>{renderSimpleMarkdown(content)}</>
+      return typeof content === 'string'
+        ? <>{renderSimpleMarkdown(content)}</>
+        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
   }
 }

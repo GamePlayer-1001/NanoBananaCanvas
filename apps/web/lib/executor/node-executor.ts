@@ -1,8 +1,8 @@
 /**
- * [INPUT]: 依赖 @/services/ai 的 getProvider (Provider 注册表)，
+ * [INPUT]: 依赖 @/services/ai 的 getProvider (Provider 注册表) 与 /api/ai/* 服务端执行链路，
  *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
  * [OUTPUT]: 对外提供 executeNode 函数 (按节点类型分发执行)
- * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用
+ * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用，统一衔接本地节点与服务端 AI/任务能力
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -85,6 +85,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   const temperature = (config.temperature as number) ?? 0.7
   const maxTokens = (config.maxTokens as number) ?? 1024
   const systemPrompt = (config.systemPrompt as string) ?? ''
+  const executionMode = (config.executionMode as string) ?? 'credits'
 
   /* ── 收集 prompt：优先上游输入，其次 config ────── */
   const promptText = (inputs['prompt-in'] as string) ?? ''
@@ -93,14 +94,6 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       'LLM node received empty prompt',
-      { nodeId: ctx.nodeId },
-    )
-  }
-
-  if (!apiKey) {
-    throw new WorkflowError(
-      ErrorCode.WORKFLOW_NODE_ERROR,
-      'API key is required for LLM execution',
       { nodeId: ctx.nodeId },
     )
   }
@@ -123,29 +116,60 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   }
 
   /* ── 执行 AI 调用 (按 Provider 路由) ────────────── */
-  const provider = getProvider(providerId)
   let result: string
 
-  if (onStreamChunk) {
-    result = await provider.chatStream({
-      model,
-      messages,
-      temperature,
-      maxTokens,
-      apiKey,
-      signal,
-      onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
-    })
+  if (executionMode === 'credits' || executionMode === 'user_key') {
+    result = onStreamChunk
+      ? await executeLLMViaStreamApi({
+        provider: providerId,
+        modelId: model,
+        messages,
+        executionMode,
+        temperature,
+        maxTokens,
+        signal,
+        onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
+      })
+      : await executeLLMViaApi({
+        provider: providerId,
+        modelId: model,
+        messages,
+        executionMode,
+        temperature,
+        maxTokens,
+        signal,
+      })
   } else {
-    const chatResult = await provider.chat({
-      model,
-      messages,
-      temperature,
-      maxTokens,
-      apiKey,
-      signal,
-    })
-    result = chatResult.content
+    if (!apiKey) {
+      throw new WorkflowError(
+        ErrorCode.WORKFLOW_NODE_ERROR,
+        'API key is required for LLM execution',
+        { nodeId: ctx.nodeId },
+      )
+    }
+
+    const provider = getProvider(providerId)
+    if (onStreamChunk) {
+      result = await provider.chatStream({
+        model,
+        messages,
+        temperature,
+        maxTokens,
+        apiKey,
+        signal,
+        onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
+      })
+    } else {
+      const chatResult = await provider.chat({
+        model,
+        messages,
+        temperature,
+        maxTokens,
+        apiKey,
+        signal,
+      })
+      result = chatResult.content
+    }
   }
 
   // 检查是否被中断
@@ -171,6 +195,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const model = (config.model as string) ?? 'openai/dall-e-3'
   const size = (config.size as string) ?? '1024x1024'
   const prompt = (inputs['prompt-in'] as string) ?? ''
+  const referenceImage = (inputs['image-in'] as string) || undefined
 
   if (!prompt) {
     throw new WorkflowError(
@@ -183,7 +208,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const { ImageGenProcessor } = await import('@/lib/tasks/processors/image-gen')
   const processor = new ImageGenProcessor(provider)
   const submitResult = await processor.submit(
-    { model, params: { prompt, size } },
+    { model, params: { prompt, size, imageUrl: referenceImage } },
     apiKey,
   )
 
@@ -445,6 +470,114 @@ function parseLoopStringItems(raw: string, separator: string): unknown[] {
 /* ─── Display: 透传内容 ──────────────────────────────── */
 
 async function executeDisplay(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const content = (ctx.inputs['content-in'] as string) ?? ''
+  const content = ctx.inputs['content-in'] ?? ''
   return { outputs: { content } }
+}
+
+interface ExecuteLLMApiParams {
+  provider: string
+  modelId: string
+  messages: ChatMessage[]
+  executionMode: 'credits' | 'user_key'
+  temperature: number
+  maxTokens: number
+  signal: AbortSignal
+}
+
+async function executeLLMViaApi(params: ExecuteLLMApiParams): Promise<string> {
+  const { signal, ...body } = params
+  const response = await fetch('/api/ai/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok) {
+    throw await createApiWorkflowError(response)
+  }
+
+  const payload = (await response.json()) as {
+    ok?: boolean
+    data?: { result?: string }
+  }
+
+  const result = payload.data?.result
+  if (typeof result !== 'string') {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'LLM API returned invalid result payload',
+    )
+  }
+
+  return result
+}
+
+interface ExecuteLLMStreamApiParams extends ExecuteLLMApiParams {
+  onChunk: (chunk: string) => void
+}
+
+async function executeLLMViaStreamApi(params: ExecuteLLMStreamApiParams): Promise<string> {
+  const { signal, onChunk, ...body } = params
+  const response = await fetch('/api/ai/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok || !response.body) {
+    throw await createApiWorkflowError(response)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let result = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const events = buffer.split('\n\n')
+    buffer = events.pop() ?? ''
+
+    for (const event of events) {
+      const lines = event
+        .split('\n')
+        .filter((line) => line.startsWith('data: '))
+        .map((line) => line.slice(6).trim())
+
+      for (const line of lines) {
+        if (!line || line === '[DONE]') continue
+
+        const payload = JSON.parse(line) as {
+          choices?: Array<{ delta?: { content?: string } }>
+        }
+        const chunk = payload.choices?.[0]?.delta?.content
+        if (!chunk) continue
+
+        result += chunk
+        onChunk(chunk)
+      }
+    }
+  }
+
+  return result
+}
+
+async function createApiWorkflowError(response: Response): Promise<WorkflowError> {
+  let message = `AI API request failed (${response.status})`
+
+  try {
+    const payload = (await response.json()) as {
+      error?: { message?: string }
+    }
+    message = payload.error?.message ?? message
+  } catch {
+    /* ignore malformed response body */
+  }
+
+  return new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, message)
 }

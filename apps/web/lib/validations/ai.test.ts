@@ -63,6 +63,26 @@ describe('aiExecuteSchema', () => {
     expect(result.workflowId).toBe('wf-123')
     expect(result.nodeId).toBe('nd-456')
   })
+
+  it('accepts multimodal content parts', () => {
+    const result = aiExecuteSchema.parse({
+      ...validInput,
+      messages: [
+        {
+          role: 'user' as const,
+          content: [
+            { type: 'text' as const, text: 'describe this image' },
+            {
+              type: 'image_url' as const,
+              image_url: { url: 'https://example.com/demo.png' },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(Array.isArray(result.messages[0]?.content)).toBe(true)
+  })
 })
 
 describe('apiKeySchema', () => {

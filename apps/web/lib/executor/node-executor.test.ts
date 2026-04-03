@@ -88,4 +88,11 @@ describe('executeNode', () => {
     const result = await executeNode(createContext('loop', { mode: 'repeat', iterations: 4 }))
     expect(result.outputs.__loop_items).toEqual([0, 1, 2, 3])
   })
+
+  it('passes through display input without forcing string conversion', async () => {
+    const payload = { type: 'url', url: 'https://example.com/demo.png', contentType: 'image/png' }
+    const result = await executeNode(createContext('display', {}, { 'content-in': payload }))
+
+    expect(result.outputs.content).toEqual(payload)
+  })
 })

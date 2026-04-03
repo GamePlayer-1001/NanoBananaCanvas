@@ -9,13 +9,26 @@ import { z } from 'zod'
 
 /* ─── AI 执行请求 ────────────────────────────────────── */
 
+const contentPartSchema = z.union([
+  z.object({
+    type: z.literal('text'),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal('image_url'),
+    image_url: z.object({
+      url: z.string().min(1),
+    }),
+  }),
+])
+
 export const aiExecuteSchema = z.object({
   provider: z.string().min(1),
   modelId: z.string().min(1),
   messages: z.array(
     z.object({
       role: z.enum(['system', 'user', 'assistant']),
-      content: z.string(),
+      content: z.union([z.string(), z.array(contentPartSchema).min(1)]),
     }),
   ).min(1),
   executionMode: z.enum(['credits', 'user_key']).default('credits'),
