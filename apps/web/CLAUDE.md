@@ -19,6 +19,7 @@ services/           — API 调用层 (ai/openrouter + storage/持久化)
 i18n/               — next-intl 国际化配置 (routing/request/navigation)
 messages/           — i18n 翻译文件 (en.json + zh.json)
 public/             — 静态资源
+scripts/            — 项目级脚本 (Cloudflare 部署包装与构建兜底)
 ```
 
 ## 配置文件
@@ -32,7 +33,8 @@ postcss.config.mjs  — PostCSS (@tailwindcss/postcss)
 vitest.config.ts    — Vitest 单元测试配置
 vitest.setup.ts     — Vitest setup (@testing-library/jest-dom)
 components.json     — shadcn/ui 组件注册 (New York 风格)
-open-next.config.ts — @opennextjs/cloudflare 适配
+open-next.config.ts — @opennextjs/cloudflare 适配 (声明 middleware 与独立 edge 路由函数)
+scripts/cloudflare-deploy.mjs — Cloudflare 生产构建/部署包装器 (修复 Windows 下 OpenNext edge config 丢失)
 wrangler.jsonc      — Cloudflare Pages 部署描述
 ```
 
