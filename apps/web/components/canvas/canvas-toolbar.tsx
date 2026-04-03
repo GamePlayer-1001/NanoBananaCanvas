@@ -3,7 +3,7 @@
  *          依赖 @/components/nodes/plugin-registry 的 getAllNodeMetas，
  *          依赖 @/components/ui 的 Button/Tooltip，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 CanvasToolbar 底部浮动工具栏组件
- * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，支持点击切换工具和拖拽创建节点
+ * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，仅保留快捷搭建主链路的节点拖拽入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -12,11 +12,9 @@
 import { type DragEvent, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import type { LucideIcon } from 'lucide-react'
-import { Hand, MousePointer2 } from 'lucide-react'
 import { getAllNodeMetas } from '@/components/nodes/plugin-registry'
 import { useCanvasToolStore, type CanvasTool } from '@/stores/use-canvas-tool-store'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
   TooltipContent,
@@ -36,13 +34,6 @@ interface ToolDef {
   nodeType?: string
 }
 
-/* ─── Tool Definitions ────────────────────────────────── */
-
-const POINTER_TOOLS: ToolDef[] = [
-  { id: 'select', labelKey: 'select', icon: MousePointer2 },
-  { id: 'hand', labelKey: 'hand', icon: Hand },
-]
-
 /* 节点工具从 plugin-registry 派生，再按画布交互优先级显式排序 */
 const rawNodeTools: ToolDef[] = getAllNodeMetas().map((meta) => ({
   id: meta.type as CanvasTool,
@@ -53,10 +44,9 @@ const rawNodeTools: ToolDef[] = getAllNodeMetas().map((meta) => ({
 
 const orderedNodeToolIds = flattenNodeEntryGroups(CANVAS_TOOLBAR_NODE_GROUPS).map((item) => item.type)
 
-const NODE_TOOLS: ToolDef[] = [
-  ...orderedNodeToolIds.flatMap((toolId) => rawNodeTools.filter((tool) => tool.id === toolId)),
-  ...rawNodeTools.filter((tool) => !orderedNodeToolIds.includes(tool.id)),
-]
+const NODE_TOOLS: ToolDef[] = orderedNodeToolIds.flatMap((toolId) =>
+  rawNodeTools.filter((tool) => tool.id === toolId),
+)
 
 /* ─── Drag Data Type ──────────────────────────────────── */
 
@@ -83,18 +73,6 @@ export function CanvasToolbar() {
           'flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg backdrop-blur-sm',
         )}
       >
-        {/* ── Pointer Tools ────────────────────────────── */}
-        {POINTER_TOOLS.map((tool) => (
-          <ToolButton
-            key={tool.id}
-            tool={tool}
-            isActive={activeTool === tool.id}
-            onClick={() => setActiveTool(tool.id)}
-          />
-        ))}
-
-        <Separator orientation="vertical" className="mx-1 !h-6" />
-
         {/* ── Node Tools (支持拖拽) ────────────────────── */}
         {NODE_TOOLS.map((tool) => (
           <ToolButton
