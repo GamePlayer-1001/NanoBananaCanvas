@@ -19,6 +19,7 @@ import { useExploreSearch } from '@/hooks/use-explore'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -73,6 +74,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="top-[20%] translate-y-0 sm:max-w-[500px]">
         <DialogTitle className="sr-only">{t('title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('description')}</DialogDescription>
 
         {/* 搜索输入 */}
         <div className="flex items-center gap-2 border-b border-border pb-3">

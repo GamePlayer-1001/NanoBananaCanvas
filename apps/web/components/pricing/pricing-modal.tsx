@@ -7,9 +7,11 @@
 
 'use client'
 
+import { useTranslations } from 'next-intl'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PricingContent } from './pricing-content'
@@ -23,6 +25,8 @@ export function PricingModal({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useTranslations('pricing')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -30,7 +34,8 @@ export function PricingModal({
         showCloseButton
       >
         {/* 隐藏标题 (a11y) */}
-        <DialogTitle className="sr-only">Pricing</DialogTitle>
+        <DialogTitle className="sr-only">{t('title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('dialogDescription')}</DialogDescription>
         <div className="max-h-[85vh] overflow-y-auto">
           <PricingContent />
         </div>

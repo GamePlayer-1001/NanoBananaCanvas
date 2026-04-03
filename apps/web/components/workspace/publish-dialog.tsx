@@ -20,6 +20,7 @@ import { ImageUpload } from '@/components/shared/image-upload'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -66,6 +67,7 @@ export function PublishDialog({ workflowId, open, onOpenChange }: PublishDialogP
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>{t('publishToExplore')}</DialogTitle>
+          <DialogDescription>{t('publishDescription')}</DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">

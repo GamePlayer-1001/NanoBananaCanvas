@@ -22,7 +22,6 @@ import {
   Video,
   Plus,
   ChevronRight,
-  UserPlus,
   MessageCircle,
   Search,
   Sparkles,
@@ -308,12 +307,6 @@ export function AppSidebar() {
           <MessageCircle size={14} />
           <span>{t('contactUs')}</span>
         </Link>
-
-        {/* 邀请 */}
-        <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-          <UserPlus size={14} />
-          <span>{t('invite')}</span>
-        </button>
       </div>
 
       {/* ── Footer ────────────────────────────────────── */}

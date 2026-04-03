@@ -16,6 +16,7 @@ import { useUpdateWorkflow } from '@/hooks/use-workflows'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -64,6 +65,7 @@ export function RenameDialog({ workflowId, currentName, open, onOpenChange }: Re
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t('renameProject')}</DialogTitle>
+            <DialogDescription>{t('renameProjectDescription')}</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
