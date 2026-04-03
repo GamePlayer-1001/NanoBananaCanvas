@@ -127,6 +127,7 @@ export function ModelPreferencesTab() {
   const apiKeysQuery = useQuery({
     queryKey: queryKeys.settings.apiKeys(),
     queryFn: fetchApiKeys,
+    retry: false,
   })
 
   const savedKeys = useMemo(
@@ -213,6 +214,14 @@ export function ModelPreferencesTab() {
         </div>
       ) : (
         <div className="space-y-4">
+          {apiKeysQuery.isError ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {apiKeysQuery.error instanceof Error
+                ? apiKeysQuery.error.message
+                : 'Failed to load API keys'}
+            </div>
+          ) : null}
+
           {MODEL_CONFIG_CARDS.map((card) => {
             const saved = savedKeys.get(card.id)
             const draft = drafts[card.id] ?? { apiKey: '', baseUrl: '', modelId: '' }
