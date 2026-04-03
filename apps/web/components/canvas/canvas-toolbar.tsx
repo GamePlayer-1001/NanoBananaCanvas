@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { CANVAS_TOOLBAR_NODE_GROUPS, flattenNodeEntryGroups } from './node-entry-config'
 
 /* ─── Types ───────────────────────────────────────────── */
 
@@ -42,15 +43,6 @@ const POINTER_TOOLS: ToolDef[] = [
   { id: 'hand', labelKey: 'hand', icon: Hand },
 ]
 
-const NODE_TOOL_GROUPS: Array<{ id: string; tools: CanvasTool[] }> = [
-  { id: 'inputs', tools: ['text-input', 'image-input'] },
-  { id: 'llm', tools: ['llm'] },
-  { id: 'image', tools: ['image-gen'] },
-  { id: 'video', tools: ['video-gen'] },
-  { id: 'audio', tools: ['audio-gen'] },
-  { id: 'display', tools: ['display'] },
-]
-
 /* 节点工具从 plugin-registry 派生，再按画布交互优先级显式排序 */
 const rawNodeTools: ToolDef[] = getAllNodeMetas().map((meta) => ({
   id: meta.type as CanvasTool,
@@ -59,7 +51,7 @@ const rawNodeTools: ToolDef[] = getAllNodeMetas().map((meta) => ({
   nodeType: meta.type,
 }))
 
-const orderedNodeToolIds = NODE_TOOL_GROUPS.flatMap((group) => group.tools)
+const orderedNodeToolIds = flattenNodeEntryGroups(CANVAS_TOOLBAR_NODE_GROUPS).map((item) => item.type)
 
 const NODE_TOOLS: ToolDef[] = [
   ...orderedNodeToolIds.flatMap((toolId) => rawNodeTools.filter((tool) => tool.id === toolId)),

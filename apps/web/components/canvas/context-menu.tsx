@@ -9,20 +9,9 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import {
-  BrainCircuit,
-  GitBranch,
-  ImageIcon,
-  ImagePlus,
-  MonitorPlay,
-  Music,
-  Repeat,
-  StickyNote,
-  Type,
-  Video,
-  Group,
-} from 'lucide-react'
+import { BrainCircuit, GitBranch, Group, ImageIcon, ImagePlus, MonitorPlay, Music, Repeat, StickyNote, Type, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CANVAS_CONTEXT_MENU_GROUPS, flattenNodeEntryGroups } from './node-entry-config'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -35,50 +24,22 @@ interface CanvasContextMenuProps {
 
 /* ─── Menu Item Definition ───────────────────────────── */
 
-const MENU_GROUPS = [
-  {
-    id: 'inputs',
-    items: [
-      { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
-      { type: 'image-input', labelKey: 'addImageInput' as const, icon: ImagePlus },
-      { type: 'note', labelKey: 'addNote' as const, icon: StickyNote },
-    ],
-  },
-  {
-    id: 'llm',
-    items: [{ type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit }],
-  },
-  {
-    id: 'image',
-    items: [{ type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon }],
-  },
-  {
-    id: 'video',
-    items: [{ type: 'video-gen', labelKey: 'addVideoGen' as const, icon: Video }],
-  },
-  {
-    id: 'audio',
-    items: [{ type: 'audio-gen', labelKey: 'addAudioGen' as const, icon: Music }],
-  },
-  {
-    id: 'display',
-    items: [{ type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay }],
-  },
-  {
-    id: 'tools',
-    items: [
-      { type: 'conditional', labelKey: 'addConditional' as const, icon: GitBranch },
-      { type: 'loop', labelKey: 'addLoop' as const, icon: Repeat },
-    ],
-  },
-  {
-    id: 'misc',
-    items: [{ type: 'group', labelKey: 'addGroup' as const, icon: Group }],
-  },
-] as const
+const MENU_ITEM_ICONS = {
+  'text-input': Type,
+  'image-input': ImagePlus,
+  note: StickyNote,
+  llm: BrainCircuit,
+  'image-gen': ImageIcon,
+  'video-gen': Video,
+  'audio-gen': Music,
+  display: MonitorPlay,
+  conditional: GitBranch,
+  loop: Repeat,
+  group: Group,
+} as const
 
 /* 先隐藏分组 UI，只保留分组定义与排序语义 */
-const MENU_ITEMS = MENU_GROUPS.flatMap((group) => group.items)
+const MENU_ITEMS = flattenNodeEntryGroups(CANVAS_CONTEXT_MENU_GROUPS)
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -114,7 +75,10 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
       )}
       style={{ left: adjustedX, top: adjustedY }}
     >
-      {MENU_ITEMS.map(({ type, labelKey, icon: Icon }) => (
+      {MENU_ITEMS.map(({ type, labelKey }) => {
+        const Icon = MENU_ITEM_ICONS[type]
+
+        return (
         <button
           key={type}
           className={cn(
@@ -130,7 +94,8 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
           <Icon className="h-4 w-4 opacity-60" />
           {t(labelKey)}
         </button>
-      ))}
+        )
+      })}
     </div>
   )
 }
