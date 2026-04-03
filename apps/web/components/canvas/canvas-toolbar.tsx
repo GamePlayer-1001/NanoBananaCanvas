@@ -43,14 +43,12 @@ const POINTER_TOOLS: ToolDef[] = [
 ]
 
 const NODE_TOOL_GROUPS: Array<{ id: string; tools: CanvasTool[] }> = [
-  { id: 'inputs', tools: ['text-input', 'image-input', 'note'] },
+  { id: 'inputs', tools: ['text-input', 'image-input'] },
   { id: 'llm', tools: ['llm'] },
   { id: 'image', tools: ['image-gen'] },
   { id: 'video', tools: ['video-gen'] },
   { id: 'audio', tools: ['audio-gen'] },
   { id: 'display', tools: ['display'] },
-  { id: 'tools', tools: ['conditional', 'loop'] },
-  { id: 'misc', tools: ['group'] },
 ]
 
 /* 节点工具从 plugin-registry 派生，再按画布交互优先级显式排序 */
