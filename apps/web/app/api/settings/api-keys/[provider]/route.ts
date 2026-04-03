@@ -10,7 +10,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
-import { requireEnv } from '@/lib/env'
+import { getEnv } from '@/lib/env'
 import {
   deserializeUserModelConfig,
   isUserModelConfigSlotId,
@@ -70,7 +70,10 @@ export async function POST(_req: Request, { params }: Params) {
       return apiError('NOT_FOUND', `No API key found for provider: ${provider}`, 404)
     }
 
-    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+    const encryptionKey = await getEnv('ENCRYPTION_KEY')
+    if (!encryptionKey) {
+      return apiError('CONFIG_MISSING', 'Server encryption key is not configured', 503)
+    }
 
     const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
     const config = deserializeUserModelConfig(provider, decrypted)

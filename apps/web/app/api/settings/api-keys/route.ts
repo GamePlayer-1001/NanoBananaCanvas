@@ -7,10 +7,10 @@
  */
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { decryptApiKey, encryptApiKey, maskApiKey } from '@/lib/credits'
 import { getDb } from '@/lib/db'
-import { requireEnv } from '@/lib/env'
+import { getEnv } from '@/lib/env'
 import { nanoid } from '@/lib/nanoid'
 import {
   deserializeUserModelConfig,
@@ -37,7 +37,14 @@ export async function GET() {
       .bind(userId)
       .all()
 
-    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+    if (!rows.results.length) {
+      return apiOk({ keys: [] })
+    }
+
+    const encryptionKey = await getEnv('ENCRYPTION_KEY')
+    if (!encryptionKey) {
+      return apiError('CONFIG_MISSING', 'Server encryption key is not configured', 503)
+    }
 
     const keys = await Promise.all(
       rows.results.map(async (row) => {
@@ -92,7 +99,10 @@ export async function PUT(req: Request) {
 
     const { apiKey, baseUrl, modelId, label } = apiKeySchema.parse(body)
 
-    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+    const encryptionKey = await getEnv('ENCRYPTION_KEY')
+    if (!encryptionKey) {
+      return apiError('CONFIG_MISSING', 'Server encryption key is not configured', 503)
+    }
 
     const encrypted = await encryptApiKey(
       serializeUserModelConfig({
