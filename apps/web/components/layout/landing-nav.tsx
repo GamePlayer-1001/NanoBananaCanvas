@@ -1,15 +1,14 @@
 /**
- * [INPUT]: 依赖 @clerk/nextjs 的 Show，依赖 next-intl 的 useTranslations，
+ * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 Link，依赖 @/components/locale-switcher，
  *          依赖 lucide-react 的 ChevronDown
  * [OUTPUT]: 对外提供 LandingNav 导航栏组件
- * [POS]: components/layout 的 Landing 导航栏，被 (landing)/layout.tsx 消费
+ * [POS]: components/layout 的 Landing 导航栏，被 (landing)/layout.tsx 消费，保持公开页无 Clerk 依赖
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { Show, SignInButton, UserButton } from '@clerk/nextjs'
 import { ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -56,32 +55,14 @@ export function LandingNav() {
           {/* ── Right Actions ──────────────────────────── */}
           <div className="flex items-center gap-3">
             <LocaleSwitcher />
-
-            <Show when="signed-out">
-              <SignInButton>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-white/20 bg-white/5 text-sm text-white hover:bg-white/10"
-                >
-                  {t('nav.startCreating')}
-                </Button>
-              </SignInButton>
-            </Show>
-
-            <Show when="signed-in">
-              <Link href="/workspace">
-                <Button
-                  size="sm"
-                  className="bg-brand-500 hover:bg-brand-600 text-sm text-white"
-                >
-                  {t('nav.startCreating')}
-                </Button>
-              </Link>
-              <UserButton
-                appearance={{ elements: { avatarBox: 'w-8 h-8' } }}
-              />
-            </Show>
+            <Link href="/workspace">
+              <Button
+                size="sm"
+                className="bg-brand-500 hover:bg-brand-600 text-sm text-white"
+              >
+                {t('nav.startCreating')}
+              </Button>
+            </Link>
           </div>
         </nav>
       </header>
