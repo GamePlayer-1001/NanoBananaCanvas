@@ -9,7 +9,19 @@
 
 import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, GitBranch, ImageIcon, ImagePlus, MonitorPlay, Repeat, Type, Video } from 'lucide-react'
+import {
+  BrainCircuit,
+  GitBranch,
+  ImageIcon,
+  ImagePlus,
+  MonitorPlay,
+  Music,
+  Repeat,
+  StickyNote,
+  Type,
+  Video,
+  Group,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -23,16 +35,50 @@ interface CanvasContextMenuProps {
 
 /* ─── Menu Item Definition ───────────────────────────── */
 
-const MENU_ITEMS = [
-  { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
-  { type: 'image-input', labelKey: 'addImageInput' as const, icon: ImagePlus },
-  { type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit },
-  { type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay },
-  { type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon },
-  { type: 'video-gen', labelKey: 'addVideoGen' as const, icon: Video },
-  { type: 'conditional', labelKey: 'addConditional' as const, icon: GitBranch },
-  { type: 'loop', labelKey: 'addLoop' as const, icon: Repeat },
+const MENU_GROUPS = [
+  {
+    id: 'inputs',
+    items: [
+      { type: 'text-input', labelKey: 'addTextInput' as const, icon: Type },
+      { type: 'image-input', labelKey: 'addImageInput' as const, icon: ImagePlus },
+      { type: 'note', labelKey: 'addNote' as const, icon: StickyNote },
+    ],
+  },
+  {
+    id: 'llm',
+    items: [{ type: 'llm', labelKey: 'addLLM' as const, icon: BrainCircuit }],
+  },
+  {
+    id: 'image',
+    items: [{ type: 'image-gen', labelKey: 'addImageGen' as const, icon: ImageIcon }],
+  },
+  {
+    id: 'video',
+    items: [{ type: 'video-gen', labelKey: 'addVideoGen' as const, icon: Video }],
+  },
+  {
+    id: 'audio',
+    items: [{ type: 'audio-gen', labelKey: 'addAudioGen' as const, icon: Music }],
+  },
+  {
+    id: 'display',
+    items: [{ type: 'display', labelKey: 'addDisplay' as const, icon: MonitorPlay }],
+  },
+  {
+    id: 'tools',
+    items: [
+      { type: 'conditional', labelKey: 'addConditional' as const, icon: GitBranch },
+      { type: 'loop', labelKey: 'addLoop' as const, icon: Repeat },
+    ],
+  },
+  {
+    id: 'misc',
+    items: [{ type: 'group', labelKey: 'addGroup' as const, icon: Group }],
+  },
 ] as const
+
+/* 先隐藏分组 UI，只保留分组定义与排序语义 */
+const MENU_ITEMS = MENU_GROUPS.flatMap((group) => group.items)
 
 /* ─── Component ──────────────────────────────────────── */
 
