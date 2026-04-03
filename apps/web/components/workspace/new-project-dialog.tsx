@@ -26,6 +26,7 @@ export function NewProjectDialog({
   onClose: () => void
 }) {
   const t = useTranslations('workspace')
+  const tc = useTranslations('common')
   const router = useRouter()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -101,7 +102,7 @@ export function NewProjectDialog({
               onClick={onClose}
               className="rounded-lg px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
             >
-              {t('cancel') ?? 'Cancel'}
+              {tc('cancel')}
             </button>
             <button
               type="submit"
