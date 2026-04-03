@@ -112,6 +112,7 @@ export class ImageGenProcessor implements TaskProcessor {
 
   async checkStatus(externalTaskId: string, _apiKey: string): Promise<CheckResult> {
     // 同步 Provider: submit 完成即代表 completed，URL 存在 externalTaskId 中
+    void _apiKey
     log.debug('Image gen checkStatus (sync)', { provider: this.provider })
     return {
       status: 'completed',
@@ -125,6 +126,8 @@ export class ImageGenProcessor implements TaskProcessor {
   }
 
   async cancel(_externalTaskId: string, _apiKey: string): Promise<void> {
+    void _externalTaskId
+    void _apiKey
     log.info('Image gen cancel (noop)', { provider: this.provider })
   }
 }

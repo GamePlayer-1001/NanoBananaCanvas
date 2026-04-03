@@ -13,7 +13,7 @@ test.describe('SEO Infrastructure', () => {
     expect(res.ok()).toBeTruthy()
 
     const text = await res.text()
-    expect(text).toContain('User-agent')
+    expect(text).toMatch(/User-Agent/i)
     expect(text).toContain('Sitemap')
     // API 路由不应被爬虫索引
     expect(text).toContain('Disallow')

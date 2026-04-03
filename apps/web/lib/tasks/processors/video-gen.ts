@@ -60,6 +60,8 @@ export class VideoGenProcessor implements TaskProcessor {
   }
 
   async cancel(_externalTaskId: string, _apiKey: string): Promise<void> {
+    void _externalTaskId
+    void _apiKey
     log.info('Video gen cancel (noop)', { provider: this.provider })
   }
 

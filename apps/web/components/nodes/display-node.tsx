@@ -8,6 +8,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 节点预览支持 data URL 与任意运行时输出，需要保留原生媒体标签。 */
+
 import { useCallback, useState, useRef, useEffect } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'

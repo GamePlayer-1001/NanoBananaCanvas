@@ -43,6 +43,7 @@ export class AudioGenProcessor implements TaskProcessor {
 
   async checkStatus(externalTaskId: string, _apiKey: string): Promise<CheckResult> {
     // 同步 Provider: submit 时已完成
+    void _apiKey
     return {
       status: 'completed',
       progress: 100,
@@ -55,6 +56,8 @@ export class AudioGenProcessor implements TaskProcessor {
   }
 
   async cancel(_externalTaskId: string, _apiKey: string): Promise<void> {
+    void _externalTaskId
+    void _apiKey
     log.info('Audio gen cancel (noop — synchronous provider)')
   }
 }

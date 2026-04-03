@@ -7,6 +7,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 动态头像来自运行时远程地址，这里不走 Next Image 优化链。 */
+
 import { useTranslations } from 'next-intl'
 import { Calendar } from 'lucide-react'
 

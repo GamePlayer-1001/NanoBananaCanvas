@@ -8,6 +8,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 上传预览可能是 blob/data/签名 URL，需要保留原始 img 行为。 */
+
 import { useCallback, useRef, useState, type DragEvent } from 'react'
 import { useTranslations } from 'next-intl'
 import { ImagePlus, Loader2, X } from 'lucide-react'

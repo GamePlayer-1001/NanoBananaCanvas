@@ -12,7 +12,7 @@ ai/                     — AI 模型集成 (3 端点)
   stream/route.ts       — POST SSE 流式 AI 执行 (ctx.waitUntil 保障积分结算)
 
 billing/                — Stripe 支付流程 (5 端点)
-  plans/route.ts        — GET  订阅套餐列表 (Free + Pro)
+  plans/route.ts        — GET  订阅套餐列表 (Stripe 优先 + 本地静态 fallback)
   checkout/route.ts     — POST 创建 Stripe Checkout Session (订阅)
   subscription/route.ts — GET  当前订阅信息
   cancel/route.ts       — POST 取消订阅 (period end)

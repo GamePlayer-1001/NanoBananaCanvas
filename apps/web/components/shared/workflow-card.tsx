@@ -7,6 +7,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 工作流缩略图与作者头像来自动态远程地址，当前不走 Next Image。 */
+
 import { Heart, Copy } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
@@ -71,7 +73,7 @@ export function WorkflowCard({ data }: { data: WorkflowCardData }) {
         {/* 底部信息 */}
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <div className="h-5 w-5 overflow-hidden rounded-full bg-muted">
+          <div className="h-5 w-5 overflow-hidden rounded-full bg-muted">
               {data.author.avatarUrl ? (
                 <img
                   src={data.author.avatarUrl}

@@ -17,26 +17,25 @@ test.describe('Navigation & Routing', () => {
   test('/en/pricing loads pricing page', async ({ page }) => {
     await page.goto('/en/pricing')
     await expect(page).toHaveURL(/pricing/)
-    // 应该有定价相关内容
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /pricing|定价/i })).toBeVisible()
   })
 
   test('/en/privacy loads privacy policy', async ({ page }) => {
     await page.goto('/en/privacy')
     await expect(page).toHaveURL(/privacy/)
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /privacy|隐私/i })).toBeVisible()
   })
 
   test('/en/terms loads terms of service', async ({ page }) => {
     await page.goto('/en/terms')
     await expect(page).toHaveURL(/terms/)
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /terms|条款/i })).toBeVisible()
   })
 
   test('/en/contact loads contact page', async ({ page }) => {
     await page.goto('/en/contact')
     await expect(page).toHaveURL(/contact/)
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /contact|联系/i })).toBeVisible()
   })
 
   test('protected routes redirect to sign-in', async ({ page }) => {

@@ -7,6 +7,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
+
 import { Link } from '@/i18n/navigation'
 
 /* ─── Types ──────────────────────────────────────────── */

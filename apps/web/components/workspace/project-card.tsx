@@ -11,6 +11,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 项目缩略图是用户生成内容，来源域名在运行时决定。 */
+
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Clock, Folder, FolderX, Globe, GlobeLock, Image as ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'

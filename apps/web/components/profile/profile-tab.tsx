@@ -7,6 +7,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- Clerk 头像地址为运行时远程资源，直接渲染更稳妥。 */
+
 import { useTranslations } from 'next-intl'
 import { useUser } from '@clerk/nextjs'
 

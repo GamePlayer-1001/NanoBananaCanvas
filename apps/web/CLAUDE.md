@@ -24,7 +24,7 @@ public/             — 静态资源
 ## 配置文件
 
 ```
-next.config.ts      — Next.js 构建配置 (Clerk 图片白名单 + next-intl 插件)
+next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + Clerk 图片白名单 + next-intl 插件)
 proxy.ts            — Next.js 16 路由代理 (clerkMiddleware + next-intl locale 检测/重写)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
