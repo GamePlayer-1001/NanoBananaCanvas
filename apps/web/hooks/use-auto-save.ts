@@ -59,7 +59,7 @@ async function saveToCloud(workflowId: string): Promise<void> {
 
 /* ─── Hook ────────────────────────────────────────────── */
 
-export function useAutoSave(workflowId?: string) {
+export function useAutoSave(workflowId?: string, enableCloud = true) {
   const hasLoaded = useRef(false)
 
   /* ── 页面加载时恢复 (仅无 workflowId 时从 localStorage) ── */
@@ -97,7 +97,7 @@ export function useAutoSave(workflowId?: string) {
       }, DEBOUNCE_LOCAL_MS)
 
       /* 云端保存 (2s 防抖，仅 workflowId 存在时) */
-      if (workflowId) {
+      if (workflowId && enableCloud) {
         if (cloudTimer) clearTimeout(cloudTimer)
         cloudTimer = setTimeout(() => {
           saveToCloud(workflowId)
@@ -110,5 +110,5 @@ export function useAutoSave(workflowId?: string) {
       if (localTimer) clearTimeout(localTimer)
       if (cloudTimer) clearTimeout(cloudTimer)
     }
-  }, [workflowId])
+  }, [workflowId, enableCloud])
 }

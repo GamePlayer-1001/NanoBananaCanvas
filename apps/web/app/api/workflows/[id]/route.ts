@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
         .bind(id, authUser.userId)
         .first()
 
-      if (owned) return apiOk(owned)
+      if (owned) return apiOk({ ...owned, canEdit: true })
     }
 
     /* 非 owner → 仅允许公开作品，附带作者信息 */
@@ -70,7 +70,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       favorited = !!favRow
     }
 
-    return apiOk({ ...pub, liked, favorited })
+    return apiOk({ ...pub, liked, favorited, canEdit: false })
   } catch (error) {
     return handleApiError(error)
   }
