@@ -15,6 +15,12 @@ interface RateLimitResult {
   resetAt: number
 }
 
+const KV_MIN_TTL_SECONDS = 60
+
+function getKvExpirationTtl(ms: number): number {
+  return Math.max(Math.ceil(ms / 1000), KV_MIN_TTL_SECONDS)
+}
+
 /* ─── Core (KV-backed sliding window) ────────────────── */
 
 export async function checkRateLimit(
@@ -32,7 +38,7 @@ export async function checkRateLimit(
   if (!raw || now >= raw.resetAt) {
     const resetAt = now + windowMs
     await kv.put(key, JSON.stringify({ count: 1, resetAt }), {
-      expirationTtl: Math.ceil(windowMs / 1000) + 1,
+      expirationTtl: getKvExpirationTtl(windowMs + 1000),
     })
     return { ok: true, remaining: limit - 1, resetAt }
   }
@@ -42,7 +48,7 @@ export async function checkRateLimit(
   //       这是 KV 限流的固有局限，对当前业务场景可接受
   const count = raw.count + 1
   const remainingMs = raw.resetAt - now
-  const ttlSeconds = Math.max(Math.ceil(remainingMs / 1000), 1)
+  const ttlSeconds = getKvExpirationTtl(remainingMs)
   await kv.put(key, JSON.stringify({ count, resetAt: raw.resetAt }), {
     expirationTtl: ttlSeconds,
   })

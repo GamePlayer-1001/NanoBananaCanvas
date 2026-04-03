@@ -91,6 +91,14 @@ describe('checkRateLimit', () => {
     const r3 = await checkRateLimit('user-count', 5, 60_000)
     expect(r3.remaining).toBe(2)
   })
+
+  it('uses Cloudflare-safe KV ttl for short windows', async () => {
+    await checkRateLimit('user-short-window', 2, 15_000)
+
+    const entry = kvStore.get('rl:user-short-window')
+    expect(entry?.expiresAt).toBeDefined()
+    expect((entry?.expiresAt ?? 0) - Date.now()).toBeGreaterThanOrEqual(60_000)
+  })
 })
 
 describe('rateLimitResponse', () => {

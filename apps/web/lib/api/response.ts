@@ -53,6 +53,12 @@ export function withBodyLimit(req: Request, maxBytes = DEFAULT_MAX_BODY): Respon
 export function handleApiError(error: unknown) {
   if (isAppError(error)) {
     const status = errorCodeToStatus(error.code)
+
+    // 认证失败是高频预期分支，不记录 error 级噪音。
+    if (error.code.startsWith('AUTH_')) {
+      return apiError(error.code, error.message, status)
+    }
+
     log.error(error.message, error, error.meta)
     return apiError(error.code, error.message, status)
   }
