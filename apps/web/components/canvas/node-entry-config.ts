@@ -35,6 +35,16 @@ type NodeEntryLabelKey =
   | 'addLoop'
   | 'addGroup'
 
+type NodeEntryGroupLabelKey =
+  | 'groupInputs'
+  | 'groupText'
+  | 'groupImage'
+  | 'groupVideo'
+  | 'groupAudio'
+  | 'groupDisplay'
+  | 'groupTools'
+  | 'groupMisc'
+
 export interface NodeEntryItem {
   type: CanvasTool
   labelKey: NodeEntryLabelKey
@@ -43,12 +53,14 @@ export interface NodeEntryItem {
 
 export interface NodeEntryGroup {
   id: string
+  labelKey: NodeEntryGroupLabelKey
   items: NodeEntryItem[]
 }
 
 export const CANVAS_TOOLBAR_NODE_GROUPS: NodeEntryGroup[] = [
   {
     id: 'inputs',
+    labelKey: 'groupInputs',
     items: [
       { type: 'text-input', labelKey: 'addTextInput', icon: Type },
       { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
@@ -56,22 +68,27 @@ export const CANVAS_TOOLBAR_NODE_GROUPS: NodeEntryGroup[] = [
   },
   {
     id: 'llm',
+    labelKey: 'groupText',
     items: [{ type: 'llm', labelKey: 'addLLM', icon: BrainCircuit }],
   },
   {
     id: 'image',
+    labelKey: 'groupImage',
     items: [{ type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon }],
   },
   {
     id: 'video',
+    labelKey: 'groupVideo',
     items: [{ type: 'video-gen', labelKey: 'addVideoGen', icon: Video }],
   },
   {
     id: 'audio',
+    labelKey: 'groupAudio',
     items: [{ type: 'audio-gen', labelKey: 'addAudioGen', icon: Music }],
   },
   {
     id: 'display',
+    labelKey: 'groupDisplay',
     items: [{ type: 'display', labelKey: 'addDisplay', icon: MonitorPlay }],
   },
 ]
@@ -79,6 +96,7 @@ export const CANVAS_TOOLBAR_NODE_GROUPS: NodeEntryGroup[] = [
 export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   {
     id: 'inputs',
+    labelKey: 'groupInputs',
     items: [
       { type: 'text-input', labelKey: 'addTextInput', icon: Type },
       { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
@@ -87,26 +105,32 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   },
   {
     id: 'llm',
+    labelKey: 'groupText',
     items: [{ type: 'llm', labelKey: 'addLLM', icon: BrainCircuit }],
   },
   {
     id: 'image',
+    labelKey: 'groupImage',
     items: [{ type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon }],
   },
   {
     id: 'video',
+    labelKey: 'groupVideo',
     items: [{ type: 'video-gen', labelKey: 'addVideoGen', icon: Video }],
   },
   {
     id: 'audio',
+    labelKey: 'groupAudio',
     items: [{ type: 'audio-gen', labelKey: 'addAudioGen', icon: Music }],
   },
   {
     id: 'display',
+    labelKey: 'groupDisplay',
     items: [{ type: 'display', labelKey: 'addDisplay', icon: MonitorPlay }],
   },
   {
     id: 'tools',
+    labelKey: 'groupTools',
     items: [
       { type: 'conditional', labelKey: 'addConditional', icon: GitBranch },
       { type: 'loop', labelKey: 'addLoop', icon: Repeat },
@@ -114,6 +138,7 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   },
   {
     id: 'misc',
+    labelKey: 'groupMisc',
     items: [{ type: 'group', labelKey: 'addGroup', icon: Group }],
   },
 ]

@@ -326,6 +326,14 @@
     "loop": "循环"
   },
   "contextMenu": {
+    "groupInputs": "输入",
+    "groupText": "文本",
+    "groupImage": "图片",
+    "groupVideo": "视频",
+    "groupAudio": "音频",
+    "groupDisplay": "展示",
+    "groupTools": "工具",
+    "groupMisc": "其他",
     "addTextInput": "添加文本输入",
     "addImageInput": "添加图片输入",
     "addLLM": "添加 LLM",
