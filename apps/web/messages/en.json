@@ -326,6 +326,14 @@
     "loop": "Loop"
   },
   "contextMenu": {
+    "groupInputs": "Inputs",
+    "groupText": "Text",
+    "groupImage": "Image",
+    "groupVideo": "Video",
+    "groupAudio": "Audio",
+    "groupDisplay": "Display",
+    "groupTools": "Tools",
+    "groupMisc": "Other",
     "addTextInput": "Add Text Input",
     "addImageInput": "Add Image Input",
     "addLLM": "Add LLM",

@@ -3,7 +3,7 @@
  *          依赖 @/components/nodes/plugin-registry 的 getAllNodeMetas，
  *          依赖 @/components/ui 的 Button/Tooltip，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 CanvasToolbar 底部浮动工具栏组件
- * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，支持点击切换工具和拖拽创建节点
+ * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，保留画布操作工具与主链路节点拖拽入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -36,8 +36,6 @@ interface ToolDef {
   nodeType?: string
 }
 
-/* ─── Tool Definitions ────────────────────────────────── */
-
 const POINTER_TOOLS: ToolDef[] = [
   { id: 'select', labelKey: 'select', icon: MousePointer2 },
   { id: 'hand', labelKey: 'hand', icon: Hand },
@@ -53,10 +51,9 @@ const rawNodeTools: ToolDef[] = getAllNodeMetas().map((meta) => ({
 
 const orderedNodeToolIds = flattenNodeEntryGroups(CANVAS_TOOLBAR_NODE_GROUPS).map((item) => item.type)
 
-const NODE_TOOLS: ToolDef[] = [
-  ...orderedNodeToolIds.flatMap((toolId) => rawNodeTools.filter((tool) => tool.id === toolId)),
-  ...rawNodeTools.filter((tool) => !orderedNodeToolIds.includes(tool.id)),
-]
+const NODE_TOOLS: ToolDef[] = orderedNodeToolIds.flatMap((toolId) =>
+  rawNodeTools.filter((tool) => tool.id === toolId),
+)
 
 /* ─── Drag Data Type ──────────────────────────────────── */
 
@@ -83,7 +80,6 @@ export function CanvasToolbar() {
           'flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg backdrop-blur-sm',
         )}
       >
-        {/* ── Pointer Tools ────────────────────────────── */}
         {POINTER_TOOLS.map((tool) => (
           <ToolButton
             key={tool.id}
