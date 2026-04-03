@@ -2,8 +2,8 @@
  * [INPUT]: 依赖 @clerk/nextjs/server 的 clerkMiddleware / createRouteMatcher，
  *          依赖 next-intl/middleware 的 createMiddleware，
  *          依赖 @/i18n/routing 的 routing 配置
- * [OUTPUT]: 对外提供 Next.js Proxy (认证 + 语言检测 + URL 前缀重写)
- * [POS]: 项目根级路由代理，Cloudflare Workers 兼容
+ * [OUTPUT]: 对外提供 Next.js Edge Middleware (认证 + 语言检测 + URL 前缀重写)
+ * [POS]: 项目根级 Edge 中间件，Cloudflare Workers 兼容
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -23,10 +23,9 @@ const isProtectedRoute = createRouteMatcher([
   '/:locale/canvas(.*)',
 ])
 
-/* ─── Combined Proxy ─────────────────────────────────── */
+/* ─── Combined Middleware ────────────────────────────── */
 
 export default clerkMiddleware(async (auth, req) => {
-  // API 路由: clerkMiddleware 设置 auth 状态，但跳过 intl 重写
   if (req.nextUrl.pathname.startsWith('/api/')) {
     return
   }
