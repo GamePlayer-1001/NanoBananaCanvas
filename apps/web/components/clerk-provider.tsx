@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @clerk/nextjs 的 ClerkProvider，依赖 @clerk/localizations 的 zhCN
- * [OUTPUT]: 对外提供 AppClerkProvider 路由级认证 Provider 包装器，固定本地化 sign-in/sign-up/fallback 地址
- * [POS]: components 根级基础 Provider，供 pricing/auth/app/editor 路由按需引入，统一 Clerk 客户端跳转与 OAuth 回跳边界
+ * [OUTPUT]: 对外提供 AppClerkProvider 路由级认证 Provider 包装器，固定本地化 sign-in/sign-up/fallback 地址与 Clerk 前端 API 代理
+ * [POS]: components 根级基础 Provider，供 pricing/auth/app/editor 路由按需引入，统一 Clerk 客户端跳转、OAuth 回跳与注册验证边界
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -25,6 +25,7 @@ export function AppClerkProvider({
 
   return (
     <ClerkProvider
+      proxyUrl="/__clerk"
       signInFallbackRedirectUrl={fallbackRedirectUrl}
       signInUrl={signInUrl}
       signUpFallbackRedirectUrl={fallbackRedirectUrl}
