@@ -26,7 +26,7 @@ scripts/            — 项目级脚本 (Cloudflare 部署包装与构建兜底)
 
 ```
 next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + Clerk 图片白名单 + next-intl 插件)
-middleware.ts       — Edge 路由中间件 (Clerk Frontend API 代理 + clerkMiddleware 本地化登录重定向 + next-intl locale 检测/重写，兼容 OpenNext Cloudflare)
+middleware.ts       — Edge 路由中间件 (clerkMiddleware 本地化登录重定向 + next-intl locale 检测/重写，兼容 OpenNext Cloudflare)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
 postcss.config.mjs  — PostCSS (@tailwindcss/postcss)
