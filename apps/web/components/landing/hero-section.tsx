@@ -227,14 +227,13 @@ export function HeroSection() {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragRef.current || !containerRef.current) return
+      const drag = dragRef.current
+      if (!drag || !containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
-      const x = e.clientX / scale - rect.left / scale - dragRef.current.offsetX
-      const y = e.clientY / scale - rect.top / scale - dragRef.current.offsetY
+      const x = e.clientX / scale - rect.left / scale - drag.offsetX
+      const y = e.clientY / scale - rect.top / scale - drag.offsetY
 
-      setNodes((prev) =>
-        prev.map((n) => (n.id === dragRef.current!.id ? { ...n, x, y } : n)),
-      )
+      setNodes((prev) => prev.map((n) => (n.id === drag.id ? { ...n, x, y } : n)))
     },
     [scale],
   )
