@@ -11,7 +11,7 @@ error-boundary.tsx — React 错误边界，捕获渲染异常并显示 fallback
 clerk-provider.tsx — Clerk 路由级 Provider 包装器 (关闭 telemetry，按需注入认证上下文)
 locale-switcher.tsx — 语言切换器 (en↔zh)，使用 @/i18n/navigation 路由切换
 canvas/            — 画布引擎组件 (Canvas + TopToolbar + Toolbar + Controls + ContextMenu)
-nodes/             — 节点组件 (BaseNode + TextInput/LLM/Display 三大 MVP 节点)
+nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合并工具节点)
 edges/             — 连线组件 (CustomEdge 贝塞尔曲线)
 layout/            — 布局组件 (LandingNav + LandingFooter + AppSidebar)
 landing/           — Landing 页面组件 (HeroSection + FloatingCards + CtaSection)

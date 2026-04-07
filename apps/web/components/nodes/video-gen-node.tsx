@@ -16,16 +16,6 @@ import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ───────────────────────────────── */
-
-const INPUTS = [
-  { id: 'prompt-in', label: 'Prompt', type: 'string' as const, required: true },
-  { id: 'image-in', label: 'Reference Image', type: 'image' as const, required: false },
-]
-const OUTPUTS = [
-  { id: 'video-out', label: 'Video', type: 'video' as const, required: false },
-]
-
 /* ─── Defaults ───────────────────────────────────────── */
 
 const DEFAULT_PROVIDER = 'kling'
@@ -46,9 +36,7 @@ const VIDEO_MODELS: Record<string, Array<{ value: string; label: string }>> = {
     { value: 'kling-v2-0', label: 'Kling V2.0' },
     { value: 'kling-v1-6', label: 'Kling V1.6' },
   ],
-  jimeng: [
-    { value: 'seedance-2.0', label: 'Seedance 2.0' },
-  ],
+  jimeng: [{ value: 'seedance-2.0', label: 'Seedance 2.0' }],
 }
 
 const DURATION_OPTIONS = [
@@ -126,19 +114,10 @@ export function VideoGenNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const currentModels = useMemo(
-    () => VIDEO_MODELS[provider] ?? [],
-    [provider],
-  )
+  const currentModels = useMemo(() => VIDEO_MODELS[provider] ?? [], [provider])
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<Video size={14} />}
-      inputs={INPUTS}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<Video size={14} />}>
       <div className="space-y-3">
         {/* ── Provider selector ────────────────────── */}
         <ConfigField label={t('provider')}>
@@ -201,12 +180,12 @@ export function VideoGenNode(props: NodeProps) {
         {(status === 'running' || resultUrl) && (
           <div className="border-border rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
-              <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+              <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
               </span>
               {status === 'running' && (
                 <div className="flex items-center gap-1.5">
-                  <Loader2 size={10} className="text-[var(--brand-500)] animate-spin" />
+                  <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
                   {progress > 0 && (
                     <span className="text-muted-foreground text-[10px]">{progress}%</span>
                   )}
@@ -215,11 +194,7 @@ export function VideoGenNode(props: NodeProps) {
             </div>
             <div className="flex items-center justify-center p-2">
               {resultUrl ? (
-                <video
-                  src={resultUrl}
-                  controls
-                  className="max-h-40 max-w-full rounded"
-                />
+                <video src={resultUrl} controls className="max-h-40 max-w-full rounded" />
               ) : (
                 <span className="text-muted-foreground text-xs italic">
                   {t('generating')}

@@ -16,16 +16,6 @@ import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ───────────────────────────────── */
-
-const INPUTS = [
-  { id: 'value-in', label: 'Value', type: 'any' as const, required: true },
-]
-const OUTPUTS = [
-  { id: 'true-out', label: 'True', type: 'any' as const },
-  { id: 'false-out', label: 'False', type: 'any' as const },
-]
-
 /* ─── Operators ─────────────────────────────────────── */
 
 const OPERATORS = [
@@ -76,20 +66,18 @@ export function ConditionalNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<GitBranch size={14} />}
-      inputs={INPUTS}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<GitBranch size={14} />}>
       <div className="space-y-3">
         {/* ── Operator ────────────────────────────── */}
         <div>
-          <label className="text-muted-foreground mb-1 block text-xs">{t('conditionOperator')}</label>
+          <label className="text-muted-foreground mb-1 block text-xs">
+            {t('conditionOperator')}
+          </label>
           <select value={operator} onChange={onOperatorChange} className={SELECT_CLASS}>
             {OPERATORS.map((op) => (
-              <option key={op.value} value={op.value}>{op.label}</option>
+              <option key={op.value} value={op.value}>
+                {op.label}
+              </option>
             ))}
           </select>
         </div>
@@ -97,7 +85,9 @@ export function ConditionalNode(props: NodeProps) {
         {/* ── Compare Value ───────────────────────── */}
         {needsCompareValue && (
           <div>
-            <label className="text-muted-foreground mb-1 block text-xs">{t('conditionValue')}</label>
+            <label className="text-muted-foreground mb-1 block text-xs">
+              {t('conditionValue')}
+            </label>
             <input
               type="text"
               value={compareValue}

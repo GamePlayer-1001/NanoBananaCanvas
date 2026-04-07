@@ -45,7 +45,11 @@ describe('executeNode', () => {
 
   it('supports typed equality in conditional node', async () => {
     const result = await executeNode(
-      createContext('conditional', { operator: '==', compareValue: '3' }, { 'value-in': 3 }),
+      createContext(
+        'conditional',
+        { operator: '==', compareValue: '3' },
+        { 'value-in': 3 },
+      ),
     )
 
     expect(result.outputs['true-out']).toBe(3)
@@ -74,7 +78,11 @@ describe('executeNode', () => {
 
   it('parses JSON array strings in loop node', async () => {
     const result = await executeNode(
-      createContext('loop', { mode: 'forEach', separator: '\\n' }, { 'items-in': '["a","b","c"]' }),
+      createContext(
+        'loop',
+        { mode: 'forEach', separator: '\\n' },
+        { 'items-in': '["a","b","c"]' },
+      ),
     )
 
     expect(result.outputs.__loop_items).toEqual(['a', 'b', 'c'])
@@ -84,21 +92,61 @@ describe('executeNode', () => {
 
   it('splits text input by custom separator in loop node', async () => {
     const result = await executeNode(
-      createContext('loop', { mode: 'forEach', separator: ',' }, { 'items-in': 'one, two,three' }),
+      createContext(
+        'loop',
+        { mode: 'forEach', separator: ',' },
+        { 'items-in': 'one, two,three' },
+      ),
     )
 
     expect(result.outputs.__loop_items).toEqual(['one', 'two', 'three'])
   })
 
   it('creates index items in repeat mode', async () => {
-    const result = await executeNode(createContext('loop', { mode: 'repeat', iterations: 4 }))
+    const result = await executeNode(
+      createContext('loop', { mode: 'repeat', iterations: 4 }),
+    )
     expect(result.outputs.__loop_items).toEqual([0, 1, 2, 3])
   })
 
   it('passes through display input without forcing string conversion', async () => {
-    const payload = { type: 'url', url: 'https://example.com/demo.png', contentType: 'image/png' }
-    const result = await executeNode(createContext('display', {}, { 'content-in': payload }))
+    const payload = {
+      type: 'url',
+      url: 'https://example.com/demo.png',
+      contentType: 'image/png',
+    }
+    const result = await executeNode(
+      createContext('display', {}, { 'content-in': payload }),
+    )
 
     expect(result.outputs.content).toEqual(payload)
+  })
+
+  it('merges text inputs in port order with configured separator', async () => {
+    const result = await executeNode(
+      createContext(
+        'text-merge',
+        { separator: ' + ' },
+        { 'text-2-in': 'B', 'text-1-in': 'A', 'text-4-in': 'D' },
+      ),
+    )
+
+    expect(result.outputs['text-out']).toBe('A + B + D')
+  })
+
+  it('merges image inputs into an ordered image list', async () => {
+    const result = await executeNode(
+      createContext(
+        'image-merge',
+        {},
+        {
+          'image-2-in': '/two.png',
+          'image-1-in': '/one.png',
+          'image-4-in': '/four.png',
+        },
+      ),
+    )
+
+    expect(result.outputs['images-out']).toEqual(['/one.png', '/two.png', '/four.png'])
   })
 })

@@ -16,12 +16,6 @@ import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ────────────────────────────────── */
-
-const OUTPUTS = [
-  { id: 'text-out', label: 'Text', type: 'string' as const, required: false },
-]
-
 /* ─── Component ───────────────────────────────────────── */
 
 export function TextInputNode(props: NodeProps) {
@@ -37,7 +31,7 @@ export function TextInputNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<Type size={14} />} outputs={OUTPUTS}>
+    <BaseNode {...props} data={data} icon={<Type size={14} />}>
       <textarea
         value={(data.config.text as string) ?? ''}
         onChange={onChange}

@@ -20,15 +20,6 @@ import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
 
-const INPUTS = [
-  { id: 'prompt-in', label: 'Prompt', type: 'string' as const, required: true },
-  { id: 'image-in', label: 'Reference Image', type: 'image' as const, required: false },
-]
-
-const OUTPUTS = [
-  { id: 'image-out', label: 'Image', type: 'image' as const, required: false },
-]
-
 const DEFAULT_PROVIDER = 'openrouter'
 const DEFAULT_MODEL = 'openai/dall-e-3'
 const DEFAULT_SIZE = '1024x1024'
@@ -77,10 +68,16 @@ export function ImageGenNode(props: NodeProps) {
   )
 
   useEffect(() => {
-    if (executionMode === 'user_key' && !USER_KEY_PROVIDERS.some((item) => item.value === provider)) {
+    if (
+      executionMode === 'user_key' &&
+      !USER_KEY_PROVIDERS.some((item) => item.value === provider)
+    ) {
       updateConfig({ provider: 'image-openai' })
     }
-    if (executionMode === 'credits' && !CREDIT_PROVIDERS.some((item) => item.value === provider)) {
+    if (
+      executionMode === 'credits' &&
+      !CREDIT_PROVIDERS.some((item) => item.value === provider)
+    ) {
       updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
     }
   }, [executionMode, provider, updateConfig])
@@ -108,35 +105,38 @@ export function ImageGenNode(props: NodeProps) {
   )
 
   const providerOptions = useMemo(
-    () => (executionMode === 'user_key' ? [...USER_KEY_PROVIDERS] : [...CREDIT_PROVIDERS]),
+    () =>
+      executionMode === 'user_key' ? [...USER_KEY_PROVIDERS] : [...CREDIT_PROVIDERS],
     [executionMode],
   )
 
   const currentModels = useMemo(
-    () => (executionMode === 'user_key' ? [] : IMAGE_MODELS[provider] ?? []),
+    () => (executionMode === 'user_key' ? [] : (IMAGE_MODELS[provider] ?? [])),
     [executionMode, provider],
   )
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<ImageIcon size={14} />}
-      inputs={INPUTS}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<ImageIcon size={14} />}>
       <div className="space-y-3">
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
               active={executionMode === 'credits'}
-              onClick={() => updateConfig({ executionMode: 'credits', provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'credits',
+                  provider: DEFAULT_PROVIDER,
+                  model: DEFAULT_MODEL,
+                })
+              }
               icon={<Coins size={12} />}
               label={t('creditsMode')}
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'image-openai' })}
+              onClick={() =>
+                updateConfig({ executionMode: 'user_key', provider: 'image-openai' })
+              }
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -185,11 +185,11 @@ export function ImageGenNode(props: NodeProps) {
         {status === 'running' || resultUrl ? (
           <div className="border-border rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
-              <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+              <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
               </span>
               {status === 'running' ? (
-                <Loader2 size={10} className="text-[var(--brand-500)] animate-spin" />
+                <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
               ) : null}
             </div>
 

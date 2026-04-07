@@ -16,17 +16,6 @@ import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ───────────────────────────────── */
-
-const INPUTS = [
-  { id: 'items-in', label: 'Items', type: 'any' as const, required: true },
-]
-const OUTPUTS = [
-  { id: 'item-out', label: 'Item', type: 'any' as const },
-  { id: 'index-out', label: 'Index', type: 'number' as const },
-  { id: 'results-out', label: 'Results', type: 'any' as const },
-]
-
 /* ─── Shared Styles ──────────────────────────────────── */
 
 const SELECT_CLASS =
@@ -57,7 +46,8 @@ export function LoopNode(props: NodeProps) {
   )
 
   const onIterationsChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => updateConfig({ iterations: parseInt(e.target.value) || 1 }),
+    (e: ChangeEvent<HTMLInputElement>) =>
+      updateConfig({ iterations: parseInt(e.target.value) || 1 }),
     [updateConfig],
   )
 
@@ -67,17 +57,13 @@ export function LoopNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<Repeat size={14} />}
-      inputs={INPUTS}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<Repeat size={14} />}>
       <div className="space-y-3">
         {/* ── Mode ────────────────────────────────── */}
         <div>
-          <label className="text-muted-foreground mb-1 block text-xs">{t('loopMode')}</label>
+          <label className="text-muted-foreground mb-1 block text-xs">
+            {t('loopMode')}
+          </label>
           <select value={mode} onChange={onModeChange} className={SELECT_CLASS}>
             <option value="forEach">For Each</option>
             <option value="repeat">Repeat N</option>
@@ -87,7 +73,9 @@ export function LoopNode(props: NodeProps) {
         {/* ── Iterations (repeat mode) ────────────── */}
         {mode === 'repeat' && (
           <div>
-            <label className="text-muted-foreground mb-1 block text-xs">{t('loopIterations')}</label>
+            <label className="text-muted-foreground mb-1 block text-xs">
+              {t('loopIterations')}
+            </label>
             <input
               type="number"
               min={1}
@@ -102,7 +90,9 @@ export function LoopNode(props: NodeProps) {
         {/* ── Separator (forEach mode) ────────────── */}
         {mode === 'forEach' && (
           <div>
-            <label className="text-muted-foreground mb-1 block text-xs">{t('loopSeparator')}</label>
+            <label className="text-muted-foreground mb-1 block text-xs">
+              {t('loopSeparator')}
+            </label>
             <input
               type="text"
               value={separator}

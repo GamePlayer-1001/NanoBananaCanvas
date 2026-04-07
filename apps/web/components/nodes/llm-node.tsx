@@ -8,25 +8,30 @@
 
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
-import { BrainCircuit, ChevronDown, ChevronRight, Coins, KeyRound, Loader2 } from 'lucide-react'
+import {
+  BrainCircuit,
+  ChevronDown,
+  ChevronRight,
+  Coins,
+  KeyRound,
+  Loader2,
+} from 'lucide-react'
 
 import { getAllModelGroups } from '@/services/ai'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
-
-const INPUTS = [
-  { id: 'prompt-in', label: 'Prompt', type: 'string' as const, required: true },
-  { id: 'image-in', label: 'Image', type: 'image' as const },
-]
-
-const OUTPUTS = [
-  { id: 'text-out', label: 'Response', type: 'string' as const, required: false },
-]
 
 const DEFAULT_PROVIDER = 'openrouter'
 const DEFAULT_MODEL = 'openai/gpt-4o-mini'
@@ -107,7 +112,8 @@ export function LLMNode(props: NodeProps) {
   )
 
   const onTemperatureChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => updateConfig({ temperature: parseFloat(e.target.value) }),
+    (e: ChangeEvent<HTMLInputElement>) =>
+      updateConfig({ temperature: parseFloat(e.target.value) }),
     [updateConfig],
   )
 
@@ -122,7 +128,8 @@ export function LLMNode(props: NodeProps) {
   )
 
   const onSystemPromptChange = useCallback(
-    (e: ChangeEvent<HTMLTextAreaElement>) => updateConfig({ systemPrompt: e.target.value }),
+    (e: ChangeEvent<HTMLTextAreaElement>) =>
+      updateConfig({ systemPrompt: e.target.value }),
     [updateConfig],
   )
 
@@ -142,13 +149,7 @@ export function LLMNode(props: NodeProps) {
   }, [executionMode, modelGroups])
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<BrainCircuit size={14} />}
-      inputs={INPUTS}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<BrainCircuit size={14} />}>
       <div className="space-y-3">
         <ConfigField label={t('provider')}>
           <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
@@ -198,7 +199,9 @@ export function LLMNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'llm-openai' })}
+              onClick={() =>
+                updateConfig({ executionMode: 'user_key', provider: 'llm-openai' })
+              }
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -256,12 +259,12 @@ export function LLMNode(props: NodeProps) {
         {status === 'running' || output ? (
           <div className="border-border rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
-              <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+              <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
               </span>
               <div className="flex items-center gap-1.5">
                 {status === 'running' ? (
-                  <Loader2 size={10} className="text-[var(--brand-500)] animate-spin" />
+                  <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
                 ) : null}
                 {tokenCount > 0 ? (
                   <span className="text-muted-foreground text-[10px]">

@@ -20,6 +20,7 @@ import {
 import { create } from 'zustand'
 import type { WorkflowNodeData } from '@/types'
 import { createLogger } from '@/lib/logger'
+import { isValidConnection } from '@/lib/utils/validate-connection'
 import { debouncedPush, useHistoryStore } from '@/stores/use-history-store'
 
 const log = createLogger('FlowStore')
@@ -101,6 +102,15 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   onConnect: (connection) => {
     log.debug('Edge connected', { source: connection.source, target: connection.target })
+    if (!isValidConnection(connection, get().nodes, get().edges)) {
+      log.debug('Rejected invalid edge', {
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+      })
+      return
+    }
     pushSnapshot()
     set({ edges: addEdge({ ...connection, type: 'custom' }, get().edges) })
   },

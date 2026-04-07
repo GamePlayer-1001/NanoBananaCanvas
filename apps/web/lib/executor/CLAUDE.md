@@ -2,14 +2,14 @@
 
 > L2 | 父级: apps/web/lib/CLAUDE.md
 
-工作流 DAG 执行引擎 — 拓扑排序 + 逐节点执行 + 条件分支 + 循环迭代 + 流式输出
+工作流 DAG 执行引擎 — 拓扑排序 + 逐节点执行 + 条件分支 + 循环迭代 + 合并工具 + 流式输出
 
 ## 成员清单
 
 ```
 index.ts              — 聚合导出执行引擎公共 API
 topological-sort.ts   — Kahn 算法 BFS 拓扑排序 + 环检测 (O(V+E))
-node-executor.ts      — 节点执行分发器 (12 种节点类型)，按 nodeType 路由到具体执行函数
+node-executor.ts      — 节点执行分发器 (14 种节点类型)，按 nodeType 路由到具体执行函数，Merge 节点按 plugin-registry 端口顺序汇聚输入
 workflow-executor.ts  — 顶层编排器 WorkflowExecutor 类 (排序→执行→条件跳过→循环迭代→中断→错误处理)
 topological-sort.test.ts — 拓扑排序单元测试 (8 用例: 空图/线性/钻石/断连/环检测)
 node-executor.test.ts — 节点执行单元测试 (text-input/conditional/loop 的输入解析与输出语义)
@@ -32,6 +32,7 @@ WorkflowExecutor.execute()
     │   │   ├── audio-gen → /api/tasks 提交 + 轮询完成
     │   │   ├── conditional → 评估条件 → true-out/false-out (null 端口)
     │   │   ├── loop → 准备 items → body 子图迭代执行
+    │   │   ├── text-merge/image-merge → 按注册表端口顺序显式汇聚多输入
     │   │   ├── note/group → noop
     │   │   └── display → 透传 content-in
     │   ├── handleConditionalSkip()      → 传播算法跳过 null 分支独占下游

@@ -19,8 +19,6 @@ import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
 
-const OUTPUTS = [{ id: 'image-out', label: 'Image', type: 'image' as const, required: false }]
-
 export function ImageInputNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
@@ -37,19 +35,10 @@ export function ImageInputNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<ImagePlus size={14} />}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<ImagePlus size={14} />}>
       <div className="space-y-2">
         <div className="text-muted-foreground text-xs">{t('imageInputHint')}</div>
-        <ImageUpload
-          value={imageUrl}
-          onChange={onChange}
-          className="h-32 w-full"
-        />
+        <ImageUpload value={imageUrl} onChange={onChange} className="h-32 w-full" />
       </div>
     </BaseNode>
   )

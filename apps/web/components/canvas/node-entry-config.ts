@@ -8,10 +8,12 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  Combine,
   GitBranch,
   Group,
   ImageIcon,
   ImagePlus,
+  Images,
   MonitorPlay,
   Music,
   Repeat,
@@ -25,6 +27,8 @@ import type { CanvasTool } from '@/stores/use-canvas-tool-store'
 type NodeEntryLabelKey =
   | 'addTextInput'
   | 'addImageInput'
+  | 'addTextMerge'
+  | 'addImageMerge'
   | 'addNote'
   | 'addLLM'
   | 'addImageGen'
@@ -69,12 +73,18 @@ export const CANVAS_TOOLBAR_NODE_GROUPS: NodeEntryGroup[] = [
   {
     id: 'llm',
     labelKey: 'groupText',
-    items: [{ type: 'llm', labelKey: 'addLLM', icon: BrainCircuit }],
+    items: [
+      { type: 'llm', labelKey: 'addLLM', icon: BrainCircuit },
+      { type: 'text-merge', labelKey: 'addTextMerge', icon: Combine },
+    ],
   },
   {
     id: 'image',
     labelKey: 'groupImage',
-    items: [{ type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon }],
+    items: [
+      { type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon },
+      { type: 'image-merge', labelKey: 'addImageMerge', icon: Images },
+    ],
   },
   {
     id: 'video',
@@ -106,12 +116,18 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   {
     id: 'llm',
     labelKey: 'groupText',
-    items: [{ type: 'llm', labelKey: 'addLLM', icon: BrainCircuit }],
+    items: [
+      { type: 'llm', labelKey: 'addLLM', icon: BrainCircuit },
+      { type: 'text-merge', labelKey: 'addTextMerge', icon: Combine },
+    ],
   },
   {
     id: 'image',
     labelKey: 'groupImage',
-    items: [{ type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon }],
+    items: [
+      { type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon },
+      { type: 'image-merge', labelKey: 'addImageMerge', icon: Images },
+    ],
   },
   {
     id: 'video',

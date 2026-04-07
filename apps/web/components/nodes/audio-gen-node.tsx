@@ -16,15 +16,6 @@ import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ───────────────────────────────── */
-
-const INPUTS = [
-  { id: 'text-in', label: 'Text', type: 'string' as const, required: true },
-]
-const OUTPUTS = [
-  { id: 'audio-out', label: 'Audio', type: 'audio' as const, required: false },
-]
-
 /* ─── Defaults ───────────────────────────────────────── */
 
 const DEFAULT_MODEL = 'tts-1'
@@ -85,7 +76,8 @@ export function AudioGenNode(props: NodeProps) {
   )
 
   const onSpeedChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => updateConfig({ speed: parseFloat(e.target.value) }),
+    (e: ChangeEvent<HTMLInputElement>) =>
+      updateConfig({ speed: parseFloat(e.target.value) }),
     [updateConfig],
   )
 
@@ -93,13 +85,7 @@ export function AudioGenNode(props: NodeProps) {
   const speedLabel = useMemo(() => `${speed.toFixed(1)}x`, [speed])
 
   return (
-    <BaseNode
-      {...props}
-      data={data}
-      icon={<Music size={14} />}
-      inputs={INPUTS}
-      outputs={OUTPUTS}
-    >
+    <BaseNode {...props} data={data} icon={<Music size={14} />}>
       <div className="space-y-3">
         {/* ── Model selector ──────────────────────── */}
         <ConfigField label={t('model')}>
@@ -140,11 +126,11 @@ export function AudioGenNode(props: NodeProps) {
         {(status === 'running' || resultUrl) && (
           <div className="border-border rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
-              <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+              <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
               </span>
               {status === 'running' && (
-                <Loader2 size={10} className="text-[var(--brand-500)] animate-spin" />
+                <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
               )}
             </div>
             <div className="flex items-center justify-center p-2">

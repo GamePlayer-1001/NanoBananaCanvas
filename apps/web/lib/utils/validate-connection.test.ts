@@ -24,10 +24,21 @@ function mkNode(id: string, type: string): Node<WorkflowNodeData> {
 }
 
 function mkEdge(src: string, tgt: string, srcH = 'text-out', tgtH = 'prompt-in'): Edge {
-  return { id: `${src}-${tgt}`, source: src, target: tgt, sourceHandle: srcH, targetHandle: tgtH }
+  return {
+    id: `${src}-${tgt}`,
+    source: src,
+    target: tgt,
+    sourceHandle: srcH,
+    targetHandle: tgtH,
+  }
 }
 
-function mkConn(src: string, tgt: string, srcH = 'text-out', tgtH = 'prompt-in'): Connection {
+function mkConn(
+  src: string,
+  tgt: string,
+  srcH = 'text-out',
+  tgtH = 'prompt-in',
+): Connection {
   return { source: src, target: tgt, sourceHandle: srcH, targetHandle: tgtH }
 }
 
@@ -42,7 +53,9 @@ describe('isValidConnection', () => {
   ]
 
   it('allows valid text-input → llm connection', () => {
-    expect(isValidConnection(mkConn('ti', 'llm', 'text-out', 'prompt-in'), nodes, [])).toBe(true)
+    expect(
+      isValidConnection(mkConn('ti', 'llm', 'text-out', 'prompt-in'), nodes, []),
+    ).toBe(true)
   })
 
   it('allows valid llm → display connection', () => {
@@ -52,7 +65,9 @@ describe('isValidConnection', () => {
   })
 
   it('allows valid image-input → llm image connection', () => {
-    expect(isValidConnection(mkConn('img', 'llm', 'image-out', 'image-in'), nodes, [])).toBe(true)
+    expect(
+      isValidConnection(mkConn('img', 'llm', 'image-out', 'image-in'), nodes, []),
+    ).toBe(true)
   })
 
   it('rejects self-connection', () => {
@@ -72,6 +87,42 @@ describe('isValidConnection', () => {
     ).toBe(true)
   })
 
+  it('rejects a second edge into an occupied input handle', () => {
+    const existing = [mkEdge('ti', 'llm', 'text-out', 'prompt-in')]
+    expect(
+      isValidConnection(mkConn('img', 'llm', 'image-out', 'prompt-in'), nodes, existing),
+    ).toBe(false)
+  })
+
+  it('treats null and undefined target handles as the same default input', () => {
+    const existing = [
+      {
+        id: 'default-in',
+        source: 'ti',
+        target: 'disp',
+        sourceHandle: undefined,
+        targetHandle: undefined,
+      },
+    ]
+
+    expect(
+      isValidConnection(mkConn('llm', 'disp', 'text-out', null), nodes, existing),
+    ).toBe(false)
+  })
+
+  it('allows multiple sources into different merge input handles', () => {
+    const mergeNodes = [...nodes, mkNode('merge', 'text-merge')]
+    const existing = [mkEdge('ti', 'merge', 'text-out', 'text-1-in')]
+
+    expect(
+      isValidConnection(
+        mkConn('llm', 'merge', 'text-out', 'text-2-in'),
+        mergeNodes,
+        existing,
+      ),
+    ).toBe(true)
+  })
+
   it('rejects missing source node', () => {
     expect(isValidConnection(mkConn('ghost', 'llm'), nodes, [])).toBe(false)
   })
@@ -84,8 +135,8 @@ describe('isValidConnection', () => {
 
   it('allows connection to unknown node types (graceful fallback)', () => {
     const customNodes = [...nodes, mkNode('custom', 'my-custom-node')]
-    expect(isValidConnection(mkConn('ti', 'custom', 'text-out', 'any'), customNodes, [])).toBe(
-      true,
-    )
+    expect(
+      isValidConnection(mkConn('ti', 'custom', 'text-out', 'any'), customNodes, []),
+    ).toBe(true)
   })
 })

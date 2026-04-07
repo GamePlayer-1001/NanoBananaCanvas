@@ -18,12 +18,6 @@ import type { WorkflowNodeData } from '@/types'
 import { renderSimpleMarkdown } from '@/lib/utils/simple-markdown'
 import { BaseNode } from './base-node'
 
-/* ─── Port Definitions ────────────────────────────────── */
-
-const INPUTS = [
-  { id: 'content-in', label: 'Content', type: 'any' as const, required: true },
-]
-
 /* ─── Copy Button ─────────────────────────────────────── */
 
 function CopyButton({ text }: { text: string }) {
@@ -72,7 +66,6 @@ export function DisplayNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<MonitorPlay size={14} />}
-      inputs={INPUTS}
       headerRight={copyText ? <CopyButton text={copyText} /> : undefined}
     >
       {content != null && content !== '' ? (
@@ -80,7 +73,9 @@ export function DisplayNode(props: NodeProps) {
           <ContentRenderer content={content} />
         </div>
       ) : (
-        <p className="text-muted-foreground text-center text-xs">{t('waitingForInput')}</p>
+        <p className="text-muted-foreground text-center text-xs">
+          {t('waitingForInput')}
+        </p>
       )}
     </BaseNode>
   )
@@ -108,7 +103,12 @@ function detectContentType(content: unknown): DisplayContentType {
 
   /* JSON 检测 */
   if ((content.startsWith('[') || content.startsWith('{')) && content.length > 2) {
-    try { JSON.parse(content); return 'json' } catch { /* not JSON */ }
+    try {
+      JSON.parse(content)
+      return 'json'
+    } catch {
+      /* not JSON */
+    }
   }
 
   return 'text'
@@ -134,7 +134,10 @@ function extractMediaUrl(content: unknown): { url: string; contentType?: string 
   if ('files' in content && Array.isArray(content.files)) {
     const firstFile = content.files.find(
       (file): file is { url: string; type?: string } =>
-        !!file && typeof file === 'object' && 'url' in file && typeof file.url === 'string',
+        !!file &&
+        typeof file === 'object' &&
+        'url' in file &&
+        typeof file.url === 'string',
     )
     if (firstFile) {
       return { url: firstFile.url, contentType: firstFile.type }
@@ -160,22 +163,46 @@ function ContentRenderer({ content }: { content: unknown }) {
 
   switch (type) {
     case 'image':
-      return stringContent
-        ? <img src={stringContent} alt="Generated" className="max-h-40 w-full rounded object-contain" />
-        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
+      return stringContent ? (
+        <img
+          src={stringContent}
+          alt="Generated"
+          className="max-h-40 w-full rounded object-contain"
+        />
+      ) : (
+        <pre className="text-muted-foreground overflow-auto text-xs">
+          {JSON.stringify(content, null, 2)}
+        </pre>
+      )
     case 'video':
-      return stringContent
-        ? <video src={stringContent} controls className="max-h-40 w-full rounded" />
-        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
+      return stringContent ? (
+        <video src={stringContent} controls className="max-h-40 w-full rounded" />
+      ) : (
+        <pre className="text-muted-foreground overflow-auto text-xs">
+          {JSON.stringify(content, null, 2)}
+        </pre>
+      )
     case 'audio':
-      return stringContent
-        ? <audio src={stringContent} controls className="w-full" />
-        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
+      return stringContent ? (
+        <audio src={stringContent} controls className="w-full" />
+      ) : (
+        <pre className="text-muted-foreground overflow-auto text-xs">
+          {JSON.stringify(content, null, 2)}
+        </pre>
+      )
     case 'json':
-      return <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
+      return (
+        <pre className="text-muted-foreground overflow-auto text-xs">
+          {JSON.stringify(content, null, 2)}
+        </pre>
+      )
     default:
-      return typeof content === 'string'
-        ? <>{renderSimpleMarkdown(content)}</>
-        : <pre className="text-muted-foreground overflow-auto text-xs">{JSON.stringify(content, null, 2)}</pre>
+      return typeof content === 'string' ? (
+        <>{renderSimpleMarkdown(content)}</>
+      ) : (
+        <pre className="text-muted-foreground overflow-auto text-xs">
+          {JSON.stringify(content, null, 2)}
+        </pre>
+      )
   }
 }

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 /api/ai/* 与 /api/tasks/* 服务端执行链路，
- *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
+ *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger，依赖 @/components/nodes/plugin-registry 的 getNodePorts
  * [OUTPUT]: 对外提供 executeNode 函数 (按节点类型分发执行)
  * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用，统一衔接画布节点与服务端 AI/任务能力
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,6 +8,7 @@
 
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
+import { getNodePorts } from '@/components/nodes/plugin-registry'
 import type { ChatMessage, ContentPart } from '@/services/ai/types'
 import type { WorkflowNodeData } from '@/types'
 
@@ -46,11 +47,15 @@ const executors: Record<string, NodeExecutorFn> = {
   group: executeNoop,
   conditional: executeConditional,
   loop: executeLoop,
+  'text-merge': executeTextMerge,
+  'image-merge': executeImageMerge,
 }
 
 /* ─── Main Entry ─────────────────────────────────────── */
 
-export async function executeNode(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+export async function executeNode(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
   const executor = executors[ctx.nodeType]
 
   if (!executor) {
@@ -73,7 +78,9 @@ async function executeTextInput(ctx: NodeExecutionContext): Promise<NodeExecutio
   return { outputs: { 'text-out': text } }
 }
 
-async function executeImageInput(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+async function executeImageInput(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
   const raw = ctx.data.config.imageUrl
   const imageUrl = typeof raw === 'string' ? raw : ''
 
@@ -86,6 +93,41 @@ async function executeImageInput(ctx: NodeExecutionContext): Promise<NodeExecuti
   }
 
   return { outputs: { 'image-out': imageUrl } }
+}
+
+/* ─── Merge: 显式多输入汇聚 ─────────────────────────── */
+
+async function executeTextMerge(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+  const separator = decodeConfiguredSeparator(
+    (ctx.data.config.separator as string) ?? '\\n',
+  )
+  const parts = collectInputValues(ctx)
+    .map((value) =>
+      typeof value === 'string' ? value : value == null ? '' : String(value),
+    )
+    .filter((value) => value.length > 0)
+
+  return { outputs: { 'text-out': parts.join(separator) } }
+}
+
+async function executeImageMerge(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
+  const images = collectInputValues(ctx).filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  )
+
+  return { outputs: { 'images-out': images } }
+}
+
+function collectInputValues(ctx: NodeExecutionContext): unknown[] {
+  return getNodePorts(ctx.nodeType)
+    .inputs.map((port) => ctx.inputs[port.id])
+    .filter((value) => value != null && value !== '')
+}
+
+function decodeConfiguredSeparator(separator: string): string {
+  return separator.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
 }
 
 /* ─── LLM: 调用 AI 模型 ─────────────────────────────── */
@@ -135,24 +177,24 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   if (executionMode === 'credits' || executionMode === 'user_key') {
     result = onStreamChunk
       ? await executeLLMViaStreamApi({
-        provider: providerId,
-        modelId: model,
-        messages,
-        executionMode,
-        temperature,
-        maxTokens,
-        signal,
-        onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
-      })
+          provider: providerId,
+          modelId: model,
+          messages,
+          executionMode,
+          temperature,
+          maxTokens,
+          signal,
+          onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
+        })
       : await executeLLMViaApi({
-        provider: providerId,
-        modelId: model,
-        messages,
-        executionMode,
-        temperature,
-        maxTokens,
-        signal,
-      })
+          provider: providerId,
+          modelId: model,
+          messages,
+          executionMode,
+          temperature,
+          maxTokens,
+          signal,
+        })
   } else {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
@@ -163,11 +205,9 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 
   // 检查是否被中断
   if (signal.aborted) {
-    throw new WorkflowError(
-      ErrorCode.WORKFLOW_ABORTED,
-      'Execution aborted',
-      { nodeId: ctx.nodeId },
-    )
+    throw new WorkflowError(ErrorCode.WORKFLOW_ABORTED, 'Execution aborted', {
+      nodeId: ctx.nodeId,
+    })
   }
 
   log.debug('LLM execution complete', { nodeId: ctx.nodeId, length: result.length })
@@ -310,7 +350,9 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
 /* ─── Conditional: 条件分支 ─────────────────────────── */
 
-async function executeConditional(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
+async function executeConditional(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
   const config = ctx.data.config
   const value = ctx.inputs['value-in']
   const operator = (config.operator as string) ?? '=='
@@ -327,7 +369,11 @@ async function executeConditional(ctx: NodeExecutionContext): Promise<NodeExecut
   }
 }
 
-function evaluateCondition(value: unknown, operator: string, compareValue: string): boolean {
+function evaluateCondition(
+  value: unknown,
+  operator: string,
+  compareValue: string,
+): boolean {
   const normalizedValue = normalizeConditionValue(value)
   const normalizedCompare = normalizeConditionValue(compareValue)
   const leftText = stringifyConditionValue(normalizedValue)
@@ -350,7 +396,9 @@ function evaluateCondition(value: unknown, operator: string, compareValue: strin
       return leftNumber != null && rightNumber != null ? leftNumber <= rightNumber : false
     case 'contains':
       if (Array.isArray(normalizedValue)) {
-        return normalizedValue.some((item) => areConditionValuesEqual(item, normalizedCompare))
+        return normalizedValue.some((item) =>
+          areConditionValuesEqual(item, normalizedCompare),
+        )
       }
       return leftText.includes(rightText)
     case 'empty':
@@ -402,7 +450,11 @@ function stringifyConditionValue(value: unknown): string {
 
 function toComparableNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
-  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+  if (
+    typeof value === 'string' &&
+    value.trim() !== '' &&
+    Number.isFinite(Number(value))
+  ) {
     return Number(value)
   }
   return null
@@ -529,7 +581,9 @@ interface ExecuteLLMStreamApiParams extends ExecuteLLMApiParams {
   onChunk: (chunk: string) => void
 }
 
-async function executeLLMViaStreamApi(params: ExecuteLLMStreamApiParams): Promise<string> {
+async function executeLLMViaStreamApi(
+  params: ExecuteLLMStreamApiParams,
+): Promise<string> {
   const { signal, onChunk, ...body } = params
   const response = await fetch('/api/ai/stream', {
     method: 'POST',
@@ -604,7 +658,9 @@ interface ExecuteTaskOutputApiParams {
   signal: AbortSignal
 }
 
-async function executeTaskOutputViaApi(params: ExecuteTaskOutputApiParams): Promise<string> {
+async function executeTaskOutputViaApi(
+  params: ExecuteTaskOutputApiParams,
+): Promise<string> {
   const submitResponse = await fetch('/api/tasks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -628,7 +684,10 @@ async function executeTaskOutputViaApi(params: ExecuteTaskOutputApiParams): Prom
 
   const taskId = submitPayload.data?.id
   if (!taskId) {
-    throw new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, 'Task submission returned no task id')
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Task submission returned no task id',
+    )
   }
 
   for (let attempt = 0; attempt < 20; attempt += 1) {

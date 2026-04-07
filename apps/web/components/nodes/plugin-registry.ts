@@ -9,10 +9,12 @@ import type { CSSProperties } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  Combine,
   GitBranch,
   Group,
   ImageIcon,
   ImagePlus,
+  Images,
   MonitorPlay,
   Music,
   Repeat,
@@ -149,7 +151,13 @@ register({
     ],
     outputs: [{ id: 'video-out', label: 'Video', type: 'video' }],
   },
-  defaults: { provider: 'kling', model: 'kling-v2-0', duration: '5', aspectRatio: '16:9', mode: 'std' },
+  defaults: {
+    provider: 'kling',
+    model: 'kling-v2-0',
+    duration: '5',
+    aspectRatio: '16:9',
+    mode: 'std',
+  },
   toolbar: { labelKey: 'videoGen' },
 })
 
@@ -164,6 +172,42 @@ register({
   },
   defaults: { provider: 'openai', model: 'tts-1', voice: 'alloy', speed: 1.0 },
   toolbar: { labelKey: 'audioGen' },
+})
+
+register({
+  type: 'text-merge',
+  category: 'transform',
+  label: 'Text Merge',
+  icon: Combine,
+  ports: {
+    inputs: [
+      { id: 'text-1-in', label: 'Text 1', type: 'string' },
+      { id: 'text-2-in', label: 'Text 2', type: 'string' },
+      { id: 'text-3-in', label: 'Text 3', type: 'string' },
+      { id: 'text-4-in', label: 'Text 4', type: 'string' },
+    ],
+    outputs: [{ id: 'text-out', label: 'Merged Text', type: 'string' }],
+  },
+  defaults: { separator: '\\n' },
+  toolbar: { labelKey: 'textMerge' },
+})
+
+register({
+  type: 'image-merge',
+  category: 'transform',
+  label: 'Image Merge',
+  icon: Images,
+  ports: {
+    inputs: [
+      { id: 'image-1-in', label: 'Image 1', type: 'image' },
+      { id: 'image-2-in', label: 'Image 2', type: 'image' },
+      { id: 'image-3-in', label: 'Image 3', type: 'image' },
+      { id: 'image-4-in', label: 'Image 4', type: 'image' },
+    ],
+    outputs: [{ id: 'images-out', label: 'Images', type: 'image-list' }],
+  },
+  defaults: {},
+  toolbar: { labelKey: 'imageMerge' },
 })
 
 register({

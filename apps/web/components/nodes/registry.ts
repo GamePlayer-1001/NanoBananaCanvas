@@ -17,6 +17,7 @@ import { NoteNode } from './note-node'
 import { GroupNode } from './group-node'
 import { ConditionalNode } from './conditional-node'
 import { LoopNode } from './loop-node'
+import { TextMergeNode, ImageMergeNode } from './merge-node'
 
 export const NODE_TYPES: NodeTypes = {
   'text-input': TextInputNode,
@@ -30,4 +31,6 @@ export const NODE_TYPES: NodeTypes = {
   group: GroupNode,
   conditional: ConditionalNode,
   loop: LoopNode,
+  'text-merge': TextMergeNode,
+  'image-merge': ImageMergeNode,
 }

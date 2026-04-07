@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 Handle/Position/NodeProps，依赖 @/types 的 WorkflowNodeData/PortDefinition
+ * [INPUT]: 依赖 @xyflow/react 的 Handle/Position/NodeProps，依赖 @/types 的 WorkflowNodeData/PortDefinition，
+ *          依赖 ./plugin-registry 的 getNodePorts
  * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件 (含 headerRight 插槽与端口标签)
  * [POS]: components/nodes 的基础模板，所有具体节点类型继承此框架
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,6 +12,7 @@ import { type ReactNode } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import type { WorkflowNodeData, PortDefinition } from '@/types'
 import { cn } from '@/lib/utils'
+import { getNodePorts } from './plugin-registry'
 
 /* ─── Types ───────────────────────────────────────────── */
 
@@ -38,6 +40,7 @@ const PORT_TYPE_LABELS: Record<PortDefinition['type'], string> = {
   number: 'number',
   boolean: 'bool',
   image: 'img',
+  'image-list': 'imgs',
   video: 'video',
   audio: 'audio',
   any: 'any',
@@ -89,6 +92,7 @@ function PortHandle({
 
 export function BaseNode({
   data,
+  type,
   selected,
   icon,
   inputs,
@@ -97,6 +101,9 @@ export function BaseNode({
   children,
 }: BaseNodeProps) {
   const status = data.status ?? 'idle'
+  const registryPorts = getNodePorts(type)
+  const inputPorts = inputs ?? registryPorts.inputs
+  const outputPorts = outputs ?? registryPorts.outputs
 
   return (
     <div
@@ -118,23 +125,23 @@ export function BaseNode({
       <div className="p-3">{children}</div>
 
       {/* ── Input Handles ────────────────────────────── */}
-      {inputs?.map((port, i) => (
+      {inputPorts.map((port, i) => (
         <PortHandle
           key={port.id}
           port={port}
           index={i}
-          total={inputs.length}
+          total={inputPorts.length}
           direction="input"
         />
       ))}
 
       {/* ── Output Handles ───────────────────────────── */}
-      {outputs?.map((port, i) => (
+      {outputPorts.map((port, i) => (
         <PortHandle
           key={port.id}
           port={port}
           index={i}
-          total={outputs.length}
+          total={outputPorts.length}
           direction="output"
         />
       ))}
