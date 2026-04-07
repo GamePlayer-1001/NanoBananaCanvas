@@ -29,6 +29,7 @@ interface DemoNode {
 interface Connection {
   from: string
   to: string
+  route?: 'rightArc'
 }
 
 /* ─── Constants ──────────────────────────────────────────── */
@@ -58,8 +59,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'c',
     label: 'LLM Compose',
     model: 'Gemini 2.5',
-    x: 380,
-    y: 160,
+    x: 360,
+    y: 20,
     gradient: 'from-cyan-500/50 to-blue-600/50',
     w: 160,
     h: 80,
@@ -100,14 +101,25 @@ const CONNECTIONS: Connection[] = [
   { from: 'a', to: 'c' },
   { from: 'b', to: 'c' },
   { from: 'c', to: 'd' },
-  { from: 'c', to: 'e' },
+  { from: 'c', to: 'e', route: 'rightArc' },
   { from: 'd', to: 'f' },
   { from: 'e', to: 'f' },
 ]
 
 /* ─── Bezier Path ────────────────────────────────────────── */
 
-function bezierPath(sx: number, sy: number, tx: number, ty: number): string {
+function bezierPath(
+  sx: number,
+  sy: number,
+  tx: number,
+  ty: number,
+  route?: Connection['route'],
+): string {
+  if (route === 'rightArc') {
+    const cx = Math.max(sx, tx) + 260
+    return `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ty}, ${tx} ${ty}`
+  }
+
   const dx = Math.abs(tx - sx) * 0.5
   return `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`
 }
@@ -118,10 +130,12 @@ function ConnectionLine({
   from,
   to,
   nodes,
+  route,
 }: {
   from: string
   to: string
   nodes: DemoNode[]
+  route?: Connection['route']
 }) {
   const s = nodes.find((n) => n.id === from)
   const t = nodes.find((n) => n.id === to)
@@ -132,7 +146,7 @@ function ConnectionLine({
   const tx = t.x
   const ty = t.y + t.h / 2
 
-  const d = bezierPath(sx, sy, tx, ty)
+  const d = bezierPath(sx, sy, tx, ty, route)
 
   return (
     <g>
@@ -291,6 +305,7 @@ export function HeroSection() {
                 from={conn.from}
                 to={conn.to}
                 nodes={nodes}
+                route={conn.route}
               />
             ))}
           </svg>
