@@ -12,7 +12,7 @@ import { zhCN } from '@clerk/localizations'
 
 /* ─── Constants ──────────────────────────────────────── */
 
-const CLERK_PROXY_URL = 'https://nanobananacanvas.com/__clerk/'
+const CLERK_PROXY_URL = 'https://nanobananacanvas.com/__clerk'
 
 /* ─── Component ──────────────────────────────────────── */
 

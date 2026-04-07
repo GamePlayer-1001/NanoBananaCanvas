@@ -9,13 +9,15 @@
 
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import createIntlMiddleware from 'next-intl/middleware'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { routing } from './i18n/routing'
 
 /* ─── Intl Middleware ────────────────────────────────── */
 
 const intlMiddleware = createIntlMiddleware(routing)
 const CLERK_PROXY_PATH = '/__clerk'
+const CANONICAL_HOST = 'nanobananacanvas.com'
+const WWW_HOST = `www.${CANONICAL_HOST}`
 
 /* ─── Route Matchers ─────────────────────────────────── */
 
@@ -47,6 +49,12 @@ function getClerkOptions(req: NextRequest) {
 /* ─── Combined Middleware ────────────────────────────── */
 
 export default clerkMiddleware(async (auth, req) => {
+  if (req.nextUrl.hostname === WWW_HOST) {
+    const url = req.nextUrl.clone()
+    url.hostname = CANONICAL_HOST
+    return NextResponse.redirect(url, 308)
+  }
+
   if (req.nextUrl.pathname.startsWith('/api/')) {
     return
   }
