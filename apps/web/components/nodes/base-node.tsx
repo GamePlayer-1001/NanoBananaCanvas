@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 Handle/Position/NodeProps，依赖 @/types 的 WorkflowNodeData
- * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件 (含 headerRight 插槽)
+ * [INPUT]: 依赖 @xyflow/react 的 Handle/Position/NodeProps，依赖 @/types 的 WorkflowNodeData/PortDefinition
+ * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件 (含 headerRight 插槽与端口标签)
  * [POS]: components/nodes 的基础模板，所有具体节点类型继承此框架
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -32,6 +32,58 @@ const STATUS_COLORS = {
   error: 'bg-destructive',
   skipped: 'bg-muted-foreground',
 } as const
+
+const PORT_TYPE_LABELS: Record<PortDefinition['type'], string> = {
+  string: 'string',
+  number: 'number',
+  boolean: 'bool',
+  image: 'img',
+  video: 'video',
+  audio: 'audio',
+  any: 'any',
+}
+
+/* ─── Port Handle ───────────────────────────────────── */
+
+function PortHandle({
+  port,
+  index,
+  total,
+  direction,
+}: {
+  port: PortDefinition
+  index: number
+  total: number
+  direction: 'input' | 'output'
+}) {
+  const top = `${((index + 1) / (total + 1)) * 100}%`
+  const isInput = direction === 'input'
+
+  return (
+    <>
+      <Handle
+        id={port.id}
+        type={isInput ? 'target' : 'source'}
+        position={isInput ? Position.Left : Position.Right}
+        style={{ top }}
+        className="!bg-background !z-10 !h-2.5 !w-2.5 !border-2 !border-[var(--brand-500)]"
+      />
+      <div
+        className={cn(
+          'pointer-events-none absolute z-10 flex -translate-y-1/2 items-center gap-1',
+          'bg-background/95 text-muted-foreground rounded-md border px-1.5 py-0.5 text-[10px] leading-none shadow-sm',
+          isInput
+            ? 'right-[calc(100%_+_10px)] text-right'
+            : 'left-[calc(100%_+_10px)] text-left',
+        )}
+        style={{ top }}
+      >
+        <span className="max-w-[96px] truncate">{port.label}</span>
+        <span className="text-[var(--brand-500)]">{PORT_TYPE_LABELS[port.type]}</span>
+      </div>
+    </>
+  )
+}
 
 /* ─── Component ───────────────────────────────────────── */
 
@@ -67,25 +119,23 @@ export function BaseNode({
 
       {/* ── Input Handles ────────────────────────────── */}
       {inputs?.map((port, i) => (
-        <Handle
+        <PortHandle
           key={port.id}
-          id={port.id}
-          type="target"
-          position={Position.Left}
-          style={{ top: `${((i + 1) / (inputs.length + 1)) * 100}%` }}
-          className="!bg-background !h-2.5 !w-2.5 !border-2 !border-[var(--brand-500)]"
+          port={port}
+          index={i}
+          total={inputs.length}
+          direction="input"
         />
       ))}
 
       {/* ── Output Handles ───────────────────────────── */}
       {outputs?.map((port, i) => (
-        <Handle
+        <PortHandle
           key={port.id}
-          id={port.id}
-          type="source"
-          position={Position.Right}
-          style={{ top: `${((i + 1) / (outputs.length + 1)) * 100}%` }}
-          className="!bg-background !h-2.5 !w-2.5 !border-2 !border-[var(--brand-500)]"
+          port={port}
+          index={i}
+          total={outputs.length}
+          direction="output"
         />
       ))}
     </div>
