@@ -4,7 +4,7 @@
  *          依赖 @/components/ui/avatar，依赖 @/components/profile/profile-modal，
  *          依赖 @/components/shared/search-command，依赖 @/components/pricing/pricing-modal，
  *          依赖 @/hooks/use-folders，依赖 sonner 的 toast
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (含 ProfileModal + PricingModal + SearchCommand + 文件夹管理)
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/PricingModal/SearchCommand + 文件夹管理)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -347,9 +347,9 @@ export function AppSidebar() {
       </div>
     </aside>
 
-    <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-    <PricingModal open={pricingOpen} onOpenChange={setPricingOpen} />
-    <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />
+    {profileOpen && <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />}
+    {pricingOpen && <PricingModal open={pricingOpen} onOpenChange={setPricingOpen} />}
+    {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
     </>
   )
 }
