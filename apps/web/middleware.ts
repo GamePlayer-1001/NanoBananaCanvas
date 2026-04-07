@@ -15,6 +15,7 @@ import { routing } from './i18n/routing'
 /* ─── Intl Middleware ────────────────────────────────── */
 
 const intlMiddleware = createIntlMiddleware(routing)
+const CLERK_PROXY_PATH = '/__clerk'
 
 /* ─── Route Matchers ─────────────────────────────────── */
 
@@ -35,7 +36,9 @@ function getClerkOptions(req: NextRequest) {
   return {
     frontendApiProxy: {
       enabled: true,
+      path: CLERK_PROXY_PATH,
     },
+    proxyUrl: new URL(CLERK_PROXY_PATH, req.url).toString(),
     signInUrl: new URL(`/${locale}/sign-in`, req.url).toString(),
     signUpUrl: new URL(`/${locale}/sign-up`, req.url).toString(),
   }

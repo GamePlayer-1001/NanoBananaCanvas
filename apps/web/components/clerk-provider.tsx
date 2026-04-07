@@ -10,6 +10,10 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import { zhCN } from '@clerk/localizations'
 
+/* ─── Constants ──────────────────────────────────────── */
+
+const CLERK_PROXY_URL = 'https://nanobananacanvas.com/__clerk/'
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function AppClerkProvider({
@@ -25,7 +29,7 @@ export function AppClerkProvider({
 
   return (
     <ClerkProvider
-      proxyUrl="/__clerk"
+      proxyUrl={CLERK_PROXY_URL}
       signInFallbackRedirectUrl={fallbackRedirectUrl}
       signInUrl={signInUrl}
       signUpFallbackRedirectUrl={fallbackRedirectUrl}
