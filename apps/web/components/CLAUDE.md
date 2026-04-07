@@ -8,7 +8,7 @@ React 组件库
 
 ```
 error-boundary.tsx — React 错误边界，捕获渲染异常并显示 fallback UI
-clerk-provider.tsx — Clerk 路由级 Provider 包装器 (关闭 telemetry，按 locale 固定本地 sign-in/sign-up)
+clerk-provider.tsx — Clerk 路由级 Provider 包装器 (关闭 telemetry，按 locale 固定本地 sign-in/sign-up，并通过 /__clerk 代理加载前端 API)
 locale-switcher.tsx — 语言切换器 (en↔zh)，使用 @/i18n/navigation 路由切换
 canvas/            — 画布引擎组件 (Canvas + TopToolbar + Toolbar + Controls + ContextMenu)
 nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合并工具节点)
