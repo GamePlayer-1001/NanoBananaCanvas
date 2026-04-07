@@ -47,6 +47,7 @@ async function saveToCloud(workflowId: string): Promise<void> {
     const serialized = serializeWorkflow(nodes, edges, viewport)
     const res = await fetch(`/api/workflows/${workflowId}`, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: JSON.stringify(serialized) }),
     })
