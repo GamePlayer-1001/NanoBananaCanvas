@@ -83,6 +83,9 @@ jobs:
       - name: Build for Cloudflare
         working-directory: apps/web
         run: npx opennextjs-cloudflare build
+        env:
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
       # ── 3. 部署前端 → Cloudflare Workers ──────
       - name: Deploy Web
