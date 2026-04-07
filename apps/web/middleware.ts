@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @clerk/nextjs/server 的 clerkMiddleware / createRouteMatcher，
  *          依赖 next-intl/middleware 的 createMiddleware，
  *          依赖 @/i18n/routing 的 routing 配置
- * [OUTPUT]: 对外提供 Next.js Edge Middleware (Clerk 认证 + 本地化登录重定向 + 语言检测 + URL 前缀重写)
+ * [OUTPUT]: 对外提供 Next.js Edge Middleware (Clerk 认证 + 前端 API 代理 + 本地化登录重定向 + 语言检测 + URL 前缀重写)
  * [POS]: 项目根级 Edge 中间件，Cloudflare Workers 兼容
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -24,15 +24,18 @@ const isProtectedRoute = createRouteMatcher([
   '/:locale/canvas(.*)',
 ])
 
-/* ─── Clerk Local Auth URLs ──────────────────────────── */
+/* ─── Clerk Options ──────────────────────────────────── */
 
-function getAuthUrls(req: NextRequest) {
+function getClerkOptions(req: NextRequest) {
   const firstSegment = req.nextUrl.pathname.split('/')[1]
   const locale = routing.locales.includes(firstSegment as (typeof routing.locales)[number])
     ? firstSegment
     : routing.defaultLocale
 
   return {
+    frontendApiProxy: {
+      enabled: true,
+    },
     signInUrl: new URL(`/${locale}/sign-in`, req.url).toString(),
     signUpUrl: new URL(`/${locale}/sign-up`, req.url).toString(),
   }
@@ -46,11 +49,14 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isProtectedRoute(req)) {
-    await auth.protect({ unauthenticatedUrl: getAuthUrls(req).signInUrl })
+    await auth.protect({ unauthenticatedUrl: getClerkOptions(req).signInUrl })
   }
   return intlMiddleware(req)
-}, getAuthUrls)
+}, getClerkOptions)
 
 export const config = {
-  matcher: ['/((?!_next|_vercel|.*\\..*).*)'],
+  matcher: [
+    '/((?!_next|_vercel|.*\\..*).*)',
+    '/(api|__clerk)(.*)',
+  ],
 }
