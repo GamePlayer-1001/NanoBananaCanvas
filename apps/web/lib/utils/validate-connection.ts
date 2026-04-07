@@ -38,8 +38,9 @@ function normalizeHandleId(handleId: string | null | undefined): string | null {
  * 规则:
  * 1. 不能连接到自身
  * 2. 不能创建重复连线 (相同 source+target+handles)
- * 3. 输入端口只能被一条边占用 (多输入请使用 Merge 节点)
- * 4. 端口类型必须兼容 ('any' 接受所有类型，否则类型必须匹配)
+ * 3. 端口类型必须兼容 ('any' 接受所有类型，否则类型必须匹配)
+ *
+ * 输入端口的唯一性由 FlowStore 通过“新边替换旧边”维护，校验层不阻止覆盖式接入。
  */
 export function isValidConnection(
   connection: Connection | Edge,
@@ -63,14 +64,7 @@ export function isValidConnection(
   )
   if (isDuplicate) return false
 
-  /* ── Rule 3: 输入端口唯一 ─────────────────────────── */
-  const isTargetPortOccupied = edges.some(
-    (e) =>
-      e.target === target && normalizeHandleId(e.targetHandle) === normalizedTargetHandle,
-  )
-  if (isTargetPortOccupied) return false
-
-  /* ── Rule 4: 端口类型兼容 ──────────────────────────── */
+  /* ── Rule 3: 端口类型兼容 ──────────────────────────── */
   const sourceNode = nodes.find((n) => n.id === source)
   const targetNode = nodes.find((n) => n.id === target)
   if (!sourceNode?.type || !targetNode?.type) return false

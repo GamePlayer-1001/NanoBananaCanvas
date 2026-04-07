@@ -73,10 +73,25 @@ function pushSnapshotDebounced() {
 function sanitizeEdges(nodes: Node<WorkflowNodeData>[], edges: Edge[]): Edge[] {
   return edges.reduce<Edge[]>((validEdges, edge) => {
     if (isValidConnection(edge, nodes, validEdges)) {
-      validEdges.push(edge)
+      validEdges = replaceInputEdge(validEdges, edge)
     }
     return validEdges
   }, [])
+}
+
+function normalizeHandleId(handleId: string | null | undefined): string | null {
+  return handleId ?? null
+}
+
+function hasSameTargetHandle(edge: Edge, connection: Connection | Edge): boolean {
+  return (
+    edge.target === connection.target &&
+    normalizeHandleId(edge.targetHandle) === normalizeHandleId(connection.targetHandle)
+  )
+}
+
+function replaceInputEdge(edges: Edge[], nextEdge: Edge): Edge[] {
+  return [...edges.filter((edge) => !hasSameTargetHandle(edge, nextEdge)), nextEdge]
 }
 
 /* ─── Store ───────────────────────────────────────────── */
@@ -121,7 +136,12 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       return
     }
     pushSnapshot()
-    set({ edges: addEdge({ ...connection, type: 'custom' }, get().edges) })
+    set((state) => ({
+      edges: addEdge(
+        { ...connection, type: 'custom' },
+        state.edges.filter((edge) => !hasSameTargetHandle(edge, connection)),
+      ),
+    }))
   },
 
   setViewport: (viewport) => set({ viewport }),

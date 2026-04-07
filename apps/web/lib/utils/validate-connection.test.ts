@@ -87,14 +87,19 @@ describe('isValidConnection', () => {
     ).toBe(true)
   })
 
-  it('rejects a second edge into an occupied input handle', () => {
+  it('allows a second edge into an occupied input handle so FlowStore can replace it', () => {
+    const textNodes = [...nodes, mkNode('ti2', 'text-input')]
     const existing = [mkEdge('ti', 'llm', 'text-out', 'prompt-in')]
     expect(
-      isValidConnection(mkConn('img', 'llm', 'image-out', 'prompt-in'), nodes, existing),
-    ).toBe(false)
+      isValidConnection(
+        mkConn('ti2', 'llm', 'text-out', 'prompt-in'),
+        textNodes,
+        existing,
+      ),
+    ).toBe(true)
   })
 
-  it('treats null and undefined target handles as the same default input', () => {
+  it('allows replacing an occupied default input when null and undefined handles differ', () => {
     const existing = [
       {
         id: 'default-in',
@@ -107,7 +112,7 @@ describe('isValidConnection', () => {
 
     expect(
       isValidConnection(mkConn('llm', 'disp', 'text-out', null), nodes, existing),
-    ).toBe(false)
+    ).toBe(true)
   })
 
   it('allows multiple sources into different merge input handles', () => {
