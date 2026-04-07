@@ -42,7 +42,7 @@ function normalizeHandleId(handleId: string | null | undefined): string | null {
  * 4. 端口类型必须兼容 ('any' 接受所有类型，否则类型必须匹配)
  */
 export function isValidConnection(
-  connection: Connection,
+  connection: Connection | Edge,
   nodes: Node<WorkflowNodeData>[],
   edges: Edge[],
 ): boolean {

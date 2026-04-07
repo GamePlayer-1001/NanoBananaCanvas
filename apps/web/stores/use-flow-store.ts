@@ -70,6 +70,15 @@ function pushSnapshotDebounced() {
   debouncedPush({ nodes, edges })
 }
 
+function sanitizeEdges(nodes: Node<WorkflowNodeData>[], edges: Edge[]): Edge[] {
+  return edges.reduce<Edge[]>((validEdges, edge) => {
+    if (isValidConnection(edge, nodes, validEdges)) {
+      validEdges.push(edge)
+    }
+    return validEdges
+  }, [])
+}
+
 /* ─── Store ───────────────────────────────────────────── */
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -154,8 +163,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   /* ── Bulk ─────────────────────────────────────────────── */
 
   setFlow: (nodes, edges, viewport) => {
-    log.info('Flow loaded', { nodes: nodes.length, edges: edges.length })
-    set({ nodes, edges, viewport: viewport ?? INITIAL_VIEWPORT })
+    const validEdges = sanitizeEdges(nodes, edges)
+    log.info('Flow loaded', { nodes: nodes.length, edges: validEdges.length })
+    set({ nodes, edges: validEdges, viewport: viewport ?? INITIAL_VIEWPORT })
   },
 
   clear: () => {
