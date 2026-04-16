@@ -112,7 +112,6 @@ export function useSubmitTask() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      qc.invalidateQueries({ queryKey: queryKeys.credits.all })
     },
   })
 }
@@ -128,7 +127,6 @@ export function useCancelTask() {
     onSuccess: (_, taskId) => {
       qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
       qc.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      qc.invalidateQueries({ queryKey: queryKeys.credits.all })
     },
   })
 }

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useCurrentUser / useCreditsBalance / useCreditsUsage
- * [POS]: hooks 的用户数据层，被 sidebar/profile/billing 消费
+ * [OUTPUT]: 对外提供 useCurrentUser
+ * [POS]: hooks 的用户数据层，被 profile 等账户面板消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -35,37 +35,11 @@ export interface UserProfile {
   createdAt: string
 }
 
-export interface CreditsBalance {
-  monthlyBalance: number
-  permanentBalance: number
-  available: number
-  frozen: number
-  totalEarned: number
-  totalSpent: number
-  plan: string
-  subscriptionStatus: string
-  currentPeriodEnd: string | null
-}
-
 /* ─── Hooks ──────────────────────────────────────────── */
 
 export function useCurrentUser() {
   return useQuery({
     queryKey: queryKeys.user.profile(),
     queryFn: () => fetchJson<UserProfile>('/api/users/me'),
-  })
-}
-
-export function useCreditsBalance() {
-  return useQuery({
-    queryKey: queryKeys.credits.balance(),
-    queryFn: () => fetchJson<CreditsBalance>('/api/credits/balance'),
-  })
-}
-
-export function useCreditsUsage() {
-  return useQuery({
-    queryKey: queryKeys.credits.all,
-    queryFn: () => fetchJson('/api/credits/usage'),
   })
 }

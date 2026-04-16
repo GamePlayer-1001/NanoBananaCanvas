@@ -2,9 +2,9 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，依赖 @clerk/nextjs 的 useUser，
  *          依赖 @/components/ui/avatar，依赖 @/components/profile/profile-modal，
- *          依赖 @/components/shared/search-command，依赖 @/components/pricing/pricing-modal，
+ *          依赖 @/components/shared/search-command，
  *          依赖 @/hooks/use-folders，依赖 sonner 的 toast
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/PricingModal/SearchCommand + 文件夹管理)
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/SearchCommand + 文件夹管理)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -21,16 +21,13 @@ import {
   LayoutGrid,
   Video,
   Plus,
-  ChevronRight,
   MessageCircle,
   Search,
-  Sparkles,
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ProfileModal } from '@/components/profile/profile-modal'
-import { PricingModal } from '@/components/pricing/pricing-modal'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
@@ -189,7 +186,6 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { user } = useUser()
   const [profileOpen, setProfileOpen] = useState(false)
-  const [pricingOpen, setPricingOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const openSearch = useCallback(() => setSearchOpen(true), [])
   useSearchShortcut(openSearch)
@@ -311,24 +307,10 @@ export function AppSidebar() {
 
       {/* ── Footer ────────────────────────────────────── */}
       <div className="border-t border-border px-3 py-3 space-y-2">
-        {/* 升级套餐入口 */}
-        <button
-          onClick={() => setPricingOpen(true)}
-          className="flex w-full items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-100"
-        >
-          <Sparkles size={14} />
-          <span className="flex-1 text-left">{t('upgrade')}</span>
-          <ChevronRight size={14} />
-        </button>
-
         {/* 用户信息 */}
         <div className="flex items-center gap-2 px-1">
           <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
             {t('freePlan')}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <MessageCircle size={12} />
-            100
           </span>
           <button
             onClick={() => setProfileOpen(true)}
@@ -348,7 +330,6 @@ export function AppSidebar() {
     </aside>
 
     {profileOpen && <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />}
-    {pricingOpen && <PricingModal open={pricingOpen} onOpenChange={setPricingOpen} />}
     {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
     </>
   )

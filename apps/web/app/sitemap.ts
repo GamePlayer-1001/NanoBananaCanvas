@@ -16,7 +16,6 @@ const LOCALES = ['en', 'zh'] as const
 // ─── 静态路由 ───────────────────────────────────────────
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
-  { path: '/pricing', changeFrequency: 'monthly' as const, priority: 0.8 },
   { path: '/explore', changeFrequency: 'daily' as const, priority: 0.9 },
   { path: '/workflows', changeFrequency: 'daily' as const, priority: 0.8 },
   { path: '/terms', changeFrequency: 'yearly' as const, priority: 0.3 },

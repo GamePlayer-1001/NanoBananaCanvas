@@ -28,7 +28,4 @@ describe('queryKeys', () => {
     expect(queryKeys.user.profile()).toEqual(['user', 'profile'])
   })
 
-  it('should generate user credits key', () => {
-    expect(queryKeys.user.credits()).toEqual(['user', 'credits'])
-  })
 })

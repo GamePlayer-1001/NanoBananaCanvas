@@ -17,7 +17,6 @@ api/                        — RESTful API 路由层 (见 api/CLAUDE.md，31 �
 [locale]/layout.tsx                         — i18n 语言布局 (next-intl + QueryProvider)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (HeroSection + LandingFooter)
-[locale]/(landing)/pricing/page.tsx        — 定价页 (动态渲染 + PricingContent + 路由级 Clerk Provider)
 [locale]/(landing)/privacy/page.tsx        — 隐私政策 (PrivacyContent)
 [locale]/(landing)/terms/page.tsx          — 服务条款 (TermsContent)
 [locale]/(auth)/layout.tsx                  — 认证分屏布局 (左 50% 玫瑰渐变 + 右 50% 深色背景 + 语言切换 + 路由级 Clerk Provider)

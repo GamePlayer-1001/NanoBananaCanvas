@@ -19,7 +19,6 @@ export const queryKeys = {
   user: {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
-    credits: () => [...queryKeys.user.all, 'credits'] as const,
   },
   explore: {
     all: ['explore'] as const,
@@ -36,17 +35,6 @@ export const queryKeys = {
   notifications: {
     all: ['notifications'] as const,
     list: (page?: number) => [...queryKeys.notifications.all, 'list', page] as const,
-  },
-  credits: {
-    all: ['credits'] as const,
-    balance: () => [...queryKeys.credits.all, 'balance'] as const,
-    transactions: (filters?: object) =>
-      [...queryKeys.credits.all, 'transactions', filters] as const,
-  },
-  billing: {
-    all: ['billing'] as const,
-    subscription: () => [...queryKeys.billing.all, 'subscription'] as const,
-    plans: () => [...queryKeys.billing.all, 'plans'] as const,
   },
   ai: {
     all: ['ai'] as const,

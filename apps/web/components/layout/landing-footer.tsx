@@ -49,9 +49,8 @@ export function LandingFooter() {
       title: t('product'),
       links: [
         { label: t('features'), href: '/#features' },
-        { label: t('pricing'), href: '/pricing' },
-        { label: t('enterprise'), href: '/pricing' },
-        { label: t('getStarted'), href: '/sign-up' },
+        { label: t('enterprise'), href: '/' },
+        { label: t('getStarted'), href: '/workspace' },
       ],
     },
     {

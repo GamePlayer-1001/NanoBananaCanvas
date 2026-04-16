@@ -20,7 +20,7 @@ explore/           — 探索页组件 (ExploreContent + ExploreTabs + ExploreGr
 workflows/         — 工作流分享组件 (WorkflowsContent)
 video-analysis/    — 视频分析组件 (UploadArea + ModelSelector + AnalysisHistory)
 workspace/         — 工作区组件 (WorkspaceHeader + WorkspaceGrid + ProjectCard + NewProjectDialog)
-profile/           — 个人中心组件 (ProfileModal + ProfileTab + BillingTab + SubscriptionTab + ModelPreferencesTab)
+profile/           — 个人中心组件 (ProfileModal + ProfileTab + ModelPreferencesTab + WorksTab + NotificationsTab)
 shared/            — 共享组件 (EmptyState + VideoCard + WorkflowCard + CategoryBadge)
 ui/                — shadcn/ui 自动管理的基础组件 (21 个: button/input/card/badge/
                      dialog/dropdown-menu/tabs/sonner/skeleton/avatar/separator/
