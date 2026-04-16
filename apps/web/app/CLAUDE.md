@@ -12,7 +12,7 @@ not-found.tsx               — 全局 404 页面
 globals.css                 — Tailwind v4 + Lux 主题 + 品牌色 Indigo + landing-dark
 robots.ts                   — robots.txt 动态生成 (SEO)
 sitemap.ts                  — sitemap.xml 动态生成 (SEO)
-api/                        — RESTful API 路由层 (见 api/CLAUDE.md，31 端点: ai/billing/credits/workflows/explore/webhooks...)
+api/                        — RESTful API 路由层 (见 api/CLAUDE.md，25 端点: ai/files/tasks/workflows/explore/settings/webhooks...)
 
 [locale]/layout.tsx                         — i18n 语言布局 (next-intl + QueryProvider)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)

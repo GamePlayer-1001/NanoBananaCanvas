@@ -15,10 +15,12 @@ import { queryKeys } from '@/lib/query/keys'
 
 export interface AIModel {
   id: string
-  name: string
+  modelId: string
+  modelName: string
   provider: string
   category: string
-  creditCost: number
+  tier: string
+  accessible: boolean
 }
 
 /* ─── Fetcher ────────────────────────────────────────── */

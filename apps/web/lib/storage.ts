@@ -1,12 +1,10 @@
 /**
  * [INPUT]: 依赖 @/lib/r2 的 getR2，依赖 @/lib/nanoid 的 ID 生成，
- *          依赖 @/lib/db 的 getDb，依赖 @/lib/kv 的 getKV，依赖 @nano-banana/shared 的 PLANS 配置
+ *          依赖 @/lib/db 的 getDb，依赖 @/lib/kv 的 getKV
  * [OUTPUT]: 对外提供 R2 存储路径生成 / 配额检查(KV 缓存) / 文件清理 / 缓存失效工具
- * [POS]: lib 的存储服务层，被文件上传 API / 异步任务 / 发布流程消费
+ * [POS]: lib 的存储服务层，被文件上传 API / 异步任务 / 发布流程消费，当前采用统一免费配额策略
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
-
-import { PLANS } from '@nano-banana/shared'
 
 import { getDb } from '@/lib/db'
 import { getKV } from '@/lib/kv'
@@ -52,6 +50,8 @@ export interface StorageUsage {
 }
 
 const STORAGE_CACHE_TTL = 300 // 5 分钟 KV 缓存
+const FREE_STORAGE_LIMIT_BYTES = 1 * 1024 * 1024 * 1024
+const OUTPUT_RETENTION_DAYS = 7
 
 /**
  * 计算用户存储使用量 (KV 缓存 5min → R2 list fallback)
@@ -70,15 +70,7 @@ export async function getStorageUsage(userId: string): Promise<StorageUsage> {
 
   /* 缓存未命中 → R2 list 计算 */
   const r2 = await getR2()
-  const db = await getDb()
-
-  const sub = await db
-    .prepare('SELECT plan FROM subscriptions WHERE user_id = ?')
-    .bind(userId)
-    .first<{ plan: string }>()
-
-  const plan = (sub?.plan ?? 'free') as keyof typeof PLANS
-  const limitBytes = (PLANS[plan]?.storageGB ?? 1) * 1024 * 1024 * 1024
+  const limitBytes = FREE_STORAGE_LIMIT_BYTES
 
   let usedBytes = 0
   const prefixes = [`uploads/${userId}/`, `outputs/${userId}/`]
@@ -112,7 +104,7 @@ export async function invalidateStorageCache(userId: string): Promise<void> {
 
 /**
  * 清理过期的 AI 输出文件
- * SQL 层直接按 plan 保留期过滤 (free=7d, pro=90d)，避免全表扫描
+ * 当前统一采用单一免费保留期，避免商业化套餐耦合
  */
 export async function cleanupExpiredOutputs(): Promise<{ deleted: number; errors: number }> {
   const r2 = await getR2()
@@ -122,18 +114,12 @@ export async function cleanupExpiredOutputs(): Promise<{ deleted: number; errors
     .prepare(`
       SELECT t.id, t.output_data
       FROM async_tasks t
-      LEFT JOIN subscriptions s ON s.user_id = t.user_id
       WHERE t.status = 'completed'
         AND t.output_data IS NOT NULL
         AND t.completed_at IS NOT NULL
-        AND (
-          (COALESCE(s.plan, 'free') = 'free'
-           AND t.completed_at < datetime('now', '-7 days'))
-          OR
-          (COALESCE(s.plan, 'free') = 'pro'
-           AND t.completed_at < datetime('now', '-90 days'))
-        )
+        AND t.completed_at < datetime('now', ?)
     `)
+    .bind(`-${OUTPUT_RETENTION_DAYS} days`)
     .all<{ id: string; output_data: string }>()
 
   let deleted = 0

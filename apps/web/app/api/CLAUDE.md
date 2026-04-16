@@ -7,14 +7,9 @@ Next.js App Router API 路由层 — RESTful 端点 · Clerk 认证 · AI 执行
 
 ```
 ai/                     — AI 模型集成 (3 端点)
-  models/route.ts       — GET  模型目录 + 定价信息
-  execute/route.ts      — POST 双模式 AI 执行 (积分/账号级模型槽位)
-  stream/route.ts       — POST SSE 流式 AI 执行 (ctx.waitUntil 保障积分结算 + 账号级模型槽位)
-
-credits/                — 积分系统 (3 端点)
-  balance/route.ts      — GET  积分余额 (三池: monthly/permanent/frozen + 套餐信息)
-  usage/route.ts        — GET  AI 使用统计 (摘要/模型/日趋势)
-  transactions/route.ts — GET  交易历史 (分页 + 类型筛选)
+  models/route.ts       — GET  统一免费模型目录
+  execute/route.ts      — POST 双模式 AI 执行 (平台 Key/账号级模型槽位)
+  stream/route.ts       — POST SSE 流式 AI 执行 (平台 Key/账号级模型槽位)
 
 folders/                — 文件夹 CRUD (2+2 端点)
   route.ts              — GET 列表 / POST 创建
@@ -41,15 +36,14 @@ health/route.ts         — GET  健康检查端点
 tasks/                  — P2 异步任务队列 (3 端点)
   route.ts              — POST 提交任务 / GET 任务列表
   [id]/route.ts         — GET  任务状态查询 + 懒评估
-  [id]/cancel/route.ts  — POST 取消任务 + 积分退还
+  [id]/cancel/route.ts  — POST 取消任务
 
 settings/               — 用户设置 (2 端点)
   api-keys/route.ts             — GET+PUT 账号级模型槽位管理 (加密存储 API Key + baseUrl + modelId)
   api-keys/[provider]/route.ts  — DELETE+POST 槽位删除/连通测试
 
-webhooks/               — 第三方回调 (2 端点)
+webhooks/               — 第三方回调 (1 端点)
   clerk/route.ts        — POST Clerk Webhook (用户 CRUD 同步 D1)
-  stripe/route.ts       — POST Stripe Webhook (支付/订阅事件处理)
 ```
 
 ## 架构约定
@@ -59,6 +53,6 @@ webhooks/               — 第三方回调 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 积分: 当前仍为历史执行链的一部分，后续将继续按拆除清单清理
+- 商业化: 计费与 Stripe 入口已移除，剩余历史表/工具待后续数据库层清扫
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

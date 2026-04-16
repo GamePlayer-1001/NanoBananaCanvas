@@ -26,16 +26,8 @@ export async function POST(req: Request) {
     const body = await req.json()
     const params = submitTaskSchema.parse(body)
 
-    /* 获取用户套餐 */
-    const sub = await db
-      .prepare('SELECT plan FROM subscriptions WHERE user_id = ?')
-      .bind(userId)
-      .first<{ plan: string }>()
-    const userPlan = sub?.plan ?? 'free'
-
     const task = await submitTask(db, {
       userId,
-      userPlan,
       taskType: params.taskType,
       provider: params.provider,
       modelId: params.modelId,

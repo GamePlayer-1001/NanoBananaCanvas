@@ -1,23 +1,16 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/credits, @/lib/db,
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db,
  *          @/lib/env, @/lib/nanoid, @/lib/user-model-config, @/services/ai, @/services/ai/openai-compatible,
- *          @/lib/validations/ai
- * [OUTPUT]: 对外提供 POST /api/ai/execute (双模式 AI 执行)
- * [POS]: api/ai 的核心执行端点，实现积分模式 (freeze→call→confirm/refund) 和账号级模型槽位执行
+ *          @/lib/validations/ai, @/lib/credits/crypto
+ * [OUTPUT]: 对外提供 POST /api/ai/execute (平台 Key / user_key 双模式 AI 执行)
+ * [POS]: api/ai 的核心执行端点，统一免费平台执行与账号级模型槽位执行的入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
-import {
-  checkModelAccess,
-  confirmSpend,
-  decryptApiKey,
-  freezeCredits,
-  getModelPricing,
-  refundCredits,
-} from '@/lib/credits'
+import { decryptApiKey } from '@/lib/credits/crypto'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -58,40 +51,25 @@ export async function POST(req: Request) {
 
     const startTime = Date.now()
 
-    // 获取用户套餐
-    const sub = await db
-      .prepare('SELECT plan FROM subscriptions WHERE user_id = ?')
-      .bind(userId)
-      .first<{ plan: string }>()
-    const userPlan = sub?.plan ?? 'free'
-
     if (params.executionMode === 'user_key') {
-      return await executeWithUserKey(db, userId, userPlan, params, startTime)
+      return await executeWithUserKey(db, userId, params, startTime)
     }
 
-    return await executeWithCredits(db, userId, userPlan, params, startTime)
+    return await executeWithPlatformKey(db, userId, params, startTime)
   } catch (error) {
     return handleApiError(error)
   }
 }
 
-/* ─── Credits Mode ───────────────────────────────────── */
+/* ─── Platform Key Mode ─────────────────────────────── */
 
-async function executeWithCredits(
+async function executeWithPlatformKey(
   db: D1Database,
   userId: string,
-  userPlan: string,
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
-  const pricing = await getModelPricing(db, params.provider, params.modelId)
-  checkModelAccess(userPlan, pricing.minPlan)
-
-  // 冻结积分
-  const freezeTxId = await freezeCredits(db, userId, pricing.creditsPerCall)
-
   try {
-    // 使用平台 Key 调用 AI (按 Provider 路由)
     const platformKey = await getPlatformKey(params.provider)
     const provider = getProvider(params.provider)
 
@@ -103,10 +81,6 @@ async function executeWithCredits(
       apiKey: platformKey,
     })
 
-    // 确认扣费
-    await confirmSpend(db, userId, freezeTxId, pricing.creditsPerCall)
-
-    // 写日志
     await writeUsageLog(db, {
       userId,
       workflowId: params.workflowId,
@@ -114,19 +88,15 @@ async function executeWithCredits(
       provider: params.provider,
       modelId: params.modelId,
       executionMode: 'credits',
-      creditsCharged: pricing.creditsPerCall,
+      creditsCharged: 0,
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
 
-    return apiOk({ result: chatResult.content, creditsCharged: pricing.creditsPerCall })
+    return apiOk({ result: chatResult.content, creditsCharged: 0 })
   } catch (error) {
-    // 退还冻结积分
-    await refundCredits(db, userId, freezeTxId)
-
-    // 写失败日志
     await writeUsageLog(db, {
       userId,
       workflowId: params.workflowId,
@@ -149,7 +119,6 @@ async function executeWithCredits(
 async function executeWithUserKey(
   db: D1Database,
   userId: string,
-  _userPlan: string,
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
