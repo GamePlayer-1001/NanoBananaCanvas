@@ -141,7 +141,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   const temperature = (config.temperature as number) ?? 0.7
   const maxTokens = (config.maxTokens as number) ?? 1024
   const systemPrompt = (config.systemPrompt as string) ?? ''
-  const executionMode = (config.executionMode as string) ?? 'credits'
+  const executionMode = (config.executionMode as string) ?? 'platform'
 
   /* ── 收集 prompt：优先上游输入，其次 config ────── */
   const promptText = (inputs['prompt-in'] as string) ?? ''
@@ -174,7 +174,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   /* ── 执行 AI 调用 (按 Provider 路由) ────────────── */
   let result: string
 
-  if (executionMode === 'credits' || executionMode === 'user_key') {
+  if (executionMode === 'platform' || executionMode === 'user_key') {
     result = onStreamChunk
       ? await executeLLMViaStreamApi({
           provider: providerId,
@@ -223,7 +223,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const provider = (config.provider as string) ?? 'openrouter'
   const model = (config.model as string) ?? 'openai/dall-e-3'
   const size = (config.size as string) ?? '1024x1024'
-  const executionMode = (config.executionMode as string) ?? 'credits'
+  const executionMode = (config.executionMode as string) ?? 'platform'
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const referenceImage = (inputs['image-in'] as string) || undefined
 
@@ -235,7 +235,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  if (executionMode !== 'credits' && executionMode !== 'user_key') {
+  if (executionMode !== 'platform' && executionMode !== 'user_key') {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       `Unsupported execution mode for image node: ${executionMode}`,
@@ -265,7 +265,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const provider = (config.provider as string) ?? 'kling'
   const model = (config.model as string) ?? 'kling-v2-0'
-  const executionMode = (config.executionMode as string) ?? 'credits'
+  const executionMode = (config.executionMode as string) ?? 'platform'
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const imageUrl = (inputs['image-in'] as string) || undefined
 
@@ -277,7 +277,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  if (executionMode !== 'credits') {
+  if (executionMode !== 'platform') {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       `Unsupported execution mode for video node: ${executionMode}`,
@@ -289,7 +289,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'video_gen',
     provider,
     modelId: model,
-    executionMode: 'credits',
+    executionMode: 'platform',
     input: {
       prompt,
       imageUrl,
@@ -313,7 +313,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const provider = (config.provider as string) ?? 'openai'
   const model = (config.model as string) ?? 'tts-1'
-  const executionMode = (config.executionMode as string) ?? 'credits'
+  const executionMode = (config.executionMode as string) ?? 'platform'
   const voice = (config.voice as string) ?? 'alloy'
   const speed = (config.speed as number) ?? 1.0
   const text = (inputs['text-in'] as string) ?? ''
@@ -326,7 +326,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  if (executionMode !== 'credits') {
+  if (executionMode !== 'platform') {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       `Unsupported execution mode for audio node: ${executionMode}`,
@@ -338,7 +338,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'audio_gen',
     provider,
     modelId: model,
-    executionMode: 'credits',
+    executionMode: 'platform',
     input: { text, voice, speed },
     outputType: 'audio',
     signal,
@@ -542,7 +542,7 @@ interface ExecuteLLMApiParams {
   provider: string
   modelId: string
   messages: ChatMessage[]
-  executionMode: 'credits' | 'user_key'
+  executionMode: 'platform' | 'user_key'
   temperature: number
   maxTokens: number
   signal: AbortSignal
@@ -652,7 +652,7 @@ interface ExecuteTaskOutputApiParams {
   taskType: 'image_gen' | 'video_gen' | 'audio_gen'
   provider: string
   modelId: string
-  executionMode: 'credits' | 'user_key'
+  executionMode: 'platform' | 'user_key'
   input: Record<string, unknown>
   outputType: 'image' | 'video' | 'audio'
   signal: AbortSignal

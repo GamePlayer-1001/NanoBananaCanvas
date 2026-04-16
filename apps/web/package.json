@@ -16,12 +16,10 @@
     "dev:cf": "npx wrangler dev --compatibility-date=2025-04-01 --compatibility-flags=nodejs_compat --d1=DB",
     "db:init": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/schema.sql",
     "db:seed": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed.sql",
-    "db:seed-pricing": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed-pricing.sql",
+    "db:seed-models": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed-models.sql",
     "clean": "rm -rf .next .turbo .open-next"
   },
   "dependencies": {
-    "@clerk/localizations": "^4.0.0",
-    "@clerk/nextjs": "^7.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@nano-banana/shared": "workspace:*",
     "@opennextjs/cloudflare": "^1.17.1",
@@ -40,8 +38,6 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
     "sonner": "^2.0.7",
-    "stripe": "^20.4.0",
-    "svix": "^1.86.0",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"

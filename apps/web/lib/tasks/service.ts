@@ -1,20 +1,17 @@
 /**
- * [INPUT]: 依赖 @nano-banana/shared 的 PLANS/TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
- *          依赖 @/lib/credits 的 freezeCredits/confirmSpend/refundCredits/decryptApiKey,
- *          依赖 @/lib/credits/pricing 的 getModelPricing/checkModelAccess,
+ * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
+ *          依赖 @/lib/api-key-crypto 的 decryptApiKey,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env
  * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks
- * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Credits + 账号级模型槽位协作
+ * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { PLANS, TASK_CONFIG } from '@nano-banana/shared'
+import { TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
 
-import { decryptApiKey } from '@/lib/credits/crypto'
-import { confirmSpend, freezeCredits, refundCredits } from '@/lib/credits'
-import { checkModelAccess, getModelPricing } from '@/lib/credits/pricing'
+import { decryptApiKey } from '@/lib/api-key-crypto'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
@@ -30,6 +27,7 @@ import { getPlatformKey } from '@/services/ai'
 import { getProcessor } from './processors'
 
 const log = createLogger('task:service')
+const FREE_TASK_CONCURRENCY_LIMIT = 1
 
 /* ─── D1 Row Shape ──────────────────────────────────── */
 
@@ -45,8 +43,6 @@ interface TaskRow {
   output_data: string | null
   status: AsyncTaskStatus
   progress: number
-  credits_charged: number
-  freeze_tx_id: string | null
   retry_count: number
   max_retries: number
   last_checked_at: string | null
@@ -62,7 +58,6 @@ interface TaskRow {
 
 export interface SubmitTaskParams {
   userId: string
-  userPlan: string
   taskType: AsyncTaskType
   provider: string
   modelId: string
@@ -82,7 +77,6 @@ export interface TaskDetail {
   progress: number
   input: Record<string, unknown>
   output: unknown | null
-  creditsCharged: number
   retryCount: number
   workflowId: string | null
   nodeId: string | null
@@ -111,7 +105,6 @@ function rowToDetail(row: TaskRow): TaskDetail {
     progress: row.progress,
     input: JSON.parse(row.input_data || '{}'),
     output: row.output_data ? JSON.parse(row.output_data) : null,
-    creditsCharged: row.credits_charged,
     retryCount: row.retry_count,
     workflowId: row.workflow_id,
     nodeId: row.node_id,
@@ -130,11 +123,7 @@ function isTerminal(status: AsyncTaskStatus): boolean {
 export async function checkConcurrency(
   db: D1Database,
   userId: string,
-  plan: string,
 ): Promise<void> {
-  const planConfig = PLANS[plan as keyof typeof PLANS]
-  const maxConcurrent = planConfig?.maxConcurrentTasks ?? 1
-
   const result = await db
     .prepare(
       `SELECT COUNT(*) as cnt FROM async_tasks
@@ -145,11 +134,11 @@ export async function checkConcurrency(
 
   const active = result?.cnt ?? 0
 
-  if (active >= maxConcurrent) {
+  if (active >= FREE_TASK_CONCURRENCY_LIMIT) {
     throw new TaskError(
       ErrorCode.TASK_CONCURRENCY_EXCEEDED,
-      `Concurrent task limit reached (${active}/${maxConcurrent})`,
-      { active, maxConcurrent, plan },
+      `Concurrent task limit reached (${active}/${FREE_TASK_CONCURRENCY_LIMIT})`,
+      { active, maxConcurrent: FREE_TASK_CONCURRENCY_LIMIT },
     )
   }
 }
@@ -160,25 +149,18 @@ export async function submitTask(
   db: D1Database,
   params: SubmitTaskParams,
 ): Promise<TaskDetail> {
-  const { userId, userPlan, taskType, provider, modelId, executionMode, input, workflowId, nodeId } = params
+  const { userId, taskType, provider, modelId, executionMode, input, workflowId, nodeId } = params
   const config = TASK_CONFIG[taskType]
   let resolvedProvider = provider
   let resolvedModelId = modelId
   let resolvedInput = input
 
   /* 并发检查 */
-  await checkConcurrency(db, userId, userPlan)
+  await checkConcurrency(db, userId)
 
-  /* 积分模式: 查定价 + 权限 + 冻结 */
-  let creditsCharged = 0
-  let freezeTxId: string | null = null
   let apiKey = ''
 
-  if (executionMode === 'credits') {
-    const pricing = await getModelPricing(db, provider, modelId)
-    checkModelAccess(userPlan, pricing.minPlan)
-    creditsCharged = pricing.creditsPerCall
-    freezeTxId = await freezeCredits(db, userId, creditsCharged)
+  if (executionMode === 'platform') {
     apiKey = await getTaskPlatformKey(provider)
   }
 
@@ -210,15 +192,14 @@ export async function submitTask(
       `INSERT INTO async_tasks (
         id, user_id, task_type, provider, model_id,
         external_task_id, execution_mode, input_data,
-        status, progress, credits_charged, freeze_tx_id,
-        retry_count, max_retries, workflow_id, node_id,
+        status, progress, retry_count, max_retries, workflow_id, node_id,
         created_at, started_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       taskId, userId, taskType, provider, resolvedModelId,
       submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
-      initialStatus, creditsCharged, freezeTxId,
+      initialStatus,
       config.maxRetries, workflowId ?? null, nodeId ?? null,
       now, initialStatus === 'running' ? now : null, now,
     )
@@ -236,7 +217,6 @@ export async function submitTask(
     progress: 0,
     input,
     output: null,
-    creditsCharged,
     retryCount: 0,
     workflowId: workflowId ?? null,
     nodeId: nodeId ?? null,
@@ -352,7 +332,7 @@ export async function checkTask(
     const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
     apiKey = runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
-  } else if (row.execution_mode === 'credits' && row.external_task_id) {
+  } else if (row.execution_mode === 'platform' && row.external_task_id) {
     apiKey = await getTaskPlatformKey(row.provider)
   }
 
@@ -377,11 +357,6 @@ export async function checkTask(
         )
         .bind(JSON.stringify(check.result), nowIso, nowIso, nowIso, taskId)
         .run()
-
-      /* 积分确认扣费 */
-      if (row.execution_mode === 'credits' && row.freeze_tx_id) {
-        await confirmSpend(db, userId, row.freeze_tx_id, row.credits_charged)
-      }
 
       log.info('Task completed', { taskId })
       return {
@@ -458,7 +433,7 @@ export async function cancelTask(
         const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
         apiKey = runtimeConfig.apiKey
         processorProvider = runtimeConfig.providerId
-      } else if (row.execution_mode === 'credits') {
+      } else if (row.execution_mode === 'platform') {
         apiKey = await getTaskPlatformKey(row.provider)
       }
       const processor = getProcessor(row.task_type, processorProvider)
@@ -478,11 +453,6 @@ export async function cancelTask(
     )
     .bind(nowIso, nowIso, taskId)
     .run()
-
-  /* 退还积分 */
-  if (row.execution_mode === 'credits' && row.freeze_tx_id) {
-    await refundCredits(db, userId, row.freeze_tx_id)
-  }
 
   log.info('Task cancelled', { taskId })
   return { ...rowToDetail(row), status: 'cancelled', completedAt: nowIso }
@@ -552,10 +522,6 @@ async function handleFailure(
     .bind(JSON.stringify({ error: errorMsg }), nowIso, nowIso, row.id)
     .run()
 
-  if (row.execution_mode === 'credits' && row.freeze_tx_id) {
-    await refundCredits(db, row.user_id, row.freeze_tx_id)
-  }
-
   log.error('Task failed', undefined, { taskId: row.id, errorMsg })
   return {
     ...rowToDetail(row),
@@ -579,10 +545,6 @@ async function handleTimeout(db: D1Database, row: TaskRow): Promise<void> {
     )
     .bind(JSON.stringify({ error: 'Task timed out' }), nowIso, nowIso, row.id)
     .run()
-
-  if (row.execution_mode === 'credits' && row.freeze_tx_id) {
-    await refundCredits(db, row.user_id, row.freeze_tx_id)
-  }
 
   log.warn('Task timed out', { taskId: row.id, taskType: row.task_type })
 }

@@ -3,6 +3,6 @@
 
 ## 成员清单
 
-pricing-content.tsx: PricingContent 定价页客户端容器，Free/Pro 双档卡片 + 周/月/年周期切换 + Stripe CTA
+此目录已清空，等待未来以新的商业化边界重建。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

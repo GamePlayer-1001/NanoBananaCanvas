@@ -119,24 +119,12 @@ interface CloudflareEnv {
   UPLOADS: R2Bucket
   ASSETS: Fetcher
 
-  // Stripe
-  STRIPE_SECRET_KEY: string
-  STRIPE_WEBHOOK_SECRET: string
-
   // API Key 加密
   ENCRYPTION_KEY: string
 
-  // 平台 AI Key (积分模式)
+  // 平台 AI Key
   OPENROUTER_API_KEY: string
   OPENAI_API_KEY: string
   KLING_ACCESS_KEY: string
   KLING_SECRET_KEY: string
-
-  // Stripe Price IDs (Dashboard 手动创建)
-  STRIPE_PRICE_STANDARD_MONTHLY: string
-  STRIPE_PRICE_STANDARD_YEARLY: string
-  STRIPE_PRICE_PRO_MONTHLY: string
-  STRIPE_PRICE_PRO_YEARLY: string
-  STRIPE_PRICE_ULTIMATE_MONTHLY: string
-  STRIPE_PRICE_ULTIMATE_YEARLY: string
 }

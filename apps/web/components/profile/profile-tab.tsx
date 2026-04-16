@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @clerk/nextjs 的 useUser
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/hooks/use-user 的 useCurrentUser
  * [OUTPUT]: 对外提供 ProfileTab 个人资料面板
  * [POS]: profile 的个人资料 Tab，被 profile-modal.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -7,16 +7,16 @@
 
 'use client'
 
-/* eslint-disable @next/next/no-img-element -- Clerk 头像地址为运行时远程资源，直接渲染更稳妥。 */
+/* eslint-disable @next/next/no-img-element -- 匿名用户头像仍可能来自远程地址，直接渲染更稳妥。 */
 
 import { useTranslations } from 'next-intl'
-import { useUser } from '@clerk/nextjs'
+import { useCurrentUser } from '@/hooks/use-user'
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function ProfileTab() {
   const t = useTranslations('profile')
-  const { user } = useUser()
+  const { data: user } = useCurrentUser()
 
   return (
     <div className="space-y-6">
@@ -25,11 +25,11 @@ export function ProfileTab() {
       {/* 头像 */}
       <div className="flex items-center gap-4">
         <div className="h-16 w-16 overflow-hidden rounded-full bg-muted">
-          {user?.imageUrl ? (
-            <img src={user.imageUrl} alt="" className="h-full w-full object-cover" />
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-brand-100 text-lg font-medium text-brand-600">
-              {user?.firstName?.charAt(0) ?? '?'}
+              {user?.name?.charAt(0) ?? 'G'}
             </div>
           )}
         </div>
@@ -40,7 +40,7 @@ export function ProfileTab() {
         <label className="text-sm font-medium text-foreground">{t('name')}</label>
         <input
           type="text"
-          defaultValue={user?.fullName ?? ''}
+          defaultValue={user?.name ?? 'Guest'}
           className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:border-brand-500 focus:outline-none"
           readOnly
         />
@@ -51,29 +51,10 @@ export function ProfileTab() {
         <label className="text-sm font-medium text-foreground">{t('email')}</label>
         <input
           type="text"
-          defaultValue={user?.primaryEmailAddress?.emailAddress ?? ''}
+          defaultValue={user?.email ?? ''}
           className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground"
           readOnly
         />
-      </div>
-
-      {/* 密码 */}
-      <div>
-        <label className="text-sm font-medium text-foreground">{t('password')}</label>
-        <div className="mt-1.5">
-          <button className="text-sm text-brand-600 transition-colors hover:text-brand-700">
-            {t('changePassword')}
-          </button>
-        </div>
-      </div>
-
-      {/* 删除账户 */}
-      <div className="border-t border-border pt-6">
-        <h4 className="text-sm font-medium text-destructive">{t('deleteAccount')}</h4>
-        <p className="mt-1 text-xs text-muted-foreground">{t('deleteAccountDesc')}</p>
-        <button className="mt-3 rounded-lg border border-destructive/30 px-4 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10">
-          {t('deleteButton')}
-        </button>
       </div>
     </div>
   )

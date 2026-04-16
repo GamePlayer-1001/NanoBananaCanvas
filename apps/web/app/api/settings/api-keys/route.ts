@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env, @/lib/nanoid,
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/api-key-crypto, @/lib/db, @/lib/env, @/lib/nanoid,
  *          @/lib/validations/ai, @/lib/user-model-config
  * [OUTPUT]: 对外提供 GET (列表) / PUT (创建/更新) /api/settings/api-keys
  * [POS]: api/settings 的 API Key 管理端点，支持掩码列表 + 加密存储
@@ -8,7 +8,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
-import { decryptApiKey, encryptApiKey, maskApiKey } from '@/lib/credits'
+import { decryptApiKey, encryptApiKey, maskApiKey } from '@/lib/api-key-crypto'
 import { getDb } from '@/lib/db'
 import { getEnv } from '@/lib/env'
 import { nanoid } from '@/lib/nanoid'

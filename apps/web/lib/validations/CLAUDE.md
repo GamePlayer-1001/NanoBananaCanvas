@@ -11,8 +11,6 @@ workflow.ts — createWorkflowSchema / updateWorkflowSchema / publishWorkflowSch
 folder.ts   — createFolderSchema / updateFolderSchema 文件夹表单验证 (name 1-50字符)
 report.ts   — reportSchema 举报表单验证 (reason enum: spam/nsfw/copyright/other)
 explore.ts  — exploreQuerySchema / searchQuerySchema 广场查询验证
-credits.ts  — creditTransactionsQuerySchema / topupSchema 积分查询验证
-billing.ts  — checkoutSchema 计费操作验证 (plan + billingPeriod)
 ai.ts       — aiExecuteSchema / apiKeySchema / modelsQuerySchema AI 执行验证
 upload.ts   — UPLOAD_LIMITS / validateUpload 文件上传校验 (类型+大小)
 task.ts     — submitTaskSchema / listTasksSchema 异步任务请求验证 (P2)

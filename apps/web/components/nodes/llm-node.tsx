@@ -57,7 +57,7 @@ export function LLMNode(props: NodeProps) {
   const model = (data.config.model as string) ?? DEFAULT_MODEL
   const temperature = (data.config.temperature as number) ?? DEFAULT_TEMPERATURE
   const maxTokens = (data.config.maxTokens as number) ?? DEFAULT_MAX_TOKENS
-  const executionMode = (data.config.executionMode as string) ?? 'credits'
+  const executionMode = (data.config.executionMode as string) ?? 'platform'
   const systemPrompt = (data.config.systemPrompt as string) ?? ''
   const output = (data.config.output as string) ?? ''
   const tokenCount = (data.config.tokenCount as number) ?? 0
@@ -187,15 +187,15 @@ export function LLMNode(props: NodeProps) {
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
-              active={executionMode === 'credits'}
+              active={executionMode === 'platform'}
               onClick={() =>
                 updateConfig({
-                  executionMode: 'credits',
+                  executionMode: 'platform',
                   provider: provider === 'llm-openai' ? DEFAULT_PROVIDER : provider,
                 })
               }
               icon={<Coins size={12} />}
-              label={t('creditsMode')}
+              label={t('platformMode')}
             />
             <ModeButton
               active={executionMode === 'user_key'}

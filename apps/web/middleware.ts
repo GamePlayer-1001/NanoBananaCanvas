@@ -1,13 +1,11 @@
 /**
- * [INPUT]: 依赖 @clerk/nextjs/server 的 clerkMiddleware / createRouteMatcher，
- *          依赖 next-intl/middleware 的 createMiddleware，
+ * [INPUT]: 依赖 next-intl/middleware 的 createMiddleware，
  *          依赖 @/i18n/routing 的 routing 配置
- * [OUTPUT]: 对外提供 Next.js Edge Middleware (Clerk 认证 + 前端 API 代理 + 本地化登录重定向 + 语言检测 + URL 前缀重写)
+ * [OUTPUT]: 对外提供 Next.js Edge Middleware (裸域规范化 + 本地化语言检测 + URL 前缀重写)
  * [POS]: 项目根级 Edge 中间件，Cloudflare Workers 兼容
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import createIntlMiddleware from 'next-intl/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 import { routing } from './i18n/routing'
@@ -15,40 +13,12 @@ import { routing } from './i18n/routing'
 /* ─── Intl Middleware ────────────────────────────────── */
 
 const intlMiddleware = createIntlMiddleware(routing)
-const CLERK_PROXY_PATH = '/__clerk'
 const CANONICAL_HOST = 'nanobananacanvas.com'
 const WWW_HOST = `www.${CANONICAL_HOST}`
 
-/* ─── Route Matchers ─────────────────────────────────── */
-
-const isProtectedRoute = createRouteMatcher([
-  '/:locale/(app)(.*)',
-  '/:locale/workspace(.*)',
-  '/:locale/canvas(.*)',
-])
-
-/* ─── Clerk Options ──────────────────────────────────── */
-
-function getClerkOptions(req: NextRequest) {
-  const firstSegment = req.nextUrl.pathname.split('/')[1]
-  const locale = routing.locales.includes(firstSegment as (typeof routing.locales)[number])
-    ? firstSegment
-    : routing.defaultLocale
-
-  return {
-    frontendApiProxy: {
-      enabled: true,
-      path: CLERK_PROXY_PATH,
-    },
-    proxyUrl: new URL(CLERK_PROXY_PATH, req.url).toString(),
-    signInUrl: new URL(`/${locale}/sign-in`, req.url).toString(),
-    signUpUrl: new URL(`/${locale}/sign-up`, req.url).toString(),
-  }
-}
-
 /* ─── Combined Middleware ────────────────────────────── */
 
-export default clerkMiddleware(async (auth, req) => {
+export default function middleware(req: NextRequest) {
   if (req.nextUrl.hostname === WWW_HOST) {
     const url = req.nextUrl.clone()
     url.hostname = CANONICAL_HOST
@@ -59,15 +29,12 @@ export default clerkMiddleware(async (auth, req) => {
     return
   }
 
-  if (isProtectedRoute(req)) {
-    await auth.protect({ unauthenticatedUrl: getClerkOptions(req).signInUrl })
-  }
   return intlMiddleware(req)
-}, getClerkOptions)
+}
 
 export const config = {
   matcher: [
     '/((?!_next|_vercel|.*\\..*).*)',
-    '/(api|__clerk)(.*)',
+    '/(api)(.*)',
   ],
 }

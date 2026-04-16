@@ -40,7 +40,7 @@ interface SubmitTaskInput {
   taskType: AsyncTaskType
   provider: string
   modelId: string
-  executionMode: 'credits' | 'user_key'
+  executionMode: 'platform' | 'user_key'
   input: Record<string, unknown>
   workflowId?: string
   nodeId?: string
@@ -112,7 +112,6 @@ export function useSubmitTask() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      qc.invalidateQueries({ queryKey: queryKeys.credits.all })
     },
   })
 }
@@ -128,7 +127,6 @@ export function useCancelTask() {
     onSuccess: (_, taskId) => {
       qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
       qc.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      qc.invalidateQueries({ queryKey: queryKeys.credits.all })
     },
   })
 }

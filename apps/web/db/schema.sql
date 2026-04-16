@@ -7,7 +7,8 @@
 PRAGMA foreign_keys = ON;
 
 -- ── DB-001: users ────────────────────────────
--- Clerk 用户镜像表，首次登录自动创建
+-- 当前用户镜像表，匿名访客与未来登录身份都统一落在这里
+-- `clerk_id` 为历史身份列，当前用于存放兼容身份键，后续重构登录时再迁移
 CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,
   clerk_id      TEXT NOT NULL UNIQUE,
@@ -128,88 +129,25 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
 
 -- ============================================
---  M7: 积分 / 支付 / AI 执行
+--  M7: AI 运行时兼容层
 -- ============================================
 
--- ── CREDIT-001: credit_balances ───────────────
--- 三池余额 (monthly 月度订阅 / permanent 永久 / frozen 冻结中)
-CREATE TABLE IF NOT EXISTS credit_balances (
-  user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  monthly_balance   INTEGER NOT NULL DEFAULT 200,
-  permanent_balance INTEGER NOT NULL DEFAULT 0,
-  frozen            INTEGER NOT NULL DEFAULT 0,
-  total_earned      INTEGER NOT NULL DEFAULT 200,
-  total_spent       INTEGER NOT NULL DEFAULT 0,
-  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- ── CREDIT-002: credit_transactions ───────────
--- 积分审计日志 (不可变，只追加)
-CREATE TABLE IF NOT EXISTS credit_transactions (
-  id                TEXT PRIMARY KEY,
-  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type              TEXT NOT NULL CHECK(type IN ('earn','spend','freeze','unfreeze','refund')),
-  pool              TEXT NOT NULL DEFAULT 'permanent' CHECK(pool IN ('monthly','permanent')),
-  amount            INTEGER NOT NULL,
-  balance_after     INTEGER NOT NULL,
-  source            TEXT NOT NULL,
-  reference_id      TEXT,
-  description       TEXT,
-  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_credit_tx_ref ON credit_transactions(reference_id);
-
--- ── CREDIT-003: subscriptions ─────────────────
--- Stripe 订阅记录 (每用户最多一条有效)
-CREATE TABLE IF NOT EXISTS subscriptions (
-  id                    TEXT PRIMARY KEY,
-  user_id               TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  stripe_subscription_id TEXT,
-  stripe_customer_id    TEXT,
-  plan                  TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free','pro')),
-  billing_period        TEXT DEFAULT 'monthly' CHECK(billing_period IN ('weekly','monthly','yearly')),
-  status                TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','canceled','past_due','trialing')),
-  current_period_start  TEXT,
-  current_period_end    TEXT,
-  monthly_credits       INTEGER NOT NULL DEFAULT 200,
-  cancel_at_period_end  INTEGER NOT NULL DEFAULT 0,
-  created_at            TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at            TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_customer_id);
-
--- ── CREDIT-004: model_pricing ─────────────────
--- 模型定价表 (积分/次)
-CREATE TABLE IF NOT EXISTS model_pricing (
+-- ── AI-001: ai_models ─────────────────────────
+-- 模型目录表 (统一免费平台模式，仅保留模型选择所需字段)
+CREATE TABLE IF NOT EXISTS ai_models (
   id                TEXT PRIMARY KEY,
   provider          TEXT NOT NULL,
   model_id          TEXT NOT NULL,
   model_name        TEXT NOT NULL,
   category          TEXT NOT NULL CHECK(category IN ('text','image','video','audio')),
-  credits_per_call  INTEGER NOT NULL,
   tier              TEXT NOT NULL DEFAULT 'basic' CHECK(tier IN ('basic','standard','premium','flagship')),
-  min_plan          TEXT NOT NULL DEFAULT 'free' CHECK(min_plan IN ('free','pro')),
   is_active         INTEGER NOT NULL DEFAULT 1,
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(provider, model_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
-
--- ── STRIPE-IDEMPOTENCY: processed_stripe_events ──
--- Webhook 幂等性: 防止 Stripe 事件重放导致积分重复充值
-CREATE TABLE IF NOT EXISTS processed_stripe_events (
-  event_id            TEXT PRIMARY KEY,
-  event_type          TEXT NOT NULL,
-  processed_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_stripe_events_processed ON processed_stripe_events(processed_at);
+CREATE INDEX IF NOT EXISTS idx_ai_models_category ON ai_models(category, is_active);
 
 -- ── user_api_keys ─────────────────────────────
 -- 用户模型配置加密存储 (AES-256-GCM)
@@ -239,8 +177,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
   node_id           TEXT,
   provider          TEXT NOT NULL,
   model_id          TEXT NOT NULL,
-  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
-  credits_charged   INTEGER NOT NULL DEFAULT 0,
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
   input_tokens      INTEGER,
   output_tokens     INTEGER,
   duration_ms       INTEGER,
@@ -268,15 +205,13 @@ CREATE TABLE IF NOT EXISTS async_tasks (
   provider          TEXT NOT NULL,
   model_id          TEXT NOT NULL,
   external_task_id  TEXT,
-  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
   input_data        TEXT NOT NULL DEFAULT '{}',
   output_data       TEXT,
   status            TEXT NOT NULL DEFAULT 'pending'
                     CHECK(status IN ('pending','running','completed','failed','cancelled')),
   progress          INTEGER NOT NULL DEFAULT 0,
   error_message     TEXT,
-  credits_charged   INTEGER NOT NULL DEFAULT 0,
-  freeze_tx_id      TEXT,
   retry_count       INTEGER NOT NULL DEFAULT 0,
   max_retries       INTEGER NOT NULL DEFAULT 2,
   last_checked_at   TEXT,

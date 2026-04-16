@@ -1,86 +1,79 @@
 /**
- * [INPUT]: 依赖 @clerk/nextjs/server 的 auth + currentUser，依赖 @/lib/db，依赖 @/lib/nanoid
+ * [INPUT]: 依赖 next/headers 的 cookies，依赖 @/lib/db，依赖 @/lib/nanoid
  * [OUTPUT]: 对外提供 requireAuth() / optionalAuth()
- * [POS]: lib/api 的认证守卫，被所有需要登录的 API route handlers 消费
+ * [POS]: lib/api 的匿名访客守卫，被所有需要用户上下文的 API route handlers 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { cookies } from 'next/headers'
 
 import { getDb } from '@/lib/db'
-import { AuthError } from '@/lib/errors'
-import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 
-const log = createLogger('auth')
+const ANON_COOKIE_NAME = 'nb_guest_id'
+const ANON_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+const ANON_CLERK_PREFIX = 'anon:'
 
 /* ─── Types ──────────────────────────────────────────── */
 
 export interface AuthUser {
   userId: string
-  clerkId: string
+  identityKey: string
 }
 
 /* ─── Guards ─────────────────────────────────────────── */
 
-/** 必须登录。未登录抛 AuthError；用户不存在则自动创建 (SYNC-001) */
-export async function requireAuth(): Promise<AuthUser> {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) {
-    throw new AuthError('AUTH_UNAUTHORIZED', 'Authentication required')
+async function getOrCreateAnonymousUser(): Promise<AuthUser> {
+  const cookieStore = await cookies()
+  let anonymousId = cookieStore.get(ANON_COOKIE_NAME)?.value
+
+  if (!anonymousId) {
+    anonymousId = nanoid()
+    cookieStore.set(ANON_COOKIE_NAME, anonymousId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ANON_COOKIE_MAX_AGE,
+    })
   }
 
+  const identityKey = `${ANON_CLERK_PREFIX}${anonymousId}`
   const db = await getDb()
+
   let user = await db
     .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-    .bind(clerkId)
+    .bind(identityKey)
     .first<{ id: string; clerk_id: string }>()
 
-  // SYNC-001: Clerk 已验证身份但 D1 无记录 → 自动创建
   if (!user) {
-    const clerkUser = await currentUser()
-    if (!clerkUser) {
-      throw new AuthError('AUTH_UNAUTHORIZED', 'Clerk user not found')
-    }
-
-    const id = nanoid()
-    const email = clerkUser.emailAddresses[0]?.emailAddress ?? ''
-    const name = clerkUser.fullName ?? clerkUser.firstName ?? ''
-    const avatarUrl = clerkUser.imageUrl ?? ''
-
+    const userId = nanoid()
     await db
       .prepare(
         `INSERT OR IGNORE INTO users (id, clerk_id, email, name, avatar_url, plan)
-         VALUES (?, ?, ?, ?, ?, 'free')`,
+         VALUES (?, ?, '', 'Guest', '', 'free')`,
       )
-      .bind(id, clerkId, email, name, avatarUrl)
+      .bind(userId, identityKey)
       .run()
 
     user = await db
       .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-      .bind(clerkId)
+      .bind(identityKey)
       .first<{ id: string; clerk_id: string }>()
-
-    if (!user) {
-      throw new AuthError('AUTH_UNAUTHORIZED', 'Failed to create user')
-    }
-
-    log.info('User auto-created via SYNC-001', { clerkId, userId: user.id })
   }
 
-  return { userId: user.id, clerkId: user.clerk_id }
+  if (!user) {
+    throw new Error('Failed to initialize anonymous user')
+  }
+
+  return { userId: user.id, identityKey: user.clerk_id }
 }
 
-/** 可选登录。未登录返回 null，不抛错 */
+/** 统一返回匿名访客上下文，保证现有 API 主链可继续运行。 */
+export async function requireAuth(): Promise<AuthUser> {
+  return getOrCreateAnonymousUser()
+}
+
+/** 匿名模式下可选认证与强制认证等价，始终返回访客上下文。 */
 export async function optionalAuth(): Promise<AuthUser | null> {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) return null
-
-  const db = await getDb()
-  const user = await db
-    .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-    .bind(clerkId)
-    .first<{ id: string; clerk_id: string }>()
-
-  return user ? { userId: user.id, clerkId: user.clerk_id } : null
+  return getOrCreateAnonymousUser()
 }

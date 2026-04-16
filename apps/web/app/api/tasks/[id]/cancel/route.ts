@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/tasks
  * [OUTPUT]: 对外提供 POST /api/tasks/:id/cancel (取消任务)
- * [POS]: api/tasks/[id]/cancel 的取消端点，触发 Provider cancel + 积分退还
+ * [POS]: api/tasks/[id]/cancel 的取消端点，触发 Provider cancel
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

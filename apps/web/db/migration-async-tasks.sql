@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS async_tasks (
 
   -- 外部 Provider
   external_task_id  TEXT,
-  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
 
   -- 输入/输出 (JSON)
   input_data        TEXT NOT NULL DEFAULT '{}',
@@ -31,10 +31,6 @@ CREATE TABLE IF NOT EXISTS async_tasks (
                     CHECK(status IN ('pending','running','completed','failed','cancelled')),
   progress          INTEGER NOT NULL DEFAULT 0,
   error_message     TEXT,
-
-  -- 积分关联
-  credits_charged   INTEGER NOT NULL DEFAULT 0,
-  freeze_tx_id      TEXT,
 
   -- 重试与节流
   retry_count       INTEGER NOT NULL DEFAULT 0,

@@ -4,7 +4,6 @@
  *          依赖 @/hooks/use-auto-save 的自动保存 (localStorage + 云端双轨)，
  *          依赖 @/lib/utils/create-node 的节点工厂，依赖 @/lib/utils/get-helper-lines 的对齐计算，
  *          依赖 @/lib/utils/validate-connection 的连接验证，依赖 @/types 的 WorkflowNode/WorkflowEdge
- *          依赖 @clerk/nextjs 的 useAuth 判断客户端会话是否仍可云保存
  * [OUTPUT]: 对外提供 Canvas 主画布组件 (含右键菜单 + 拖拽连线创建节点 + 辅助线 + MiniMap + 顶部/底部工具栏)
  * [POS]: components/canvas 的核心渲染器，被 workspace/[id] 页面消费，接收 workflowId 驱动云端保存
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -24,7 +23,6 @@ import {
   SelectionMode,
   useReactFlow,
 } from '@xyflow/react'
-import { useAuth } from '@clerk/nextjs'
 import type { WorkflowNode, WorkflowEdge } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { useCanvasToolStore } from '@/stores/use-canvas-tool-store'
@@ -75,10 +73,8 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const resetTool = useCanvasToolStore((s) => s.resetTool)
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
   const { screenToFlowPosition } = useReactFlow()
-  const { isSignedIn } = useAuth()
-
   /* ── 自动保存 (localStorage + 云端双轨) ────────────── */
-  useAutoSave(workflowId, canEdit && isSignedIn === true)
+  useAutoSave(workflowId, canEdit)
 
   /* ── 全局快捷键 (Ctrl+Enter/Esc/Ctrl+S/Ctrl+O) ───── */
   useCanvasShortcuts(workflowId)
