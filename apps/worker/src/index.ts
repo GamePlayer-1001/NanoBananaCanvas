@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的三个定时任务
+ * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的两个定时任务
  * [OUTPUT]: 对外提供 Cloudflare Worker API 入口 (HTTP + Cron Scheduled)
  * [POS]: apps/worker 的主入口，HTTP 路由 + 每 10 分钟 Cron 调度
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,7 +11,6 @@ import { logger } from 'hono/logger'
 
 import { cleanupExpiredOutputs } from './cron/cleanup'
 import { markTimedOutTasks } from './cron/timeout'
-import { unfreezeStaleCredits } from './cron/unfreeze'
 
 /* ─── Bindings 类型 ──────────────────────────────────── */
 
@@ -64,15 +63,8 @@ export default {
     ctx.waitUntil(
       (async () => {
         const results = {
-          unfrozen: 0,
           timedOut: 0,
           cleaned: { deleted: 0, errors: 0 },
-        }
-
-        try {
-          results.unfrozen = await unfreezeStaleCredits(env.DB)
-        } catch (err) {
-          console.error('[cron] unfreeze failed:', err)
         }
 
         try {

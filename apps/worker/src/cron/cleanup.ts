@@ -1,11 +1,13 @@
 /**
  * [INPUT]: 无外部依赖，纯 D1 + R2 操作
  * [OUTPUT]: 对外提供 cleanupExpiredOutputs — 批量清理过期 AI 输出文件
- * [POS]: cron 的文件清理任务，按 plan 保留期过滤 (free=7d, pro=90d)
+ * [POS]: cron 的文件清理任务，按统一 7 天保留期过滤
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-/** 清理过期的 AI 输出文件 (SQL 层按 plan 保留期过滤) */
+const OUTPUT_RETENTION_DAYS = 7
+
+/** 清理过期的 AI 输出文件 (SQL 层按统一保留期过滤) */
 export async function cleanupExpiredOutputs(
   db: D1Database,
   r2: R2Bucket,
@@ -14,19 +16,13 @@ export async function cleanupExpiredOutputs(
     .prepare(
       `SELECT t.id, t.output_data
        FROM async_tasks t
-       LEFT JOIN subscriptions s ON s.user_id = t.user_id
        WHERE t.status = 'completed'
          AND t.output_data IS NOT NULL
          AND t.completed_at IS NOT NULL
-         AND (
-           (COALESCE(s.plan, 'free') = 'free'
-            AND t.completed_at < datetime('now', '-7 days'))
-           OR
-           (COALESCE(s.plan, 'free') = 'pro'
-            AND t.completed_at < datetime('now', '-90 days'))
-         )
+         AND t.completed_at < datetime('now', ?)
        LIMIT 200`,
     )
+    .bind(`-${OUTPUT_RETENTION_DAYS} days`)
     .all<{ id: string; output_data: string }>()
 
   let deleted = 0

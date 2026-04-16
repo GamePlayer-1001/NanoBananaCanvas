@@ -34,7 +34,7 @@ bucket_name = "nano-banana-uploads"
 binding = "KV"
 id = "f8140250229b4287a07afedbf6170fcf"
 
-# ─── Cron Triggers (每 10 分钟: 积分解冻 + 文件清理 + 超时扫描) ─
+# ─── Cron Triggers (每 10 分钟: 文件清理 + 超时扫描) ─
 [triggers]
 crons = ["*/10 * * * *"]
 
