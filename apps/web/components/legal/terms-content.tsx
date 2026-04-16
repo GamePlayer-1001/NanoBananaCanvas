@@ -41,8 +41,8 @@ export function TermsContent() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_payment')}</h2>
-          <p>{t('terms_payment_body')}</p>
+          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_access')}</h2>
+          <p>{t('terms_access_body')}</p>
         </section>
 
         <section>

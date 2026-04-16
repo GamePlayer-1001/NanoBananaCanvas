@@ -8,8 +8,8 @@
 
 ```
 src/index.ts           — 桶文件，重导出 types + constants + utils
-src/types/index.ts     — PlanType/TaskStatus/ModelCategory 等共享类型
-src/constants/index.ts — PLANS/TASK_CONFIG/FREEZE_TTL_MINUTES/LOCALES 等共享常量
+src/types/index.ts     — TaskStatus/ModelCategory/ExecutionMode 等共享类型
+src/constants/index.ts — TASK_CONFIG/LOCALES 等共享常量
 src/utils/index.ts     — 工具函数桶文件
 src/utils/nanoid.ts    — 零依赖 nanoid 生成器 (Web Crypto API)
 ```

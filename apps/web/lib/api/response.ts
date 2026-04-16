@@ -81,7 +81,6 @@ function errorCodeToStatus(code: string): number {
   if (code.startsWith('VALIDATION_')) return 400
   if (code === 'UPLOAD_TOO_LARGE') return 413
   if (code.startsWith('UPLOAD_')) return 400
-  if (code.startsWith('CREDITS_')) return 402
   if (code === 'TASK_CONCURRENCY_EXCEEDED') return 429
   if (code === 'TASK_NOT_FOUND') return 404
   if (code.startsWith('TASK_')) return 400

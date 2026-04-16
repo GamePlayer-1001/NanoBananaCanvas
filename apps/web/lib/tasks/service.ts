@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
- *          依赖 @/lib/credits/crypto 的 decryptApiKey,
+ *          依赖 @/lib/api-key-crypto 的 decryptApiKey,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env
  * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks
@@ -11,7 +11,7 @@
 import { TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
 
-import { decryptApiKey } from '@/lib/credits/crypto'
+import { decryptApiKey } from '@/lib/api-key-crypto'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
@@ -43,8 +43,6 @@ interface TaskRow {
   output_data: string | null
   status: AsyncTaskStatus
   progress: number
-  credits_charged: number
-  freeze_tx_id: string | null
   retry_count: number
   max_retries: number
   last_checked_at: string | null
@@ -79,7 +77,6 @@ export interface TaskDetail {
   progress: number
   input: Record<string, unknown>
   output: unknown | null
-  creditsCharged: number
   retryCount: number
   workflowId: string | null
   nodeId: string | null
@@ -108,7 +105,6 @@ function rowToDetail(row: TaskRow): TaskDetail {
     progress: row.progress,
     input: JSON.parse(row.input_data || '{}'),
     output: row.output_data ? JSON.parse(row.output_data) : null,
-    creditsCharged: row.credits_charged,
     retryCount: row.retry_count,
     workflowId: row.workflow_id,
     nodeId: row.node_id,
@@ -162,10 +158,9 @@ export async function submitTask(
   /* 并发检查 */
   await checkConcurrency(db, userId)
 
-  const creditsCharged = 0
   let apiKey = ''
 
-  if (executionMode === 'credits') {
+  if (executionMode === 'platform') {
     apiKey = await getTaskPlatformKey(provider)
   }
 
@@ -197,15 +192,14 @@ export async function submitTask(
       `INSERT INTO async_tasks (
         id, user_id, task_type, provider, model_id,
         external_task_id, execution_mode, input_data,
-        status, progress, credits_charged, freeze_tx_id,
-        retry_count, max_retries, workflow_id, node_id,
+        status, progress, retry_count, max_retries, workflow_id, node_id,
         created_at, started_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       taskId, userId, taskType, provider, resolvedModelId,
       submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
-      initialStatus, creditsCharged, null,
+      initialStatus,
       config.maxRetries, workflowId ?? null, nodeId ?? null,
       now, initialStatus === 'running' ? now : null, now,
     )
@@ -223,7 +217,6 @@ export async function submitTask(
     progress: 0,
     input,
     output: null,
-    creditsCharged,
     retryCount: 0,
     workflowId: workflowId ?? null,
     nodeId: nodeId ?? null,
@@ -339,7 +332,7 @@ export async function checkTask(
     const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
     apiKey = runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
-  } else if (row.execution_mode === 'credits' && row.external_task_id) {
+  } else if (row.execution_mode === 'platform' && row.external_task_id) {
     apiKey = await getTaskPlatformKey(row.provider)
   }
 
@@ -440,7 +433,7 @@ export async function cancelTask(
         const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
         apiKey = runtimeConfig.apiKey
         processorProvider = runtimeConfig.providerId
-      } else if (row.execution_mode === 'credits') {
+      } else if (row.execution_mode === 'platform') {
         apiKey = await getTaskPlatformKey(row.provider)
       }
       const processor = getProcessor(row.task_type, processorProvider)

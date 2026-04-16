@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     )
 
     let sql = `SELECT id, provider, model_id, model_name, category, tier
-               FROM model_pricing WHERE is_active = 1`
+               FROM ai_models WHERE is_active = 1`
     const binds: string[] = []
 
     if (category) {

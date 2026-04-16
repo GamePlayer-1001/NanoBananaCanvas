@@ -16,7 +16,7 @@
     "dev:cf": "npx wrangler dev --compatibility-date=2025-04-01 --compatibility-flags=nodejs_compat --d1=DB",
     "db:init": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/schema.sql",
     "db:seed": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed.sql",
-    "db:seed-pricing": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed-pricing.sql",
+    "db:seed-models": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed-models.sql",
     "clean": "rm -rf .next .turbo .open-next"
   },
   "dependencies": {

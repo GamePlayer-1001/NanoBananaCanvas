@@ -31,7 +31,7 @@ export const aiExecuteSchema = z.object({
       content: z.union([z.string(), z.array(contentPartSchema).min(1)]),
     }),
   ).min(1),
-  executionMode: z.enum(['credits', 'user_key']).default('credits'),
+  executionMode: z.enum(['platform', 'user_key']).default('platform'),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(32768).optional(),
   workflowId: z.string().optional(),

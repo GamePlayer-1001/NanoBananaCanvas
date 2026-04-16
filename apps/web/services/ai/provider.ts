@@ -36,7 +36,7 @@ const PLATFORM_KEY_MAP: Record<string, string> = {
 }
 
 /**
- * 获取指定 Provider 的平台 API Key (用于积分模式)
+ * 获取指定 Provider 的平台 API Key
  * 从环境变量中读取，不存在则抛出错误
  */
 export async function getPlatformKey(providerId: string): Promise<string> {

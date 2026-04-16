@@ -54,12 +54,6 @@ describe('handleApiError', () => {
     expect(res.status).toBe(400)
   })
 
-  it('maps CREDITS_INSUFFICIENT to 402', async () => {
-    const err = new AppError(ErrorCode.CREDITS_INSUFFICIENT, 'No credits')
-    const res = handleApiError(err)
-    expect(res.status).toBe(402)
-  })
-
   it('maps NOT_FOUND to 404', async () => {
     const err = new AppError(ErrorCode.NOT_FOUND, 'Not found')
     const res = handleApiError(err)

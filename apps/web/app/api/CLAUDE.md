@@ -51,6 +51,6 @@ settings/               — 用户设置 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 商业化: 计费与 Stripe 入口已移除，剩余历史表/工具待后续数据库层清扫
+- 商业化: 计费与 Stripe 入口已移除，当前 API 仅保留免费运行与账号级 API Key 配置
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

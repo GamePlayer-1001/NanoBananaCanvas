@@ -17,7 +17,7 @@ describe('aiExecuteSchema', () => {
 
   it('accepts valid input with defaults', () => {
     const result = aiExecuteSchema.parse(validInput)
-    expect(result.executionMode).toBe('credits')
+    expect(result.executionMode).toBe('platform')
     expect(result.temperature).toBeUndefined()
     expect(result.maxTokens).toBeUndefined()
   })

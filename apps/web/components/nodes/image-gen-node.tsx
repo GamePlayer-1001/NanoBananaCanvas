@@ -30,7 +30,7 @@ const SIZE_OPTIONS = [
   { value: '1792x1024', label: '1792×1024' },
 ]
 
-const CREDIT_PROVIDERS = [
+const PLATFORM_PROVIDERS = [
   { value: 'openrouter', label: 'OpenRouter' },
   { value: 'gemini', label: 'Google Gemini' },
 ] as const
@@ -56,7 +56,7 @@ export function ImageGenNode(props: NodeProps) {
   const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
   const model = (data.config.model as string) ?? DEFAULT_MODEL
   const size = (data.config.size as string) ?? DEFAULT_SIZE
-  const executionMode = (data.config.executionMode as string) ?? 'credits'
+  const executionMode = (data.config.executionMode as string) ?? 'platform'
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
 
@@ -75,8 +75,8 @@ export function ImageGenNode(props: NodeProps) {
       updateConfig({ provider: 'image-openai' })
     }
     if (
-      executionMode === 'credits' &&
-      !CREDIT_PROVIDERS.some((item) => item.value === provider)
+      executionMode === 'platform' &&
+      !PLATFORM_PROVIDERS.some((item) => item.value === provider)
     ) {
       updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
     }
@@ -106,7 +106,7 @@ export function ImageGenNode(props: NodeProps) {
 
   const providerOptions = useMemo(
     () =>
-      executionMode === 'user_key' ? [...USER_KEY_PROVIDERS] : [...CREDIT_PROVIDERS],
+      executionMode === 'user_key' ? [...USER_KEY_PROVIDERS] : [...PLATFORM_PROVIDERS],
     [executionMode],
   )
 
@@ -121,16 +121,16 @@ export function ImageGenNode(props: NodeProps) {
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
-              active={executionMode === 'credits'}
+              active={executionMode === 'platform'}
               onClick={() =>
                 updateConfig({
-                  executionMode: 'credits',
+                  executionMode: 'platform',
                   provider: DEFAULT_PROVIDER,
                   model: DEFAULT_MODEL,
                 })
               }
               icon={<Coins size={12} />}
-              label={t('creditsMode')}
+              label={t('platformMode')}
             />
             <ModeButton
               active={executionMode === 'user_key'}

@@ -40,7 +40,7 @@ interface SubmitTaskInput {
   taskType: AsyncTaskType
   provider: string
   modelId: string
-  executionMode: 'credits' | 'user_key'
+  executionMode: 'platform' | 'user_key'
   input: Record<string, unknown>
   workflowId?: string
   nodeId?: string

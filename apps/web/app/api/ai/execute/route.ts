@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db,
  *          @/lib/env, @/lib/nanoid, @/lib/user-model-config, @/services/ai, @/services/ai/openai-compatible,
- *          @/lib/validations/ai, @/lib/credits/crypto
+ *          @/lib/validations/ai, @/lib/api-key-crypto
  * [OUTPUT]: 对外提供 POST /api/ai/execute (平台 Key / user_key 双模式 AI 执行)
  * [POS]: api/ai 的核心执行端点，统一免费平台执行与账号级模型槽位执行的入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,7 +10,7 @@
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
-import { decryptApiKey } from '@/lib/credits/crypto'
+import { decryptApiKey } from '@/lib/api-key-crypto'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -87,15 +87,14 @@ async function executeWithPlatformKey(
       nodeId: params.nodeId,
       provider: params.provider,
       modelId: params.modelId,
-      executionMode: 'credits',
-      creditsCharged: 0,
+      executionMode: 'platform',
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
 
-    return apiOk({ result: chatResult.content, creditsCharged: 0 })
+    return apiOk({ result: chatResult.content })
   } catch (error) {
     await writeUsageLog(db, {
       userId,
@@ -103,8 +102,7 @@ async function executeWithPlatformKey(
       nodeId: params.nodeId,
       provider: params.provider,
       modelId: params.modelId,
-      executionMode: 'credits',
-      creditsCharged: 0,
+      executionMode: 'platform',
       durationMs: Date.now() - startTime,
       status: 'failed',
       errorMessage: error instanceof Error ? error.message : String(error),
@@ -140,7 +138,7 @@ async function executeWithUserKey(
       .bind(userId, params.provider)
       .run()
 
-    // 写日志 (不扣积分)
+    // 写日志
     await writeUsageLog(db, {
       userId,
       workflowId: params.workflowId,
@@ -148,14 +146,13 @@ async function executeWithUserKey(
       provider: params.provider,
       modelId: runtimeConfig.modelId,
       executionMode: 'user_key',
-      creditsCharged: 0,
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
 
-    return apiOk({ result: chatResult.content, creditsCharged: 0 })
+    return apiOk({ result: chatResult.content })
   } catch (error) {
     await writeUsageLog(db, {
       userId,
@@ -164,7 +161,6 @@ async function executeWithUserKey(
       provider: params.provider,
       modelId: runtimeConfig.modelId,
       executionMode: 'user_key',
-      creditsCharged: 0,
       durationMs: Date.now() - startTime,
       status: 'failed',
       errorMessage: error instanceof Error ? error.message : String(error),
@@ -220,7 +216,6 @@ interface UsageLogParams {
   provider: string
   modelId: string
   executionMode: string
-  creditsCharged: number
   inputTokens?: number | null
   outputTokens?: number | null
   durationMs: number
@@ -233,8 +228,8 @@ async function writeUsageLog(db: D1Database, params: UsageLogParams) {
     await db
       .prepare(
         `INSERT INTO ai_usage_logs (id, user_id, workflow_id, node_id, provider, model_id,
-         execution_mode, credits_charged, input_tokens, output_tokens, duration_ms, status, error_message)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         execution_mode, input_tokens, output_tokens, duration_ms, status, error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -244,7 +239,6 @@ async function writeUsageLog(db: D1Database, params: UsageLogParams) {
         params.provider,
         params.modelId,
         params.executionMode,
-        params.creditsCharged,
         params.inputTokens ?? null,
         params.outputTokens ?? null,
         params.durationMs,

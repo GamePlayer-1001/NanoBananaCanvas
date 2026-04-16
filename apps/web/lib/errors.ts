@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/CreditFreezeError/TaskError) + UPLOAD/TASK 错误码
+ * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/TaskError) + UPLOAD/TASK 错误码
  * [POS]: lib 的统一错误类型体系，被所有业务模块消费，是错误处理的唯一真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -27,10 +27,6 @@ export const ErrorCode = {
   AI_RATE_LIMITED: 'AI_RATE_LIMITED',
   AI_QUOTA_EXCEEDED: 'AI_QUOTA_EXCEEDED',
   AI_MODEL_UNAVAILABLE: 'AI_MODEL_UNAVAILABLE',
-
-  // 积分层
-  CREDITS_INSUFFICIENT: 'CREDITS_INSUFFICIENT',
-  CREDITS_FROZEN_FAILED: 'CREDITS_FROZEN_FAILED',
 
   // 工作流层
   WORKFLOW_INVALID: 'WORKFLOW_INVALID',
@@ -131,20 +127,6 @@ export class AIServiceError extends AppError {
   ) {
     super(code, message, meta)
     this.name = 'AIServiceError'
-  }
-}
-
-export class InsufficientCreditsError extends AppError {
-  constructor(meta: Record<string, unknown> = {}) {
-    super(ErrorCode.CREDITS_INSUFFICIENT, 'Insufficient credits', meta)
-    this.name = 'InsufficientCreditsError'
-  }
-}
-
-export class CreditFreezeError extends AppError {
-  constructor(meta: Record<string, unknown> = {}) {
-    super(ErrorCode.CREDITS_FROZEN_FAILED, 'Failed to freeze credits', meta)
-    this.name = 'CreditFreezeError'
   }
 }
 

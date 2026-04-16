@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/credits, @/lib/db, @/lib/env,
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/api-key-crypto, @/lib/db, @/lib/env,
  *          @/lib/user-model-config, @/services/ai/openai-compatible
  * [OUTPUT]: 对外提供 DELETE (删除) / POST (测试) /api/settings/api-keys/[provider]
  * [POS]: api/settings 的 API Key 单项操作端点
@@ -8,7 +8,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
-import { decryptApiKey } from '@/lib/credits'
+import { decryptApiKey } from '@/lib/api-key-crypto'
 import { getDb } from '@/lib/db'
 import { getEnv } from '@/lib/env'
 import {

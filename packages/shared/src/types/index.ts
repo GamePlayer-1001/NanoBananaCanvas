@@ -5,23 +5,11 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-/** 套餐类型 */
-export type PlanType = 'free' | 'pro'
-
-/** 计费周期 */
-export type BillingPeriod = 'weekly' | 'monthly' | 'yearly'
-
 /** 任务状态 */
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed'
 
 /** AI 模型分类 */
 export type ModelCategory = 'text' | 'image' | 'video' | 'audio'
-
-/** 积分交易类型 (含冻结/解冻，与 D1 schema CHECK 一致) */
-export type CreditTransactionType = 'earn' | 'spend' | 'freeze' | 'unfreeze' | 'refund'
-
-/** 积分来源 */
-export type CreditSource = 'subscription' | 'bonus' | 'ai_call' | 'refund'
 
 /* ─── P2: Async Task Queue ──────────────────────────── */
 
@@ -32,4 +20,4 @@ export type AsyncTaskType = 'video_gen' | 'image_gen' | 'audio_gen'
 export type AsyncTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 /** AI 执行模式 */
-export type ExecutionMode = 'credits' | 'user_key'
+export type ExecutionMode = 'platform' | 'user_key'

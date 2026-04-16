@@ -132,24 +132,22 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_r
 --  M7: AI 运行时兼容层
 -- ============================================
 
--- ── CREDIT-004: model_pricing ─────────────────
--- 模型目录表 (当前仍被模型列表消费，历史定价字段待后续迁移)
-CREATE TABLE IF NOT EXISTS model_pricing (
+-- ── AI-001: ai_models ─────────────────────────
+-- 模型目录表 (统一免费平台模式，仅保留模型选择所需字段)
+CREATE TABLE IF NOT EXISTS ai_models (
   id                TEXT PRIMARY KEY,
   provider          TEXT NOT NULL,
   model_id          TEXT NOT NULL,
   model_name        TEXT NOT NULL,
   category          TEXT NOT NULL CHECK(category IN ('text','image','video','audio')),
-  credits_per_call  INTEGER NOT NULL,
   tier              TEXT NOT NULL DEFAULT 'basic' CHECK(tier IN ('basic','standard','premium','flagship')),
-  min_plan          TEXT NOT NULL DEFAULT 'free' CHECK(min_plan IN ('free','pro')),
   is_active         INTEGER NOT NULL DEFAULT 1,
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(provider, model_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_models_category ON ai_models(category, is_active);
 
 -- ── user_api_keys ─────────────────────────────
 -- 用户模型配置加密存储 (AES-256-GCM)
@@ -179,8 +177,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
   node_id           TEXT,
   provider          TEXT NOT NULL,
   model_id          TEXT NOT NULL,
-  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
-  credits_charged   INTEGER NOT NULL DEFAULT 0,
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
   input_tokens      INTEGER,
   output_tokens     INTEGER,
   duration_ms       INTEGER,
@@ -208,15 +205,13 @@ CREATE TABLE IF NOT EXISTS async_tasks (
   provider          TEXT NOT NULL,
   model_id          TEXT NOT NULL,
   external_task_id  TEXT,
-  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('credits','user_key')),
+  execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
   input_data        TEXT NOT NULL DEFAULT '{}',
   output_data       TEXT,
   status            TEXT NOT NULL DEFAULT 'pending'
                     CHECK(status IN ('pending','running','completed','failed','cancelled')),
   progress          INTEGER NOT NULL DEFAULT 0,
   error_message     TEXT,
-  credits_charged   INTEGER NOT NULL DEFAULT 0,
-  freeze_tx_id      TEXT,
   retry_count       INTEGER NOT NULL DEFAULT 0,
   max_retries       INTEGER NOT NULL DEFAULT 2,
   last_checked_at   TEXT,

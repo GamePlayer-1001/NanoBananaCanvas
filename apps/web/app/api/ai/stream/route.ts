@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/db,
  *          @/lib/user-model-config, @/services/ai (Provider 注册表), @/services/ai/openai-compatible,
- *          @/lib/validations/ai, @/lib/credits/crypto
+ *          @/lib/validations/ai, @/lib/api-key-crypto
  * [OUTPUT]: 对外提供 POST /api/ai/stream (平台 Key / user_key 双模式 SSE 流式执行)
  * [POS]: api/ai 的流式端点，统一免费平台执行与账号级模型槽位的 SSE 入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,7 +12,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, handleApiError, withBodyLimit } from '@/lib/api/response'
-import { decryptApiKey } from '@/lib/credits/crypto'
+import { decryptApiKey } from '@/lib/api-key-crypto'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -77,7 +77,6 @@ export async function POST(req: Request) {
 
     // 后台 chatStream → SSE 转发
     // 使用 ctx.waitUntil() 保障 Worker 在流结束后仍存活
-    // 确保积分 confirm/refund 操作一定完成
     const { ctx } = await getCloudflareContext()
 
     const streamTask = (async () => {
@@ -101,7 +100,6 @@ export async function POST(req: Request) {
           userId,
           { ...params, modelId: resolvedModelId },
           'success',
-          0,
           Date.now() - startTime,
         )
       } catch (err) {
@@ -110,7 +108,6 @@ export async function POST(req: Request) {
           userId,
           { ...params, modelId: resolvedModelId },
           'failed',
-          0,
           Date.now() - startTime,
           err instanceof Error ? err.message : String(err),
         )
@@ -183,7 +180,6 @@ async function writeUsageLog(
     nodeId?: string
   },
   status: string,
-  creditsCharged: number,
   durationMs: number,
   errorMessage?: string,
 ) {
@@ -191,8 +187,8 @@ async function writeUsageLog(
     await db
       .prepare(
         `INSERT INTO ai_usage_logs (id, user_id, workflow_id, node_id, provider, model_id,
-         execution_mode, credits_charged, duration_ms, status, error_message)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         execution_mode, duration_ms, status, error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -202,7 +198,6 @@ async function writeUsageLog(
         params.provider,
         params.modelId,
         params.executionMode,
-        creditsCharged,
         durationMs,
         status,
         errorMessage ?? null,
