@@ -12,9 +12,11 @@
 
 import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 
+import { queryKeys } from '@/lib/query/keys'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
@@ -48,6 +50,29 @@ const IMAGE_MODELS: Record<string, Array<{ value: string; label: string }>> = {
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
 
+interface ApiKeyItem {
+  provider: string
+  isActive: boolean
+  modelId?: string
+}
+
+interface ApiKeysResponse {
+  ok: true
+  data: {
+    keys: ApiKeyItem[]
+  }
+}
+
+async function fetchApiKeys(): Promise<ApiKeyItem[]> {
+  const res = await fetch('/api/settings/api-keys', { cache: 'no-store' })
+  const payload = (await res.json()) as ApiKeysResponse | { error?: { message?: string } }
+  if (!res.ok || !('data' in payload)) {
+    const errorMessage = 'error' in payload ? payload.error?.message : undefined
+    throw new Error(errorMessage ?? 'Failed to load API keys')
+  }
+  return payload.data.keys
+}
+
 export function ImageGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
@@ -59,6 +84,13 @@ export function ImageGenNode(props: NodeProps) {
   const executionMode = (data.config.executionMode as string) ?? 'platform'
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
+
+  const apiKeysQuery = useQuery({
+    queryKey: queryKeys.settings.apiKeys(),
+    queryFn: fetchApiKeys,
+    retry: false,
+    staleTime: 30_000,
+  })
 
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
@@ -85,13 +117,18 @@ export function ImageGenNode(props: NodeProps) {
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const nextProvider = e.target.value
+      if (executionMode === 'user_key') {
+        updateConfig({ provider: nextProvider })
+        return
+      }
+
       const nextModels = IMAGE_MODELS[nextProvider] ?? []
       updateConfig({
         provider: nextProvider,
         model: nextModels[0]?.value ?? model,
       })
     },
-    [model, updateConfig],
+    [executionMode, model, updateConfig],
   )
 
   const onModelChange = useCallback(
@@ -114,6 +151,21 @@ export function ImageGenNode(props: NodeProps) {
     () => (executionMode === 'user_key' ? [] : (IMAGE_MODELS[provider] ?? [])),
     [executionMode, provider],
   )
+
+  const selectedUserKeyConfig = useMemo(
+    () =>
+      executionMode === 'user_key'
+        ? (apiKeysQuery.data ?? []).find((item) => item.provider === provider && item.isActive)
+        : undefined,
+    [apiKeysQuery.data, executionMode, provider],
+  )
+
+  const userKeyModelLabel = useMemo(() => {
+    const modelId = selectedUserKeyConfig?.modelId?.trim()
+    if (modelId) return modelId
+    if (apiKeysQuery.isLoading) return 'Loading profile model config...'
+    return 'Use profile model config'
+  }, [apiKeysQuery.isLoading, selectedUserKeyConfig?.modelId])
 
   return (
     <BaseNode {...props} data={data} icon={<ImageIcon size={14} />}>
@@ -155,13 +207,13 @@ export function ImageGenNode(props: NodeProps) {
 
         <ConfigField label={t('model')}>
           <select
-            value={model}
+            value={executionMode === 'user_key' ? userKeyModelLabel : model}
             onChange={onModelChange}
             className={SELECT_CLASS}
             disabled={executionMode === 'user_key'}
           >
             {executionMode === 'user_key' ? (
-              <option value={model}>{model || 'Use profile model config'}</option>
+              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
             ) : (
               currentModels.map((item) => (
                 <option key={item.value} value={item.value}>
