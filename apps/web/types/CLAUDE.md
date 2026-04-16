@@ -10,7 +10,7 @@
 index.ts      — 桶文件，重导出所有类型
 workflow.ts   — Workflow/WorkflowData/WorkflowNode/WorkflowEdge/NodeCategory/ExecutionStatus
 node.ts       — NodeDefinition/PortDefinition/PortType/NodeRegistry (含 image-list 复合图片端口)
-user.ts       — User/UserCredits
+user.ts       — User
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

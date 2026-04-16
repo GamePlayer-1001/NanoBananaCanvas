@@ -7,7 +7,8 @@
 PRAGMA foreign_keys = ON;
 
 -- ── DB-001: users ────────────────────────────
--- Clerk 用户镜像表，首次登录自动创建
+-- 当前用户镜像表，匿名访客与未来登录身份都统一落在这里
+-- `clerk_id` 为历史身份列，当前用于存放兼容身份键，后续重构登录时再迁移
 CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,
   clerk_id      TEXT NOT NULL UNIQUE,
@@ -128,7 +129,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
 
 -- ============================================
---  M7: 积分 / 支付 / AI 执行
+--  M7: 历史商业化 / AI 运行时兼容层
 -- ============================================
 
 -- ── CREDIT-001: credit_balances ───────────────
@@ -163,7 +164,7 @@ CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id, cr
 CREATE INDEX IF NOT EXISTS idx_credit_tx_ref ON credit_transactions(reference_id);
 
 -- ── CREDIT-003: subscriptions ─────────────────
--- Stripe 订阅记录 (每用户最多一条有效)
+-- 历史订阅记录 (当前运行时已不再依赖，保留待后续数据库迁移)
 CREATE TABLE IF NOT EXISTS subscriptions (
   id                    TEXT PRIMARY KEY,
   user_id               TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -183,7 +184,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_customer_id);
 
 -- ── CREDIT-004: model_pricing ─────────────────
--- 模型定价表 (积分/次)
+-- 模型目录表 (当前仍被模型列表消费，历史定价字段待后续迁移)
 CREATE TABLE IF NOT EXISTS model_pricing (
   id                TEXT PRIMARY KEY,
   provider          TEXT NOT NULL,
@@ -201,8 +202,8 @@ CREATE TABLE IF NOT EXISTS model_pricing (
 
 CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
 
--- ── STRIPE-IDEMPOTENCY: processed_stripe_events ──
--- Webhook 幂等性: 防止 Stripe 事件重放导致积分重复充值
+-- ── EVENT-IDEMPOTENCY: processed_stripe_events ──
+-- 历史事件幂等表，原用于 Stripe/Clerk Webhook，当前保留待后续迁移
 CREATE TABLE IF NOT EXISTS processed_stripe_events (
   event_id            TEXT PRIMARY KEY,
   event_type          TEXT NOT NULL,

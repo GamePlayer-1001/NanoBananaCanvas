@@ -18,7 +18,7 @@ const ANON_CLERK_PREFIX = 'anon:'
 
 export interface AuthUser {
   userId: string
-  clerkId: string
+  identityKey: string
 }
 
 /* ─── Guards ─────────────────────────────────────────── */
@@ -37,12 +37,12 @@ async function getOrCreateAnonymousUser(): Promise<AuthUser> {
     })
   }
 
-  const clerkId = `${ANON_CLERK_PREFIX}${anonymousId}`
+  const identityKey = `${ANON_CLERK_PREFIX}${anonymousId}`
   const db = await getDb()
 
   let user = await db
     .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-    .bind(clerkId)
+    .bind(identityKey)
     .first<{ id: string; clerk_id: string }>()
 
   if (!user) {
@@ -52,12 +52,12 @@ async function getOrCreateAnonymousUser(): Promise<AuthUser> {
         `INSERT OR IGNORE INTO users (id, clerk_id, email, name, avatar_url, plan)
          VALUES (?, ?, '', 'Guest', '', 'free')`,
       )
-      .bind(userId, clerkId)
+      .bind(userId, identityKey)
       .run()
 
     user = await db
       .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-      .bind(clerkId)
+      .bind(identityKey)
       .first<{ id: string; clerk_id: string }>()
   }
 
@@ -65,7 +65,7 @@ async function getOrCreateAnonymousUser(): Promise<AuthUser> {
     throw new Error('Failed to initialize anonymous user')
   }
 
-  return { userId: user.id, clerkId: user.clerk_id }
+  return { userId: user.id, identityKey: user.clerk_id }
 }
 
 /** 统一返回匿名访客上下文，保证现有 API 主链可继续运行。 */

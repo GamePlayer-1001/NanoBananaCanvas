@@ -17,7 +17,19 @@ export async function GET() {
     const db = await getDb()
     const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first()
 
-    return apiOk(user)
+    if (!user) {
+      return apiOk(null)
+    }
+
+    return apiOk({
+      id: user.id,
+      identityKey: user.clerk_id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatar_url || '',
+      tier: user.plan,
+      createdAt: user.created_at,
+    })
   } catch (error) {
     return handleApiError(error)
   }

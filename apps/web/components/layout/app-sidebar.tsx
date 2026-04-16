@@ -317,8 +317,8 @@ export function AppSidebar() {
             className="ml-auto"
           >
             <Avatar size="sm">
-              {user?.imageUrl && (
-                <AvatarImage src={user.imageUrl} alt={user.name ?? 'Guest'} />
+              {user?.avatarUrl && (
+                <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
               )}
               <AvatarFallback>
                 {user?.name?.charAt(0) ?? 'G'}
