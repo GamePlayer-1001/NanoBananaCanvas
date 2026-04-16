@@ -129,59 +129,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
 
 -- ============================================
---  M7: 历史商业化 / AI 运行时兼容层
+--  M7: AI 运行时兼容层
 -- ============================================
-
--- ── CREDIT-001: credit_balances ───────────────
--- 三池余额 (monthly 月度订阅 / permanent 永久 / frozen 冻结中)
-CREATE TABLE IF NOT EXISTS credit_balances (
-  user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  monthly_balance   INTEGER NOT NULL DEFAULT 200,
-  permanent_balance INTEGER NOT NULL DEFAULT 0,
-  frozen            INTEGER NOT NULL DEFAULT 0,
-  total_earned      INTEGER NOT NULL DEFAULT 200,
-  total_spent       INTEGER NOT NULL DEFAULT 0,
-  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- ── CREDIT-002: credit_transactions ───────────
--- 积分审计日志 (不可变，只追加)
-CREATE TABLE IF NOT EXISTS credit_transactions (
-  id                TEXT PRIMARY KEY,
-  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type              TEXT NOT NULL CHECK(type IN ('earn','spend','freeze','unfreeze','refund')),
-  pool              TEXT NOT NULL DEFAULT 'permanent' CHECK(pool IN ('monthly','permanent')),
-  amount            INTEGER NOT NULL,
-  balance_after     INTEGER NOT NULL,
-  source            TEXT NOT NULL,
-  reference_id      TEXT,
-  description       TEXT,
-  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_credit_tx_ref ON credit_transactions(reference_id);
-
--- ── CREDIT-003: subscriptions ─────────────────
--- 历史订阅记录 (当前运行时已不再依赖，保留待后续数据库迁移)
-CREATE TABLE IF NOT EXISTS subscriptions (
-  id                    TEXT PRIMARY KEY,
-  user_id               TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  stripe_subscription_id TEXT,
-  stripe_customer_id    TEXT,
-  plan                  TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free','pro')),
-  billing_period        TEXT DEFAULT 'monthly' CHECK(billing_period IN ('weekly','monthly','yearly')),
-  status                TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','canceled','past_due','trialing')),
-  current_period_start  TEXT,
-  current_period_end    TEXT,
-  monthly_credits       INTEGER NOT NULL DEFAULT 200,
-  cancel_at_period_end  INTEGER NOT NULL DEFAULT 0,
-  created_at            TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at            TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_customer_id);
 
 -- ── CREDIT-004: model_pricing ─────────────────
 -- 模型目录表 (当前仍被模型列表消费，历史定价字段待后续迁移)
@@ -201,16 +150,6 @@ CREATE TABLE IF NOT EXISTS model_pricing (
 );
 
 CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
-
--- ── EVENT-IDEMPOTENCY: processed_stripe_events ──
--- 历史事件幂等表，原用于 Stripe/Clerk Webhook，当前保留待后续迁移
-CREATE TABLE IF NOT EXISTS processed_stripe_events (
-  event_id            TEXT PRIMARY KEY,
-  event_type          TEXT NOT NULL,
-  processed_at        TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_stripe_events_processed ON processed_stripe_events(processed_at);
 
 -- ── user_api_keys ─────────────────────────────
 -- 用户模型配置加密存储 (AES-256-GCM)

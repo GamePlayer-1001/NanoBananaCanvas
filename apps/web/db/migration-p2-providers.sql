@@ -1,4 +1,4 @@
--- P2: 新增 DeepSeek + Gemini 直连模型定价
+-- P2: 新增 DeepSeek + Gemini 直连模型目录项
 -- 这些模型通过平台 Key 直接调用 (非 OpenRouter 代理)
 
 -- DeepSeek 模型 (高性价比)

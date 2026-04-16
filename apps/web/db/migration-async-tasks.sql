@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS async_tasks (
   progress          INTEGER NOT NULL DEFAULT 0,
   error_message     TEXT,
 
-  -- 积分关联
+  -- 执行计量兼容字段
   credits_charged   INTEGER NOT NULL DEFAULT 0,
   freeze_tx_id      TEXT,
 
