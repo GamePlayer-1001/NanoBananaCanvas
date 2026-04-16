@@ -482,7 +482,7 @@
     "privacy_usage": "二、信息使用方式",
     "privacy_usage_body": "我们使用您的信息来提供和改进服务、处理交易、发送服务相关通讯、防止欺诈以及遵守法律义务。我们不会将您的个人数据出售给第三方。",
     "privacy_sharing": "三、信息共享",
-    "privacy_sharing_body": "我们仅与帮助运营的服务提供商（Cloudflare、Stripe、Clerk）共享信息，或在法律要求时共享，或在您选择公开发布内容时共享。已发布的工作流会显示您的用户名和头像。",
+    "privacy_sharing_body": "我们仅与帮助运营的服务提供商（如 Cloudflare）共享信息，或在法律要求时共享，或在您选择公开发布内容时共享。已发布的工作流会显示您的用户名和头像。",
     "privacy_security": "四、数据安全",
     "privacy_security_body": "我们实施行业标准的安全措施，包括传输加密（TLS）和静态加密。用于账号级执行的 API 密钥会在服务端加密后存储，并仅在你的登录账号上下文中读取。我们定期审查安全实践。",
     "privacy_cookies": "五、Cookie 与追踪",

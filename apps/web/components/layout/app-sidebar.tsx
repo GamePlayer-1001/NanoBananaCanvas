@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
- *          依赖 lucide-react 图标，依赖 @clerk/nextjs 的 useUser，
+ *          依赖 lucide-react 图标，
  *          依赖 @/components/ui/avatar，依赖 @/components/profile/profile-modal，
  *          依赖 @/components/shared/search-command，
- *          依赖 @/hooks/use-folders，依赖 sonner 的 toast
+ *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast
  * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/SearchCommand + 文件夹管理)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -14,7 +14,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useUser } from '@clerk/nextjs'
 import { toast } from 'sonner'
 import {
   Folder,
@@ -31,6 +30,7 @@ import { ProfileModal } from '@/components/profile/profile-modal'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
+import { useCurrentUser } from '@/hooks/use-user'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -184,7 +184,7 @@ function FolderItem({
 export function AppSidebar() {
   const t = useTranslations('sidebar')
   const pathname = usePathname()
-  const { user } = useUser()
+  const { data: user } = useCurrentUser()
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const openSearch = useCallback(() => setSearchOpen(true), [])
@@ -318,10 +318,10 @@ export function AppSidebar() {
           >
             <Avatar size="sm">
               {user?.imageUrl && (
-                <AvatarImage src={user.imageUrl} alt={user.fullName ?? 'User'} />
+                <AvatarImage src={user.imageUrl} alt={user.name ?? 'Guest'} />
               )}
               <AvatarFallback>
-                {user?.firstName?.charAt(0) ?? '?'}
+                {user?.name?.charAt(0) ?? 'G'}
               </AvatarFallback>
             </Avatar>
           </button>

@@ -5,7 +5,8 @@
  *          依赖 @/hooks/use-auto-save 的 useCloudSaveStatus 保存状态，
  *          依赖 sonner 的 toast 通知，
  *          依赖 next-intl 的 useTranslations，
- *          依赖 @clerk/nextjs 的 UserButton，
+ *          依赖 @/hooks/use-user 的 useCurrentUser，
+ *          依赖 @/components/ui/avatar，
  *          依赖 @/components/locale-switcher 的语言切换，
  *          依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 CanvasTopToolbar 顶部工具栏组件
@@ -16,7 +17,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { UserButton } from '@clerk/nextjs'
 import { useTranslations } from 'next-intl'
 import { ArrowLeft, Check, Cloud, CloudOff, Download, History, Loader2, Play, Redo2, Undo2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,8 +35,10 @@ import {
 } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { useCurrentUser } from '@/hooks/use-user'
 
 /* ─── Save Status Indicator ───────────────────────────── */
 
@@ -160,6 +162,7 @@ interface CanvasTopToolbarProps {
 
 export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const t = useTranslations('canvas')
+  const { data: user } = useCurrentUser()
   const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
   const nodes = useFlowStore((s) => s.nodes)
   const edges = useFlowStore((s) => s.edges)
@@ -367,11 +370,10 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
         <LocaleSwitcher />
 
         {/* ── User ───────────────────────────────────── */}
-        <UserButton
-          appearance={{
-            elements: { avatarBox: 'w-7 h-7' },
-          }}
-        />
+        <Avatar size="sm">
+          {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />}
+          <AvatarFallback>{user?.name?.charAt(0) ?? 'G'}</AvatarFallback>
+        </Avatar>
       </div>
     </TooltipProvider>
   )

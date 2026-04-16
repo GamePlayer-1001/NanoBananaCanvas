@@ -482,7 +482,7 @@
     "privacy_usage": "2. How We Use Your Information",
     "privacy_usage_body": "We use your information to provide and improve our services, process transactions, send service-related communications, prevent fraud, and comply with legal obligations. We do not sell your personal data to third parties.",
     "privacy_sharing": "3. Information Sharing",
-    "privacy_sharing_body": "We share your information only with service providers who help us operate (Cloudflare, Stripe, Clerk), when required by law, or when you choose to publish content publicly. Published workflows display your username and avatar.",
+    "privacy_sharing_body": "We share your information only with service providers who help us operate (such as Cloudflare), when required by law, or when you choose to publish content publicly. Published workflows display your username and avatar.",
     "privacy_security": "4. Data Security",
     "privacy_security_body": "We implement industry-standard security measures including encryption in transit (TLS) and at rest. API keys used for account-scoped execution are encrypted before they are stored on the server and are only read within the current signed-in account context. We regularly review our security practices.",
     "privacy_cookies": "5. Cookies & Tracking",

@@ -1,7 +1,7 @@
 # api/
 > L2 | 父级: apps/web/app/CLAUDE.md
 
-Next.js App Router API 路由层 — RESTful 端点 · Clerk 认证 · AI 执行
+Next.js App Router API 路由层 — RESTful 端点 · 匿名访客上下文 · AI 执行
 
 ## 成员清单
 
@@ -23,7 +23,7 @@ explore/                — 社区广场 (2 端点)
 
 categories/route.ts     — GET  分类列表 (i18n 本地化)
 notifications/route.ts  — GET+PATCH 通知列表 + 标记已读
-users/me/route.ts       — GET  当前用户信息 + 首次登录自动同步
+users/me/route.ts       — GET  当前匿名访客信息
 files/                  — 文件上传与读取 (见子 CLAUDE.md)
   upload/route.ts       — POST 文件上传 (R2 存储, 配额检查)
   [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开, uploads/outputs 按用户隔离)
@@ -42,13 +42,11 @@ settings/               — 用户设置 (2 端点)
   api-keys/route.ts             — GET+PUT 账号级模型槽位管理 (加密存储 API Key + baseUrl + modelId)
   api-keys/[provider]/route.ts  — DELETE+POST 槽位删除/连通测试
 
-webhooks/               — 第三方回调 (1 端点)
-  clerk/route.ts        — POST Clerk Webhook (用户 CRUD 同步 D1)
 ```
 
 ## 架构约定
 
-- 认证: `requireAuth()` / `optionalAuth()` from `lib/api/auth.ts`
+- 认证: `requireAuth()` / `optionalAuth()` from `lib/api/auth.ts`，当前统一返回匿名访客上下文
 - 响应: `apiOk` / `handleApiError` from `lib/api/response.ts`
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点

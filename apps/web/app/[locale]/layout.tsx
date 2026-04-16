@@ -5,8 +5,8 @@
  *          依赖 next/font/google 的 Geist 字体，
  *          依赖 @/components/ui/sonner 的 Toaster，
  *          依赖 @/lib/query/provider 的 QueryProvider
- * [OUTPUT]: 对外提供带 locale 参数的语言布局 (html/body + Clerk + i18n Provider)
- * [POS]: [locale] 动态路由布局，包裹所有语言相关页面，认证 + i18n 的枢纽
+ * [OUTPUT]: 对外提供带 locale 参数的语言布局 (html/body + i18n Provider)
+ * [POS]: [locale] 动态路由布局，包裹所有语言相关页面，是 i18n 与 Query 的枢纽
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

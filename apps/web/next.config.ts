@@ -14,15 +14,6 @@ initOpenNextCloudflareForDev()
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.clerk.com',
-      },
-    ],
-  },
-}
+const nextConfig: NextConfig = {}
 
 export default withNextIntl(nextConfig)
