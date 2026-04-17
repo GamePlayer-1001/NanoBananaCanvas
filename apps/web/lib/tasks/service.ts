@@ -265,7 +265,7 @@ async function findUserConfigRow(
   db: D1Database,
   userId: string,
   slotId: UserModelConfigSlotId,
-): Promise<{ encrypted_key: string; slotId: string } | null> {
+): Promise<{ encrypted_key: string; slotId: UserModelConfigSlotId } | null> {
   for (const candidate of getSlotLookupOrder(slotId)) {
     const row = await db
       .prepare(
