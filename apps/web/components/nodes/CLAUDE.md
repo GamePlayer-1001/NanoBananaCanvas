@@ -14,7 +14,7 @@ text-input-node.tsx — TextInputNode 文本输入节点
 image-input-node.tsx — ImageInputNode 图片输入节点 (R2 上传 + 图片预览 + image-out 输出)
 llm-node.tsx        — LLMNode 大语言模型节点 (平台执行 + 文本 API 配置卡片/温度/MaxTokens/SystemPrompt/流式输出)
 display-node.tsx    — DisplayNode 结果展示节点 (Markdown 渲染/复制按钮)
-image-gen-node.tsx  — ImageGenNode 图片生成节点 (平台执行 + 图片 API 配置卡片/尺寸选择/图片预览)
+image-gen-node.tsx  — ImageGenNode 图片生成节点 (平台模式只选模型/参数，账号模式走 API 配置卡片/尺寸选择/图片预览)
 video-gen-node.tsx  — VideoGenNode 视频生成节点 (平台执行 + 视频 API 配置卡片/时长/画面比例/模式/视频播放/进度条)
 audio-gen-node.tsx  — AudioGenNode 音频生成节点 (平台执行 + 音频 API 配置卡片/语音选择/语速调节/音频播放)
 merge-node.tsx      — TextMergeNode/ImageMergeNode 工具节点 (多文本/多图片显式汇聚，端口由 plugin-registry 驱动)

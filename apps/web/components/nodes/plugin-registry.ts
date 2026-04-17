@@ -135,7 +135,12 @@ register({
     ],
     outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },
-  defaults: { provider: 'openrouter', model: 'openai/dall-e-3', size: '1024x1024' },
+  defaults: {
+    provider: 'openrouter',
+    model: 'openai/dall-e-3',
+    size: '1024x1024',
+    tokenBillingDraft: null,
+  },
   toolbar: { labelKey: 'imageGen' },
 })
 

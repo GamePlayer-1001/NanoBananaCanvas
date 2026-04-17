@@ -10,6 +10,8 @@ import { createLogger } from '@/lib/logger'
 import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './types'
 
 const log = createLogger('processor:image-gen')
+const OPENROUTER_IMAGE_BASE_URL = 'https://openrouter.ai/api/v1'
+const OPENAI_IMAGE_BASE_URL = 'https://api.openai.com/v1'
 
 interface OpenAICompatibleImageResponse {
   data?: Array<{
@@ -45,11 +47,12 @@ function extractOpenAICompatibleImageUrl(
 async function openAICompatibleSubmit(
   input: SubmitInput,
   apiKey: string,
+  provider: string,
 ): Promise<{ url: string }> {
   const { model, params } = input
   const prompt = (params.prompt as string) ?? ''
   const size = (params.size as string) ?? '1024x1024'
-  const baseUrl = typeof params.baseUrl === 'string' ? params.baseUrl.trim().replace(/\/+$/, '') : ''
+  const baseUrl = resolveOpenAICompatibleBaseUrl(provider, params)
 
   if (!baseUrl) {
     throw new Error('OpenAI-compatible image provider requires baseUrl')
@@ -77,6 +80,24 @@ async function openAICompatibleSubmit(
     )
   }
   return { url }
+}
+
+function resolveOpenAICompatibleBaseUrl(
+  provider: string,
+  params: Record<string, unknown>,
+): string {
+  switch (provider) {
+    case 'openrouter':
+      return OPENROUTER_IMAGE_BASE_URL
+    case 'openai':
+      return OPENAI_IMAGE_BASE_URL
+    case 'openai-compatible':
+      return typeof params.baseUrl === 'string'
+        ? params.baseUrl.trim().replace(/\/+$/, '')
+        : ''
+    default:
+      return ''
+  }
 }
 
 /* ─── Google Imagen API ──────────────────────────────── */
@@ -131,8 +152,10 @@ export class ImageGenProcessor implements TaskProcessor {
     let result: { url: string }
 
     switch (this.provider) {
+      case 'openrouter':
+      case 'openai':
       case 'openai-compatible':
-        result = await openAICompatibleSubmit(input, apiKey)
+        result = await openAICompatibleSubmit(input, apiKey, this.provider)
         break
       case 'gemini':
         result = await googleImageSubmit(input, apiKey)

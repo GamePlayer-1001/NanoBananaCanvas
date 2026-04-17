@@ -32,15 +32,10 @@ const SIZE_OPTIONS = [
   { value: '1792x1024', label: '1792×1024' },
 ]
 
-const PLATFORM_PROVIDERS = [
-  { value: 'openrouter', label: 'OpenRouter' },
-  { value: 'gemini', label: 'Google Gemini' },
+const PLATFORM_IMAGE_MODELS = [
+  { value: 'openai/dall-e-3', label: 'DALL-E 3', provider: 'openrouter' },
+  { value: 'imagen-3.0-generate-002', label: 'Imagen 3', provider: 'gemini' },
 ] as const
-
-const IMAGE_MODELS: Record<string, Array<{ value: string; label: string }>> = {
-  openrouter: [{ value: 'openai/dall-e-3', label: 'DALL-E 3' }],
-  gemini: [{ value: 'imagen-3.0-generate-002', label: 'Imagen 3' }],
-}
 
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
@@ -52,6 +47,9 @@ export function ImageGenNode(props: NodeProps) {
 
   const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
   const model = (data.config.model as string) ?? DEFAULT_MODEL
+  const selectedPlatformModel =
+    PLATFORM_IMAGE_MODELS.find((item) => item.value === model) ??
+    PLATFORM_IMAGE_MODELS[0]
   const size = (data.config.size as string) ?? DEFAULT_SIZE
   const executionMode = (data.config.executionMode as string) ?? 'platform'
   const resultUrl = (data.config.resultUrl as string) ?? ''
@@ -88,45 +86,38 @@ export function ImageGenNode(props: NodeProps) {
     }
     if (
       executionMode === 'platform' &&
-      !PLATFORM_PROVIDERS.some((item) => item.value === provider)
+      provider !== selectedPlatformModel.provider
     ) {
-      updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
+      updateConfig({
+        provider: selectedPlatformModel.provider,
+        model: selectedPlatformModel.value,
+      })
     }
-  }, [executionMode, provider, savedImageConfig?.configId, updateConfig])
+  }, [executionMode, provider, savedImageConfig?.configId, selectedPlatformModel.provider, selectedPlatformModel.value, updateConfig])
 
-  const onProviderChange = useCallback(
+  const onModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
-      const nextProvider = e.target.value
+      const nextModel = e.target.value
       if (executionMode === 'user_key') {
-        updateConfig({ provider: nextProvider })
+        updateConfig({ model: nextModel })
         return
       }
 
-      const nextModels = IMAGE_MODELS[nextProvider] ?? []
+      const matched =
+        PLATFORM_IMAGE_MODELS.find((item) => item.value === nextModel) ??
+        PLATFORM_IMAGE_MODELS[0]
       updateConfig({
-        provider: nextProvider,
-        model: nextModels[0]?.value ?? model,
+        model: matched.value,
+        provider: matched.provider,
       })
     },
-    [executionMode, model, updateConfig],
-  )
-
-  const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ model: e.target.value }),
-    [updateConfig],
+    [executionMode, updateConfig],
   )
 
   const onSizeChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ size: e.target.value }),
     [updateConfig],
   )
-
-  const providerOptions =
-    executionMode === 'user_key'
-      ? [{ value: 'image', label: userKeyProviderLabel }]
-      : [...PLATFORM_PROVIDERS]
-
-  const currentModels = executionMode === 'user_key' ? [] : (IMAGE_MODELS[provider] ?? [])
 
   return (
     <BaseNode {...props} data={data} icon={<ImageIcon size={14} />}>
@@ -154,39 +145,45 @@ export function ImageGenNode(props: NodeProps) {
           </div>
         </ConfigField>
 
-        <ConfigField label={t('provider')}>
-          <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
-            {providerOptions.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </ConfigField>
-
         {executionMode === 'user_key' ? (
-          <ConfigField label={t('accountConfigLabel')}>
-            <select
-              value={selectedUserConfigId}
-              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'image' })}
-              className={SELECT_CLASS}
-            >
-              {savedImageConfigs.length === 0 ? (
-                <option value="">{t('noApiConfigs')}</option>
-              ) : (
-                savedImageConfigs.map((item) => (
-                  <option key={item.configId} value={item.configId}>
-                    {item.label || item.configId}
-                  </option>
-                ))
-              )}
-            </select>
+          <>
+            <ConfigField label={t('provider')}>
+              <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+                {userKeyProviderLabel}
+              </div>
+            </ConfigField>
+
+            <ConfigField label={t('accountConfigLabel')}>
+              <select
+                value={selectedUserConfigId}
+                onChange={(e) =>
+                  updateConfig({ userKeyConfigId: e.target.value, provider: 'image' })
+                }
+                className={SELECT_CLASS}
+              >
+                {savedImageConfigs.length === 0 ? (
+                  <option value="">{t('noApiConfigs')}</option>
+                ) : (
+                  savedImageConfigs.map((item) => (
+                    <option key={item.configId} value={item.configId}>
+                      {item.label || item.configId}
+                    </option>
+                  ))
+                )}
+              </select>
+            </ConfigField>
+          </>
+        ) : (
+          <ConfigField label={t('provider')}>
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              {t('platformMode')}
+            </div>
           </ConfigField>
-        ) : null}
+        )}
 
         <ConfigField label={t('model')}>
           <select
-            value={executionMode === 'user_key' ? userKeyModelLabel : model}
+            value={executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel.value}
             onChange={onModelChange}
             className={SELECT_CLASS}
             disabled={executionMode === 'user_key'}
@@ -194,7 +191,7 @@ export function ImageGenNode(props: NodeProps) {
             {executionMode === 'user_key' ? (
               <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
             ) : (
-              currentModels.map((item) => (
+              PLATFORM_IMAGE_MODELS.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
