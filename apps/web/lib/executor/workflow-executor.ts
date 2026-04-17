@@ -124,7 +124,7 @@ export class WorkflowExecutor {
         }
 
         const errorMsg = err instanceof Error ? err.message : String(err)
-        log.error('Node execution failed', { nodeId, error: errorMsg })
+        log.error('Node execution failed', err, { nodeId, error: errorMsg })
 
         callbacks.onNodeError(nodeId, errorMsg)
         callbacks.updateNodeStatus(nodeId, 'error')

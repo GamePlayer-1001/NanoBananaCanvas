@@ -67,7 +67,7 @@ export const useExecutionStore = create<ExecutionState>((set) => ({
   },
 
   failExecution: (error) => {
-    log.error('Execution failed', { error })
+    log.error('Execution failed', undefined, { error })
     set({ isExecuting: false, currentNodeId: null, error })
   },
 
