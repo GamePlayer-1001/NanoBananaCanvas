@@ -7,10 +7,12 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
-import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
+import { isAppError } from '@/lib/errors'
 import { listTasks, submitTask } from '@/lib/tasks'
 import { listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
+import { ZodError } from 'zod'
 
 /* ─── POST /api/tasks — 提交任务 ────────────────────── */
 
@@ -41,6 +43,13 @@ export async function POST(req: Request) {
 
     return apiOk(task, 201)
   } catch (error) {
+    if (
+      error instanceof Error &&
+      !isAppError(error) &&
+      !(error instanceof ZodError)
+    ) {
+      return apiError('UNKNOWN', error.message || 'Internal server error', 500)
+    }
     return handleApiError(error)
   }
 }
@@ -63,6 +72,13 @@ export async function GET(req: Request) {
     const result = await listTasks(db, userId, params)
     return apiOk(result)
   } catch (error) {
+    if (
+      error instanceof Error &&
+      !isAppError(error) &&
+      !(error instanceof ZodError)
+    ) {
+      return apiError('UNKNOWN', error.message || 'Internal server error', 500)
+    }
     return handleApiError(error)
   }
 }

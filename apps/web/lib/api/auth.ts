@@ -8,6 +8,7 @@
 import { cookies } from 'next/headers'
 
 import { getDb } from '@/lib/db'
+import { AppError, ErrorCode } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
 
 const ANON_COOKIE_NAME = 'nb_guest_id'
@@ -62,7 +63,9 @@ async function getOrCreateAnonymousUser(): Promise<AuthUser> {
   }
 
   if (!user) {
-    throw new Error('Failed to initialize anonymous user')
+    throw new AppError(ErrorCode.UNKNOWN, 'Failed to initialize anonymous user', {
+      identityKey,
+    })
   }
 
   return { userId: user.id, identityKey: user.clerk_id }
