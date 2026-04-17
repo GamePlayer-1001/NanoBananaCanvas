@@ -17,7 +17,7 @@
     "db:init": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/schema.sql",
     "db:seed": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed.sql",
     "db:seed-models": "npx wrangler d1 execute nano-banana-canvas-db --local --file=./db/seed-models.sql",
-    "clean": "node -e \"const fs=require('fs'); for (const target of ['.next','.turbo','.open-next']) fs.rmSync(target,{recursive:true,force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\""
+    "clean": "node -e \"const fs=require('fs'); for (const target of ['.next','.turbo']) fs.rmSync(target,{recursive:true,force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

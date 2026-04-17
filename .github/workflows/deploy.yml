@@ -82,7 +82,7 @@ jobs:
       # ── 2. OpenNext 转换 (Next.js → Workers) ─
       - name: Build for Cloudflare
         working-directory: apps/web
-        run: npx opennextjs-cloudflare build
+        run: pnpm run deploy:build
         env:
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
