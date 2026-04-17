@@ -315,69 +315,71 @@ export function ModelPreferencesTab() {
                 return (
                   <div
                     key={itemId}
-                    className="space-y-4 rounded-2xl border border-border/80 bg-muted/10 p-4"
+                    className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-3.5"
                   >
                     {isConfigured ? (
-                      <div className="space-y-2">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                          <div className="space-y-1">
-                            <p className="text-2xl font-semibold tracking-tight text-foreground">
-                              {saved?.label || t('newConfig')}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 space-y-1.5">
+                          <p className="truncate text-lg font-semibold tracking-tight text-foreground">
+                            {saved?.label || t('newConfig')}
+                          </p>
+                          <div className="space-y-1 text-sm leading-6 text-muted-foreground">
+                            {saved?.maskedKey ? (
+                              <p className="truncate">{t('loadedMaskedKey', { key: saved.maskedKey })}</p>
+                            ) : null}
+                            <p className="truncate">
+                              {t('currentProvider', {
+                                provider: selectedProvider?.label ?? saved?.providerId ?? '-',
+                              })}
                             </p>
-                            <div className="space-y-1 text-sm text-muted-foreground">
-                              {saved?.maskedKey ? (
-                                <p>{t('loadedMaskedKey', { key: saved.maskedKey })}</p>
-                              ) : null}
-                              <p>
-                                {t('currentProvider', {
-                                  provider: selectedProvider?.label ?? saved?.providerId ?? '-',
-                                })}
-                              </p>
-                              <p>{t('currentModelId', { modelId: saved?.modelId ?? '-' })}</p>
-                              <p>{t('currentBaseUrl', { baseUrl: saved?.baseUrl ?? '-' })}</p>
-                            </div>
+                            <p className="truncate">
+                              {t('currentModelId', { modelId: saved?.modelId ?? '-' })}
+                            </p>
+                            <p className="truncate">
+                              {t('currentBaseUrl', { baseUrl: saved?.baseUrl ?? '-' })}
+                            </p>
                           </div>
+                        </div>
 
-                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-                              <CheckCircle2 size={12} />
-                              {t('configured')}
-                            </span>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600">
+                            <CheckCircle2 size={12} />
+                            {t('configured')}
+                          </span>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!configId) return
-                                testMutation.mutate(configId)
-                              }}
-                              disabled={isTesting}
-                              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isTesting ? (
-                                <Loader2 size={14} className="animate-spin" />
-                              ) : (
-                                <RefreshCw size={14} />
-                              )}
-                              {t('testApiConfig')}
-                            </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!configId) return
+                              testMutation.mutate(configId)
+                            }}
+                            disabled={isTesting}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isTesting ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <RefreshCw size={13} />
+                            )}
+                            {t('testApiConfig')}
+                          </button>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!configId) return
-                                deleteMutation.mutate(configId)
-                              }}
-                              disabled={isDeleting}
-                              className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isDeleting ? (
-                                <Loader2 size={14} className="animate-spin" />
-                              ) : (
-                                <Trash2 size={14} />
-                              )}
-                              {t('deleteApiConfig')}
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!configId) return
+                              deleteMutation.mutate(configId)
+                            }}
+                            disabled={isDeleting}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 text-xs font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isDeleting ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={13} />
+                            )}
+                            {t('deleteApiConfig')}
+                          </button>
                         </div>
                       </div>
                     ) : null}
