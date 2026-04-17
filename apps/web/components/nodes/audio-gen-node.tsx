@@ -61,8 +61,17 @@ export function AudioGenNode(props: NodeProps) {
   const speed = (data.config.speed as number) ?? DEFAULT_SPEED
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
-  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
-  const savedAudioConfig = getConfigByCapability('audio')
+  const {
+    getConfigByCapability,
+    getConfigById,
+    getConfigsByCapability,
+    isLoading: isModelConfigLoading,
+  } = useModelConfigs()
+  const savedAudioConfigs = getConfigsByCapability('audio')
+  const selectedUserConfigId =
+    ((data.config.userKeyConfigId as string | undefined) ?? savedAudioConfigs[0]?.configId) || ''
+  const savedAudioConfig =
+    getConfigById(selectedUserConfigId) ?? getConfigByCapability('audio')
   const userKeyProviderLabel = getProviderLabel('audio', savedAudioConfig?.providerId)
   const userKeyModelLabel =
     savedAudioConfig?.modelId?.trim() ||
@@ -78,12 +87,12 @@ export function AudioGenNode(props: NodeProps) {
 
   useEffect(() => {
     if (executionMode === 'user_key' && provider !== 'audio') {
-      updateConfig({ provider: 'audio' })
+      updateConfig({ provider: 'audio', userKeyConfigId: savedAudioConfig?.configId ?? '' })
     }
     if (executionMode === 'platform' && provider === 'audio') {
       updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
     }
-  }, [executionMode, provider, updateConfig])
+  }, [executionMode, provider, savedAudioConfig?.configId, updateConfig])
 
   const onModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ model: e.target.value }),
@@ -108,13 +117,10 @@ export function AudioGenNode(props: NodeProps) {
 
   /* ── Speed display ─────────────────────────────────── */
   const speedLabel = useMemo(() => `${speed.toFixed(1)}x`, [speed])
-  const providerOptions = useMemo(
-    () =>
-      executionMode === 'user_key'
-        ? [{ value: 'audio', label: userKeyProviderLabel }]
-        : [{ value: 'openai', label: 'OpenAI' }],
-    [executionMode, userKeyProviderLabel],
-  )
+  const providerOptions =
+    executionMode === 'user_key'
+      ? [{ value: 'audio', label: userKeyProviderLabel }]
+      : [{ value: 'openai', label: 'OpenAI' }]
 
   return (
     <BaseNode {...props} data={data} icon={<Music size={14} />}>
@@ -156,6 +162,26 @@ export function AudioGenNode(props: NodeProps) {
             ))}
           </select>
         </ConfigField>
+
+        {executionMode === 'user_key' ? (
+          <ConfigField label={t('accountConfigLabel')}>
+            <select
+              value={selectedUserConfigId}
+              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'audio' })}
+              className={SELECT_CLASS}
+            >
+              {savedAudioConfigs.length === 0 ? (
+                <option value="">{t('noApiConfigs')}</option>
+              ) : (
+                savedAudioConfigs.map((item) => (
+                  <option key={item.configId} value={item.configId}>
+                    {item.label || item.configId}
+                  </option>
+                ))
+              )}
+            </select>
+          </ConfigField>
+        ) : null}
 
         {/* ── Model selector ──────────────────────── */}
         <ConfigField label={t('model')}>

@@ -31,6 +31,7 @@ export async function POST(req: Request) {
       taskType: params.taskType,
       provider: params.provider,
       modelId: params.modelId,
+      configId: params.configId,
       executionMode: params.executionMode,
       input: params.input,
       workflowId: params.workflowId,

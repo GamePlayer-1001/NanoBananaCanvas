@@ -15,7 +15,7 @@ env.ts       — 统一环境变量获取入口 (getEnv/requireEnv → getCloudf
 r2.ts        — R2 对象存储访问入口 (getR2 → getCloudflareContext)
 nanoid.ts    — 零依赖 ID 生成器 (CF Workers 兼容)
 api-key-crypto.ts   — API Key 服务端 AES-256-GCM 加密层 (encrypt/decrypt/mask)
-user-model-config.ts — 账号级模型配置契约层 (槽位定义 + 加密负载 JSON 编解码 + URL 规范化)
+user-model-config.ts — 账号级模型配置契约层 (兼容旧槽位 + 多配置能力标记 + 加密负载 JSON 编解码 + URL 规范化)
 model-config-catalog.ts — API 接入配置目录 (四类能力卡片 + provider 选项 + 标签查找)
 api/                 — API 路由公共基础设施 (auth 守卫 + response 统一响应，详见子 CLAUDE.md)
 executor/    — 工作流 DAG 执行引擎 (拓扑排序 + 节点执行 + 编排器，详见子 CLAUDE.md)

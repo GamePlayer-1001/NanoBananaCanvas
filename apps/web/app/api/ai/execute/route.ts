@@ -17,10 +17,7 @@ import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
   deserializeUserModelConfig,
-  getSlotLookupOrder,
-  isUserModelConfigSlotId,
   toRuntimeUserModelConfig,
-  type UserModelConfigSlotId,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
 import { getPlatformKey, getProvider } from '@/services/ai'
@@ -122,7 +119,7 @@ async function executeWithUserKey(
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
-  const runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider)
+  const runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider, params.configId)
 
   try {
     const provider = getUserKeyProvider(runtimeConfig)
@@ -137,7 +134,7 @@ async function executeWithUserKey(
     // 更新 last_used_at
     await db
       .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
-      .bind(userId, runtimeConfig.slotId)
+      .bind(userId, runtimeConfig.configId)
       .run()
 
     // 写日志
@@ -176,12 +173,9 @@ async function getUserRuntimeConfig(
   db: D1Database,
   userId: string,
   provider: string,
+  configId?: string,
 ): Promise<UserModelRuntimeConfig> {
-  if (!isUserModelConfigSlotId(provider)) {
-    throw new Error(`Unsupported user_key provider slot: ${provider}`)
-  }
-
-  const keyRow = await findUserConfigRow(db, userId, provider)
+  const keyRow = await findUserConfigRow(db, userId, provider, configId)
 
   if (!keyRow) {
     throw new Error('No API key configured for this provider')
@@ -189,8 +183,8 @@ async function getUserRuntimeConfig(
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')
   const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(keyRow.slotId, decrypted)
-  return toRuntimeUserModelConfig(keyRow.slotId, payload)
+  const payload = deserializeUserModelConfig(keyRow.configId, decrypted)
+  return toRuntimeUserModelConfig(keyRow.configId, payload)
 }
 
 function getUserKeyProvider(config: UserModelRuntimeConfig) {
@@ -211,18 +205,36 @@ function getUserKeyProvider(config: UserModelRuntimeConfig) {
 async function findUserConfigRow(
   db: D1Database,
   userId: string,
-  slotId: UserModelConfigSlotId,
-): Promise<{ encrypted_key: string; slotId: UserModelConfigSlotId } | null> {
-  for (const candidate of getSlotLookupOrder(slotId)) {
+  capability: string,
+  configId?: string,
+): Promise<{ encrypted_key: string; configId: string } | null> {
+  if (configId) {
     const row = await db
       .prepare(
         'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
       )
-      .bind(userId, candidate)
+      .bind(userId, configId)
       .first<{ encrypted_key: string }>()
 
     if (row) {
-      return { ...row, slotId: candidate }
+      return { ...row, configId }
+    }
+    return null
+  }
+
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const rows = await db
+    .prepare(
+      'SELECT provider, encrypted_key FROM user_api_keys WHERE user_id = ? AND is_active = 1 ORDER BY created_at ASC',
+    )
+    .bind(userId)
+    .all<{ provider: string; encrypted_key: string }>()
+
+  for (const row of rows.results ?? []) {
+    const decrypted = await decryptApiKey(String(row.encrypted_key), encryptionKey)
+    const payload = deserializeUserModelConfig(String(row.provider), decrypted)
+    if (payload.capability === capability) {
+      return { encrypted_key: String(row.encrypted_key), configId: String(row.provider) }
     }
   }
 

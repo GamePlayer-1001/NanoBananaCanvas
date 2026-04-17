@@ -17,7 +17,7 @@ use-workflows.ts         — useWorkflows / useWorkflow / useCreateWorkflow / us
 use-folders.ts           — useFolders / useCreateFolder / useUpdateFolder / useDeleteFolder / useMoveWorkflowToFolder (TanStack Query)
 use-explore.ts           — useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow (TanStack Query)
 use-user.ts              — useCurrentUser 当前用户数据 (TanStack Query)
-use-model-configs.ts     — useModelConfigs 账号 API 接入配置数据 (TanStack Query + 能力卡片映射)
+use-model-configs.ts     — useModelConfigs 账号 API 接入配置数据 (TanStack Query + 按能力聚合多配置 + 配置 ID 查找)
 use-categories.ts        — useCategories 分类数据 (TanStack Query, 5min staleTime)
 use-ai-models.ts         — useAIModels AI 模型目录 (TanStack Query, 10min staleTime)
 use-mobile.ts            — useIsMobile 移动端断点检测 (768px, matchMedia 监听)

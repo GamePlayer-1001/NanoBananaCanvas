@@ -18,10 +18,7 @@ import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
   deserializeUserModelConfig,
-  getSlotLookupOrder,
-  isUserModelConfigSlotId,
   toRuntimeUserModelConfig,
-  type UserModelConfigSlotId,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
 import { getPlatformKey } from '@/services/ai'
@@ -63,6 +60,7 @@ export interface SubmitTaskParams {
   taskType: AsyncTaskType
   provider: string
   modelId: string
+  configId?: string
   executionMode: ExecutionMode
   input: Record<string, unknown>
   workflowId?: string
@@ -151,7 +149,7 @@ export async function submitTask(
   db: D1Database,
   params: SubmitTaskParams,
 ): Promise<TaskDetail> {
-  const { userId, taskType, provider, modelId, executionMode, input, workflowId, nodeId } = params
+  const { userId, taskType, provider, modelId, configId, executionMode, input, workflowId, nodeId } = params
   const config = TASK_CONFIG[taskType]
   let resolvedProvider = provider
   let resolvedModelId = modelId
@@ -168,7 +166,7 @@ export async function submitTask(
 
   /* user_key 模式: 获取解密后的 API Key */
   if (executionMode === 'user_key') {
-    const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, provider)
+    const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, provider, configId)
     apiKey =
       runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
         ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
@@ -236,16 +234,9 @@ async function getUserTaskRuntimeConfig(
   db: D1Database,
   userId: string,
   provider: string,
+  configId?: string,
 ): Promise<UserModelRuntimeConfig> {
-  if (!isUserModelConfigSlotId(provider)) {
-    throw new TaskError(
-      ErrorCode.TASK_PROVIDER_ERROR,
-      `Unsupported user_key provider slot: ${provider}`,
-      { provider },
-    )
-  }
-
-  const keyRow = await findUserConfigRow(db, userId, provider)
+  const keyRow = await findUserConfigRow(db, userId, provider, configId)
 
   if (!keyRow) {
     throw new TaskError(
@@ -257,26 +248,46 @@ async function getUserTaskRuntimeConfig(
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')
   const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(keyRow.slotId, decrypted)
-  return toRuntimeUserModelConfig(keyRow.slotId, payload)
+  const payload = deserializeUserModelConfig(keyRow.configId, decrypted)
+  return toRuntimeUserModelConfig(keyRow.configId, payload)
 }
 
 async function findUserConfigRow(
   db: D1Database,
   userId: string,
-  slotId: UserModelConfigSlotId,
-): Promise<{ encrypted_key: string; slotId: UserModelConfigSlotId } | null> {
-  for (const candidate of getSlotLookupOrder(slotId)) {
+  capability: string,
+  configId?: string,
+): Promise<{ encrypted_key: string; configId: string } | null> {
+  if (configId) {
     const row = await db
       .prepare(
         `SELECT encrypted_key FROM user_api_keys
          WHERE user_id = ? AND provider = ? AND is_active = 1`,
       )
-      .bind(userId, candidate)
+      .bind(userId, configId)
       .first<{ encrypted_key: string }>()
 
     if (row) {
-      return { ...row, slotId: candidate }
+      return { ...row, configId }
+    }
+    return null
+  }
+
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const rows = await db
+    .prepare(
+      `SELECT provider, encrypted_key FROM user_api_keys
+       WHERE user_id = ? AND is_active = 1
+       ORDER BY created_at ASC`,
+    )
+    .bind(userId)
+    .all<{ provider: string; encrypted_key: string }>()
+
+  for (const row of rows.results ?? []) {
+    const decrypted = await decryptApiKey(String(row.encrypted_key), encryptionKey)
+    const payload = deserializeUserModelConfig(String(row.provider), decrypted)
+    if (payload.capability === capability) {
+      return { encrypted_key: String(row.encrypted_key), configId: String(row.provider) }
     }
   }
 

@@ -138,6 +138,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 
   const providerId = (config.provider as string) ?? 'openrouter'
   const model = (config.model as string) ?? 'openai/gpt-4o-mini'
+  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
   const temperature = (config.temperature as number) ?? 0.7
   const maxTokens = (config.maxTokens as number) ?? 1024
   const systemPrompt = (config.systemPrompt as string) ?? ''
@@ -179,6 +180,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
       ? await executeLLMViaStreamApi({
           provider: providerId,
           modelId: model,
+          configId,
           messages,
           executionMode,
           temperature,
@@ -189,6 +191,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
       : await executeLLMViaApi({
           provider: providerId,
           modelId: model,
+          configId,
           messages,
           executionMode,
           temperature,
@@ -222,6 +225,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const provider = (config.provider as string) ?? 'openrouter'
   const model = (config.model as string) ?? 'openai/dall-e-3'
+  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
   const size = (config.size as string) ?? '1024x1024'
   const executionMode = (config.executionMode as string) ?? 'platform'
   const prompt = (inputs['prompt-in'] as string) ?? ''
@@ -247,6 +251,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'image_gen',
     provider,
     modelId: model,
+    configId,
     executionMode,
     input: { prompt, size, imageUrl: referenceImage },
     outputType: 'image',
@@ -265,6 +270,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const provider = (config.provider as string) ?? 'kling'
   const model = (config.model as string) ?? 'kling-v2-0'
+  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
   const executionMode = (config.executionMode as string) ?? 'platform'
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const imageUrl = (inputs['image-in'] as string) || undefined
@@ -289,6 +295,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'video_gen',
     provider,
     modelId: model,
+    configId,
     executionMode: executionMode as 'platform' | 'user_key',
     input: {
       prompt,
@@ -313,6 +320,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const provider = (config.provider as string) ?? 'openai'
   const model = (config.model as string) ?? 'tts-1'
+  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
   const executionMode = (config.executionMode as string) ?? 'platform'
   const voice = (config.voice as string) ?? 'alloy'
   const speed = (config.speed as number) ?? 1.0
@@ -338,6 +346,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'audio_gen',
     provider,
     modelId: model,
+    configId,
     executionMode: executionMode as 'platform' | 'user_key',
     input: { text, voice, speed },
     outputType: 'audio',
@@ -541,6 +550,7 @@ async function executeDisplay(ctx: NodeExecutionContext): Promise<NodeExecutionR
 interface ExecuteLLMApiParams {
   provider: string
   modelId: string
+  configId?: string
   messages: ChatMessage[]
   executionMode: 'platform' | 'user_key'
   temperature: number
@@ -652,6 +662,7 @@ interface ExecuteTaskOutputApiParams {
   taskType: 'image_gen' | 'video_gen' | 'audio_gen'
   provider: string
   modelId: string
+  configId?: string
   executionMode: 'platform' | 'user_key'
   input: Record<string, unknown>
   outputType: 'image' | 'video' | 'audio'
@@ -668,6 +679,7 @@ async function executeTaskOutputViaApi(
       taskType: params.taskType,
       provider: params.provider,
       modelId: params.modelId,
+      configId: params.configId,
       executionMode: params.executionMode,
       input: params.input,
     }),

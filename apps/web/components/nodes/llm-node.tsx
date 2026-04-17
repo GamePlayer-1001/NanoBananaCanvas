@@ -8,14 +8,7 @@
 
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import {
@@ -60,7 +53,12 @@ export function LLMNode(props: NodeProps) {
   const output = (data.config.output as string) ?? ''
   const tokenCount = (data.config.tokenCount as number) ?? 0
   const status = data.status ?? 'idle'
-  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
+  const {
+    getConfigByCapability,
+    getConfigById,
+    getConfigsByCapability,
+    isLoading: isModelConfigLoading,
+  } = useModelConfigs()
 
   const modelGroups = useMemo(() => getAllModelGroups(), [])
   const currentGroups = useMemo(
@@ -70,7 +68,11 @@ export function LLMNode(props: NodeProps) {
 
   const [showSystemPrompt, setShowSystemPrompt] = useState(!!systemPrompt)
   const outputRef = useRef<HTMLDivElement>(null)
-  const savedTextConfig = getConfigByCapability('text')
+  const savedTextConfigs = getConfigsByCapability('text')
+  const selectedUserConfigId =
+    ((data.config.userKeyConfigId as string | undefined) ?? savedTextConfigs[0]?.configId) || ''
+  const savedTextConfig =
+    getConfigById(selectedUserConfigId) ?? getConfigByCapability('text')
   const userKeyProviderLabel = getProviderLabel('text', savedTextConfig?.providerId)
   const userKeyModelLabel =
     savedTextConfig?.modelId?.trim() ||
@@ -91,9 +93,12 @@ export function LLMNode(props: NodeProps) {
 
   useEffect(() => {
     if (executionMode === 'user_key' && provider !== 'text') {
-      updateConfig({ provider: 'text' })
+      updateConfig({
+        provider: 'text',
+        userKeyConfigId: savedTextConfig?.configId ?? '',
+      })
     }
-  }, [executionMode, provider, updateConfig])
+  }, [executionMode, provider, savedTextConfig?.configId, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
@@ -137,20 +142,19 @@ export function LLMNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const providerOptions = useMemo(() => {
-    if (executionMode === 'user_key') {
-      return [{ value: 'text', label: userKeyProviderLabel }]
-    }
-
-    const seen = new Set<string>()
-    return modelGroups
-      .filter((g) => {
-        if (seen.has(g.provider)) return false
-        seen.add(g.provider)
-        return true
-      })
-      .map((g) => ({ value: g.provider, label: g.providerName }))
-  }, [executionMode, modelGroups, userKeyProviderLabel])
+  const providerOptions =
+    executionMode === 'user_key'
+      ? [{ value: 'text', label: userKeyProviderLabel }]
+      : (() => {
+          const seen = new Set<string>()
+          return modelGroups
+            .filter((g) => {
+              if (seen.has(g.provider)) return false
+              seen.add(g.provider)
+              return true
+            })
+            .map((g) => ({ value: g.provider, label: g.providerName }))
+        })()
 
   return (
     <BaseNode {...props} data={data} icon={<BrainCircuit size={14} />}>
@@ -164,6 +168,26 @@ export function LLMNode(props: NodeProps) {
             ))}
           </select>
         </ConfigField>
+
+        {executionMode === 'user_key' ? (
+          <ConfigField label={t('accountConfigLabel')}>
+            <select
+              value={selectedUserConfigId}
+              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'text' })}
+              className={SELECT_CLASS}
+            >
+              {savedTextConfigs.length === 0 ? (
+                <option value="">{t('noApiConfigs')}</option>
+              ) : (
+                savedTextConfigs.map((item) => (
+                  <option key={item.configId} value={item.configId}>
+                    {item.label || item.configId}
+                  </option>
+                ))
+              )}
+            </select>
+          </ConfigField>
+        ) : null}
 
         <ConfigField label={t('model')}>
           <select

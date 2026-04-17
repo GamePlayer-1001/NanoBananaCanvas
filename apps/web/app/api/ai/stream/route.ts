@@ -19,7 +19,6 @@ import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
   deserializeUserModelConfig,
-  isUserModelConfigSlotId,
   toRuntimeUserModelConfig,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
     let runtimeConfig: UserModelRuntimeConfig | null = null
 
     if (params.executionMode === 'user_key') {
-      runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider)
+      runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider, params.configId)
       apiKey = runtimeConfig.apiKey
       resolvedModelId = runtimeConfig.modelId
     } else {
@@ -134,17 +133,16 @@ async function getUserRuntimeConfig(
   db: D1Database,
   userId: string,
   provider: string,
+  configId?: string,
 ): Promise<UserModelRuntimeConfig> {
-  if (!isUserModelConfigSlotId(provider)) {
-    throw new Error(`Unsupported user_key provider slot: ${provider}`)
-  }
-
-  const keyRow = await db
-    .prepare(
-      'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
-    )
-    .bind(userId, provider)
-    .first<{ encrypted_key: string }>()
+  const keyRow = configId
+    ? await db
+        .prepare(
+          'SELECT provider, encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
+        )
+        .bind(userId, configId)
+        .first<{ provider: string; encrypted_key: string }>()
+    : await findFirstCapabilityConfig(db, userId, provider)
 
   if (!keyRow) {
     throw new Error('No API key configured for this provider')
@@ -152,8 +150,8 @@ async function getUserRuntimeConfig(
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')
   const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(provider, decrypted)
-  return toRuntimeUserModelConfig(provider, payload)
+  const payload = deserializeUserModelConfig(keyRow.provider, decrypted)
+  return toRuntimeUserModelConfig(keyRow.provider, payload)
 }
 
 function getUserKeyProvider(config: UserModelRuntimeConfig) {
@@ -165,6 +163,30 @@ function getUserKeyProvider(config: UserModelRuntimeConfig) {
   }
 
   return getProvider(config.providerId)
+}
+
+async function findFirstCapabilityConfig(
+  db: D1Database,
+  userId: string,
+  capability: string,
+): Promise<{ provider: string; encrypted_key: string } | null> {
+  const rows = await db
+    .prepare(
+      'SELECT provider, encrypted_key FROM user_api_keys WHERE user_id = ? AND is_active = 1 ORDER BY created_at ASC',
+    )
+    .bind(userId)
+    .all<{ provider: string; encrypted_key: string }>()
+
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  for (const row of rows.results ?? []) {
+    const decrypted = await decryptApiKey(String(row.encrypted_key), encryptionKey)
+    const payload = deserializeUserModelConfig(String(row.provider), decrypted)
+    if (payload.capability === capability) {
+      return { provider: String(row.provider), encrypted_key: String(row.encrypted_key) }
+    }
+  }
+
+  return null
 }
 
 /* ─── Usage Log ──────────────────────────────────────── */

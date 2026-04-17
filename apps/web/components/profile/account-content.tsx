@@ -39,8 +39,8 @@ export function AccountContent() {
   const ActiveContent = TAB_CONTENT[activeTab]
 
   return (
-    <div className="flex min-h-full bg-background">
-      <div className="w-full max-w-[260px] border-r border-border bg-muted/20 p-4">
+    <div className="flex min-h-full items-start bg-background">
+      <div className="sticky top-0 h-screen w-full max-w-[260px] overflow-y-auto border-r border-border bg-muted/20 p-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground">{t('account')}</h1>
           <p className="text-sm text-muted-foreground">{t('accountPageDesc')}</p>

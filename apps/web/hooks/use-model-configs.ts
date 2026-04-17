@@ -14,18 +14,18 @@ import { queryKeys } from '@/lib/query/keys'
 
 export interface ModelConfigItem {
   id: string
-  provider: string
+  configId: string
   label: string | null
   isActive: boolean
   lastUsedAt: string | null
   createdAt: string | null
-  slotId?: string
-  capability?: 'text' | 'image' | 'video' | 'audio'
+  capability: 'text' | 'image' | 'video' | 'audio'
   providerKind?: string
   providerId?: string
   modelId?: string
   baseUrl?: string
   hasSecretKey?: boolean
+  maskedKey?: string
 }
 
 interface ApiKeysResponse {
@@ -33,13 +33,6 @@ interface ApiKeysResponse {
   data: {
     keys: ModelConfigItem[]
   }
-}
-
-const CAPABILITY_SLOT_PRIORITY: Record<string, string[]> = {
-  text: ['text', 'llm-openai'],
-  image: ['image', 'image-openai', 'image-google'],
-  video: ['video'],
-  audio: ['audio'],
 }
 
 async function fetchModelConfigs(): Promise<ModelConfigItem[]> {
@@ -61,26 +54,31 @@ export function useModelConfigs() {
 
   const configsByCapability = useMemo(() => {
     const items = query.data ?? []
-    const map = new Map<string, ModelConfigItem>()
+    const map = new Map<string, ModelConfigItem[]>()
 
-    for (const [capability, order] of Object.entries(CAPABILITY_SLOT_PRIORITY)) {
-      const match = order
-        .map((slotId) => items.find((item) => item.provider === slotId && item.isActive))
-        .find(Boolean)
-
-      if (match) {
-        map.set(capability, match)
-      }
+    for (const item of items) {
+      const current = map.get(item.capability) ?? []
+      current.push(item)
+      map.set(item.capability, current)
     }
 
     return map
   }, [query.data])
 
+  const configMap = useMemo(
+    () => new Map((query.data ?? []).map((item) => [item.configId, item])),
+    [query.data],
+  )
+
   return {
     ...query,
     items: query.data ?? [],
     configsByCapability,
+    getConfigsByCapability: (capability: 'text' | 'image' | 'video' | 'audio') =>
+      configsByCapability.get(capability) ?? [],
     getConfigByCapability: (capability: 'text' | 'image' | 'video' | 'audio') =>
-      configsByCapability.get(capability),
+      (configsByCapability.get(capability) ?? []).find((item) => item.isActive),
+    getConfigById: (configId?: string | null) =>
+      (configId ? configMap.get(configId) : undefined),
   }
 }
