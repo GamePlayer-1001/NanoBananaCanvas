@@ -11,6 +11,35 @@ import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './ty
 
 const log = createLogger('processor:image-gen')
 
+interface OpenAICompatibleImageResponse {
+  data?: Array<{
+    url?: string
+    b64_json?: string
+    revised_prompt?: string
+  }>
+}
+
+function toImageDataUrl(base64: string, mimeType = 'image/png'): string {
+  return `data:${mimeType};base64,${base64}`
+}
+
+function extractOpenAICompatibleImageUrl(
+  payload: OpenAICompatibleImageResponse,
+): string | null {
+  const first = payload.data?.[0]
+  if (!first) return null
+
+  if (typeof first.url === 'string' && first.url.trim()) {
+    return first.url
+  }
+
+  if (typeof first.b64_json === 'string' && first.b64_json.trim()) {
+    return toImageDataUrl(first.b64_json.trim())
+  }
+
+  return null
+}
+
 /* ─── OpenAI-compatible Image API ────────────────────── */
 
 async function openAICompatibleSubmit(
@@ -40,9 +69,13 @@ async function openAICompatibleSubmit(
     throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
 
-  const data = (await res.json()) as { data?: Array<{ url?: string }> }
-  const url = data.data?.[0]?.url
-  if (!url) throw new Error('OpenRouter returned no image URL')
+  const data = (await res.json()) as OpenAICompatibleImageResponse
+  const url = extractOpenAICompatibleImageUrl(data)
+  if (!url) {
+    throw new Error(
+      'OpenAI-compatible image API returned neither url nor b64_json image data',
+    )
+  }
   return { url }
 }
 

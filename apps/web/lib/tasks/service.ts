@@ -181,10 +181,31 @@ export async function submitTask(
 
   /* 提交到 Provider */
   const processor = getProcessor(taskType, resolvedProvider)
-  const submitResult = await processor.submit(
-    { model: resolvedModelId, params: resolvedInput },
-    apiKey,
-  )
+  let submitResult: Awaited<ReturnType<typeof processor.submit>>
+
+  try {
+    submitResult = await processor.submit(
+      { model: resolvedModelId, params: resolvedInput },
+      apiKey,
+    )
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unknown image task provider error'
+    log.error('Task submit failed', error, {
+      taskType,
+      provider,
+      resolvedProvider,
+      modelId: resolvedModelId,
+      executionMode,
+    })
+    throw new TaskError(ErrorCode.TASK_PROVIDER_ERROR, message, {
+      taskType,
+      provider,
+      resolvedProvider,
+      modelId: resolvedModelId,
+      executionMode,
+    })
+  }
 
   /* 持久化到 D1 */
   const taskId = nanoid()
