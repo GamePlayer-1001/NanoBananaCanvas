@@ -309,178 +309,217 @@ export function ModelPreferencesTab() {
                   testMutation.isPending && testMutation.variables === saved?.configId
                 const isDeleting =
                   deleteMutation.isPending && deleteMutation.variables === saved?.configId
+                const configId = saved?.configId ?? null
+                const isConfigured = Boolean(saved?.configId)
 
                 return (
                   <div
                     key={itemId}
                     className="space-y-4 rounded-2xl border border-border/80 bg-muted/10 p-4"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {saved?.label || draft.name || t('newConfig')}
-                        </p>
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          {saved?.maskedKey ? <p>{t('loadedMaskedKey', { key: saved.maskedKey })}</p> : null}
-                          {saved?.label ? <p>{t('currentProvider', { provider: selectedProvider?.label ?? saved.providerId ?? '-' })}</p> : null}
-                          {saved?.modelId ? <p>{t('currentModelId', { modelId: saved.modelId })}</p> : null}
-                          {saved?.baseUrl ? <p>{t('currentBaseUrl', { baseUrl: saved.baseUrl })}</p> : null}
+                    {isConfigured ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-1">
+                            <p className="text-2xl font-semibold tracking-tight text-foreground">
+                              {saved?.label || t('newConfig')}
+                            </p>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              {saved?.maskedKey ? (
+                                <p>{t('loadedMaskedKey', { key: saved.maskedKey })}</p>
+                              ) : null}
+                              <p>
+                                {t('currentProvider', {
+                                  provider: selectedProvider?.label ?? saved?.providerId ?? '-',
+                                })}
+                              </p>
+                              <p>{t('currentModelId', { modelId: saved?.modelId ?? '-' })}</p>
+                              <p>{t('currentBaseUrl', { baseUrl: saved?.baseUrl ?? '-' })}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
+                              <CheckCircle2 size={12} />
+                              {t('configured')}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!configId) return
+                                testMutation.mutate(configId)
+                              }}
+                              disabled={isTesting}
+                              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isTesting ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <RefreshCw size={14} />
+                              )}
+                              {t('testApiConfig')}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!configId) return
+                                deleteMutation.mutate(configId)
+                              }}
+                              disabled={isDeleting}
+                              className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isDeleting ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={14} />
+                              )}
+                              {t('deleteApiConfig')}
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      {saved?.configId ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-                          <CheckCircle2 size={12} />
-                          {t('configured')}
-                        </span>
-                      ) : (
-                        <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                          {t('newConfig')}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">{t('configNameLabel')}</label>
-                      <input
-                        type="text"
-                        value={draft.name}
-                        onChange={(e) => updateDraft(itemId, { name: e.target.value })}
-                        placeholder={t('configNamePlaceholder')}
-                        className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">{t('providerTypeLabel')}</label>
-                      <select
-                        value={draft.providerId}
-                        onChange={(e) => {
-                          const nextProvider = getProviderOption(capability, e.target.value)
-                          if (!nextProvider) return
-                          updateDraft(itemId, {
-                            providerId: nextProvider.providerId,
-                            providerKind: nextProvider.providerKind,
-                            baseUrl: nextProvider.requiresBaseUrl ? draft.baseUrl : '',
-                            secretKey: nextProvider.requiresSecretKey ? draft.secretKey : '',
-                          })
-                        }}
-                        className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:border-brand-500 focus:outline-none"
-                      >
-                        {providerOptions.map((option) => (
-                          <option key={option.providerId} value={option.providerId}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
-                        {selectedProvider?.apiKeyLabel ?? t('apiKeyLabel')}
-                      </label>
-                      <input
-                        type="password"
-                        value={draft.apiKey}
-                        onChange={(e) => updateDraft(itemId, { apiKey: e.target.value })}
-                        placeholder={t('apiKeyPlaceholder')}
-                        className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {saved ? t('configuredHint') : t('saveHint')}
-                      </p>
-                    </div>
-
-                    {selectedProvider?.requiresSecretKey ? (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">
-                          {selectedProvider.secretKeyLabel ?? t('secretKeyLabel')}
-                        </label>
-                        <input
-                          type="password"
-                          value={draft.secretKey}
-                          onChange={(e) => updateDraft(itemId, { secretKey: e.target.value })}
-                          placeholder={t('secretKeyPlaceholder')}
-                          className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
-                        />
-                      </div>
                     ) : null}
+                    {!isConfigured ? (
+                      <>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-foreground">
+                              {draft.name || t('newConfig')}
+                            </p>
+                          </div>
 
-                    {selectedProvider?.requiresBaseUrl ? (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">{t('baseUrlLabel')}</label>
-                        <input
-                          type="url"
-                          value={draft.baseUrl}
-                          onChange={(e) => updateDraft(itemId, { baseUrl: e.target.value })}
-                          placeholder="https://api.example.com/v1"
-                          className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
-                        />
-                      </div>
+                          <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                            {t('newConfig')}
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">
+                            {t('configNameLabel')}
+                          </label>
+                          <input
+                            type="text"
+                            value={draft.name}
+                            onChange={(e) => updateDraft(itemId, { name: e.target.value })}
+                            placeholder={t('configNamePlaceholder')}
+                            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">
+                            {t('providerTypeLabel')}
+                          </label>
+                          <select
+                            value={draft.providerId}
+                            onChange={(e) => {
+                              const nextProvider = getProviderOption(capability, e.target.value)
+                              if (!nextProvider) return
+                              updateDraft(itemId, {
+                                providerId: nextProvider.providerId,
+                                providerKind: nextProvider.providerKind,
+                                baseUrl: nextProvider.requiresBaseUrl ? draft.baseUrl : '',
+                                secretKey: nextProvider.requiresSecretKey ? draft.secretKey : '',
+                              })
+                            }}
+                            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:border-brand-500 focus:outline-none"
+                          >
+                            {providerOptions.map((option) => (
+                              <option key={option.providerId} value={option.providerId}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">
+                            {selectedProvider?.apiKeyLabel ?? t('apiKeyLabel')}
+                          </label>
+                          <input
+                            type="password"
+                            value={draft.apiKey}
+                            onChange={(e) => updateDraft(itemId, { apiKey: e.target.value })}
+                            placeholder={t('apiKeyPlaceholder')}
+                            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                          />
+                          <p className="text-xs text-muted-foreground">{t('saveHint')}</p>
+                        </div>
+
+                        {selectedProvider?.requiresSecretKey ? (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">
+                              {selectedProvider.secretKeyLabel ?? t('secretKeyLabel')}
+                            </label>
+                            <input
+                              type="password"
+                              value={draft.secretKey}
+                              onChange={(e) => updateDraft(itemId, { secretKey: e.target.value })}
+                              placeholder={t('secretKeyPlaceholder')}
+                              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                        ) : null}
+
+                        {selectedProvider?.requiresBaseUrl ? (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">
+                              {t('baseUrlLabel')}
+                            </label>
+                            <input
+                              type="url"
+                              value={draft.baseUrl}
+                              onChange={(e) => updateDraft(itemId, { baseUrl: e.target.value })}
+                              placeholder="https://api.example.com/v1"
+                              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                        ) : null}
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">
+                            {t('modelIdLabel')}
+                          </label>
+                          <input
+                            type="text"
+                            value={draft.modelId}
+                            onChange={(e) => updateDraft(itemId, { modelId: e.target.value })}
+                            placeholder={t(`capability_${capability}_model_placeholder`)}
+                            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              saveMutation.mutate({
+                                ...draft,
+                                capability,
+                                providerKind:
+                                  selectedProvider?.providerKind ?? draft.providerKind,
+                              })
+                            }
+                            disabled={isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
+                            {t('saveApiConfig')}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => removeLocalDraft(capability, itemId)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted"
+                          >
+                            <Trash2 size={14} />
+                            {t('cancelDraft')}
+                          </button>
+                        </div>
+                      </>
                     ) : null}
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">{t('modelIdLabel')}</label>
-                      <input
-                        type="text"
-                        value={draft.modelId}
-                        onChange={(e) => updateDraft(itemId, { modelId: e.target.value })}
-                        placeholder={t(`capability_${capability}_model_placeholder`)}
-                        className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          saveMutation.mutate({
-                            ...draft,
-                            capability,
-                            providerKind:
-                              selectedProvider?.providerKind ?? draft.providerKind,
-                          })
-                        }
-                        disabled={isSaving}
-                        className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
-                        {t('saveApiConfig')}
-                      </button>
-
-                      {saved?.configId ? (
-                        <button
-                          type="button"
-                          onClick={() => testMutation.mutate(saved.configId)}
-                          disabled={isTesting}
-                          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {isTesting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                          {t('testApiConfig')}
-                        </button>
-                      ) : null}
-
-                      {saved?.configId ? (
-                        <button
-                          type="button"
-                          onClick={() => deleteMutation.mutate(saved.configId)}
-                          disabled={isDeleting}
-                          className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                          {t('deleteApiConfig')}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => removeLocalDraft(capability, itemId)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted"
-                        >
-                          <Trash2 size={14} />
-                          {t('cancelDraft')}
-                        </button>
-                      )}
-                    </div>
                   </div>
                 )
               })}
