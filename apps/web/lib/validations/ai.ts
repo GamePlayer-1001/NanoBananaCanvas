@@ -25,6 +25,7 @@ const contentPartSchema = z.union([
 export const aiExecuteSchema = z.object({
   provider: z.string().min(1),
   modelId: z.string().min(1),
+  configId: z.string().trim().min(1).optional(),
   messages: z.array(
     z.object({
       role: z.enum(['system', 'user', 'assistant']),
@@ -41,10 +42,13 @@ export const aiExecuteSchema = z.object({
 /* ─── API Key 管理 ───────────────────────────────────── */
 
 export const apiKeySchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100, 'Name is too long'),
   apiKey: z.string().trim().optional(),
   secretKey: z.string().trim().optional(),
   baseUrl: z.string().trim().url('Base URL must be a valid URL').optional(),
   modelId: z.string().min(1, 'Model ID is required'),
+  capability: z.enum(['text', 'image', 'video', 'audio']),
+  configId: z.string().trim().min(1).optional(),
   providerKind: z.enum([
     'openai-compatible',
     'google-image',

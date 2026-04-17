@@ -13,6 +13,7 @@ export const submitTaskSchema = z.object({
   taskType: z.enum(['video_gen', 'image_gen', 'audio_gen']),
   provider: z.string().min(1, 'Provider is required'),
   modelId: z.string().min(1, 'Model ID is required'),
+  configId: z.string().trim().min(1).optional(),
   executionMode: z.enum(['platform', 'user_key']).default('user_key'),
   input: z.record(z.string(), z.unknown()).default({}),
   workflowId: z.string().optional(),

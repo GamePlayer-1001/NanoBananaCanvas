@@ -8,8 +8,8 @@ Next.js App Router API 路由层 — RESTful 端点 · 匿名访客上下文 · 
 ```
 ai/                     — AI 模型集成 (3 端点)
   models/route.ts       — GET  统一免费模型目录
-  execute/route.ts      — POST 双模式 AI 执行 (平台 Key/账号级模型槽位)
-  stream/route.ts       — POST SSE 流式 AI 执行 (平台 Key/账号级模型槽位)
+  execute/route.ts      — POST 双模式 AI 执行 (平台 Key/账号级多配置选择)
+  stream/route.ts       — POST SSE 流式 AI 执行 (平台 Key/账号级多配置选择)
 
 folders/                — 文件夹 CRUD (2+2 端点)
   route.ts              — GET 列表 / POST 创建
@@ -39,8 +39,8 @@ tasks/                  — P2 异步任务队列 (3 端点)
   [id]/cancel/route.ts  — POST 取消任务
 
 settings/               — 用户设置 (2 端点)
-  api-keys/route.ts             — GET+PUT 账号级模型槽位管理 (加密存储 API Key + baseUrl + modelId)
-  api-keys/[provider]/route.ts  — DELETE+POST 槽位删除/连通测试
+  api-keys/route.ts             — GET+PUT 账号级 API 配置列表管理 (多条配置 + 名称 + 加密存储 API Key/baseUrl/modelId)
+  api-keys/[provider]/route.ts  — DELETE+POST 配置删除/连通测试 (按配置 ID)
 
 ```
 

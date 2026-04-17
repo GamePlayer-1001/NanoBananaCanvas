@@ -5,6 +5,8 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import type { CapabilityId } from '@/lib/model-config-catalog'
+
 /* ─── Slot Definitions ──────────────────────────────── */
 
 export const PRIMARY_USER_MODEL_CONFIG_SLOTS = {
@@ -71,15 +73,25 @@ export function isPrimaryUserModelSlotId(value: string): value is UserModelPrima
   return value in PRIMARY_USER_MODEL_CONFIG_SLOTS
 }
 
+export function isUserModelCapability(value: string): value is CapabilityId {
+  return value === 'text' || value === 'image' || value === 'video' || value === 'audio'
+}
+
 export function getSlotLookupOrder(slotId: UserModelConfigSlotId): UserModelConfigSlotId[] {
   if (!isPrimaryUserModelSlotId(slotId)) return [slotId]
   return [slotId, ...PRIMARY_USER_MODEL_CONFIG_SLOTS[slotId].legacySlots]
 }
 
+export function getLegacyCapability(slotId: string): CapabilityId | undefined {
+  if (!isUserModelConfigSlotId(slotId)) return undefined
+  return USER_MODEL_CONFIG_SLOTS[slotId].capability
+}
+
 /* ─── Stored Payload ─────────────────────────────────── */
 
 export interface UserModelConfigPayload {
-  version: 1 | 2
+  version: 1 | 2 | 3
+  capability: CapabilityId
   providerKind: UserModelProviderKind
   providerId?: string
   apiKey: string
@@ -89,18 +101,19 @@ export interface UserModelConfigPayload {
 }
 
 export interface PublicUserModelConfig {
-  slotId: UserModelConfigSlotId
-  capability: UserModelCapability
+  configId: string
+  capability: CapabilityId
   providerKind: UserModelProviderKind
   providerId: string
   modelId: string
   baseUrl?: string
   hasSecretKey: boolean
+  maskedKey: string
 }
 
 export interface UserModelRuntimeConfig {
-  slotId: UserModelConfigSlotId
-  capability: UserModelCapability
+  configId: string
+  capability: CapabilityId
   providerKind: UserModelProviderKind
   providerId: string
   apiKey: string
@@ -114,20 +127,22 @@ export function serializeUserModelConfig(payload: UserModelConfigPayload): strin
 }
 
 export function deserializeUserModelConfig(
-  slotId: UserModelConfigSlotId,
+  configId: string,
   decrypted: string,
 ): UserModelConfigPayload {
   try {
     const parsed = JSON.parse(decrypted) as Partial<UserModelConfigPayload>
     if (
       parsed &&
-      (parsed.version === 1 || parsed.version === 2) &&
+      (parsed.version === 1 || parsed.version === 2 || parsed.version === 3) &&
       typeof parsed.apiKey === 'string' &&
       typeof parsed.modelId === 'string' &&
-      isProviderKind(parsed.providerKind)
+      isProviderKind(parsed.providerKind) &&
+      isResolvedCapability(parsed.capability, configId)
     ) {
       return {
         version: parsed.version,
+        capability: parsed.capability,
         providerKind: parsed.providerKind,
         providerId: normalizeProviderId(parsed.providerId),
         apiKey: parsed.apiKey,
@@ -140,9 +155,14 @@ export function deserializeUserModelConfig(
     /* legacy plain key fallback below */
   }
 
-  const slot = USER_MODEL_CONFIG_SLOTS[slotId]
+  const capability = getLegacyCapability(configId)
+  if (!capability) {
+    throw new Error(`Config ${configId} cannot be resolved to a capability`)
+  }
+  const slot = USER_MODEL_CONFIG_SLOTS[configId as UserModelConfigSlotId]
   return {
     version: 1,
+    capability,
     providerKind: slot.providerKind,
     apiKey: decrypted,
     modelId: '',
@@ -152,29 +172,29 @@ export function deserializeUserModelConfig(
 }
 
 export function toPublicUserModelConfig(
-  slotId: UserModelConfigSlotId,
+  configId: string,
   payload: UserModelConfigPayload,
+  maskedKey: string,
 ): PublicUserModelConfig {
-  const slot = USER_MODEL_CONFIG_SLOTS[slotId]
   return {
-    slotId,
-    capability: slot.capability,
+    configId,
+    capability: payload.capability,
     providerKind: payload.providerKind,
     providerId: payload.providerId ?? toRuntimeProviderId(payload.providerKind),
     modelId: payload.modelId,
     baseUrl: normalizeOptionalBaseUrl(payload.baseUrl),
     hasSecretKey: !!normalizeOptionalSecretKey(payload.secretKey),
+    maskedKey,
   }
 }
 
 export function toRuntimeUserModelConfig(
-  slotId: UserModelConfigSlotId,
+  configId: string,
   payload: UserModelConfigPayload,
 ): UserModelRuntimeConfig {
-  const slot = USER_MODEL_CONFIG_SLOTS[slotId]
   return {
-    slotId,
-    capability: slot.capability,
+    configId,
+    capability: payload.capability,
     providerKind: payload.providerKind,
     providerId: payload.providerId ?? toRuntimeProviderId(payload.providerKind),
     apiKey: payload.apiKey,
@@ -206,6 +226,11 @@ function normalizeProviderId(providerId: unknown): string | undefined {
   if (typeof providerId !== 'string') return undefined
   const trimmed = providerId.trim()
   return trimmed ? trimmed : undefined
+}
+
+function isResolvedCapability(capability: unknown, configId: string): capability is CapabilityId {
+  if (isUserModelCapability(String(capability))) return true
+  return Boolean(getLegacyCapability(configId))
 }
 
 function isProviderKind(value: unknown): value is UserModelProviderKind {

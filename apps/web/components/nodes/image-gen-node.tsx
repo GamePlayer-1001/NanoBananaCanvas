@@ -10,7 +10,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 生成结果可能是 data URL 或第三方临时链接，不适合走 Next Image。 */
 
-import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
+import { useCallback, useEffect, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
@@ -56,8 +56,17 @@ export function ImageGenNode(props: NodeProps) {
   const executionMode = (data.config.executionMode as string) ?? 'platform'
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
-  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
-  const savedImageConfig = getConfigByCapability('image')
+  const {
+    getConfigByCapability,
+    getConfigById,
+    getConfigsByCapability,
+    isLoading: isModelConfigLoading,
+  } = useModelConfigs()
+  const savedImageConfigs = getConfigsByCapability('image')
+  const selectedUserConfigId =
+    ((data.config.userKeyConfigId as string | undefined) ?? savedImageConfigs[0]?.configId) || ''
+  const savedImageConfig =
+    getConfigById(selectedUserConfigId) ?? getConfigByCapability('image')
   const userKeyProviderLabel = getProviderLabel('image', savedImageConfig?.providerId)
   const userKeyModelLabel =
     savedImageConfig?.modelId?.trim() ||
@@ -75,7 +84,7 @@ export function ImageGenNode(props: NodeProps) {
       executionMode === 'user_key' &&
       provider !== 'image'
     ) {
-      updateConfig({ provider: 'image' })
+      updateConfig({ provider: 'image', userKeyConfigId: savedImageConfig?.configId ?? '' })
     }
     if (
       executionMode === 'platform' &&
@@ -83,7 +92,7 @@ export function ImageGenNode(props: NodeProps) {
     ) {
       updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
     }
-  }, [executionMode, provider, updateConfig])
+  }, [executionMode, provider, savedImageConfig?.configId, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
@@ -112,18 +121,12 @@ export function ImageGenNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const providerOptions = useMemo(
-    () =>
-      executionMode === 'user_key'
-        ? [{ value: 'image', label: userKeyProviderLabel }]
-        : [...PLATFORM_PROVIDERS],
-    [executionMode, userKeyProviderLabel],
-  )
+  const providerOptions =
+    executionMode === 'user_key'
+      ? [{ value: 'image', label: userKeyProviderLabel }]
+      : [...PLATFORM_PROVIDERS]
 
-  const currentModels = useMemo(
-    () => (executionMode === 'user_key' ? [] : (IMAGE_MODELS[provider] ?? [])),
-    [executionMode, provider],
-  )
+  const currentModels = executionMode === 'user_key' ? [] : (IMAGE_MODELS[provider] ?? [])
 
   return (
     <BaseNode {...props} data={data} icon={<ImageIcon size={14} />}>
@@ -160,6 +163,26 @@ export function ImageGenNode(props: NodeProps) {
             ))}
           </select>
         </ConfigField>
+
+        {executionMode === 'user_key' ? (
+          <ConfigField label={t('accountConfigLabel')}>
+            <select
+              value={selectedUserConfigId}
+              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'image' })}
+              className={SELECT_CLASS}
+            >
+              {savedImageConfigs.length === 0 ? (
+                <option value="">{t('noApiConfigs')}</option>
+              ) : (
+                savedImageConfigs.map((item) => (
+                  <option key={item.configId} value={item.configId}>
+                    {item.label || item.configId}
+                  </option>
+                ))
+              )}
+            </select>
+          </ConfigField>
+        ) : null}
 
         <ConfigField label={t('model')}>
           <select
