@@ -147,6 +147,22 @@ function extractMediaUrl(content: unknown): { url: string; contentType?: string 
   return null
 }
 
+function isPrimitiveContent(
+  content: unknown,
+): content is string | number | boolean | null | undefined {
+  return (
+    content == null ||
+    typeof content === 'string' ||
+    typeof content === 'number' ||
+    typeof content === 'boolean'
+  )
+}
+
+function formatPrimitiveContent(content: string | number | boolean | null | undefined): string {
+  if (content == null) return 'null'
+  return String(content)
+}
+
 function getCopyText(content: unknown): string | undefined {
   if (typeof content === 'string') return content
   if (typeof content === 'number' || typeof content === 'boolean') return String(content)
@@ -157,51 +173,116 @@ function getCopyText(content: unknown): string | undefined {
 /* ─── Multi-Modal Renderer ────────────────────────────── */
 
 function ContentRenderer({ content }: { content: unknown }) {
+  if (Array.isArray(content)) {
+    if (content.length === 0) {
+      return <p className="text-muted-foreground text-xs italic">[]</p>
+    }
+
+    return (
+      <div className="space-y-2">
+        {content.map((item, index) => (
+          <div key={index} className="bg-muted/40 rounded-md border p-2">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase">
+              Item {index + 1}
+            </div>
+            <ContentRenderer content={item} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (isPrimitiveContent(content)) {
+    const primitive = formatPrimitiveContent(content)
+    const type = detectContentType(primitive)
+
+    if (type === 'text') {
+      return <>{renderSimpleMarkdown(primitive)}</>
+    }
+
+    return <MediaRenderer content={primitive} type={type} fallback={primitive} />
+  }
+
+  if (content && typeof content === 'object') {
+    const media = extractMediaUrl(content)
+    if (media) {
+      const type = detectContentType(media.contentType ? `data:${media.contentType}` : media.url)
+      return <MediaRenderer content={media.url} type={type} fallback={content} />
+    }
+
+    return (
+      <div className="space-y-2">
+        {Object.entries(content).map(([key, value]) => (
+          <div key={key} className="bg-muted/30 rounded-md border p-2">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase">
+              {key}
+            </div>
+            <ContentRenderer content={value} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const type = detectContentType(content)
   const media = extractMediaUrl(content)
   const stringContent = typeof content === 'string' ? content : media?.url
 
+  return <MediaRenderer content={stringContent} type={type} fallback={content} />
+}
+
+function MediaRenderer({
+  content,
+  type,
+  fallback,
+}: {
+  content?: string
+  type: DisplayContentType
+  fallback: unknown
+}) {
   switch (type) {
     case 'image':
-      return stringContent ? (
+      return content ? (
         <img
-          src={stringContent}
+          src={content}
           alt="Generated"
           className="max-h-40 w-full rounded object-contain"
         />
       ) : (
         <pre className="text-muted-foreground overflow-auto text-xs">
-          {JSON.stringify(content, null, 2)}
+          {JSON.stringify(fallback, null, 2)}
         </pre>
       )
     case 'video':
-      return stringContent ? (
-        <video src={stringContent} controls className="max-h-40 w-full rounded" />
+      return content ? (
+        <video src={content} controls className="max-h-40 w-full rounded" />
       ) : (
         <pre className="text-muted-foreground overflow-auto text-xs">
-          {JSON.stringify(content, null, 2)}
+          {JSON.stringify(fallback, null, 2)}
         </pre>
       )
     case 'audio':
-      return stringContent ? (
-        <audio src={stringContent} controls className="w-full" />
+      return content ? (
+        <audio src={content} controls className="w-full" />
       ) : (
         <pre className="text-muted-foreground overflow-auto text-xs">
-          {JSON.stringify(content, null, 2)}
+          {JSON.stringify(fallback, null, 2)}
         </pre>
       )
     case 'json':
       return (
         <pre className="text-muted-foreground overflow-auto text-xs">
-          {JSON.stringify(content, null, 2)}
+          {JSON.stringify(fallback, null, 2)}
         </pre>
       )
     default:
       return typeof content === 'string' ? (
-        <>{renderSimpleMarkdown(content)}</>
+        <>
+          {renderSimpleMarkdown(content)}
+        </>
       ) : (
         <pre className="text-muted-foreground overflow-auto text-xs">
-          {JSON.stringify(content, null, 2)}
+          {JSON.stringify(fallback, null, 2)}
         </pre>
       )
   }
