@@ -19,9 +19,14 @@ describe('ImageGenProcessor', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           data: [{ url: 'https://example.com/generated.png' }],
         }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/generated.png' }],
+          }),
       } satisfies Partial<Response>),
     )
 
@@ -44,9 +49,14 @@ describe('ImageGenProcessor', () => {
   it('maps platform openrouter image models to the hosted base url', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
       json: async () => ({
         data: [{ url: 'https://example.com/platform.png' }],
       }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/platform.png' }],
+        }),
     } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
 
@@ -78,9 +88,14 @@ describe('ImageGenProcessor', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           data: [{ b64_json: 'ZmFrZS1pbWFnZS1ieXRlcw==' }],
         }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ b64_json: 'ZmFrZS1pbWFnZS1ieXRlcw==' }],
+          }),
       } satisfies Partial<Response>),
     )
 
@@ -99,5 +114,31 @@ describe('ImageGenProcessor', () => {
     expect(result.externalTaskId).toBe(
       'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
     )
+  })
+
+  it('surfaces html responses as baseUrl configuration errors', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
+        text: async () => '<!doctype html><html><body>Wrong endpoint</body></html>',
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('openai-compatible')
+
+    await expect(
+      processor.submit(
+        {
+          model: 'demo-model',
+          params: {
+            prompt: 'draw a fox',
+            baseUrl: 'https://example.com',
+          },
+        },
+        'test-key',
+      ),
+    ).rejects.toThrow(/Check that baseUrl points to an OpenAI-compatible image endpoint/)
   })
 })

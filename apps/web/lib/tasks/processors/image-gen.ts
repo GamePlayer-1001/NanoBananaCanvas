@@ -21,6 +21,14 @@ interface OpenAICompatibleImageResponse {
   }>
 }
 
+function summarizeResponseBody(body: string, maxLength = 160): string {
+  const normalized = body.replace(/\s+/g, ' ').trim()
+  if (!normalized) return '(empty response body)'
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength)}...`
+    : normalized
+}
+
 function toImageDataUrl(base64: string, mimeType = 'image/png'): string {
   return `data:${mimeType};base64,${base64}`
 }
@@ -72,7 +80,28 @@ async function openAICompatibleSubmit(
     throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
 
-  const data = (await res.json()) as OpenAICompatibleImageResponse
+  const contentType = res.headers.get('content-type') ?? ''
+  const rawBody = await res.text().catch(() => '')
+
+  if (!contentType.toLowerCase().includes('application/json')) {
+    throw new Error(
+      `OpenAI-compatible image API returned non-JSON content (${contentType || 'unknown content type'}). ` +
+        `Check that baseUrl points to an OpenAI-compatible image endpoint. ` +
+        `Response preview: ${summarizeResponseBody(rawBody)}`,
+    )
+  }
+
+  let data: OpenAICompatibleImageResponse
+  try {
+    data = JSON.parse(rawBody) as OpenAICompatibleImageResponse
+  } catch {
+    throw new Error(
+      `OpenAI-compatible image API returned invalid JSON. ` +
+        `Check that baseUrl points to an OpenAI-compatible image endpoint. ` +
+        `Response preview: ${summarizeResponseBody(rawBody)}`,
+    )
+  }
+
   const url = extractOpenAICompatibleImageUrl(data)
   if (!url) {
     throw new Error(
