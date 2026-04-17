@@ -87,6 +87,7 @@ export function ImageGenNode(props: NodeProps) {
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('image-gen', config)
     if (
+      selectedUserConfigId &&
       executionMode === 'user_key' &&
       resolveUserConfigId(config) !== selectedUserConfigId
     ) {

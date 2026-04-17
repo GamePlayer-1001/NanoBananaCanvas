@@ -69,6 +69,10 @@ describe('ai-node-config', () => {
     ).toBe('cfg-image-a')
   })
 
+  it('returns undefined when no available config ids exist', () => {
+    expect(resolveAvailableUserConfigId({ executionMode: 'user_key' }, [])).toBeUndefined()
+  })
+
   it('generates migration patch for legacy workflows', () => {
     expect(
       getNodeConfigMigrationPatch('llm', {

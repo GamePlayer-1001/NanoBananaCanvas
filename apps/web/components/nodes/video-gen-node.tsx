@@ -115,6 +115,7 @@ export function VideoGenNode(props: NodeProps) {
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('video-gen', config)
     if (
+      selectedUserConfigId &&
       executionMode === 'user_key' &&
       resolveUserConfigId(config) !== selectedUserConfigId
     ) {

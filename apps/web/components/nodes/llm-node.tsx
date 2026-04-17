@@ -103,6 +103,7 @@ export function LLMNode(props: NodeProps) {
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('llm', config)
     if (
+      selectedUserConfigId &&
       executionMode === 'user_key' &&
       resolveUserConfigId(config) !== selectedUserConfigId
     ) {

@@ -97,6 +97,7 @@ export function AudioGenNode(props: NodeProps) {
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('audio-gen', config)
     if (
+      selectedUserConfigId &&
       executionMode === 'user_key' &&
       resolveUserConfigId(config) !== selectedUserConfigId
     ) {
