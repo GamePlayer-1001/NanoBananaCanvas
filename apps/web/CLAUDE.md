@@ -26,14 +26,14 @@ scripts/            — 项目级脚本 (Cloudflare 部署包装与构建兜底)
 
 ```
 next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + next-intl 插件)
-middleware.ts       — Edge 路由中间件 (裸域规范化 + next-intl locale 检测/重写，兼容 OpenNext Cloudflare)
+proxy.ts            — Next.js 16 Proxy 入口 (裸域规范化 + next-intl locale 检测/重写，兼容 OpenNext Cloudflare)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
 postcss.config.mjs  — PostCSS (@tailwindcss/postcss)
 vitest.config.ts    — Vitest 单元测试配置
 vitest.setup.ts     — Vitest setup (@testing-library/jest-dom)
 components.json     — shadcn/ui 组件注册 (New York 风格)
-open-next.config.ts — @opennextjs/cloudflare 适配 (声明 middleware 与独立 edge 路由函数)
+open-next.config.ts — @opennextjs/cloudflare 适配 (声明 Proxy/Edge 路由函数的运行边界)
 scripts/cloudflare-deploy.mjs — Cloudflare 生产构建/部署包装器 (修复 Windows 下 OpenNext edge config 丢失)
 wrangler.jsonc      — Cloudflare Pages 部署描述
 ```
