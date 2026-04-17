@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 ./types 的 TaskProcessor 接口，依赖 @/lib/logger，依赖 @/lib/env
  * [OUTPUT]: 对外提供 ImageGenProcessor 类 (OpenAI 兼容 + Google 图片生成)
- * [POS]: lib/tasks/processors 的图片生成处理器，按 provider 分发到 OpenAI 兼容接口或 Google Imagen
+ * [POS]: lib/tasks/processors 的图片生成处理器，按 provider 分发到 OpenAI 兼容接口或 Google Imagen，并把尺寸档位 + 比例解析为真实分辨率
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -21,6 +21,22 @@ interface OpenAICompatibleImageResponse {
   }>
 }
 
+const IMAGE_SIZE_PRESET_LONG_EDGE: Record<string, number> = {
+  '720p': 1280,
+  '1k': 1024,
+  '2k': 2048,
+  '4k': 4096,
+  '8k': 8192,
+}
+
+const IMAGE_ASPECT_RATIO_MAP: Record<string, [number, number]> = {
+  '1:1': [1, 1],
+  '2:3': [2, 3],
+  '3:2': [3, 2],
+  '9:16': [9, 16],
+  '16:9': [16, 9],
+}
+
 function summarizeResponseBody(body: string, maxLength = 160): string {
   const normalized = body.replace(/\s+/g, ' ').trim()
   if (!normalized) return '(empty response body)'
@@ -31,6 +47,35 @@ function summarizeResponseBody(body: string, maxLength = 160): string {
 
 function toImageDataUrl(base64: string, mimeType = 'image/png'): string {
   return `data:${mimeType};base64,${base64}`
+}
+
+function roundToEven(value: number): number {
+  const rounded = Math.max(2, Math.round(value))
+  return rounded % 2 === 0 ? rounded : rounded + 1
+}
+
+export function resolveImageGenerationSize(
+  sizePreset: string,
+  aspectRatio: string,
+): string {
+  if (/^\d+x\d+$/i.test(sizePreset)) {
+    return sizePreset.toLowerCase()
+  }
+
+  const longEdge = IMAGE_SIZE_PRESET_LONG_EDGE[sizePreset] ?? IMAGE_SIZE_PRESET_LONG_EDGE['1k']
+  const ratio = IMAGE_ASPECT_RATIO_MAP[aspectRatio] ?? IMAGE_ASPECT_RATIO_MAP['1:1']
+  const [rawWidthRatio, rawHeightRatio] = ratio
+
+  if (rawWidthRatio === rawHeightRatio) {
+    return `${longEdge}x${longEdge}`
+  }
+
+  const isLandscape = rawWidthRatio > rawHeightRatio
+  const widthRatio = isLandscape ? rawWidthRatio : rawHeightRatio
+  const heightRatio = isLandscape ? rawHeightRatio : rawWidthRatio
+  const shortEdge = roundToEven((longEdge * heightRatio) / widthRatio)
+
+  return isLandscape ? `${longEdge}x${shortEdge}` : `${shortEdge}x${longEdge}`
 }
 
 function extractOpenAICompatibleImageUrl(
@@ -59,7 +104,11 @@ async function openAICompatibleSubmit(
 ): Promise<{ url: string }> {
   const { model, params } = input
   const prompt = (params.prompt as string) ?? ''
-  const size = (params.size as string) ?? '1024x1024'
+  const size = resolveImageGenerationSize(
+    (params.size as string) ?? '1k',
+    (params.aspectRatio as string) ?? '1:1',
+  )
+  const aspectRatio = (params.aspectRatio as string) ?? '1:1'
   const baseUrl = resolveOpenAICompatibleBaseUrl(provider, params)
 
   if (!baseUrl) {
@@ -72,7 +121,7 @@ async function openAICompatibleSubmit(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, prompt, size, n: 1 }),
+    body: JSON.stringify({ model, prompt, size, aspect_ratio: aspectRatio, n: 1 }),
   })
 
   if (!res.ok) {

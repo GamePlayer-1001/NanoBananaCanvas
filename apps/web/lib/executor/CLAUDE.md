@@ -27,7 +27,7 @@ WorkflowExecutor.execute()
     │   ├── executeNode()                → 按 nodeType 分发
     │   │   ├── text-input → 直接输出 config.text
     │   │   ├── llm → ai-node-config 解析执行目标 → /api/ai/execute or /api/ai/stream
-    │   │   ├── image-gen → ai-node-config 解析执行目标 → /api/tasks 提交 + 轮询完成
+    │   │   ├── image-gen → ai-node-config 解析执行目标 + 收集尺寸档位/比例 → /api/tasks 提交 + 轮询完成
     │   │   ├── video-gen → ai-node-config 解析执行目标 → /api/tasks 提交 + 轮询完成
     │   │   ├── audio-gen → ai-node-config 解析执行目标 → /api/tasks 提交 + 轮询完成
     │   │   ├── conditional → 评估条件 → true-out/false-out (null 端口)

@@ -223,7 +223,8 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const { data, inputs, signal } = ctx
   const config = data.config
   const target = resolveNodeExecutionTarget('image-gen', config)
-  const size = (config.size as string) ?? '1024x1024'
+  const size = (config.size as string) ?? '1k'
+  const aspectRatio = (config.aspectRatio as string) ?? '1:1'
   const executionMode = target.executionMode
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const referenceImage = (inputs['image-in'] as string) || undefined
@@ -251,7 +252,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     modelId: target.modelId,
     configId: target.configId,
     executionMode,
-    input: { prompt, size, imageUrl: referenceImage },
+    input: { prompt, size, aspectRatio, imageUrl: referenceImage },
     outputType: 'image',
     signal,
   })

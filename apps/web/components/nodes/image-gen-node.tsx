@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
  *          依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 ImageGenNode 图片生成节点组件
- * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染
+ * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责只读展示模型并收集尺寸/比例参数
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -10,7 +10,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 生成结果可能是 data URL 或第三方临时链接，不适合走 Next Image。 */
 
-import { useCallback, useEffect, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
@@ -28,13 +28,24 @@ import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
 
-const DEFAULT_SIZE = '1024x1024'
+const DEFAULT_SIZE = '1k'
+const DEFAULT_ASPECT_RATIO = '1:1'
 
 const SIZE_OPTIONS = [
-  { value: '1024x1024', label: '1024×1024' },
-  { value: '1024x1792', label: '1024×1792' },
-  { value: '1792x1024', label: '1792×1024' },
+  { value: '720p', label: '720P' },
+  { value: '1k', label: '1K' },
+  { value: '2k', label: '2K' },
+  { value: '4k', label: '4K' },
+  { value: '8k', label: '8K' },
 ]
+
+const ASPECT_RATIO_OPTIONS = [
+  { value: '1:1', label: '1:1' },
+  { value: '2:3', label: '2:3' },
+  { value: '3:2', label: '3:2' },
+  { value: '9:16', label: '9:16' },
+  { value: '16:9', label: '16:9' },
+] as const
 
 const PLATFORM_IMAGE_MODELS = [
   { value: 'openai/dall-e-3', label: 'DALL-E 3', provider: 'openrouter' },
@@ -43,6 +54,18 @@ const PLATFORM_IMAGE_MODELS = [
 
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
+
+function migrateLegacySize(size: string): { size: string; aspectRatio: string } {
+  switch (size) {
+    case '1024x1792':
+      return { size: DEFAULT_SIZE, aspectRatio: '9:16' }
+    case '1792x1024':
+      return { size: DEFAULT_SIZE, aspectRatio: '16:9' }
+    case '1024x1024':
+    default:
+      return { size: DEFAULT_SIZE, aspectRatio: DEFAULT_ASPECT_RATIO }
+  }
+}
 
 export function ImageGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
@@ -54,7 +77,16 @@ export function ImageGenNode(props: NodeProps) {
   const selectedPlatformModel =
     PLATFORM_IMAGE_MODELS.find((item) => item.value === model) ??
     PLATFORM_IMAGE_MODELS[0]
-  const size = (config.size as string) ?? DEFAULT_SIZE
+  const sizeValue = typeof config.size === 'string' ? config.size : DEFAULT_SIZE
+  const migratedLegacySize = useMemo(() => migrateLegacySize(sizeValue), [sizeValue])
+  const size = SIZE_OPTIONS.some((item) => item.value === sizeValue)
+    ? sizeValue
+    : migratedLegacySize.size
+  const aspectRatioValue =
+    typeof config.aspectRatio === 'string' ? config.aspectRatio : migratedLegacySize.aspectRatio
+  const aspectRatio = ASPECT_RATIO_OPTIONS.some((item) => item.value === aspectRatioValue)
+    ? aspectRatioValue
+    : DEFAULT_ASPECT_RATIO
   const executionMode = (config.executionMode as string) ?? 'platform'
   const resultUrl = (config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
@@ -76,6 +108,8 @@ export function ImageGenNode(props: NodeProps) {
   const userKeyModelLabel =
     savedImageConfig?.modelId?.trim() ||
     (isModelConfigLoading ? 'Loading API config...' : 'Use account API config')
+  const displayModelLabel =
+    executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel.label
 
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
@@ -86,6 +120,10 @@ export function ImageGenNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('image-gen', config)
+    if (sizeValue !== size || config.aspectRatio !== aspectRatio) {
+      patch.size = size
+      patch.aspectRatio = aspectRatio
+    }
     if (
       selectedUserConfigId &&
       executionMode === 'user_key' &&
@@ -97,24 +135,15 @@ export function ImageGenNode(props: NodeProps) {
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [config, executionMode, selectedUserConfigId, updateConfig])
-
-  const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const nextModel = e.target.value
-      const matched =
-        PLATFORM_IMAGE_MODELS.find((item) => item.value === nextModel) ??
-        PLATFORM_IMAGE_MODELS[0]
-      updateConfig({
-        platformModel: matched.value,
-        platformProvider: matched.provider,
-      })
-    },
-    [updateConfig],
-  )
+  }, [aspectRatio, config, executionMode, selectedUserConfigId, size, sizeValue, updateConfig])
 
   const onSizeChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ size: e.target.value }),
+    [updateConfig],
+  )
+
+  const onAspectRatioChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ aspectRatio: e.target.value }),
     [updateConfig],
   )
 
@@ -184,27 +213,28 @@ export function ImageGenNode(props: NodeProps) {
         )}
 
         <ConfigField label={t('model')}>
-          <select
-            value={executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel.value}
-            onChange={onModelChange}
-            className={SELECT_CLASS}
-            disabled={executionMode === 'user_key'}
-          >
-            {executionMode === 'user_key' ? (
-              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
-            ) : (
-              PLATFORM_IMAGE_MODELS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))
-            )}
-          </select>
+          <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+            {displayModelLabel}
+          </div>
         </ConfigField>
 
         <ConfigField label={t('imageSize')}>
           <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
             {SIZE_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </ConfigField>
+
+        <ConfigField label={t('imageAspect')}>
+          <select
+            value={aspectRatio}
+            onChange={onAspectRatioChange}
+            className={SELECT_CLASS}
+          >
+            {ASPECT_RATIO_OPTIONS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>

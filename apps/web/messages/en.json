@@ -398,6 +398,7 @@
     "noApiConfigs": "No configs available",
     "provider": "Provider",
     "imageSize": "Size",
+    "imageAspect": "Aspect Ratio",
     "videoDuration": "Duration",
     "videoAspect": "Aspect Ratio",
     "videoMode": "Quality",

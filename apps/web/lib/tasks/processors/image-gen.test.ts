@@ -1,13 +1,13 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./image-gen 的 ImageGenProcessor
- * [OUTPUT]: 对外提供图片任务处理器测试 (OpenAI 兼容 url/base64 响应)
+ * [OUTPUT]: 对外提供图片任务处理器测试 (OpenAI 兼容 url/base64 响应 + 尺寸档位解析)
  * [POS]: lib/tasks/processors 的回归保护，覆盖图片兼容协议的关键返回体分支
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ImageGenProcessor } from './image-gen'
+import { ImageGenProcessor, resolveImageGenerationSize } from './image-gen'
 
 describe('ImageGenProcessor', () => {
   afterEach(() => {
@@ -79,8 +79,23 @@ describe('ImageGenProcessor', () => {
         headers: expect.objectContaining({
           Authorization: 'Bearer platform-key',
         }),
+        body: JSON.stringify({
+          model: 'openai/dall-e-3',
+          prompt: 'draw a city',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
       }),
     )
+  })
+
+  it('resolves preset size and aspect ratio into concrete dimensions', () => {
+    expect(resolveImageGenerationSize('720p', '16:9')).toBe('1280x720')
+    expect(resolveImageGenerationSize('1k', '9:16')).toBe('576x1024')
+    expect(resolveImageGenerationSize('2k', '3:2')).toBe('2048x1366')
+    expect(resolveImageGenerationSize('4k', '2:3')).toBe('2732x4096')
+    expect(resolveImageGenerationSize('1024x1792', '1:1')).toBe('1024x1792')
   })
 
   it('converts OpenAI-compatible b64_json responses into data URLs', async () => {

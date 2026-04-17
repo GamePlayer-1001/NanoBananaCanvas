@@ -142,7 +142,8 @@ register({
   defaults: {
     platformProvider: 'openrouter',
     platformModel: 'openai/dall-e-3',
-    size: '1024x1024',
+    size: '1k',
+    aspectRatio: '1:1',
     tokenBillingDraft: null,
   },
   toolbar: { labelKey: 'imageGen' },
