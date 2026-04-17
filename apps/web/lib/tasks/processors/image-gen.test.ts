@@ -41,6 +41,38 @@ describe('ImageGenProcessor', () => {
     expect(result.initialStatus).toBe('running')
   })
 
+  it('maps platform openrouter image models to the hosted base url', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ url: 'https://example.com/platform.png' }],
+      }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openrouter')
+    await processor.submit(
+      {
+        model: 'openai/dall-e-3',
+        params: {
+          prompt: 'draw a city',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/images/generations',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer platform-key',
+        }),
+      }),
+    )
+  })
+
   it('converts OpenAI-compatible b64_json responses into data URLs', async () => {
     vi.stubGlobal(
       'fetch',

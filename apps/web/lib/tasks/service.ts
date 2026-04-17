@@ -67,6 +67,13 @@ export interface SubmitTaskParams {
   nodeId?: string
 }
 
+interface ReservedTaskBillingDraft {
+  mode: 'reserved'
+  inputTokens: null
+  outputTokens: null
+  billableUnits: null
+}
+
 export interface TaskDetail {
   id: string
   taskType: AsyncTaskType
@@ -118,6 +125,15 @@ function isTerminal(status: AsyncTaskStatus): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
 
+function createReservedTaskBillingDraft(): ReservedTaskBillingDraft {
+  return {
+    mode: 'reserved',
+    inputTokens: null,
+    outputTokens: null,
+    billableUnits: null,
+  }
+}
+
 /* ─── 1. Concurrency Check ──────────────────────────── */
 
 export async function checkConcurrency(
@@ -154,6 +170,7 @@ export async function submitTask(
   let resolvedProvider = provider
   let resolvedModelId = modelId
   let resolvedInput = input
+  const billingDraft = createReservedTaskBillingDraft()
 
   /* 并发检查 */
   await checkConcurrency(db, userId)
@@ -176,6 +193,12 @@ export async function submitTask(
     resolvedInput = {
       ...input,
       ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
+      billingDraft,
+    }
+  } else {
+    resolvedInput = {
+      ...input,
+      billingDraft,
     }
   }
 
