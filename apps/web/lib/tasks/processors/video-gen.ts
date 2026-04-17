@@ -15,7 +15,6 @@ const log = createLogger('processor:video-gen')
 /* ─── Kling Helpers ──────────────────────────────────── */
 
 function createKlingClient(apiKey: string): KlingClient {
-  // apiKey format: "accessKey:secretKey"
   const [accessKey, secretKey] = apiKey.split(':')
   if (!accessKey || !secretKey) {
     throw new Error('Kling API key must be "accessKey:secretKey" format')

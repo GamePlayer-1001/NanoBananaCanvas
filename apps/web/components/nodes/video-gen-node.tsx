@@ -8,10 +8,12 @@
 
 'use client'
 
-import { useCallback, useMemo, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
-import { Loader2, Video } from 'lucide-react'
+import { Coins, KeyRound, Loader2, Video } from 'lucide-react'
+import { useModelConfigs } from '@/hooks/use-model-configs'
+import { getProviderLabel } from '@/lib/model-config-catalog'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
@@ -73,9 +75,16 @@ export function VideoGenNode(props: NodeProps) {
   const duration = (data.config.duration as string) ?? DEFAULT_DURATION
   const aspectRatio = (data.config.aspectRatio as string) ?? DEFAULT_ASPECT
   const mode = (data.config.mode as string) ?? DEFAULT_MODE
+  const executionMode = (data.config.executionMode as string) ?? 'platform'
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const progress = (data.config.progress as number) ?? 0
   const status = data.status ?? 'idle'
+  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
+  const savedVideoConfig = getConfigByCapability('video')
+  const userKeyProviderLabel = getProviderLabel('video', savedVideoConfig?.providerId)
+  const userKeyModelLabel =
+    savedVideoConfig?.modelId?.trim() ||
+    (isModelConfigLoading ? 'Loading API config...' : 'Use account API config')
 
   /* ── Update helpers ────────────────────────────────── */
   const updateConfig = useCallback(
@@ -85,13 +94,26 @@ export function VideoGenNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
+  useEffect(() => {
+    if (executionMode === 'user_key' && provider !== 'video') {
+      updateConfig({ provider: 'video' })
+    }
+    if (executionMode === 'platform' && provider === 'video') {
+      updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
+    }
+  }, [executionMode, provider, updateConfig])
+
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const newProvider = e.target.value
+      if (executionMode === 'user_key') {
+        updateConfig({ provider: newProvider })
+        return
+      }
       const models = VIDEO_MODELS[newProvider] ?? []
       updateConfig({ provider: newProvider, model: models[0]?.value ?? '' })
     },
-    [updateConfig],
+    [executionMode, updateConfig],
   )
 
   const onModelChange = useCallback(
@@ -114,16 +136,53 @@ export function VideoGenNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const currentModels = useMemo(() => VIDEO_MODELS[provider] ?? [], [provider])
+  const currentModels = useMemo(
+    () => (executionMode === 'user_key' ? [] : (VIDEO_MODELS[provider] ?? [])),
+    [executionMode, provider],
+  )
+  const providerOptions = useMemo(
+    () =>
+      executionMode === 'user_key'
+        ? [{ value: 'video', label: userKeyProviderLabel }]
+        : VIDEO_PROVIDERS,
+    [executionMode, userKeyProviderLabel],
+  )
 
   return (
     <BaseNode {...props} data={data} icon={<Video size={14} />}>
       <div className="space-y-3">
+        <ConfigField label={t('executionMode')}>
+          <div className="nodrag flex gap-1">
+            <ModeButton
+              active={executionMode === 'platform'}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'platform',
+                  provider: DEFAULT_PROVIDER,
+                  model: DEFAULT_MODEL,
+                })
+              }
+              icon={<Coins size={12} />}
+              label={t('platformMode')}
+            />
+            <ModeButton
+              active={executionMode === 'user_key'}
+              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'video' })}
+              icon={<KeyRound size={12} />}
+              label={t('userKeyMode')}
+            />
+          </div>
+        </ConfigField>
+
         {/* ── Provider selector ────────────────────── */}
         <ConfigField label={t('provider')}>
           <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
-            {VIDEO_PROVIDERS.map((p) => (
-              <option key={p.value} value={p.value} disabled={p.disabled}>
+            {providerOptions.map((p) => (
+              <option
+                key={p.value}
+                value={p.value}
+                disabled={'disabled' in p ? p.disabled : false}
+              >
                 {p.label}
               </option>
             ))}
@@ -132,12 +191,21 @@ export function VideoGenNode(props: NodeProps) {
 
         {/* ── Model selector ──────────────────────── */}
         <ConfigField label={t('model')}>
-          <select value={model} onChange={onModelChange} className={SELECT_CLASS}>
-            {currentModels.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
+          <select
+            value={executionMode === 'user_key' ? userKeyModelLabel : model}
+            onChange={onModelChange}
+            className={SELECT_CLASS}
+            disabled={executionMode === 'user_key'}
+          >
+            {executionMode === 'user_key' ? (
+              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
+            ) : (
+              currentModels.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))
+            )}
           </select>
         </ConfigField>
 
@@ -228,5 +296,32 @@ function ConfigField({ label, children }: { label: string; children: React.React
       <label className="text-muted-foreground mb-1 block text-xs">{label}</label>
       {children}
     </div>
+  )
+}
+
+function ModeButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+        active
+          ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/10 text-[var(--brand-500)]'
+          : 'border-input text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }

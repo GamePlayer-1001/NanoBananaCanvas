@@ -18,6 +18,7 @@ import {
   normalizeOpenAIBaseUrl,
   serializeUserModelConfig,
   toPublicUserModelConfig,
+  type UserModelConfigPayload,
 } from '@/lib/user-model-config'
 import { apiKeySchema } from '@/lib/validations/ai'
 
@@ -97,24 +98,59 @@ export async function PUT(req: Request) {
       return handleApiError(new Error('Provider query parameter is required'))
     }
 
-    const { apiKey, baseUrl, modelId, label } = apiKeySchema.parse(body)
+    const { apiKey, secretKey, baseUrl, modelId, label, providerKind, providerId } =
+      apiKeySchema.parse(body)
 
     const encryptionKey = await getEnv('ENCRYPTION_KEY')
     if (!encryptionKey) {
       return apiError('CONFIG_MISSING', 'Server encryption key is not configured', 503)
     }
 
+    const existingRow = await db
+      .prepare(
+        `SELECT encrypted_key
+         FROM user_api_keys
+         WHERE user_id = ? AND provider = ?`,
+      )
+      .bind(userId, provider)
+      .first<{ encrypted_key: string }>()
+
+    const existingConfig = existingRow?.encrypted_key
+      ? deserializeUserModelConfig(
+          provider,
+          await decryptApiKey(existingRow.encrypted_key, encryptionKey),
+        )
+      : null
+
+    const normalizedBaseUrl =
+      providerKind === 'openai-compatible'
+        ? normalizeOpenAIBaseUrl(baseUrl ?? '')
+        : undefined
+
+    const nextConfig: UserModelConfigPayload = {
+      version: 2,
+      providerKind,
+      providerId,
+      apiKey: apiKey || existingConfig?.apiKey || '',
+      secretKey: secretKey || existingConfig?.secretKey,
+      modelId,
+      baseUrl: normalizedBaseUrl,
+    }
+
+    if (!nextConfig.apiKey) {
+      return apiError('VALIDATION_FAILED', 'API key is required', 400)
+    }
+
+    if (providerKind === 'kling' && !nextConfig.secretKey) {
+      return apiError('VALIDATION_FAILED', 'Secret key is required for Kling', 400)
+    }
+
+    if (providerKind === 'openai-compatible' && !nextConfig.baseUrl) {
+      return apiError('VALIDATION_FAILED', 'Base URL is required for OpenAI-compatible providers', 400)
+    }
+
     const encrypted = await encryptApiKey(
-      serializeUserModelConfig({
-        version: 1,
-        providerKind: provider === 'image-google' ? 'google-image' : 'openai-compatible',
-        apiKey,
-        modelId,
-        baseUrl:
-          provider === 'image-google'
-            ? undefined
-            : normalizeOpenAIBaseUrl(baseUrl ?? ''),
-      }),
+      serializeUserModelConfig(nextConfig),
       encryptionKey,
     )
 
@@ -134,12 +170,12 @@ export async function PUT(req: Request) {
 
     return apiOk({
       provider,
-      maskedKey: maskApiKey(apiKey),
+      maskedKey: maskApiKey(nextConfig.apiKey),
+      providerKind,
+      providerId,
       modelId,
-      baseUrl:
-        provider === 'image-google'
-          ? null
-          : normalizeOpenAIBaseUrl(baseUrl ?? ''),
+      baseUrl: nextConfig.baseUrl ?? null,
+      hasSecretKey: !!nextConfig.secretKey,
       saved: true,
     })
   } catch (error) {

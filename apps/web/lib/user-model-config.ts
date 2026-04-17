@@ -7,45 +7,95 @@
 
 /* ─── Slot Definitions ──────────────────────────────── */
 
-export const USER_MODEL_CONFIG_SLOTS = {
-  'llm-openai': {
-    capability: 'llm',
+export const PRIMARY_USER_MODEL_CONFIG_SLOTS = {
+  text: {
+    capability: 'text',
     providerKind: 'openai-compatible',
+    legacySlots: ['llm-openai'],
+  },
+  image: {
+    capability: 'image',
+    providerKind: 'openai-compatible',
+    legacySlots: ['image-openai', 'image-google'],
+  },
+  video: {
+    capability: 'video',
+    providerKind: 'kling',
+    legacySlots: [],
+  },
+  audio: {
+    capability: 'audio',
+    providerKind: 'openai-audio',
+    legacySlots: [],
+  },
+} as const
+
+const LEGACY_USER_MODEL_CONFIG_SLOTS = {
+  'llm-openai': {
+    capability: 'text',
+    providerKind: 'openai-compatible',
+    legacySlots: [],
   },
   'image-openai': {
     capability: 'image',
     providerKind: 'openai-compatible',
+    legacySlots: [],
   },
   'image-google': {
     capability: 'image',
     providerKind: 'google-image',
+    legacySlots: [],
   },
 } as const
 
+export const USER_MODEL_CONFIG_SLOTS = {
+  ...PRIMARY_USER_MODEL_CONFIG_SLOTS,
+  ...LEGACY_USER_MODEL_CONFIG_SLOTS,
+} as const
+
+export type UserModelPrimarySlotId = keyof typeof PRIMARY_USER_MODEL_CONFIG_SLOTS
 export type UserModelConfigSlotId = keyof typeof USER_MODEL_CONFIG_SLOTS
 export type UserModelCapability = (typeof USER_MODEL_CONFIG_SLOTS)[UserModelConfigSlotId]['capability']
-export type UserModelProviderKind = (typeof USER_MODEL_CONFIG_SLOTS)[UserModelConfigSlotId]['providerKind']
+export type UserModelProviderKind =
+  | 'openai-compatible'
+  | 'google-image'
+  | 'gemini'
+  | 'kling'
+  | 'openai-audio'
 
 export function isUserModelConfigSlotId(value: string): value is UserModelConfigSlotId {
   return value in USER_MODEL_CONFIG_SLOTS
 }
 
+export function isPrimaryUserModelSlotId(value: string): value is UserModelPrimarySlotId {
+  return value in PRIMARY_USER_MODEL_CONFIG_SLOTS
+}
+
+export function getSlotLookupOrder(slotId: UserModelConfigSlotId): UserModelConfigSlotId[] {
+  if (!isPrimaryUserModelSlotId(slotId)) return [slotId]
+  return [slotId, ...PRIMARY_USER_MODEL_CONFIG_SLOTS[slotId].legacySlots]
+}
+
 /* ─── Stored Payload ─────────────────────────────────── */
 
 export interface UserModelConfigPayload {
-  version: 1
+  version: 1 | 2
   providerKind: UserModelProviderKind
+  providerId?: string
   apiKey: string
   modelId: string
   baseUrl?: string
+  secretKey?: string
 }
 
 export interface PublicUserModelConfig {
   slotId: UserModelConfigSlotId
   capability: UserModelCapability
   providerKind: UserModelProviderKind
+  providerId: string
   modelId: string
   baseUrl?: string
+  hasSecretKey: boolean
 }
 
 export interface UserModelRuntimeConfig {
@@ -56,6 +106,7 @@ export interface UserModelRuntimeConfig {
   apiKey: string
   modelId: string
   baseUrl?: string
+  secretKey?: string
 }
 
 export function serializeUserModelConfig(payload: UserModelConfigPayload): string {
@@ -70,17 +121,19 @@ export function deserializeUserModelConfig(
     const parsed = JSON.parse(decrypted) as Partial<UserModelConfigPayload>
     if (
       parsed &&
-      parsed.version === 1 &&
+      (parsed.version === 1 || parsed.version === 2) &&
       typeof parsed.apiKey === 'string' &&
       typeof parsed.modelId === 'string' &&
       isProviderKind(parsed.providerKind)
     ) {
       return {
-        version: 1,
+        version: parsed.version,
         providerKind: parsed.providerKind,
+        providerId: normalizeProviderId(parsed.providerId),
         apiKey: parsed.apiKey,
         modelId: parsed.modelId,
         baseUrl: normalizeOptionalBaseUrl(parsed.baseUrl),
+        secretKey: normalizeOptionalSecretKey(parsed.secretKey),
       }
     }
   } catch {
@@ -94,6 +147,7 @@ export function deserializeUserModelConfig(
     apiKey: decrypted,
     modelId: '',
     baseUrl: undefined,
+    secretKey: undefined,
   }
 }
 
@@ -106,8 +160,10 @@ export function toPublicUserModelConfig(
     slotId,
     capability: slot.capability,
     providerKind: payload.providerKind,
+    providerId: payload.providerId ?? toRuntimeProviderId(payload.providerKind),
     modelId: payload.modelId,
     baseUrl: normalizeOptionalBaseUrl(payload.baseUrl),
+    hasSecretKey: !!normalizeOptionalSecretKey(payload.secretKey),
   }
 }
 
@@ -120,10 +176,11 @@ export function toRuntimeUserModelConfig(
     slotId,
     capability: slot.capability,
     providerKind: payload.providerKind,
-    providerId: toRuntimeProviderId(payload.providerKind),
+    providerId: payload.providerId ?? toRuntimeProviderId(payload.providerKind),
     apiKey: payload.apiKey,
     modelId: payload.modelId,
     baseUrl: normalizeOptionalBaseUrl(payload.baseUrl),
+    secretKey: normalizeOptionalSecretKey(payload.secretKey),
   }
 }
 
@@ -139,10 +196,39 @@ function normalizeOptionalBaseUrl(baseUrl: unknown): string | undefined {
   return trimmed ? normalizeOpenAIBaseUrl(trimmed) : undefined
 }
 
+function normalizeOptionalSecretKey(secretKey: unknown): string | undefined {
+  if (typeof secretKey !== 'string') return undefined
+  const trimmed = secretKey.trim()
+  return trimmed ? trimmed : undefined
+}
+
+function normalizeProviderId(providerId: unknown): string | undefined {
+  if (typeof providerId !== 'string') return undefined
+  const trimmed = providerId.trim()
+  return trimmed ? trimmed : undefined
+}
+
 function isProviderKind(value: unknown): value is UserModelProviderKind {
-  return value === 'openai-compatible' || value === 'google-image'
+  return (
+    value === 'openai-compatible' ||
+    value === 'google-image' ||
+    value === 'gemini' ||
+    value === 'kling' ||
+    value === 'openai-audio'
+  )
 }
 
 function toRuntimeProviderId(providerKind: UserModelProviderKind): string {
-  return providerKind === 'google-image' ? 'gemini' : 'openai-compatible'
+  switch (providerKind) {
+    case 'google-image':
+    case 'gemini':
+      return 'gemini'
+    case 'kling':
+      return 'kling'
+    case 'openai-audio':
+      return 'openai'
+    case 'openai-compatible':
+    default:
+      return 'openai-compatible'
+  }
 }

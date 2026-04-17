@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @tanstack/react-query 的 query/mutation，
- *          依赖 sonner 的 toast，依赖 @/lib/query/keys
- * [OUTPUT]: 对外提供 ModelPreferencesTab 模型偏好设置面板
- * [POS]: profile 的模型偏好 Tab，被 profile-modal.tsx 消费，负责管理账号级模型配置槽位
+ *          依赖 sonner 的 toast，依赖 @/hooks/use-model-configs，依赖 @/lib/model-config-catalog
+ * [OUTPUT]: 对外提供 ModelPreferencesTab API 接入配置面板
+ * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的 API 接入配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -10,237 +10,205 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Key, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, KeyRound, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { useModelConfigs, type ModelConfigItem } from '@/hooks/use-model-configs'
+import {
+  MODEL_PROVIDER_OPTIONS,
+  getProviderOption,
+  type CapabilityId,
+} from '@/lib/model-config-catalog'
 import { queryKeys } from '@/lib/query/keys'
 
-interface ApiKeyItem {
-  id: string
-  provider: string
-  label: string | null
-  isActive: boolean
-  lastUsedAt: string | null
-  createdAt: string | null
-  slotId?: string
-  capability?: string
-  providerKind?: string
-  modelId?: string
-  baseUrl?: string
-}
-
-interface ApiKeysResponse {
-  ok: true
-  data: {
-    keys: ApiKeyItem[]
-  }
-}
-
-const MODEL_CONFIG_CARDS = [
-  {
-    id: 'llm-openai',
-    titleKey: 'slotLlmOpenAI',
-    descriptionKey: 'slotLlmOpenAIDesc',
-    placeholder: 'sk-or-v1-...',
-    showBaseUrl: true,
-  },
-  {
-    id: 'image-openai',
-    titleKey: 'slotImageOpenAI',
-    descriptionKey: 'slotImageOpenAIDesc',
-    placeholder: 'sk-or-v1-...',
-    showBaseUrl: true,
-  },
-  {
-    id: 'image-google',
-    titleKey: 'slotImageGoogle',
-    descriptionKey: 'slotImageGoogleDesc',
-    placeholder: 'AIza...',
-    showBaseUrl: false,
-  },
-] as const
-
-type SlotId = (typeof MODEL_CONFIG_CARDS)[number]['id']
-
 interface DraftState {
+  providerId: string
+  providerKind:
+    | 'openai-compatible'
+    | 'google-image'
+    | 'gemini'
+    | 'kling'
+    | 'openai-audio'
   apiKey: string
+  secretKey: string
   baseUrl: string
   modelId: string
 }
 
-async function fetchApiKeys(): Promise<ApiKeyItem[]> {
-  const res = await fetch('/api/settings/api-keys', { cache: 'no-store' })
-  const payload = (await res.json()) as ApiKeysResponse | { error?: { message?: string } }
-  if (!res.ok || !('data' in payload)) {
-    const errorMessage = 'error' in payload ? payload.error?.message : undefined
-    throw new Error(errorMessage ?? 'Failed to load API keys')
-  }
-  return payload.data.keys
-}
+const CARD_ORDER: CapabilityId[] = ['text', 'image', 'video', 'audio']
 
-async function saveApiKey(
-  provider: string,
-  apiKey: string,
-  modelId: string,
-  baseUrl?: string,
+async function saveApiConfig(
+  capability: CapabilityId,
+  payload: DraftState,
 ) {
-  const res = await fetch(`/api/settings/api-keys?provider=${provider}`, {
+  const res = await fetch(`/api/settings/api-keys?provider=${capability}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey, modelId, baseUrl }),
+    body: JSON.stringify(payload),
   })
 
-  const payload = (await res.json()) as { error?: { message?: string } }
+  const body = (await res.json()) as { error?: { message?: string } }
   if (!res.ok) {
-    throw new Error(payload.error?.message ?? 'Failed to save API key')
+    throw new Error(body.error?.message ?? 'Failed to save API config')
   }
 }
 
-async function testApiKey(provider: string) {
-  const res = await fetch(`/api/settings/api-keys/${provider}`, { method: 'POST' })
-  const payload = (await res.json()) as {
+async function testApiConfig(capability: CapabilityId) {
+  const res = await fetch(`/api/settings/api-keys/${capability}`, { method: 'POST' })
+  const body = (await res.json()) as {
     data?: { valid?: boolean }
     error?: { message?: string }
   }
   if (!res.ok) {
-    throw new Error(payload.error?.message ?? 'Failed to test API key')
+    throw new Error(body.error?.message ?? 'Failed to test API config')
   }
-  if (!payload.data?.valid) {
-    throw new Error('API key validation failed')
+  if (!body.data?.valid) {
+    throw new Error('API config validation failed')
   }
 }
 
-async function deleteApiKey(provider: string) {
-  const res = await fetch(`/api/settings/api-keys/${provider}`, { method: 'DELETE' })
-  const payload = (await res.json()) as { error?: { message?: string } }
+async function deleteApiConfig(capability: CapabilityId) {
+  const res = await fetch(`/api/settings/api-keys/${capability}`, { method: 'DELETE' })
+  const body = (await res.json()) as { error?: { message?: string } }
   if (!res.ok) {
-    throw new Error(payload.error?.message ?? 'Failed to delete API key')
+    throw new Error(body.error?.message ?? 'Failed to delete API config')
+  }
+}
+
+function createDefaultDraft(capability: CapabilityId, saved?: ModelConfigItem): DraftState {
+  const provider = getProviderOption(capability, saved?.providerId)
+  return {
+    providerId: saved?.providerId ?? provider?.providerId ?? MODEL_PROVIDER_OPTIONS[capability][0].providerId,
+    providerKind:
+      (saved?.providerKind as DraftState['providerKind'] | undefined) ??
+      provider?.providerKind ??
+      MODEL_PROVIDER_OPTIONS[capability][0].providerKind,
+    apiKey: '',
+    secretKey: '',
+    baseUrl: '',
+    modelId: '',
   }
 }
 
 export function ModelPreferencesTab() {
   const t = useTranslations('profile')
   const queryClient = useQueryClient()
+  const { isLoading, isError, error, getConfigByCapability } = useModelConfigs()
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({})
 
-  const apiKeysQuery = useQuery({
-    queryKey: queryKeys.settings.apiKeys(),
-    queryFn: fetchApiKeys,
-    retry: false,
-  })
-
-  const savedKeys = useMemo(
-    () => new Map((apiKeysQuery.data ?? []).map((item) => [item.provider, item])),
-    [apiKeysQuery.data],
-  )
-
-  const invalidateKeys = async () => {
+  const invalidateConfigs = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() })
   }
 
   const saveMutation = useMutation({
-    mutationFn: ({
-      provider,
-      apiKey,
-      modelId,
-      baseUrl,
-    }: {
-      provider: string
-      apiKey: string
-      modelId: string
-      baseUrl?: string
-    }) => saveApiKey(provider, apiKey, modelId, baseUrl),
+    mutationFn: ({ capability, payload }: { capability: CapabilityId; payload: DraftState }) =>
+      saveApiConfig(capability, payload),
     onSuccess: async (_data, variables) => {
-      setDrafts((current) => ({
-        ...current,
-        [variables.provider]: { apiKey: '', baseUrl: '', modelId: '' },
-      }))
-      await invalidateKeys()
-      toast.success(t('apiKeySaved'))
+      setDrafts((current) => {
+        const next = { ...current }
+        delete next[variables.capability]
+        return next
+      })
+      await invalidateConfigs()
+      toast.success(t('apiConfigSaved'))
     },
-    onError: (error: Error) => {
-      toast.error(error.message || t('apiKeySaveFailed'))
+    onError: (nextError: Error) => {
+      toast.error(nextError.message || t('apiConfigSaveFailed'))
     },
   })
 
   const testMutation = useMutation({
-    mutationFn: (provider: string) => testApiKey(provider),
+    mutationFn: (capability: CapabilityId) => testApiConfig(capability),
     onSuccess: async () => {
-      await invalidateKeys()
-      toast.success(t('apiKeyTestPassed'))
+      await invalidateConfigs()
+      toast.success(t('apiConfigTestPassed'))
     },
-    onError: (error: Error) => {
-      toast.error(error.message || t('apiKeyTestFailed'))
+    onError: (nextError: Error) => {
+      toast.error(nextError.message || t('apiConfigTestFailed'))
     },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (provider: string) => deleteApiKey(provider),
-    onSuccess: async (_data, provider) => {
-      setDrafts((current) => ({
-        ...current,
-        [provider]: { apiKey: '', baseUrl: '', modelId: '' },
-      }))
-      await invalidateKeys()
-      toast.success(t('apiKeyDeleted'))
+    mutationFn: (capability: CapabilityId) => deleteApiConfig(capability),
+    onSuccess: async (_data, capability) => {
+      setDrafts((current) => {
+        const next = { ...current }
+        delete next[capability]
+        return next
+      })
+      await invalidateConfigs()
+      toast.success(t('apiConfigDeleted'))
     },
-    onError: (error: Error) => {
-      toast.error(error.message || t('apiKeyDeleteFailed'))
+    onError: (nextError: Error) => {
+      toast.error(nextError.message || t('apiConfigDeleteFailed'))
     },
   })
+
+  const cards = useMemo(
+    () =>
+      CARD_ORDER.map((capability) => {
+        const saved = getConfigByCapability(capability)
+        const draft = drafts[capability] ?? createDefaultDraft(capability, saved)
+        return { capability, saved, draft }
+      }),
+    [drafts, getConfigByCapability],
+  )
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-foreground">{t('modelPreferences')}</h3>
-        <p className="text-sm leading-6 text-muted-foreground">{t('modelPreferencesDesc')}</p>
+        <p className="text-sm leading-6 text-muted-foreground">{t('apiConfigDesc')}</p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/20 p-4">
         <div className="flex items-start gap-3">
           <ShieldCheck size={18} className="mt-0.5 text-brand-500" />
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">{t('apiKeySecurityTitle')}</p>
-            <p>{t('apiKeySecurityBody')}</p>
+            <p className="font-medium text-foreground">{t('apiConfigSecurityTitle')}</p>
+            <p>{t('apiConfigSecurityBody')}</p>
           </div>
         </div>
       </div>
 
-      {apiKeysQuery.isLoading ? (
+      {isLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 size={14} className="animate-spin" />
-          {t('apiKeyLoading')}
+          {t('apiConfigLoading')}
         </div>
       ) : (
         <div className="space-y-4">
-          {apiKeysQuery.isError ? (
+          {isError ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              {apiKeysQuery.error instanceof Error
-                ? apiKeysQuery.error.message
-                : 'Failed to load API keys'}
+              {error instanceof Error ? error.message : 'Failed to load API configs'}
             </div>
           ) : null}
 
-          {MODEL_CONFIG_CARDS.map((card) => {
-            const saved = savedKeys.get(card.id)
-            const draft = drafts[card.id] ?? { apiKey: '', baseUrl: '', modelId: '' }
-            const isSaving = saveMutation.isPending && saveMutation.variables?.provider === card.id
-            const isTesting = testMutation.isPending && testMutation.variables === card.id
-            const isDeleting = deleteMutation.isPending && deleteMutation.variables === card.id
+          {cards.map(({ capability, saved, draft }) => {
+            const selectedProvider = getProviderOption(capability, draft.providerId)
+            const providerOptions = MODEL_PROVIDER_OPTIONS[capability]
+            const isSaving =
+              saveMutation.isPending && saveMutation.variables?.capability === capability
+            const isTesting =
+              testMutation.isPending && testMutation.variables === capability
+            const isDeleting =
+              deleteMutation.isPending && deleteMutation.variables === capability
 
             return (
               <section
-                key={card.id}
+                key={capability}
                 className="space-y-4 rounded-xl border border-border bg-background p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Key size={14} />
-                      {t(card.titleKey)}
+                      <KeyRound size={14} />
+                      {t(`capability_${capability}`)}
                     </div>
-                    <p className="text-sm text-muted-foreground">{t(card.descriptionKey)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t(`capability_${capability}_desc`)}
+                    </p>
                   </div>
 
                   {saved?.isActive ? (
@@ -256,20 +224,47 @@ export function ModelPreferencesTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">{t('apiKeyLabel')}</label>
+                  <label className="text-sm font-medium text-foreground">{t('providerTypeLabel')}</label>
+                  <select
+                    value={draft.providerId}
+                    onChange={(e) => {
+                      const nextProvider = getProviderOption(capability, e.target.value)
+                      if (!nextProvider) return
+                      setDrafts((current) => ({
+                        ...current,
+                        [capability]: {
+                          ...draft,
+                          providerId: nextProvider.providerId,
+                          providerKind: nextProvider.providerKind,
+                          baseUrl: nextProvider.requiresBaseUrl ? draft.baseUrl : '',
+                          secretKey: nextProvider.requiresSecretKey ? draft.secretKey : '',
+                        },
+                      }))
+                    }}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:border-brand-500 focus:outline-none"
+                  >
+                    {providerOptions.map((option) => (
+                      <option key={option.providerId} value={option.providerId}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    {selectedProvider?.apiKeyLabel ?? t('apiKeyLabel')}
+                  </label>
                   <input
                     type="password"
                     value={draft.apiKey}
                     onChange={(e) =>
                       setDrafts((current) => ({
                         ...current,
-                        [card.id]: {
-                          ...draft,
-                          apiKey: e.target.value,
-                        },
+                        [capability]: { ...draft, apiKey: e.target.value },
                       }))
                     }
-                    placeholder={card.placeholder}
+                    placeholder={t('apiKeyPlaceholder')}
                     className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -277,7 +272,27 @@ export function ModelPreferencesTab() {
                   </p>
                 </div>
 
-                {card.showBaseUrl ? (
+                {selectedProvider?.requiresSecretKey ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      {selectedProvider.secretKeyLabel ?? t('secretKeyLabel')}
+                    </label>
+                    <input
+                      type="password"
+                      value={draft.secretKey}
+                      onChange={(e) =>
+                        setDrafts((current) => ({
+                          ...current,
+                          [capability]: { ...draft, secretKey: e.target.value },
+                        }))
+                      }
+                      placeholder={t('secretKeyPlaceholder')}
+                      className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                    />
+                  </div>
+                ) : null}
+
+                {selectedProvider?.requiresBaseUrl ? (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">{t('baseUrlLabel')}</label>
                     <input
@@ -286,13 +301,10 @@ export function ModelPreferencesTab() {
                       onChange={(e) =>
                         setDrafts((current) => ({
                           ...current,
-                          [card.id]: {
-                            ...draft,
-                            baseUrl: e.target.value,
-                          },
+                          [capability]: { ...draft, baseUrl: e.target.value },
                         }))
                       }
-                      placeholder={saved?.baseUrl ?? 'https://openrouter.ai/api/v1'}
+                      placeholder={saved?.baseUrl ?? 'https://api.example.com/v1'}
                       className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                     />
                   </div>
@@ -306,72 +318,64 @@ export function ModelPreferencesTab() {
                     onChange={(e) =>
                       setDrafts((current) => ({
                         ...current,
-                        [card.id]: {
-                          ...draft,
-                          modelId: e.target.value,
-                        },
+                        [capability]: { ...draft, modelId: e.target.value },
                       }))
                     }
-                    placeholder={saved?.modelId ?? getDefaultModelPlaceholder(card.id)}
+                    placeholder={saved?.modelId ?? t(`capability_${capability}_model_placeholder`)}
                     className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                   />
                 </div>
+
+                {saved?.modelId ? (
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p>{t('currentProvider', { provider: selectedProvider?.label ?? saved.providerId ?? '-' })}</p>
+                    <p>{t('currentModelId', { modelId: saved.modelId })}</p>
+                    {saved.baseUrl ? <p>{t('currentBaseUrl', { baseUrl: saved.baseUrl })}</p> : null}
+                  </div>
+                ) : null}
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
                       saveMutation.mutate({
-                        provider: card.id,
-                        apiKey: draft.apiKey.trim(),
-                        modelId: draft.modelId.trim() || saved?.modelId || '',
-                        baseUrl: card.showBaseUrl
-                          ? draft.baseUrl.trim() || saved?.baseUrl || ''
-                          : undefined,
+                        capability,
+                        payload: {
+                          ...draft,
+                          providerKind:
+                            selectedProvider?.providerKind ?? draft.providerKind,
+                        },
                       })
                     }
-                    disabled={
-                      !draft.apiKey.trim() ||
-                      !(draft.modelId.trim() || saved?.modelId) ||
-                      (card.showBaseUrl && !(draft.baseUrl.trim() || saved?.baseUrl)) ||
-                      isSaving ||
-                      isTesting ||
-                      isDeleting
-                    }
-                    className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSaving ? <Loader2 size={14} className="animate-spin" /> : null}
-                    {t('saveApiKey')}
+                    {t('saveApiConfig')}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => testMutation.mutate(card.id)}
-                    disabled={!saved || isSaving || isTesting || isDeleting}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => testMutation.mutate(capability)}
+                    disabled={isTesting}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isTesting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                    {t('testApiKey')}
+                    {t('testApiConfig')}
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => deleteMutation.mutate(card.id)}
-                    disabled={!saved || isSaving || isTesting || isDeleting}
-                    className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    {t('deleteApiKey')}
-                  </button>
+                  {saved?.isActive ? (
+                    <button
+                      type="button"
+                      onClick={() => deleteMutation.mutate(capability)}
+                      disabled={isDeleting}
+                      className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      {t('deleteApiConfig')}
+                    </button>
+                  ) : null}
                 </div>
-
-                {saved?.lastUsedAt ? (
-                  <div className="space-y-1 text-xs text-muted-foreground">
-                    <p>{t('currentModelId', { modelId: saved.modelId ?? '-' })}</p>
-                    {saved.baseUrl ? <p>{t('currentBaseUrl', { baseUrl: saved.baseUrl })}</p> : null}
-                    <p>{t('lastUsedAt', { date: saved.lastUsedAt })}</p>
-                  </div>
-                ) : null}
               </section>
             )
           })}
@@ -379,17 +383,4 @@ export function ModelPreferencesTab() {
       )}
     </div>
   )
-}
-
-function getDefaultModelPlaceholder(slotId: SlotId): string {
-  switch (slotId) {
-    case 'llm-openai':
-      return 'openai/gpt-4o-mini'
-    case 'image-openai':
-      return 'openai/dall-e-3'
-    case 'image-google':
-      return 'imagen-3.0-generate-002'
-    default:
-      return ''
-  }
 }

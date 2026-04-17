@@ -13,6 +13,7 @@ import { getDb } from '@/lib/db'
 import { getEnv } from '@/lib/env'
 import {
   deserializeUserModelConfig,
+  getSlotLookupOrder,
   isUserModelConfigSlotId,
   type UserModelConfigPayload,
   type UserModelConfigSlotId,
@@ -33,12 +34,17 @@ export async function DELETE(_req: Request, { params }: Params) {
     }
     const db = await getDb()
 
-    const result = await db
-      .prepare('DELETE FROM user_api_keys WHERE user_id = ? AND provider = ?')
-      .bind(userId, provider)
-      .run()
+    let changes = 0
 
-    if (!result.meta.changes) {
+    for (const candidate of getSlotLookupOrder(provider)) {
+      const result = await db
+        .prepare('DELETE FROM user_api_keys WHERE user_id = ? AND provider = ?')
+        .bind(userId, candidate)
+        .run()
+      changes += result.meta.changes ?? 0
+    }
+
+    if (!changes) {
       return apiError('NOT_FOUND', `No API key found for provider: ${provider}`, 404)
     }
 
@@ -59,12 +65,7 @@ export async function POST(_req: Request, { params }: Params) {
     }
     const db = await getDb()
 
-    const keyRow = await db
-      .prepare(
-        'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
-      )
-      .bind(userId, provider)
-      .first<{ encrypted_key: string }>()
+    const keyRow = await findUserConfigRow(db, userId, provider)
 
     if (!keyRow) {
       return apiError('NOT_FOUND', `No API key found for provider: ${provider}`, 404)
@@ -76,14 +77,14 @@ export async function POST(_req: Request, { params }: Params) {
     }
 
     const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-    const config = deserializeUserModelConfig(provider, decrypted)
+    const config = deserializeUserModelConfig(keyRow.slotId, decrypted)
     const valid = await validateSlotConfig(provider, config)
 
     // 更新 last_used_at
     if (valid) {
       await db
         .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
-        .bind(userId, provider)
+        .bind(userId, keyRow.slotId)
         .run()
     }
 
@@ -97,13 +98,43 @@ async function validateSlotConfig(
   provider: UserModelConfigSlotId,
   config: UserModelConfigPayload,
 ): Promise<boolean> {
-  if (provider === 'image-google') {
-    return new GeminiClient().validateKey(config.apiKey)
+  void provider
+
+  switch (config.providerKind) {
+    case 'google-image':
+    case 'gemini':
+      return new GeminiClient().validateKey(config.apiKey)
+    case 'openai-audio':
+      return new OpenAICompatibleClient('https://api.openai.com/v1').validateKey(
+        config.apiKey,
+      )
+    case 'kling':
+      return Boolean(config.apiKey.trim() && config.secretKey?.trim())
+    case 'openai-compatible':
+      if (!config.baseUrl) return false
+      return new OpenAICompatibleClient(config.baseUrl).validateKey(config.apiKey)
+    default:
+      return false
+  }
+}
+
+async function findUserConfigRow(
+  db: D1Database,
+  userId: string,
+  slotId: UserModelConfigSlotId,
+): Promise<{ encrypted_key: string; slotId: UserModelConfigSlotId } | null> {
+  for (const candidate of getSlotLookupOrder(slotId)) {
+    const row = await db
+      .prepare(
+        'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
+      )
+      .bind(userId, candidate)
+      .first<{ encrypted_key: string }>()
+
+    if (row) {
+      return { ...row, slotId: candidate }
+    }
   }
 
-  if (!config.baseUrl) {
-    return false
-  }
-
-  return new OpenAICompatibleClient(config.baseUrl).validateKey(config.apiKey)
+  return null
 }

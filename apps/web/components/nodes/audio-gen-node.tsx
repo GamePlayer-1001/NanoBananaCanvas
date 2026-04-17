@@ -8,10 +8,12 @@
 
 'use client'
 
-import { useCallback, useMemo, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
-import { Loader2, Music } from 'lucide-react'
+import { Coins, KeyRound, Loader2, Music } from 'lucide-react'
+import { useModelConfigs } from '@/hooks/use-model-configs'
+import { getProviderLabel } from '@/lib/model-config-catalog'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
@@ -19,6 +21,7 @@ import { BaseNode } from './base-node'
 /* ─── Defaults ───────────────────────────────────────── */
 
 const DEFAULT_MODEL = 'tts-1'
+const DEFAULT_PROVIDER = 'openai'
 const DEFAULT_VOICE = 'alloy'
 const DEFAULT_SPEED = 1.0
 
@@ -51,11 +54,19 @@ export function AudioGenNode(props: NodeProps) {
   const t = useTranslations('nodes')
 
   /* ── Config values ─────────────────────────────────── */
+  const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
   const model = (data.config.model as string) ?? DEFAULT_MODEL
+  const executionMode = (data.config.executionMode as string) ?? 'platform'
   const voice = (data.config.voice as string) ?? DEFAULT_VOICE
   const speed = (data.config.speed as number) ?? DEFAULT_SPEED
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
+  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
+  const savedAudioConfig = getConfigByCapability('audio')
+  const userKeyProviderLabel = getProviderLabel('audio', savedAudioConfig?.providerId)
+  const userKeyModelLabel =
+    savedAudioConfig?.modelId?.trim() ||
+    (isModelConfigLoading ? 'Loading API config...' : 'Use account API config')
 
   /* ── Update helpers ────────────────────────────────── */
   const updateConfig = useCallback(
@@ -65,8 +76,22 @@ export function AudioGenNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
+  useEffect(() => {
+    if (executionMode === 'user_key' && provider !== 'audio') {
+      updateConfig({ provider: 'audio' })
+    }
+    if (executionMode === 'platform' && provider === 'audio') {
+      updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
+    }
+  }, [executionMode, provider, updateConfig])
+
   const onModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ model: e.target.value }),
+    [updateConfig],
+  )
+
+  const onProviderChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ provider: e.target.value }),
     [updateConfig],
   )
 
@@ -83,18 +108,72 @@ export function AudioGenNode(props: NodeProps) {
 
   /* ── Speed display ─────────────────────────────────── */
   const speedLabel = useMemo(() => `${speed.toFixed(1)}x`, [speed])
+  const providerOptions = useMemo(
+    () =>
+      executionMode === 'user_key'
+        ? [{ value: 'audio', label: userKeyProviderLabel }]
+        : [{ value: 'openai', label: 'OpenAI' }],
+    [executionMode, userKeyProviderLabel],
+  )
 
   return (
     <BaseNode {...props} data={data} icon={<Music size={14} />}>
       <div className="space-y-3">
-        {/* ── Model selector ──────────────────────── */}
-        <ConfigField label={t('model')}>
-          <select value={model} onChange={onModelChange} className={SELECT_CLASS}>
-            {MODEL_OPTIONS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
+        <ConfigField label={t('executionMode')}>
+          <div className="nodrag flex gap-1">
+            <ModeButton
+              active={executionMode === 'platform'}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'platform',
+                  provider: DEFAULT_PROVIDER,
+                  model: DEFAULT_MODEL,
+                })
+              }
+              icon={<Coins size={12} />}
+              label={t('platformMode')}
+            />
+            <ModeButton
+              active={executionMode === 'user_key'}
+              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'audio' })}
+              icon={<KeyRound size={12} />}
+              label={t('userKeyMode')}
+            />
+          </div>
+        </ConfigField>
+
+        <ConfigField label={t('provider')}>
+          <select
+            value={provider}
+            onChange={onProviderChange}
+            className={SELECT_CLASS}
+            disabled={executionMode === 'user_key'}
+          >
+            {providerOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
+          </select>
+        </ConfigField>
+
+        {/* ── Model selector ──────────────────────── */}
+        <ConfigField label={t('model')}>
+          <select
+            value={executionMode === 'user_key' ? userKeyModelLabel : model}
+            onChange={onModelChange}
+            className={SELECT_CLASS}
+            disabled={executionMode === 'user_key'}
+          >
+            {executionMode === 'user_key' ? (
+              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
+            ) : (
+              MODEL_OPTIONS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))
+            )}
           </select>
         </ConfigField>
 
@@ -157,5 +236,32 @@ function ConfigField({ label, children }: { label: string; children: React.React
       <label className="text-muted-foreground mb-1 block text-xs">{label}</label>
       {children}
     </div>
+  )
+}
+
+function ModeButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+        active
+          ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/10 text-[var(--brand-500)]'
+          : 'border-input text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }

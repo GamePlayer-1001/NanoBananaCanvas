@@ -18,8 +18,10 @@ import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
   deserializeUserModelConfig,
+  getSlotLookupOrder,
   isUserModelConfigSlotId,
   toRuntimeUserModelConfig,
+  type UserModelConfigSlotId,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
 import { getPlatformKey } from '@/services/ai'
@@ -167,12 +169,16 @@ export async function submitTask(
   /* user_key 模式: 获取解密后的 API Key */
   if (executionMode === 'user_key') {
     const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, provider)
-    apiKey = runtimeConfig.apiKey
+    apiKey =
+      runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
+        ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
+        : runtimeConfig.apiKey
     resolvedProvider = runtimeConfig.providerId
     resolvedModelId = runtimeConfig.modelId
-    resolvedInput = runtimeConfig.baseUrl
-      ? { ...input, baseUrl: runtimeConfig.baseUrl }
-      : input
+    resolvedInput = {
+      ...input,
+      ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
+    }
   }
 
   /* 提交到 Provider */
@@ -239,13 +245,7 @@ async function getUserTaskRuntimeConfig(
     )
   }
 
-  const keyRow = await db
-    .prepare(
-      `SELECT encrypted_key FROM user_api_keys
-       WHERE user_id = ? AND provider = ? AND is_active = 1`,
-    )
-    .bind(userId, provider)
-    .first<{ encrypted_key: string }>()
+  const keyRow = await findUserConfigRow(db, userId, provider)
 
   if (!keyRow) {
     throw new TaskError(
@@ -257,8 +257,30 @@ async function getUserTaskRuntimeConfig(
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')
   const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(provider, decrypted)
-  return toRuntimeUserModelConfig(provider, payload)
+  const payload = deserializeUserModelConfig(keyRow.slotId, decrypted)
+  return toRuntimeUserModelConfig(keyRow.slotId, payload)
+}
+
+async function findUserConfigRow(
+  db: D1Database,
+  userId: string,
+  slotId: UserModelConfigSlotId,
+): Promise<{ encrypted_key: string; slotId: string } | null> {
+  for (const candidate of getSlotLookupOrder(slotId)) {
+    const row = await db
+      .prepare(
+        `SELECT encrypted_key FROM user_api_keys
+         WHERE user_id = ? AND provider = ? AND is_active = 1`,
+      )
+      .bind(userId, candidate)
+      .first<{ encrypted_key: string }>()
+
+    if (row) {
+      return { ...row, slotId: candidate }
+    }
+  }
+
+  return null
 }
 
 async function getTaskPlatformKey(provider: string): Promise<string> {
@@ -330,7 +352,10 @@ export async function checkTask(
   let processorProvider = row.provider
   if (row.execution_mode === 'user_key' && row.external_task_id) {
     const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
-    apiKey = runtimeConfig.apiKey
+    apiKey =
+      runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
+        ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
+        : runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
   } else if (row.execution_mode === 'platform' && row.external_task_id) {
     apiKey = await getTaskPlatformKey(row.provider)

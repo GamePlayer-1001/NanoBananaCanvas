@@ -28,11 +28,11 @@ export class AudioGenProcessor implements TaskProcessor {
   async submit(input: SubmitInput, apiKey: string): Promise<SubmitResult> {
     log.info('Audio gen submit', { model: input.model, provider: this.provider })
 
-    if (this.provider !== 'openai') {
+    if (this.provider !== 'openai' && this.provider !== 'openai-compatible') {
       throw new Error(`Provider "${this.provider}" not supported for audio_gen`)
     }
 
-    const result = await openaiTTSSubmit(input, apiKey)
+    const result = await openaiTTSSubmit(input, apiKey, this.provider)
 
     // TTS 是同步调用: submit 即完成，URL = base64 data URI
     return {
@@ -67,16 +67,25 @@ export class AudioGenProcessor implements TaskProcessor {
 async function openaiTTSSubmit(
   input: SubmitInput,
   apiKey: string,
+  provider: string,
 ): Promise<{ dataUrl: string }> {
   const { model, params } = input
   const text = params.text as string
   const voice = (params.voice as string) ?? 'alloy'
   const speed = (params.speed as number) ?? 1.0
+  const baseUrl =
+    typeof params.baseUrl === 'string' ? params.baseUrl.trim().replace(/\/+$/, '') : ''
 
   if (!text) throw new Error('Text input is required for TTS')
   if (!apiKey) throw new Error('OpenAI API key is required for TTS')
+  if (provider === 'openai-compatible' && !baseUrl) {
+    throw new Error('OpenAI-compatible audio provider requires baseUrl')
+  }
 
-  const res = await fetch(OPENAI_TTS_URL, {
+  const endpoint =
+    provider === 'openai-compatible' ? `${baseUrl}/audio/speech` : OPENAI_TTS_URL
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

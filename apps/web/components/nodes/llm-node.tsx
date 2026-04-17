@@ -27,6 +27,8 @@ import {
   Loader2,
 } from 'lucide-react'
 
+import { useModelConfigs } from '@/hooks/use-model-configs'
+import { getProviderLabel } from '@/lib/model-config-catalog'
 import { getAllModelGroups } from '@/services/ai'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
@@ -37,10 +39,6 @@ const DEFAULT_PROVIDER = 'openrouter'
 const DEFAULT_MODEL = 'openai/gpt-4o-mini'
 const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_MAX_TOKENS = 1024
-
-const USER_KEY_PROVIDER_OPTIONS = [
-  { value: 'llm-openai', label: 'OpenAI Compatible' },
-] as const
 
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
@@ -62,6 +60,7 @@ export function LLMNode(props: NodeProps) {
   const output = (data.config.output as string) ?? ''
   const tokenCount = (data.config.tokenCount as number) ?? 0
   const status = data.status ?? 'idle'
+  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
 
   const modelGroups = useMemo(() => getAllModelGroups(), [])
   const currentGroups = useMemo(
@@ -71,6 +70,11 @@ export function LLMNode(props: NodeProps) {
 
   const [showSystemPrompt, setShowSystemPrompt] = useState(!!systemPrompt)
   const outputRef = useRef<HTMLDivElement>(null)
+  const savedTextConfig = getConfigByCapability('text')
+  const userKeyProviderLabel = getProviderLabel('text', savedTextConfig?.providerId)
+  const userKeyModelLabel =
+    savedTextConfig?.modelId?.trim() ||
+    (isModelConfigLoading ? 'Loading API config...' : 'Use account API config')
 
   useEffect(() => {
     if (outputRef.current) {
@@ -86,15 +90,15 @@ export function LLMNode(props: NodeProps) {
   )
 
   useEffect(() => {
-    if (executionMode === 'user_key' && provider !== 'llm-openai') {
-      updateConfig({ provider: 'llm-openai' })
+    if (executionMode === 'user_key' && provider !== 'text') {
+      updateConfig({ provider: 'text' })
     }
   }, [executionMode, provider, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const newProvider = e.target.value
-      if (newProvider === 'llm-openai') {
+      if (executionMode === 'user_key') {
         updateConfig({ provider: newProvider })
         return
       }
@@ -103,7 +107,7 @@ export function LLMNode(props: NodeProps) {
       const firstModel = groups[0]?.models[0]?.value ?? ''
       updateConfig({ provider: newProvider, model: firstModel })
     },
-    [modelGroups, updateConfig],
+    [executionMode, modelGroups, updateConfig],
   )
 
   const onModelChange = useCallback(
@@ -135,7 +139,7 @@ export function LLMNode(props: NodeProps) {
 
   const providerOptions = useMemo(() => {
     if (executionMode === 'user_key') {
-      return [...USER_KEY_PROVIDER_OPTIONS]
+      return [{ value: 'text', label: userKeyProviderLabel }]
     }
 
     const seen = new Set<string>()
@@ -146,7 +150,7 @@ export function LLMNode(props: NodeProps) {
         return true
       })
       .map((g) => ({ value: g.provider, label: g.providerName }))
-  }, [executionMode, modelGroups])
+  }, [executionMode, modelGroups, userKeyProviderLabel])
 
   return (
     <BaseNode {...props} data={data} icon={<BrainCircuit size={14} />}>
@@ -163,13 +167,13 @@ export function LLMNode(props: NodeProps) {
 
         <ConfigField label={t('model')}>
           <select
-            value={model}
+            value={executionMode === 'user_key' ? userKeyModelLabel : model}
             onChange={onModelChange}
             className={SELECT_CLASS}
             disabled={executionMode === 'user_key'}
           >
             {executionMode === 'user_key' ? (
-              <option value={model}>{model || 'Use profile model config'}</option>
+              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
             ) : (
               currentGroups.map((group) => (
                 <optgroup key={group.providerName} label={group.providerName}>
@@ -191,7 +195,7 @@ export function LLMNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  provider: provider === 'llm-openai' ? DEFAULT_PROVIDER : provider,
+                  provider: provider === 'text' ? DEFAULT_PROVIDER : provider,
                 })
               }
               icon={<Coins size={12} />}
@@ -199,9 +203,7 @@ export function LLMNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() =>
-                updateConfig({ executionMode: 'user_key', provider: 'llm-openai' })
-              }
+              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'text' })}
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />

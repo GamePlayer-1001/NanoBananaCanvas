@@ -17,8 +17,10 @@ import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
   deserializeUserModelConfig,
+  getSlotLookupOrder,
   isUserModelConfigSlotId,
   toRuntimeUserModelConfig,
+  type UserModelConfigSlotId,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
 import { getPlatformKey, getProvider } from '@/services/ai'
@@ -135,7 +137,7 @@ async function executeWithUserKey(
     // 更新 last_used_at
     await db
       .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
-      .bind(userId, params.provider)
+      .bind(userId, runtimeConfig.slotId)
       .run()
 
     // 写日志
@@ -179,12 +181,7 @@ async function getUserRuntimeConfig(
     throw new Error(`Unsupported user_key provider slot: ${provider}`)
   }
 
-  const keyRow = await db
-    .prepare(
-      'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
-    )
-    .bind(userId, provider)
-    .first<{ encrypted_key: string }>()
+  const keyRow = await findUserConfigRow(db, userId, provider)
 
   if (!keyRow) {
     throw new Error('No API key configured for this provider')
@@ -192,8 +189,8 @@ async function getUserRuntimeConfig(
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')
   const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(provider, decrypted)
-  return toRuntimeUserModelConfig(provider, payload)
+  const payload = deserializeUserModelConfig(keyRow.slotId, decrypted)
+  return toRuntimeUserModelConfig(keyRow.slotId, payload)
 }
 
 function getUserKeyProvider(config: UserModelRuntimeConfig) {
@@ -204,7 +201,32 @@ function getUserKeyProvider(config: UserModelRuntimeConfig) {
     return new OpenAICompatibleClient(config.baseUrl)
   }
 
-  return getProvider(config.providerId)
+  if (config.providerKind === 'gemini') {
+    return getProvider(config.providerId)
+  }
+
+  throw new Error(`Provider kind "${config.providerKind}" is not supported for text execution`)
+}
+
+async function findUserConfigRow(
+  db: D1Database,
+  userId: string,
+  slotId: UserModelConfigSlotId,
+): Promise<{ encrypted_key: string; slotId: UserModelConfigSlotId } | null> {
+  for (const candidate of getSlotLookupOrder(slotId)) {
+    const row = await db
+      .prepare(
+        'SELECT encrypted_key FROM user_api_keys WHERE user_id = ? AND provider = ? AND is_active = 1',
+      )
+      .bind(userId, candidate)
+      .first<{ encrypted_key: string }>()
+
+    if (row) {
+      return { ...row, slotId: candidate }
+    }
+  }
+
+  return null
 }
 
 /* ─── Usage Log ──────────────────────────────────────── */

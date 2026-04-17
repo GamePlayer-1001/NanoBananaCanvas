@@ -277,7 +277,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  if (executionMode !== 'platform') {
+  if (executionMode !== 'platform' && executionMode !== 'user_key') {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       `Unsupported execution mode for video node: ${executionMode}`,
@@ -289,7 +289,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'video_gen',
     provider,
     modelId: model,
-    executionMode: 'platform',
+    executionMode: executionMode as 'platform' | 'user_key',
     input: {
       prompt,
       imageUrl,
@@ -326,7 +326,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     )
   }
 
-  if (executionMode !== 'platform') {
+  if (executionMode !== 'platform' && executionMode !== 'user_key') {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
       `Unsupported execution mode for audio node: ${executionMode}`,
@@ -338,7 +338,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     taskType: 'audio_gen',
     provider,
     modelId: model,
-    executionMode: 'platform',
+    executionMode: executionMode as 'platform' | 'user_key',
     input: { text, voice, speed },
     outputType: 'audio',
     signal,

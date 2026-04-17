@@ -41,9 +41,18 @@ export const aiExecuteSchema = z.object({
 /* ─── API Key 管理 ───────────────────────────────────── */
 
 export const apiKeySchema = z.object({
-  apiKey: z.string().min(1, 'API key is required'),
-  baseUrl: z.string().url('Base URL must be a valid URL').optional(),
+  apiKey: z.string().trim().optional(),
+  secretKey: z.string().trim().optional(),
+  baseUrl: z.string().trim().url('Base URL must be a valid URL').optional(),
   modelId: z.string().min(1, 'Model ID is required'),
+  providerKind: z.enum([
+    'openai-compatible',
+    'google-image',
+    'gemini',
+    'kling',
+    'openai-audio',
+  ]),
+  providerId: z.string().min(1, 'Provider ID is required'),
   label: z.string().max(100).optional(),
 })
 

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，
- *          依赖 @/components/ui/avatar，依赖 @/components/profile/profile-modal，
+ *          依赖 @/components/ui/avatar，
  *          依赖 @/components/shared/search-command，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast
  * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/SearchCommand + 文件夹管理)
@@ -26,7 +26,6 @@ import {
 
 import { Link, usePathname } from '@/i18n/navigation'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { ProfileModal } from '@/components/profile/profile-modal'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
@@ -185,7 +184,6 @@ export function AppSidebar() {
   const t = useTranslations('sidebar')
   const pathname = usePathname()
   const { data: user } = useCurrentUser()
-  const [profileOpen, setProfileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const openSearch = useCallback(() => setSearchOpen(true), [])
   useSearchShortcut(openSearch)
@@ -312,10 +310,7 @@ export function AppSidebar() {
           <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
             {t('freePlan')}
           </span>
-          <button
-            onClick={() => setProfileOpen(true)}
-            className="ml-auto"
-          >
+          <Link href="/account" className="ml-auto">
             <Avatar size="sm">
               {user?.avatarUrl && (
                 <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
@@ -324,12 +319,11 @@ export function AppSidebar() {
                 {user?.name?.charAt(0) ?? 'G'}
               </AvatarFallback>
             </Avatar>
-          </button>
+          </Link>
         </div>
       </div>
     </aside>
 
-    {profileOpen && <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />}
     {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
     </>
   )

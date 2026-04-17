@@ -12,11 +12,11 @@
 
 import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 
-import { queryKeys } from '@/lib/query/keys'
+import { useModelConfigs } from '@/hooks/use-model-configs'
+import { getProviderLabel } from '@/lib/model-config-catalog'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
@@ -37,11 +37,6 @@ const PLATFORM_PROVIDERS = [
   { value: 'gemini', label: 'Google Gemini' },
 ] as const
 
-const USER_KEY_PROVIDERS = [
-  { value: 'image-openai', label: 'OpenAI Compatible' },
-  { value: 'image-google', label: 'Google Image' },
-] as const
-
 const IMAGE_MODELS: Record<string, Array<{ value: string; label: string }>> = {
   openrouter: [{ value: 'openai/dall-e-3', label: 'DALL-E 3' }],
   gemini: [{ value: 'imagen-3.0-generate-002', label: 'Imagen 3' }],
@@ -49,29 +44,6 @@ const IMAGE_MODELS: Record<string, Array<{ value: string; label: string }>> = {
 
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
-
-interface ApiKeyItem {
-  provider: string
-  isActive: boolean
-  modelId?: string
-}
-
-interface ApiKeysResponse {
-  ok: true
-  data: {
-    keys: ApiKeyItem[]
-  }
-}
-
-async function fetchApiKeys(): Promise<ApiKeyItem[]> {
-  const res = await fetch('/api/settings/api-keys', { cache: 'no-store' })
-  const payload = (await res.json()) as ApiKeysResponse | { error?: { message?: string } }
-  if (!res.ok || !('data' in payload)) {
-    const errorMessage = 'error' in payload ? payload.error?.message : undefined
-    throw new Error(errorMessage ?? 'Failed to load API keys')
-  }
-  return payload.data.keys
-}
 
 export function ImageGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
@@ -84,13 +56,12 @@ export function ImageGenNode(props: NodeProps) {
   const executionMode = (data.config.executionMode as string) ?? 'platform'
   const resultUrl = (data.config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
-
-  const apiKeysQuery = useQuery({
-    queryKey: queryKeys.settings.apiKeys(),
-    queryFn: fetchApiKeys,
-    retry: false,
-    staleTime: 30_000,
-  })
+  const { getConfigByCapability, isLoading: isModelConfigLoading } = useModelConfigs()
+  const savedImageConfig = getConfigByCapability('image')
+  const userKeyProviderLabel = getProviderLabel('image', savedImageConfig?.providerId)
+  const userKeyModelLabel =
+    savedImageConfig?.modelId?.trim() ||
+    (isModelConfigLoading ? 'Loading API config...' : 'Use account API config')
 
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
@@ -102,9 +73,9 @@ export function ImageGenNode(props: NodeProps) {
   useEffect(() => {
     if (
       executionMode === 'user_key' &&
-      !USER_KEY_PROVIDERS.some((item) => item.value === provider)
+      provider !== 'image'
     ) {
-      updateConfig({ provider: 'image-openai' })
+      updateConfig({ provider: 'image' })
     }
     if (
       executionMode === 'platform' &&
@@ -143,29 +114,16 @@ export function ImageGenNode(props: NodeProps) {
 
   const providerOptions = useMemo(
     () =>
-      executionMode === 'user_key' ? [...USER_KEY_PROVIDERS] : [...PLATFORM_PROVIDERS],
-    [executionMode],
+      executionMode === 'user_key'
+        ? [{ value: 'image', label: userKeyProviderLabel }]
+        : [...PLATFORM_PROVIDERS],
+    [executionMode, userKeyProviderLabel],
   )
 
   const currentModels = useMemo(
     () => (executionMode === 'user_key' ? [] : (IMAGE_MODELS[provider] ?? [])),
     [executionMode, provider],
   )
-
-  const selectedUserKeyConfig = useMemo(
-    () =>
-      executionMode === 'user_key'
-        ? (apiKeysQuery.data ?? []).find((item) => item.provider === provider && item.isActive)
-        : undefined,
-    [apiKeysQuery.data, executionMode, provider],
-  )
-
-  const userKeyModelLabel = useMemo(() => {
-    const modelId = selectedUserKeyConfig?.modelId?.trim()
-    if (modelId) return modelId
-    if (apiKeysQuery.isLoading) return 'Loading profile model config...'
-    return 'Use profile model config'
-  }, [apiKeysQuery.isLoading, selectedUserKeyConfig?.modelId])
 
   return (
     <BaseNode {...props} data={data} icon={<ImageIcon size={14} />}>
@@ -186,9 +144,7 @@ export function ImageGenNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() =>
-                updateConfig({ executionMode: 'user_key', provider: 'image-openai' })
-              }
+              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'image' })}
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
