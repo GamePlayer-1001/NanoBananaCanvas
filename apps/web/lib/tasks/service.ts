@@ -25,6 +25,7 @@ import type { NodeCapability } from '@/lib/ai-node-config'
 import { getPlatformKey } from '@/services/ai'
 
 import { getProcessor } from './processors'
+import type { TaskProcessor } from './processors'
 
 const log = createLogger('task:service')
 const FREE_TASK_CONCURRENCY_LIMIT = 1
@@ -136,6 +137,19 @@ function createReservedTaskBillingDraft(): ReservedTaskBillingDraft {
   }
 }
 
+function toTaskProviderError(
+  error: unknown,
+  meta: Record<string, unknown>,
+  fallbackMessage = 'Task provider request failed',
+): TaskError {
+  if (error instanceof TaskError) {
+    return error
+  }
+
+  const message = error instanceof Error ? error.message : fallbackMessage
+  return new TaskError(ErrorCode.TASK_PROVIDER_ERROR, message, meta)
+}
+
 /* ─── 1. Concurrency Check ──────────────────────────── */
 
 export async function checkConcurrency(
@@ -207,49 +221,42 @@ export async function submitTask(
   await checkConcurrency(db, userId)
 
   let apiKey = ''
-
-  if (executionMode === 'platform') {
-    apiKey = await getTaskPlatformKey(provider as string)
-  }
-
-  /* user_key 模式: 获取解密后的 API Key */
-  if (executionMode === 'user_key') {
-    const runtimeConfig = await getUserTaskRuntimeConfig(
-      db,
-      userId,
-      capability as NodeCapability,
-      configId,
-    )
-    apiKey =
-      runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
-        ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
-        : runtimeConfig.apiKey
-    resolvedProvider = runtimeConfig.providerId
-    resolvedModelId = runtimeConfig.modelId
-    resolvedInput = {
-      ...input,
-      ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
-      billingDraft,
-    }
-  } else {
-    resolvedInput = {
-      ...input,
-      billingDraft,
-    }
-  }
-
-  /* 提交到 Provider */
-  const processor = getProcessor(taskType, resolvedProvider)
-  let submitResult: Awaited<ReturnType<typeof processor.submit>>
+  let processor: ReturnType<typeof getProcessor>
+  let submitResult: Awaited<ReturnType<TaskProcessor['submit']>>
 
   try {
+    if (executionMode === 'platform') {
+      apiKey = await getTaskPlatformKey(provider as string)
+      resolvedInput = {
+        ...input,
+        billingDraft,
+      }
+    } else {
+      const runtimeConfig = await getUserTaskRuntimeConfig(
+        db,
+        userId,
+        capability as NodeCapability,
+        configId,
+      )
+      apiKey =
+        runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
+          ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
+          : runtimeConfig.apiKey
+      resolvedProvider = runtimeConfig.providerId
+      resolvedModelId = runtimeConfig.modelId
+      resolvedInput = {
+        ...input,
+        ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
+        billingDraft,
+      }
+    }
+
+    processor = getProcessor(taskType, resolvedProvider)
     submitResult = await processor.submit(
       { model: resolvedModelId, params: resolvedInput },
       apiKey,
     )
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown image task provider error'
     log.error('Task submit failed', error, {
       taskType,
       provider: requestProvider,
@@ -257,7 +264,7 @@ export async function submitTask(
       modelId: resolvedModelId,
       executionMode,
     })
-    throw new TaskError(ErrorCode.TASK_PROVIDER_ERROR, message, {
+    throw toTaskProviderError(error, {
       taskType,
       provider: requestProvider,
       resolvedProvider,
@@ -323,20 +330,24 @@ async function getUserTaskRuntimeConfig(
   capability: NodeCapability,
   configId?: string,
 ): Promise<UserModelRuntimeConfig> {
-  const keyRow = await findUserConfigRow(db, userId, capability, configId)
+  try {
+    const keyRow = await findUserConfigRow(db, userId, capability, configId)
 
-  if (!keyRow) {
-    throw new TaskError(
-      ErrorCode.TASK_PROVIDER_ERROR,
-      `No API key configured for capability: ${capability}`,
-      { capability },
-    )
+    if (!keyRow) {
+      throw new TaskError(
+        ErrorCode.TASK_PROVIDER_ERROR,
+        `No API key configured for capability: ${capability}`,
+        { capability },
+      )
+    }
+
+    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+    const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
+    const payload = deserializeUserModelConfig(keyRow.configId, decrypted)
+    return toRuntimeUserModelConfig(keyRow.configId, payload)
+  } catch (error) {
+    throw toTaskProviderError(error, { userId, capability, configId })
   }
-
-  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
-  const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(keyRow.configId, decrypted)
-  return toRuntimeUserModelConfig(keyRow.configId, payload)
 }
 
 async function findUserConfigRow(
@@ -382,24 +393,28 @@ async function findUserConfigRow(
 }
 
 async function getTaskPlatformKey(provider: string): Promise<string> {
-  switch (provider) {
-    case 'openrouter':
-    case 'deepseek':
-    case 'gemini':
-      return getPlatformKey(provider)
-    case 'openai':
-      return requireEnv('OPENAI_API_KEY')
-    case 'kling': {
-      const accessKey = await requireEnv('KLING_ACCESS_KEY')
-      const secretKey = await requireEnv('KLING_SECRET_KEY')
-      return `${accessKey}:${secretKey}`
+  try {
+    switch (provider) {
+      case 'openrouter':
+      case 'deepseek':
+      case 'gemini':
+        return await getPlatformKey(provider)
+      case 'openai':
+        return await requireEnv('OPENAI_API_KEY')
+      case 'kling': {
+        const accessKey = await requireEnv('KLING_ACCESS_KEY')
+        const secretKey = await requireEnv('KLING_SECRET_KEY')
+        return `${accessKey}:${secretKey}`
+      }
+      default:
+        throw new TaskError(
+          ErrorCode.TASK_PROVIDER_ERROR,
+          `No platform key mapping for provider: ${provider}`,
+          { provider },
+        )
     }
-    default:
-      throw new TaskError(
-        ErrorCode.TASK_PROVIDER_ERROR,
-        `No platform key mapping for provider: ${provider}`,
-        { provider },
-      )
+  } catch (error) {
+    throw toTaskProviderError(error, { provider })
   }
 }
 
