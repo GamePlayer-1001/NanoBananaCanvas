@@ -390,6 +390,7 @@
     "waitingForInput": "等待输入...",
     "copied": "已复制!",
     "copyResult": "复制结果",
+    "downloadResult": "下载结果",
     "executionMode": "执行模式",
     "platformMode": "平台",
     "userKeyMode": "API Key",

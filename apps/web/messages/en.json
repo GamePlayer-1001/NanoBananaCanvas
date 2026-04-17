@@ -390,6 +390,7 @@
     "waitingForInput": "Waiting for input...",
     "copied": "Copied!",
     "copyResult": "Copy result",
+    "downloadResult": "Download result",
     "executionMode": "Execution Mode",
     "platformMode": "Platform",
     "userKeyMode": "API Key",

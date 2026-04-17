@@ -70,6 +70,10 @@ function pushSnapshotDebounced() {
   debouncedPush({ nodes, edges })
 }
 
+function isResizeEndChange(change: NodeChange<Node<WorkflowNodeData>>): boolean {
+  return change.type === 'dimensions' && 'resizing' in change && change.resizing === false
+}
+
 function sanitizeEdges(nodes: Node<WorkflowNodeData>[], edges: Edge[]): Edge[] {
   return edges.reduce<Edge[]>((validEdges, edge) => {
     if (isValidConnection(edge, nodes, validEdges)) {
@@ -109,6 +113,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       (c) => c.type === 'position' && 'dragging' in c && c.dragging === false,
     )
     if (hasDragEnd) pushSnapshotDebounced()
+
+    /* 缩放结束时记录快照 */
+    const hasResizeEnd = changes.some((c) => isResizeEndChange(c))
+    if (hasResizeEnd) pushSnapshotDebounced()
 
     /* 删除操作记录快照 */
     const hasRemove = changes.some((c) => c.type === 'remove')

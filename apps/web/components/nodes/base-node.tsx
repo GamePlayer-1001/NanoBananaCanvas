@@ -8,8 +8,8 @@
 
 'use client'
 
-import { type ReactNode } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { Handle, NodeResizer, Position, type NodeProps } from '@xyflow/react'
 import type { WorkflowNodeData, PortDefinition } from '@/types'
 import { cn } from '@/lib/utils'
 import { getNodePorts } from './plugin-registry'
@@ -23,6 +23,9 @@ export interface BaseNodeProps extends NodeProps {
   outputs?: PortDefinition[]
   headerRight?: ReactNode
   children?: ReactNode
+  resizable?: boolean
+  minWidth?: number
+  minHeight?: number
 }
 
 /* ─── Status Indicator ────────────────────────────────── */
@@ -99,20 +102,59 @@ export function BaseNode({
   outputs,
   headerRight,
   children,
+  resizable = true,
+  minWidth = 280,
+  minHeight = 100,
 }: BaseNodeProps) {
   const status = data.status ?? 'idle'
   const registryPorts = getNodePorts(type)
   const inputPorts = inputs ?? registryPorts.inputs
   const outputPorts = outputs ?? registryPorts.outputs
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [showResizer, setShowResizer] = useState(false)
+
+  const updateResizeHover = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    if (!resizable) return
+
+    const bounds = containerRef.current?.getBoundingClientRect()
+    if (!bounds) return
+
+    const threshold = 12
+    const localX = event.clientX - bounds.left
+    const localY = event.clientY - bounds.top
+    const nearHorizontal = localX <= threshold || localX >= bounds.width - threshold
+    const nearVertical = localY <= threshold || localY >= bounds.height - threshold
+    const nextVisible = nearHorizontal || nearVertical
+
+    setShowResizer((current) => (current === nextVisible ? current : nextVisible))
+  }, [resizable])
+
+  const hideResizer = useCallback(() => {
+    setShowResizer(false)
+  }, [])
 
   return (
     <div
+      ref={containerRef}
+      onMouseMove={updateResizeHover}
+      onMouseLeave={hideResizer}
+      style={{ minWidth, minHeight }}
       className={cn(
-        'bg-card relative min-h-[100px] w-[280px] rounded-lg border shadow-sm',
+        'bg-card relative h-full w-full rounded-lg border shadow-sm',
         'transition-shadow duration-150',
         selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
       )}
     >
+      {resizable ? (
+        <NodeResizer
+          isVisible={selected || showResizer}
+          minWidth={minWidth}
+          minHeight={minHeight}
+          lineClassName="!border-[var(--brand-500)]/70"
+          handleClassName="!bg-[var(--brand-500)] !w-2 !h-2 !rounded-sm"
+        />
+      ) : null}
+
       {/* ── Header ───────────────────────────────────── */}
       <div className="border-border flex items-center gap-2 border-b px-3 py-2">
         <div className={cn('h-2 w-2 rounded-full', STATUS_COLORS[status])} />

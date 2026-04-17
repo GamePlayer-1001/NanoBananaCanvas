@@ -8,8 +8,8 @@
 
 'use client'
 
-import { useCallback, type ChangeEvent } from 'react'
-import type { NodeProps } from '@xyflow/react'
+import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
+import { NodeResizer, type NodeProps } from '@xyflow/react'
 import { StickyNote } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -31,6 +31,8 @@ const BG_COLORS = [
 export function NoteNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [showResizer, setShowResizer] = useState(false)
 
   const text = (data.config.text as string) ?? ''
   const bgColor = (data.config.bgColor as string) ?? BG_COLORS[0].value
@@ -49,15 +51,40 @@ export function NoteNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
+  const onMouseMove = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    const bounds = containerRef.current?.getBoundingClientRect()
+    if (!bounds) return
+
+    const threshold = 12
+    const localX = event.clientX - bounds.left
+    const localY = event.clientY - bounds.top
+    const nearHorizontal = localX <= threshold || localX >= bounds.width - threshold
+    const nearVertical = localY <= threshold || localY >= bounds.height - threshold
+    const nextVisible = nearHorizontal || nearVertical
+
+    setShowResizer((current) => (current === nextVisible ? current : nextVisible))
+  }, [])
+
   return (
     <div
+      ref={containerRef}
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => setShowResizer(false)}
       className={cn(
-        'relative min-h-[120px] w-[240px] rounded-lg border shadow-sm',
+        'relative h-full min-h-[120px] w-full min-w-[240px] rounded-lg border shadow-sm',
         'transition-shadow duration-150',
         props.selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
       )}
       style={{ backgroundColor: bgColor }}
     >
+      <NodeResizer
+        isVisible={!!props.selected || showResizer}
+        minWidth={240}
+        minHeight={120}
+        lineClassName="!border-[var(--brand-500)]/70"
+        handleClassName="!bg-[var(--brand-500)] !w-2 !h-2 !rounded-sm"
+      />
+
       {/* ── Header ─────────────────────────────────── */}
       <div className="flex items-center gap-2 border-b border-black/10 px-3 py-2">
         <StickyNote size={14} className="text-muted-foreground" />

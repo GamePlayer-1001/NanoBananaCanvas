@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useCallback, type ChangeEvent } from 'react'
+import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { NodeResizer } from '@xyflow/react'
 import { Group } from 'lucide-react'
@@ -32,6 +32,8 @@ const BG_COLORS = [
 export function GroupNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [showResizer, setShowResizer] = useState(false)
 
   const label = data.label ?? 'Group'
   const bgColor = (data.config.bgColor as string) ?? BG_COLORS[0].value
@@ -50,8 +52,25 @@ export function GroupNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
+  const onMouseMove = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    const bounds = containerRef.current?.getBoundingClientRect()
+    if (!bounds) return
+
+    const threshold = 12
+    const localX = event.clientX - bounds.left
+    const localY = event.clientY - bounds.top
+    const nearHorizontal = localX <= threshold || localX >= bounds.width - threshold
+    const nearVertical = localY <= threshold || localY >= bounds.height - threshold
+    const nextVisible = nearHorizontal || nearVertical
+
+    setShowResizer((current) => (current === nextVisible ? current : nextVisible))
+  }, [])
+
   return (
     <div
+      ref={containerRef}
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => setShowResizer(false)}
       className={cn(
         'relative h-full w-full rounded-xl border-2 border-dashed',
         'transition-shadow duration-150',
@@ -60,7 +79,7 @@ export function GroupNode(props: NodeProps) {
       style={{ backgroundColor: bgColor, minWidth: 300, minHeight: 200 }}
     >
       <NodeResizer
-        isVisible={!!props.selected}
+        isVisible={!!props.selected || showResizer}
         minWidth={300}
         minHeight={200}
         lineClassName="!border-[var(--brand-500)]"
