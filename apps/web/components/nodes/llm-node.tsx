@@ -23,6 +23,7 @@ import {
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import {
   getNodeConfigMigrationPatch,
+  resolveAvailableUserConfigId,
   resolvePlatformModel,
   resolvePlatformProvider,
   resolveUserConfigId,
@@ -75,7 +76,10 @@ export function LLMNode(props: NodeProps) {
   const outputRef = useRef<HTMLDivElement>(null)
   const savedTextConfigs = getConfigsByCapability('text')
   const selectedUserConfigId =
-    (resolveUserConfigId(config) ?? savedTextConfigs[0]?.configId) || ''
+    resolveAvailableUserConfigId(
+      config,
+      savedTextConfigs.map((item) => item.configId),
+    ) ?? ''
   const savedTextConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('text')
   const userKeyProviderLabel = getProviderLabel('text', savedTextConfig?.providerId)
@@ -98,14 +102,17 @@ export function LLMNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('llm', config)
-    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
-      patch.userKeyConfigId = savedTextConfig?.configId ?? ''
+    if (
+      executionMode === 'user_key' &&
+      resolveUserConfigId(config) !== selectedUserConfigId
+    ) {
+      patch.userKeyConfigId = selectedUserConfigId
     }
 
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [config, executionMode, savedTextConfig?.configId, updateConfig])
+  }, [config, executionMode, selectedUserConfigId, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {

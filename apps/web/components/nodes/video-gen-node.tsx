@@ -15,6 +15,7 @@ import { Coins, KeyRound, Loader2, Video } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import {
   getNodeConfigMigrationPatch,
+  resolveAvailableUserConfigId,
   resolvePlatformModel,
   resolvePlatformProvider,
   resolveUserConfigId,
@@ -92,7 +93,10 @@ export function VideoGenNode(props: NodeProps) {
   } = useModelConfigs()
   const savedVideoConfigs = getConfigsByCapability('video')
   const selectedUserConfigId =
-    (resolveUserConfigId(config) ?? savedVideoConfigs[0]?.configId) || ''
+    resolveAvailableUserConfigId(
+      config,
+      savedVideoConfigs.map((item) => item.configId),
+    ) ?? ''
   const savedVideoConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('video')
   const userKeyProviderLabel = getProviderLabel('video', savedVideoConfig?.providerId)
@@ -110,13 +114,16 @@ export function VideoGenNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('video-gen', config)
-    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
-      patch.userKeyConfigId = savedVideoConfig?.configId ?? ''
+    if (
+      executionMode === 'user_key' &&
+      resolveUserConfigId(config) !== selectedUserConfigId
+    ) {
+      patch.userKeyConfigId = selectedUserConfigId
     }
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [config, executionMode, savedVideoConfig?.configId, updateConfig])
+  }, [config, executionMode, selectedUserConfigId, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {

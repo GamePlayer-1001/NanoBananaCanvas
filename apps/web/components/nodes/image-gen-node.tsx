@@ -18,6 +18,7 @@ import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import {
   getNodeConfigMigrationPatch,
+  resolveAvailableUserConfigId,
   resolvePlatformModel,
   resolveUserConfigId,
 } from '@/lib/ai-node-config'
@@ -65,7 +66,10 @@ export function ImageGenNode(props: NodeProps) {
   } = useModelConfigs()
   const savedImageConfigs = getConfigsByCapability('image')
   const selectedUserConfigId =
-    (resolveUserConfigId(config) ?? savedImageConfigs[0]?.configId) || ''
+    resolveAvailableUserConfigId(
+      config,
+      savedImageConfigs.map((item) => item.configId),
+    ) ?? ''
   const savedImageConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('image')
   const userKeyProviderLabel = getProviderLabel('image', savedImageConfig?.providerId)
@@ -82,14 +86,17 @@ export function ImageGenNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('image-gen', config)
-    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
-      patch.userKeyConfigId = savedImageConfig?.configId ?? ''
+    if (
+      executionMode === 'user_key' &&
+      resolveUserConfigId(config) !== selectedUserConfigId
+    ) {
+      patch.userKeyConfigId = selectedUserConfigId
     }
 
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [config, executionMode, savedImageConfig?.configId, updateConfig])
+  }, [config, executionMode, selectedUserConfigId, updateConfig])
 
   const onModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {

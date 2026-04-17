@@ -87,6 +87,18 @@ export function resolveUserConfigId(config: Record<string, unknown>): string | u
   return readConfigString(config, 'userKeyConfigId')
 }
 
+export function resolveAvailableUserConfigId(
+  config: Record<string, unknown>,
+  availableConfigIds: readonly string[],
+): string | undefined {
+  const configured = resolveUserConfigId(config)
+  if (configured && availableConfigIds.includes(configured)) {
+    return configured
+  }
+
+  return availableConfigIds[0]
+}
+
 export function resolveNodeExecutionTarget(
   nodeType: SupportedAINodeType,
   config: Record<string, unknown>,

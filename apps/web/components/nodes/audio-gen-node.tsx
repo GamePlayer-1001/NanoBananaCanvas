@@ -15,6 +15,7 @@ import { Coins, KeyRound, Loader2, Music } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import {
   getNodeConfigMigrationPatch,
+  resolveAvailableUserConfigId,
   resolvePlatformModel,
   resolvePlatformProvider,
   resolveUserConfigId,
@@ -74,7 +75,10 @@ export function AudioGenNode(props: NodeProps) {
   } = useModelConfigs()
   const savedAudioConfigs = getConfigsByCapability('audio')
   const selectedUserConfigId =
-    (resolveUserConfigId(config) ?? savedAudioConfigs[0]?.configId) || ''
+    resolveAvailableUserConfigId(
+      config,
+      savedAudioConfigs.map((item) => item.configId),
+    ) ?? ''
   const savedAudioConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('audio')
   const userKeyProviderLabel = getProviderLabel('audio', savedAudioConfig?.providerId)
@@ -92,13 +96,16 @@ export function AudioGenNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('audio-gen', config)
-    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
-      patch.userKeyConfigId = savedAudioConfig?.configId ?? ''
+    if (
+      executionMode === 'user_key' &&
+      resolveUserConfigId(config) !== selectedUserConfigId
+    ) {
+      patch.userKeyConfigId = selectedUserConfigId
     }
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [config, executionMode, savedAudioConfig?.configId, updateConfig])
+  }, [config, executionMode, selectedUserConfigId, updateConfig])
 
   const onModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformModel: e.target.value }),

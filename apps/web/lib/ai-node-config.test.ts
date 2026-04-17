@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getNodeConfigMigrationPatch,
+  resolveAvailableUserConfigId,
   resolveNodeExecutionTarget,
   resolvePlatformProvider,
 } from './ai-node-config'
@@ -57,6 +58,15 @@ describe('ai-node-config', () => {
     expect(target.capability).toBe('audio')
     expect(target.provider).toBeUndefined()
     expect(target.configId).toBe('cfg-audio')
+  })
+
+  it('falls back to the first available config id when stored id is stale', () => {
+    expect(
+      resolveAvailableUserConfigId(
+        { executionMode: 'user_key', userKeyConfigId: 'cfg-missing' },
+        ['cfg-image-a', 'cfg-image-b'],
+      ),
+    ).toBe('cfg-image-a')
   })
 
   it('generates migration patch for legacy workflows', () => {
