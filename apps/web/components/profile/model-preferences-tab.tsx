@@ -261,7 +261,7 @@ export function ModelPreferencesTab() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <div className="flex items-center gap-2 text-base font-semibold text-foreground">
                     <KeyRound size={14} />
                     {t(`capability_${capability}`)}
                   </div>
@@ -315,15 +315,15 @@ export function ModelPreferencesTab() {
                 return (
                   <div
                     key={itemId}
-                    className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-3.5"
+                    className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-3"
                   >
                     {isConfigured ? (
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 space-y-1.5">
-                          <p className="truncate text-lg font-semibold tracking-tight text-foreground">
+                      <div className="flex items-stretch justify-between gap-4">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="truncate text-sm font-medium text-foreground">
                             {saved?.label || t('newConfig')}
                           </p>
-                          <div className="space-y-1 text-sm leading-6 text-muted-foreground">
+                          <div className="space-y-0.5 text-xs leading-5 text-muted-foreground">
                             {saved?.maskedKey ? (
                               <p className="truncate">{t('loadedMaskedKey', { key: saved.maskedKey })}</p>
                             ) : null}
@@ -341,45 +341,47 @@ export function ModelPreferencesTab() {
                           </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-col items-end gap-2">
+                        <div className="flex shrink-0 flex-col items-end self-stretch">
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600">
                             <CheckCircle2 size={12} />
                             {t('configured')}
                           </span>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!configId) return
-                              testMutation.mutate(configId)
-                            }}
-                            disabled={isTesting}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isTesting ? (
-                              <Loader2 size={13} className="animate-spin" />
-                            ) : (
-                              <RefreshCw size={13} />
-                            )}
-                            {t('testApiConfig')}
-                          </button>
+                          <div className="mt-auto flex flex-col items-end gap-2 pt-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!configId) return
+                                testMutation.mutate(configId)
+                              }}
+                              disabled={isTesting}
+                              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isTesting ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <RefreshCw size={12} />
+                              )}
+                              {t('testApiConfig')}
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!configId) return
-                              deleteMutation.mutate(configId)
-                            }}
-                            disabled={isDeleting}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 text-xs font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isDeleting ? (
-                              <Loader2 size={13} className="animate-spin" />
-                            ) : (
-                              <Trash2 size={13} />
-                            )}
-                            {t('deleteApiConfig')}
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!configId) return
+                                deleteMutation.mutate(configId)
+                              }}
+                              disabled={isDeleting}
+                              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 text-xs font-medium text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isDeleting ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={12} />
+                              )}
+                              {t('deleteApiConfig')}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : null}
