@@ -54,9 +54,9 @@ export async function POST(req: Request) {
 
     // 确定使用的 API Key
     let apiKey: string
-    let resolvedModelId = params.modelId
+    let resolvedModelId: string
     let runtimeConfig: UserModelRuntimeConfig | null = null
-    const providerId = params.provider
+    let providerId: string
 
     if (params.executionMode === 'user_key') {
       runtimeConfig = await getUserRuntimeConfig(
@@ -67,15 +67,18 @@ export async function POST(req: Request) {
       )
       apiKey = runtimeConfig.apiKey
       resolvedModelId = runtimeConfig.modelId
+      providerId = runtimeConfig.providerId
     } else {
-      apiKey = await getPlatformKey(providerId as string)
+      providerId = params.provider as string
+      resolvedModelId = params.modelId as string
+      apiKey = await getPlatformKey(providerId)
     }
 
     // 通过 Provider 抽象层发起流式调用，转为 SSE
     const provider =
       runtimeConfig
         ? getUserKeyProvider(runtimeConfig)
-        : getProvider(providerId as string)
+        : getProvider(providerId)
     const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
           userId,
           {
             ...params,
-            provider: runtimeConfig?.providerId ?? (providerId as string),
+            provider: providerId,
             modelId: resolvedModelId,
           },
           'success',
@@ -117,7 +120,7 @@ export async function POST(req: Request) {
           userId,
           {
             ...params,
-            provider: runtimeConfig?.providerId ?? (providerId as string),
+            provider: providerId,
             modelId: resolvedModelId,
           },
           'failed',
