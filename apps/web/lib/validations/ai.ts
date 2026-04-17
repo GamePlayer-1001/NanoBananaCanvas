@@ -9,6 +9,8 @@ import { z } from 'zod'
 
 /* ─── AI 执行请求 ────────────────────────────────────── */
 
+const capabilitySchema = z.enum(['text', 'image', 'video', 'audio'])
+
 const contentPartSchema = z.union([
   z.object({
     type: z.literal('text'),
@@ -22,22 +24,53 @@ const contentPartSchema = z.union([
   }),
 ])
 
-export const aiExecuteSchema = z.object({
-  provider: z.string().min(1),
-  modelId: z.string().min(1),
-  configId: z.string().trim().min(1).optional(),
-  messages: z.array(
-    z.object({
-      role: z.enum(['system', 'user', 'assistant']),
-      content: z.union([z.string(), z.array(contentPartSchema).min(1)]),
-    }),
-  ).min(1),
-  executionMode: z.enum(['platform', 'user_key']).default('platform'),
-  temperature: z.number().min(0).max(2).optional(),
-  maxTokens: z.number().int().min(1).max(32768).optional(),
-  workflowId: z.string().optional(),
-  nodeId: z.string().optional(),
-})
+export const aiExecuteSchema = z
+  .object({
+    provider: z.string().trim().min(1).optional(),
+    capability: capabilitySchema.optional(),
+    modelId: z.string().trim().min(1).optional(),
+    configId: z.string().trim().min(1).optional(),
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(['system', 'user', 'assistant']),
+          content: z.union([z.string(), z.array(contentPartSchema).min(1)]),
+        }),
+      )
+      .min(1),
+    executionMode: z.enum(['platform', 'user_key']).default('platform'),
+    temperature: z.number().min(0).max(2).optional(),
+    maxTokens: z.number().int().min(1).max(32768).optional(),
+    workflowId: z.string().optional(),
+    nodeId: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.executionMode === 'platform') {
+      if (!value.provider) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['provider'],
+          message: 'Platform execution requires provider',
+        })
+      }
+
+      if (!value.modelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['modelId'],
+          message: 'Platform execution requires modelId',
+        })
+      }
+    }
+
+    if (value.executionMode === 'user_key' && !value.capability) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['capability'],
+        message: 'User key execution requires capability',
+      })
+    }
+  })
 
 /* ─── API Key 管理 ───────────────────────────────────── */
 

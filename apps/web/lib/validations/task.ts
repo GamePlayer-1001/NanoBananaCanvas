@@ -9,16 +9,47 @@ import { z } from 'zod'
 
 /* ─── Submit Task ───────────────────────────────────── */
 
-export const submitTaskSchema = z.object({
-  taskType: z.enum(['video_gen', 'image_gen', 'audio_gen']),
-  provider: z.string().min(1, 'Provider is required'),
-  modelId: z.string().min(1, 'Model ID is required'),
-  configId: z.string().trim().min(1).optional(),
-  executionMode: z.enum(['platform', 'user_key']).default('user_key'),
-  input: z.record(z.string(), z.unknown()).default({}),
-  workflowId: z.string().optional(),
-  nodeId: z.string().optional(),
-})
+const capabilitySchema = z.enum(['text', 'image', 'video', 'audio'])
+
+export const submitTaskSchema = z
+  .object({
+    taskType: z.enum(['video_gen', 'image_gen', 'audio_gen']),
+    provider: z.string().trim().min(1).optional(),
+    capability: capabilitySchema.optional(),
+    modelId: z.string().trim().min(1).optional(),
+    configId: z.string().trim().min(1).optional(),
+    executionMode: z.enum(['platform', 'user_key']).default('user_key'),
+    input: z.record(z.string(), z.unknown()).default({}),
+    workflowId: z.string().optional(),
+    nodeId: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.executionMode === 'platform') {
+      if (!value.provider) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['provider'],
+          message: 'Platform execution requires provider',
+        })
+      }
+
+      if (!value.modelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['modelId'],
+          message: 'Platform execution requires modelId',
+        })
+      }
+    }
+
+    if (value.executionMode === 'user_key' && !value.capability) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['capability'],
+        message: 'User key execution requires capability',
+      })
+    }
+  })
 
 export type SubmitTaskInput = z.infer<typeof submitTaskSchema>
 

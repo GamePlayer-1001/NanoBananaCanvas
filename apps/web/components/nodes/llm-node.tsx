@@ -21,6 +21,12 @@ import {
 } from 'lucide-react'
 
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import {
+  getNodeConfigMigrationPatch,
+  resolvePlatformModel,
+  resolvePlatformProvider,
+  resolveUserConfigId,
+} from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import { getAllModelGroups } from '@/services/ai'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -28,8 +34,6 @@ import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
 
-const DEFAULT_PROVIDER = 'openrouter'
-const DEFAULT_MODEL = 'openai/gpt-4o-mini'
 const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_MAX_TOKENS = 1024
 
@@ -43,15 +47,16 @@ export function LLMNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
+  const config = data.config
 
-  const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
-  const model = (data.config.model as string) ?? DEFAULT_MODEL
-  const temperature = (data.config.temperature as number) ?? DEFAULT_TEMPERATURE
-  const maxTokens = (data.config.maxTokens as number) ?? DEFAULT_MAX_TOKENS
-  const executionMode = (data.config.executionMode as string) ?? 'platform'
-  const systemPrompt = (data.config.systemPrompt as string) ?? ''
-  const output = (data.config.output as string) ?? ''
-  const tokenCount = (data.config.tokenCount as number) ?? 0
+  const platformProvider = resolvePlatformProvider('llm', config)
+  const platformModel = resolvePlatformModel('llm', config)
+  const temperature = (config.temperature as number) ?? DEFAULT_TEMPERATURE
+  const maxTokens = (config.maxTokens as number) ?? DEFAULT_MAX_TOKENS
+  const executionMode = (config.executionMode as string) ?? 'platform'
+  const systemPrompt = (config.systemPrompt as string) ?? ''
+  const output = (config.output as string) ?? ''
+  const tokenCount = (config.tokenCount as number) ?? 0
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -62,15 +67,15 @@ export function LLMNode(props: NodeProps) {
 
   const modelGroups = useMemo(() => getAllModelGroups(), [])
   const currentGroups = useMemo(
-    () => modelGroups.filter((g) => g.provider === provider),
-    [modelGroups, provider],
+    () => modelGroups.filter((g) => g.provider === platformProvider),
+    [modelGroups, platformProvider],
   )
 
   const [showSystemPrompt, setShowSystemPrompt] = useState(!!systemPrompt)
   const outputRef = useRef<HTMLDivElement>(null)
   const savedTextConfigs = getConfigsByCapability('text')
   const selectedUserConfigId =
-    ((data.config.userKeyConfigId as string | undefined) ?? savedTextConfigs[0]?.configId) || ''
+    (resolveUserConfigId(config) ?? savedTextConfigs[0]?.configId) || ''
   const savedTextConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('text')
   const userKeyProviderLabel = getProviderLabel('text', savedTextConfig?.providerId)
@@ -86,37 +91,34 @@ export function LLMNode(props: NodeProps) {
 
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
-      updateNodeData(props.id, { config: { ...data.config, ...patch } })
+      updateNodeData(props.id, { config: { ...config, ...patch } })
     },
-    [props.id, data.config, updateNodeData],
+    [props.id, config, updateNodeData],
   )
 
   useEffect(() => {
-    if (executionMode === 'user_key' && provider !== 'text') {
-      updateConfig({
-        provider: 'text',
-        userKeyConfigId: savedTextConfig?.configId ?? '',
-      })
+    const patch = getNodeConfigMigrationPatch('llm', config)
+    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
+      patch.userKeyConfigId = savedTextConfig?.configId ?? ''
     }
-  }, [executionMode, provider, savedTextConfig?.configId, updateConfig])
+
+    if (Object.keys(patch).length > 0) {
+      updateConfig(patch)
+    }
+  }, [config, executionMode, savedTextConfig?.configId, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const newProvider = e.target.value
-      if (executionMode === 'user_key') {
-        updateConfig({ provider: newProvider })
-        return
-      }
-
       const groups = modelGroups.filter((g) => g.provider === newProvider)
       const firstModel = groups[0]?.models[0]?.value ?? ''
-      updateConfig({ provider: newProvider, model: firstModel })
+      updateConfig({ platformProvider: newProvider, platformModel: firstModel })
     },
-    [executionMode, modelGroups, updateConfig],
+    [modelGroups, updateConfig],
   )
 
   const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ model: e.target.value }),
+    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformModel: e.target.value }),
     [updateConfig],
   )
 
@@ -143,37 +145,45 @@ export function LLMNode(props: NodeProps) {
   )
 
   const providerOptions =
-    executionMode === 'user_key'
-      ? [{ value: 'text', label: userKeyProviderLabel }]
-      : (() => {
-          const seen = new Set<string>()
-          return modelGroups
-            .filter((g) => {
-              if (seen.has(g.provider)) return false
-              seen.add(g.provider)
-              return true
-            })
-            .map((g) => ({ value: g.provider, label: g.providerName }))
-        })()
+    (() => {
+      const seen = new Set<string>()
+      return modelGroups
+        .filter((g) => {
+          if (seen.has(g.provider)) return false
+          seen.add(g.provider)
+          return true
+        })
+        .map((g) => ({ value: g.provider, label: g.providerName }))
+    })()
 
   return (
     <BaseNode {...props} data={data} icon={<BrainCircuit size={14} />}>
       <div className="space-y-3">
         <ConfigField label={t('provider')}>
-          <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
-            {providerOptions.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+          {executionMode === 'user_key' ? (
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              {userKeyProviderLabel}
+            </div>
+          ) : (
+            <select
+              value={platformProvider}
+              onChange={onProviderChange}
+              className={SELECT_CLASS}
+            >
+              {providerOptions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          )}
         </ConfigField>
 
         {executionMode === 'user_key' ? (
           <ConfigField label={t('accountConfigLabel')}>
             <select
               value={selectedUserConfigId}
-              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'text' })}
+              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value })}
               className={SELECT_CLASS}
             >
               {savedTextConfigs.length === 0 ? (
@@ -191,7 +201,7 @@ export function LLMNode(props: NodeProps) {
 
         <ConfigField label={t('model')}>
           <select
-            value={executionMode === 'user_key' ? userKeyModelLabel : model}
+            value={executionMode === 'user_key' ? userKeyModelLabel : platformModel}
             onChange={onModelChange}
             className={SELECT_CLASS}
             disabled={executionMode === 'user_key'}
@@ -219,7 +229,8 @@ export function LLMNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  provider: provider === 'text' ? DEFAULT_PROVIDER : provider,
+                  platformProvider,
+                  platformModel,
                 })
               }
               icon={<Coins size={12} />}
@@ -227,7 +238,12 @@ export function LLMNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'text' })}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'user_key',
+                  userKeyConfigId: selectedUserConfigId,
+                })
+              }
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />

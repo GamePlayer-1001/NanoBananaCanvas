@@ -68,12 +68,15 @@ async function executeWithPlatformKey(
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
+  const providerId = params.provider as string
+  const modelId = params.modelId as string
+
   try {
-    const platformKey = await getPlatformKey(params.provider)
-    const provider = getProvider(params.provider)
+    const platformKey = await getPlatformKey(providerId)
+    const provider = getProvider(providerId)
 
     const chatResult = await provider.chat({
-      model: params.modelId,
+      model: modelId,
       messages: params.messages,
       temperature: params.temperature ?? 0.7,
       maxTokens: params.maxTokens ?? 1024,
@@ -84,8 +87,8 @@ async function executeWithPlatformKey(
       userId,
       workflowId: params.workflowId,
       nodeId: params.nodeId,
-      provider: params.provider,
-      modelId: params.modelId,
+      provider: providerId,
+      modelId,
       executionMode: 'platform',
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
@@ -99,8 +102,8 @@ async function executeWithPlatformKey(
       userId,
       workflowId: params.workflowId,
       nodeId: params.nodeId,
-      provider: params.provider,
-      modelId: params.modelId,
+      provider: providerId,
+      modelId,
       executionMode: 'platform',
       durationMs: Date.now() - startTime,
       status: 'failed',
@@ -119,7 +122,8 @@ async function executeWithUserKey(
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
-  const runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider, params.configId)
+  const capability = params.capability as string
+  const runtimeConfig = await getUserRuntimeConfig(db, userId, capability, params.configId)
 
   try {
     const provider = getUserKeyProvider(runtimeConfig)
@@ -142,7 +146,7 @@ async function executeWithUserKey(
       userId,
       workflowId: params.workflowId,
       nodeId: params.nodeId,
-      provider: params.provider,
+      provider: runtimeConfig.providerId,
       modelId: runtimeConfig.modelId,
       executionMode: 'user_key',
       inputTokens: chatResult.usage?.promptTokens ?? null,
@@ -157,7 +161,7 @@ async function executeWithUserKey(
       userId,
       workflowId: params.workflowId,
       nodeId: params.nodeId,
-      provider: params.provider,
+      provider: runtimeConfig.providerId,
       modelId: runtimeConfig.modelId,
       executionMode: 'user_key',
       durationMs: Date.now() - startTime,
@@ -172,13 +176,13 @@ async function executeWithUserKey(
 async function getUserRuntimeConfig(
   db: D1Database,
   userId: string,
-  provider: string,
+  capability: string,
   configId?: string,
 ): Promise<UserModelRuntimeConfig> {
-  const keyRow = await findUserConfigRow(db, userId, provider, configId)
+  const keyRow = await findUserConfigRow(db, userId, capability, configId)
 
   if (!keyRow) {
-    throw new Error('No API key configured for this provider')
+    throw new Error(`No API key configured for capability: ${capability}`)
   }
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')

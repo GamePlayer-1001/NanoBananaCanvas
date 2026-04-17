@@ -13,6 +13,12 @@ import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, KeyRound, Loader2, Music } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import {
+  getNodeConfigMigrationPatch,
+  resolvePlatformModel,
+  resolvePlatformProvider,
+  resolveUserConfigId,
+} from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -20,8 +26,6 @@ import { BaseNode } from './base-node'
 
 /* ─── Defaults ───────────────────────────────────────── */
 
-const DEFAULT_MODEL = 'tts-1'
-const DEFAULT_PROVIDER = 'openai'
 const DEFAULT_VOICE = 'alloy'
 const DEFAULT_SPEED = 1.0
 
@@ -52,14 +56,15 @@ export function AudioGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
+  const config = data.config
 
   /* ── Config values ─────────────────────────────────── */
-  const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
-  const model = (data.config.model as string) ?? DEFAULT_MODEL
-  const executionMode = (data.config.executionMode as string) ?? 'platform'
-  const voice = (data.config.voice as string) ?? DEFAULT_VOICE
-  const speed = (data.config.speed as number) ?? DEFAULT_SPEED
-  const resultUrl = (data.config.resultUrl as string) ?? ''
+  const provider = resolvePlatformProvider('audio-gen', config)
+  const model = resolvePlatformModel('audio-gen', config)
+  const executionMode = (config.executionMode as string) ?? 'platform'
+  const voice = (config.voice as string) ?? DEFAULT_VOICE
+  const speed = (config.speed as number) ?? DEFAULT_SPEED
+  const resultUrl = (config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -69,7 +74,7 @@ export function AudioGenNode(props: NodeProps) {
   } = useModelConfigs()
   const savedAudioConfigs = getConfigsByCapability('audio')
   const selectedUserConfigId =
-    ((data.config.userKeyConfigId as string | undefined) ?? savedAudioConfigs[0]?.configId) || ''
+    (resolveUserConfigId(config) ?? savedAudioConfigs[0]?.configId) || ''
   const savedAudioConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('audio')
   const userKeyProviderLabel = getProviderLabel('audio', savedAudioConfig?.providerId)
@@ -80,27 +85,28 @@ export function AudioGenNode(props: NodeProps) {
   /* ── Update helpers ────────────────────────────────── */
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
-      updateNodeData(props.id, { config: { ...data.config, ...patch } })
+      updateNodeData(props.id, { config: { ...config, ...patch } })
     },
-    [props.id, data.config, updateNodeData],
+    [props.id, config, updateNodeData],
   )
 
   useEffect(() => {
-    if (executionMode === 'user_key' && provider !== 'audio') {
-      updateConfig({ provider: 'audio', userKeyConfigId: savedAudioConfig?.configId ?? '' })
+    const patch = getNodeConfigMigrationPatch('audio-gen', config)
+    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
+      patch.userKeyConfigId = savedAudioConfig?.configId ?? ''
     }
-    if (executionMode === 'platform' && provider === 'audio') {
-      updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
+    if (Object.keys(patch).length > 0) {
+      updateConfig(patch)
     }
-  }, [executionMode, provider, savedAudioConfig?.configId, updateConfig])
+  }, [config, executionMode, savedAudioConfig?.configId, updateConfig])
 
   const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ model: e.target.value }),
+    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformModel: e.target.value }),
     [updateConfig],
   )
 
   const onProviderChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ provider: e.target.value }),
+    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformProvider: e.target.value }),
     [updateConfig],
   )
 
@@ -117,10 +123,7 @@ export function AudioGenNode(props: NodeProps) {
 
   /* ── Speed display ─────────────────────────────────── */
   const speedLabel = useMemo(() => `${speed.toFixed(1)}x`, [speed])
-  const providerOptions =
-    executionMode === 'user_key'
-      ? [{ value: 'audio', label: userKeyProviderLabel }]
-      : [{ value: 'openai', label: 'OpenAI' }]
+  const providerOptions = [{ value: 'openai', label: 'OpenAI' }]
 
   return (
     <BaseNode {...props} data={data} icon={<Music size={14} />}>
@@ -132,8 +135,8 @@ export function AudioGenNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  provider: DEFAULT_PROVIDER,
-                  model: DEFAULT_MODEL,
+                  platformProvider: provider,
+                  platformModel: model,
                 })
               }
               icon={<Coins size={12} />}
@@ -141,7 +144,12 @@ export function AudioGenNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'audio' })}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'user_key',
+                  userKeyConfigId: selectedUserConfigId,
+                })
+              }
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -149,25 +157,26 @@ export function AudioGenNode(props: NodeProps) {
         </ConfigField>
 
         <ConfigField label={t('provider')}>
-          <select
-            value={provider}
-            onChange={onProviderChange}
-            className={SELECT_CLASS}
-            disabled={executionMode === 'user_key'}
-          >
-            {providerOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {executionMode === 'user_key' ? (
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              {userKeyProviderLabel}
+            </div>
+          ) : (
+            <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
+              {providerOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
         </ConfigField>
 
         {executionMode === 'user_key' ? (
           <ConfigField label={t('accountConfigLabel')}>
             <select
               value={selectedUserConfigId}
-              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'audio' })}
+              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value })}
               className={SELECT_CLASS}
             >
               {savedAudioConfigs.length === 0 ? (

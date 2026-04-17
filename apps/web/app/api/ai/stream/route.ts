@@ -56,20 +56,26 @@ export async function POST(req: Request) {
     let apiKey: string
     let resolvedModelId = params.modelId
     let runtimeConfig: UserModelRuntimeConfig | null = null
+    const providerId = params.provider
 
     if (params.executionMode === 'user_key') {
-      runtimeConfig = await getUserRuntimeConfig(db, userId, params.provider, params.configId)
+      runtimeConfig = await getUserRuntimeConfig(
+        db,
+        userId,
+        params.capability as string,
+        params.configId,
+      )
       apiKey = runtimeConfig.apiKey
       resolvedModelId = runtimeConfig.modelId
     } else {
-      apiKey = await getPlatformKey(params.provider)
+      apiKey = await getPlatformKey(providerId as string)
     }
 
     // 通过 Provider 抽象层发起流式调用，转为 SSE
     const provider =
       runtimeConfig
         ? getUserKeyProvider(runtimeConfig)
-        : getProvider(params.provider)
+        : getProvider(providerId as string)
     const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
@@ -97,7 +103,11 @@ export async function POST(req: Request) {
         await writeUsageLog(
           db,
           userId,
-          { ...params, modelId: resolvedModelId },
+          {
+            ...params,
+            provider: runtimeConfig?.providerId ?? (providerId as string),
+            modelId: resolvedModelId,
+          },
           'success',
           Date.now() - startTime,
         )
@@ -105,7 +115,11 @@ export async function POST(req: Request) {
         await writeUsageLog(
           db,
           userId,
-          { ...params, modelId: resolvedModelId },
+          {
+            ...params,
+            provider: runtimeConfig?.providerId ?? (providerId as string),
+            modelId: resolvedModelId,
+          },
           'failed',
           Date.now() - startTime,
           err instanceof Error ? err.message : String(err),
@@ -132,7 +146,7 @@ export async function POST(req: Request) {
 async function getUserRuntimeConfig(
   db: D1Database,
   userId: string,
-  provider: string,
+  capability: string,
   configId?: string,
 ): Promise<UserModelRuntimeConfig> {
   const keyRow = configId
@@ -142,10 +156,10 @@ async function getUserRuntimeConfig(
         )
         .bind(userId, configId)
         .first<{ provider: string; encrypted_key: string }>()
-    : await findFirstCapabilityConfig(db, userId, provider)
+    : await findFirstCapabilityConfig(db, userId, capability)
 
   if (!keyRow) {
-    throw new Error('No API key configured for this provider')
+    throw new Error(`No API key configured for capability: ${capability}`)
   }
 
   const encryptionKey = await requireEnv('ENCRYPTION_KEY')

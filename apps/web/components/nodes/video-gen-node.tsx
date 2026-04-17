@@ -13,6 +13,12 @@ import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, KeyRound, Loader2, Video } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import {
+  getNodeConfigMigrationPatch,
+  resolvePlatformModel,
+  resolvePlatformProvider,
+  resolveUserConfigId,
+} from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -20,8 +26,6 @@ import { BaseNode } from './base-node'
 
 /* ─── Defaults ───────────────────────────────────────── */
 
-const DEFAULT_PROVIDER = 'kling'
-const DEFAULT_MODEL = 'kling-v2-0'
 const DEFAULT_DURATION = '5'
 const DEFAULT_ASPECT = '16:9'
 const DEFAULT_MODE = 'std'
@@ -68,16 +72,17 @@ export function VideoGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
+  const config = data.config
 
   /* ── Config values ─────────────────────────────────── */
-  const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
-  const model = (data.config.model as string) ?? DEFAULT_MODEL
-  const duration = (data.config.duration as string) ?? DEFAULT_DURATION
-  const aspectRatio = (data.config.aspectRatio as string) ?? DEFAULT_ASPECT
-  const mode = (data.config.mode as string) ?? DEFAULT_MODE
-  const executionMode = (data.config.executionMode as string) ?? 'platform'
-  const resultUrl = (data.config.resultUrl as string) ?? ''
-  const progress = (data.config.progress as number) ?? 0
+  const provider = resolvePlatformProvider('video-gen', config)
+  const model = resolvePlatformModel('video-gen', config)
+  const duration = (config.duration as string) ?? DEFAULT_DURATION
+  const aspectRatio = (config.aspectRatio as string) ?? DEFAULT_ASPECT
+  const mode = (config.mode as string) ?? DEFAULT_MODE
+  const executionMode = (config.executionMode as string) ?? 'platform'
+  const resultUrl = (config.resultUrl as string) ?? ''
+  const progress = (config.progress as number) ?? 0
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -87,7 +92,7 @@ export function VideoGenNode(props: NodeProps) {
   } = useModelConfigs()
   const savedVideoConfigs = getConfigsByCapability('video')
   const selectedUserConfigId =
-    ((data.config.userKeyConfigId as string | undefined) ?? savedVideoConfigs[0]?.configId) || ''
+    (resolveUserConfigId(config) ?? savedVideoConfigs[0]?.configId) || ''
   const savedVideoConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('video')
   const userKeyProviderLabel = getProviderLabel('video', savedVideoConfig?.providerId)
@@ -98,35 +103,32 @@ export function VideoGenNode(props: NodeProps) {
   /* ── Update helpers ────────────────────────────────── */
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
-      updateNodeData(props.id, { config: { ...data.config, ...patch } })
+      updateNodeData(props.id, { config: { ...config, ...patch } })
     },
-    [props.id, data.config, updateNodeData],
+    [props.id, config, updateNodeData],
   )
 
   useEffect(() => {
-    if (executionMode === 'user_key' && provider !== 'video') {
-      updateConfig({ provider: 'video', userKeyConfigId: savedVideoConfig?.configId ?? '' })
+    const patch = getNodeConfigMigrationPatch('video-gen', config)
+    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
+      patch.userKeyConfigId = savedVideoConfig?.configId ?? ''
     }
-    if (executionMode === 'platform' && provider === 'video') {
-      updateConfig({ provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL })
+    if (Object.keys(patch).length > 0) {
+      updateConfig(patch)
     }
-  }, [executionMode, provider, savedVideoConfig?.configId, updateConfig])
+  }, [config, executionMode, savedVideoConfig?.configId, updateConfig])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const newProvider = e.target.value
-      if (executionMode === 'user_key') {
-        updateConfig({ provider: newProvider })
-        return
-      }
       const models = VIDEO_MODELS[newProvider] ?? []
-      updateConfig({ provider: newProvider, model: models[0]?.value ?? '' })
+      updateConfig({ platformProvider: newProvider, platformModel: models[0]?.value ?? '' })
     },
-    [executionMode, updateConfig],
+    [updateConfig],
   )
 
   const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ model: e.target.value }),
+    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformModel: e.target.value }),
     [updateConfig],
   )
 
@@ -146,10 +148,7 @@ export function VideoGenNode(props: NodeProps) {
   )
 
   const currentModels = executionMode === 'user_key' ? [] : (VIDEO_MODELS[provider] ?? [])
-  const providerOptions =
-    executionMode === 'user_key'
-      ? [{ value: 'video', label: userKeyProviderLabel }]
-      : VIDEO_PROVIDERS
+  const providerOptions = VIDEO_PROVIDERS
 
   return (
     <BaseNode {...props} data={data} icon={<Video size={14} />}>
@@ -161,8 +160,8 @@ export function VideoGenNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  provider: DEFAULT_PROVIDER,
-                  model: DEFAULT_MODEL,
+                  platformProvider: provider,
+                  platformModel: model,
                 })
               }
               icon={<Coins size={12} />}
@@ -170,7 +169,12 @@ export function VideoGenNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'video' })}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'user_key',
+                  userKeyConfigId: selectedUserConfigId,
+                })
+              }
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -179,17 +183,23 @@ export function VideoGenNode(props: NodeProps) {
 
         {/* ── Provider selector ────────────────────── */}
         <ConfigField label={t('provider')}>
-          <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
-            {providerOptions.map((p) => (
-              <option
-                key={p.value}
-                value={p.value}
-                disabled={'disabled' in p ? p.disabled : false}
-              >
-                {p.label}
-              </option>
-            ))}
-          </select>
+          {executionMode === 'user_key' ? (
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              {userKeyProviderLabel}
+            </div>
+          ) : (
+            <select value={provider} onChange={onProviderChange} className={SELECT_CLASS}>
+              {providerOptions.map((p) => (
+                <option
+                  key={p.value}
+                  value={p.value}
+                  disabled={'disabled' in p ? p.disabled : false}
+                >
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          )}
         </ConfigField>
 
         {/* ── Model selector ──────────────────────── */}
@@ -216,7 +226,7 @@ export function VideoGenNode(props: NodeProps) {
           <ConfigField label={t('accountConfigLabel')}>
             <select
               value={selectedUserConfigId}
-              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value, provider: 'video' })}
+              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value })}
               className={SELECT_CLASS}
             >
               {savedVideoConfigs.length === 0 ? (

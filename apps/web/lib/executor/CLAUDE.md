@@ -9,7 +9,7 @@
 ```
 index.ts              — 聚合导出执行引擎公共 API
 topological-sort.ts   — Kahn 算法 BFS 拓扑排序 + 环检测 (O(V+E))
-node-executor.ts      — 节点执行分发器 (14 种节点类型)，按 nodeType 路由到具体执行函数，Merge 节点按 plugin-registry 端口顺序汇聚输入
+node-executor.ts      — 节点执行分发器 (14 种节点类型)，先经 ai-node-config 解析平台 provider / 用户 capability，再路由到执行函数
 workflow-executor.ts  — 顶层编排器 WorkflowExecutor 类 (排序→执行→条件跳过→循环迭代→中断→错误处理)
 topological-sort.test.ts — 拓扑排序单元测试 (8 用例: 空图/线性/钻石/断连/环检测)
 node-executor.test.ts — 节点执行单元测试 (text-input/conditional/loop 的输入解析与输出语义)
@@ -26,10 +26,10 @@ WorkflowExecutor.execute()
     │   ├── collectInputs()              → 沿 edges 回溯上游输出
     │   ├── executeNode()                → 按 nodeType 分发
     │   │   ├── text-input → 直接输出 config.text
-    │   │   ├── llm → /api/ai/execute or /api/ai/stream
-    │   │   ├── image-gen → /api/tasks 提交 + 轮询完成
-    │   │   ├── video-gen → /api/tasks 提交 + 轮询完成
-    │   │   ├── audio-gen → /api/tasks 提交 + 轮询完成
+    │   │   ├── llm → ai-node-config 解析执行目标 → /api/ai/execute or /api/ai/stream
+    │   │   ├── image-gen → ai-node-config 解析执行目标 → /api/tasks 提交 + 轮询完成
+    │   │   ├── video-gen → ai-node-config 解析执行目标 → /api/tasks 提交 + 轮询完成
+    │   │   ├── audio-gen → ai-node-config 解析执行目标 → /api/tasks 提交 + 轮询完成
     │   │   ├── conditional → 评估条件 → true-out/false-out (null 端口)
     │   │   ├── loop → 准备 items → body 子图迭代执行
     │   │   ├── text-merge/image-merge → 按注册表端口顺序显式汇聚多输入

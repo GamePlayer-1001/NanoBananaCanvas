@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       userId,
       taskType: params.taskType,
       provider: params.provider,
+      capability: params.capability,
       modelId: params.modelId,
       configId: params.configId,
       executionMode: params.executionMode,

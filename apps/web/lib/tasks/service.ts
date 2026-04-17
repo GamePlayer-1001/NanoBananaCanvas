@@ -21,6 +21,7 @@ import {
   toRuntimeUserModelConfig,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
+import type { NodeCapability } from '@/lib/ai-node-config'
 import { getPlatformKey } from '@/services/ai'
 
 import { getProcessor } from './processors'
@@ -58,8 +59,9 @@ interface TaskRow {
 export interface SubmitTaskParams {
   userId: string
   taskType: AsyncTaskType
-  provider: string
-  modelId: string
+  provider?: string
+  capability?: NodeCapability
+  modelId?: string
   configId?: string
   executionMode: ExecutionMode
   input: Record<string, unknown>
@@ -165,10 +167,39 @@ export async function submitTask(
   db: D1Database,
   params: SubmitTaskParams,
 ): Promise<TaskDetail> {
-  const { userId, taskType, provider, modelId, configId, executionMode, input, workflowId, nodeId } = params
+  const {
+    userId,
+    taskType,
+    provider,
+    capability,
+    modelId,
+    configId,
+    executionMode,
+    input,
+    workflowId,
+    nodeId,
+  } = params
   const config = TASK_CONFIG[taskType]
-  let resolvedProvider = provider
-  let resolvedModelId = modelId
+  const requestProvider = executionMode === 'platform' ? provider : capability
+
+  if (executionMode === 'platform' && (!provider || !modelId)) {
+    throw new TaskError(
+      ErrorCode.TASK_PROVIDER_ERROR,
+      'Platform task execution requires provider and modelId',
+      { taskType, provider, modelId, executionMode },
+    )
+  }
+
+  if (executionMode === 'user_key' && !capability) {
+    throw new TaskError(
+      ErrorCode.TASK_PROVIDER_ERROR,
+      'User key task execution requires capability',
+      { taskType, capability, executionMode },
+    )
+  }
+
+  let resolvedProvider = provider ?? ''
+  let resolvedModelId = modelId ?? ''
   let resolvedInput = input
   const billingDraft = createReservedTaskBillingDraft()
 
@@ -178,12 +209,17 @@ export async function submitTask(
   let apiKey = ''
 
   if (executionMode === 'platform') {
-    apiKey = await getTaskPlatformKey(provider)
+    apiKey = await getTaskPlatformKey(provider as string)
   }
 
   /* user_key 模式: 获取解密后的 API Key */
   if (executionMode === 'user_key') {
-    const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, provider, configId)
+    const runtimeConfig = await getUserTaskRuntimeConfig(
+      db,
+      userId,
+      capability as NodeCapability,
+      configId,
+    )
     apiKey =
       runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
         ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
@@ -216,14 +252,14 @@ export async function submitTask(
       error instanceof Error ? error.message : 'Unknown image task provider error'
     log.error('Task submit failed', error, {
       taskType,
-      provider,
+      provider: requestProvider,
       resolvedProvider,
       modelId: resolvedModelId,
       executionMode,
     })
     throw new TaskError(ErrorCode.TASK_PROVIDER_ERROR, message, {
       taskType,
-      provider,
+      provider: requestProvider,
       resolvedProvider,
       modelId: resolvedModelId,
       executionMode,
@@ -245,7 +281,7 @@ export async function submitTask(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
-      taskId, userId, taskType, provider, resolvedModelId,
+      taskId, userId, taskType, requestProvider, resolvedModelId,
       submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
       initialStatus,
       config.maxRetries, workflowId ?? null, nodeId ?? null,
@@ -253,12 +289,19 @@ export async function submitTask(
     )
     .run()
 
-  log.info('Task submitted', { taskId, taskType, provider, resolvedProvider, executionMode, initialStatus })
+  log.info('Task submitted', {
+    taskId,
+    taskType,
+    provider: requestProvider,
+    resolvedProvider,
+    executionMode,
+    initialStatus,
+  })
 
   return {
     id: taskId,
     taskType,
-    provider,
+    provider: requestProvider as string,
     modelId: resolvedModelId,
     executionMode,
     status: initialStatus,
@@ -277,16 +320,16 @@ export async function submitTask(
 async function getUserTaskRuntimeConfig(
   db: D1Database,
   userId: string,
-  provider: string,
+  capability: NodeCapability,
   configId?: string,
 ): Promise<UserModelRuntimeConfig> {
-  const keyRow = await findUserConfigRow(db, userId, provider, configId)
+  const keyRow = await findUserConfigRow(db, userId, capability, configId)
 
   if (!keyRow) {
     throw new TaskError(
       ErrorCode.TASK_PROVIDER_ERROR,
-      `No API key configured for provider: ${provider}`,
-      { provider },
+      `No API key configured for capability: ${capability}`,
+      { capability },
     )
   }
 
@@ -406,7 +449,11 @@ export async function checkTask(
   let apiKey = ''
   let processorProvider = row.provider
   if (row.execution_mode === 'user_key' && row.external_task_id) {
-    const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
+    const runtimeConfig = await getUserTaskRuntimeConfig(
+      db,
+      userId,
+      row.provider as NodeCapability,
+    )
     apiKey =
       runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
         ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
@@ -510,7 +557,11 @@ export async function cancelTask(
       let apiKey = ''
       let processorProvider = row.provider
       if (row.execution_mode === 'user_key') {
-        const runtimeConfig = await getUserTaskRuntimeConfig(db, userId, row.provider)
+        const runtimeConfig = await getUserTaskRuntimeConfig(
+          db,
+          userId,
+          row.provider as NodeCapability,
+        )
         apiKey = runtimeConfig.apiKey
         processorProvider = runtimeConfig.providerId
       } else if (row.execution_mode === 'platform') {

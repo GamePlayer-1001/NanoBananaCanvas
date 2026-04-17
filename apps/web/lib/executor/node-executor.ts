@@ -9,6 +9,7 @@
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { getNodePorts } from '@/components/nodes/plugin-registry'
+import { resolveNodeExecutionTarget } from '@/lib/ai-node-config'
 import type { ChatMessage, ContentPart } from '@/services/ai/types'
 import type { WorkflowNodeData } from '@/types'
 
@@ -135,14 +136,11 @@ function decodeConfiguredSeparator(separator: string): string {
 async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
   const { data, inputs, signal, onStreamChunk } = ctx
   const config = data.config
-
-  const providerId = (config.provider as string) ?? 'openrouter'
-  const model = (config.model as string) ?? 'openai/gpt-4o-mini'
-  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
+  const target = resolveNodeExecutionTarget('llm', config)
   const temperature = (config.temperature as number) ?? 0.7
   const maxTokens = (config.maxTokens as number) ?? 1024
   const systemPrompt = (config.systemPrompt as string) ?? ''
-  const executionMode = (config.executionMode as string) ?? 'platform'
+  const executionMode = target.executionMode
 
   /* ── 收集 prompt：优先上游输入，其次 config ────── */
   const promptText = (inputs['prompt-in'] as string) ?? ''
@@ -178,9 +176,10 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   if (executionMode === 'platform' || executionMode === 'user_key') {
     result = onStreamChunk
       ? await executeLLMViaStreamApi({
-          provider: providerId,
-          modelId: model,
-          configId,
+          provider: target.provider,
+          capability: target.capability,
+          modelId: target.modelId,
+          configId: target.configId,
           messages,
           executionMode,
           temperature,
@@ -189,9 +188,10 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
           onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
         })
       : await executeLLMViaApi({
-          provider: providerId,
-          modelId: model,
-          configId,
+          provider: target.provider,
+          capability: target.capability,
+          modelId: target.modelId,
+          configId: target.configId,
           messages,
           executionMode,
           temperature,
@@ -222,12 +222,9 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
   const { data, inputs, signal } = ctx
   const config = data.config
-
-  const provider = (config.provider as string) ?? 'openrouter'
-  const model = (config.model as string) ?? 'openai/dall-e-3'
-  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
+  const target = resolveNodeExecutionTarget('image-gen', config)
   const size = (config.size as string) ?? '1024x1024'
-  const executionMode = (config.executionMode as string) ?? 'platform'
+  const executionMode = target.executionMode
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const referenceImage = (inputs['image-in'] as string) || undefined
 
@@ -249,16 +246,20 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const resultUrl = await executeTaskOutputViaApi({
     taskType: 'image_gen',
-    provider,
-    modelId: model,
-    configId,
+    provider: target.provider,
+    capability: target.capability,
+    modelId: target.modelId,
+    configId: target.configId,
     executionMode,
     input: { prompt, size, imageUrl: referenceImage },
     outputType: 'image',
     signal,
   })
 
-  log.debug('Image gen complete', { nodeId: ctx.nodeId, provider })
+  log.debug('Image gen complete', {
+    nodeId: ctx.nodeId,
+    provider: target.provider ?? target.capability,
+  })
   return { outputs: { 'image-out': resultUrl } }
 }
 
@@ -267,11 +268,8 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
 async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
   const { data, inputs, signal } = ctx
   const config = data.config
-
-  const provider = (config.provider as string) ?? 'kling'
-  const model = (config.model as string) ?? 'kling-v2-0'
-  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
-  const executionMode = (config.executionMode as string) ?? 'platform'
+  const target = resolveNodeExecutionTarget('video-gen', config)
+  const executionMode = target.executionMode
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const imageUrl = (inputs['image-in'] as string) || undefined
 
@@ -293,10 +291,11 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const resultUrl = await executeTaskOutputViaApi({
     taskType: 'video_gen',
-    provider,
-    modelId: model,
-    configId,
-    executionMode: executionMode as 'platform' | 'user_key',
+    provider: target.provider,
+    capability: target.capability,
+    modelId: target.modelId,
+    configId: target.configId,
+    executionMode,
     input: {
       prompt,
       imageUrl,
@@ -308,7 +307,10 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     signal,
   })
 
-  log.debug('Video gen complete', { nodeId: ctx.nodeId, provider })
+  log.debug('Video gen complete', {
+    nodeId: ctx.nodeId,
+    provider: target.provider ?? target.capability,
+  })
   return { outputs: { 'video-out': resultUrl } }
 }
 
@@ -317,11 +319,8 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
 async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
   const { data, inputs, signal } = ctx
   const config = data.config
-
-  const provider = (config.provider as string) ?? 'openai'
-  const model = (config.model as string) ?? 'tts-1'
-  const configId = (config.userKeyConfigId as string | undefined) ?? undefined
-  const executionMode = (config.executionMode as string) ?? 'platform'
+  const target = resolveNodeExecutionTarget('audio-gen', config)
+  const executionMode = target.executionMode
   const voice = (config.voice as string) ?? 'alloy'
   const speed = (config.speed as number) ?? 1.0
   const text = (inputs['text-in'] as string) ?? ''
@@ -344,16 +343,20 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const resultUrl = await executeTaskOutputViaApi({
     taskType: 'audio_gen',
-    provider,
-    modelId: model,
-    configId,
-    executionMode: executionMode as 'platform' | 'user_key',
+    provider: target.provider,
+    capability: target.capability,
+    modelId: target.modelId,
+    configId: target.configId,
+    executionMode,
     input: { text, voice, speed },
     outputType: 'audio',
     signal,
   })
 
-  log.debug('Audio gen complete', { nodeId: ctx.nodeId, provider })
+  log.debug('Audio gen complete', {
+    nodeId: ctx.nodeId,
+    provider: target.provider ?? target.capability,
+  })
   return { outputs: { 'audio-out': resultUrl } }
 }
 
@@ -548,8 +551,9 @@ async function executeDisplay(ctx: NodeExecutionContext): Promise<NodeExecutionR
 }
 
 interface ExecuteLLMApiParams {
-  provider: string
-  modelId: string
+  provider?: string
+  capability?: 'text' | 'image' | 'video' | 'audio'
+  modelId?: string
   configId?: string
   messages: ChatMessage[]
   executionMode: 'platform' | 'user_key'
@@ -660,8 +664,9 @@ async function createApiWorkflowError(response: Response): Promise<WorkflowError
 
 interface ExecuteTaskOutputApiParams {
   taskType: 'image_gen' | 'video_gen' | 'audio_gen'
-  provider: string
-  modelId: string
+  provider?: string
+  capability?: 'text' | 'image' | 'video' | 'audio'
+  modelId?: string
   configId?: string
   executionMode: 'platform' | 'user_key'
   input: Record<string, unknown>
@@ -678,6 +683,7 @@ async function executeTaskOutputViaApi(
     body: JSON.stringify({
       taskType: params.taskType,
       provider: params.provider,
+      capability: params.capability,
       modelId: params.modelId,
       configId: params.configId,
       executionMode: params.executionMode,

@@ -16,14 +16,17 @@ import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import {
+  getNodeConfigMigrationPatch,
+  resolvePlatformModel,
+  resolveUserConfigId,
+} from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
 
-const DEFAULT_PROVIDER = 'openrouter'
-const DEFAULT_MODEL = 'openai/dall-e-3'
 const DEFAULT_SIZE = '1024x1024'
 
 const SIZE_OPTIONS = [
@@ -44,15 +47,15 @@ export function ImageGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
+  const config = data.config
 
-  const provider = (data.config.provider as string) ?? DEFAULT_PROVIDER
-  const model = (data.config.model as string) ?? DEFAULT_MODEL
+  const model = resolvePlatformModel('image-gen', config)
   const selectedPlatformModel =
     PLATFORM_IMAGE_MODELS.find((item) => item.value === model) ??
     PLATFORM_IMAGE_MODELS[0]
-  const size = (data.config.size as string) ?? DEFAULT_SIZE
-  const executionMode = (data.config.executionMode as string) ?? 'platform'
-  const resultUrl = (data.config.resultUrl as string) ?? ''
+  const size = (config.size as string) ?? DEFAULT_SIZE
+  const executionMode = (config.executionMode as string) ?? 'platform'
+  const resultUrl = (config.resultUrl as string) ?? ''
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -62,7 +65,7 @@ export function ImageGenNode(props: NodeProps) {
   } = useModelConfigs()
   const savedImageConfigs = getConfigsByCapability('image')
   const selectedUserConfigId =
-    ((data.config.userKeyConfigId as string | undefined) ?? savedImageConfigs[0]?.configId) || ''
+    (resolveUserConfigId(config) ?? savedImageConfigs[0]?.configId) || ''
   const savedImageConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('image')
   const userKeyProviderLabel = getProviderLabel('image', savedImageConfig?.providerId)
@@ -72,46 +75,34 @@ export function ImageGenNode(props: NodeProps) {
 
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
-      updateNodeData(props.id, { config: { ...data.config, ...patch } })
+      updateNodeData(props.id, { config: { ...config, ...patch } })
     },
-    [props.id, data.config, updateNodeData],
+    [props.id, config, updateNodeData],
   )
 
   useEffect(() => {
-    if (
-      executionMode === 'user_key' &&
-      provider !== 'image'
-    ) {
-      updateConfig({ provider: 'image', userKeyConfigId: savedImageConfig?.configId ?? '' })
+    const patch = getNodeConfigMigrationPatch('image-gen', config)
+    if (executionMode === 'user_key' && !resolveUserConfigId(config)) {
+      patch.userKeyConfigId = savedImageConfig?.configId ?? ''
     }
-    if (
-      executionMode === 'platform' &&
-      provider !== selectedPlatformModel.provider
-    ) {
-      updateConfig({
-        provider: selectedPlatformModel.provider,
-        model: selectedPlatformModel.value,
-      })
+
+    if (Object.keys(patch).length > 0) {
+      updateConfig(patch)
     }
-  }, [executionMode, provider, savedImageConfig?.configId, selectedPlatformModel.provider, selectedPlatformModel.value, updateConfig])
+  }, [config, executionMode, savedImageConfig?.configId, updateConfig])
 
   const onModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const nextModel = e.target.value
-      if (executionMode === 'user_key') {
-        updateConfig({ model: nextModel })
-        return
-      }
-
       const matched =
         PLATFORM_IMAGE_MODELS.find((item) => item.value === nextModel) ??
         PLATFORM_IMAGE_MODELS[0]
       updateConfig({
-        model: matched.value,
-        provider: matched.provider,
+        platformModel: matched.value,
+        platformProvider: matched.provider,
       })
     },
-    [executionMode, updateConfig],
+    [updateConfig],
   )
 
   const onSizeChange = useCallback(
@@ -129,8 +120,8 @@ export function ImageGenNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  provider: DEFAULT_PROVIDER,
-                  model: DEFAULT_MODEL,
+                  platformProvider: selectedPlatformModel.provider,
+                  platformModel: selectedPlatformModel.value,
                 })
               }
               icon={<Coins size={12} />}
@@ -138,7 +129,12 @@ export function ImageGenNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() => updateConfig({ executionMode: 'user_key', provider: 'image' })}
+              onClick={() =>
+                updateConfig({
+                  executionMode: 'user_key',
+                  userKeyConfigId: selectedUserConfigId,
+                })
+              }
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -156,9 +152,7 @@ export function ImageGenNode(props: NodeProps) {
             <ConfigField label={t('accountConfigLabel')}>
               <select
                 value={selectedUserConfigId}
-                onChange={(e) =>
-                  updateConfig({ userKeyConfigId: e.target.value, provider: 'image' })
-                }
+                onChange={(e) => updateConfig({ userKeyConfigId: e.target.value })}
                 className={SELECT_CLASS}
               >
                 {savedImageConfigs.length === 0 ? (

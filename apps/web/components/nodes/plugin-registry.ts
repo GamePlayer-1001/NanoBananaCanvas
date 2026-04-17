@@ -106,7 +106,11 @@ register({
     ],
     outputs: [{ id: 'text-out', label: 'Response', type: 'string' }],
   },
-  defaults: { provider: 'openrouter', model: 'openai/gpt-4o-mini', temperature: 0.7 },
+  defaults: {
+    platformProvider: 'openrouter',
+    platformModel: 'openai/gpt-4o-mini',
+    temperature: 0.7,
+  },
   toolbar: { labelKey: 'llm' },
 })
 
@@ -136,8 +140,8 @@ register({
     outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },
   defaults: {
-    provider: 'openrouter',
-    model: 'openai/dall-e-3',
+    platformProvider: 'openrouter',
+    platformModel: 'openai/dall-e-3',
     size: '1024x1024',
     tokenBillingDraft: null,
   },
@@ -157,8 +161,8 @@ register({
     outputs: [{ id: 'video-out', label: 'Video', type: 'video' }],
   },
   defaults: {
-    provider: 'kling',
-    model: 'kling-v2-0',
+    platformProvider: 'kling',
+    platformModel: 'kling-v2-0',
     duration: '5',
     aspectRatio: '16:9',
     mode: 'std',
@@ -175,7 +179,12 @@ register({
     inputs: [{ id: 'text-in', label: 'Text', type: 'string', required: true }],
     outputs: [{ id: 'audio-out', label: 'Audio', type: 'audio' }],
   },
-  defaults: { provider: 'openai', model: 'tts-1', voice: 'alloy', speed: 1.0 },
+  defaults: {
+    platformProvider: 'openai',
+    platformModel: 'tts-1',
+    voice: 'alloy',
+    speed: 1.0,
+  },
   toolbar: { labelKey: 'audioGen' },
 })
 
