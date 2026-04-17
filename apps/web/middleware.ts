@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 next-intl/middleware 的 createMiddleware，
  *          依赖 @/i18n/routing 的 routing 配置
- * [OUTPUT]: 对外提供 Next.js Proxy (裸域规范化 + 本地化语言检测 + URL 前缀重写)
- * [POS]: 项目根级 Proxy 入口，承接 Next.js 16 的 proxy 约定并保持 Cloudflare Workers 兼容
+ * [OUTPUT]: 对外提供 Next.js Edge Middleware (裸域规范化 + 本地化语言检测 + URL 前缀重写)
+ * [POS]: 项目根级 Edge Middleware 入口，优先兼容 OpenNext Cloudflare 当前运行时边界
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -16,9 +16,9 @@ const intlMiddleware = createIntlMiddleware(routing)
 const CANONICAL_HOST = 'nanobananacanvas.com'
 const WWW_HOST = `www.${CANONICAL_HOST}`
 
-/* ─── Combined Proxy ─────────────────────────────────── */
+/* ─── Combined Middleware ────────────────────────────── */
 
-export default function proxy(req: NextRequest) {
+export default function middleware(req: NextRequest) {
   if (req.nextUrl.hostname === WWW_HOST) {
     const url = req.nextUrl.clone()
     url.hostname = CANONICAL_HOST
