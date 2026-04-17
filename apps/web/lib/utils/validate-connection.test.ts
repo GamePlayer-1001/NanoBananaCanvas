@@ -23,7 +23,12 @@ function mkNode(id: string, type: string): Node<WorkflowNodeData> {
   }
 }
 
-function mkEdge(src: string, tgt: string, srcH = 'text-out', tgtH = 'prompt-in'): Edge {
+function mkEdge(
+  src: string,
+  tgt: string,
+  srcH: string | null | undefined = 'text-out',
+  tgtH: string | null | undefined = 'prompt-in',
+): Edge {
   return {
     id: `${src}-${tgt}`,
     source: src,
@@ -36,8 +41,8 @@ function mkEdge(src: string, tgt: string, srcH = 'text-out', tgtH = 'prompt-in')
 function mkConn(
   src: string,
   tgt: string,
-  srcH = 'text-out',
-  tgtH = 'prompt-in',
+  srcH: string | null | undefined = 'text-out',
+  tgtH: string | null | undefined = 'prompt-in',
 ): Connection {
   return { source: src, target: tgt, sourceHandle: srcH, targetHandle: tgtH }
 }
