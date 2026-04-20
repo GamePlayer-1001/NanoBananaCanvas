@@ -20,6 +20,8 @@
     "clean": "node -e \"const fs=require('fs'); for (const target of ['.next','.turbo']) fs.rmSync(target,{recursive:true,force:true}); fs.rmSync('tsconfig.tsbuildinfo',{force:true});\""
   },
   "dependencies": {
+    "@clerk/localizations": "^4.5.2",
+    "@clerk/nextjs": "^7.2.3",
     "@hookform/resolvers": "^5.2.2",
     "@nano-banana/shared": "workspace:*",
     "@opennextjs/cloudflare": "^1.17.1",
