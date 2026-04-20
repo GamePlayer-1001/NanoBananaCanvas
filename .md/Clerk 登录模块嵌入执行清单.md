@@ -1,7 +1,7 @@
 # Clerk 登录模块嵌入执行清单
 
 > 基于《Clerk 登录系统回装方案与清单.md》与当前匿名主链代码现状整理。
-> 目标不是“把 Clerk 装回去”，而是“在匿名可用前提下外挂一个账户系统”。
+> 目标不是“把 Clerk 装回去”，而是“把真实登录能力接回当前产品链路，并与业务身份体系解耦”。
 
 ## 一、现状判断
 
@@ -10,12 +10,12 @@
 1. `apps/web/middleware.ts` 当前只承担两件事：裸域规范化 + `next-intl` locale 重写。
 2. `apps/web/lib/api/auth.ts` 当前通过 `nb_guest_id` cookie 生成匿名访客身份，并把身份镜像写入 `users.clerk_id = anon:{guestId}`。
 3. 所有核心 API 基本都依赖 `requireAuth()` / `optionalAuth()`，但它们现在返回的是匿名上下文，而不是第三方登录态。
-4. Landing 页主 CTA 当前直接跳 `/workspace`，说明产品主链默认允许匿名进入创作。
+4. Landing 页主 CTA 当前已经跳 `/sign-in`，说明当前产品入口已调整为先登录再进入创作。
 5. 账户页 `/[locale]/account` 当前承载的是“匿名账户镜像 + API Key 配置”，不是 Clerk 账户中心。
 
 ### 1.2 本次回装的设计边界
 
-1. 不改匿名主链的默认可用性。
+1. 不把 Clerk 反向渗透成业务单一真相源。
 2. 不让 `middleware` 再次变成认证、i18n、代理、保护的四合一黑洞。
 3. 不让业务层直接消费 Clerk SDK 原始对象。
 4. 不以 Clerk 是否可用来决定画板能否打开。
@@ -74,13 +74,14 @@ type SessionActor =
 
 ### 3.2 页面跳转规则
 
-1. Landing 主 CTA 继续保留“直接进入产品”的匿名路径，目标仍为 `/workspace`。
-2. Landing 右上角新增明确的“登录”入口，跳到 `/sign-in?redirect_url=/{locale}/account`。
+1. Landing 主 CTA 直接进入 `/{locale}/sign-in`。
+2. Landing 当前不新增独立“登录”按钮，避免双入口并存造成认知噪音。
 3. 当用户从需要账户态的能力进入时，统一跳到：
    `/sign-in?redirect_url={encodedCurrentPath}`
 4. 登录成功后只允许回跳到站内白名单路径：
    `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/canvas/:id`
-5. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
+5. 当前第一阶段默认回跳 `/{locale}/workspace`，后续再补安全白名单解析。
+6. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
 
 ### 3.3 第一阶段不保护的页面
 
@@ -98,8 +99,8 @@ type SessionActor =
 
 ### 4.1 Landing 页
 
-1. 保留现有“立即创作”按钮，继续走匿名主链。
-2. 在 `landing-nav.tsx` 增加次级按钮“登录”。
+1. 保留现有“立即创作”按钮，但它现在承担登录入口职责。
+2. Landing 顶部不新增单独“登录”按钮。
 3. 如需强调账户价值，只展示轻文案：
    “登录后可同步作品、跨设备读取 API 配置、管理个人资料”。
 
@@ -185,7 +186,7 @@ type SessionActor =
 
 ### Phase 0：预检与准备
 
-- [ ] 确认 `@clerk/nextjs` 与 `@clerk/localizations` 的目标版本
+- [x] 确认 `@clerk/nextjs` 与 `@clerk/localizations` 的目标版本
 - [ ] 清点当前代码里所有依赖匿名 actor 的 API 与页面
 - [ ] 确认第一阶段哪些能力必须登录，哪些继续匿名
 - [ ] 确认 Clerk Dashboard 中启用的登录方式（邮箱 / Google / GitHub）
@@ -193,12 +194,13 @@ type SessionActor =
 
 ### Phase 1：最小接入
 
-- [ ] 安装 Clerk 依赖
-- [ ] 在最小根边界注入 `ClerkProvider`
-- [ ] 新建 `(auth)` 路由组与 `sign-in`、`sign-up` 页面
-- [ ] 为认证页面补齐中英文案
+- [x] 安装 Clerk 依赖
+- [x] 在最小根边界注入 `ClerkProvider`
+- [x] 新建 `(auth)` 路由组与 `sign-in`、`sign-up` 页面
+- [x] 为认证页面补齐中英文案
 - [ ] 定义统一 `redirect_url` 白名单策略
-- [ ] LandingNav 增加“登录”入口，保留“立即创作”匿名入口
+- [x] 调整 Landing 主 CTA 进入登录页
+- [ ] 核验 Clerk Dashboard 真实环境配置
 
 ### Phase 2：身份抽象层
 
@@ -276,7 +278,7 @@ type SessionActor =
 
 满足以下条件，才算这次 Clerk 回装设计成立：
 
-1. 未登录用户仍可进入工作区和画布主链。
+1. 登录入口、登录页、注册页和成功回跳路径都明确且稳定。
 2. 登录页、注册页、登录回跳路径都明确且安全。
 3. 业务服务层不直接依赖 Clerk 原始对象。
 4. 受保护能力是局部显式的，而不是全局隐式的。
