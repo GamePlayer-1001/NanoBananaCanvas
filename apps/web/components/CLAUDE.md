@@ -13,6 +13,7 @@ canvas/            — 画布引擎组件 (Canvas + TopToolbar + Toolbar + Contr
 nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合并工具节点)
 edges/             — 连线组件 (CustomEdge 贝塞尔曲线)
 layout/            — 布局组件 (LandingNav + LandingFooter + AppSidebar)
+auth/              — 认证组件 (AuthShell 双栏认证壳，承载登录/注册视觉骨架)
 landing/           — Landing 页面组件 (HeroSection + FloatingCards + CtaSection)
 explore/           — 探索页组件 (ExploreContent + ExploreTabs + ExploreGrid)
 workflows/         — 工作流分享组件 (WorkflowsContent)

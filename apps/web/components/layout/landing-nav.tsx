@@ -21,6 +21,7 @@ import { Link } from '@/i18n/navigation'
 
 export function LandingNav() {
   const t = useTranslations('landing')
+  const authT = useTranslations('auth')
 
   return (
     <TooltipProvider>
@@ -52,6 +53,15 @@ export function LandingNav() {
           {/* ── Right Actions ──────────────────────────── */}
           <div className="flex items-center gap-3">
             <LocaleSwitcher />
+            <Link href="/sign-in">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-white/12 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              >
+                {authT('signIn')}
+              </Button>
+            </Link>
             <Link href="/workspace">
               <Button
                 size="sm"

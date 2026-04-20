@@ -14,6 +14,7 @@ zh.json: 中文翻译，与 en.json 结构完全对称
 - `metadata` — 页面 SEO 元数据
 - `notFound` — 404 页面
 - `landing` — Landing Page 内容 (含 signIn/dashboard 认证按钮文案)
+- `auth` — 登录/注册页面文案与认证视觉区说明
 - `workspace` — 工作空间页面
 - `canvas` — 画布操作 (Run/Stop/Import/Export/toast)
 - `toolbar` — 底部工具栏标签
