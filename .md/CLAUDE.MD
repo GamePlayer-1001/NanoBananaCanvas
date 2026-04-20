@@ -14,6 +14,7 @@ SEO 与 Open Graph 策略.md: SEO、OG、Sitemap 与结构化数据策略
 Landing Page 视觉策略.md: Landing 页视觉语言与动效策略  
 AI Provider 适配层设计.md: 多 Provider 抽象层与接入差异说明  
 Clerk 登录系统回装方案与清单.md: 未来重新嵌入身份系统时的目标架构、前置条件与执行清单
+Clerk 登录模块嵌入执行清单.md: 基于当前匿名主链整理的 Clerk 嵌入方案、路由跳转设计与分阶段执行清单
 
 ## 历史归档
 
