@@ -13,7 +13,11 @@
 5. Landing Page 当前不保留单独“登录”按钮，主 CTA“立即创作”已经跳转到 `/sign-in`。
 6. 登录成功后的默认回跳已经指向 `/workspace`。
 7. 站点当前使用隐藏语言前缀策略，外部 URL 不暴露 `/zh`、`/en` 前缀。
-8. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”和“生产环境 Dashboard 配置核验”。
+8. 当前 `apps/web/middleware.ts` 仍只处理裸域规范化与 `next-intl` 重写，尚未接入 Clerk 代理或任何 `auth.protect()` 逻辑。
+9. 当前 `apps/web/lib/api/auth.ts`、`apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts` 仍然基于匿名访客镜像工作，业务主链尚未消费真实 Clerk 会话。
+10. 当前 `/[locale]/account`、`AppSidebar`、`MobileHeader` 展示的仍是匿名用户镜像，不是 Clerk 账户态。
+11. 当前仓库中不存在 `apps/web/app/api/webhooks/clerk/route.ts`，Webhook 同步链路尚未落地。
+12. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”“Clerk Dashboard/生产环境配置核验”“Webhook 账户镜像同步”。
 
 ## 二、回装前提
 
@@ -75,6 +79,7 @@
 - [x] 仅在需要 session 的最外层布局注入 Provider
 - [x] 新建 `/sign-in`、`/sign-up` 页面
 - [x] 明确登录成功后的单一回跳路径
+- [ ] 在 `middleware.ts` 中补齐生产所需的 Clerk 代理能力（当前未接入）
 
 ### 5.3 身份适配
 
@@ -108,7 +113,7 @@
 - [ ] 登录用户可以看到额外的账户能力，而不是只有“登录成功”但没有业务账户态
 - [ ] 核心服务层不直接依赖 Clerk SDK
 - [ ] 路由保护是局部的、显式的，不是全局泛滥的
-- [x] `pnpm lint` 通过
+- [ ] `pnpm lint` 通过
 - [ ] `pnpm test` 通过
 
 ## 九、分步协作方式
@@ -126,5 +131,12 @@
 认证应该是外挂，不应该是地基。
 
 如果某次回装让“画板离开 Clerk 就不能活”，那说明设计又走回了旧路，必须立刻停下来重构边界。
+
+## 十一、本轮代码审计结论（2026-04-20）
+
+1. 当前最准确的阶段描述不是“Clerk 已回装完成”，而是“Clerk 认证入口层已回装，业务身份桥接层未完成”。
+2. 已完成的是 UI 入口、Provider 注入、语言本地化与默认回跳；未完成的是 actor 抽象、账户态 UI 合流、Webhook 镜像、局部受保护能力。
+3. `users.clerk_id` 继续承担兼容身份键角色，当前仍写入 `anon:{guestId}`；在真正接桥前，不应把它重新当成“只存 Clerk user id”的字段。
+4. 下一步优先级应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后再处理 Dashboard 与 Webhook。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

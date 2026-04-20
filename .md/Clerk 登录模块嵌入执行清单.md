@@ -12,6 +12,8 @@
 3. 所有核心 API 基本都依赖 `requireAuth()` / `optionalAuth()`，但它们现在返回的是匿名上下文，而不是第三方登录态。
 4. Landing 页主 CTA 当前已经跳 `/sign-in`，说明当前产品入口已调整为先登录再进入创作。
 5. 账户页 `/[locale]/account` 当前承载的是“匿名账户镜像 + API Key 配置”，不是 Clerk 账户中心。
+6. `apps/web/app/api/webhooks/clerk/route.ts` 当前不存在，说明 Clerk 账户镜像同步尚未开始。
+7. `AppSidebar` 与 `MobileHeader` 虽然已经有账户入口，但入口消费的是 `/api/users/me` 返回的匿名镜像。
 
 ### 1.2 本次回装的设计边界
 
@@ -187,7 +189,7 @@ type SessionActor =
 ### Phase 0：预检与准备
 
 - [x] 确认 `@clerk/nextjs` 与 `@clerk/localizations` 的目标版本
-- [ ] 清点当前代码里所有依赖匿名 actor 的 API 与页面
+- [x] 清点当前代码里所有依赖匿名 actor 的 API 与页面
 - [ ] 确认第一阶段哪些能力必须登录，哪些继续匿名
 - [ ] 确认 Clerk Dashboard 中启用的登录方式（邮箱 / Google / GitHub）
 - [ ] 确认生产域名是否仍需 `__clerk` 代理路径
@@ -200,6 +202,7 @@ type SessionActor =
 - [x] 为认证页面补齐中英文案
 - [ ] 定义统一 `redirect_url` 白名单策略
 - [x] 调整 Landing 主 CTA 进入登录页
+- [ ] 在 `middleware.ts` 中补齐 Clerk 生产代理能力（当前代码未接）
 - [ ] 核验 Clerk Dashboard 真实环境配置
 
 ### Phase 2：身份抽象层
@@ -283,5 +286,12 @@ type SessionActor =
 3. 业务服务层不直接依赖 Clerk 原始对象。
 4. 受保护能力是局部显式的，而不是全局隐式的。
 5. 未来继续接“云同步 / webhook / OAuth / 账户资料”时，不需要推翻本次分层。
+
+## 十一、本轮清单修订说明（2026-04-20）
+
+1. 这份清单已按当前代码状态回写，不再假设 `middleware` 已带 Clerk 代理，也不再假设 `/account` 已接上真实账户态。
+2. 当前可以明确视为“已完成”的只有认证入口层：Provider、登录页、注册页、Landing 跳转、默认回跳。
+3. 当前仍属于“未完成”的核心链路有三条：身份抽象层、账户页合流、Webhook 镜像同步。
+4. 后续如果开始做真实登录桥接，应该优先改 `lib/api/auth.ts` 与 `/api/users/me`，因为它们是所有账户 UI 和业务 API 的单一身份入口。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
