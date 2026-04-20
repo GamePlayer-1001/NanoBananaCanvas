@@ -42,6 +42,15 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
 }
 
+/* ─── Clerk Redirects ─────────────────────────────────── */
+
+const CLERK_SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? '/sign-in'
+const CLERK_SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? '/sign-up'
+const CLERK_SIGN_IN_FALLBACK_REDIRECT_URL =
+  process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ?? '/workspace'
+const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
+  process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/workspace'
+
 /* ─── Layout ────────────────────────────────────────────── */
 
 export default async function LocaleLayout({
@@ -65,6 +74,10 @@ export default async function LocaleLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider
           localization={locale === 'zh' ? zhCN : undefined}
+          signInUrl={CLERK_SIGN_IN_URL}
+          signUpUrl={CLERK_SIGN_UP_URL}
+          signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
+          signUpFallbackRedirectUrl={CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
           appearance={{ cssLayerName: 'clerk' }}
         >
           <TooltipProvider>
