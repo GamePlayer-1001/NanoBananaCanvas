@@ -62,7 +62,7 @@ export function LandingNav() {
                 {authT('signIn')}
               </Button>
             </Link>
-            <Link href="/workspace">
+            <Link href="/sign-in">
               <Button
                 size="sm"
                 className="bg-brand-500 hover:bg-brand-600 text-sm text-white"

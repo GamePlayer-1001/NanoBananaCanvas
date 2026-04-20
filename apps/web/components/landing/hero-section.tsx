@@ -336,7 +336,7 @@ export function HeroSection() {
 
             {/* CTA */}
             <Link
-              href="/workspace"
+              href="/sign-in"
               className="border-brand-500/50 bg-brand-500/15 hover:bg-brand-500/25 pointer-events-auto inline-flex h-11 items-center rounded-lg border px-7 text-sm font-medium text-white backdrop-blur-sm transition-all"
             >
               {t('cta')}
