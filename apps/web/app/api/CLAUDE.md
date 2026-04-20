@@ -32,6 +32,8 @@ admin/                  — 运维管理 (1 端点)
   cleanup/route.ts      — POST 手动触发过期文件清理 (Bearer token 认证)
 og/route.tsx            — GET  Open Graph 动态图片生成
 health/route.ts         — GET  健康检查端点
+webhooks/               — Clerk 账户镜像同步 (1 端点)
+  clerk/route.ts        — POST Clerk 用户 webhook (created/updated/deleted)
 
 tasks/                  — P2 异步任务队列 (3 端点)
   route.ts              — POST 提交任务 / GET 任务列表

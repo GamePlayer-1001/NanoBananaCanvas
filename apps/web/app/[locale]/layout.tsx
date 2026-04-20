@@ -5,6 +5,7 @@
  *          依赖 @/i18n/routing 的 routing 配置，
  *          依赖 next/font/google 的 Geist 字体，
  *          依赖 @/components/ui/sonner 的 Toaster，
+ *          依赖 @/components/ui/tooltip 的 TooltipProvider，
  *          依赖 @/lib/query/provider 的 QueryProvider
  * [OUTPUT]: 对外提供带 locale 参数的语言布局 (html/body + Clerk/i18n/Query Provider)
  * [POS]: [locale] 动态路由布局，包裹所有语言相关页面，是 Clerk、i18n 与 Query 的枢纽
@@ -18,6 +19,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { QueryProvider } from '@/lib/query/provider'
 import { routing } from '@/i18n/routing'
 import '@/app/globals.css'
@@ -39,6 +41,15 @@ const geistMono = Geist_Mono({
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
 }
+
+/* ─── Clerk Redirects ─────────────────────────────────── */
+
+const CLERK_SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? '/sign-in'
+const CLERK_SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? '/sign-up'
+const CLERK_SIGN_IN_FALLBACK_REDIRECT_URL =
+  process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ?? '/workspace'
+const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
+  process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/workspace'
 
 /* ─── Layout ────────────────────────────────────────────── */
 
@@ -63,13 +74,19 @@ export default async function LocaleLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider
           localization={locale === 'zh' ? zhCN : undefined}
+          signInUrl={CLERK_SIGN_IN_URL}
+          signUpUrl={CLERK_SIGN_UP_URL}
+          signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
+          signUpFallbackRedirectUrl={CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
           appearance={{ cssLayerName: 'clerk' }}
         >
-          <NextIntlClientProvider messages={messages}>
-            <QueryProvider>
-              {children}
-            </QueryProvider>
-          </NextIntlClientProvider>
+          <TooltipProvider>
+            <NextIntlClientProvider messages={messages}>
+              <QueryProvider>
+                {children}
+              </QueryProvider>
+            </NextIntlClientProvider>
+          </TooltipProvider>
         </ClerkProvider>
         <Toaster position="bottom-right" richColors />
       </body>
