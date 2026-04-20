@@ -204,6 +204,7 @@ type SessionActor =
 - [x] 调整 Landing 主 CTA 进入登录页
 - [ ] 在 `middleware.ts` 中补齐 Clerk 生产代理能力（当前代码未接）
 - [ ] 核验 Clerk Dashboard 真实环境配置
+  当前状态：2026-04-20 已重建新的 Production 实例；本地 `pk/sk` 已切到新实例，但 DNS 解析、Path 配置、Webhook 仍未补齐。
 
 ### Phase 2：身份抽象层
 
@@ -293,5 +294,7 @@ type SessionActor =
 2. 当前可以明确视为“已完成”的只有认证入口层：Provider、登录页、注册页、Landing 跳转、默认回跳。
 3. 当前仍属于“未完成”的核心链路有三条：身份抽象层、账户页合流、Webhook 镜像同步。
 4. 后续如果开始做真实登录桥接，应该优先改 `lib/api/auth.ts` 与 `/api/users/me`，因为它们是所有账户 UI 和业务 API 的单一身份入口。
+5. 当日已重建新的 Clerk Production 实例；仓库侧已切换本地运行所用的 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 与 `CLERK_SECRET_KEY`，但这类变更只落在 `apps/web/.env.local`，不会进入 git 留痕。
+6. 新实例当前仍缺三类外围配置：`clerk.nanobananacanvas.com / accounts.nanobananacanvas.com` 的 DNS 解析、Dashboard 中的 Path 路径核对，以及 `/api/webhooks/clerk` 落地前对应的 Webhook 创建。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
