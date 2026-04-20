@@ -1,23 +1,15 @@
 /**
- * [INPUT]: 依赖 lucide-react 图标，依赖 @/components/ui/button / card / input / label，依赖 @/i18n/navigation 的 Link
+ * [INPUT]: 依赖 react 的 ReactNode，依赖 lucide-react 图标，
+ *          依赖 @/components/locale-switcher，依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 AuthShell 认证双栏壳组件
  * [POS]: auth 模块的核心展示组件，被 sign-in/sign-up 页面复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { ArrowRight, Github, LockKeyhole, Mail, PanelsTopLeft, Sparkles } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { ArrowRight, PanelsTopLeft, Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 import { Link } from '@/i18n/navigation'
 
 type AuthMode = 'sign-in' | 'sign-up'
@@ -26,10 +18,10 @@ interface AuthShellProps {
   mode: AuthMode
   title: string
   subtitle: string
-  ctaLabel: string
   switchLabel: string
   switchHref: '/sign-in' | '/sign-up'
   switchText: string
+  children: ReactNode
   t: {
     brandName: string
     visualEyebrow: string
@@ -38,14 +30,6 @@ interface AuthShellProps {
     visualPointOne: string
     visualPointTwo: string
     visualPointThree: string
-    emailLabel: string
-    emailPlaceholder: string
-    passwordLabel: string
-    passwordPlaceholder: string
-    forgotPassword: string
-    divider: string
-    continueWithGoogle: string
-    continueWithGithub: string
     termsPrefix: string
     termsLink: string
     and: string
@@ -58,220 +42,126 @@ export function AuthShell({
   mode,
   title,
   subtitle,
-  ctaLabel,
   switchLabel,
   switchHref,
   switchText,
+  children,
   t,
 }: AuthShellProps) {
   const isSignIn = mode === 'sign-in'
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#09090d]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.24),_transparent_34%),radial-gradient(circle_at_bottom_left,_rgba(244,114,182,0.16),_transparent_28%),linear-gradient(135deg,_#09090d_0%,_#111322_46%,_#09090d_100%)]" />
-      <div className="absolute inset-y-0 left-[14%] hidden w-px bg-white/8 lg:block" />
-      <div className="absolute right-[10%] top-[12%] hidden h-56 w-56 rounded-full bg-brand-500/18 blur-3xl lg:block" />
-      <div className="absolute bottom-[10%] left-[8%] hidden h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl lg:block" />
+    <div className="min-h-screen bg-[#f6f3ef]">
+      <div className="grid min-h-screen lg:grid-cols-[1.02fr_0.98fr]">
+        <section className="relative hidden overflow-hidden bg-[#1a120f] lg:block">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_22%,_rgba(255,226,205,0.42),_transparent_18%),radial-gradient(circle_at_70%_18%,_rgba(254,114,144,0.18),_transparent_22%),radial-gradient(circle_at_28%_82%,_rgba(236,72,153,0.18),_transparent_18%),radial-gradient(circle_at_78%_72%,_rgba(59,130,246,0.15),_transparent_20%),linear-gradient(180deg,_rgba(12,8,7,0.16),_rgba(12,8,7,0.42))]" />
+          <div className="absolute inset-0 opacity-80 [background-image:radial-gradient(circle_at_center,_rgba(255,255,255,0.55)_0,_transparent_18%),radial-gradient(circle_at_center,_rgba(96,165,250,0.6)_0,_transparent_12%),radial-gradient(circle_at_center,_rgba(251,113,133,0.5)_0,_transparent_12%)] [background-position:0_0,40px_40px,80px_12px] [background-size:140px_140px,180px_180px,220px_220px]" />
+          <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-      <div className="relative mx-auto grid min-h-screen w-full max-w-[1500px] lg:grid-cols-[1.08fr_0.92fr]">
-        <section className="relative hidden px-10 py-12 lg:flex lg:flex-col lg:justify-between xl:px-16">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-white/6 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
-              <PanelsTopLeft className="h-5 w-5 text-white" />
+          <div className="absolute -left-16 bottom-[-8%] h-[34rem] w-[28rem] rotate-[-14deg] rounded-[58%_42%_62%_38%/48%_44%_56%_52%] border border-white/10 bg-[radial-gradient(circle_at_35%_35%,_rgba(255,228,228,0.88),_rgba(237,145,163,0.72)_42%,_rgba(115,44,54,0.16)_78%,_transparent_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.4)]" />
+          <div className="absolute left-[16%] top-[12%] h-[22rem] w-[18rem] rotate-[8deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/12 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,234,234,0.92),_rgba(238,164,176,0.76)_46%,_rgba(117,57,69,0.18)_84%,_transparent_100%)] shadow-[0_36px_90px_rgba(0,0,0,0.34)]" />
+          <div className="absolute right-[8%] bottom-[18%] h-36 w-24 rotate-[12deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/10 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,230,236,0.9),_rgba(234,113,135,0.78)_46%,_rgba(105,35,54,0.12)_84%,_transparent_100%)] shadow-[0_22px_60px_rgba(0,0,0,0.34)]" />
+
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/8 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/28 to-transparent" />
+
+          <div className="relative flex h-full flex-col justify-between px-10 py-10 text-white xl:px-14">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+                <PanelsTopLeft className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] tracking-[0.3em] text-white/58 uppercase">
+                  {t.visualEyebrow}
+                </p>
+                <p className="text-base font-semibold">{t.brandName}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold tracking-[0.28em] text-white/45 uppercase">
-                {t.visualEyebrow}
+
+            <div className="max-w-xl space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[11px] tracking-[0.28em] text-white/70 uppercase backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5" />
+                {isSignIn ? 'Sign In Gateway' : 'Create Account'}
+              </div>
+              <h1 className="max-w-xl font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
+                {t.visualHeadline}
+              </h1>
+              <p className="max-w-lg text-lg leading-8 text-white/72">
+                {t.visualDescription}
               </p>
-              <p className="mt-1 text-base font-semibold text-white">{t.brandName}</p>
-            </div>
-          </div>
 
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-xs tracking-[0.22em] text-white/62 uppercase">
-              <Sparkles className="h-3.5 w-3.5" />
-              {isSignIn ? 'Martini-style Auth Shell' : 'Account Creation Surface'}
-            </div>
-            <h1 className="mt-8 max-w-2xl font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
-              {t.visualHeadline}
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-white/68">
-              {t.visualDescription}
-            </p>
-
-            <div className="mt-12 grid gap-4 md:grid-cols-3">
-              {[t.visualPointOne, t.visualPointTwo, t.visualPointThree].map((point) => (
-                <div
-                  key={point}
-                  className="rounded-[28px] border border-white/10 bg-white/[0.045] px-5 py-5 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-sm"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/8">
-                    <ArrowRight className="h-4 w-4 text-white/90" />
+              <div className="grid gap-4 md:grid-cols-3">
+                {[t.visualPointOne, t.visualPointTwo, t.visualPointThree].map((point) => (
+                  <div
+                    key={point}
+                    className="rounded-[28px] border border-white/12 bg-black/16 px-5 py-5 backdrop-blur-md"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-white/72">{point}</p>
                   </div>
-                  <p className="mt-5 text-sm leading-6 text-white/74">{point}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between rounded-[32px] border border-white/10 bg-black/20 px-6 py-5 text-sm text-white/55 backdrop-blur-sm">
-            <span>{t.previewHint}</span>
-            <Link href="/explore" className="font-medium text-white transition-colors hover:text-brand-200">
-              Explore Gallery
-            </Link>
+            <div className="text-sm text-white/54">{t.previewHint}</div>
           </div>
         </section>
 
-        <section className="relative flex items-center justify-center px-4 py-10 sm:px-8 lg:px-10">
-          <div className="w-full max-w-[520px]">
-            <div className="mb-6 flex items-center justify-between lg:hidden">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/6">
-                  <PanelsTopLeft className="h-4.5 w-4.5 text-white" />
+        <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-8 lg:px-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.9),_transparent_32%),linear-gradient(180deg,_#f8f6f3_0%,_#f5f1ed_100%)]" />
+          <div className="absolute inset-x-0 top-0 h-px bg-black/6" />
+
+          <div className="relative z-10 w-full max-w-[560px]">
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-3 lg:hidden">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white shadow-sm">
+                  <PanelsTopLeft className="h-4.5 w-4.5 text-black" />
                 </div>
-                <span className="font-semibold tracking-tight text-white">{t.brandName}</span>
-              </Link>
-              <Link href="/explore" className="text-sm text-white/62 transition-colors hover:text-white">
-                Back
-              </Link>
+                <span className="font-semibold tracking-tight text-black">{t.brandName}</span>
+              </div>
+              <div className="ml-auto">
+                <LocaleSwitcher />
+              </div>
             </div>
 
-            <Card className="overflow-hidden rounded-[32px] border-white/10 bg-[#11131a]/88 py-0 text-white shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-              <CardHeader className="gap-3 border-b border-white/8 px-7 pt-7 pb-6 sm:px-9">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-3xl font-semibold tracking-tight text-white">
-                      {title}
-                    </CardTitle>
-                    <CardDescription className="mt-3 max-w-sm text-sm leading-6 text-white/58">
-                      {subtitle}
-                    </CardDescription>
-                  </div>
-                  <div className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 sm:flex">
-                    {isSignIn ? (
-                      <LockKeyhole className="h-4.5 w-4.5 text-white/76" />
-                    ) : (
-                      <Sparkles className="h-4.5 w-4.5 text-white/76" />
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-6 px-7 pt-7 pb-6 sm:px-9">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 rounded-2xl border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                      <path
-                        fill="currentColor"
-                        d="M21.35 11.1h-9.17v2.98h5.26c-.23 1.5-1.08 2.77-2.3 3.63v2.99h3.72c2.18-2.01 3.44-4.98 3.44-8.52 0-.73-.07-1.43-.2-2.08Z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M12.18 22c3.11 0 5.72-1.03 7.63-2.8l-3.72-2.99c-1.03.69-2.34 1.09-3.91 1.09-3 0-5.54-2.02-6.45-4.73H1.88v3.08A11.53 11.53 0 0 0 12.18 22Z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M5.73 12.56a6.9 6.9 0 0 1 0-4.4V5.08H1.88a11.5 11.5 0 0 0 0 10.56l3.85-3.08Z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M12.18 6.54c1.69 0 3.21.58 4.41 1.71l3.31-3.31C17.89 3.07 15.29 2 12.18 2A11.53 11.53 0 0 0 1.88 8.36l3.85 3.08c.91-2.71 3.45-4.9 6.45-4.9Z"
-                      />
-                    </svg>
-                    {t.continueWithGoogle}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 rounded-2xl border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <Github className="h-4 w-4" />
-                    {t.continueWithGithub}
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-3 text-xs tracking-[0.2em] text-white/28 uppercase">
-                  <div className="h-px flex-1 bg-white/10" />
-                  <span>{t.divider}</span>
-                  <div className="h-px flex-1 bg-white/10" />
-                </div>
-
-                <form className="space-y-5">
-                  <div className="space-y-2.5">
-                    <Label htmlFor={`${mode}-email`} className="text-white/72">
-                      {t.emailLabel}
-                    </Label>
-                    <div className="relative">
-                      <Mail className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-white/30" />
-                      <Input
-                        id={`${mode}-email`}
-                        type="email"
-                        placeholder={t.emailPlaceholder}
-                        className="h-12 rounded-2xl border-white/10 bg-white/[0.04] pl-11 text-white placeholder:text-white/26 focus-visible:border-brand-400 focus-visible:ring-brand-500/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between gap-4">
-                      <Label htmlFor={`${mode}-password`} className="text-white/72">
-                        {t.passwordLabel}
-                      </Label>
-                      {isSignIn ? (
-                        <button
-                          type="button"
-                          className="text-xs font-medium text-white/56 transition-colors hover:text-white"
-                        >
-                          {t.forgotPassword}
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="relative">
-                      <LockKeyhole className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-white/30" />
-                      <Input
-                        id={`${mode}-password`}
-                        type="password"
-                        placeholder={t.passwordPlaceholder}
-                        className="h-12 rounded-2xl border-white/10 bg-white/[0.04] pl-11 text-white placeholder:text-white/26 focus-visible:border-brand-400 focus-visible:ring-brand-500/20"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    className="h-12 w-full rounded-2xl bg-white text-[#0a0a0e] hover:bg-white/92"
-                  >
-                    {ctaLabel}
-                  </Button>
-                </form>
-              </CardContent>
-
-              <CardFooter className="flex-col items-stretch gap-4 border-t border-white/8 px-7 pt-6 pb-7 sm:px-9">
-                <p className="text-center text-sm leading-6 text-white/56">
-                  {switchLabel}{' '}
-                  <Link href={switchHref} className="font-medium text-white transition-colors hover:text-brand-200">
-                    {switchText}
-                  </Link>
+            <div className="mb-8 space-y-3 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-black/8 bg-white shadow-[0_16px_40px_rgba(20,20,20,0.08)]">
+                <PanelsTopLeft className="h-7 w-7 text-black" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium tracking-[0.24em] text-black/42 uppercase">
+                  {t.brandName}
                 </p>
-                <p className="text-center text-xs leading-6 text-white/36">
-                  {t.termsPrefix}{' '}
-                  <Link href="/terms" className="text-white/70 transition-colors hover:text-white">
-                    {t.termsLink}
-                  </Link>{' '}
-                  {t.and}{' '}
-                  <Link href="/privacy" className="text-white/70 transition-colors hover:text-white">
-                    {t.privacyLink}
-                  </Link>
-                </p>
-                <p className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-3 text-center text-xs leading-5 text-white/42">
-                  {t.previewHint}
-                </p>
-              </CardFooter>
-            </Card>
+                <h2 className="font-serif text-4xl tracking-tight text-[#111111]">{title}</h2>
+                <p className="mx-auto max-w-md text-sm leading-7 text-black/54">{subtitle}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-center">{children}</div>
+
+            <div className="mt-6 space-y-3 text-center">
+              <p className="text-sm leading-6 text-black/54">
+                {switchLabel}{' '}
+                <Link
+                  href={switchHref}
+                  className="font-medium text-[#5b53c7] transition-colors hover:text-[#4b45ad]"
+                >
+                  {switchText}
+                </Link>
+              </p>
+              <p className="text-xs leading-6 text-black/38">
+                {t.termsPrefix}{' '}
+                <Link href="/terms" className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]">
+                  {t.termsLink}
+                </Link>{' '}
+                {t.and}{' '}
+                <Link href="/privacy" className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]">
+                  {t.privacyLink}
+                </Link>
+              </p>
+            </div>
           </div>
         </section>
       </div>

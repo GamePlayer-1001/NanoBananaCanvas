@@ -28,7 +28,7 @@ e2e/                 — Playwright E2E 测试
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
 | 缓存   | Cloudflare KV (限流/存储配额)                     |
 | 存储   | Cloudflare R2                                     |
-| 认证   | 当前匿名访客模式，Clerk 回装方案保留在文档层      |
+| 认证   | 匿名主链 + Clerk 登录页回装进行中                 |
 | 支付   | 当前未启用运行时商业化链路，历史方案已归档        |
 | i18n   | next-intl (P1 接入)                               |
 | 部署   | @opennextjs/cloudflare → Cloudflare Workers        |
@@ -53,8 +53,8 @@ pnpm format:check     # Prettier 检查 (CI 用)
 [locale]/(landing)/pricing    — 定价页 (Free/Pro 双档 + 周/月/年切换)
 [locale]/(landing)/privacy    — 隐私政策
 [locale]/(landing)/terms      — 服务条款
-[locale]/(auth)/sign-in       — 预留登录页路由（当前不在主链使用）
-[locale]/(auth)/sign-up       — 预留注册页路由（当前不在主链使用）
+[locale]/(auth)/sign-in       — 登录页 (Landing 主 CTA 入口 + 真实 Clerk 登录卡片)
+[locale]/(auth)/sign-up       — 注册页 (真实 Clerk 注册卡片)
 [locale]/(app)/explore        — 社区广场 (视频卡片网格 + 标签筛选)
 [locale]/(app)/explore/[id]   — 作品详情 (预览 + 作者 + 互动)
 [locale]/(app)/workflows      — 工作流分享 (分类 + 搜索 + 工作流卡片)
@@ -80,10 +80,10 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ## 环境模式
 
-> **当前状态: 匿名主链模式（基础设施生产级 + 身份/支付待重建）**
+> **当前状态: 匿名主链模式 + Clerk 登录页回装中（基础设施生产级 + 身份/支付待重建）**
 >
 > - **基础设施**: D1 数据库、R2 存储、域名路由均已指向生产环境 (nanobananacanvas.com)
-> - **认证**: 当前主链通过匿名访客 cookie + D1 用户镜像运行，Clerk 已退出运行时主链
+> - **认证**: 当前主链仍通过匿名访客 cookie + D1 用户镜像运行，但 `/sign-in` 与 `/sign-up` 已重新接回 Clerk 认证卡片
 > - **支付**: 当前运行时未启用商业化链路，历史 Stripe/积分方案已转入 `.md/archive/`
 > - **环境变量**: 统一通过 `lib/env.ts` (getEnv/requireEnv) 获取，底层走 getCloudflareContext()
 > - **重建**: 未来如需重新接回身份系统，以 `.md/Clerk 登录系统回装方案与清单.md` 为入口

@@ -1,3 +1,5 @@
+@layer theme, base, clerk, components, utilities;
+
 /* ============================================================
  * Nano Banana Canvas — 全局样式
  * Tailwind CSS v4 · CSS-first 配置
