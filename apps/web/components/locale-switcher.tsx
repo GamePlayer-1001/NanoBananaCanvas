@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
@@ -34,21 +35,23 @@ export function LocaleSwitcher() {
   const switchTo = locale === 'en' ? 'zh' : 'en'
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5"
-          onClick={() => router.replace(pathname, { locale: switchTo })}
-        >
-          <Globe size={14} />
-          <span className="hidden sm:inline">{LOCALE_LABEL[locale]}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={8}>
-        {LOCALE_LABEL[locale]}
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => router.replace(pathname, { locale: switchTo })}
+          >
+            <Globe size={14} />
+            <span className="hidden sm:inline">{LOCALE_LABEL[locale]}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" sideOffset={8}>
+          {LOCALE_LABEL[locale]}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
