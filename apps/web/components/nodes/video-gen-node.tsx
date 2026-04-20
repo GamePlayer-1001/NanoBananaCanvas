@@ -159,8 +159,14 @@ export function VideoGenNode(props: NodeProps) {
   const providerOptions = VIDEO_PROVIDERS
 
   return (
-    <BaseNode {...props} data={data} icon={<Video size={14} />}>
-      <div className="space-y-3">
+    <BaseNode
+      {...props}
+      data={data}
+      icon={<Video size={14} />}
+      minHeight={240}
+      bodyClassName="min-h-0"
+    >
+      <div className="flex h-full min-h-0 flex-col gap-3">
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
@@ -287,7 +293,7 @@ export function VideoGenNode(props: NodeProps) {
 
         {/* ── Result area ─────────────────────────── */}
         {(status === 'running' || resultUrl) && (
-          <div className="border-border rounded-md border">
+          <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
@@ -301,9 +307,13 @@ export function VideoGenNode(props: NodeProps) {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-center p-2">
+            <div className="flex min-h-[132px] flex-1 items-center justify-center p-2">
               {resultUrl ? (
-                <video src={resultUrl} controls className="max-h-40 max-w-full rounded" />
+                <video
+                  src={resultUrl}
+                  controls
+                  className="h-full max-h-full max-w-full rounded object-contain"
+                />
               ) : (
                 <span className="text-muted-foreground text-xs italic">
                   {t('generating')}

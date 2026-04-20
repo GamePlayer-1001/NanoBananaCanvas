@@ -165,8 +165,14 @@ export function LLMNode(props: NodeProps) {
     })()
 
   return (
-    <BaseNode {...props} data={data} icon={<BrainCircuit size={14} />}>
-      <div className="space-y-3">
+    <BaseNode
+      {...props}
+      data={data}
+      icon={<BrainCircuit size={14} />}
+      minHeight={220}
+      bodyClassName="min-h-0"
+    >
+      <div className="flex h-full min-h-0 flex-col gap-3">
         <ConfigField label={t('provider')}>
           {executionMode === 'user_key' ? (
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
@@ -307,7 +313,7 @@ export function LLMNode(props: NodeProps) {
         </div>
 
         {status === 'running' || output ? (
-          <div className="border-border rounded-md border">
+          <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
@@ -326,7 +332,7 @@ export function LLMNode(props: NodeProps) {
 
             <div
               ref={outputRef}
-              className="max-h-32 overflow-auto p-2 text-xs leading-relaxed whitespace-pre-wrap"
+              className="min-h-[96px] flex-1 overflow-auto p-2 text-xs leading-relaxed whitespace-pre-wrap"
             >
               {output || (
                 <span className="text-muted-foreground italic">{t('generating')}</span>
