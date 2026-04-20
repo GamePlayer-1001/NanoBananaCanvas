@@ -29,6 +29,7 @@ import { useCanvasToolStore } from '@/stores/use-canvas-tool-store'
 import { useContextMenu } from '@/hooks/use-context-menu'
 import { createNode } from '@/lib/utils/create-node'
 import { getHelperLines } from '@/lib/utils/get-helper-lines'
+import { resolveAutoConnectTargetHandle } from '@/lib/utils/resolve-auto-connect-handle'
 import { isValidConnection } from '@/lib/utils/validate-connection'
 import { useAutoSave, useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
@@ -263,11 +264,21 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
 
       /* 如果是从连线拖拽触发，自动创建边 */
       if (connectingFrom.current) {
+        const sourceNode = useFlowStore
+          .getState()
+          .nodes.find((item) => item.id === connectingFrom.current?.nodeId)
+        const targetHandle = sourceNode?.type
+          ? resolveAutoConnectTargetHandle(
+              sourceNode.type,
+              connectingFrom.current.handleId,
+              type,
+            )
+          : null
         const connection: Connection = {
           source: connectingFrom.current.nodeId,
           sourceHandle: connectingFrom.current.handleId,
           target: node.id,
-          targetHandle: null,
+          targetHandle,
         }
         useFlowStore.getState().onConnect(connection)
         connectingFrom.current = null

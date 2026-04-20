@@ -125,6 +125,8 @@ export function DisplayNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<MonitorPlay size={14} />}
+      minHeight={180}
+      bodyClassName="min-h-0"
       headerRight={
         copyText || downloadPayload ? (
           <div className="flex items-center gap-1">
@@ -135,11 +137,11 @@ export function DisplayNode(props: NodeProps) {
       }
     >
       {content != null && content !== '' ? (
-        <div className="nodrag nowheel max-h-64 overflow-auto text-sm">
+        <div className="nodrag nowheel flex h-full min-h-0 flex-col overflow-auto text-sm">
           <ContentRenderer content={content} />
         </div>
       ) : (
-        <p className="text-muted-foreground text-center text-xs">
+        <p className="text-muted-foreground flex h-full items-center justify-center text-center text-xs">
           {t('waitingForInput')}
         </p>
       )}
@@ -493,14 +495,14 @@ function MediaRenderer({
         <img
           src={content}
           alt="Generated"
-          className="max-h-64 w-full object-contain"
+          className="h-full max-h-full w-full object-contain"
         />
       ) : (
         <JsonBlock value={fallback} />
       )
     case 'video':
       return content ? (
-        <video src={content} controls className="max-h-64 w-full bg-black" />
+        <video src={content} controls className="h-full max-h-full w-full bg-black object-contain" />
       ) : (
         <JsonBlock value={fallback} />
       )

@@ -28,7 +28,7 @@ e2e/                 — Playwright E2E 测试
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
 | 缓存   | Cloudflare KV (限流/存储配额)                     |
 | 存储   | Cloudflare R2                                     |
-| 认证   | 匿名主链 + Clerk 登录页回装进行中                 |
+| 认证   | Clerk 登录页已接回运行时，业务身份桥接继续推进中  |
 | 支付   | 当前未启用运行时商业化链路，历史方案已归档        |
 | i18n   | next-intl (P1 接入)                               |
 | 部署   | @opennextjs/cloudflare → Cloudflare Workers        |
@@ -80,10 +80,10 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ## 环境模式
 
-> **当前状态: 匿名主链模式 + Clerk 登录页回装中（基础设施生产级 + 身份/支付待重建）**
+> **当前状态: Clerk 登录页已上线到运行时，业务身份桥接与支付仍待重建**
 >
 > - **基础设施**: D1 数据库、R2 存储、域名路由均已指向生产环境 (nanobananacanvas.com)
-> - **认证**: 当前主链仍通过匿名访客 cookie + D1 用户镜像运行，但 `/sign-in` 与 `/sign-up` 已重新接回 Clerk 认证卡片
+> - **认证**: Landing 主 CTA 已进入 `/sign-in`；`/sign-in` 与 `/sign-up` 已接回真实 Clerk 卡片，业务侧仍存在匿名 actor 与正式账户态并行阶段
 > - **支付**: 当前运行时未启用商业化链路，历史 Stripe/积分方案已转入 `.md/archive/`
 > - **环境变量**: 统一通过 `lib/env.ts` (getEnv/requireEnv) 获取，底层走 getCloudflareContext()
 > - **重建**: 未来如需重新接回身份系统，以 `.md/Clerk 登录系统回装方案与清单.md` 为入口

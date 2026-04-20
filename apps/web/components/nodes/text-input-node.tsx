@@ -31,13 +31,19 @@ export function TextInputNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<Type size={14} />}>
+    <BaseNode
+      {...props}
+      data={data}
+      icon={<Type size={14} />}
+      minHeight={140}
+      bodyClassName="min-h-0"
+    >
       <textarea
         value={(data.config.text as string) ?? ''}
         onChange={onChange}
         placeholder={t('enterText')}
         rows={3}
-        className="nodrag nowheel border-input bg-background w-full resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
+        className="nodrag nowheel border-input bg-background h-full min-h-[92px] w-full resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />
     </BaseNode>
   )

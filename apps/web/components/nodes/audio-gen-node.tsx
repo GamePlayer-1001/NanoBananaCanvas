@@ -134,8 +134,14 @@ export function AudioGenNode(props: NodeProps) {
   const providerOptions = [{ value: 'openai', label: 'OpenAI' }]
 
   return (
-    <BaseNode {...props} data={data} icon={<Music size={14} />}>
-      <div className="space-y-3">
+    <BaseNode
+      {...props}
+      data={data}
+      icon={<Music size={14} />}
+      minHeight={220}
+      bodyClassName="min-h-0"
+    >
+      <div className="flex h-full min-h-0 flex-col gap-3">
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
@@ -246,7 +252,7 @@ export function AudioGenNode(props: NodeProps) {
 
         {/* ── Result preview ──────────────────────── */}
         {(status === 'running' || resultUrl) && (
-          <div className="border-border rounded-md border">
+          <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
@@ -255,7 +261,7 @@ export function AudioGenNode(props: NodeProps) {
                 <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
               )}
             </div>
-            <div className="flex items-center justify-center p-2">
+            <div className="flex min-h-[88px] flex-1 items-center justify-center p-2">
               {resultUrl ? (
                 <audio src={resultUrl} controls className="nodrag nowheel w-full" />
               ) : (

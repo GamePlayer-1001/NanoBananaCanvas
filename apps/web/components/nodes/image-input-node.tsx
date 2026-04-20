@@ -35,10 +35,16 @@ export function ImageInputNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<ImagePlus size={14} />}>
-      <div className="space-y-2">
+    <BaseNode
+      {...props}
+      data={data}
+      icon={<ImagePlus size={14} />}
+      minHeight={220}
+      bodyClassName="min-h-0"
+    >
+      <div className="flex h-full min-h-0 flex-col gap-2">
         <div className="text-muted-foreground text-xs">{t('imageInputHint')}</div>
-        <ImageUpload value={imageUrl} onChange={onChange} className="h-32 w-full" />
+        <ImageUpload value={imageUrl} onChange={onChange} className="h-full min-h-[128px] w-full" />
       </div>
     </BaseNode>
   )

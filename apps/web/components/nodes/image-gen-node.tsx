@@ -148,8 +148,14 @@ export function ImageGenNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<ImageIcon size={14} />}>
-      <div className="space-y-3">
+    <BaseNode
+      {...props}
+      data={data}
+      icon={<ImageIcon size={14} />}
+      minHeight={220}
+      bodyClassName="min-h-0"
+    >
+      <div className="flex h-full min-h-0 flex-col gap-3">
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
@@ -243,7 +249,7 @@ export function ImageGenNode(props: NodeProps) {
         </ConfigField>
 
         {status === 'running' || resultUrl ? (
-          <div className="border-border rounded-md border">
+          <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
@@ -253,12 +259,12 @@ export function ImageGenNode(props: NodeProps) {
               ) : null}
             </div>
 
-            <div className="flex items-center justify-center p-2">
+            <div className="flex min-h-[120px] flex-1 items-center justify-center p-2">
               {resultUrl ? (
                 <img
                   src={resultUrl}
                   alt="Generated"
-                  className="max-h-40 max-w-full rounded object-contain"
+                  className="h-full max-h-full max-w-full rounded object-contain"
                 />
               ) : (
                 <span className="text-muted-foreground text-xs italic">
