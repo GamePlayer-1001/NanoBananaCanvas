@@ -231,10 +231,10 @@ type SessionActor =
 
 ### Phase 5：Webhook 与账户镜像
 
-- [ ] 新建 `/api/webhooks/clerk`
-- [ ] 只处理 `user.created` / `user.updated` / `user.deleted`
-- [ ] webhook 只更新账户资料镜像，不触发业务初始化级联
-- [ ] 确保 webhook 失败不会阻断登录与产品主链
+- [x] 新建 `/api/webhooks/clerk`
+- [x] 只处理 `user.created` / `user.updated` / `user.deleted`
+- [x] webhook 只更新账户资料镜像，不触发业务初始化级联
+- [x] 确保 webhook 失败不会阻断登录与产品主链
 
 ### Phase 6：收尾与验证
 
@@ -296,5 +296,6 @@ type SessionActor =
 4. 后续如果开始做真实登录桥接，应该优先改 `lib/api/auth.ts` 与 `/api/users/me`，因为它们是所有账户 UI 和业务 API 的单一身份入口。
 5. 当日已重建新的 Clerk Production 实例；仓库侧已切换本地运行所用的 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 与 `CLERK_SECRET_KEY`，但这类变更只落在 `apps/web/.env.local`，不会进入 git 留痕。
 6. 新实例当前仍缺三类外围配置：`clerk.nanobananacanvas.com / accounts.nanobananacanvas.com` 的 DNS 解析、Dashboard 中的 Path 路径核对，以及 `/api/webhooks/clerk` 落地前对应的 Webhook 创建。
+7. 2026-04-20 已补上 `/api/webhooks/clerk` 路由与最小用户镜像同步逻辑；当前剩余阻塞是把这版代码部署到线上，然后再在 Clerk Dashboard 创建真实 webhook 端点并回填新的签名密钥。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

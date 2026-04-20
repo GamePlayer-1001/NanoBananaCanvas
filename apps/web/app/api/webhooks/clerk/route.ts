@@ -7,6 +7,7 @@
  */
 
 import { verifyWebhook } from '@clerk/nextjs/webhooks'
+import type { NextRequest } from 'next/server'
 
 import { apiError, apiOk } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
@@ -111,7 +112,7 @@ async function deleteClerkUser(payload: ClerkUserPayload) {
     .run()
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const signingSecret = await getEnv('CLERK_WEBHOOK_SECRET')
 
   if (!signingSecret) {
