@@ -11,8 +11,9 @@
 3. `apps/web/app/[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx` 已落地，内部使用真实 Clerk `SignIn` 卡片。
 4. `apps/web/app/[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx` 已落地，内部使用真实 Clerk `SignUp` 卡片。
 5. Landing Page 当前不保留单独“登录”按钮，主 CTA“立即创作”已经跳转到 `/sign-in`。
-6. 登录成功后的默认回跳已经指向 `/{locale}/workspace`。
-7. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”和“生产环境 Dashboard 配置核验”。
+6. 登录成功后的默认回跳已经指向 `/workspace`。
+7. 站点当前使用隐藏语言前缀策略，外部 URL 不暴露 `/zh`、`/en` 前缀。
+8. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”和“生产环境 Dashboard 配置核验”。
 
 ## 二、回装前提
 

@@ -74,13 +74,13 @@ type SessionActor =
 
 ### 3.2 页面跳转规则
 
-1. Landing 主 CTA 直接进入 `/{locale}/sign-in`。
+1. Landing 主 CTA 直接进入 `/sign-in`。
 2. Landing 当前不新增独立“登录”按钮，避免双入口并存造成认知噪音。
 3. 当用户从需要账户态的能力进入时，统一跳到：
    `/sign-in?redirect_url={encodedCurrentPath}`
 4. 登录成功后只允许回跳到站内白名单路径：
    `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/canvas/:id`
-5. 当前第一阶段默认回跳 `/{locale}/workspace`，后续再补安全白名单解析。
+5. 当前第一阶段默认回跳 `/workspace`，后续再补安全白名单解析。
 6. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
 
 ### 3.3 第一阶段不保护的页面

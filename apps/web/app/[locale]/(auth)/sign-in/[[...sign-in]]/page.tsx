@@ -74,9 +74,9 @@ export default async function SignInPage({
     >
       <SignIn
         routing="path"
-        path={`/${locale}/sign-in`}
-        signUpUrl={`/${locale}/sign-up`}
-        fallbackRedirectUrl={`/${locale}/workspace`}
+        path="/sign-in"
+        signUpUrl="/sign-up"
+        fallbackRedirectUrl="/workspace"
         appearance={CLERK_CARD_APPEARANCE}
       />
     </AuthShell>

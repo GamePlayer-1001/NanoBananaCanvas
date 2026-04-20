@@ -53,8 +53,8 @@ pnpm format:check     # Prettier 检查 (CI 用)
 [locale]/(landing)/pricing    — 定价页 (Free/Pro 双档 + 周/月/年切换)
 [locale]/(landing)/privacy    — 隐私政策
 [locale]/(landing)/terms      — 服务条款
-[locale]/(auth)/sign-in       — 登录页 (Landing 主 CTA 入口 + 真实 Clerk 登录卡片)
-[locale]/(auth)/sign-up       — 注册页 (真实 Clerk 注册卡片)
+[locale]/(auth)/sign-in       — 登录页 (文件树位于 [locale] 下，外部 URL 暴露为 /sign-in)
+[locale]/(auth)/sign-up       — 注册页 (文件树位于 [locale] 下，外部 URL 暴露为 /sign-up)
 [locale]/(app)/explore        — 社区广场 (视频卡片网格 + 标签筛选)
 [locale]/(app)/explore/[id]   — 作品详情 (预览 + 作者 + 互动)
 [locale]/(app)/workflows      — 工作流分享 (分类 + 搜索 + 工作流卡片)
@@ -69,6 +69,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 - **Monorepo**: pnpm workspace + Turborepo
 - **路由**: `[locale]/(landing|auth|app|editor)` 四路由组
+- **URL 语义**: 语言前缀在外部 URL 中隐藏，`[locale]` 仅作为内部文件树与消息加载边界
 - **Landing**: Hero 交互式画板 (可拖动节点 + SVG 连线) + Footer
 - **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
 - **品牌色**: Indigo-500 (#6366F1)
@@ -83,7 +84,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 > **当前状态: Clerk 登录页已上线到运行时，业务身份桥接与支付仍待重建**
 >
 > - **基础设施**: D1 数据库、R2 存储、域名路由均已指向生产环境 (nanobananacanvas.com)
-> - **认证**: Landing 主 CTA 已进入 `/sign-in`；`/sign-in` 与 `/sign-up` 已接回真实 Clerk 卡片，业务侧仍存在匿名 actor 与正式账户态并行阶段
+> - **认证**: Landing 主 CTA 已进入 `/sign-in`；`/sign-in` 与 `/sign-up` 走隐藏 locale 前缀策略并接回真实 Clerk 卡片，业务侧仍存在匿名 actor 与正式账户态并行阶段
 > - **支付**: 当前运行时未启用商业化链路，历史 Stripe/积分方案已转入 `.md/archive/`
 > - **环境变量**: 统一通过 `lib/env.ts` (getEnv/requireEnv) 获取，底层走 getCloudflareContext()
 > - **重建**: 未来如需重新接回身份系统，以 `.md/Clerk 登录系统回装方案与清单.md` 为入口
