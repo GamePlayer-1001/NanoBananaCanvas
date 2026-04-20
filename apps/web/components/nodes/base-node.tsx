@@ -26,6 +26,7 @@ export interface BaseNodeProps extends NodeProps {
   resizable?: boolean
   minWidth?: number
   minHeight?: number
+  bodyClassName?: string
 }
 
 /* ─── Status Indicator ────────────────────────────────── */
@@ -105,6 +106,7 @@ export function BaseNode({
   resizable = true,
   minWidth = 280,
   minHeight = 100,
+  bodyClassName,
 }: BaseNodeProps) {
   const status = data.status ?? 'idle'
   const registryPorts = getNodePorts(type)
@@ -140,7 +142,7 @@ export function BaseNode({
       onMouseLeave={hideResizer}
       style={{ minWidth, minHeight }}
       className={cn(
-        'bg-card relative h-full w-full rounded-lg border shadow-sm',
+        'bg-card relative flex h-full w-full flex-col rounded-lg border shadow-sm',
         'transition-shadow duration-150',
         selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
       )}
@@ -164,7 +166,7 @@ export function BaseNode({
       </div>
 
       {/* ── Body ─────────────────────────────────────── */}
-      <div className="p-3">{children}</div>
+      <div className={cn('flex min-h-0 flex-1 flex-col p-3', bodyClassName)}>{children}</div>
 
       {/* ── Input Handles ────────────────────────────── */}
       {inputPorts.map((port, i) => (
