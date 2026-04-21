@@ -50,6 +50,7 @@ const CLERK_SIGN_IN_FALLBACK_REDIRECT_URL =
   process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ?? '/workspace'
 const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
   process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/workspace'
+const CLERK_PROXY_URL = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
 
 /* ─── Layout ────────────────────────────────────────────── */
 
@@ -78,6 +79,7 @@ export default async function LocaleLayout({
           signUpUrl={CLERK_SIGN_UP_URL}
           signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
           signUpFallbackRedirectUrl={CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
+          proxyUrl={CLERK_PROXY_URL}
           appearance={{ cssLayerName: 'clerk' }}
         >
           <TooltipProvider>

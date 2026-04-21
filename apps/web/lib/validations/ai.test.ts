@@ -23,8 +23,13 @@ describe('aiExecuteSchema', () => {
   })
 
   it('accepts user_key execution mode', () => {
-    const result = aiExecuteSchema.parse({ ...validInput, executionMode: 'user_key' })
+    const result = aiExecuteSchema.parse({
+      ...validInput,
+      executionMode: 'user_key',
+      capability: 'text',
+    })
     expect(result.executionMode).toBe('user_key')
+    expect(result.capability).toBe('text')
   })
 
   it('rejects empty provider', () => {
@@ -87,18 +92,38 @@ describe('aiExecuteSchema', () => {
 
 describe('apiKeySchema', () => {
   it('accepts valid api key', () => {
-    const result = apiKeySchema.parse({ apiKey: 'sk-or-v1-xxx', modelId: 'openai/gpt-4o-mini' })
+    const result = apiKeySchema.parse({
+      name: 'Primary OpenRouter',
+      apiKey: 'sk-or-v1-xxx',
+      modelId: 'openai/gpt-4o-mini',
+      capability: 'text',
+      providerKind: 'openai-compatible',
+      providerId: 'llm-openrouter',
+    })
     expect(result.apiKey).toBe('sk-or-v1-xxx')
   })
 
-  it('rejects empty api key', () => {
-    expect(() => apiKeySchema.parse({ apiKey: '', modelId: 'openai/gpt-4o-mini' })).toThrow()
+  it('allows empty api key for non-rotating config updates', () => {
+    const result = apiKeySchema.parse({
+      name: 'Primary OpenRouter',
+      apiKey: '',
+      modelId: 'openai/gpt-4o-mini',
+      capability: 'text',
+      providerKind: 'openai-compatible',
+      providerId: 'llm-openrouter',
+    })
+
+    expect(result.apiKey).toBe('')
   })
 
   it('accepts optional label and baseUrl', () => {
     const result = apiKeySchema.parse({
+      name: 'My Key',
       apiKey: 'sk-test',
       modelId: 'openai/gpt-4o-mini',
+      capability: 'text',
+      providerKind: 'openai-compatible',
+      providerId: 'llm-openrouter',
       baseUrl: 'https://openrouter.ai/api/v1',
       label: 'My Key',
     })

@@ -48,12 +48,13 @@
 14. `AppSidebar` 与 `/account` 资料页已补齐登录态 / 匿名态文案与登出入口；登出后默认回到 `/${locale}/explore`。
 15. `users` 表已扩展 `username`、`first_name`、`last_name`、`membership_status` 字段，Clerk session / webhook / `/api/users/me` / 账户页展示已完成同构更新。
 16. `/account` -> “我的作品” 已支持检测当前设备本地草稿，并在登录后显式导入到账户工作区，避免匿名创作结果继续滞留在单机 `localStorage`。
+17. `apps/web/middleware.ts` 与 `apps/web/app/[locale]/layout.tsx` 已补齐 Clerk Frontend API 代理代码入口；当 `NEXT_PUBLIC_CLERK_PROXY_URL` 存在时，可直接启用代理路径。
 
 ### 1.2 剩余事项归类
 
 #### A. 人工环境配置
 
-1. `apps/web/middleware.ts` 已完成代码侧 Clerk session 注入；是否补充生产代理能力，取决于 Clerk Dashboard 与生产域名部署策略，不属于当前仓库内单边代码阻塞项。
+1. `apps/web/middleware.ts` 已完成代码侧 Clerk session 注入与 Frontend API 代理能力；剩余只是在生产环境中回填 `NEXT_PUBLIC_CLERK_PROXY_URL` 与对应 Dashboard / 域名配置。
 2. Clerk Dashboard 生产域名、回调地址、OAuth 配置、Webhook 真实端点与签名密钥仍需人工核验与回填。
 3. 是否继续启用 `__clerk` 代理路径，属于生产部署决策，不再作为本轮代码接入待办。
 
@@ -238,7 +239,7 @@ type SessionActor =
 - [x] 确保 webhook 失败不会阻断登录与产品主链
 - [x] 定义统一 `redirect_url` 白名单策略
 - [x] 在 `middleware.ts` 中接入 Clerk session 注入并与现有 host/i18n 中间件组合
-- [ ] 在 `middleware.ts` 中补齐 Clerk 生产代理能力
+- [x] 在 `middleware.ts` 中补齐 Clerk 生产代理能力
 - [ ] 核验 Clerk Dashboard 真实环境配置
 
 当前状态：
@@ -276,14 +277,14 @@ type SessionActor =
 ### Phase 5：收尾与验证
 
 - [x] `pnpm lint`
-- [ ] `pnpm test`
+- [x] `pnpm test`
 - [ ] 最小登录链路手测：Landing → SignIn → redirect → Account
 - [ ] 最小匿名链路手测：Landing → Workspace → Canvas
 - [ ] 验证匿名用户不登录时核心产品仍可用
 - [ ] 验证登录用户能看到额外账户能力而非被迫改走另一套产品
 
 说明：
-`pnpm test` 当前失败为仓库既有测试债，不是本轮 Clerk 回归；手测项在没有真实 Dashboard 生产配置前，只能保留为环境验证清单。
+`pnpm --filter @nano-banana/web exec tsc --noEmit`、`pnpm --filter @nano-banana/web lint`、`pnpm --filter @nano-banana/web test` 已在 2026-04-21 本地全部通过；手测项在没有真实 Dashboard 生产配置前，仍保留为环境验证清单。
 
 ## 八、文件级落点
 
@@ -329,10 +330,9 @@ type SessionActor =
 3. `apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts`、`/account`、`AppSidebar` 已能消费真实账户镜像，登录用户的资料与资源开始落到正式 actor。
 4. `users.clerk_id` 继续承担兼容身份键角色，匿名链路写入 `anon:{guestId}`，登录链路与 webhook 链路写入 `clerk:{clerkUserId}`；在真正迁移列名之前，不应把它重新当成“只存 Clerk user id”的字段。
 5. 账户级 API 配置已经改为登录保护，匿名访客不再把这类跨设备资产写入 guest actor。
-6. 当前未纳入本轮结案范围的是：Clerk 生产代理 / Dashboard 外围配置，以及会员体系、跨设备匿名资产迁移、复杂资源合并这些“账户体系深化”能力。
-7. `pnpm --filter @nano-banana/web exec tsc --noEmit` 与 `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过。
-8. `pnpm --filter @nano-banana/web test` 已在 2026-04-21 重新执行，当前仍未通过；失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是本轮 Clerk 桥接引入的新回归。
-9. 当前可明确列出的失败点为：`lib/validations/ai.test.ts` 失败 3 项，`lib/utils/create-node.test.ts` 失败 1 项。
-10. 若进入下一阶段，最优先应是：先完成 Dashboard 代理与真实 webhook 端点配置，再把作品、收藏、云端资产这类“用户专属资源”继续统一收口到 `requireAccountActor()`，最后设计跨设备匿名资产迁移方案。
+6. 当前未纳入本轮结案范围的是：Clerk Dashboard 外围配置，以及会员体系、跨设备匿名资产迁移、复杂资源合并这些“账户体系深化”能力。
+7. `pnpm --filter @nano-banana/web exec tsc --noEmit`、`pnpm --filter @nano-banana/web lint`、`pnpm --filter @nano-banana/web test` 已在 2026-04-21 本地全部通过。
+8. 当前代码侧已不存在 Clerk 接入遗留测试债，剩余验证项集中在真实生产环境的 Dashboard / 域名 / Webhook 配置核验。
+9. 若进入下一阶段，最优先应是：先完成 Dashboard 代理与真实 webhook 端点配置，再把作品、收藏、云端资产这类“用户专属资源”继续统一收口到 `requireAccountActor()`，最后设计跨设备匿名资产迁移方案。
 
 [PROTOCOL]: 变更时更新此文档，然后检查 CLAUDE.md

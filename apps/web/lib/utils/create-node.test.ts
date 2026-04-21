@@ -35,7 +35,11 @@ describe('createNode', () => {
     expect(node.type).toBe('llm')
     expect(node.data.label).toBe('LLM')
     expect(node.data.type).toBe('ai-model')
-    expect(node.data.config).toEqual({ provider: 'openrouter', model: 'openai/gpt-4o-mini', temperature: 0.7 })
+    expect(node.data.config).toEqual({
+      platformProvider: 'openrouter',
+      platformModel: 'openai/gpt-4o-mini',
+      temperature: 0.7,
+    })
   })
 
   it('creates display with correct defaults', () => {
