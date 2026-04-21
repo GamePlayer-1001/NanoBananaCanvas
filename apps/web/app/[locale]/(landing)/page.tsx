@@ -12,6 +12,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HeroSection } from '@/components/landing/hero-section'
 import { LandingFooter } from '@/components/layout/landing-footer'
+import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import {
   BASE_URL,
   SITE_NAME,
@@ -69,7 +70,7 @@ export default async function LandingPage({
           '@type': 'ContactPoint',
           contactType: 'customer support',
           url: buildAbsoluteUrl('/contact'),
-          availableLanguage: ['en', 'zh'],
+          availableLanguage: AVAILABLE_LANGUAGE_CODES,
         },
       ],
       areaServed: [
@@ -97,7 +98,7 @@ export default async function LandingPage({
         price: '0',
         priceCurrency: 'USD',
       },
-      availableLanguage: ['en', 'zh'],
+      availableLanguage: AVAILABLE_LANGUAGE_CODES,
       featureList: [
         seoT('featureWorkflow'),
         seoT('featureImageVideo'),

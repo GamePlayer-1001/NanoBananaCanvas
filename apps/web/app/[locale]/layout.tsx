@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @clerk/nextjs 的 ClerkProvider，依赖 @clerk/localizations 的 zhCN，
  *          依赖 next-intl 的 NextIntlClientProvider / hasLocale，
  *          依赖 next-intl/server 的 getMessages / setRequestLocale，
- *          依赖 @/i18n/routing 的 routing 配置，
+ *          依赖 @/i18n/routing 的 routing 配置，依赖 @/i18n/config 的 locale 元数据，
  *          依赖 next/font/google 的 Geist 字体，
  *          依赖 @/components/ui/sonner 的 Toaster，
  *          依赖 @/components/ui/tooltip 的 TooltipProvider，
@@ -21,6 +21,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { QueryProvider } from '@/lib/query/provider'
+import { getLocaleDefinition } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
 import '@/app/globals.css'
 
@@ -67,6 +68,7 @@ export default async function LocaleLayout({
     notFound()
   }
 
+  const localeDefinition = getLocaleDefinition(locale)
   setRequestLocale(locale)
   const messages = await getMessages()
 
@@ -74,7 +76,7 @@ export default async function LocaleLayout({
     <html lang={locale} suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider
-          localization={locale === 'zh' ? zhCN : undefined}
+          localization={localeDefinition.clerkLocalizationKey === 'zhCN' ? zhCN : undefined}
           signInUrl={CLERK_SIGN_IN_URL}
           signUpUrl={CLERK_SIGN_UP_URL}
           signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}

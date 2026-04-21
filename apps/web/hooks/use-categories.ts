@@ -16,8 +16,8 @@ import { queryKeys } from '@/lib/query/keys'
 export interface Category {
   id: string
   slug: string
-  nameEn: string
-  nameZh: string
+  name: string
+  translations: Record<string, string>
 }
 
 /* ─── Fetcher ────────────────────────────────────────── */

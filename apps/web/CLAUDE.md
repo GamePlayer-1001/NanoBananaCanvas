@@ -16,10 +16,10 @@ hooks/              — 自定义 React Hooks
 types/              — 前端类型定义 (workflow/node/user)
 styles/             — 额外样式文件 (reactflow.css)
 services/           — API 调用层 (ai/openrouter + storage/持久化)
-i18n/               — next-intl 国际化配置 (routing/request/navigation)
-messages/           — i18n 翻译文件 (en.json + zh.json)
+i18n/               — next-intl 国际化配置与消息索引 (config/routing/request/navigation/message-index)
+messages/           — i18n 翻译文件 (en.json + zh.json，配合脚本做全键对校验)
 public/             — 静态资源
-scripts/            — 项目级脚本 (Cloudflare 部署包装与构建兜底)
+scripts/            — 项目级脚本 (Cloudflare 部署包装 + i18n/L10N 索引/校验/脚手架)
 ```
 
 ## 配置文件

@@ -8,7 +8,7 @@ React 组件库
 
 ```
 error-boundary.tsx — React 错误边界，捕获渲染异常并显示 fallback UI
-locale-switcher.tsx — 语言切换器 (en↔zh)，使用 @/i18n/navigation 路由切换
+locale-switcher.tsx — 语言切换器，下拉展示所有启用 locale，使用 @/i18n/navigation 路由切换
 canvas/            — 画布引擎组件 (Canvas + TopToolbar + Toolbar + Controls + ContextMenu)
 nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合并工具节点)
 edges/             — 连线组件 (CustomEdge 贝塞尔曲线)

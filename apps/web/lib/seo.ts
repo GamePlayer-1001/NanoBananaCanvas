@@ -6,6 +6,7 @@
  */
 
 import type { Metadata } from 'next'
+import { getLocaleDefinition } from '@/i18n/config'
 
 export const BASE_URL = 'https://nanobananacanvas.com'
 export const SITE_NAME = 'Nano Banana Canvas'
@@ -21,10 +22,6 @@ export const NO_INDEX_METADATA: Metadata = {
       follow: false,
     },
   },
-}
-
-function getOpenGraphLocale(locale: string) {
-  return locale === 'zh' ? 'zh_CN' : 'en_US'
 }
 
 export function buildAbsoluteUrl(path = '/') {
@@ -86,7 +83,7 @@ export function buildPageMetadata({
       description,
       url: canonical,
       siteName: SITE_NAME,
-      locale: getOpenGraphLocale(locale),
+      locale: getLocaleDefinition(locale).ogLocale,
       type,
       images: [
         {

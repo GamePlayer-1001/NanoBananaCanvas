@@ -40,10 +40,9 @@ interface PublishDialogProps {
 export function PublishDialog({ workflowId, open, onOpenChange }: PublishDialogProps) {
   const t = useTranslations('workspace')
   const tc = useTranslations('common')
-  const locale = useLocale()
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [coverUrl, setCoverUrl] = useState<string | undefined>()
-  const { data: categories, isLoading: categoriesLoading } = useCategories(locale)
+  const { data: categories, isLoading: categoriesLoading } = useCategories(useLocale())
   const { mutate, isPending } = usePublishWorkflow(workflowId)
 
   const handlePublish = () => {
@@ -100,7 +99,7 @@ export function PublishDialog({ workflowId, open, onOpenChange }: PublishDialogP
                         : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground',
                     )}
                   >
-                    {locale === 'zh' ? cat.nameZh : cat.nameEn}
+                    {cat.name}
                   </button>
                 ))}
               </div>
