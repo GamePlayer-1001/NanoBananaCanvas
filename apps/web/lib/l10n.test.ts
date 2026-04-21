@@ -14,6 +14,23 @@ describe('getLocalizedFieldValue', () => {
     name_zh: '图片生成',
   }
 
+  it('prefers json-backed translations when available', () => {
+    expect(
+      getLocalizedFieldValue(
+        {
+          name_i18n: JSON.stringify({
+            en: 'Image Generation',
+            zh: '图片生成',
+          }),
+          name_en: 'Legacy Image Generation',
+          name_zh: '旧版图片生成',
+        },
+        'name',
+        'zh',
+      ),
+    ).toBe('图片生成')
+  })
+
   it('returns the requested locale when the translation exists', () => {
     expect(getLocalizedFieldValue(categoryRecord, 'name', 'zh')).toBe('图片生成')
   })
@@ -32,15 +49,20 @@ describe('getLocalizedFieldMap', () => {
     expect(
       getLocalizedFieldMap(
         {
+          title_i18n: JSON.stringify({
+            en: 'Workspace',
+            zh: '工作区',
+          }),
           title_en: 'Workspace',
           title_zh: '工作区',
         },
         'title',
-        ['en', 'zh'],
+        ['en', 'zh', 'ja'],
       ),
     ).toEqual({
       en: 'Workspace',
       zh: '工作区',
+      ja: 'Workspace',
     })
   })
 })

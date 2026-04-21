@@ -519,6 +519,13 @@ export const MESSAGE_USAGE_INDEX = {
   ]
 } as const
 
+export const MESSAGE_DYNAMIC_LEAF_KEYS = [
+  "exploreDetail.reason_copyright",
+  "exploreDetail.reason_nsfw",
+  "exploreDetail.reason_other",
+  "exploreDetail.reason_spam"
+] as const
+
 export const USED_MESSAGE_LEAF_KEYS = [
   "auth.alreadyHaveAccount",
   "auth.and",
@@ -594,6 +601,10 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "exploreDetail.likes",
   "exploreDetail.notFound",
   "exploreDetail.publishedOn",
+  "exploreDetail.reason_copyright",
+  "exploreDetail.reason_nsfw",
+  "exploreDetail.reason_other",
+  "exploreDetail.reason_spam",
   "exploreDetail.report",
   "exploreDetail.reportDescription",
   "exploreDetail.reportFailed",

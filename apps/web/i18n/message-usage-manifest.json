@@ -1,0 +1,8 @@
+{
+  "dynamicKeys": [
+    "exploreDetail.reason_copyright",
+    "exploreDetail.reason_nsfw",
+    "exploreDetail.reason_other",
+    "exploreDetail.reason_spam"
+  ]
+}

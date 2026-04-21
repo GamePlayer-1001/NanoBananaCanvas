@@ -65,7 +65,6 @@ export async function GET(req: NextRequest) {
         `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
                 w.view_count, w.published_at, w.category_id,
                 u.name as author_name, u.avatar_url as author_avatar,
-                c.name_en as category_name_en, c.name_zh as category_name_zh,
                 (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
                  FROM json_each(json_extract(w.data, '$.nodes')) j) as node_types
          FROM workflows w

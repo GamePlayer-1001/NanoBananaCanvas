@@ -28,10 +28,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ── DB-006: categories ──────────────────────
--- 工作流分类（i18n 双语名称）
+-- 工作流分类（name_i18n 为多语言真相源，name_en/name_zh 保留为历史兼容列）
 CREATE TABLE IF NOT EXISTS categories (
   id            TEXT PRIMARY KEY,
   slug          TEXT NOT NULL UNIQUE,
+  name_i18n     TEXT NOT NULL DEFAULT '{}',
   name_en       TEXT NOT NULL,
   name_zh       TEXT NOT NULL,
   icon          TEXT DEFAULT '',

@@ -15,6 +15,7 @@
     "i18n:sync": "node ./scripts/i18n-tools.mjs sync",
     "i18n:add-locale": "node ./scripts/i18n-tools.mjs add-locale",
     "i18n:check": "node ./scripts/i18n-tools.mjs check",
+    "i18n:prune-unused": "node ./scripts/i18n-tools.mjs prune-unused",
     "deploy:build": "node ./scripts/cloudflare-deploy.mjs build",
     "deploy:preview": "npx opennextjs-cloudflare preview",
     "deploy": "node ./scripts/cloudflare-deploy.mjs deploy",

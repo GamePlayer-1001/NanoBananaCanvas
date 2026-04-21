@@ -9,17 +9,17 @@ Next.js 16 前端应用 · App Router + Turbopack + RSC
 ```
 app/                — App Router 路由树 (layout/page/api，含 14 个 API 端点)
 components/         — React 组件 (ui/ 为 shadcn 自动管理)
-db/                 — D1 数据库 Schema + 种子数据 (users/workflows 等核心表 + 账户资料扩展迁移)
+db/                 — D1 数据库 Schema + 种子数据 (users/workflows 等核心表 + 账户资料扩展迁移 + categories i18n 迁移)
 lib/                — 工具函数与配置 (utils/query/validations/api/db/nanoid)
 stores/             — Zustand 客户端状态
 hooks/              — 自定义 React Hooks
 types/              — 前端类型定义 (workflow/node/user)
 styles/             — 额外样式文件 (reactflow.css)
 services/           — API 调用层 (ai/openrouter + storage/持久化)
-i18n/               — next-intl 国际化配置与消息索引 (config/routing/request/navigation/message-index)
-messages/           — i18n 翻译文件 (en.json + zh.json，配合脚本做全键对校验)
+i18n/               — next-intl 国际化配置与消息索引 (config/routing/request/navigation/message-index/message-usage/message-usage-manifest)
+messages/           — i18n 翻译文件 (en.json + zh.json，配合脚本做全键对校验/死 key 清理)
 public/             — 静态资源
-scripts/            — 项目级脚本 (Cloudflare 部署包装 + i18n/L10N 索引/校验/脚手架)
+scripts/            — 项目级脚本 (Cloudflare 部署包装 + i18n/L10N 索引/校验/修剪/脚手架)
 ```
 
 ## 配置文件

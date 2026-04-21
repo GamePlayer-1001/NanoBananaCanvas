@@ -8,6 +8,7 @@ const WEB_ROOT = path.resolve(process.cwd())
 const MESSAGES_DIR = path.join(WEB_ROOT, 'messages')
 const GENERATED_INDEX_PATH = path.join(WEB_ROOT, 'i18n', 'message-index.ts')
 const GENERATED_USAGE_PATH = path.join(WEB_ROOT, 'i18n', 'message-usage.ts')
+const USAGE_MANIFEST_PATH = path.join(WEB_ROOT, 'i18n', 'message-usage-manifest.json')
 const BASE_LOCALE = 'en'
 const SCAN_ROOTS = ['app', 'components', 'hooks', 'lib']
 
@@ -28,6 +29,19 @@ function listLocaleFiles() {
 
 function listLocales() {
   return listLocaleFiles().map((name) => name.replace(/\.json$/u, ''))
+}
+
+function readUsageManifest() {
+  if (!fs.existsSync(USAGE_MANIFEST_PATH)) {
+    return { dynamicKeys: [] }
+  }
+
+  const manifest = readJson(USAGE_MANIFEST_PATH)
+  return {
+    dynamicKeys: Array.isArray(manifest.dynamicKeys)
+      ? manifest.dynamicKeys.filter((key) => typeof key === 'string').sort()
+      : [],
+  }
 }
 
 function flattenLeaves(value, prefix = '') {
@@ -115,6 +129,20 @@ function collectUsageIndex() {
   )
 }
 
+function collectUsedLeafKeys() {
+  const usageIndex = collectUsageIndex()
+  const usageManifest = readUsageManifest()
+  const usedLeafKeys = [
+    ...new Set([...Object.values(usageIndex).flat(), ...usageManifest.dynamicKeys]),
+  ].sort()
+
+  return {
+    usageIndex,
+    usageManifest,
+    usedLeafKeys,
+  }
+}
+
 function mergeWithBaseShape(base, target) {
   if (!base || typeof base !== 'object' || Array.isArray(base)) {
     return typeof target === 'string' ? target : base
@@ -140,8 +168,7 @@ function generateIndex() {
   const namespaceIndex = collectNamespaceIndex(baseMessages)
   const leafKeys = flattenLeaves(baseMessages).sort()
   const namespaceNames = Object.keys(baseMessages).sort()
-  const usageIndex = collectUsageIndex()
-  const usedLeafKeys = [...new Set(Object.values(usageIndex).flat())].sort()
+  const { usageIndex, usageManifest, usedLeafKeys } = collectUsedLeafKeys()
 
   const fileContent = `/**
  * [INPUT]: 依赖 messages/*.json 的基准语言结构
@@ -178,6 +205,8 @@ export type MessageLeafKey = (typeof MESSAGE_LEAF_KEYS)[number]
  */
 
 export const MESSAGE_USAGE_INDEX = ${JSON.stringify(usageIndex, null, 2)} as const
+
+export const MESSAGE_DYNAMIC_LEAF_KEYS = ${JSON.stringify(usageManifest.dynamicKeys, null, 2)} as const
 
 export const USED_MESSAGE_LEAF_KEYS = ${JSON.stringify(usedLeafKeys, null, 2)} as const
 
@@ -220,8 +249,7 @@ function validateMessages() {
     return
   }
 
-  const usageIndex = collectUsageIndex()
-  const usedLeafKeys = [...new Set(Object.values(usageIndex).flat())].sort()
+  const { usedLeafKeys } = collectUsedLeafKeys()
   const missingReferences = usedLeafKeys.filter((leafKey) => !baseLeaves.includes(leafKey))
   const unusedLeafKeys = baseLeaves.filter((leafKey) => !usedLeafKeys.includes(leafKey))
 
@@ -238,6 +266,44 @@ function validateMessages() {
   console.log('\nAll locale files are symmetric with the base locale.')
   console.log(`Referenced keys: ${usedLeafKeys.length}`)
   console.log(`Unused base-locale keys: ${unusedLeafKeys.length}`)
+}
+
+function pruneNode(value, usedLeafKeySet, prefix = '') {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return usedLeafKeySet.has(prefix) ? value : undefined
+  }
+
+  const nextEntries = Object.entries(value)
+    .map(([key, child]) => [key, pruneNode(child, usedLeafKeySet, prefix ? `${prefix}.${key}` : key)])
+    .filter(([, child]) => child !== undefined)
+
+  if (nextEntries.length === 0) {
+    return undefined
+  }
+
+  return Object.fromEntries(nextEntries)
+}
+
+function pruneUnusedMessages() {
+  const baseMessages = readJson(path.join(MESSAGES_DIR, `${BASE_LOCALE}.json`))
+  const { usedLeafKeys } = collectUsedLeafKeys()
+  const usedLeafKeySet = new Set(usedLeafKeys)
+  const locales = listLocales()
+  const prunedBaseMessages = pruneNode(baseMessages, usedLeafKeySet) ?? {}
+
+  writeJson(path.join(MESSAGES_DIR, `${BASE_LOCALE}.json`), prunedBaseMessages)
+  console.log(`Pruned locale file -> messages/${BASE_LOCALE}.json`)
+
+  for (const locale of locales.filter((candidate) => candidate !== BASE_LOCALE)) {
+    const localePath = path.join(MESSAGES_DIR, `${locale}.json`)
+    const localeMessages = readJson(localePath)
+    const merged = mergeWithBaseShape(prunedBaseMessages, localeMessages)
+    writeJson(localePath, merged)
+    console.log(`Pruned locale file -> messages/${locale}.json`)
+  }
+
+  generateIndex()
+  validateMessages()
 }
 
 function syncMessages(targetLocale) {
@@ -291,6 +357,9 @@ switch (command) {
   case 'check':
     generateIndex()
     validateMessages()
+    break
+  case 'prune-unused':
+    pruneUnusedMessages()
     break
   default:
     console.error(`Unknown command: ${command}`)
