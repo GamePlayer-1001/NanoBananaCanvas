@@ -1,7 +1,7 @@
 -- ============================================
 --  Nano Banana Canvas — D1 Database Schema
 --  Engine: SQLite (Cloudflare D1)
---  Version: 3.0 (M8 + M7 + folders + P2 async_tasks)
+--  Version: 4.0 (M8 + P2 + Stripe billing rebuild)
 -- ============================================
 
 PRAGMA foreign_keys = ON;
@@ -132,6 +132,130 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
+
+-- ============================================
+--  Stripe Billing Runtime (SPAY-300 ~ 308)
+-- ============================================
+
+-- ── billing credit_balances ──────────────────
+-- 双池余额：订阅积分 + 永久积分，并保留冻结态
+CREATE TABLE IF NOT EXISTS credit_balances (
+  user_id             TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  monthly_balance     INTEGER NOT NULL DEFAULT 0,
+  permanent_balance   INTEGER NOT NULL DEFAULT 0,
+  frozen_credits      INTEGER NOT NULL DEFAULT 0,
+  total_earned        INTEGER NOT NULL DEFAULT 0,
+  total_spent         INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── billing credit_transactions ──────────────
+-- 所有积分变化的审计日志
+CREATE TABLE IF NOT EXISTS credit_transactions (
+  id                  TEXT PRIMARY KEY,
+  user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type                TEXT NOT NULL CHECK(type IN ('earn', 'spend', 'freeze', 'unfreeze', 'refund')),
+  pool                TEXT NOT NULL DEFAULT 'permanent' CHECK(pool IN ('monthly', 'permanent')),
+  amount              INTEGER NOT NULL,
+  balance_after       INTEGER NOT NULL,
+  source              TEXT NOT NULL,
+  reference_id        TEXT,
+  description         TEXT DEFAULT '',
+  created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_ref ON credit_transactions(reference_id);
+
+-- ── billing subscriptions ────────────────────
+-- 本地订阅/套餐权益镜像，Free 也在此表达默认态
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id                        TEXT PRIMARY KEY,
+  user_id                   TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  stripe_subscription_id    TEXT,
+  stripe_customer_id        TEXT,
+  plan                      TEXT NOT NULL DEFAULT 'free' CHECK(plan IN ('free', 'standard', 'pro', 'ultimate')),
+  purchase_mode             TEXT NOT NULL DEFAULT 'auto_monthly' CHECK(purchase_mode IN ('auto_monthly', 'one_time')),
+  billing_period            TEXT NOT NULL DEFAULT 'monthly' CHECK(billing_period IN ('monthly', 'one_time')),
+  status                    TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'canceled', 'past_due', 'trialing', 'incomplete', 'incomplete_expired', 'unpaid')),
+  current_period_start      TEXT,
+  current_period_end        TEXT,
+  monthly_credits           INTEGER NOT NULL DEFAULT 0,
+  storage_gb                INTEGER NOT NULL DEFAULT 1,
+  cancel_at_period_end      INTEGER NOT NULL DEFAULT 0,
+  created_at                TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at                TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_customer ON subscriptions(stripe_customer_id);
+
+-- ── billing model_pricing ────────────────────
+-- token/生成量折算积分定价表
+CREATE TABLE IF NOT EXISTS model_pricing (
+  id                        TEXT PRIMARY KEY,
+  provider                  TEXT NOT NULL,
+  model_id                  TEXT NOT NULL,
+  model_name                TEXT NOT NULL,
+  category                  TEXT NOT NULL CHECK(category IN ('text', 'image', 'video', 'audio')),
+  credits_per_1k_units      INTEGER NOT NULL,
+  tier                      TEXT NOT NULL DEFAULT 'basic' CHECK(tier IN ('basic', 'standard', 'premium', 'flagship')),
+  min_plan                  TEXT NOT NULL DEFAULT 'free' CHECK(min_plan IN ('free', 'standard', 'pro', 'ultimate')),
+  is_active                 INTEGER NOT NULL DEFAULT 1,
+  created_at                TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at                TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(provider, model_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_pricing_category ON model_pricing(category, is_active);
+
+-- ── billing credit_packages ──────────────────
+-- 可购买积分包目录
+CREATE TABLE IF NOT EXISTS credit_packages (
+  id                  TEXT PRIMARY KEY,
+  name                TEXT NOT NULL,
+  credits             INTEGER NOT NULL,
+  price_cents         INTEGER NOT NULL,
+  bonus_credits       INTEGER NOT NULL DEFAULT 0,
+  is_active           INTEGER NOT NULL DEFAULT 1,
+  sort_order          INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── billing processed_stripe_events ──────────
+-- Stripe webhook 幂等保护
+CREATE TABLE IF NOT EXISTS processed_stripe_events (
+  event_id            TEXT PRIMARY KEY,
+  event_type          TEXT NOT NULL,
+  processed_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── billing_orders ───────────────────────────
+-- 一次性套餐与积分包订单审计
+CREATE TABLE IF NOT EXISTS billing_orders (
+  id                        TEXT PRIMARY KEY,
+  user_id                   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stripe_checkout_session_id TEXT,
+  stripe_payment_intent_id  TEXT,
+  stripe_customer_id        TEXT,
+  order_kind                TEXT NOT NULL CHECK(order_kind IN ('plan_one_time', 'credit_pack')),
+  plan                      TEXT CHECK(plan IN ('standard', 'pro', 'ultimate')),
+  package_id                TEXT REFERENCES credit_packages(id) ON DELETE SET NULL,
+  currency                  TEXT NOT NULL,
+  amount_total              INTEGER NOT NULL,
+  credits_awarded           INTEGER NOT NULL DEFAULT 0,
+  status                    TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'failed', 'refunded', 'expired')),
+  metadata                  TEXT NOT NULL DEFAULT '{}',
+  paid_at                   TEXT,
+  created_at                TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at                TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_billing_orders_user ON billing_orders(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_orders_checkout ON billing_orders(stripe_checkout_session_id);
+CREATE INDEX IF NOT EXISTS idx_billing_orders_payment_intent ON billing_orders(stripe_payment_intent_id);
 
 -- ============================================
 --  M7: AI 运行时兼容层

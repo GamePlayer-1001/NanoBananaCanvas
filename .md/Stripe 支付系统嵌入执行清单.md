@@ -108,15 +108,52 @@
 
 ### Phase 3：数据库与账本结构
 
-- [ ] **SPAY-300** 在 `schema.sql` 重建 `credit_balances`
-- [ ] **SPAY-301** 在 `schema.sql` 重建 `credit_transactions`
-- [ ] **SPAY-302** 在 `schema.sql` 重建 `subscriptions`
-- [ ] **SPAY-303** 在 `schema.sql` 重建 `model_pricing`
-- [ ] **SPAY-304** 在 `schema.sql` 重建 `credit_packages`
-- [ ] **SPAY-305** 新增 `processed_stripe_events` 幂等表
-- [ ] **SPAY-306** 评估是否单独新增 `billing_orders` 表，用于一次性套餐与积分包订单审计
-- [ ] **SPAY-307** 更新 `seed-pricing.sql`，改成 `credits_per_1k_units`
-- [ ] **SPAY-308** 为 `subscriptions` 增加 `purchase_mode` 与 `storage_gb`
+- [x] **SPAY-300** 在 `schema.sql` 重建 `credit_balances`
+- [x] **SPAY-301** 在 `schema.sql` 重建 `credit_transactions`
+- [x] **SPAY-302** 在 `schema.sql` 重建 `subscriptions`
+- [x] **SPAY-303** 在 `schema.sql` 重建 `model_pricing`
+- [x] **SPAY-304** 在 `schema.sql` 重建 `credit_packages`
+- [x] **SPAY-305** 新增 `processed_stripe_events` 幂等表
+- [x] **SPAY-306** 评估是否单独新增 `billing_orders` 表，用于一次性套餐与积分包订单审计
+- [x] **SPAY-307** 更新 `seed-pricing.sql`，改成 `credits_per_1k_units`
+- [x] **SPAY-308** 为 `subscriptions` 增加 `purchase_mode` 与 `storage_gb`
+
+#### Phase 3 结论（2026-04-21）
+
+1. 已在 `apps/web/db/schema.sql` 重建 7 张商业化核心表：
+   - `credit_balances`
+   - `credit_transactions`
+   - `subscriptions`
+   - `model_pricing`
+   - `credit_packages`
+   - `processed_stripe_events`
+   - `billing_orders`
+2. `credit_balances` 已按双池模型落地：
+   - `monthly_balance`
+   - `permanent_balance`
+   - `frozen_credits`
+   - `total_earned / total_spent`
+3. `subscriptions` 已对齐新主方案：
+   - `plan` 支持 `free / standard / pro / ultimate`
+   - `purchase_mode` 支持 `auto_monthly / one_time`
+   - `storage_gb` 与 `monthly_credits` 已进入本地权益镜像
+4. `model_pricing` 已切换为 token/生成量计费口径：
+   - 统一使用 `credits_per_1k_units`
+   - 保留 `tier / min_plan / category / is_active`
+5. `billing_orders` 评估结论：
+   - 需要单独建表
+   - 原因：一次性套餐与积分包都不适合只挂在 `subscriptions` 上，否则“订阅状态”和“一次性订单审计”会混成一个表，后续退款、对账、重放 Webhook 都会变脏
+6. 已新增配套文件：
+   - `apps/web/db/migration-011-billing-rebuild.sql`
+   - `apps/web/db/seed-pricing.sql`
+7. 已完成本地验证：
+   - 干净临时 D1：`schema.sql` 执行成功
+   - 干净临时 D1：`seed-pricing.sql` 执行成功
+   - 验证计数：`credit_packages = 4`，`model_pricing = 19`
+   - `pnpm --filter @nano-banana/web exec tsc --noEmit`
+8. 验证备注：
+   - 现有默认 `.wrangler` 本地库因为历史 schema 落后，会在 `db:init` 时先撞到旧列不一致；这不是本轮 SQL 结构错误
+   - 本轮验证已改用独立临时 `persist-to` 目录完成，避免污染现有本地数据库状态
 
 ### Phase 4：Stripe 服务层
 
