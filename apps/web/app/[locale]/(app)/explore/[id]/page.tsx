@@ -11,8 +11,7 @@ import { setRequestLocale } from 'next-intl/server'
 
 import { ExploreDetailContent } from '@/components/explore/detail/explore-detail-content'
 import { getDb } from '@/lib/db'
-
-const BASE_URL = 'https://nanobananacanvas.com'
+import { SITE_NAME, buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -28,28 +27,20 @@ export async function generateMetadata({
       .first<{ name: string; description: string | null }>()
     if (!row) return { title: 'Workflow Not Found' }
     const title = row.name
-    const description = row.description || `AI workflow "${row.name}" on Nano Banana Canvas`
-    return {
+    const description =
+      row.description ||
+      `Reusable AI workflow template for creators and teams on ${SITE_NAME}.`
+
+    return buildPageMetadata({
       title,
       description,
-      alternates: {
-        canonical: `${BASE_URL}/${locale}/explore/${id}`,
-        languages: {
-          en: `${BASE_URL}/en/explore/${id}`,
-          zh: `${BASE_URL}/zh/explore/${id}`,
-        },
-      },
-      openGraph: {
-        title: `${title} | Nano Banana Canvas`,
-        description,
-        url: `${BASE_URL}/${locale}/explore/${id}`,
-        siteName: 'Nano Banana Canvas',
-        type: 'article',
-      },
-      twitter: { card: 'summary_large_image', title, description },
-    }
+      path: `/explore/${id}`,
+      locale,
+      type: 'article',
+      ogTitle: `${title} | ${SITE_NAME}`,
+    })
   } catch {
-    return { title: 'Explore | Nano Banana Canvas' }
+    return { title: `Explore | ${SITE_NAME}` }
   }
 }
 

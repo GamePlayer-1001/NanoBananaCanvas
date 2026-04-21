@@ -11,6 +11,7 @@ errors.ts    — AppError 统一错误类型体系 (NetworkError/AuthError/AISer
 logger.ts    — 轻量级日志工具 (开发彩色终端/生产结构化 JSON)
 utils.ts     — cn() 样式合并工具 (shadcn 管理)
 db.ts        — D1 数据库访问入口 (getDb → getCloudflareContext)
+seo.ts       — SEO 语义层 (BASE_URL/metadata 工厂/OG URL/公开索引策略统一出口)
 env.ts       — 统一环境变量获取入口 (getEnv/requireEnv → getCloudflareContext，消除 process.env 混用)
 r2.ts        — R2 对象存储访问入口 (getR2 → getCloudflareContext)
 storage.ts   — 存储路径/私有文件 URL 解析/配额缓存/输出清理与失效工具

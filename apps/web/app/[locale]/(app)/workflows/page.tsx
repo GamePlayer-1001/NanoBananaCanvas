@@ -10,8 +10,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { WorkflowsContent } from '@/components/workflows/workflows-content'
-
-const BASE_URL = 'https://nanobananacanvas.com'
+import { buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -20,21 +19,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'metadata' })
-  return {
+  return buildPageMetadata({
     title: t('workflowsTitle'),
     description: t('workflowsDescription'),
-    alternates: {
-      canonical: `${BASE_URL}/${locale}/workflows`,
-      languages: { en: `${BASE_URL}/en/workflows`, zh: `${BASE_URL}/zh/workflows` },
-    },
-    openGraph: {
-      title: `${t('workflowsTitle')} | Nano Banana Canvas`,
-      description: t('workflowsDescription'),
-      url: `${BASE_URL}/${locale}/workflows`,
-      siteName: 'Nano Banana Canvas',
-      type: 'website',
-    },
-  }
+    path: '/workflows',
+    locale,
+  })
 }
 
 /* ─── Page ───────────────────────────────────────────── */

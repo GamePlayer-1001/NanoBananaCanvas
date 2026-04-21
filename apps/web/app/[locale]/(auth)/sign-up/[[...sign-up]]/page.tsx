@@ -6,11 +6,15 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import type { Metadata } from 'next'
 import { SignUp } from '@clerk/nextjs'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { AuthShell } from '@/components/auth/auth-shell'
 import { resolveSafeAuthRedirect } from '@/lib/auth/redirect'
+import { NO_INDEX_METADATA } from '@/lib/seo'
+
+export const metadata: Metadata = NO_INDEX_METADATA
 
 const CLERK_CARD_APPEARANCE = {
   elements: {

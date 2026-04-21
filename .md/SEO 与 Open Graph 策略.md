@@ -1,7 +1,8 @@
 # Nano Banana Canvas - SEO 与 Open Graph 策略
 
-> 文档版本：v1.0
+> 文档版本：v1.1
 > 创建日期：2026-03-04
+> 更新日期：2026-04-21
 > 关联文档：项目框架结构.md（含存储链路摘要）
 
 ---
@@ -12,7 +13,7 @@
 
 | 页面          | 渲染 | SEO 重要性 | 策略                       |
 | ------------- | ---- | ---------- | -------------------------- |
-| Landing Page  | SSG  | **极高**   | 精心优化 meta + 结构化数据 |
+| Landing Page  | SSG  | **极高**   | 精心优化 meta + 结构化数据 + 可见 FAQ/GEO 语义层 |
 | 定价页        | SSG  | 高         | 套餐结构化数据             |
 | 作品广场      | SSR  | 高         | 动态 meta + 分页 SEO       |
 | 作品详情      | SSR  | **极高**   | 动态 OG 图 + 结构化数据    |
@@ -59,14 +60,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: {
       canonical: 'https://nanobananacanvas.com',
-      languages: {
-        en: '/en',
-        zh: '/zh',
-      },
     },
   }
 }
 ```
+
+### 1.3 当前路由现实与 canonical 原则
+
+当前项目外部 URL 采用 `localePrefix: 'never'`，也就是对真实访问者暴露的是单一公开路径，例如：
+
+- `/`
+- `/explore`
+- `/workflows`
+- `/contact`
+
+因此当前阶段的 SEO 原则不是伪造 `/en`、`/zh` 双 URL，而是：
+
+1. 所有公开页面 canonical 指向真实外部 URL  
+2. sitemap 只输出真实可访问的公开 URL  
+3. 不输出虚假的 `hreflang` 互链，避免把搜索引擎引向并不存在的外部地址  
+4. 多语言能力暂时通过页面内容与应用运行时承接，而不是靠独立语言 URL 承接
 
 ---
 
@@ -179,42 +192,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 ## 三、结构化数据
 
-### 3.1 Landing Page — WebSite + SoftwareApplication
+### 3.1 Landing Page — Organization + SoftwareApplication + FAQPage
 
 ```typescript
-// components/landing/structured-data.tsx
-
-export function LandingStructuredData() {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Nano Banana Canvas',
-    applicationCategory: 'MultimediaApplication',
-    operatingSystem: 'Web',
-    offers: {
-      '@type': 'AggregateOffer',
-      lowPrice: '0',
-      highPrice: '150',
-      priceCurrency: 'USD',
-      offerCount: 4,
-    },
-    description: 'Visual AI Workflow Platform for creating images, videos, and audio with 30+ AI models.',
-    featureList: [
-      'Node-based visual editor',
-      '30+ AI models integration',
-      'Cloud rendering',
-      'Community sharing',
-    ],
-  }
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  )
-}
+// app/[locale]/(landing)/page.tsx
+// 结构化数据与页面可见内容共用同一份事实源，避免“标记里有、页面上没有”
 ```
+
+落地规则：
+
+- `Organization`：表达品牌、社媒入口、支持语言与服务覆盖区域  
+- `SoftwareApplication`：表达产品类型、免费入口、核心能力  
+- `FAQPage`：只标记页面上真实可见的 FAQ，不虚构问题与答案  
+- GEO 语义通过“真实服务区域 + 真实团队形态 + 真实使用场景”承接，不通过批量城市页承接
 
 ### 3.2 作品详情页 — CreativeWork
 
@@ -290,46 +280,20 @@ import type { MetadataRoute } from 'next'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 静态页面
   const staticPages = [
-    { url: 'https://nanobananacanvas.com/en', changeFrequency: 'weekly', priority: 1.0 },
-    { url: 'https://nanobananacanvas.com/zh', changeFrequency: 'weekly', priority: 1.0 },
-    {
-      url: 'https://nanobananacanvas.com/en/pricing',
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: 'https://nanobananacanvas.com/zh/pricing',
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: 'https://nanobananacanvas.com/en/explore',
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
-    {
-      url: 'https://nanobananacanvas.com/zh/explore',
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
+    { url: 'https://nanobananacanvas.com/', changeFrequency: 'weekly', priority: 1.0 },
+    { url: 'https://nanobananacanvas.com/explore', changeFrequency: 'daily', priority: 0.9 },
+    { url: 'https://nanobananacanvas.com/workflows', changeFrequency: 'daily', priority: 0.8 },
+    { url: 'https://nanobananacanvas.com/contact', changeFrequency: 'monthly', priority: 0.6 },
   ] as MetadataRoute.Sitemap
 
   // 动态页面：公开的作品
   const workflows = await getPublicWorkflows()
-  const workflowPages = workflows.flatMap((w) => [
-    {
-      url: `https://nanobananacanvas.com/en/explore/${w.id}`,
-      lastModified: new Date(w.updated_at),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    },
-    {
-      url: `https://nanobananacanvas.com/zh/explore/${w.id}`,
-      lastModified: new Date(w.updated_at),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    },
-  ])
+  const workflowPages = workflows.map((w) => ({
+    url: `https://nanobananacanvas.com/explore/${w.id}`,
+    lastModified: new Date(w.updated_at),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
 
   return [...staticPages, ...workflowPages]
 }
@@ -347,23 +311,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: [
-          '/',
-          '/en/',
-          '/zh/',
-          '/en/explore/',
-          '/zh/explore/',
-          '/en/pricing',
-          '/zh/pricing',
-        ],
+        allow: '/',
         disallow: [
           '/api/',
-          '/en/workspace/',
-          '/zh/workspace/',
-          '/en/profile/',
-          '/zh/profile/',
-          '/en/billing/',
-          '/zh/billing/',
+          '/account',
+          '/canvas/',
+          '/sign-in',
+          '/sign-up',
+          '/workspace/',
         ],
       },
     ],
@@ -372,32 +327,17 @@ export default function robots(): MetadataRoute.Robots {
 }
 ```
 
-### 4.3 i18n SEO
+### 4.3 i18n SEO（保持隐藏 locale 的现状）
 
 ```typescript
-// app/[locale]/layout.tsx
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return {
-    alternates: {
-      canonical: `https://nanobananacanvas.com/${params.locale}`,
-      languages: {
-        en: '/en',
-        zh: '/zh',
-        'x-default': '/en',
-      },
-    },
-  }
-}
+// 当前不输出 hreflang 语言互链，因为外部并不存在 /en /zh 独立 URL
+// 先保证 canonical 与 sitemap 完全匹配真实公开地址
 ```
 
-**`hreflang` 标签** 由 Next.js `alternates.languages` 自动生成：
+说明：
 
-```html
-<link rel="alternate" hreflang="en" href="https://nanobananacanvas.com/en" />
-<link rel="alternate" hreflang="zh" href="https://nanobananacanvas.com/zh" />
-<link rel="alternate" hreflang="x-default" href="https://nanobananacanvas.com/en" />
-```
+- 如果未来要做完整多语言 SEO，必须先把真实公开 URL 结构改成可索引的多语言路径
+- 在这之前，最优策略是避免输出错误的语言互链信号
 
 ---
 
@@ -469,6 +409,7 @@ const inter = Inter({
 | 日期       | 版本 | 变更内容                                                          |
 | ---------- | ---- | ----------------------------------------------------------------- |
 | 2026-03-04 | v1.0 | 初始版本：SEO 架构、动态 OG 图生成、结构化数据、Sitemap、i18n SEO |
+| 2026-04-21 | v1.1 | 对齐真实隐藏 locale 路由：canonical/sitemap 改为真实公开 URL；Landing 新增 FAQ/GEO 可见语义层与 Organization/SoftwareApplication/FAQPage 结构化数据；robots 收口私有路径抓取边界 |
 
 ---
 

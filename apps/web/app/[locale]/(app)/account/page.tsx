@@ -5,9 +5,13 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import type { Metadata } from 'next'
 import { setRequestLocale } from 'next-intl/server'
 
 import { AccountContent } from '@/components/profile/account-content'
+import { NO_INDEX_METADATA } from '@/lib/seo'
+
+export const metadata: Metadata = NO_INDEX_METADATA
 
 export default async function AccountPage({
   params,

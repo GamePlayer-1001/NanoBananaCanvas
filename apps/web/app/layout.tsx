@@ -6,13 +6,16 @@
  */
 
 import type { Metadata } from 'next'
+import { BASE_URL, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: 'Nano Banana Canvas',
-    template: '%s | Nano Banana Canvas',
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: 'Visual AI Workflow Platform — Build, share, and run AI workflows',
+  description: SITE_DESCRIPTION,
 }
 
 export default function RootLayout({

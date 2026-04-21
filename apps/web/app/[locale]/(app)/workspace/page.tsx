@@ -6,10 +6,14 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { setRequestLocale } from 'next-intl/server'
 
 import { WorkspaceContent } from '@/components/workspace/workspace-content'
+import { NO_INDEX_METADATA } from '@/lib/seo'
+
+export const metadata: Metadata = NO_INDEX_METADATA
 
 /* ─── Page ───────────────────────────────────────────── */
 

@@ -10,8 +10,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ContactContent } from '@/components/contact/contact-content'
-
-const BASE_URL = 'https://nanobananacanvas.com'
+import { BASE_URL, SITE_NAME, buildAbsoluteUrl, buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -20,14 +19,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'contact' })
-  return {
+  return buildPageMetadata({
     title: t('title'),
     description: t('subtitle'),
-    alternates: {
-      canonical: `${BASE_URL}/${locale}/contact`,
-      languages: { en: `${BASE_URL}/en/contact`, zh: `${BASE_URL}/zh/contact` },
-    },
-  }
+    path: '/contact',
+    locale,
+  })
 }
 
 /* ─── Page ───────────────────────────────────────────── */
@@ -40,5 +37,34 @@ export default async function ContactPage({
   const { locale } = await params
   setRequestLocale(locale)
 
-  return <ContactContent />
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE_NAME,
+    url: BASE_URL,
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        url: buildAbsoluteUrl('/contact'),
+        availableLanguage: ['en', 'zh'],
+      },
+    ],
+    sameAs: [
+      'https://t.me/nanobananacanvas',
+      'https://discord.gg/nanobananacanvas',
+      'https://x.com/nanobananacanvas',
+      'https://instagram.com/nanobananacanvas',
+    ],
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ContactContent />
+    </>
+  )
 }

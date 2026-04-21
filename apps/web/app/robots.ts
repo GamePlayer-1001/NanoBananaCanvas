@@ -6,6 +6,7 @@
  */
 
 import type { MetadataRoute } from 'next'
+import { BASE_URL } from '@/lib/seo'
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -13,9 +14,17 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/workspace/'],
+        disallow: [
+          '/api/',
+          '/account',
+          '/canvas/',
+          '/sign-in',
+          '/sign-up',
+          '/workspace/',
+        ],
       },
     ],
-    sitemap: 'https://nanobananacanvas.com/sitemap.xml',
+    host: BASE_URL,
+    sitemap: `${BASE_URL}/sitemap.xml`,
   }
 }
