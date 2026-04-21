@@ -238,7 +238,7 @@ type SessionActor =
 
 ### Phase 6：收尾与验证
 
-- [ ] `pnpm lint`
+- [x] `pnpm lint`
 - [ ] `pnpm test`
 - [ ] 最小登录链路手测：Landing → SignIn → redirect → Account
 - [ ] 最小匿名链路手测：Landing → Workspace → Canvas
@@ -288,14 +288,22 @@ type SessionActor =
 4. 受保护能力是局部显式的，而不是全局隐式的。
 5. 未来继续接“云同步 / webhook / OAuth / 账户资料”时，不需要推翻本次分层。
 
-## 十一、本轮清单修订说明（2026-04-20）
+## 十一、本轮清单修订说明（2026-04-21）
 
-1. 这份清单已按当前代码状态回写，不再假设 `middleware` 已带 Clerk 代理，也不再假设 `/account` 已接上真实账户态。
-2. 当前可以明确视为“已完成”的只有认证入口层：Provider、登录页、注册页、Landing 跳转、默认回跳。
-3. 当前仍属于“未完成”的核心链路有三条：身份抽象层、账户页合流、Webhook 镜像同步。
-4. 后续如果开始做真实登录桥接，应该优先改 `lib/api/auth.ts` 与 `/api/users/me`，因为它们是所有账户 UI 和业务 API 的单一身份入口。
-5. 当日已重建新的 Clerk Production 实例；仓库侧已切换本地运行所用的 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 与 `CLERK_SECRET_KEY`，但这类变更只落在 `apps/web/.env.local`，不会进入 git 留痕。
-6. 新实例当前仍缺三类外围配置：`clerk.nanobananacanvas.com / accounts.nanobananacanvas.com` 的 DNS 解析、Dashboard 中的 Path 路径核对，以及 `/api/webhooks/clerk` 落地前对应的 Webhook 创建。
-7. 2026-04-20 已补上 `/api/webhooks/clerk` 路由与最小用户镜像同步逻辑；当前剩余阻塞是把这版代码部署到线上，然后再在 Clerk Dashboard 创建真实 webhook 端点并回填新的签名密钥。
+1. 本次按真实代码重新核对了 `middleware.ts`、`[locale]/layout.tsx`、`(auth)` 路由、`lib/api/auth.ts`、`/api/users/me`、`/api/webhooks/clerk`、`AppSidebar`、`MobileHeader`、`/account`。
+2. 当前已经可以确认完成的链路不只认证入口层，还包括最小 webhook 入口层：
+   `ClerkProvider`、`/sign-in`、`/sign-up`、Landing 主 CTA 跳转、默认回跳 `/workspace`、`/api/webhooks/clerk` 三类事件同步。
+3. 当前仍未完成的主链路集中在三块：
+   身份抽象层（`identity adapter / session facade`）、
+   账户 UI 合流（`/api/users/me`、`AppSidebar`、`/account` 仍读匿名镜像）、
+   生产环境核验（Dashboard / 代理路径 / Webhook 真实端点）。
+4. 当前 `sign-in` / `sign-up` 页面已经通过 `forceRedirectUrl` 与 `fallbackRedirectUrl` 把成功登录后的默认去向固定到 `/${locale}/workspace`，但“读取 `redirect_url` 并做站内白名单校验”的策略还没有落地。
+5. 当前 `middleware.ts` 依旧只处理裸域规范化与 `next-intl` 重写，没有引入 Clerk 代理，也没有任何全局 `auth.protect()`；这符合当前“不要把中间件做胖”的设计约束，但意味着生产代理需求仍需单独确认。
+6. 当前 `apps/web/lib/api/auth.ts` 与 `/api/users/me` 仍然只会返回匿名 actor，`AppSidebar` 头像与 `/account` 页面消费的也是这条匿名链路，所以“登录成功”与“业务账户态已接桥”仍然是两件不同的事。
+7. 当前仓库里已经存在 `apps/web/app/api/webhooks/clerk/route.ts`，并且只处理 `user.created` / `user.updated` / `user.deleted`；旧文档里“webhook 尚未落地”的描述已经失效。
+8. `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过；`pnpm --filter @nano-banana/web test` 未通过，但失败点集中在既有测试与当前业务模型不一致，而不是这次文档同步引入的新问题：
+   `lib/validations/ai.test.ts` 有 3 个断言落后于现有 schema，
+   `lib/utils/create-node.test.ts` 有 1 个断言仍期待旧的 LLM 默认配置字段。
+9. 下一步如果继续推进真实登录桥接，最优先仍然是改 `lib/api/auth.ts` 与 `/api/users/me`，因为它们是所有账户 UI 和业务 API 共享的身份入口；在这一步完成前，继续堆 UI 只会制造“已登录但业务仍匿名”的裂缝。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

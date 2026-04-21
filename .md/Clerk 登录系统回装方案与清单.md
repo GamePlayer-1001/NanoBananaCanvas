@@ -16,8 +16,8 @@
 8. 当前 `apps/web/middleware.ts` 仍只处理裸域规范化与 `next-intl` 重写，尚未接入 Clerk 代理或任何 `auth.protect()` 逻辑。
 9. 当前 `apps/web/lib/api/auth.ts`、`apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts` 仍然基于匿名访客镜像工作，业务主链尚未消费真实 Clerk 会话。
 10. 当前 `/[locale]/account`、`AppSidebar`、`MobileHeader` 展示的仍是匿名用户镜像，不是 Clerk 账户态。
-11. 当前仓库中不存在 `apps/web/app/api/webhooks/clerk/route.ts`，Webhook 同步链路尚未落地。
-12. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”“Clerk Dashboard/生产环境配置核验”“Webhook 账户镜像同步”。
+11. 当前仓库中已经存在 `apps/web/app/api/webhooks/clerk/route.ts`，并处理 `user.created` / `user.updated` / `user.deleted` 三类最小同步事件。
+12. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”“Clerk Dashboard/生产环境配置核验”“Webhook 真实环境端点接通与签名密钥回填”。
 
 ## 二、回装前提
 
@@ -95,9 +95,9 @@
 
 ### 5.5 Webhook 与同步
 
-- [ ] 新建最小 webhook 端点
-- [ ] 只处理 `user.created` / `user.updated` / `user.deleted`
-- [ ] 确保 webhook 失败不会阻断核心产品使用
+- [x] 新建最小 webhook 端点
+- [x] 只处理 `user.created` / `user.updated` / `user.deleted`
+- [x] 确保 webhook 失败不会阻断核心产品使用
 
 ## 七、下一步执行顺序
 
@@ -113,7 +113,7 @@
 - [ ] 登录用户可以看到额外的账户能力，而不是只有“登录成功”但没有业务账户态
 - [ ] 核心服务层不直接依赖 Clerk SDK
 - [ ] 路由保护是局部的、显式的，不是全局泛滥的
-- [ ] `pnpm lint` 通过
+- [x] `pnpm lint` 通过
 - [ ] `pnpm test` 通过
 
 ## 九、分步协作方式
@@ -132,11 +132,12 @@
 
 如果某次回装让“画板离开 Clerk 就不能活”，那说明设计又走回了旧路，必须立刻停下来重构边界。
 
-## 十一、本轮代码审计结论（2026-04-20）
+## 十一、本轮代码审计结论（2026-04-21）
 
-1. 当前最准确的阶段描述不是“Clerk 已回装完成”，而是“Clerk 认证入口层已回装，业务身份桥接层未完成”。
-2. 已完成的是 UI 入口、Provider 注入、语言本地化与默认回跳；未完成的是 actor 抽象、账户态 UI 合流、Webhook 镜像、局部受保护能力。
-3. `users.clerk_id` 继续承担兼容身份键角色，当前仍写入 `anon:{guestId}`；在真正接桥前，不应把它重新当成“只存 Clerk user id”的字段。
-4. 下一步优先级应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后再处理 Dashboard 与 Webhook。
+1. 当前最准确的阶段描述仍然不是“Clerk 已回装完成”，而是“Clerk 认证入口层与最小 webhook 层已回装，业务身份桥接层未完成”。
+2. 已完成的是 UI 入口、Provider 注入、语言本地化、默认回跳以及 `/api/webhooks/clerk` 最小镜像同步；未完成的是 actor 抽象、账户态 UI 合流、局部受保护能力与 Dashboard 真实环境核验。
+3. `users.clerk_id` 继续承担兼容身份键角色，匿名链路仍写入 `anon:{guestId}`，webhook 链路会写入 `clerk:{clerkUserId}`；在真正接桥前，不应把它重新当成“只存 Clerk user id”的字段。
+4. `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过；`pnpm --filter @nano-banana/web test` 当前未通过，失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是 Clerk 文档回写本身引入的新回归。
+5. 目前最大的产品裂缝不是登录页，而是“Clerk 会话已存在，但业务 API 仍返回匿名 actor”。下一步优先级应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后处理 Dashboard 代理、redirect 白名单与真实 webhook 端点配置。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
