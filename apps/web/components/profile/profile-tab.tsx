@@ -1,5 +1,7 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/hooks/use-user 的 useCurrentUser
+ * [INPUT]: 依赖 next-intl 的 useTranslations / useLocale，依赖 @clerk/nextjs 的 SignOutButton，
+ *          依赖 @/hooks/use-user 的 useCurrentUser，依赖 @/i18n/navigation 的 Link，
+ *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
  * [OUTPUT]: 对外提供 ProfileTab 个人资料面板
  * [POS]: profile 的个人资料 Tab，被 profile-modal.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,14 +11,19 @@
 
 /* eslint-disable @next/next/no-img-element -- 匿名用户头像仍可能来自远程地址，直接渲染更稳妥。 */
 
-import { useTranslations } from 'next-intl'
+import { SignOutButton } from '@clerk/nextjs'
+import { useLocale, useTranslations } from 'next-intl'
 import { useCurrentUser } from '@/hooks/use-user'
+import { Link } from '@/i18n/navigation'
+import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function ProfileTab() {
   const t = useTranslations('profile')
+  const locale = useLocale()
   const { data: user } = useCurrentUser()
+  const signOutRedirect = getDefaultSignOutRedirect(locale)
 
   return (
     <div className="space-y-6">
@@ -46,6 +53,16 @@ export function ProfileTab() {
         />
       </div>
 
+      <div>
+        <label className="text-sm font-medium text-foreground">{t('username')}</label>
+        <input
+          type="text"
+          defaultValue={user?.username ?? ''}
+          className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground"
+          readOnly
+        />
+      </div>
+
       {/* 邮箱 */}
       <div>
         <label className="text-sm font-medium text-foreground">{t('email')}</label>
@@ -55,6 +72,72 @@ export function ProfileTab() {
           className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground"
           readOnly
         />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div>
+          <label className="text-sm font-medium text-foreground">{t('firstName')}</label>
+          <input
+            type="text"
+            defaultValue={user?.firstName ?? ''}
+            className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground"
+            readOnly
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">{t('lastName')}</label>
+          <input
+            type="text"
+            defaultValue={user?.lastName ?? ''}
+            className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground"
+            readOnly
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">{t('membershipStatus')}</label>
+          <input
+            type="text"
+            defaultValue={user?.membershipStatus ?? user?.plan ?? 'free'}
+            className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground"
+            readOnly
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/20 p-4">
+        {user?.isAuthenticated ? (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">{t('signedInStatus')}</p>
+              <p className="text-sm text-muted-foreground">{t('signedInStatusBody')}</p>
+            </div>
+
+            <SignOutButton redirectUrl={signOutRedirect}>
+              <button
+                type="button"
+                className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+              >
+                {t('signOut')}
+              </button>
+            </SignOutButton>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">{t('guestStatus')}</p>
+              <p className="text-sm text-muted-foreground">{t('guestStatusBody')}</p>
+            </div>
+
+            <Link
+              href="/sign-in?redirect_url=/account"
+              className="inline-flex items-center rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-700"
+            >
+              {t('goToSignIn')}
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

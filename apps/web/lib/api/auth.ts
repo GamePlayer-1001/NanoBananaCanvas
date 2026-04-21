@@ -1,82 +1,77 @@
 /**
- * [INPUT]: 依赖 next/headers 的 cookies，依赖 @/lib/db，依赖 @/lib/nanoid
- * [OUTPUT]: 对外提供 requireAuth() / optionalAuth()
- * [POS]: lib/api 的匿名访客守卫，被所有需要用户上下文的 API route handlers 消费
+ * [INPUT]: 依赖 @/lib/auth/session-actor 的 getSessionActor / requireAuthenticatedActor
+ * [OUTPUT]: 对外提供 requireAuth() / optionalAuth() / requireAuthenticatedAuth()
+ * [POS]: lib/api 的 API 用户上下文入口，向现有 route handlers 屏蔽 Clerk 会话与匿名访客的底层差异
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { cookies } from 'next/headers'
-
-import { getDb } from '@/lib/db'
-import { AppError, ErrorCode } from '@/lib/errors'
-import { nanoid } from '@/lib/nanoid'
-
-const ANON_COOKIE_NAME = 'nb_guest_id'
-const ANON_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
-const ANON_CLERK_PREFIX = 'anon:'
+import {
+  getSessionActor,
+  requireAuthenticatedActor as requireAuthenticatedSessionActor,
+  type AuthenticatedActor,
+  type SessionActor,
+} from '@/lib/auth/session-actor'
 
 /* ─── Types ──────────────────────────────────────────── */
 
 export interface AuthUser {
   userId: string
   identityKey: string
+  actorId: string
+  actorKind: SessionActor['kind']
+  isAuthenticated: boolean
+  email: string
+  username: string
+  firstName: string
+  lastName: string
+  name: string
+  avatarUrl: string
+  plan: string
+  membershipStatus: string
+  createdAt: string
+  clerkUserId?: string
 }
 
-/* ─── Guards ─────────────────────────────────────────── */
-
-async function getOrCreateAnonymousUser(): Promise<AuthUser> {
-  const cookieStore = await cookies()
-  let anonymousId = cookieStore.get(ANON_COOKIE_NAME)?.value
-
-  if (!anonymousId) {
-    anonymousId = nanoid()
-    cookieStore.set(ANON_COOKIE_NAME, anonymousId, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: ANON_COOKIE_MAX_AGE,
-    })
+function toAuthUser(actor: SessionActor): AuthUser {
+  return {
+    userId: actor.userId,
+    actorId: actor.actorId,
+    identityKey: actor.identityKey,
+    actorKind: actor.kind,
+    isAuthenticated: actor.isAuthenticated,
+    email: actor.email,
+    username: actor.username,
+    firstName: actor.firstName,
+    lastName: actor.lastName,
+    name: actor.name,
+    avatarUrl: actor.avatarUrl,
+    plan: actor.plan,
+    membershipStatus: actor.membershipStatus,
+    createdAt: actor.createdAt,
+    clerkUserId: actor.kind === 'clerk' ? actor.clerkUserId : undefined,
   }
-
-  const identityKey = `${ANON_CLERK_PREFIX}${anonymousId}`
-  const db = await getDb()
-
-  let user = await db
-    .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-    .bind(identityKey)
-    .first<{ id: string; clerk_id: string }>()
-
-  if (!user) {
-    const userId = nanoid()
-    await db
-      .prepare(
-        `INSERT OR IGNORE INTO users (id, clerk_id, email, name, avatar_url, plan)
-         VALUES (?, ?, '', 'Guest', '', 'free')`,
-      )
-      .bind(userId, identityKey)
-      .run()
-
-    user = await db
-      .prepare('SELECT id, clerk_id FROM users WHERE clerk_id = ?')
-      .bind(identityKey)
-      .first<{ id: string; clerk_id: string }>()
-  }
-
-  if (!user) {
-    throw new AppError(ErrorCode.UNKNOWN, 'Failed to initialize anonymous user', {
-      identityKey,
-    })
-  }
-
-  return { userId: user.id, identityKey: user.clerk_id }
 }
 
-/** 统一返回匿名访客上下文，保证现有 API 主链可继续运行。 */
+export interface AuthenticatedAuthUser extends AuthUser {
+  actorKind: 'clerk'
+  isAuthenticated: true
+  clerkUserId: string
+}
+
+/** 统一返回当前请求 actor，上层无需关心是 Clerk 账户还是匿名访客。 */
 export async function requireAuth(): Promise<AuthUser> {
-  return getOrCreateAnonymousUser()
+  const actor = await getSessionActor()
+  return toAuthUser(actor)
 }
 
-/** 匿名模式下可选认证与强制认证等价，始终返回访客上下文。 */
+/** 当前项目里 optionalAuth 与 requireAuth 等价，但保留接口以兼容公开页分支判断。 */
 export async function optionalAuth(): Promise<AuthUser | null> {
-  return getOrCreateAnonymousUser()
+  const actor = await getSessionActor()
+  return toAuthUser(actor)
+}
+
+/** 仅在必须登录的资源上使用，明确拒绝匿名访客。 */
+export async function requireAuthenticatedAuth(): Promise<AuthenticatedAuthUser> {
+  const actor: AuthenticatedActor = await requireAuthenticatedSessionActor()
+  return toAuthUser(actor) as AuthenticatedAuthUser
 }

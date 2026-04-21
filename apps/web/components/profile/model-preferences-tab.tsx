@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @tanstack/react-query 的 query/mutation，
- *          依赖 sonner 的 toast，依赖 @/hooks/use-model-configs，依赖 @/lib/model-config-catalog
+ *          依赖 sonner 的 toast，依赖 @/hooks/use-model-configs / use-user，
+ *          依赖 @/i18n/navigation 的 Link，依赖 @/lib/model-config-catalog
  * [OUTPUT]: 对外提供 ModelPreferencesTab API 接入配置面板
  * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的多条 API 接入配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -23,6 +24,8 @@ import {
 import { toast } from 'sonner'
 
 import { useModelConfigs, type ModelConfigItem } from '@/hooks/use-model-configs'
+import { useCurrentUser } from '@/hooks/use-user'
+import { Link } from '@/i18n/navigation'
 import {
   MODEL_PROVIDER_OPTIONS,
   getProviderOption,
@@ -107,6 +110,7 @@ function createDraft(capability: CapabilityId, saved?: ModelConfigItem): DraftSt
 export function ModelPreferencesTab() {
   const t = useTranslations('profile')
   const queryClient = useQueryClient()
+  const { data: currentUser } = useCurrentUser()
   const {
     isLoading,
     isError,
@@ -241,7 +245,29 @@ export function ModelPreferencesTab() {
         </div>
       </div>
 
-      {isLoading ? (
+      {currentUser && !currentUser.isAuthenticated ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-amber-950">
+                {t('accountLoginRequiredTitle')}
+              </p>
+              <p className="text-sm leading-6 text-amber-800">
+                {t('accountLoginRequiredBody')}
+              </p>
+            </div>
+
+            <Link
+              href="/sign-in"
+              className="inline-flex items-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
+            >
+              {t('accountLoginRequiredAction')}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {currentUser && !currentUser.isAuthenticated ? null : isLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 size={14} className="animate-spin" />
           {t('apiConfigLoading')}

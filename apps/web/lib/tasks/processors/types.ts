@@ -43,6 +43,10 @@ export interface TaskOutput {
   url?: string
   /** MIME 类型 */
   contentType?: string
+  /** 落盘后的 R2 Key，供私有读取/清理使用 */
+  r2_key?: string
+  /** 原始文件名或推导后的文件名 */
+  fileName?: string
   /** 结构化数据 (某些 Provider 返回 JSON) */
   data?: unknown
 }

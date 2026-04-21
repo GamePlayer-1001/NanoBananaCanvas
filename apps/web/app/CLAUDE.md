@@ -14,7 +14,7 @@ robots.ts                   — robots.txt 动态生成 (SEO)
 sitemap.ts                  — sitemap.xml 动态生成 (SEO)
 api/                        — RESTful API 路由层 (见 api/CLAUDE.md，26 端点: ai/files/tasks/workflows/explore/settings/webhooks...)
 
-[locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider)
+[locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (HeroSection + LandingFooter)
 [locale]/(landing)/privacy/page.tsx        — 隐私政策 (PrivacyContent)

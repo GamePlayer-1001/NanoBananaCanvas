@@ -7,7 +7,7 @@ API 路由公共基础设施
 ## 成员清单
 
 ```
-auth.ts            — requireAuth() / optionalAuth() 匿名访客守卫，cookie → D1 用户镜像
+auth.ts            — requireAuth() / optionalAuth() / requireAuthenticatedAuth() API 用户上下文门面，SessionActor → Route Handler 兼容视图
 rate-limit.ts      — checkRateLimit / rateLimitResponse / withRateLimit KV 滑动窗口限流器，所有 API 路由消费
 rate-limit.test.ts — rate-limit 模块单元测试 (Vitest, KV mock)
 response.ts        — apiOk / apiError / handleApiError 统一响应，AppError → HTTP 状态码映射

@@ -28,7 +28,7 @@ e2e/                 — Playwright E2E 测试
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
 | 缓存   | Cloudflare KV (限流/存储配额)                     |
 | 存储   | Cloudflare R2                                     |
-| 认证   | Clerk 登录页已接回运行时，业务身份桥接继续推进中  |
+| 认证   | Clerk 会话桥接已接回运行时，账户级资源绑定继续收口中 |
 | 支付   | 当前未启用运行时商业化链路，历史方案已归档        |
 | i18n   | next-intl (P1 接入)                               |
 | 部署   | @opennextjs/cloudflare → Cloudflare Workers        |
@@ -81,10 +81,10 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ## 环境模式
 
-> **当前状态: Clerk 登录页已上线到运行时，业务身份桥接与支付仍待重建**
+> **当前状态: Clerk 会话桥接已接回运行时，账户级资源绑定已开始生效，支付仍待重建**
 >
 > - **基础设施**: D1 数据库、R2 存储、域名路由均已指向生产环境 (nanobananacanvas.com)
-> - **认证**: Landing 主 CTA 已进入 `/sign-in`；`/sign-in` 与 `/sign-up` 走隐藏 locale 前缀策略并接回真实 Clerk 卡片，业务侧仍存在匿名 actor 与正式账户态并行阶段
+> - **认证**: Landing 主 CTA 已进入 `/sign-in`；`/sign-in` 与 `/sign-up` 走隐藏 locale 前缀策略并接回真实 Clerk 卡片；`middleware.ts` 已注入 Clerk session，`lib/auth/session-actor.ts` 已把登录态映射到 `users` 表，工作流/文件夹/任务开始按真实 actor 归属
 > - **支付**: 当前运行时未启用商业化链路，历史 Stripe/积分方案已转入 `.md/archive/`
 > - **环境变量**: 统一通过 `lib/env.ts` (getEnv/requireEnv) 获取，底层走 getCloudflareContext()
 > - **重建**: 未来如需重新接回身份系统，以 `.md/Clerk 登录系统回装方案与清单.md` 为入口

@@ -18,6 +18,7 @@ export const createWorkflowSchema = z.object({
     .string()
     .max(500, 'Description must be 500 characters or less')
     .optional(),
+  data: z.string().optional(),
 })
 
 export const updateWorkflowSchema = z.object({

@@ -9,7 +9,7 @@ Next.js 16 前端应用 · App Router + Turbopack + RSC
 ```
 app/                — App Router 路由树 (layout/page/api，含 14 个 API 端点)
 components/         — React 组件 (ui/ 为 shadcn 自动管理)
-db/                 — D1 数据库 Schema + 种子数据 (7 表)
+db/                 — D1 数据库 Schema + 种子数据 (users/workflows 等核心表 + 账户资料扩展迁移)
 lib/                — 工具函数与配置 (utils/query/validations/api/db/nanoid)
 stores/             — Zustand 客户端状态
 hooks/              — 自定义 React Hooks
@@ -26,7 +26,7 @@ scripts/            — 项目级脚本 (Cloudflare 部署包装与构建兜底)
 
 ```
 next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + next-intl 插件)
-middleware.ts       — Edge 路由中间件 (裸域规范化 + next-intl locale 检测/重写，外部 URL 隐藏语言前缀)
+middleware.ts       — Edge 路由中间件 (Clerk 会话注入 + 可开关 Frontend API 代理 + 裸域规范化 + next-intl locale 检测/重写，外部 URL 隐藏语言前缀)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
 postcss.config.mjs  — PostCSS (@tailwindcss/postcss)

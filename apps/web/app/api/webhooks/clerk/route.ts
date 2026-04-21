@@ -62,6 +62,16 @@ function pickDisplayName(payload: ClerkUserPayload) {
   return fullName || payload.username || payload.first_name || payload.last_name || 'Member'
 }
 
+function pickAccountProfile(payload: ClerkUserPayload) {
+  return {
+    username: payload.username ?? '',
+    firstName: payload.first_name ?? '',
+    lastName: payload.last_name ?? '',
+    name: pickDisplayName(payload),
+    avatarUrl: payload.image_url ?? '',
+  }
+}
+
 async function upsertClerkUser(payload: ClerkUserPayload) {
   if (!payload.id) {
     throw new Error('Missing Clerk user id in webhook payload')
@@ -69,8 +79,7 @@ async function upsertClerkUser(payload: ClerkUserPayload) {
 
   const identityKey = toIdentityKey(payload.id)
   const email = pickPrimaryEmail(payload)
-  const name = pickDisplayName(payload)
-  const avatarUrl = payload.image_url ?? ''
+  const profile = pickAccountProfile(payload)
   const db = await getDb()
 
   const existingUser = await db
@@ -82,10 +91,18 @@ async function upsertClerkUser(payload: ClerkUserPayload) {
     await db
       .prepare(
         `UPDATE users
-         SET email = ?, name = ?, avatar_url = ?, updated_at = datetime('now')
+         SET email = ?, username = ?, first_name = ?, last_name = ?, name = ?, avatar_url = ?, updated_at = datetime('now')
          WHERE clerk_id = ?`,
       )
-      .bind(email, name, avatarUrl, identityKey)
+      .bind(
+        email,
+        profile.username,
+        profile.firstName,
+        profile.lastName,
+        profile.name,
+        profile.avatarUrl,
+        identityKey,
+      )
       .run()
 
     return
@@ -93,10 +110,19 @@ async function upsertClerkUser(payload: ClerkUserPayload) {
 
   await db
     .prepare(
-      `INSERT INTO users (id, clerk_id, email, name, avatar_url, plan)
-       VALUES (?, ?, ?, ?, ?, 'free')`,
+      `INSERT INTO users (id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'free', 'free')`,
     )
-    .bind(nanoid(), identityKey, email, name, avatarUrl)
+    .bind(
+      nanoid(),
+      identityKey,
+      email,
+      profile.username,
+      profile.firstName,
+      profile.lastName,
+      profile.name,
+      profile.avatarUrl,
+    )
     .run()
 }
 

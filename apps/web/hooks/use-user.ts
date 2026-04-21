@@ -27,11 +27,20 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export interface UserProfile {
   id: string
+  actorId: string
+  actorKind: 'anonymous' | 'clerk'
+  isAuthenticated: boolean
   identityKey: string
+  clerkUserId?: string | null
+  username: string
+  firstName: string
+  lastName: string
   name: string
   email: string
   avatarUrl?: string
   tier: string
+  plan: string
+  membershipStatus: string
   createdAt: string
 }
 
