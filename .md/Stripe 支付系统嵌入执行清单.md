@@ -71,11 +71,40 @@
 
 ### Phase 2：环境变量与服务端配置
 
-- [ ] **SPAY-200** 在 `apps/web/.env.example` 补齐 Stripe 所需环境变量占位
-- [ ] **SPAY-201** 创建 `lib/stripe/config.ts`，集中解析 Secret Key、Webhook Secret、Price ID
-- [ ] **SPAY-202** 创建 `resolveStripePriceId()`，按 `plan / purchaseMode / packageId / currency` 解析 Price
-- [ ] **SPAY-203** 建立 `currency whitelist` 与 `CF-IPCountry -> currency` 推断器
-- [ ] **SPAY-204** 为价格缺失、币种缺失、非法 purchaseMode 增加统一错误码
+- [x] **SPAY-200** 在 `apps/web/.env.example` 补齐 Stripe 所需环境变量占位
+- [x] **SPAY-201** 创建 `lib/stripe/config.ts`，集中解析 Secret Key、Webhook Secret、Price ID
+- [x] **SPAY-202** 创建 `resolveStripePriceId()`，按 `plan / purchaseMode / packageId / currency` 解析 Price
+- [x] **SPAY-203** 建立 `currency whitelist` 与 `CF-IPCountry -> currency` 推断器
+- [x] **SPAY-204** 为价格缺失、币种缺失、非法 purchaseMode 增加统一错误码
+
+#### Phase 2 Batch A 结论（2026-04-21）
+
+1. 已在 `apps/web/.env.example` 完成 Stripe 新方案占位：
+   - 新增 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`、`STRIPE_PORTAL_CONFIGURATION_ID`、`STRIPE_DEFAULT_CURRENCY`
+   - 新增 `Standard / Pro / Ultimate` 三档在 `plan_auto_monthly / plan_one_time` 下的四币种 Price ID 占位
+   - 新增 `500 / 1200 / 3500 / 8000` 四个积分包在四币种下的 Price ID 占位
+2. 已新增 `apps/web/lib/billing/config.ts` 作为当前 Stripe 配置真相源：
+   - 集中解析 Secret Key / Webhook Secret / Portal Config / Price IDs
+   - 提供 `getPlanPriceEnvKey()`、`getCreditPackPriceEnvKey()` 命名规范生成器
+   - 提供 `getStripeBillingConfig()` 统一配置入口
+3. 已实现 `resolveStripePriceId()`：
+   - 套餐模式按 `plan + purchaseMode + currency` 解析
+   - 积分包模式按 `packageId + currency` 解析
+   - Price 缺失时统一抛出 `BILLING_PRICE_NOT_CONFIGURED`
+4. 已实现币种白名单与推断器：
+   - 白名单固定为 `usd / eur / gbp / cny`
+   - `resolveBillingCurrency()` 优先接收显式币种；未传时回退到 `inferCurrencyFromCountry()`
+   - 国家推断规则与 Phase 0 对齐：`GB -> gbp`、`CN -> cny`、欧盟/欧洲经济区优先 `eur`、其他回退 `usd`
+5. 已补统一错误码：
+   - `BILLING_CONFIG_INVALID`
+   - `BILLING_PLAN_INVALID`
+   - `BILLING_PACKAGE_INVALID`
+   - `BILLING_CURRENCY_UNSUPPORTED`
+   - `BILLING_PURCHASE_MODE_INVALID`
+   - `BILLING_PRICE_NOT_CONFIGURED`
+6. 已完成本地验证：
+   - `pnpm --filter @nano-banana/web test -- lib/billing/config.test.ts lib/api/response.test.ts`
+   - `pnpm --filter @nano-banana/web exec tsc --noEmit`
 
 ### Phase 3：数据库与账本结构
 

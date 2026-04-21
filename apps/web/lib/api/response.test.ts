@@ -66,6 +66,15 @@ describe('handleApiError', () => {
     expect(res.status).toBe(409)
   })
 
+  it('maps BILLING_PRICE_NOT_CONFIGURED to 503', async () => {
+    const err = new AppError(
+      ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
+      'Missing Stripe price',
+    )
+    const res = handleApiError(err)
+    expect(res.status).toBe(503)
+  })
+
   it('maps unknown errors to 500', async () => {
     const err = new Error('Random error')
     const res = handleApiError(err)

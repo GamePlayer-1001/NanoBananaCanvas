@@ -84,6 +84,8 @@ function errorCodeToStatus(code: string): number {
   if (code === 'TASK_CONCURRENCY_EXCEEDED') return 429
   if (code === 'TASK_NOT_FOUND') return 404
   if (code.startsWith('TASK_')) return 400
+  if (code === 'BILLING_PRICE_NOT_CONFIGURED') return 503
+  if (code.startsWith('BILLING_')) return 400
   if (code === 'NOT_FOUND') return 404
   if (code === 'CONFLICT') return 409
   return 500

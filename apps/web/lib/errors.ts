@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/TaskError) + UPLOAD/TASK 错误码
+ * [OUTPUT]: 对外提供 AppError 及其子类 (NetworkError/ValidationError/AuthError/AIServiceError/WorkflowError/TaskError/BillingError) + UPLOAD/TASK/BILLING 错误码
  * [POS]: lib 的统一错误类型体系，被所有业务模块消费，是错误处理的唯一真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -46,6 +46,14 @@ export const ErrorCode = {
   TASK_PROVIDER_ERROR: 'TASK_PROVIDER_ERROR',
   TASK_TIMEOUT: 'TASK_TIMEOUT',
   TASK_ALREADY_TERMINAL: 'TASK_ALREADY_TERMINAL',
+
+  // 计费层
+  BILLING_CONFIG_INVALID: 'BILLING_CONFIG_INVALID',
+  BILLING_PLAN_INVALID: 'BILLING_PLAN_INVALID',
+  BILLING_PACKAGE_INVALID: 'BILLING_PACKAGE_INVALID',
+  BILLING_CURRENCY_UNSUPPORTED: 'BILLING_CURRENCY_UNSUPPORTED',
+  BILLING_PURCHASE_MODE_INVALID: 'BILLING_PURCHASE_MODE_INVALID',
+  BILLING_PRICE_NOT_CONFIGURED: 'BILLING_PRICE_NOT_CONFIGURED',
 
   // 资源层
   NOT_FOUND: 'NOT_FOUND',
@@ -163,6 +171,25 @@ export class TaskError extends AppError {
   ) {
     super(code, message, meta)
     this.name = 'TaskError'
+  }
+}
+
+export class BillingError extends AppError {
+  constructor(
+    code: Extract<
+      ErrorCode,
+      | 'BILLING_CONFIG_INVALID'
+      | 'BILLING_PLAN_INVALID'
+      | 'BILLING_PACKAGE_INVALID'
+      | 'BILLING_CURRENCY_UNSUPPORTED'
+      | 'BILLING_PURCHASE_MODE_INVALID'
+      | 'BILLING_PRICE_NOT_CONFIGURED'
+    >,
+    message: string,
+    meta: Record<string, unknown> = {},
+  ) {
+    super(code, message, meta)
+    this.name = 'BillingError'
   }
 }
 
