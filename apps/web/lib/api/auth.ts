@@ -21,9 +21,13 @@ export interface AuthUser {
   actorKind: SessionActor['kind']
   isAuthenticated: boolean
   email: string
+  username: string
+  firstName: string
+  lastName: string
   name: string
   avatarUrl: string
   plan: string
+  membershipStatus: string
   createdAt: string
   clerkUserId?: string
 }
@@ -36,9 +40,13 @@ function toAuthUser(actor: SessionActor): AuthUser {
     actorKind: actor.kind,
     isAuthenticated: actor.isAuthenticated,
     email: actor.email,
+    username: actor.username,
+    firstName: actor.firstName,
+    lastName: actor.lastName,
     name: actor.name,
     avatarUrl: actor.avatarUrl,
     plan: actor.plan,
+    membershipStatus: actor.membershipStatus,
     createdAt: actor.createdAt,
     clerkUserId: actor.kind === 'clerk' ? actor.clerkUserId : undefined,
   }

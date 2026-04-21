@@ -20,13 +20,16 @@
 10. `apps/web/lib/auth/identity-adapter.ts`、`apps/web/lib/auth/session-actor.ts` 已落地，`apps/web/lib/api/auth.ts` 已改为统一输出 `SessionActor` 兼容视图。
 11. `apps/web/app/api/users/me/route.ts` 已返回标准 actor 视图，账户页与侧边栏已可消费真实登录账户镜像。
 12. `/api/settings/api-keys*` 已要求登录后访问，账户级 API 配置不再写入匿名访客上下文。
+13. `apps/web/lib/auth/redirect.ts` 已落地，`sign-in` / `sign-up` 已支持读取 `redirect_url`，并限制回跳到站内白名单路径。
+14. `AppSidebar` 与 `/account` 资料页已补齐登录态 / 匿名态文案与登出入口；登出后默认回到 `/${locale}/explore`。
+15. `users` 表已扩展 `username`、`first_name`、`last_name`、`membership_status` 字段，Clerk session / webhook / `/api/users/me` / 账户页展示已完成同构更新。
 
 ### 1.2 当前未完成能力
 
 1. `apps/web/middleware.ts` 虽已接入 Clerk session 注入，但仍未补齐生产代理能力，也未启用任何全局 `auth.protect()` 逻辑。
-2. `redirect_url` 的站内白名单策略尚未落地，当前只实现了默认回跳，没有读取查询参数并做站内白名单校验。
-3. `AppSidebar`、`/account` 已能消费真实 actor 镜像，但登出入口、独立账户菜单与更明确的登录态文案仍未补齐。
-4. 只有“账户级 API 配置”已经切到登录保护；其他未来账户资产 API 仍需继续显式区分匿名态与登录态。
+2. 当前白名单只覆盖 `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/explore`、`/canvas/:id`；后续新增账户态页面时，必须同步更新 `apps/web/lib/auth/redirect.ts`。
+3. 只有“账户级 API 配置”已经切到登录保护；其他未来账户资产 API 仍需继续显式区分匿名态与登录态。
+4. “用户生成资源绑定”和“用户账户数据库完善”目前已完成基础身份桥接、作品归属 `user_id` 绑定、以及账户资料字段持久化；但还没有形成完整的会员体系、资源迁移工具和历史匿名作品转正式账户的显式升级流程。
 5. Clerk Dashboard 生产域名、回调地址、OAuth 配置、Webhook 真实端点与签名密钥回填仍待核验。
 
 ### 1.3 当前阶段判断
@@ -106,7 +109,7 @@ type SessionActor =
    `/sign-in?redirect_url={encodedCurrentPath}`
 4. 登录成功后只允许回跳到站内白名单路径：
    `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/canvas/:id`
-5. 当前第一阶段已经稳定实现的是默认回跳 `/workspace`；`redirect_url` 读取、站内白名单校验与安全回跳解析仍待补。
+5. 当前第一阶段已经实现 `redirect_url` 读取与站内白名单校验；未命中白名单时统一回退到 `/workspace`。
 6. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
 
 ### 4.3 第一阶段保持匿名可用的页面
@@ -199,7 +202,7 @@ type SessionActor =
 - [x] 只处理 `user.created` / `user.updated` / `user.deleted`
 - [x] webhook 只更新账户资料镜像，不触发业务初始化级联
 - [x] 确保 webhook 失败不会阻断登录与产品主链
-- [ ] 定义统一 `redirect_url` 白名单策略
+- [x] 定义统一 `redirect_url` 白名单策略
 - [x] 在 `middleware.ts` 中接入 Clerk session 注入并与现有 host/i18n 中间件组合
 - [ ] 在 `middleware.ts` 中补齐 Clerk 生产代理能力
 - [ ] 核验 Clerk Dashboard 真实环境配置
@@ -214,18 +217,20 @@ type SessionActor =
 - [x] 定义 `SessionActor` / `AuthenticatedActor`
 - [x] 重构 `requireAuth()`，拆成“允许匿名 actor”与“必须登录 actor”两类守卫
 - [x] 将 `/api/users/me` 改为返回标准 actor 视图，而不是匿名访客特化视图
+- [x] 扩展 `users` 表账户资料字段（昵称 / 姓 / 名 / 会员状态）并同步 Clerk 镜像
 
 ### Phase 3：账户页与 UI 合流
 
 - [x] `AppSidebar` 根据 actor 展示匿名态 / 登录态底部信息
 - [x] `MobileHeader` 通过复用 `AppSidebar` 暴露账户入口
 - [x] `/account` 接入真实登录资料摘要
-- [ ] 增加登出入口
+- [x] 增加登出入口
 - [x] 明确匿名用户访问账户同步能力时的登录引导文案
 
 ### Phase 4：局部受保护能力
 
 - [x] 仅对“跨设备同步 API 配置”增加登录要求
+- [x] 抽出 `requireAccountActor()` 语义化账户守卫别名，作为后续账户资产 API 的统一入口
 - [ ] 仅对“未来云端资源同步”增加登录要求
 - [ ] 仅对明确账户资产 API 启用 `requireAuthenticatedActor()`
 - [ ] 保持工作区、画布、广场浏览可匿名使用
@@ -283,10 +288,10 @@ type SessionActor =
 3. `apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts`、`/account`、`AppSidebar` 已能消费真实账户镜像，登录用户的资料与资源开始落到正式 actor。
 4. `users.clerk_id` 继续承担兼容身份键角色，匿名链路写入 `anon:{guestId}`，登录链路与 webhook 链路写入 `clerk:{clerkUserId}`；在真正迁移列名之前，不应把它重新当成“只存 Clerk user id”的字段。
 5. 账户级 API 配置已经改为登录保护，匿名访客不再把这类跨设备资产写入 guest actor。
-6. 当前仍未完成的是：Clerk 生产代理 / Dashboard 外围配置、`redirect_url` 白名单解析、登出入口、以及更大范围的账户资产守卫收口。
+6. 当前仍未完成的是：Clerk 生产代理 / Dashboard 外围配置、更大范围的账户资产守卫收口，以及会员体系、匿名作品升级导入、历史资产迁移这些“账户体系深化”能力。
 7. `pnpm --filter @nano-banana/web exec tsc --noEmit` 与 `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过。
 8. `pnpm --filter @nano-banana/web test` 已在 2026-04-21 重新执行，当前仍未通过；失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是本轮 Clerk 桥接引入的新回归。
 9. 当前可明确列出的失败点为：`lib/validations/ai.test.ts` 失败 3 项，`lib/utils/create-node.test.ts` 失败 1 项。
-10. 下一步最优先应是：补 `redirect_url` 安全回跳、补登出入口、把更多明确账户资产 API 切到 `requireAuthenticatedActor()`，最后完成 Dashboard 代理与真实 webhook 端点配置。
+10. 下一步最优先应是：把作品、收藏、云端资产这类“用户专属资源”继续统一收口到 `requireAccountActor()`，再补匿名作品导入正式账户的显式流程，最后完成 Dashboard 代理与真实 webhook 端点配置。
 
 [PROTOCOL]: 变更时更新此文档，然后检查 CLAUDE.md

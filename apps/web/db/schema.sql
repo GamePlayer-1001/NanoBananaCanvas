@@ -13,9 +13,13 @@ CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,
   clerk_id      TEXT NOT NULL UNIQUE,
   email         TEXT NOT NULL,
+  username      TEXT NOT NULL DEFAULT '',
+  first_name    TEXT NOT NULL DEFAULT '',
+  last_name     TEXT NOT NULL DEFAULT '',
   name          TEXT NOT NULL DEFAULT '',
   avatar_url    TEXT DEFAULT '',
   plan          TEXT NOT NULL DEFAULT 'free',
+  membership_status TEXT NOT NULL DEFAULT 'free',
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

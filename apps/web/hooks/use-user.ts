@@ -32,11 +32,15 @@ export interface UserProfile {
   isAuthenticated: boolean
   identityKey: string
   clerkUserId?: string | null
+  username: string
+  firstName: string
+  lastName: string
   name: string
   email: string
   avatarUrl?: string
   tier: string
   plan: string
+  membershipStatus: string
   createdAt: string
 }
 

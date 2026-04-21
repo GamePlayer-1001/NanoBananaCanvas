@@ -28,11 +28,15 @@ export async function GET() {
       isAuthenticated: authUser.isAuthenticated,
       identityKey: user.clerk_id,
       clerkUserId: authUser.clerkUserId ?? null,
+      username: user.username || '',
+      firstName: user.first_name || '',
+      lastName: user.last_name || '',
       name: user.name,
       email: user.email,
       avatarUrl: user.avatar_url || '',
       tier: user.plan,
       plan: user.plan,
+      membershipStatus: user.membership_status || user.plan,
       createdAt: user.created_at,
     })
   } catch (error) {

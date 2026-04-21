@@ -9,8 +9,12 @@ export interface User {
   id: string
   identityKey: string
   email: string
+  username: string
+  firstName: string
+  lastName: string
   name: string
   avatarUrl?: string
   tier: string
+  membershipStatus: string
   createdAt: string
 }

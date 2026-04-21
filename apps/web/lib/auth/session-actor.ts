@@ -16,9 +16,13 @@ type DbUserRow = {
   id: string
   clerk_id: string
   email: string
+  username: string
+  first_name: string
+  last_name: string
   name: string
   avatar_url: string
   plan: string
+  membership_status: string
   created_at: string
 }
 
@@ -30,9 +34,13 @@ export type SessionActor =
       identityKey: `anon:${string}`
       isAuthenticated: false
       email: string
+      username: string
+      firstName: string
+      lastName: string
       name: string
       avatarUrl: string
       plan: string
+      membershipStatus: string
       createdAt: string
     }
   | {
@@ -43,9 +51,13 @@ export type SessionActor =
       isAuthenticated: true
       clerkUserId: string
       email: string
+      username: string
+      firstName: string
+      lastName: string
       name: string
       avatarUrl: string
       plan: string
+      membershipStatus: string
       createdAt: string
     }
 
@@ -55,7 +67,7 @@ async function findUserByIdentityKey(identityKey: string) {
   const db = await getDb()
   return db
     .prepare(
-      `SELECT id, clerk_id, email, name, avatar_url, plan, created_at
+      `SELECT id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status, created_at
        FROM users
        WHERE clerk_id = ?`,
     )
@@ -71,13 +83,16 @@ async function ensureAnonymousActor(identity: Extract<Awaited<ReturnType<typeof 
     const newUserId = nanoid()
     await db
       .prepare(
-        `INSERT OR IGNORE INTO users (id, clerk_id, email, name, avatar_url, plan)
-         VALUES (?, ?, ?, ?, ?, 'free')`,
+        `INSERT OR IGNORE INTO users (id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'free', 'free')`,
       )
       .bind(
         newUserId,
         identity.identityKey,
         identity.profile.email,
+        identity.profile.username,
+        identity.profile.firstName,
+        identity.profile.lastName,
         identity.profile.name,
         identity.profile.avatarUrl,
       )
@@ -99,9 +114,13 @@ async function ensureAnonymousActor(identity: Extract<Awaited<ReturnType<typeof 
     identityKey: user.clerk_id as `anon:${string}`,
     isAuthenticated: false,
     email: user.email,
+    username: user.username,
+    firstName: user.first_name,
+    lastName: user.last_name,
     name: user.name,
     avatarUrl: user.avatar_url || '',
     plan: user.plan,
+    membershipStatus: user.membership_status,
     createdAt: user.created_at,
   }
 }
@@ -113,6 +132,9 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
   if (user) {
     const shouldRefresh =
       user.email !== identity.profile.email ||
+      user.username !== identity.profile.username ||
+      user.first_name !== identity.profile.firstName ||
+      user.last_name !== identity.profile.lastName ||
       user.name !== identity.profile.name ||
       (user.avatar_url || '') !== identity.profile.avatarUrl
 
@@ -120,11 +142,14 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
       await db
         .prepare(
           `UPDATE users
-           SET email = ?, name = ?, avatar_url = ?, updated_at = datetime('now')
+           SET email = ?, username = ?, first_name = ?, last_name = ?, name = ?, avatar_url = ?, updated_at = datetime('now')
            WHERE clerk_id = ?`,
         )
         .bind(
           identity.profile.email,
+          identity.profile.username,
+          identity.profile.firstName,
+          identity.profile.lastName,
           identity.profile.name,
           identity.profile.avatarUrl,
           identity.identityKey,
@@ -139,13 +164,16 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
     const newUserId = nanoid()
     await db
       .prepare(
-        `INSERT INTO users (id, clerk_id, email, name, avatar_url, plan)
-         VALUES (?, ?, ?, ?, ?, 'free')`,
+        `INSERT INTO users (id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'free', 'free')`,
       )
       .bind(
         newUserId,
         identity.identityKey,
         identity.profile.email,
+        identity.profile.username,
+        identity.profile.firstName,
+        identity.profile.lastName,
         identity.profile.name,
         identity.profile.avatarUrl,
       )
@@ -168,9 +196,13 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
     isAuthenticated: true,
     clerkUserId: identity.clerkUserId,
     email: user.email,
+    username: user.username,
+    firstName: user.first_name,
+    lastName: user.last_name,
     name: user.name,
     avatarUrl: user.avatar_url || '',
     plan: user.plan,
+    membershipStatus: user.membership_status,
     createdAt: user.created_at,
   }
 }

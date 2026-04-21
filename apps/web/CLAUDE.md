@@ -9,7 +9,7 @@ Next.js 16 前端应用 · App Router + Turbopack + RSC
 ```
 app/                — App Router 路由树 (layout/page/api，含 14 个 API 端点)
 components/         — React 组件 (ui/ 为 shadcn 自动管理)
-db/                 — D1 数据库 Schema + 种子数据 (7 表)
+db/                 — D1 数据库 Schema + 种子数据 (users/workflows 等核心表 + 账户资料扩展迁移)
 lib/                — 工具函数与配置 (utils/query/validations/api/db/nanoid)
 stores/             — Zustand 客户端状态
 hooks/              — 自定义 React Hooks

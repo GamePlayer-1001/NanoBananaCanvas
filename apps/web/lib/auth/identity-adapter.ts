@@ -18,6 +18,9 @@ const CLERK_IDENTITY_PREFIX = 'clerk:'
 
 type IdentityProfile = {
   email: string
+  username: string
+  firstName: string
+  lastName: string
   name: string
   avatarUrl: string
 }
@@ -84,6 +87,9 @@ async function resolveAnonymousIdentity(): Promise<ResolvedIdentity> {
     isAuthenticated: false,
     profile: {
       email: '',
+      username: '',
+      firstName: '',
+      lastName: '',
       name: 'Guest',
       avatarUrl: '',
     },
@@ -106,6 +112,9 @@ export async function resolveRequestIdentity(): Promise<ResolvedIdentity> {
     isAuthenticated: true,
     profile: {
       email: pickPrimaryEmail(user),
+      username: user?.username ?? '',
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
       name: pickDisplayName(user),
       avatarUrl: user?.imageUrl ?? '',
     },

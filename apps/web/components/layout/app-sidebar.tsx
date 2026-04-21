@@ -1,9 +1,11 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link / usePathname，
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @clerk/nextjs 的 SignOutButton，
+ *          依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，
  *          依赖 @/components/ui/avatar，
  *          依赖 @/components/shared/search-command，
- *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast
+ *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
+ *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
  * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/SearchCommand + 文件夹管理)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,9 +13,10 @@
 
 'use client'
 
+import { SignOutButton } from '@clerk/nextjs'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
   Folder,
@@ -22,6 +25,7 @@ import {
   Plus,
   MessageCircle,
   Search,
+  LogOut,
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
@@ -30,6 +34,7 @@ import { SearchCommand, useSearchShortcut } from '@/components/shared/search-com
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
 import { useCurrentUser } from '@/hooks/use-user'
+import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -182,6 +187,7 @@ function FolderItem({
 
 export function AppSidebar() {
   const t = useTranslations('sidebar')
+  const locale = useLocale()
   const pathname = usePathname()
   const { data: user } = useCurrentUser()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -191,6 +197,7 @@ export function AppSidebar() {
   const activeFolderId = searchParams.get('folder')
   const { data: folders } = useFolders()
   const createFolder = useCreateFolder()
+  const signOutRedirect = getDefaultSignOutRedirect(locale)
 
   const handleCreateFolder = () => {
     createFolder.mutate(
@@ -306,20 +313,52 @@ export function AppSidebar() {
       {/* ── Footer ────────────────────────────────────── */}
       <div className="border-t border-border px-3 py-3 space-y-2">
         {/* 用户信息 */}
-        <div className="flex items-center gap-2 px-1">
-          <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <div className="flex items-start gap-2 px-1">
+          <span className="mt-0.5 rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
             {t('freePlan')}
           </span>
-          <Link href="/account" className="ml-auto">
-            <Avatar size="sm">
-              {user?.avatarUrl && (
-                <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
-              )}
-              <AvatarFallback>
-                {user?.name?.charAt(0) ?? 'G'}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Link href="/account" className="ml-auto">
+                <Avatar size="sm">
+                  {user?.avatarUrl && (
+                    <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
+                  )}
+                  <AvatarFallback>
+                    {user?.name?.charAt(0) ?? 'G'}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            </div>
+
+            <div className="mt-1 min-w-0">
+              <p className="truncate text-xs font-medium text-foreground">
+                {user?.name ?? 'Guest'}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {user?.isAuthenticated ? user.email || t('signedIn') : t('guestMode')}
+              </p>
+            </div>
+
+            {user?.isAuthenticated ? (
+              <SignOutButton redirectUrl={signOutRedirect}>
+                <button
+                  type="button"
+                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground"
+                >
+                  <LogOut size={12} />
+                  {t('signOut')}
+                </button>
+              </SignOutButton>
+            ) : (
+              <Link
+                href="/sign-in?redirect_url=/workspace"
+                className="mt-2 inline-flex text-[11px] font-medium text-brand-600 transition hover:text-brand-700"
+              >
+                {t('signIn')}
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </aside>

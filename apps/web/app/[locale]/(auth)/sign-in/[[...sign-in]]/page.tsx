@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @clerk/nextjs 的 SignIn，依赖 next-intl/server 的 getTranslations / setRequestLocale，
- *          依赖 @/components/auth/auth-shell
+ *          依赖 @/components/auth/auth-shell，依赖 @/lib/auth/redirect
  * [OUTPUT]: 对外提供登录页路由
  * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与 Martini 风格外层壳
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,6 +10,7 @@ import { SignIn } from '@clerk/nextjs'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { AuthShell } from '@/components/auth/auth-shell'
+import { resolveSafeAuthRedirect } from '@/lib/auth/redirect'
 
 const CLERK_CARD_APPEARANCE = {
   elements: {
@@ -41,11 +42,14 @@ const CLERK_CARD_APPEARANCE = {
 
 export default async function SignInPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams?: Promise<{ redirect_url?: string }>
 }) {
   const { locale } = await params
-  const workspaceUrl = `/${locale}/workspace`
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const redirectUrl = resolveSafeAuthRedirect(locale, resolvedSearchParams?.redirect_url)
   setRequestLocale(locale)
 
   const t = await getTranslations('auth')
@@ -77,8 +81,8 @@ export default async function SignInPage({
         routing="path"
         path="/sign-in"
         signUpUrl="/sign-up"
-        fallbackRedirectUrl={workspaceUrl}
-        forceRedirectUrl={workspaceUrl}
+        fallbackRedirectUrl={redirectUrl}
+        forceRedirectUrl={redirectUrl}
         appearance={CLERK_CARD_APPEARANCE}
       />
     </AuthShell>
