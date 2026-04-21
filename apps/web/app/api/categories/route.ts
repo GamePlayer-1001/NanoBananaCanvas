@@ -20,11 +20,16 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url)
     const locale = url.searchParams.get('locale') ?? 'en'
     const db = await getDb()
+    const columnRows = await db.prepare("PRAGMA table_info('categories')").all()
+    const hasNameI18nColumn = (columnRows.results ?? []).some(
+      (row: Record<string, unknown>) => row.name === 'name_i18n',
+    )
+    const selectColumns = hasNameI18nColumn
+      ? 'id, slug, name_i18n, name_en, name_zh, icon, sort_order'
+      : 'id, slug, name_en, name_zh, icon, sort_order'
 
     const rows = await db
-      .prepare(
-        'SELECT id, slug, name_i18n, name_en, name_zh, icon, sort_order FROM categories ORDER BY sort_order',
-      )
+      .prepare(`SELECT ${selectColumns} FROM categories ORDER BY sort_order`)
       .all()
 
     const items = (rows.results ?? []).map((row: Record<string, unknown>) => ({
