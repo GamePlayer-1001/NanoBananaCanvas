@@ -23,11 +23,41 @@
 
 ### Phase 0：预检与对齐
 
-- [ ] **SPAY-000** 确认当前代码树中已删除的旧商业化残留边界，列出需要复活的目录与文件
-- [ ] **SPAY-001** 对齐支付主方案：`Free 默认进入态 + 四档套餐 + 积分包 + token 计费`
-- [ ] **SPAY-002** 确认套餐权益只保留 `monthlyCredits` 与 `storageGB`
-- [ ] **SPAY-003** 明确登录前后支付边界：未登录用户只能浏览定价页，结账必须登录
-- [ ] **SPAY-004** 明确币种白名单与 IP 推断策略，确定默认币种回退规则
+- [x] **SPAY-000** 确认当前代码树中已删除的旧商业化残留边界，列出需要复活的目录与文件
+- [x] **SPAY-001** 对齐支付主方案：`Free 默认进入态 + 四档套餐 + 积分包 + token 计费`
+- [x] **SPAY-002** 确认套餐权益只保留 `monthlyCredits` 与 `storageGB`
+- [x] **SPAY-003** 明确登录前后支付边界：未登录用户只能浏览定价页，结账必须登录
+- [x] **SPAY-004** 明确币种白名单与 IP 推断策略，确定默认币种回退规则
+
+#### Phase 0 结论（2026-04-21）
+
+1. **旧商业化运行时已被真实移除**
+   - `apps/web/db/schema.sql` 已删除 `credit_balances / credit_transactions / subscriptions / processed_stripe_events`。
+   - `apps/web/app/api/CLAUDE.md` 已明确写明“商业化：计费与 Stripe 入口已移除”。
+   - `apps/web/components/pricing/` 当前只剩 `CLAUDE.md` 壳文件，真实定价组件已清空。
+   - 代码树中已不存在 `app/api/billing/*`、`app/api/credits/*`、`app/api/webhooks/stripe/route.ts`、`/pricing` 页面运行时文件。
+   - 当前仅残留少量“免费版”文案与账户页 `membershipStatus` 展示位，不构成支付链路。
+2. **需要复活的目录与文件边界**
+   - 路由页：`apps/web/app/[locale]/(landing)/pricing/page.tsx`、`apps/web/app/[locale]/(app)/billing/page.tsx`
+   - API：`apps/web/app/api/billing/*`、`apps/web/app/api/credits/*`、`apps/web/app/api/pricing/plans/route.ts`、`apps/web/app/api/webhooks/stripe/route.ts`
+   - 服务层：`apps/web/lib/billing/*` 或 `apps/web/lib/stripe/*`（以配置、checkout、portal、webhook、账本服务拆分）
+   - UI：`apps/web/components/pricing/*`、`apps/web/components/billing/*`
+   - 数据层：`apps/web/db/schema.sql` 与对应 migration/seed，重建 billing 账本与 Stripe 幂等表
+3. **统一主方案锁定**
+   - 唯一口径：`Free 默认进入态 + Standard / Pro / Ultimate + credit_pack + token 计费`
+   - 不再回退到历史 `Free + Pro` 二档实验版，也不恢复“固定每次调用积分”的旧口径。
+4. **套餐权益锁定**
+   - 套餐仅承载两类权益：`monthlyCredits` 与 `storageGB`
+   - 并发数、模型访问层级、功能开关不再绑在套餐上，避免把产品能力切成大量例外分支。
+5. **登录前后支付边界锁定**
+   - 未登录用户：允许访问与浏览 `/pricing`
+   - 发起 Checkout / Portal / Cancel / Topup：必须先登录并获得真实 `SessionActor`
+   - `Free` 不是 Stripe SKU，不进入 Checkout；它只在本地账户系统中表达默认态。
+6. **首批币种与推断策略锁定**
+   - 币种白名单首批定为：`usd / eur / gbp / cny`
+   - 服务端依据 `CF-IPCountry` 推断默认币种：`US -> usd`、`GB -> gbp`、`CN -> cny`、欧盟/欧洲经济区国家优先 `eur`
+   - 未命中映射、Cloudflare 本地开发、或国家码缺失时，统一回退 `usd`
+   - 客户端可以请求白名单币种，但最终 Price ID 仍由服务端解析，不信任任意客户端价格参数
 
 ### Phase 1：Stripe Dashboard 建模
 
