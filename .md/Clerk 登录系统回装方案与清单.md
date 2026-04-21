@@ -8,12 +8,12 @@
 
 ### 1.1 已落地能力
 
-1. `@clerk/nextjs` 与 `@clerk/localizations` 已重新接回项目。
+1. `@clerk/nextjs@^7.2.3` 与 `@clerk/localizations@^4.5.2` 已重新接回项目。
 2. `apps/web/app/[locale]/layout.tsx` 已注入 `ClerkProvider`，并按 locale 接入中文本地化。
 3. `apps/web/app/[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx` 已落地，内部使用真实 Clerk `SignIn` 卡片。
 4. `apps/web/app/[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx` 已落地，内部使用真实 Clerk `SignUp` 卡片。
 5. Landing Page 当前不保留单独“登录”按钮，主 CTA“立即创作”已经跳转到 `/sign-in`。
-6. 登录成功后的默认回跳已经固定到 `/${locale}/workspace`。
+6. 登录成功后的默认回跳已经固定到 `/${locale}/workspace`；`[locale]/layout.tsx` 提供 Provider 级 fallback redirect，`sign-in` / `sign-up` 页面额外通过 `forceRedirectUrl` 与 `fallbackRedirectUrl` 固定页面级回跳。
 7. 站点当前使用隐藏语言前缀策略，外部 URL 不暴露 `/zh`、`/en` 前缀。
 8. `apps/web/app/api/webhooks/clerk/route.ts` 已存在，并处理 `user.created` / `user.updated` / `user.deleted` 三类最小同步事件。
 
@@ -21,8 +21,8 @@
 
 1. `apps/web/middleware.ts` 仍只处理裸域规范化与 `next-intl` 重写，尚未接入 Clerk 代理或任何 `auth.protect()` 逻辑。
 2. `apps/web/lib/api/auth.ts`、`apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts` 仍然基于匿名访客镜像工作，业务主链尚未消费真实 Clerk 会话。
-3. `/[locale]/account`、`AppSidebar`、`MobileHeader` 展示的仍是匿名用户镜像，不是 Clerk 账户态。
-4. `redirect_url` 的站内白名单策略尚未落地，当前只实现了默认回跳。
+3. `/[locale]/account`、`AppSidebar`、`MobileHeader` 仍未接入 Clerk 会话态；其中 `MobileHeader` 只是复用 `AppSidebar`，没有独立账户入口策略。
+4. `redirect_url` 的站内白名单策略尚未落地，当前只实现了默认回跳，没有读取查询参数并做站内白名单校验。
 5. Clerk Dashboard 生产域名、回调地址、OAuth 配置、Webhook 真实端点与签名密钥回填仍待核验。
 
 ### 1.3 当前阶段判断
@@ -98,11 +98,11 @@ type SessionActor =
 
 1. Landing 主 CTA 直接进入 `/sign-in`。
 2. Landing 当前不新增独立“登录”按钮，避免双入口并存造成认知噪音。
-3. 当用户从需要账户态的能力进入时，统一跳到：
+3. 当用户从需要账户态的能力进入时，目标策略仍是统一跳到：
    `/sign-in?redirect_url={encodedCurrentPath}`
 4. 登录成功后只允许回跳到站内白名单路径：
    `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/canvas/:id`
-5. 当前第一阶段已经稳定实现的是默认回跳 `/workspace`；白名单解析仍待补。
+5. 当前第一阶段已经稳定实现的是默认回跳 `/workspace`；`redirect_url` 读取、站内白名单校验与安全回跳解析仍待补。
 6. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
 
 ### 4.3 第一阶段保持匿名可用的页面
@@ -178,7 +178,7 @@ type SessionActor =
 
 ### Phase 0：预检与准备
 
-- [x] 确认 `@clerk/nextjs` 与 `@clerk/localizations` 的目标版本
+- [x] 确认 `@clerk/nextjs@^7.2.3` 与 `@clerk/localizations@^4.5.2` 的目标版本
 - [x] 清点当前代码里所有依赖匿名 actor 的 API 与页面
 - [ ] 确认第一阶段哪些能力必须登录，哪些继续匿名
 - [ ] 确认 Clerk Dashboard 中启用的登录方式（邮箱 / Google / GitHub）
@@ -276,9 +276,10 @@ type SessionActor =
 1. 已完成的是 UI 入口、Provider 注入、语言本地化、默认回跳以及 `/api/webhooks/clerk` 最小镜像同步。
 2. 未完成的是 actor 抽象、账户态 UI 合流、局部受保护能力与 Dashboard 真实环境核验。
 3. `users.clerk_id` 继续承担兼容身份键角色，匿名链路仍写入 `anon:{guestId}`，webhook 链路会写入 `clerk:{clerkUserId}`；在真正接桥前，不应把它重新当成“只存 Clerk user id”的字段。
-4. `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过。
-5. `pnpm --filter @nano-banana/web test` 当前未通过，失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是 Clerk 文档整理本身引入的新回归。
-6. 当前最大的产品裂缝不是登录页，而是“Clerk 会话已存在，但业务 API 仍返回匿名 actor”。
-7. 下一步最优先应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后处理 Dashboard 代理、redirect 白名单与真实 webhook 端点配置。
+4. `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 重新本地通过。
+5. `pnpm --filter @nano-banana/web test` 已在 2026-04-21 重新执行，当前仍未通过；失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是 Clerk 文档同步本身引入的新回归。
+6. 当前可明确列出的失败点为：`lib/validations/ai.test.ts` 失败 3 项，`lib/utils/create-node.test.ts` 失败 1 项。
+7. 当前最大的产品裂缝不是登录页，而是“Clerk 会话已存在，但业务 API 仍返回匿名 actor”。
+8. 下一步最优先应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后处理 Dashboard 代理、redirect 白名单与真实 webhook 端点配置。
 
 [PROTOCOL]: 变更时更新此文档，然后检查 CLAUDE.md
