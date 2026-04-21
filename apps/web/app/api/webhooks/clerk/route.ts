@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @clerk/nextjs/webhooks 的 verifyWebhook，依赖 @/lib/db 与 @/lib/env，
- *          依赖 @/lib/nanoid 生成本地用户 ID，依赖 @/lib/api/response 输出统一 JSON
+ *          依赖 @/lib/auth/user-store，依赖 @/lib/api/response 输出统一 JSON
  * [OUTPUT]: 对外提供 POST /api/webhooks/clerk (Clerk 用户镜像同步)
  * [POS]: api/webhooks 的 Clerk 入口，只处理 user.created / user.updated / user.deleted 三类最小同步事件
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,9 +10,13 @@ import { verifyWebhook } from '@clerk/nextjs/webhooks'
 import type { NextRequest } from 'next/server'
 
 import { apiError, apiOk } from '@/lib/api/response'
+import {
+  findUserByIdentityKey,
+  insertUserByIdentityKey,
+  updateUserProfileByIdentityKey,
+} from '@/lib/auth/user-store'
 import { getDb } from '@/lib/db'
 import { getEnv } from '@/lib/env'
-import { nanoid } from '@/lib/nanoid'
 
 const CLERK_IDENTITY_PREFIX = 'clerk:'
 const CLERK_WEBHOOK_EVENTS = new Set([
@@ -34,10 +38,6 @@ type ClerkUserPayload = {
   image_url?: string | null
   primary_email_address_id?: string | null
   email_addresses?: ClerkEmailAddress[] | null
-}
-
-type DbUserRow = {
-  id: string
 }
 
 function toIdentityKey(clerkUserId: string) {
@@ -78,52 +78,18 @@ async function upsertClerkUser(payload: ClerkUserPayload) {
   }
 
   const identityKey = toIdentityKey(payload.id)
-  const email = pickPrimaryEmail(payload)
-  const profile = pickAccountProfile(payload)
-  const db = await getDb()
-
-  const existingUser = await db
-    .prepare('SELECT id FROM users WHERE clerk_id = ?')
-    .bind(identityKey)
-    .first<DbUserRow>()
+  const profile = {
+    email: pickPrimaryEmail(payload),
+    ...pickAccountProfile(payload),
+  }
+  const existingUser = await findUserByIdentityKey(identityKey)
 
   if (existingUser) {
-    await db
-      .prepare(
-        `UPDATE users
-         SET email = ?, username = ?, first_name = ?, last_name = ?, name = ?, avatar_url = ?, updated_at = datetime('now')
-         WHERE clerk_id = ?`,
-      )
-      .bind(
-        email,
-        profile.username,
-        profile.firstName,
-        profile.lastName,
-        profile.name,
-        profile.avatarUrl,
-        identityKey,
-      )
-      .run()
-
+    await updateUserProfileByIdentityKey(identityKey, profile)
     return
   }
 
-  await db
-    .prepare(
-      `INSERT INTO users (id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'free', 'free')`,
-    )
-    .bind(
-      nanoid(),
-      identityKey,
-      email,
-      profile.username,
-      profile.firstName,
-      profile.lastName,
-      profile.name,
-      profile.avatarUrl,
-    )
-    .run()
+  await insertUserByIdentityKey(identityKey, profile)
 }
 
 async function deleteClerkUser(payload: ClerkUserPayload) {
