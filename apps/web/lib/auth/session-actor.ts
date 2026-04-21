@@ -1,30 +1,19 @@
 /**
  * [INPUT]: 依赖 @/lib/auth/identity-adapter 的 resolveRequestIdentity，
- *          依赖 @/lib/db，依赖 @/lib/errors，依赖 @/lib/nanoid
+ *          依赖 ./user-store，依赖 @/lib/errors
  * [OUTPUT]: 对外提供 getSessionActor() / requireAuthenticatedActor()，统一输出业务可消费的会话 actor
  * [POS]: lib/auth 的会话门面层，负责把外部身份源收敛到 users 表与应用内部 actor 契约
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { getDb } from '@/lib/db'
 import { AppError, AuthError, ErrorCode } from '@/lib/errors'
-import { nanoid } from '@/lib/nanoid'
 
 import { resolveRequestIdentity } from './identity-adapter'
-
-type DbUserRow = {
-  id: string
-  clerk_id: string
-  email: string
-  username: string
-  first_name: string
-  last_name: string
-  name: string
-  avatar_url: string
-  plan: string
-  membership_status: string
-  created_at: string
-}
+import {
+  findUserByIdentityKey,
+  insertUserByIdentityKey,
+  updateUserProfileByIdentityKey,
+} from './user-store'
 
 export type SessionActor =
   | {
@@ -63,41 +52,11 @@ export type SessionActor =
 
 export type AuthenticatedActor = Extract<SessionActor, { isAuthenticated: true }>
 
-async function findUserByIdentityKey(identityKey: string) {
-  const db = await getDb()
-  return db
-    .prepare(
-      `SELECT id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status, created_at
-       FROM users
-       WHERE clerk_id = ?`,
-    )
-    .bind(identityKey)
-    .first<DbUserRow>()
-}
-
 async function ensureAnonymousActor(identity: Extract<Awaited<ReturnType<typeof resolveRequestIdentity>>, { kind: 'anonymous' }>): Promise<SessionActor> {
-  const db = await getDb()
   let user = await findUserByIdentityKey(identity.identityKey)
 
   if (!user) {
-    const newUserId = nanoid()
-    await db
-      .prepare(
-        `INSERT OR IGNORE INTO users (id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'free', 'free')`,
-      )
-      .bind(
-        newUserId,
-        identity.identityKey,
-        identity.profile.email,
-        identity.profile.username,
-        identity.profile.firstName,
-        identity.profile.lastName,
-        identity.profile.name,
-        identity.profile.avatarUrl,
-      )
-      .run()
-
+    await insertUserByIdentityKey(identity.identityKey, identity.profile)
     user = await findUserByIdentityKey(identity.identityKey)
   }
 
@@ -126,7 +85,6 @@ async function ensureAnonymousActor(identity: Extract<Awaited<ReturnType<typeof 
 }
 
 async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof resolveRequestIdentity>>, { kind: 'clerk' }>): Promise<SessionActor> {
-  const db = await getDb()
   let user = await findUserByIdentityKey(identity.identityKey)
 
   if (user) {
@@ -139,46 +97,13 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
       (user.avatar_url || '') !== identity.profile.avatarUrl
 
     if (shouldRefresh) {
-      await db
-        .prepare(
-          `UPDATE users
-           SET email = ?, username = ?, first_name = ?, last_name = ?, name = ?, avatar_url = ?, updated_at = datetime('now')
-           WHERE clerk_id = ?`,
-        )
-        .bind(
-          identity.profile.email,
-          identity.profile.username,
-          identity.profile.firstName,
-          identity.profile.lastName,
-          identity.profile.name,
-          identity.profile.avatarUrl,
-          identity.identityKey,
-        )
-        .run()
-
+      await updateUserProfileByIdentityKey(identity.identityKey, identity.profile)
       user = await findUserByIdentityKey(identity.identityKey)
     }
   }
 
   if (!user) {
-    const newUserId = nanoid()
-    await db
-      .prepare(
-        `INSERT INTO users (id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'free', 'free')`,
-      )
-      .bind(
-        newUserId,
-        identity.identityKey,
-        identity.profile.email,
-        identity.profile.username,
-        identity.profile.firstName,
-        identity.profile.lastName,
-        identity.profile.name,
-        identity.profile.avatarUrl,
-      )
-      .run()
-
+    await insertUserByIdentityKey(identity.identityKey, identity.profile)
     user = await findUserByIdentityKey(identity.identityKey)
   }
 
