@@ -1,9 +1,10 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @clerk/nextjs 的 SignOutButton，
+ * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，
  *          依赖 @/components/ui/avatar，
  *          依赖 @/components/shared/search-command，
+ *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
  * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/SearchCommand + 文件夹管理)
@@ -13,7 +14,6 @@
 
 'use client'
 
-import { SignOutButton } from '@clerk/nextjs'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
+import { SignOutAction } from '@/components/auth/sign-out-action'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
@@ -341,15 +342,13 @@ export function AppSidebar() {
             </div>
 
             {user?.isAuthenticated ? (
-              <SignOutButton redirectUrl={signOutRedirect}>
-                <button
-                  type="button"
-                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground"
-                >
-                  <LogOut size={12} />
-                  {t('signOut')}
-                </button>
-              </SignOutButton>
+              <SignOutAction
+                redirectUrl={signOutRedirect}
+                className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <LogOut size={12} />
+                {t('signOut')}
+              </SignOutAction>
             ) : (
               <Link
                 href="/sign-in?redirect_url=/workspace"

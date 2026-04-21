@@ -1,6 +1,7 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations / useLocale，依赖 @clerk/nextjs 的 SignOutButton，
+ * [INPUT]: 依赖 next-intl 的 useTranslations / useLocale，
  *          依赖 @/hooks/use-user 的 useCurrentUser，依赖 @/i18n/navigation 的 Link，
+ *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
  * [OUTPUT]: 对外提供 ProfileTab 个人资料面板
  * [POS]: profile 的个人资料 Tab，被 profile-modal.tsx 消费
@@ -11,10 +12,10 @@
 
 /* eslint-disable @next/next/no-img-element -- 匿名用户头像仍可能来自远程地址，直接渲染更稳妥。 */
 
-import { SignOutButton } from '@clerk/nextjs'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCurrentUser } from '@/hooks/use-user'
 import { Link } from '@/i18n/navigation'
+import { SignOutAction } from '@/components/auth/sign-out-action'
 import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
 
 /* ─── Component ──────────────────────────────────────── */
@@ -114,14 +115,12 @@ export function ProfileTab() {
               <p className="text-sm text-muted-foreground">{t('signedInStatusBody')}</p>
             </div>
 
-            <SignOutButton redirectUrl={signOutRedirect}>
-              <button
-                type="button"
-                className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
-              >
-                {t('signOut')}
-              </button>
-            </SignOutButton>
+            <SignOutAction
+              redirectUrl={signOutRedirect}
+              className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {t('signOut')}
+            </SignOutAction>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3">
