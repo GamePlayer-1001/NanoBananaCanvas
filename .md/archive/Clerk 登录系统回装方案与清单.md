@@ -45,7 +45,7 @@
 11. `apps/web/app/api/users/me/route.ts` 已返回标准 actor 视图，账户页与侧边栏已可消费真实登录账户镜像。
 12. `/api/settings/api-keys*` 已要求登录后访问，账户级 API 配置不再写入匿名访客上下文。
 13. `apps/web/lib/auth/redirect.ts` 已落地，`sign-in` / `sign-up` 已支持读取 `redirect_url`，并限制回跳到站内白名单路径。
-14. `AppSidebar` 与 `/account` 资料页已补齐登录态 / 匿名态文案与登出入口；登出后默认回到 `/${locale}/explore`。
+14. `AppSidebar` 与 `/account` 资料页已补齐登录态 / 匿名态文案与登出入口；登出后默认回到 `/${locale}` Landing。
 15. `users` 表已扩展 `username`、`first_name`、`last_name`、`membership_status` 字段，Clerk session / webhook / `/api/users/me` / 账户页展示已完成同构更新。
 16. `/account` -> “我的作品” 已支持检测当前设备本地草稿，并在登录后显式导入到账户工作区，避免匿名创作结果继续滞留在单机 `localStorage`。
 17. `apps/web/middleware.ts` 与 `apps/web/app/[locale]/layout.tsx` 已补齐 Clerk Frontend API 代理代码入口；当 `NEXT_PUBLIC_CLERK_PROXY_URL` 存在时，可直接启用代理路径。
@@ -143,7 +143,7 @@ type SessionActor =
 4. 登录成功后只允许回跳到站内白名单路径：
    `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/canvas/:id`
 5. 当前第一阶段已经实现 `redirect_url` 读取与站内白名单校验；未命中白名单时统一回退到 `/workspace`。
-6. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
+6. 退出登录后默认回到当前 locale Landing，不回匿名敏感页面。
 
 ### 4.3 第一阶段保持匿名可用的页面
 

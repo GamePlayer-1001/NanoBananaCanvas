@@ -52,7 +52,7 @@ export function getDefaultWorkspaceRedirect(locale: string) {
 }
 
 export function getDefaultSignOutRedirect(locale: string) {
-  return localizePath(locale, '/explore')
+  return localizePath(locale, '/')
 }
 
 export function resolveSafeAuthRedirect(locale: string, candidate?: string | null) {

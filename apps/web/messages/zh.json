@@ -107,7 +107,11 @@
   "sidebar": {
     "personal": "个人",
     "search": "搜索...",
+    "explore": "探索",
+    "videoAnalysis": "视频分析",
+    "alpha": "Alpha",
     "workspace": "工作区",
+    "all": "全部",
     "noFolders": "还没有文件夹",
     "freePlan": "免费版",
     "contactUs": "联系我们",
@@ -121,6 +125,10 @@
     "noFolder": "无文件夹"
   },
   "explore": {
+    "hot": "热门",
+    "latest": "最新",
+    "myLiked": "我赞过的",
+    "myVideos": "我的视频",
     "uploadVideo": "上传视频",
     "prev": "上一页",
     "next": "下一页"
@@ -152,6 +160,9 @@
   "workspace": {
     "personalProjects": "个人项目",
     "searchPlaceholder": "搜索项目...",
+    "sortRecent": "最近更新",
+    "sortName": "名称",
+    "sortCreated": "创建时间",
     "newProject": "新建项目",
     "untitledProject": "未命名项目",
     "createProject": "创建项目",
@@ -191,6 +202,8 @@
     "accountLoginRequiredBody": "这部分配置会绑定到你的正式账户，用于跨设备读取和隔离不同用户的密钥数据。当前访客态不再写入这类账户资产。",
     "accountLoginRequiredAction": "前往登录",
     "personalInfo": "个人资料",
+    "works": "作品",
+    "notifications": "通知",
     "modelPreferences": "模型偏好设置",
     "name": "姓名",
     "username": "昵称",
@@ -237,10 +250,21 @@
     "apiConfigDeleteFailed": "删除 API 配置失败",
     "currentProvider": "当前接入类型：{provider}",
     "currentModelId": "当前模型 ID：{modelId}",
-    "currentBaseUrl": "当前 Base URL：{baseUrl}"
+    "currentBaseUrl": "当前 Base URL：{baseUrl}",
+    "capability_text": "文本",
+    "capability_text_desc": "管理文本生成节点使用的 API 提供商与模型配置。",
+    "capability_image": "图像",
+    "capability_image_desc": "管理图像生成节点使用的 API 提供商与模型配置。",
+    "capability_video": "视频",
+    "capability_video_desc": "管理视频生成节点使用的 API 提供商与模型配置。",
+    "capability_audio": "音频",
+    "capability_audio_desc": "管理音频生成节点使用的 API 提供商与模型配置。"
   },
   "profileWorks": {
     "title": "我的作品",
+    "all": "全部",
+    "shared": "已发布",
+    "favorites": "收藏",
     "empty": "还没有作品",
     "localDraftTitle": "检测到当前设备上的本地草稿",
     "localDraftBodySignedIn": "发现本地草稿「{name}」，共 {count} 个节点。现在可以一键导入到你的正式账户工作区。",
