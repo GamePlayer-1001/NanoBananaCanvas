@@ -1,143 +1,284 @@
-# Clerk 登录系统回装方案与清单
+# Clerk 登录系统统一接入清单
 
-> 目标：未来重新接入 Clerk 时，不重复当前“认证渗透业务全身”的错误，而是以可插拔边界重新接回。
+> 本文档是当前项目唯一有效的 Clerk 接入主清单。
+> 它整合了原《Clerk 登录系统回装方案与清单.md》与《Clerk 登录模块嵌入执行清单.md》的内容。
+> 目标不是“把 Clerk 装回去”，而是“把真实登录能力接回当前产品链路，并与业务身份体系解耦”。
 
 ## 一、当前真实进度
 
-以下内容已经落地，不再属于待设计状态：
+### 1.1 已落地能力
 
 1. `@clerk/nextjs` 与 `@clerk/localizations` 已重新接回项目。
 2. `apps/web/app/[locale]/layout.tsx` 已注入 `ClerkProvider`，并按 locale 接入中文本地化。
 3. `apps/web/app/[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx` 已落地，内部使用真实 Clerk `SignIn` 卡片。
 4. `apps/web/app/[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx` 已落地，内部使用真实 Clerk `SignUp` 卡片。
 5. Landing Page 当前不保留单独“登录”按钮，主 CTA“立即创作”已经跳转到 `/sign-in`。
-6. 登录成功后的默认回跳已经指向 `/workspace`。
+6. 登录成功后的默认回跳已经固定到 `/${locale}/workspace`。
 7. 站点当前使用隐藏语言前缀策略，外部 URL 不暴露 `/zh`、`/en` 前缀。
-8. 当前 `apps/web/middleware.ts` 仍只处理裸域规范化与 `next-intl` 重写，尚未接入 Clerk 代理或任何 `auth.protect()` 逻辑。
-9. 当前 `apps/web/lib/api/auth.ts`、`apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts` 仍然基于匿名访客镜像工作，业务主链尚未消费真实 Clerk 会话。
-10. 当前 `/[locale]/account`、`AppSidebar`、`MobileHeader` 展示的仍是匿名用户镜像，不是 Clerk 账户态。
-11. 当前仓库中已经存在 `apps/web/app/api/webhooks/clerk/route.ts`，并处理 `user.created` / `user.updated` / `user.deleted` 三类最小同步事件。
-12. 当前尚未完成的是“Clerk 用户与业务用户体系的最终接桥”“Clerk Dashboard/生产环境配置核验”“Webhook 真实环境端点接通与签名密钥回填”。
+8. `apps/web/app/api/webhooks/clerk/route.ts` 已存在，并处理 `user.created` / `user.updated` / `user.deleted` 三类最小同步事件。
 
-## 二、回装前提
+### 1.2 当前未完成能力
 
-只有当以下条件成立时，才建议重新安装 Clerk：
+1. `apps/web/middleware.ts` 仍只处理裸域规范化与 `next-intl` 重写，尚未接入 Clerk 代理或任何 `auth.protect()` 逻辑。
+2. `apps/web/lib/api/auth.ts`、`apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts` 仍然基于匿名访客镜像工作，业务主链尚未消费真实 Clerk 会话。
+3. `/[locale]/account`、`AppSidebar`、`MobileHeader` 展示的仍是匿名用户镜像，不是 Clerk 账户态。
+4. `redirect_url` 的站内白名单策略尚未落地，当前只实现了默认回跳。
+5. Clerk Dashboard 生产域名、回调地址、OAuth 配置、Webhook 真实端点与签名密钥回填仍待核验。
 
-1. 核心画板、工作流保存、编辑器交互已经稳定。
-2. 已明确“哪些能力必须登录，哪些能力必须匿名可用”。
-3. 资源归属模型已经从“临时本地模式”整理为明确的数据边界。
-4. 团队确认需要真实账户，而不是继续使用匿名/本地单用户模式。
+### 1.3 当前阶段判断
+
+当前最准确的阶段描述不是“Clerk 已回装完成”，而是：
+
+`Clerk 认证入口层与最小 webhook 层已回装，业务身份桥接层未完成。`
+
+## 二、设计边界
+
+1. 不把 Clerk 反向渗透成业务单一真相源。
+2. 不让 `middleware` 再次变成认证、i18n、代理、保护的四合一黑洞。
+3. 不让业务层直接消费 Clerk SDK 原始对象。
+4. 不以 Clerk 是否可用来决定画板能否打开。
+5. 认证应该是外挂，不应该是地基。
 
 ## 三、目标架构
 
-### 2.1 认证边界
+### 3.1 认证边界
 
-- 登录只负责“身份确认”和“账户态 UI”
-- 业务资源访问通过应用内 `actor`/`workspace owner` 抽象，不直接把 Clerk 当业务主模型
-- 不再让每个服务函数直接依赖 Clerk SDK
+1. 登录只负责“身份确认”和“账户态 UI”。
+2. 业务资源访问通过应用内 `actor` / `workspace owner` 抽象，不直接把 Clerk 当业务主模型。
+3. 不再让每个服务函数直接依赖 Clerk SDK。
 
-### 2.2 推荐分层
+### 3.2 推荐分层
 
 1. `identity adapter`
-   职责：封装 Clerk `auth()` / `currentUser()` / webhook 数据映射
+   职责：统一封装 Clerk 的 `auth()`、`currentUser()`、webhook payload 和匿名 cookie 读取。
 2. `session facade`
-   职责：向应用提供统一的当前 actor 信息
-3. `resource access layer`
-   职责：基于 actor 判断工作流/文件夹/任务权限
-4. `ui auth shell`
-   职责：登录页、头像、登出、受保护页面包装
+   职责：向应用对外暴露唯一会话对象。
+3. `actor repository`
+   职责：把匿名 actor、Clerk actor 与 `users` 表做映射，不让业务层碰第三方字段。
+4. `auth ui shell`
+   职责：承载 `sign-in`、`sign-up`、头像入口、登出按钮、登录回跳。
+5. `resource guard`
+   职责：仅在真正需要账户态的页面/API 上启用显式守卫。
 
-## 四、明确不要恢复的旧设计
+### 3.3 推荐 actor 契约
 
-1. 不要再让 `middleware` 同时承担 i18n、canonical host、Clerk 代理、路由保护四种职责。
-2. 不要再让 `users.plan` 与第三方身份一起成为业务写入入口。
-3. 不要再让路由级 `ClerkProvider` 到处包裹，应该收敛到最小边界。
-4. 不要把“自动建用户 + 业务初始化 + 权限判断”塞进同一个函数。
+```ts
+type SessionActor =
+  | {
+      kind: 'anonymous'
+      actorId: string
+      identityKey: `anon:${string}`
+      isAuthenticated: false
+    }
+  | {
+      kind: 'clerk'
+      actorId: string
+      identityKey: `clerk:${string}`
+      isAuthenticated: true
+      clerkUserId: string
+    }
+```
 
-## 五、建议回装顺序
+设计原则：
+1. 业务层只认 `SessionActor`。
+2. `users.clerk_id` 第一阶段继续作为兼容身份列使用，后续再迁移到更中性的 `identity_key`。
+3. 匿名与登录都必须落到同一个 actor 解析入口。
 
-1. 安装依赖并恢复最小 Provider。
-2. 只接公开的登录/注册页与基础 session 读取。
-3. 接 `identity adapter`，把 Clerk 信息映射到应用内部 actor。
-4. 接最小受保护能力，例如“云端工作流同步”。
-5. 最后再接头像菜单、Profile、OAuth、webhook 同步。
+## 四、路由与跳转策略
 
-## 六、回装清单
+### 4.1 认证路由
 
-### 5.1 依赖与配置
+1. `apps/web/app/[locale]/(auth)/layout.tsx`
+2. `apps/web/app/[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx`
+3. `apps/web/app/[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx`
+4. `apps/web/app/[locale]/(auth)/sso-callback/page.tsx`
+   可选，后续 OAuth 合流时再补。
 
-- [x] 安装 `@clerk/nextjs`
-- [x] 安装 `@clerk/localizations`
-- [x] 配置 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- [x] 配置 `CLERK_SECRET_KEY`
-- [x] 配置 `CLERK_WEBHOOK_SECRET`
-- [ ] 核验 Clerk Dashboard 中生产域名、回调地址、OAuth 提供商配置
+### 4.2 页面跳转规则
 
-### 5.2 基础接入
+1. Landing 主 CTA 直接进入 `/sign-in`。
+2. Landing 当前不新增独立“登录”按钮，避免双入口并存造成认知噪音。
+3. 当用户从需要账户态的能力进入时，统一跳到：
+   `/sign-in?redirect_url={encodedCurrentPath}`
+4. 登录成功后只允许回跳到站内白名单路径：
+   `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/canvas/:id`
+5. 当前第一阶段已经稳定实现的是默认回跳 `/workspace`；白名单解析仍待补。
+6. 退出登录后默认回到 `/explore` 或当前 locale Landing，不回匿名敏感页面。
 
-- [x] 新建最小 `clerk-provider.tsx` 等价能力
-- [x] 仅在需要 session 的最外层布局注入 Provider
-- [x] 新建 `/sign-in`、`/sign-up` 页面
-- [x] 明确登录成功后的单一回跳路径
-- [ ] 在 `middleware.ts` 中补齐生产所需的 Clerk 代理能力（当前未接入）
+### 4.3 第一阶段保持匿名可用的页面
 
-### 5.3 身份适配
+1. `/explore`
+2. `/explore/[id]`
+3. `/workspace`
+4. `/workspace/[id]`
+5. `/canvas/[id]`
+6. `/video-analysis`
 
-- [ ] 新建 `identity adapter`，统一封装 Clerk SDK
-- [ ] 定义应用内部 `Actor` 类型，不直接在业务层传播 Clerk 原始结构
-- [ ] 建立 `users` 镜像策略，但仅作为应用账户档案，不承担全部业务真相
+原因：
+当前产品定位仍以匿名可创作为主，登录只解锁额外能力，而不是门禁。
 
-### 5.4 权限接回
+## 五、服务端接入策略
 
-- [ ] 先只保护“云同步”与“跨设备资产”
-- [ ] 编辑器本地使用仍保持匿名可用
-- [ ] 仅在真正需要账户态的 API 上接入守卫
+### 5.1 Provider 注入边界
 
-### 5.5 Webhook 与同步
+1. 在最小共享根布局注入 `ClerkProvider`。
+2. 不在每个 route group 单独包 Provider。
+3. `ClerkProvider` 只负责 session 与 auth UI，不负责业务初始化。
 
-- [x] 新建最小 webhook 端点
+### 5.2 middleware 策略
+
+第一阶段 `middleware.ts` 只允许承担非常有限的 Clerk 职责：
+
+1. 保持现有 canonical host 逻辑。
+2. 保持现有 `next-intl` locale 逻辑。
+3. 如 Clerk 代理是生产必需，仅增加代理必要能力，不增加全局 `auth.protect()`。
+4. 页面保护改为页面内或 API 内显式守卫，不走全局路由泛拦截。
+
+### 5.3 建议新增身份模块
+
+1. `apps/web/lib/auth/identity-adapter.ts`
+2. `apps/web/lib/auth/session-actor.ts`
+3. `apps/web/lib/auth/route-guard.ts`
+4. `apps/web/lib/auth/redirect.ts`
+
+职责拆分：
+1. `identity-adapter.ts` 负责 Clerk 与匿名 cookie 的统一读取。
+2. `session-actor.ts` 负责输出业务侧唯一会话对象。
+3. `route-guard.ts` 负责 `requireAuthenticatedActor()` 这类细粒度守卫。
+4. `redirect.ts` 负责安全回跳与白名单校验。
+
+## 六、数据迁移策略
+
+### 6.1 users 表身份列
+
+当前 `users.clerk_id` 已经被匿名身份复用，不能直接恢复“只存 Clerk user id”的旧语义。
+
+建议分两阶段：
+
+1. Phase A，兼容期
+   继续使用 `clerk_id` 列，但写入更中性的 identity key：
+   `anon:{guestId}` / `clerk:{clerkUserId}`
+2. Phase B，收口期
+   增加 `identity_key` 列，完成代码切换后废弃 `clerk_id`
+
+### 6.2 匿名升级为登录用户
+
+第一阶段推荐不做自动资源合并，只做账户建立与新资源归属。
+
+原因：
+匿名工作流、文件夹、通知、API 配置、异步任务都已经用匿名 `user_id` 运行。
+如果一上来就自动 merge，会把本次接桥复杂度直接推到最高。
+
+建议策略：
+1. 新登录用户创建独立 actor。
+2. 匿名态历史资源暂不自动迁移。
+3. 后续若要迁移，再单独做“导入当前匿名工作区到登录账户”的显式流程。
+
+## 七、统一执行清单
+
+### Phase 0：预检与准备
+
+- [x] 确认 `@clerk/nextjs` 与 `@clerk/localizations` 的目标版本
+- [x] 清点当前代码里所有依赖匿名 actor 的 API 与页面
+- [ ] 确认第一阶段哪些能力必须登录，哪些继续匿名
+- [ ] 确认 Clerk Dashboard 中启用的登录方式（邮箱 / Google / GitHub）
+- [ ] 确认生产域名是否仍需 `__clerk` 代理路径
+
+### Phase 1：最小接入
+
+- [x] 安装 Clerk 依赖
+- [x] 在最小根边界注入 `ClerkProvider`
+- [x] 新建 `(auth)` 路由组与 `sign-in`、`sign-up` 页面
+- [x] 为认证页面补齐中英文案
+- [x] 调整 Landing 主 CTA 进入登录页
+- [x] 新建 `/api/webhooks/clerk`
 - [x] 只处理 `user.created` / `user.updated` / `user.deleted`
-- [x] 确保 webhook 失败不会阻断核心产品使用
+- [x] webhook 只更新账户资料镜像，不触发业务初始化级联
+- [x] 确保 webhook 失败不会阻断登录与产品主链
+- [ ] 定义统一 `redirect_url` 白名单策略
+- [ ] 在 `middleware.ts` 中补齐 Clerk 生产代理能力
+- [ ] 核验 Clerk Dashboard 真实环境配置
 
-## 七、下一步执行顺序
+当前状态：
+2026-04-20 已重建新的 Production 实例；本地 `pk/sk` 已切到新实例，但 DNS 解析、Path 配置、真实 Webhook 端点仍未补齐。
 
-1. 先核验 Clerk Dashboard 真实环境配置，确认站点域名、重定向 URL、Google 登录能力与当前部署一致。
-2. 再补业务侧 `identity adapter` / `session facade`，让 Clerk 用户能映射为应用内部 actor。
-3. 然后补最小账户同步链路，让登录后的 `/account` 与 `/api/users/me` 能返回正式账户态。
-4. 最后再决定是否处理匿名资产合并，不在第一阶段抢做。
+### Phase 2：身份抽象层
 
-## 八、验收标准
+- [ ] 新建 `identity adapter`
+- [ ] 新建 `session facade`
+- [ ] 定义 `SessionActor` / `AuthenticatedActor`
+- [ ] 重构 `requireAuth()`，拆成“允许匿名 actor”与“必须登录 actor”两类守卫
+- [ ] 将 `/api/users/me` 改为返回标准 actor 视图，而不是匿名访客特化视图
 
-- [ ] 未登录用户仍可进入核心画板本地模式
-- [x] Landing 主入口已进入登录页
-- [ ] 登录用户可以看到额外的账户能力，而不是只有“登录成功”但没有业务账户态
-- [ ] 核心服务层不直接依赖 Clerk SDK
-- [ ] 路由保护是局部的、显式的，不是全局泛滥的
-- [x] `pnpm lint` 通过
-- [ ] `pnpm test` 通过
+### Phase 3：账户页与 UI 合流
 
-## 九、分步协作方式
+- [ ] `AppSidebar` 根据 actor 展示匿名态 / 登录态底部信息
+- [ ] `MobileHeader` 补登录入口或账户入口
+- [ ] `/account` 接入真实登录资料摘要
+- [ ] 增加登出入口
+- [ ] 明确匿名用户访问账户同步能力时的登录引导文案
 
-后续真实环境接入按下面的节奏推进：
+### Phase 4：局部受保护能力
 
-1. 我先在代码和文档里处理当前这一步。
-2. 一旦需要你去 Clerk 后台、域名平台或第三方 OAuth 平台操作，我会明确告诉你：
-   你现在要做什么、为什么必须你来做、在哪个页面操作、该填什么。
-3. 你完成后回复我“已完成”或告诉我你遇到的阻碍。
-4. 我再继续下一步，不跨步、不抢跑。
+- [ ] 仅对“跨设备同步 API 配置”增加登录要求
+- [ ] 仅对“未来云端资源同步”增加登录要求
+- [ ] 仅对明确账户资产 API 启用 `requireAuthenticatedActor()`
+- [ ] 保持工作区、画布、广场浏览可匿名使用
 
-## 十、回装时的第一原则
+### Phase 5：收尾与验证
 
-认证应该是外挂，不应该是地基。
+- [x] `pnpm lint`
+- [ ] `pnpm test`
+- [ ] 最小登录链路手测：Landing → SignIn → redirect → Account
+- [ ] 最小匿名链路手测：Landing → Workspace → Canvas
+- [ ] 验证匿名用户不登录时核心产品仍可用
+- [ ] 验证登录用户能看到额外账户能力而非被迫改走另一套产品
 
-如果某次回装让“画板离开 Clerk 就不能活”，那说明设计又走回了旧路，必须立刻停下来重构边界。
+## 八、文件级落点
+
+### 8.1 必改文件
+
+1. `apps/web/middleware.ts`
+2. `apps/web/lib/api/auth.ts`
+3. `apps/web/app/api/users/me/route.ts`
+4. `apps/web/components/layout/app-sidebar.tsx`
+5. `apps/web/components/layout/mobile-header.tsx`
+6. `apps/web/components/profile/account-content.tsx`
+7. `apps/web/messages/en.json`
+8. `apps/web/messages/zh.json`
+
+### 8.2 建议新增文件
+
+1. `apps/web/lib/auth/identity-adapter.ts`
+2. `apps/web/lib/auth/session-actor.ts`
+3. `apps/web/lib/auth/route-guard.ts`
+4. `apps/web/lib/auth/redirect.ts`
+
+## 九、验收标准
+
+1. 未登录用户仍可进入核心画板本地模式。
+2. Landing 主入口稳定进入登录页。
+3. 登录用户可以看到额外的账户能力，而不是只有“登录成功”但没有业务账户态。
+4. 核心服务层不直接依赖 Clerk SDK。
+5. 路由保护是局部的、显式的，不是全局泛滥的。
+6. `pnpm lint` 通过。
+7. `pnpm test` 通过，或明确记录失败与原因。
+
+## 十、当前主要风险
+
+1. 最大风险不是 UI，而是 `users.clerk_id` 已被匿名模式挪作兼容身份列。
+2. 第二风险是把“登录后可同步”误做成“登录后才能用产品”。
+3. 第三风险是把 `middleware` 再次做胖，导致 OpenNext Cloudflare 部署回归。
+4. 第四风险是匿名资产与登录资产的自动合并，容易污染现有用户数据边界。
 
 ## 十一、本轮代码审计结论（2026-04-21）
 
-1. 当前最准确的阶段描述仍然不是“Clerk 已回装完成”，而是“Clerk 认证入口层与最小 webhook 层已回装，业务身份桥接层未完成”。
-2. 已完成的是 UI 入口、Provider 注入、语言本地化、默认回跳以及 `/api/webhooks/clerk` 最小镜像同步；未完成的是 actor 抽象、账户态 UI 合流、局部受保护能力与 Dashboard 真实环境核验。
+1. 已完成的是 UI 入口、Provider 注入、语言本地化、默认回跳以及 `/api/webhooks/clerk` 最小镜像同步。
+2. 未完成的是 actor 抽象、账户态 UI 合流、局部受保护能力与 Dashboard 真实环境核验。
 3. `users.clerk_id` 继续承担兼容身份键角色，匿名链路仍写入 `anon:{guestId}`，webhook 链路会写入 `clerk:{clerkUserId}`；在真正接桥前，不应把它重新当成“只存 Clerk user id”的字段。
-4. `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过；`pnpm --filter @nano-banana/web test` 当前未通过，失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是 Clerk 文档回写本身引入的新回归。
-5. 目前最大的产品裂缝不是登录页，而是“Clerk 会话已存在，但业务 API 仍返回匿名 actor”。下一步优先级应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后处理 Dashboard 代理、redirect 白名单与真实 webhook 端点配置。
+4. `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过。
+5. `pnpm --filter @nano-banana/web test` 当前未通过，失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是 Clerk 文档整理本身引入的新回归。
+6. 当前最大的产品裂缝不是登录页，而是“Clerk 会话已存在，但业务 API 仍返回匿名 actor”。
+7. 下一步最优先应是：先补 `identity adapter / session facade`，再改 `/api/users/me` 与 `/account`，最后处理 Dashboard 代理、redirect 白名单与真实 webhook 端点配置。
 
-[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+[PROTOCOL]: 变更时更新此文档，然后检查 CLAUDE.md
