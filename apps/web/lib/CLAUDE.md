@@ -20,6 +20,7 @@ model-config-catalog.ts — API 接入配置目录 (四类能力卡片 + provide
 ai-node-config.ts — AI 节点配置语义层 (platformProvider/platformModel 与 capability/userKeyConfigId 分离 + 旧工作流兼容解析 + 失效用户配置自动回退)
 ai-node-config.test.ts — AI 节点配置语义测试 (验证新字段优先级、旧字段迁移兼容、平台/用户模式隔离)
 api/                 — API 路由公共基础设施 (auth 守卫 + response 统一响应，详见子 CLAUDE.md)
+auth/        — 身份桥接层 (Clerk/匿名 identity adapter + SessionActor 门面，详见子 CLAUDE.md)
 executor/    — 工作流 DAG 执行引擎 (拓扑排序 + 节点执行 + 编排器，详见子 CLAUDE.md)
 query/       — TanStack Query 配置与缓存键工厂 (4 文件，详见子 CLAUDE.md)
 utils/       — 画布与节点通用工具函数 (4 文件，详见子 CLAUDE.md)

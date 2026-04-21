@@ -1,11 +1,13 @@
 /**
- * [INPUT]: 依赖 next-intl/middleware 的 createMiddleware，
+ * [INPUT]: 依赖 @clerk/nextjs/server 的 clerkMiddleware，
+ *          依赖 next-intl/middleware 的 createMiddleware，
  *          依赖 @/i18n/routing 的 routing 配置
- * [OUTPUT]: 对外提供 Next.js Edge Middleware (裸域规范化 + 本地化语言检测 + URL 前缀重写)
- * [POS]: 项目根级 Edge Middleware 入口，优先兼容 OpenNext Cloudflare 当前运行时边界
+ * [OUTPUT]: 对外提供 Next.js Edge Middleware (Clerk 会话注入 + 裸域规范化 + 本地化语言检测 + URL 前缀重写)
+ * [POS]: 项目根级 Edge Middleware 入口，负责为服务端 auth() 提供 Clerk 会话上下文，同时保持现有 OpenNext Cloudflare 兼容边界
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { clerkMiddleware } from '@clerk/nextjs/server'
 import createIntlMiddleware from 'next-intl/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 import { routing } from './i18n/routing'
@@ -18,7 +20,7 @@ const WWW_HOST = `www.${CANONICAL_HOST}`
 
 /* ─── Combined Middleware ────────────────────────────── */
 
-export default function middleware(req: NextRequest) {
+export default clerkMiddleware(async (_auth, req: NextRequest) => {
   if (req.nextUrl.hostname === WWW_HOST) {
     const url = req.nextUrl.clone()
     url.hostname = CANONICAL_HOST
@@ -26,11 +28,11 @@ export default function middleware(req: NextRequest) {
   }
 
   if (req.nextUrl.pathname.startsWith('/api/')) {
-    return
+    return NextResponse.next()
   }
 
   return intlMiddleware(req)
-}
+})
 
 export const config = {
   matcher: [

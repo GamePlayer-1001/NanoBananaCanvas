@@ -6,7 +6,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { requireAuth } from '@/lib/api/auth'
+import { requireAuthenticatedAuth } from '@/lib/api/auth'
 import { decryptApiKey, encryptApiKey, maskApiKey } from '@/lib/api-key-crypto'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
@@ -26,7 +26,7 @@ import { apiKeySchema } from '@/lib/validations/ai'
 
 export async function GET() {
   try {
-    const { userId } = await requireAuth()
+    const { userId } = await requireAuthenticatedAuth()
     const db = await getDb()
 
     const rows = await db
@@ -78,7 +78,7 @@ export async function PUT(req: Request) {
   if (tooLarge) return tooLarge
 
   try {
-    const { userId } = await requireAuth()
+    const { userId } = await requireAuthenticatedAuth()
     const db = await getDb()
     const body = await req.json()
 

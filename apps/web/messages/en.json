@@ -230,6 +230,9 @@
   "profile": {
     "account": "Account",
     "accountPageDesc": "Manage profile, works, notifications, and API connection cards for each capability.",
+    "accountLoginRequiredTitle": "Sign in to save account-level API configs",
+    "accountLoginRequiredBody": "These configs are now bound to your real account for cross-device access and per-user secret isolation. Guest sessions no longer write this kind of account asset.",
+    "accountLoginRequiredAction": "Go to sign in",
     "personalInfo": "Personal Info",
     "billing": "Billing",
     "subscription": "Subscription",

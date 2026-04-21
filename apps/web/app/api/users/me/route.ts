@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth，依赖 @/lib/db
- * [OUTPUT]: 对外提供 GET /api/users/me (匿名访客用户信息)
- * [POS]: api/users 的用户端点，返回当前匿名访客在 D1 中的用户镜像
+ * [OUTPUT]: 对外提供 GET /api/users/me (当前 actor 的账户镜像)
+ * [POS]: api/users 的用户端点，返回当前请求对应的 users 表记录与 actor 身份视图
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,9 +13,9 @@ import { getDb } from '@/lib/db'
 
 export async function GET() {
   try {
-    const { userId } = await requireAuth()
+    const authUser = await requireAuth()
     const db = await getDb()
-    const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first()
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(authUser.userId).first()
 
     if (!user) {
       return apiOk(null)
@@ -23,11 +23,16 @@ export async function GET() {
 
     return apiOk({
       id: user.id,
+      actorId: authUser.actorId,
+      actorKind: authUser.actorKind,
+      isAuthenticated: authUser.isAuthenticated,
       identityKey: user.clerk_id,
+      clerkUserId: authUser.clerkUserId ?? null,
       name: user.name,
       email: user.email,
       avatarUrl: user.avatar_url || '',
       tier: user.plan,
+      plan: user.plan,
       createdAt: user.created_at,
     })
   } catch (error) {

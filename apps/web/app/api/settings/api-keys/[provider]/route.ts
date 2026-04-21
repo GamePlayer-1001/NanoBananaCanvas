@@ -6,7 +6,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { requireAuth } from '@/lib/api/auth'
+import { requireAuthenticatedAuth } from '@/lib/api/auth'
 import { decryptApiKey } from '@/lib/api-key-crypto'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
@@ -24,7 +24,7 @@ type Params = { params: Promise<{ provider: string }> }
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    const { userId } = await requireAuth()
+    const { userId } = await requireAuthenticatedAuth()
     const { provider: configId } = await params
     const db = await getDb()
 
@@ -47,7 +47,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
 export async function POST(_req: Request, { params }: Params) {
   try {
-    const { userId } = await requireAuth()
+    const { userId } = await requireAuthenticatedAuth()
     const { provider: configId } = await params
     const db = await getDb()
 
