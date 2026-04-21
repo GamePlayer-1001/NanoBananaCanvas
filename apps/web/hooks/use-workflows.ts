@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useWorkflows / useWorkflow / useCreateWorkflow / useUpdateWorkflow / useDeleteWorkflow / usePublishWorkflow / useUnpublishWorkflow
+ * [OUTPUT]: 对外提供 useWorkflows / useWorkflow / useCreateWorkflow / useImportLocalWorkflow / useUpdateWorkflow / useDeleteWorkflow / usePublishWorkflow / useUnpublishWorkflow
  * [POS]: hooks 的工作流数据层，被 workspace/canvas 页面消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -22,6 +22,7 @@ interface WorkflowListParams {
 interface CreateWorkflowInput {
   name: string
   description?: string
+  data?: string
 }
 
 interface CreateWorkflowResult {
@@ -73,6 +74,22 @@ export function useWorkflow(id: string) {
 }
 
 export function useCreateWorkflow() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CreateWorkflowInput) =>
+      fetchJson<CreateWorkflowResult>('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
+    },
+  })
+}
+
+export function useImportLocalWorkflow() {
   const qc = useQueryClient()
 
   return useMutation({

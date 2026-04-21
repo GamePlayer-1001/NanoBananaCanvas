@@ -312,13 +312,22 @@
     "lastUsedAt": "Last used: {date}",
     "accountConfigLabel": "Account Config"
   },
-  "profileWorks": {
-    "title": "My Works",
-    "all": "All",
-    "shared": "Published",
-    "empty": "No works yet",
-    "favorites": "Favorites"
-  },
+    "profileWorks": {
+      "title": "My Works",
+      "all": "All",
+      "shared": "Published",
+      "empty": "No works yet",
+      "favorites": "Favorites",
+      "localDraftTitle": "A local draft was found on this device",
+      "localDraftBodySignedIn": "We found the local draft \"{name}\" with {count} nodes. You can import it into your real account workspace now.",
+      "localDraftBodyGuest": "We found the local draft \"{name}\". Sign in to import it into your real account so it does not stay stranded on this device.",
+      "importAction": "Import to my account",
+      "signInToImport": "Sign in to import",
+      "importDescription": "Imported from the current device local draft",
+      "importSuccess": "\"{name}\" has been imported into your account workspace",
+      "importFailed": "Failed to import the local draft",
+      "importedDraftFallback": "Untitled draft"
+    },
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications yet",

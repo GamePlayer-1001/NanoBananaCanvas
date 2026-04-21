@@ -13,7 +13,7 @@ use-auto-save.ts         — useAutoSave 防抖自动保存 + 页面加载恢复
 use-canvas-shortcuts.ts  — useCanvasShortcuts 画布全局快捷键 (Ctrl+Z 撤销/Ctrl+Shift+Z 重做/Ctrl+Enter 执行/Esc 中断/Ctrl+S 导出/Ctrl+O 导入)
 use-thumbnail-capture.ts — useThumbnailCapture 画布截图生成 (html-to-image → R2 上传，60s 节流)
 use-media-query.ts       — useMediaQuery / useIsDesktop 响应式媒体查询 hook
-use-workflows.ts         — useWorkflows / useWorkflow / useCreateWorkflow / useUpdateWorkflow / useDeleteWorkflow (TanStack Query, folder 筛选)
+use-workflows.ts         — useWorkflows / useWorkflow / useCreateWorkflow / useImportLocalWorkflow / useUpdateWorkflow / useDeleteWorkflow (TanStack Query, folder 筛选 + 本地草稿导入账户)
 use-folders.ts           — useFolders / useCreateFolder / useUpdateFolder / useDeleteFolder / useMoveWorkflowToFolder (TanStack Query)
 use-explore.ts           — useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow (TanStack Query)
 use-user.ts              — useCurrentUser 当前用户数据 (TanStack Query)

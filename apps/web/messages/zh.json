@@ -312,13 +312,22 @@
     "lastUsedAt": "最近使用：{date}",
     "accountConfigLabel": "账户配置"
   },
-  "profileWorks": {
-    "title": "我的作品",
-    "all": "全部",
-    "shared": "已发布",
-    "empty": "还没有作品",
-    "favorites": "收藏"
-  },
+    "profileWorks": {
+      "title": "我的作品",
+      "all": "全部",
+      "shared": "已发布",
+      "empty": "还没有作品",
+      "favorites": "收藏",
+      "localDraftTitle": "检测到当前设备上的本地草稿",
+      "localDraftBodySignedIn": "发现本地草稿「{name}」，共 {count} 个节点。现在可以一键导入到你的正式账户工作区。",
+      "localDraftBodyGuest": "发现本地草稿「{name}」。登录后即可把它导入正式账户，避免设备切换后丢失。",
+      "importAction": "导入到我的账户",
+      "signInToImport": "登录后导入",
+      "importDescription": "从当前设备的本地草稿导入",
+      "importSuccess": "已将「{name}」导入到账户工作区",
+      "importFailed": "导入本地草稿失败",
+      "importedDraftFallback": "未命名草稿"
+    },
   "notifications": {
     "title": "通知",
     "empty": "暂无通知",

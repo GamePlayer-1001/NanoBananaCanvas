@@ -23,13 +23,14 @@
 13. `apps/web/lib/auth/redirect.ts` 已落地，`sign-in` / `sign-up` 已支持读取 `redirect_url`，并限制回跳到站内白名单路径。
 14. `AppSidebar` 与 `/account` 资料页已补齐登录态 / 匿名态文案与登出入口；登出后默认回到 `/${locale}/explore`。
 15. `users` 表已扩展 `username`、`first_name`、`last_name`、`membership_status` 字段，Clerk session / webhook / `/api/users/me` / 账户页展示已完成同构更新。
+16. `/account` -> “我的作品” 已支持检测当前设备本地草稿，并在登录后显式导入到账户工作区，避免匿名创作结果继续滞留在单机 `localStorage`。
 
 ### 1.2 当前未完成能力
 
 1. `apps/web/middleware.ts` 虽已接入 Clerk session 注入，但仍未补齐生产代理能力，也未启用任何全局 `auth.protect()` 逻辑。
 2. 当前白名单只覆盖 `/account`、`/workspace`、`/workflows`、`/video-analysis`、`/explore`、`/canvas/:id`；后续新增账户态页面时，必须同步更新 `apps/web/lib/auth/redirect.ts`。
 3. 只有“账户级 API 配置”已经切到登录保护；其他未来账户资产 API 仍需继续显式区分匿名态与登录态。
-4. “用户生成资源绑定”和“用户账户数据库完善”目前已完成基础身份桥接、作品归属 `user_id` 绑定、以及账户资料字段持久化；但还没有形成完整的会员体系、资源迁移工具和历史匿名作品转正式账户的显式升级流程。
+4. “用户生成资源绑定”和“用户账户数据库完善”目前已完成基础身份桥接、作品归属 `user_id` 绑定、以及账户资料字段持久化，并补上了“当前设备本地草稿 -> 正式账户工作区”的显式导入；但还没有形成完整的会员体系、跨设备历史匿名资产迁移工具与更复杂的数据合并策略。
 5. Clerk Dashboard 生产域名、回调地址、OAuth 配置、Webhook 真实端点与签名密钥回填仍待核验。
 
 ### 1.3 当前阶段判断
@@ -231,6 +232,7 @@ type SessionActor =
 
 - [x] 仅对“跨设备同步 API 配置”增加登录要求
 - [x] 抽出 `requireAccountActor()` 语义化账户守卫别名，作为后续账户资产 API 的统一入口
+- [x] 提供“本地草稿导入正式账户”显式流程，避免匿名作品继续滞留单机
 - [ ] 仅对“未来云端资源同步”增加登录要求
 - [ ] 仅对明确账户资产 API 启用 `requireAuthenticatedActor()`
 - [ ] 保持工作区、画布、广场浏览可匿名使用
@@ -288,10 +290,10 @@ type SessionActor =
 3. `apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts`、`/account`、`AppSidebar` 已能消费真实账户镜像，登录用户的资料与资源开始落到正式 actor。
 4. `users.clerk_id` 继续承担兼容身份键角色，匿名链路写入 `anon:{guestId}`，登录链路与 webhook 链路写入 `clerk:{clerkUserId}`；在真正迁移列名之前，不应把它重新当成“只存 Clerk user id”的字段。
 5. 账户级 API 配置已经改为登录保护，匿名访客不再把这类跨设备资产写入 guest actor。
-6. 当前仍未完成的是：Clerk 生产代理 / Dashboard 外围配置、更大范围的账户资产守卫收口，以及会员体系、匿名作品升级导入、历史资产迁移这些“账户体系深化”能力。
+6. 当前仍未完成的是：Clerk 生产代理 / Dashboard 外围配置、更大范围的账户资产守卫收口，以及会员体系、跨设备匿名资产迁移、复杂资源合并这些“账户体系深化”能力。
 7. `pnpm --filter @nano-banana/web exec tsc --noEmit` 与 `pnpm --filter @nano-banana/web lint` 已在 2026-04-21 本地通过。
 8. `pnpm --filter @nano-banana/web test` 已在 2026-04-21 重新执行，当前仍未通过；失败集中在既有测试断言未跟上当前 schema / 节点默认值，而不是本轮 Clerk 桥接引入的新回归。
 9. 当前可明确列出的失败点为：`lib/validations/ai.test.ts` 失败 3 项，`lib/utils/create-node.test.ts` 失败 1 项。
-10. 下一步最优先应是：把作品、收藏、云端资产这类“用户专属资源”继续统一收口到 `requireAccountActor()`，再补匿名作品导入正式账户的显式流程，最后完成 Dashboard 代理与真实 webhook 端点配置。
+10. 下一步最优先应是：把作品、收藏、云端资产这类“用户专属资源”继续统一收口到 `requireAccountActor()`，再补跨设备匿名资产迁移方案，最后完成 Dashboard 代理与真实 webhook 端点配置。
 
 [PROTOCOL]: 变更时更新此文档，然后检查 CLAUDE.md
