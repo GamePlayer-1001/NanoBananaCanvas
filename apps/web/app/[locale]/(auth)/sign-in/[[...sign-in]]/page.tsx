@@ -45,6 +45,7 @@ export default async function SignInPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  const workspaceUrl = `/${locale}/workspace`
   setRequestLocale(locale)
 
   const t = await getTranslations('auth')
@@ -76,7 +77,8 @@ export default async function SignInPage({
         routing="path"
         path="/sign-in"
         signUpUrl="/sign-up"
-        fallbackRedirectUrl="/workspace"
+        fallbackRedirectUrl={workspaceUrl}
+        forceRedirectUrl={workspaceUrl}
         appearance={CLERK_CARD_APPEARANCE}
       />
     </AuthShell>
