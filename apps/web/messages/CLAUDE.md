@@ -11,6 +11,7 @@ zh.json: 中文翻译，与 en.json 结构完全对称并通过脚本校验
 ## 命名空间约定
 
 - `common` — 跨页面通用文本
+  当前同时承载 loading/retry/error-boundary 这类跨页面兜底文案
 - `metadata` — 页面 SEO 元数据
 - `notFound` — 404 页面
 - `landing` — Landing Page 内容 (含 signIn/dashboard 认证按钮文案)

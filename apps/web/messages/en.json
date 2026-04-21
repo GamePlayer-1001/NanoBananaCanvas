@@ -11,7 +11,9 @@
     "back": "Back",
     "viewAll": "View All",
     "noResults": "No results found",
-    "retry": "Retry"
+    "retry": "Retry",
+    "errorBoundaryTitle": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred"
   },
   "metadata": {
     "title": "Nano Banana Canvas",

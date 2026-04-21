@@ -7,7 +7,9 @@ import process from 'node:process'
 const WEB_ROOT = path.resolve(process.cwd())
 const MESSAGES_DIR = path.join(WEB_ROOT, 'messages')
 const GENERATED_INDEX_PATH = path.join(WEB_ROOT, 'i18n', 'message-index.ts')
+const GENERATED_USAGE_PATH = path.join(WEB_ROOT, 'i18n', 'message-usage.ts')
 const BASE_LOCALE = 'en'
+const SCAN_ROOTS = ['app', 'components', 'hooks', 'lib']
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'))
@@ -47,6 +49,72 @@ function collectNamespaceIndex(messages) {
   )
 }
 
+function listSourceFiles() {
+  return SCAN_ROOTS.flatMap((relativeRoot) =>
+    walkFiles(path.join(WEB_ROOT, relativeRoot)).map((filePath) =>
+      path.relative(WEB_ROOT, filePath).replace(/\\/gu, '/'),
+    ),
+  )
+}
+
+function walkFiles(dirPath) {
+  return fs.readdirSync(dirPath, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(dirPath, entry.name)
+
+    if (entry.isDirectory()) {
+      if (['node_modules', '.next', '.turbo'].includes(entry.name)) {
+        return []
+      }
+
+      return walkFiles(fullPath)
+    }
+
+    return /\.(ts|tsx)$/u.test(entry.name) ? [fullPath] : []
+  })
+}
+
+function collectTranslatorBindings(source) {
+  const bindings = new Map()
+  const bindingPattern =
+    /const\s+(\w+)\s*=\s*(?:await\s+)?(?:useTranslations|getTranslations)\((?:['"]([^'"]+)['"]|\{[\s\S]*?namespace:\s*['"]([^'"]+)['"][\s\S]*?\})\)/gu
+
+  for (const match of source.matchAll(bindingPattern)) {
+    const [, variableName, directNamespace, objectNamespace] = match
+    bindings.set(variableName, directNamespace ?? objectNamespace ?? '')
+  }
+
+  return bindings
+}
+
+function collectFileUsage(relativePath) {
+  const fullPath = path.join(WEB_ROOT, relativePath)
+  const source = fs.readFileSync(fullPath, 'utf8')
+  const bindings = collectTranslatorBindings(source)
+  const keys = new Set()
+
+  for (const [variableName, namespace] of bindings.entries()) {
+    const usagePattern = new RegExp(
+      `\\b${variableName}(?:\\.(?:rich|markup|has))?\\(\\s*['"]([^'"]+)['"]`,
+      'gu',
+    )
+
+    for (const match of source.matchAll(usagePattern)) {
+      const leafKey = match[1]
+      keys.add(namespace ? `${namespace}.${leafKey}` : leafKey)
+    }
+  }
+
+  return [...keys].sort()
+}
+
+function collectUsageIndex() {
+  return Object.fromEntries(
+    listSourceFiles()
+      .map((relativePath) => [relativePath, collectFileUsage(relativePath)])
+      .filter(([, keys]) => keys.length > 0),
+  )
+}
+
 function mergeWithBaseShape(base, target) {
   if (!base || typeof base !== 'object' || Array.isArray(base)) {
     return typeof target === 'string' ? target : base
@@ -72,6 +140,8 @@ function generateIndex() {
   const namespaceIndex = collectNamespaceIndex(baseMessages)
   const leafKeys = flattenLeaves(baseMessages).sort()
   const namespaceNames = Object.keys(baseMessages).sort()
+  const usageIndex = collectUsageIndex()
+  const usedLeafKeys = [...new Set(Object.values(usageIndex).flat())].sort()
 
   const fileContent = `/**
  * [INPUT]: 依赖 messages/*.json 的基准语言结构
@@ -98,7 +168,25 @@ export type MessageLeafKey = (typeof MESSAGE_LEAF_KEYS)[number]
 `
 
   fs.writeFileSync(GENERATED_INDEX_PATH, fileContent)
+  const usageContent = `/**
+ * [INPUT]: 依赖 app/components/hooks/lib 中的翻译函数调用
+ * [OUTPUT]: 对外提供消息 key 使用索引与已消费 key 列表
+ * [POS]: i18n 的生成使用索引文件，被运维校验与后续死 key 清理消费
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ *
+ * 此文件由 scripts/i18n-tools.mjs 自动生成，请勿手改。
+ */
+
+export const MESSAGE_USAGE_INDEX = ${JSON.stringify(usageIndex, null, 2)} as const
+
+export const USED_MESSAGE_LEAF_KEYS = ${JSON.stringify(usedLeafKeys, null, 2)} as const
+
+export type UsedMessageLeafKey = (typeof USED_MESSAGE_LEAF_KEYS)[number]
+`
+
+  fs.writeFileSync(GENERATED_USAGE_PATH, usageContent)
   console.log(`Generated message index -> ${path.relative(WEB_ROOT, GENERATED_INDEX_PATH)}`)
+  console.log(`Generated message usage -> ${path.relative(WEB_ROOT, GENERATED_USAGE_PATH)}`)
 }
 
 function validateMessages() {
@@ -132,7 +220,24 @@ function validateMessages() {
     return
   }
 
+  const usageIndex = collectUsageIndex()
+  const usedLeafKeys = [...new Set(Object.values(usageIndex).flat())].sort()
+  const missingReferences = usedLeafKeys.filter((leafKey) => !baseLeaves.includes(leafKey))
+  const unusedLeafKeys = baseLeaves.filter((leafKey) => !usedLeafKeys.includes(leafKey))
+
+  if (missingReferences.length) {
+    process.exitCode = 1
+    console.error(
+      `\nMissing referenced keys (${missingReferences.length}): ${missingReferences
+        .slice(0, 20)
+        .join(', ')}`,
+    )
+    return
+  }
+
   console.log('\nAll locale files are symmetric with the base locale.')
+  console.log(`Referenced keys: ${usedLeafKeys.length}`)
+  console.log(`Unused base-locale keys: ${unusedLeafKeys.length}`)
 }
 
 function syncMessages(targetLocale) {

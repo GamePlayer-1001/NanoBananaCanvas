@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 react 的 Component，依赖 @/lib/logger 的 createLogger
+ * [INPUT]: 依赖 react 的 Component，依赖 @/lib/logger 的 createLogger，
+ *          依赖 ./error-boundary-fallback 的本地化 fallback
  * [OUTPUT]: 对外提供 ErrorBoundary 组件 + withErrorBoundary HOC
  * [POS]: components 的全局错误捕获层，被 layout 和关键路由消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,7 +11,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { createLogger } from '@/lib/logger'
 import { isAppError } from '@/lib/errors'
-import { Button } from '@/components/ui/button'
+import { ErrorBoundaryFallback } from './error-boundary-fallback'
 
 const log = createLogger('ErrorBoundary')
 
@@ -66,18 +67,4 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
 /* ─── Default Fallback UI ─────────────────────────────── */
 
-function DefaultFallback({ error, onReset }: { error: Error; onReset: () => void }) {
-  return (
-    <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 p-8">
-      <div className="text-center">
-        <h3 className="text-destructive text-lg font-semibold">Something went wrong</h3>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {isAppError(error) ? error.message : 'An unexpected error occurred'}
-        </p>
-      </div>
-      <Button variant="outline" size="sm" onClick={onReset}>
-        Try again
-      </Button>
-    </div>
-  )
-}
+const DefaultFallback = ErrorBoundaryFallback

@@ -11,7 +11,9 @@
     "back": "返回",
     "viewAll": "查看全部",
     "noResults": "未找到结果",
-    "retry": "重试"
+    "retry": "重试",
+    "errorBoundaryTitle": "出错了",
+    "unexpectedError": "发生了一个未预期的错误"
   },
   "metadata": {
     "title": "Nano Banana Canvas",
