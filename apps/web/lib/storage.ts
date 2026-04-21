@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/r2 的 getR2，依赖 @/lib/nanoid 的 ID 生成，
  *          依赖 @/lib/db 的 getDb，依赖 @/lib/kv 的 getKV
- * [OUTPUT]: 对外提供 R2 存储路径生成 / 配额检查(KV 缓存) / 文件清理 / 缓存失效工具
+ * [OUTPUT]: 对外提供 R2 存储路径生成 / 私有输出路径解析 / 配额检查(KV 缓存) / 文件清理 / 缓存失效工具
  * [POS]: lib 的存储服务层，被文件上传 API / 异步任务 / 发布流程消费，当前采用统一免费配额策略
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -25,6 +25,7 @@ import { getR2 } from '@/lib/r2'
 /* ============================================ */
 
 export type StorageCategory = 'uploads' | 'outputs' | 'thumbnails'
+const INTERNAL_FILE_PREFIX = '/api/files/'
 
 /* ─── Path Generators ────────────────────────── */
 
@@ -38,6 +39,18 @@ export function generateOutputPath(userId: string, taskId: string, ext: string):
 
 export function generateThumbnailPath(workflowId: string): string {
   return `thumbnails/${workflowId}.webp`
+}
+
+export function toInternalFileUrl(key: string): string {
+  return `${INTERNAL_FILE_PREFIX}${key}`
+}
+
+export function extractR2KeyFromFileUrl(url: string): string | null {
+  if (!url.startsWith(INTERNAL_FILE_PREFIX)) {
+    return null
+  }
+
+  return url.slice(INTERNAL_FILE_PREFIX.length) || null
 }
 
 /* ─── Storage Quota ──────────────────────────── */
@@ -128,7 +141,9 @@ export async function cleanupExpiredOutputs(): Promise<{ deleted: number; errors
   for (const task of results) {
     try {
       const output = JSON.parse(task.output_data)
-      const r2Key = output.r2_key || output.url?.replace('/api/files/', '')
+      const r2Key = output.r2_key || (typeof output.url === 'string'
+        ? extractR2KeyFromFileUrl(output.url)
+        : null)
       if (r2Key) {
         await r2.delete(r2Key)
         deleted++

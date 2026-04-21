@@ -15,7 +15,7 @@
 
 1. Clerk 登录入口、Provider 注入、登录页/注册页、默认回跳、登出入口。
 2. `SessionActor` 身份桥接、`users` 表账户镜像、`/api/users/me`、Clerk webhook 最小同步。
-3. 账户页与侧边栏登录态 UI、账户级 API Key 登录保护、资源按 `user_id` 归属。
+3. 账户页与侧边栏登录态 UI、账户级 API Key 登录保护、资源按 `user_id` 归属，工作流生成结果已统一进入账户级私有留存。
 4. 本地匿名草稿检测与显式导入正式账户工作区。
 5. 清单文档、模块 CLAUDE 文档、文件头契约同步完成。
 
@@ -49,6 +49,7 @@
 15. `users` 表已扩展 `username`、`first_name`、`last_name`、`membership_status` 字段，Clerk session / webhook / `/api/users/me` / 账户页展示已完成同构更新。
 16. `/account` -> “我的作品” 已支持检测当前设备本地草稿，并在登录后显式导入到账户工作区，避免匿名创作结果继续滞留在单机 `localStorage`。
 17. `apps/web/middleware.ts` 与 `apps/web/app/[locale]/layout.tsx` 已补齐 Clerk Frontend API 代理代码入口；当 `NEXT_PUBLIC_CLERK_PROXY_URL` 存在时，可直接启用代理路径。
+18. 工作流异步任务完成后的图片 / 视频 / 音频结果已统一写入 R2 `outputs/{userId}/{taskId}.{ext}`，并通过 `/api/files/...` 按账户私有读取，避免用户之间串读生成媒体。
 
 ### 1.2 剩余事项归类
 
@@ -62,7 +63,7 @@
 
 1. 当前白名单已覆盖现阶段账户入口；若未来新增账户态页面，需同步更新 `apps/web/lib/auth/redirect.ts`。
 2. 只有“账户级 API 配置”已经切到登录保护；其他未来账户资产 API 仍需按业务边界继续显式区分匿名态与登录态。
-3. “用户生成资源绑定”和“用户账户数据库完善”已经完成本轮目标；剩余的是更深层的会员体系、跨设备历史匿名资产迁移工具与更复杂的数据合并策略。
+3. “用户生成资源绑定”、“工作流生成结果账户级留存”和“用户账户数据库完善”已经完成本轮目标；剩余的是更深层的会员体系、跨设备历史匿名资产迁移工具与更复杂的数据合并策略。
 
 ### 1.3 当前阶段判断
 
@@ -270,8 +271,8 @@ type SessionActor =
 - [x] 仅对“跨设备同步 API 配置”增加登录要求
 - [x] 抽出 `requireAccountActor()` 语义化账户守卫别名，作为后续账户资产 API 的统一入口
 - [x] 提供“本地草稿导入正式账户”显式流程，避免匿名作品继续滞留单机
-- [ ] 仅对“未来云端资源同步”增加登录要求
-- [ ] 仅对明确账户资产 API 启用 `requireAuthenticatedActor()`
+- [x] 工作流生成结果统一持久化到 `outputs/{userId}/{taskId}.{ext}`，并通过 `/api/files/...` 做账户级私有访问
+- [x] 对明确账户资产 API 启用登录守卫：`/api/settings/api-keys*`、`/api/files/uploads/*`、`/api/files/outputs/*`
 - [x] 保持工作区、画布、广场浏览可匿名使用
 
 ### Phase 5：收尾与验证
@@ -284,7 +285,7 @@ type SessionActor =
 - [ ] 验证登录用户能看到额外账户能力而非被迫改走另一套产品
 
 说明：
-`pnpm --filter @nano-banana/web exec tsc --noEmit`、`pnpm --filter @nano-banana/web lint`、`pnpm --filter @nano-banana/web test` 已在 2026-04-21 本地全部通过；手测项当前仅作为上线前人工验收清单保留。
+`pnpm --filter @nano-banana/web exec tsc --noEmit`、`pnpm --filter @nano-banana/web lint`、`pnpm --filter @nano-banana/web test` 已于 2026-04-21 按本轮最新代码重新本地通过；手测项当前仅作为上线前人工验收清单保留。
 
 ## 八、文件级落点
 
@@ -330,9 +331,10 @@ type SessionActor =
 3. `apps/web/app/api/users/me/route.ts`、`apps/web/hooks/use-user.ts`、`/account`、`AppSidebar` 已能消费真实账户镜像，登录用户的资料与资源开始落到正式 actor。
 4. `users.clerk_id` 继续承担兼容身份键角色，匿名链路写入 `anon:{guestId}`，登录链路与 webhook 链路写入 `clerk:{clerkUserId}`；在真正迁移列名之前，不应把它重新当成“只存 Clerk user id”的字段。
 5. 账户级 API 配置已经改为登录保护，匿名访客不再把这类跨设备资产写入 guest actor。
-6. 当前未纳入本轮结案范围的是：会员体系、跨设备匿名资产迁移、复杂资源合并这些“账户体系深化”能力。
-7. `pnpm --filter @nano-banana/web exec tsc --noEmit`、`pnpm --filter @nano-banana/web lint`、`pnpm --filter @nano-banana/web test` 已在 2026-04-21 本地全部通过。
-8. 当前代码侧已不存在 Clerk 接入遗留测试债，Dashboard / 域名 / Webhook 配置也已完成核对。
-9. 若进入下一阶段，最优先应是：把作品、收藏、云端资产这类“用户专属资源”继续统一收口到 `requireAccountActor()`，再设计跨设备匿名资产迁移方案，最后抽象完整会员体系。
+6. 工作流生成结果现在会在任务完成时统一写入 R2 `outputs/{userId}/{taskId}.{ext}`，数据库只保留站内私有访问地址与 `r2_key`，用户只能读取自己的生成媒体。
+7. 当前未纳入本轮结案范围的是：会员体系、跨设备匿名资产迁移、复杂资源合并这些“账户体系深化”能力。
+8. `pnpm --filter @nano-banana/web exec tsc --noEmit`、`pnpm --filter @nano-banana/web lint`、`pnpm --filter @nano-banana/web test` 已于 2026-04-21 按本轮最新代码重新全部通过。
+9. 当前代码侧已不存在 Clerk 接入主链的结构性遗留项，Dashboard / 域名 / Webhook 配置也已完成核对。
+10. 若进入下一阶段，最优先应是：设计“我的作品/历史生成结果”检索与展示页，再决定是否补充更长保留期、收藏夹和会员体系。
 
 [PROTOCOL]: 变更时更新此文档，然后检查 CLAUDE.md

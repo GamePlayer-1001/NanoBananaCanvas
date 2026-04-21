@@ -13,6 +13,7 @@ utils.ts     — cn() 样式合并工具 (shadcn 管理)
 db.ts        — D1 数据库访问入口 (getDb → getCloudflareContext)
 env.ts       — 统一环境变量获取入口 (getEnv/requireEnv → getCloudflareContext，消除 process.env 混用)
 r2.ts        — R2 对象存储访问入口 (getR2 → getCloudflareContext)
+storage.ts   — 存储路径/私有文件 URL 解析/配额缓存/输出清理与失效工具
 nanoid.ts    — 零依赖 ID 生成器 (CF Workers 兼容)
 api-key-crypto.ts   — API Key 服务端 AES-256-GCM 加密层 (encrypt/decrypt/mask)
 user-model-config.ts — 账号级模型配置契约层 (兼容旧槽位 + 多配置能力标记 + 加密负载 JSON 编解码 + URL 规范化)

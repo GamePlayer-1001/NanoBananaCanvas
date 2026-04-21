@@ -2,8 +2,8 @@
  * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
- *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks
+ *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks，并在完成态统一收口任务输出到账户级 R2
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -16,6 +16,13 @@ import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import { getR2 } from '@/lib/r2'
+import {
+  extractR2KeyFromFileUrl,
+  generateOutputPath,
+  invalidateStorageCache,
+  toInternalFileUrl,
+} from '@/lib/storage'
 import {
   deserializeUserModelConfig,
   toRuntimeUserModelConfig,
@@ -25,7 +32,7 @@ import type { NodeCapability } from '@/lib/ai-node-config'
 import { getPlatformKey } from '@/services/ai'
 
 import { getProcessor } from './processors'
-import type { TaskProcessor } from './processors'
+import type { TaskOutput, TaskProcessor } from './processors'
 
 const log = createLogger('task:service')
 const FREE_TASK_CONCURRENCY_LIMIT = 1
@@ -148,6 +155,139 @@ function toTaskProviderError(
 
   const message = error instanceof Error ? error.message : fallbackMessage
   return new TaskError(ErrorCode.TASK_PROVIDER_ERROR, message, meta)
+}
+
+const CONTENT_TYPE_EXTENSION_MAP: Record<string, string> = {
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/ogg': 'ogg',
+  'audio/webm': 'webm',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'video/webm': 'webm',
+}
+
+function isUrlOutput(output: TaskOutput | undefined): output is TaskOutput & { url: string } {
+  return output?.type === 'url' && typeof output.url === 'string' && output.url.trim().length > 0
+}
+
+function inferExtensionFromContentType(contentType: string | null | undefined): string | null {
+  if (!contentType) {
+    return null
+  }
+
+  const normalized = contentType.split(';', 1)[0]?.trim().toLowerCase()
+  return normalized ? CONTENT_TYPE_EXTENSION_MAP[normalized] ?? null : null
+}
+
+function inferExtensionFromUrl(url: string): string | null {
+  if (url.startsWith('data:')) {
+    const match = /^data:([^;,]+)/i.exec(url)
+    return inferExtensionFromContentType(match?.[1] ?? null)
+  }
+
+  try {
+    const parsed = new URL(url)
+    const match = /\.([a-z0-9]+)$/i.exec(parsed.pathname)
+    return match?.[1]?.toLowerCase() ?? null
+  } catch {
+    return null
+  }
+}
+
+function inferOutputExtension(output: TaskOutput): string {
+  return (
+    inferExtensionFromContentType(output.contentType) ??
+    (output.url ? inferExtensionFromUrl(output.url) : null) ??
+    'bin'
+  )
+}
+
+function inferOutputFileName(taskId: string, output: TaskOutput): string {
+  const ext = inferOutputExtension(output)
+  return `${taskId}.${ext}`
+}
+
+function normalizeInternalOutput(taskId: string, output: TaskOutput, r2Key: string): TaskOutput {
+  return {
+    ...output,
+    url: toInternalFileUrl(r2Key),
+    r2_key: r2Key,
+    fileName: output.fileName ?? inferOutputFileName(taskId, output),
+  }
+}
+
+async function fetchOutputPayload(output: TaskOutput): Promise<{
+  body: ArrayBuffer
+  contentType: string
+}> {
+  if (!isUrlOutput(output)) {
+    throw new Error('Task output is not a valid URL payload')
+  }
+
+  const response = await fetch(output.url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch task output: ${response.status} ${response.statusText}`)
+  }
+
+  const body = await response.arrayBuffer()
+  const contentType =
+    response.headers.get('content-type') ??
+    output.contentType ??
+    'application/octet-stream'
+
+  return { body, contentType }
+}
+
+async function persistTaskOutput(
+  taskId: string,
+  userId: string,
+  output: TaskOutput,
+): Promise<TaskOutput> {
+  if (!isUrlOutput(output)) {
+    return output
+  }
+
+  const existingKey =
+    output.r2_key ??
+    (output.url ? extractR2KeyFromFileUrl(output.url) : null)
+
+  if (existingKey?.startsWith(`outputs/${userId}/`)) {
+    return normalizeInternalOutput(taskId, output, existingKey)
+  }
+
+  const { body, contentType } = await fetchOutputPayload(output)
+  const ext =
+    inferExtensionFromContentType(contentType) ??
+    inferOutputExtension({ ...output, contentType }) ??
+    'bin'
+  const r2Key = generateOutputPath(userId, taskId, ext)
+  const fileName = output.fileName ?? `${taskId}.${ext}`
+  const r2 = await getR2()
+
+  await r2.put(r2Key, body, {
+    httpMetadata: {
+      contentType,
+      contentDisposition: `inline; filename="${fileName}"`,
+    },
+  })
+
+  await invalidateStorageCache(userId)
+
+  return {
+    ...output,
+    contentType,
+    fileName,
+    r2_key: r2Key,
+    url: toInternalFileUrl(r2Key),
+  }
 }
 
 /* ─── 1. Concurrency Check ──────────────────────────── */
@@ -489,6 +629,8 @@ export async function checkTask(
 
     /* 根据 Provider 返回状态更新 D1 */
     if (check.status === 'completed' && check.result) {
+      const persistedOutput = await persistTaskOutput(taskId, userId, check.result)
+
       await db
         .prepare(
           `UPDATE async_tasks
@@ -497,7 +639,7 @@ export async function checkTask(
                last_checked_at = ?, updated_at = ?
            WHERE id = ?`,
         )
-        .bind(JSON.stringify(check.result), nowIso, nowIso, nowIso, taskId)
+        .bind(JSON.stringify(persistedOutput), nowIso, nowIso, nowIso, taskId)
         .run()
 
       log.info('Task completed', { taskId })
@@ -505,7 +647,7 @@ export async function checkTask(
         ...rowToDetail(row),
         status: 'completed',
         progress: 100,
-        output: check.result,
+        output: persistedOutput,
         completedAt: nowIso,
       }
     }
