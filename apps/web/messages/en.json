@@ -107,7 +107,11 @@
   "sidebar": {
     "personal": "Personal",
     "search": "Search...",
+    "explore": "Explore",
+    "videoAnalysis": "Video Analysis",
+    "alpha": "Alpha",
     "workspace": "Workspace",
+    "all": "All",
     "noFolders": "No folders yet",
     "freePlan": "Free",
     "contactUs": "Contact Us",
@@ -121,6 +125,10 @@
     "noFolder": "No Folder"
   },
   "explore": {
+    "hot": "Hot",
+    "latest": "Latest",
+    "myLiked": "Liked",
+    "myVideos": "My Videos",
     "uploadVideo": "Upload Video",
     "prev": "Previous",
     "next": "Next"
@@ -152,6 +160,9 @@
   "workspace": {
     "personalProjects": "Personal Projects",
     "searchPlaceholder": "Search projects...",
+    "sortRecent": "Recently updated",
+    "sortName": "Name",
+    "sortCreated": "Created date",
     "newProject": "New Project",
     "untitledProject": "Untitled Project",
     "createProject": "Create Project",
@@ -191,6 +202,8 @@
     "accountLoginRequiredBody": "These configs are now bound to your real account for cross-device access and per-user secret isolation. Guest sessions no longer write this kind of account asset.",
     "accountLoginRequiredAction": "Go to sign in",
     "personalInfo": "Personal Info",
+    "works": "Works",
+    "notifications": "Notifications",
     "modelPreferences": "Model Preferences",
     "name": "Name",
     "username": "Username",
@@ -237,10 +250,21 @@
     "apiConfigDeleteFailed": "Failed to delete API config",
     "currentProvider": "Current provider: {provider}",
     "currentModelId": "Current model ID: {modelId}",
-    "currentBaseUrl": "Current base URL: {baseUrl}"
+    "currentBaseUrl": "Current base URL: {baseUrl}",
+    "capability_text": "Text",
+    "capability_text_desc": "Manage API providers and models used by text-generation nodes.",
+    "capability_image": "Image",
+    "capability_image_desc": "Manage API providers and models used by image-generation nodes.",
+    "capability_video": "Video",
+    "capability_video_desc": "Manage API providers and models used by video-generation nodes.",
+    "capability_audio": "Audio",
+    "capability_audio_desc": "Manage API providers and models used by audio-generation nodes."
   },
   "profileWorks": {
     "title": "My Works",
+    "all": "All",
+    "shared": "Published",
+    "favorites": "Favorites",
     "empty": "No works yet",
     "localDraftTitle": "A local draft was found on this device",
     "localDraftBodySignedIn": "We found the local draft \"{name}\" with {count} nodes. You can import it into your real account workspace now.",
