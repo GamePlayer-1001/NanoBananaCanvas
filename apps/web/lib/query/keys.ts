@@ -20,6 +20,10 @@ export const queryKeys = {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
   },
+  billing: {
+    all: ['billing'] as const,
+    balance: () => [...queryKeys.billing.all, 'balance'] as const,
+  },
   explore: {
     all: ['explore'] as const,
     list: (filters?: object) =>

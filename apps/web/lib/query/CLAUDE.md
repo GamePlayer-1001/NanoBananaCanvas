@@ -10,6 +10,7 @@ TanStack Query 配置与缓存键工厂
 client.ts      — QueryClient 工厂 (SSR 安全，staleTime/gcTime 预设)
 provider.tsx   — QueryProvider 客户端组件 (React 上下文桥)
 keys.ts        — queryKeys 缓存键工厂 (workflows/users/explore)
+keys.ts        — queryKeys 缓存键工厂 (workflows/users/billing/explore)
 keys.test.ts   — queryKeys 单元测试
 ```
 

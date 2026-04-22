@@ -28,4 +28,8 @@ describe('queryKeys', () => {
     expect(queryKeys.user.profile()).toEqual(['user', 'profile'])
   })
 
+  it('should generate billing balance key', () => {
+    expect(queryKeys.billing.balance()).toEqual(['billing', 'balance'])
+  })
+
 })

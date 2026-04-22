@@ -26,6 +26,8 @@ import {
   MessageCircle,
   Search,
   LogOut,
+  Coins,
+  Sparkles,
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
@@ -34,6 +36,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
+import { useCreditBalance } from '@/hooks/use-billing'
 import { useCurrentUser } from '@/hooks/use-user'
 import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
 
@@ -191,6 +194,7 @@ export function AppSidebar() {
   const locale = useLocale()
   const pathname = usePathname()
   const { data: user } = useCurrentUser()
+  const { data: balance } = useCreditBalance(Boolean(user?.isAuthenticated))
   const [searchOpen, setSearchOpen] = useState(false)
   const openSearch = useCallback(() => setSearchOpen(true), [])
   useSearchShortcut(openSearch)
@@ -316,7 +320,7 @@ export function AppSidebar() {
         {/* 用户信息 */}
         <div className="flex items-start gap-2 px-1">
           <span className="mt-0.5 rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {t('freePlan')}
+            {user?.plan ? t('planBadge', { plan: user.plan }) : t('freePlan')}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -342,13 +346,45 @@ export function AppSidebar() {
             </div>
 
             {user?.isAuthenticated ? (
-              <SignOutAction
-                redirectUrl={signOutRedirect}
-                className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <LogOut size={12} />
-                {t('signOut')}
-              </SignOutAction>
+              <>
+                <div className="mt-3 space-y-1.5">
+                  <Link
+                    href="/billing"
+                    className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-[11px] transition-colors ${
+                      pathname === '/billing'
+                        ? 'border-brand-200 bg-brand-50 text-brand-700'
+                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Coins size={12} />
+                      {t('creditsEntry')}
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {balance?.availableCredits?.toLocaleString() ?? '...'}
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/pricing"
+                    className="flex items-center justify-between rounded-lg border border-border px-2.5 py-2 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles size={12} />
+                      {t('upgradeEntry')}
+                    </span>
+                    <span className="font-medium text-brand-600">{t('upgradeCta')}</span>
+                  </Link>
+                </div>
+
+                <SignOutAction
+                  redirectUrl={signOutRedirect}
+                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <LogOut size={12} />
+                  {t('signOut')}
+                </SignOutAction>
+              </>
             ) : (
               <Link
                 href="/sign-in?redirect_url=/workspace"

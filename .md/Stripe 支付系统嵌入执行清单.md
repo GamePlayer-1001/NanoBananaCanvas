@@ -498,11 +498,11 @@
 
 - [x] **SPAY-800** 重建 `/pricing` 页面
 - [~] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换（前三者已完成，币种手动切换仍待补）
-- [ ] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
+- [x] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
 - [x] **SPAY-803** 重建 `/billing` 页面
 - [x] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
 - [x] **SPAY-805** 在账户页接回账单入口
-- [ ] **SPAY-806** 在侧边栏接回积分与升级入口，但不污染匿名主链
+- [x] **SPAY-806** 在侧边栏接回积分与升级入口，但不污染匿名主链
 - [x] **SPAY-807** 为未登录 Checkout 操作补登录跳转与回跳
 
 #### Phase 8 Batch A 结论（2026-04-22）
@@ -567,6 +567,21 @@
 3. 已把账户页账单入口从“只跳 Stripe Portal”升级为“双入口”
    - 入口一：打开本地 `/billing` 工作台，先看账本镜像
    - 入口二：继续进入 Stripe Customer Portal 处理订阅、支付方式与账单信息
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`
+
+#### Phase 8 Batch F 结论（2026-04-22）
+
+1. 已在 `/pricing` 补齐 Free 默认态表达
+   - 当前明确说明 `Free` 是默认进入态，不是 Stripe Checkout 商品
+   - 当前 CTA 变为“Start/Continue with Free”，不再制造“购买 Free”的错误心智
+2. 已在侧边栏接回登录态积分与升级入口
+   - 登录用户：展示本地账本入口与当前可用积分摘要，同时提供 `/pricing` 升级入口
+   - 匿名用户：继续只保留原有公开主链入口，不展示积分/升级块，避免污染匿名主链
+3. 当前实现方式
+   - 新增 `useCreditBalance` 读取本地 `/api/credits/balance`
+   - `AppSidebar` 仅在 `isAuthenticated=true` 时挂载积分与升级入口
 4. 当前验证结果
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`

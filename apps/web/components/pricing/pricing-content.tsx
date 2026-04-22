@@ -10,7 +10,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { useRouter } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 
@@ -168,6 +168,66 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
             >
               {t('toggleCredits')}
             </button>
+          </div>
+        </div>
+
+        <div className="mt-10 rounded-[30px] border border-emerald-400/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.16),rgba(99,102,241,0.10))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-medium tracking-[0.18em] text-emerald-200 uppercase">
+                {t('freeEyebrow')}
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold text-white md:text-4xl">
+                {t('freeTitle')}
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-white/72 md:text-base">
+                {t('freeDescription')}
+              </p>
+            </div>
+
+            <div className="min-w-0 rounded-[26px] border border-white/10 bg-black/20 p-5 lg:w-[360px]">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm text-white/55">{t('freePriceLabel')}</p>
+                  <p className="mt-2 text-5xl font-semibold text-white">{t('freePriceValue')}</p>
+                </div>
+                <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-100">
+                  {t('freeBadge')}
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-sm text-white/82">
+                  <p className="text-white/50">{t('freeFeatureEntryTitle')}</p>
+                  <p className="mt-1 font-medium text-white">{t('freeFeatureEntryBody')}</p>
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-sm text-white/82">
+                  <p className="text-white/50">{t('freeFeatureCreditsTitle')}</p>
+                  <p className="mt-1 font-medium text-white">{t('freeFeatureCreditsBody')}</p>
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-sm text-white/82">
+                  <p className="text-white/50">{t('freeFeatureUpgradeTitle')}</p>
+                  <p className="mt-1 font-medium text-white">{t('freeFeatureUpgradeBody')}</p>
+                </div>
+              </div>
+
+              {isAuthenticated ? (
+                <Link
+                  href="/workspace"
+                  className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-white text-sm font-medium text-black transition hover:bg-white/90"
+                >
+                  {t('freePrimaryAuthenticated')}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => router.push('/sign-in?redirect_url=/workspace')}
+                  className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-white text-sm font-medium text-black transition hover:bg-white/90"
+                >
+                  {t('freePrimaryGuest')}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
