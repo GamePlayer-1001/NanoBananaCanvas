@@ -70,7 +70,7 @@
 - [x] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price（Sandbox 已建 Standard / Pro / Ultimate）
 - [x] **SPAY-102** 为三档套餐分别创建 `one_time` 一次性 Price
 - [x] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
-- [~] **SPAY-104** 收口多币种策略：仅 `USD / CNY` 手动固定，其他地区走 Stripe Adaptive Pricing（本地代码已对齐，待 Dashboard 最后确认）
+- [x] **SPAY-104** 收口多币种策略：仅 `USD / CNY` 手动固定，其他地区走 Stripe Adaptive Pricing
 - [x] **SPAY-105** 统一 Product / Price 命名规范与最小 Metadata 规范（metadata 不再作为运行时阻塞项）
 - [x] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式
 
@@ -111,10 +111,10 @@
    - 当前 Portal Configuration ID：`bpc_1TOsxnEaFSfu5kGHU7OAQ9Zi`
    - 当前测试链接已激活：`https://billing.stripe.com/p/login/test_4gM14n9NqfT66zO8088so00`
    - 当前项目推荐的回跳落点仍是 `/account`，不建议长期把回跳落到 `/explore`
-9. **Phase 1 当前剩余的唯一人工确认项**
-   - 本地代码与文档已经收口为“`USD / CNY` 手动固定，其他地区走 Stripe Adaptive Pricing”。
-   - 但 Stripe Dashboard 中是否已为对应 Product/Price 打开 Adaptive Pricing，仍需最后人工确认一次。
-   - 因此 `SPAY-104` 目前保留 `[~]`，避免把未实际核验的后台状态误写成已完成。
+9. **Adaptive Pricing 的 Sandbox 状态已确认**
+   - 你提供的 Dashboard 截图位置为：`付款 -> Adaptive Pricing -> Checkout、Elements 以及托管账单页面`。
+   - 当前 Sandbox 中该开关已处于开启状态，可以支撑我们“`USD / CNY` 手动固定，其他地区自动本地化”的现行策略。
+   - 因此 `SPAY-104` 现已可正式收口为完成。
 
 ### Phase 2：环境变量与服务端配置
 
