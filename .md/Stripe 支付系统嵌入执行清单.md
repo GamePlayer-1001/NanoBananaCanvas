@@ -347,8 +347,8 @@
 - [ ] **SPAY-605** 重建 `POST /api/billing/topup`
 - [x] **SPAY-606** 重建 `POST /api/webhooks/stripe`
 - [x] **SPAY-607** 重建 `GET /api/credits/balance`
-- [ ] **SPAY-608** 重建 `GET /api/credits/transactions`
-- [ ] **SPAY-609** 重建 `GET /api/credits/usage`
+- [x] **SPAY-608** 重建 `GET /api/credits/transactions`
+- [x] **SPAY-609** 重建 `GET /api/credits/usage`
 - [x] **SPAY-610** 重建 `GET /api/pricing/plans`
 
 #### Phase 6 Batch A 结论（2026-04-22）
@@ -457,6 +457,24 @@
 3. 当前实现方式
    - 新增 `apps/web/lib/billing/credits.ts` 统一读取 `users + credit_balances + subscriptions`
    - 如果用户已有账户但尚未生成 `credit_balances` 行，会先自动补齐空余额行，再返回摘要
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`
+
+#### Phase 6 Batch H 结论（2026-04-22）
+
+1. 已恢复 `GET /api/credits/transactions`
+   - 路由位置：`apps/web/app/api/credits/transactions/route.ts`
+   - 当前返回分页结果：`items / total / page / pageSize / hasMore`
+   - 当前流水直接读取 `credit_transactions` 真相源，不再让账单页自己拼 SQL 语义
+2. 已恢复 `GET /api/credits/usage`
+   - 路由位置：`apps/web/app/api/credits/usage/route.ts`
+   - 当前返回三组聚合：`summary / byModel / daily`
+   - 当前 usage 统计窗口默认 `30` 天，可通过 `windowDays` 查询参数调整
+3. 当前 usage 口径说明
+   - 数据源为 `ai_usage_logs + model_pricing`
+   - 当前 `estimatedCreditsSpent` 是基于 `input_tokens + output_tokens` 与 `credits_per_1k_units` 计算的展示摘要
+   - 这一步先解决账单页统计可读性，不冒充已经接回 `freeze / confirm / refund` 的真实执行扣费链
 4. 当前验证结果
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`

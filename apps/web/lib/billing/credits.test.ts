@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 @/lib/db mock，依赖 ./credits
- * [OUTPUT]: 对外提供积分余额摘要测试，覆盖双池汇总与缺失用户错误
+ * [OUTPUT]: 对外提供积分余额/流水/usage 测试，覆盖账本摘要与聚合查询口径
  * [POS]: lib/billing 的积分读取层回归测试，防止账本展示口径漂移
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -14,9 +14,16 @@ vi.mock('@/lib/db', () => ({
 import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 
-import { getCreditBalanceSummary } from './credits'
+import { getCreditBalanceSummary, getCreditTransactions, getCreditUsage } from './credits'
 
-function createDbMock(row: Record<string, unknown> | null): D1Database {
+function createDbMock(options: {
+  balanceRow?: Record<string, unknown> | null
+  transactionCountRow?: Record<string, unknown> | null
+  transactionRows?: Record<string, unknown>[]
+  usageSummaryRow?: Record<string, unknown> | null
+  usageByModelRows?: Record<string, unknown>[]
+  usageDailyRows?: Record<string, unknown>[]
+}): D1Database {
   return {
     prepare: vi.fn((sql: string) => {
       if (sql.includes('INSERT OR IGNORE INTO credit_balances')) {
@@ -30,7 +37,47 @@ function createDbMock(row: Record<string, unknown> | null): D1Database {
       if (sql.includes('FROM users u')) {
         return {
           bind: vi.fn().mockReturnValue({
-            first: vi.fn().mockResolvedValue(row),
+            first: vi.fn().mockResolvedValue(options.balanceRow ?? null),
+          }),
+        }
+      }
+
+      if (sql.includes('FROM credit_transactions') && sql.includes('COUNT(*) AS total')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            first: vi.fn().mockResolvedValue(options.transactionCountRow ?? { total: 0 }),
+          }),
+        }
+      }
+
+      if (sql.includes('FROM credit_transactions') && sql.includes('ORDER BY created_at DESC')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            all: vi.fn().mockResolvedValue({ results: options.transactionRows ?? [] }),
+          }),
+        }
+      }
+
+      if (sql.includes('FROM ai_usage_logs u') && sql.includes('COUNT(*) AS total_requests')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            first: vi.fn().mockResolvedValue(options.usageSummaryRow ?? null),
+          }),
+        }
+      }
+
+      if (sql.includes('GROUP BY u.provider, u.model_id')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            all: vi.fn().mockResolvedValue({ results: options.usageByModelRows ?? [] }),
+          }),
+        }
+      }
+
+      if (sql.includes('GROUP BY date(u.created_at)')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            all: vi.fn().mockResolvedValue({ results: options.usageDailyRows ?? [] }),
           }),
         }
       }
@@ -48,17 +95,19 @@ describe('getCreditBalanceSummary', () => {
   it('returns merged balances from monthly, permanent and frozen pools', async () => {
     vi.mocked(getDb).mockResolvedValue(
       createDbMock({
-        user_id: 'user-1',
-        plan: 'pro',
-        membership_status: 'pro',
-        monthly_balance: 1200,
-        permanent_balance: 350,
-        frozen_credits: 80,
-        total_earned: 4000,
-        total_spent: 2370,
-        updated_at: '2026-04-22 15:00:00',
-        subscription_monthly_credits: 5400,
-        storage_gb: 100,
+        balanceRow: {
+          user_id: 'user-1',
+          plan: 'pro',
+          membership_status: 'pro',
+          monthly_balance: 1200,
+          permanent_balance: 350,
+          frozen_credits: 80,
+          total_earned: 4000,
+          total_spent: 2370,
+          updated_at: '2026-04-22 15:00:00',
+          subscription_monthly_credits: 5400,
+          storage_gb: 100,
+        },
       }),
     )
 
@@ -80,8 +129,162 @@ describe('getCreditBalanceSummary', () => {
   })
 
   it('throws when the user row does not exist', async () => {
-    vi.mocked(getDb).mockResolvedValue(createDbMock(null))
+    vi.mocked(getDb).mockResolvedValue(createDbMock({ balanceRow: null }))
 
     await expect(getCreditBalanceSummary('missing-user')).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('returns paginated credit transactions ordered by newest first', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        transactionCountRow: { total: 3 },
+        transactionRows: [
+          {
+            id: 'txn_2',
+            type: 'refund',
+            pool: 'permanent',
+            amount: 200,
+            balance_after: 1400,
+            source: 'stripe_credit_pack',
+            reference_id: 'cs_test_2',
+            description: 'Refunded credit pack',
+            created_at: '2026-04-22 16:00:00',
+          },
+          {
+            id: 'txn_1',
+            type: 'earn',
+            pool: 'monthly',
+            amount: 1200,
+            balance_after: 1200,
+            source: 'stripe_subscription_renewal',
+            reference_id: 'in_test_1',
+            description: 'Renewal credits',
+            created_at: '2026-04-22 15:00:00',
+          },
+        ],
+      }),
+    )
+
+    await expect(getCreditTransactions('user-1', { page: 1, pageSize: 2 })).resolves.toEqual({
+      items: [
+        {
+          id: 'txn_2',
+          type: 'refund',
+          pool: 'permanent',
+          amount: 200,
+          balanceAfter: 1400,
+          source: 'stripe_credit_pack',
+          referenceId: 'cs_test_2',
+          description: 'Refunded credit pack',
+          createdAt: '2026-04-22 16:00:00',
+        },
+        {
+          id: 'txn_1',
+          type: 'earn',
+          pool: 'monthly',
+          amount: 1200,
+          balanceAfter: 1200,
+          source: 'stripe_subscription_renewal',
+          referenceId: 'in_test_1',
+          description: 'Renewal credits',
+          createdAt: '2026-04-22 15:00:00',
+        },
+      ],
+      total: 3,
+      page: 1,
+      pageSize: 2,
+      hasMore: true,
+    })
+  })
+
+  it('returns usage summary, by-model breakdown and daily buckets', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        usageSummaryRow: {
+          total_requests: 4,
+          success_count: 3,
+          failed_count: 1,
+          total_input_tokens: 3200,
+          total_output_tokens: 1800,
+          estimated_credits_spent: 25,
+        },
+        usageByModelRows: [
+          {
+            provider: 'openrouter',
+            model_id: 'openai/gpt-4o-mini',
+            request_count: 3,
+            success_count: 2,
+            failed_count: 1,
+            input_tokens: 2500,
+            output_tokens: 1400,
+            estimated_credits_spent: 19,
+          },
+        ],
+        usageDailyRows: [
+          {
+            day: '2026-04-22',
+            request_count: 2,
+            success_count: 2,
+            failed_count: 0,
+            input_tokens: 1500,
+            output_tokens: 900,
+            estimated_credits_spent: 12,
+          },
+          {
+            day: '2026-04-21',
+            request_count: 2,
+            success_count: 1,
+            failed_count: 1,
+            input_tokens: 1700,
+            output_tokens: 900,
+            estimated_credits_spent: 13,
+          },
+        ],
+      }),
+    )
+
+    await expect(getCreditUsage('user-1', { windowDays: 30 })).resolves.toEqual({
+      windowDays: 30,
+      summary: {
+        totalRequests: 4,
+        successCount: 3,
+        failedCount: 1,
+        totalInputTokens: 3200,
+        totalOutputTokens: 1800,
+        estimatedCreditsSpent: 25,
+      },
+      byModel: [
+        {
+          provider: 'openrouter',
+          modelId: 'openai/gpt-4o-mini',
+          requestCount: 3,
+          successCount: 2,
+          failedCount: 1,
+          inputTokens: 2500,
+          outputTokens: 1400,
+          estimatedCreditsSpent: 19,
+        },
+      ],
+      daily: [
+        {
+          day: '2026-04-22',
+          requestCount: 2,
+          successCount: 2,
+          failedCount: 0,
+          inputTokens: 1500,
+          outputTokens: 900,
+          estimatedCreditsSpent: 12,
+        },
+        {
+          day: '2026-04-21',
+          requestCount: 2,
+          successCount: 1,
+          failedCount: 1,
+          inputTokens: 1700,
+          outputTokens: 900,
+          estimatedCreditsSpent: 13,
+        },
+      ],
+    })
   })
 })

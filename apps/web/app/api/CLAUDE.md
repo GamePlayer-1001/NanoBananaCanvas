@@ -12,8 +12,10 @@ billing/                — Stripe 计费入口 (2 端点)
   subscription/route.ts — GET 当前用户订阅镜像摘要 (登录必需)
   cancel/route.ts       — POST 自动月付到期取消 (登录必需)
 
-credits/                — 积分账本读取入口 (1 端点)
+credits/                — 积分账本读取入口 (3 端点)
   balance/route.ts      — GET 当前用户双池积分余额摘要 (登录必需)
+  transactions/route.ts — GET 当前用户积分流水分页结果 (登录必需)
+  usage/route.ts        — GET 当前用户 usage 聚合摘要 (登录必需)
 
 pricing/                — 公开定价目录 (1 端点)
   plans/route.ts        — GET 动态套餐目录 (Stripe 拉价 + IP/currency 解析)

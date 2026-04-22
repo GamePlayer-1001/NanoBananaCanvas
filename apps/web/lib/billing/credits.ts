@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/db、@/lib/errors，依赖 ./plans 的 Free 套餐快照
- * [OUTPUT]: 对外提供 getCreditBalanceSummary()，返回当前用户的双池积分余额摘要
- * [POS]: lib/billing 的积分读取层，被 credits API 与后续 /billing 页面消费，负责从账本真相源汇总可展示余额
+ * [OUTPUT]: 对外提供积分余额、交易流水与 usage 摘要读取器
+ * [POS]: lib/billing 的积分读取层，被 credits API 与后续 /billing 页面消费，负责从账本真相源汇总可展示资产与消耗数据
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -40,6 +40,105 @@ export interface CreditBalanceSummary {
   updatedAt: string | null
 }
 
+type CreditTransactionRow = {
+  id: string
+  type: 'earn' | 'spend' | 'freeze' | 'unfreeze' | 'refund'
+  pool: 'monthly' | 'permanent'
+  amount: number
+  balance_after: number
+  source: string
+  reference_id: string | null
+  description: string
+  created_at: string
+}
+
+export interface CreditTransactionItem {
+  id: string
+  type: 'earn' | 'spend' | 'freeze' | 'unfreeze' | 'refund'
+  pool: 'monthly' | 'permanent'
+  amount: number
+  balanceAfter: number
+  source: string
+  referenceId: string | null
+  description: string
+  createdAt: string
+}
+
+export interface CreditTransactionsResult {
+  items: CreditTransactionItem[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+type CreditUsageSummaryRow = {
+  total_requests: number | null
+  success_count: number | null
+  failed_count: number | null
+  total_input_tokens: number | null
+  total_output_tokens: number | null
+  estimated_credits_spent: number | null
+}
+
+type CreditUsageModelRow = {
+  provider: string
+  model_id: string
+  request_count: number | null
+  success_count: number | null
+  failed_count: number | null
+  input_tokens: number | null
+  output_tokens: number | null
+  estimated_credits_spent: number | null
+}
+
+type CreditUsageDailyRow = {
+  day: string
+  request_count: number | null
+  success_count: number | null
+  failed_count: number | null
+  input_tokens: number | null
+  output_tokens: number | null
+  estimated_credits_spent: number | null
+}
+
+export interface CreditUsageSummary {
+  totalRequests: number
+  successCount: number
+  failedCount: number
+  totalInputTokens: number
+  totalOutputTokens: number
+  estimatedCreditsSpent: number
+}
+
+export interface CreditUsageByModelItem {
+  provider: string
+  modelId: string
+  requestCount: number
+  successCount: number
+  failedCount: number
+  inputTokens: number
+  outputTokens: number
+  estimatedCreditsSpent: number
+}
+
+export interface CreditUsageDailyItem {
+  day: string
+  requestCount: number
+  successCount: number
+  failedCount: number
+  inputTokens: number
+  outputTokens: number
+  estimatedCreditsSpent: number
+}
+
+export interface CreditUsageResult {
+  windowDays: number
+  summary: CreditUsageSummary
+  byModel: CreditUsageByModelItem[]
+  daily: CreditUsageDailyItem[]
+}
+
 async function ensureCreditBalanceRow(userId: string) {
   const db = await getDb()
   await db
@@ -55,6 +154,14 @@ async function ensureCreditBalanceRow(userId: string) {
     )
     .bind(userId)
     .run()
+}
+
+function normalizePositiveInt(value: number | undefined, fallback: number, max: number): number {
+  if (!value || Number.isNaN(value)) {
+    return fallback
+  }
+
+  return Math.min(Math.max(Math.trunc(value), 1), max)
 }
 
 function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSummary {
@@ -110,4 +217,185 @@ export async function getCreditBalanceSummary(userId: string): Promise<CreditBal
   }
 
   return toCreditBalanceSummary(row)
+}
+
+function toCreditTransactionItem(row: CreditTransactionRow): CreditTransactionItem {
+  return {
+    id: row.id,
+    type: row.type,
+    pool: row.pool,
+    amount: row.amount,
+    balanceAfter: row.balance_after,
+    source: row.source,
+    referenceId: row.reference_id,
+    description: row.description,
+    createdAt: row.created_at,
+  }
+}
+
+export async function getCreditTransactions(
+  userId: string,
+  options?: { page?: number; pageSize?: number },
+): Promise<CreditTransactionsResult> {
+  await ensureCreditBalanceRow(userId)
+
+  const page = normalizePositiveInt(options?.page, 1, 500)
+  const pageSize = normalizePositiveInt(options?.pageSize, 20, 100)
+  const offset = (page - 1) * pageSize
+  const db = await getDb()
+
+  const countRow = await db
+    .prepare(
+      `SELECT COUNT(*) AS total
+       FROM credit_transactions
+       WHERE user_id = ?`,
+    )
+    .bind(userId)
+    .first<{ total: number | null }>()
+
+  const listResult = await db
+    .prepare(
+      `SELECT
+         id,
+         type,
+         pool,
+         amount,
+         balance_after,
+         source,
+         reference_id,
+         description,
+         created_at
+       FROM credit_transactions
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .bind(userId, pageSize, offset)
+    .all<CreditTransactionRow>()
+
+  const total = countRow?.total ?? 0
+  const items = (listResult.results ?? []).map(toCreditTransactionItem)
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    hasMore: offset + items.length < total,
+  }
+}
+
+function toUsageSummary(row: CreditUsageSummaryRow | null | undefined): CreditUsageSummary {
+  return {
+    totalRequests: row?.total_requests ?? 0,
+    successCount: row?.success_count ?? 0,
+    failedCount: row?.failed_count ?? 0,
+    totalInputTokens: row?.total_input_tokens ?? 0,
+    totalOutputTokens: row?.total_output_tokens ?? 0,
+    estimatedCreditsSpent: row?.estimated_credits_spent ?? 0,
+  }
+}
+
+function toUsageByModelItem(row: CreditUsageModelRow): CreditUsageByModelItem {
+  return {
+    provider: row.provider,
+    modelId: row.model_id,
+    requestCount: row.request_count ?? 0,
+    successCount: row.success_count ?? 0,
+    failedCount: row.failed_count ?? 0,
+    inputTokens: row.input_tokens ?? 0,
+    outputTokens: row.output_tokens ?? 0,
+    estimatedCreditsSpent: row.estimated_credits_spent ?? 0,
+  }
+}
+
+function toUsageDailyItem(row: CreditUsageDailyRow): CreditUsageDailyItem {
+  return {
+    day: row.day,
+    requestCount: row.request_count ?? 0,
+    successCount: row.success_count ?? 0,
+    failedCount: row.failed_count ?? 0,
+    inputTokens: row.input_tokens ?? 0,
+    outputTokens: row.output_tokens ?? 0,
+    estimatedCreditsSpent: row.estimated_credits_spent ?? 0,
+  }
+}
+
+export async function getCreditUsage(
+  userId: string,
+  options?: { windowDays?: number },
+): Promise<CreditUsageResult> {
+  const windowDays = normalizePositiveInt(options?.windowDays, 30, 365)
+  const db = await getDb()
+
+  const summaryRow = await db
+    .prepare(
+      `SELECT
+         COUNT(*) AS total_requests,
+         SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END) AS success_count,
+         SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
+         SUM(COALESCE(u.input_tokens, 0)) AS total_input_tokens,
+         SUM(COALESCE(u.output_tokens, 0)) AS total_output_tokens,
+         SUM(CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)) AS estimated_credits_spent
+       FROM ai_usage_logs u
+       LEFT JOIN model_pricing mp
+         ON mp.provider = u.provider
+        AND mp.model_id = u.model_id
+       WHERE u.user_id = ?
+         AND u.created_at >= datetime('now', ?)` ,
+    )
+    .bind(userId, `-${windowDays} days`)
+    .first<CreditUsageSummaryRow>()
+
+  const byModelResult = await db
+    .prepare(
+      `SELECT
+         u.provider,
+         u.model_id,
+         COUNT(*) AS request_count,
+         SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END) AS success_count,
+         SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
+         SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
+         SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
+         SUM(CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)) AS estimated_credits_spent
+       FROM ai_usage_logs u
+       LEFT JOIN model_pricing mp
+         ON mp.provider = u.provider
+        AND mp.model_id = u.model_id
+       WHERE u.user_id = ?
+         AND u.created_at >= datetime('now', ?)
+       GROUP BY u.provider, u.model_id
+       ORDER BY estimated_credits_spent DESC, request_count DESC, u.model_id ASC`,
+    )
+    .bind(userId, `-${windowDays} days`)
+    .all<CreditUsageModelRow>()
+
+  const dailyResult = await db
+    .prepare(
+      `SELECT
+         date(u.created_at) AS day,
+         COUNT(*) AS request_count,
+         SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END) AS success_count,
+         SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
+         SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
+         SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
+         SUM(CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)) AS estimated_credits_spent
+       FROM ai_usage_logs u
+       LEFT JOIN model_pricing mp
+         ON mp.provider = u.provider
+        AND mp.model_id = u.model_id
+       WHERE u.user_id = ?
+         AND u.created_at >= datetime('now', ?)
+       GROUP BY date(u.created_at)
+       ORDER BY day DESC`,
+    )
+    .bind(userId, `-${windowDays} days`)
+    .all<CreditUsageDailyRow>()
+
+  return {
+    windowDays,
+    summary: toUsageSummary(summaryRow),
+    byModel: (byModelResult.results ?? []).map(toUsageByModelItem),
+    daily: (dailyResult.results ?? []).map(toUsageDailyItem),
+  }
 }
