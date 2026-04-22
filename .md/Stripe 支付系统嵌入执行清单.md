@@ -59,19 +59,19 @@
    - 发起 Checkout / Portal / Cancel / Topup：必须先登录并获得真实 `SessionActor`
    - `Free` 不是 Stripe SKU，不进入 Checkout；它只在本地账户系统中表达默认态。
 6. **首批币种与推断策略锁定**
-   - 币种白名单首批定为：`usd / eur / gbp / cny`
-   - 服务端依据 `CF-IPCountry` 推断默认币种：`US -> usd`、`GB -> gbp`、`CN -> cny`、欧盟/欧洲经济区国家优先 `eur`
-   - 未命中映射、Cloudflare 本地开发、或国家码缺失时，统一回退 `usd`
-   - 客户端可以请求白名单币种，但最终 Price ID 仍由服务端解析，不信任任意客户端价格参数
+   - 手动固定币种只保留：`usd / cny`
+   - 服务端依据 `CF-IPCountry` 推断 integration currency：`CN -> cny`，其他地区统一回退 `usd`
+   - `usd / cny` 之外的地区不再手动维护固定 Price，默认交给 Stripe Adaptive Pricing 在 Checkout 托管页自动本地化
+   - 客户端只允许请求 `usd / cny` 两种固定币种，最终 Price ID 仍由服务端解析，不信任任意客户端价格参数
 
 ### Phase 1：Stripe Dashboard 建模
 
-- [~] **SPAY-100** 在 Stripe Dashboard 建立付费套餐商品模型（当前为 `Nano Banana Canvas Bundle` 单 Product + 三个套餐 Price，后续如需拆 Product 再评估）
-- [~] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price（Sandbox 已建 Standard / Pro / Ultimate）
+- [x] **SPAY-100** 在 Stripe Dashboard 建立付费套餐商品模型（当前为 `Nano Banana Canvas Bundle` 单 Product + 三个套餐 Price）
+- [x] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price（Sandbox 已建 Standard / Pro / Ultimate）
 - [x] **SPAY-102** 为三档套餐分别创建 `one_time` 一次性 Price
 - [x] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
-- [~] **SPAY-104** 为所有套餐与积分包补齐多币种 Price（当前 recurring 套餐 Price 已按同一 Price 下 `currency_options` 建模）
-- [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 作为后台可读性增强项保留待补）
+- [~] **SPAY-104** 收口多币种策略：仅 `USD / CNY` 手动固定，其他地区走 Stripe Adaptive Pricing（本地代码已对齐，待 Dashboard 最后确认）
+- [x] **SPAY-105** 统一 Product / Price 命名规范与最小 Metadata 规范（metadata 不再作为运行时阻塞项）
 - [x] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式
 
 #### Phase 1 当前状态（2026-04-22）
@@ -83,9 +83,10 @@
    - `Standard`: `price_1TOaFXEaFSfu5kGH9qYwD8tK`
    - `Pro`: `price_1TOaIGEaFSfu5kGH2s6ocPIe`
    - `Ultimate`: `price_1TOaIpEaFSfu5kGHIqYjzQ1i`
-3. **多币种建模已确认采用 Stripe 官方推荐的“单 Price 多币种”**
-   - 同一个 Price 下通过 `currency_options` 维护 `usd / eur / gbp / cny` 等本地化金额。
-   - 代码侧不再要求每个币种都维护一组独立 Price ID；只有未来确实拆 Price 时才回退到按币种单独配置。
+3. **多币种建模已收口为“USD/CNY 手动 + 其他地区 Adaptive Pricing”**
+   - 当前手动固定币种只保留 `usd / cny`。
+   - 其他地区不再在 Dashboard 手动补 `eur / gbp / ...` 固定 Price，而是默认交给 Stripe Adaptive Pricing 自动本地化。
+   - 代码侧也不再要求每个币种都维护一组独立 Price ID；只有未来确实要锁死某个币种金额时才额外拆 Price。
 4. **命名现实与代码语义对齐**
    - 后台展示名曾出现 `Ultimatex`，但当前代码、数据库和文档统一继续使用内部语义 `ultimate`。
    - 这意味着 `Ultimatex` 只视为后台展示命名差异，不新增第四档套餐。
@@ -101,14 +102,19 @@
    - `1200 credits`: `price_1TOsQdEaFSfu5kGHdeuL7JfC`
    - `3500 credits`: `price_1TOsR4EaFSfu5kGHGdEJkr2z`
    - `8000 credits`: `price_1TOsRQEaFSfu5kGH4xurdNtz`
-7. **Metadata 当前定位已澄清**
+7. **Metadata 当前定位已澄清并降级为“非阻塞运营增强项”**
    - Stripe 后台右侧红框“元数据”确实就是 metadata 编辑入口。
    - Product 级 metadata 只适合放所有子 Price 共享的键，例如 `kind=plan`、`purchase_mode=plan_one_time` 或 `kind=credit_pack`。
    - 像 `plan=standard/pro/ultimate`、`package_id=500/1200/3500/8000` 这类随 Price 变化的值，不应该三档共用一组 Product metadata。
+   - 当前运行时不依赖 Dashboard metadata 才能正确下单，因此 metadata 规范冻结后，不再阻塞 Phase 1 收口。
 8. **Customer Portal 已在 Sandbox 完成基础配置**
    - 当前 Portal Configuration ID：`bpc_1TOsxnEaFSfu5kGHU7OAQ9Zi`
    - 当前测试链接已激活：`https://billing.stripe.com/p/login/test_4gM14n9NqfT66zO8088so00`
    - 当前项目推荐的回跳落点仍是 `/account`，不建议长期把回跳落到 `/explore`
+9. **Phase 1 当前剩余的唯一人工确认项**
+   - 本地代码与文档已经收口为“`USD / CNY` 手动固定，其他地区走 Stripe Adaptive Pricing”。
+   - 但 Stripe Dashboard 中是否已为对应 Product/Price 打开 Adaptive Pricing，仍需最后人工确认一次。
+   - 因此 `SPAY-104` 目前保留 `[~]`，避免把未实际核验的后台状态误写成已完成。
 
 ### Phase 2：环境变量与服务端配置
 
@@ -133,9 +139,9 @@
    - 积分包模式优先解析共享 Price ID，必要时才回退到 `packageId + currency`
    - Price 缺失时统一抛出 `BILLING_PRICE_NOT_CONFIGURED`
 4. 已实现币种白名单与推断器：
-   - 白名单固定为 `usd / eur / gbp / cny`
+   - 手动固定币种白名单已收口为 `usd / cny`
    - `resolveBillingCurrency()` 优先接收显式币种；未传时回退到 `inferCurrencyFromCountry()`
-   - 国家推断规则与 Phase 0 对齐：`GB -> gbp`、`CN -> cny`、欧盟/欧洲经济区优先 `eur`、其他回退 `usd`
+   - 国家推断规则与 Phase 0 对齐：`CN -> cny`、其他地区统一回退 `usd`
 5. 已补统一错误码：
    - `BILLING_CONFIG_INVALID`
    - `BILLING_PLAN_INVALID`
@@ -150,14 +156,18 @@
 #### Phase 2 Batch B 结论（2026-04-22）
 
 1. **多币种 Price 建模已纠偏**
-   - 从“每个币种一组独立 Price ID”的错误假设，修正为“优先单 Price + `currency_options`”。
-   - `.env.example` 已同步改成：共享 Price ID 为主，币种拆分 Price 作为兼容备用。
+   - 从“每个币种一组独立 Price ID”的错误假设，修正为“优先共享 Price ID + 仅对 `USD/CNY` 保留手动固定入口”。
+   - `.env.example` 已同步改成：共享 Price ID 为主，`USD/CNY` 币种拆分 Price 作为兼容备用。
 2. **配置层已兼容两种 Stripe 后台建模**
-   - 场景 A：一个 Stripe Price 内部挂多币种 → 只需要一个 Price ID。
-   - 场景 B：不同币种真的拆成不同 Price → 仍可通过 `*_USD / *_EUR / *_GBP / *_CNY` 补充。
+   - 场景 A：一个 Stripe Price 走共享 Price ID，并由 Stripe Adaptive Pricing 自动本地化。
+   - 场景 B：`USD / CNY` 需要锁死金额 → 仍可通过 `*_USD / *_CNY` 补充。
 3. **Checkout 不再把“IP 推断币种”误当成“必须独立 Price 解析”**
-   - IP 推断保留为展示/偏好语义。
-   - 真正的本地币种展示交由 Stripe Checkout 对 multi-currency Price 的原生支持处理。
+   - IP 推断只负责决定是否走 `CNY fixed` 或 `USD base`。
+   - `USD/CNY` 之外地区的本地币种展示，交由 Stripe Checkout + Adaptive Pricing 处理。
+4. **Phase 1 当前代码口径已与新策略对齐**
+   - `apps/web/lib/billing/config.ts` 当前只接受 `usd / cny` 两种手动固定币种。
+   - `apps/web/.env.example` 已移除 `EUR / GBP` 固定 Price 占位，避免后续继续维护所有币种的手动价格。
+   - 按当前要求，本轮先跳过测试，等全部完成并部署生产后再统一完整验证。
 4. **本地验证已再次通过**
    - `pnpm --filter @nano-banana/web test -- lib/billing/config.test.ts`
    - `pnpm --filter @nano-banana/web build`

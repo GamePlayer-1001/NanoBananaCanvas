@@ -31,7 +31,7 @@ function createConfig(): StripeBillingConfig {
       standard: {
         plan_auto_monthly: {
           defaultPriceId: 'price_std_sub_multi',
-          byCurrency: { usd: 'price_std_sub_usd', eur: 'price_std_sub_eur' },
+          byCurrency: { usd: 'price_std_sub_usd', cny: 'price_std_sub_cny' },
         },
         plan_one_time: {
           byCurrency: { usd: 'price_std_one_usd' },
@@ -58,7 +58,7 @@ function createConfig(): StripeBillingConfig {
     },
     creditPackPrices: {
       '500': { byCurrency: { usd: 'price_pack_500_usd' } },
-      '1200': { byCurrency: { usd: 'price_pack_1200_usd', eur: 'price_pack_1200_eur' } },
+      '1200': { byCurrency: { usd: 'price_pack_1200_usd', cny: 'price_pack_1200_cny' } },
       '3500': { byCurrency: { usd: 'price_pack_3500_usd' } },
       '8000': { byCurrency: { usd: 'price_pack_8000_usd' } },
     },
@@ -85,17 +85,14 @@ describe('billing config', () => {
   })
 
   it('should build currency credit pack env keys with canonical naming', () => {
-    expect(getCreditPackPriceCurrencyEnvKey('1200', 'eur')).toBe(
-      'STRIPE_PRICE_CREDIT_PACK_1200_EUR',
+    expect(getCreditPackPriceCurrencyEnvKey('1200', 'cny')).toBe(
+      'STRIPE_PRICE_CREDIT_PACK_1200_CNY',
     )
   })
 
-  it('should infer eur for euro-area countries', () => {
-    expect(inferCurrencyFromCountry('DE')).toBe('eur')
-  })
-
-  it('should infer gbp for GB and cny for CN', () => {
-    expect(inferCurrencyFromCountry('GB')).toBe('gbp')
+  it('should infer cny for CN and usd for all other regions', () => {
+    expect(inferCurrencyFromCountry('GB')).toBe('usd')
+    expect(inferCurrencyFromCountry('DE')).toBe('usd')
     expect(inferCurrencyFromCountry('CN')).toBe('cny')
   })
 
@@ -117,8 +114,8 @@ describe('billing config', () => {
 
   it('should prefer an explicit supported requested currency', () => {
     expect(
-      resolveBillingCurrency({ requestedCurrency: 'GBP', countryCode: 'DE' }),
-    ).toBe('gbp')
+      resolveBillingCurrency({ requestedCurrency: 'CNY', countryCode: 'DE' }),
+    ).toBe('cny')
   })
 
   it('should resolve plan prices by plan/mode/currency', async () => {
@@ -140,7 +137,7 @@ describe('billing config', () => {
         {
           plan: 'standard',
           purchaseMode: 'plan_auto_monthly',
-          currency: 'gbp',
+          currency: 'cny',
         },
         createConfig(),
       ),
@@ -153,11 +150,11 @@ describe('billing config', () => {
         {
           purchaseMode: 'credit_pack',
           packageId: '1200',
-          currency: 'eur',
+          currency: 'cny',
         },
         createConfig(),
       ),
-    ).resolves.toBe('price_pack_1200_eur')
+    ).resolves.toBe('price_pack_1200_cny')
   })
 
   it('should throw a unified error when the price is missing', async () => {
@@ -166,7 +163,7 @@ describe('billing config', () => {
         {
           plan: 'standard',
           purchaseMode: 'plan_one_time',
-          currency: 'eur',
+          currency: 'cny',
         },
         createConfig(),
       ),

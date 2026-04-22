@@ -109,11 +109,11 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('should route credit pack requests to the credit-pack checkout branch', async () => {
-    vi.mocked(resolveBillingCurrency).mockReturnValue('eur')
+    vi.mocked(resolveBillingCurrency).mockReturnValue('usd')
     vi.mocked(createCheckoutSession).mockResolvedValue({
       checkoutUrl: 'https://checkout.stripe.test/session_pack_1200',
       sessionId: 'cs_test_pack_1200',
-      preferredCurrency: 'eur',
+      preferredCurrency: 'usd',
       packageId: '1200',
       purchaseMode: 'credit_pack',
     })
@@ -136,7 +136,7 @@ describe('POST /api/billing/checkout', () => {
       userId: 'user_123',
       purchaseMode: 'credit_pack',
       packageId: '1200',
-      preferredCurrency: 'eur',
+      preferredCurrency: 'usd',
     })
     expect(response.status).toBe(201)
     await expect(response.json()).resolves.toMatchObject({

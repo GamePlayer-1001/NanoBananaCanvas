@@ -12,7 +12,7 @@ export const BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
 export const PLAN_PURCHASE_MODES = ['plan_auto_monthly', 'plan_one_time'] as const
 export const BILLING_PURCHASE_MODES = [...PLAN_PURCHASE_MODES, 'credit_pack'] as const
 export const CREDIT_PACK_IDS = ['500', '1200', '3500', '8000'] as const
-export const BILLING_CURRENCIES = ['usd', 'eur', 'gbp', 'cny'] as const
+export const BILLING_CURRENCIES = ['usd', 'cny'] as const
 export const DEFAULT_BILLING_CURRENCY = 'usd' as const
 
 export type BillingPlan = (typeof BILLING_PLANS)[number]
@@ -53,12 +53,6 @@ export interface ResolveStripePriceIdInput {
   currency: BillingCurrency
 }
 
-const EURO_COUNTRY_CODES = new Set([
-  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
-  'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL',
-  'PT', 'RO', 'SE', 'SI', 'SK',
-])
-
 function isBillingPlan(value: string): value is BillingPlan {
   return (BILLING_PLANS as readonly string[]).includes(value)
 }
@@ -96,16 +90,8 @@ export function inferCurrencyFromCountry(countryCode: string | null | undefined)
     return DEFAULT_BILLING_CURRENCY
   }
 
-  if (normalized === 'GB') {
-    return 'gbp'
-  }
-
   if (normalized === 'CN') {
     return 'cny'
-  }
-
-  if (EURO_COUNTRY_CODES.has(normalized)) {
-    return 'eur'
   }
 
   return DEFAULT_BILLING_CURRENCY
