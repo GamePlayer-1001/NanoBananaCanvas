@@ -231,6 +231,21 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
           </div>
         </div>
 
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm font-medium text-white">{t('billingNoticeTitle')}</p>
+            <p className="mt-2 text-sm leading-6 text-white/62">{t('billingNoticeBody')}</p>
+          </article>
+          <article className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm font-medium text-white">{t('refundNoticeTitle')}</p>
+            <p className="mt-2 text-sm leading-6 text-white/62">{t('refundNoticeBody')}</p>
+          </article>
+          <article className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm font-medium text-white">{t('currencyNoticeTitle')}</p>
+            <p className="mt-2 text-sm leading-6 text-white/62">{t('currencyNoticeBody')}</p>
+          </article>
+        </div>
+
         {selectedMode === 'credit_pack' ? (
           <div className="mt-12 grid gap-6 lg:grid-cols-4">
             {visibleCreditPacks.map((creditPack) => {

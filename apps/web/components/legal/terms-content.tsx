@@ -17,7 +17,7 @@ export function TermsContent() {
   return (
     <div className="mx-auto max-w-[800px] px-6 pb-20 pt-28">
       <h1 className="text-3xl font-bold text-white">{t('termsTitle')}</h1>
-      <p className="mt-2 text-sm text-white/50">{t('lastUpdated', { date: '2026-03-01' })}</p>
+      <p className="mt-2 text-sm text-white/50">{t('lastUpdated', { date: '2026-04-22' })}</p>
 
       <div className="mt-10 space-y-8 text-sm leading-relaxed text-white/70">
         <section>
@@ -43,6 +43,21 @@ export function TermsContent() {
         <section>
           <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_access')}</h2>
           <p>{t('terms_access_body')}</p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_billing')}</h2>
+          <p>{t('terms_billing_body')}</p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_refunds')}</h2>
+          <p>{t('terms_refunds_body')}</p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_currency')}</h2>
+          <p>{t('terms_currency_body')}</p>
         </section>
 
         <section>

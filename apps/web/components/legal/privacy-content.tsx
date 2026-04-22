@@ -17,7 +17,7 @@ export function PrivacyContent() {
   return (
     <div className="mx-auto max-w-[800px] px-6 pb-20 pt-28">
       <h1 className="text-3xl font-bold text-white">{t('privacyTitle')}</h1>
-      <p className="mt-2 text-sm text-white/50">{t('lastUpdated', { date: '2026-03-01' })}</p>
+      <p className="mt-2 text-sm text-white/50">{t('lastUpdated', { date: '2026-04-22' })}</p>
 
       <div className="mt-10 space-y-8 text-sm leading-relaxed text-white/70">
         <section>
@@ -28,6 +28,11 @@ export function PrivacyContent() {
         <section>
           <h2 className="mb-3 text-lg font-semibold text-white">{t('privacy_usage')}</h2>
           <p>{t('privacy_usage_body')}</p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold text-white">{t('privacy_billing')}</h2>
+          <p>{t('privacy_billing_body')}</p>
         </section>
 
         <section>
