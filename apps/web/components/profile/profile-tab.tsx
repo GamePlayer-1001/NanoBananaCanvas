@@ -3,7 +3,7 @@
  *          依赖 @/hooks/use-user 的 useCurrentUser，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/components/auth/sign-out-action，依赖 sonner 的 toast，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
- * [OUTPUT]: 对外提供 ProfileTab 个人资料面板，含 Stripe Portal 入口
+ * [OUTPUT]: 对外提供 ProfileTab 个人资料面板，含本地账单页与 Stripe Portal 入口
  * [POS]: profile 的个人资料 Tab，被账户页消费，承载基础身份信息与账单入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -145,6 +145,13 @@ export function ProfileTab() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/billing"
+                className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+              >
+                {t('openBillingWorkspace')}
+              </Link>
+
               <button
                 type="button"
                 onClick={() => {

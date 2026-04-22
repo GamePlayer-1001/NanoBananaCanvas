@@ -499,8 +499,8 @@
 - [x] **SPAY-800** 重建 `/pricing` 页面
 - [~] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换（前三者已完成，币种手动切换仍待补）
 - [ ] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
-- [ ] **SPAY-803** 重建 `/billing` 页面
-- [ ] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
+- [x] **SPAY-803** 重建 `/billing` 页面
+- [x] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
 - [x] **SPAY-805** 在账户页接回账单入口
 - [ ] **SPAY-806** 在侧边栏接回积分与升级入口，但不污染匿名主链
 - [x] **SPAY-807** 为未登录 Checkout 操作补登录跳转与回跳
@@ -553,6 +553,23 @@
 3. 当前仍未完成的 UI 范围
    - `/billing` 专用账单页
    - 币种手动切换
+
+#### Phase 8 Batch E 结论（2026-04-22）
+
+1. 已恢复 `/billing` 页面
+   - 路由位置：`apps/web/app/[locale]/(app)/billing/page.tsx`
+   - 当前页面聚合本地 `subscription / balance / transactions / usage` 四类摘要
+   - 当前页面仍保持 `noindex`，避免把私有账单页暴露给搜索引擎
+2. 已重建本地账单组件
+   - `CreditBalanceCard`：展示双池余额、冻结积分、套餐额度与存储镜像
+   - `PaymentHistoryTable`：展示 `credit_transactions` 最近流水
+   - `UsageChart`：展示最近 30 天的 `summary / daily / byModel` 用量摘要
+3. 已把账户页账单入口从“只跳 Stripe Portal”升级为“双入口”
+   - 入口一：打开本地 `/billing` 工作台，先看账本镜像
+   - 入口二：继续进入 Stripe Customer Portal 处理订阅、支付方式与账单信息
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`
 
 ### Phase 9：文案、i18n 与法务
 
