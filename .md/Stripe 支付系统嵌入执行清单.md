@@ -770,8 +770,8 @@
 - [x] **SPAY-1003** 为 `/api/billing/checkout` 与 `/api/webhooks/stripe` 写集成测试
 - [ ] **SPAY-1004** 手测三类订单：自动月付 / 一次性套餐 / 积分包
 - [ ] **SPAY-1005** 手测用户升级、降级、取消、续费、支付失败
-- [ ] **SPAY-1006** 补齐生产环境 Stripe 密钥
-- [ ] **SPAY-1007** 配置正式 Stripe Webhook 端点
+- [x] **SPAY-1006** 补齐生产环境 Stripe 密钥
+- [x] **SPAY-1007** 配置正式 Stripe Webhook 端点
 - [ ] **SPAY-1008** 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
 
 #### Phase 10 Batch A 结论（2026-04-22）
@@ -879,6 +879,27 @@
 4. 下一步最短路径
    - 先在 Stripe Live 创建正式 Webhook endpoint
    - 拿到 `whsec_...` 后，再一次性完成 Cloudflare 生产环境 Stripe 变量注入
+
+#### Phase 10 Batch G 结论（2026-04-22）
+
+1. 已完成 Cloudflare Web 生产环境 Stripe 接线
+   - 已把当前代码真实消费的 Stripe 变量写入 `nano-banana-web`
+   - 包括 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY / STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / STRIPE_PORTAL_CONFIGURATION_ID / STRIPE_DEFAULT_CURRENCY`
+   - 以及当前三类订单所需的 10 个 Live Price IDs
+2. 已完成正式 Webhook 端点配置闭环
+   - Live endpoint 已创建为 `https://nanobananacanvas.com/api/webhooks/stripe`
+   - 监听事件已与当前代码真实消费集合保持一致
+   - Live `whsec_...` 已录入 Cloudflare 生产环境
+3. 生产环境脏配置已清理
+   - Cloudflare 中旧方案遗留的 `*_MONTHLY / *_YEARLY` Stripe secrets 已删除
+   - GitHub Actions 的 `NEXT_PUBLIC_APP_URL` 已同步校正为 `https://nanobananacanvas.com`
+4. 当前 Phase 10 的真实状态
+   - `SPAY-1006` 与 `SPAY-1007` 已完成
+   - 剩余主线只剩 `SPAY-1004 / SPAY-1005 / SPAY-1008`
+5. 当前未验证项
+   - 还未触发新的生产部署
+   - 也还未对 Live Webhook 做到端到端 `2xx` 投递验证
+   - 这两项都留到 `SPAY-1008` 与后续集中手测阶段收口
 
 ---
 
