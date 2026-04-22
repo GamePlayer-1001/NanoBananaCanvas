@@ -9,6 +9,8 @@ credits.test.ts: 积分读取测试，覆盖余额摘要、交易流水与 usage
 plans.ts: 套餐与积分包权益真相源，统一维护 Standard / Pro / Ultimate 与 credit_pack 的本地 snapshot
 entitlements.ts: 权益兑现层，统一维护 subscriptions 镜像、membership、月度积分重置、一次性积分发放与 Free 降级
 stripe-client.ts: Stripe SDK 门面，负责 secret key 初始化、App URL 校验与 Stripe Customer 绑定
+stripe-error.ts: Stripe 异常映射层，把 Stripe 原生错误统一翻译成 BillingError
+stripe-error.test.ts: Stripe 异常映射测试，覆盖支付拒绝、限流、配置拒绝、网络异常与通用异常
 checkout.ts: Checkout 编排层，将登录用户的套餐购买语义翻译成 Stripe Checkout Session
 portal.ts: Customer Portal 编排层，将登录用户翻译成 Stripe Customer Portal Session
 pricing.ts: 公开价格读取层，服务端从 Stripe 拉取套餐价格并整理成 UI 可消费目录

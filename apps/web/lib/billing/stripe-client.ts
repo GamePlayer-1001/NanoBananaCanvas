@@ -13,6 +13,7 @@ import { BillingError, ErrorCode, NotFoundError } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
 
 import { FREE_PLAN_SNAPSHOT } from './plans'
+import { withStripeErrorMapping } from './stripe-error'
 
 let stripeClient: Stripe | null = null
 
@@ -96,11 +97,13 @@ export async function getOrCreateStripeCustomer(userId: string): Promise<Billing
   }
 
   const stripe = await getStripe()
-  const customer = await stripe.customers.create({
-    email: user.email,
-    name: user.name ?? undefined,
-    metadata: { userId },
-  })
+  const customer = await withStripeErrorMapping('creating stripe customer', () =>
+    stripe.customers.create({
+      email: user.email,
+      name: user.name ?? undefined,
+      metadata: { userId },
+    }),
+  )
 
   const subscriptionRowId = existing?.id ?? nanoid()
 

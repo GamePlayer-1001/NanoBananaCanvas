@@ -215,7 +215,7 @@
 - [x] **SPAY-404** 实现 Subscription cancel 服务
 - [x] **SPAY-405** 实现 Webhook 签名验证器
 - [x] **SPAY-406** 实现 Webhook 幂等处理器
-- [ ] **SPAY-407** 为 Stripe 错误码做本地异常映射
+- [x] **SPAY-407** 为 Stripe 错误码做本地异常映射
 
 #### Phase 4 Batch A 结论（2026-04-22）
 
@@ -304,6 +304,27 @@
 4. 当前仍保留的边界
    - 退款、争议、支付失败等反向事件尚未接回
    - 更复杂的积分冻结/确认/回滚仍待 Phase 5 权益引擎闭环
+
+#### Phase 4 Batch G 结论（2026-04-22）
+
+1. 已补齐 Stripe 原生异常到本地 `BillingError` 的统一映射
+   - 新增 `apps/web/lib/billing/stripe-error.ts`
+   - 当前 `checkout / portal / cancel / getOrCreateStripeCustomer` 已统一复用该适配层
+2. 当前已接回的本地异常语义
+   - `BILLING_PAYMENT_DECLINED`
+   - `BILLING_RATE_LIMITED`
+   - `BILLING_NETWORK_ERROR`
+   - `BILLING_PROVIDER_ERROR`
+   - `StripeAuthenticationError / StripePermissionError` 会统一回落到 `BILLING_CONFIG_INVALID`
+3. 当前 API 状态码也已同步
+   - 支付拒绝：`402`
+   - Stripe 限流：`429`
+   - 网络失败：`503`
+   - Stripe 服务侧失败：`502`
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web test -- lib/billing/stripe-error.test.ts`
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
 
 ### Phase 5：积分与权益引擎
 

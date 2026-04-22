@@ -7,6 +7,8 @@
 
 import type Stripe from 'stripe'
 
+import { BillingError, ErrorCode } from '@/lib/errors'
+
 import {
   type BillingCurrency,
   type BillingPlan,
@@ -15,6 +17,7 @@ import {
   resolveStripePriceId,
 } from './config'
 import { getBillingPlanSnapshot } from './plans'
+import { withStripeErrorMapping } from './stripe-error'
 import { getOrCreateStripeCustomer, getStripe, requireAppBaseUrl } from './stripe-client'
 
 export type CreateCheckoutSessionInput =
@@ -83,30 +86,36 @@ export async function createCheckoutSession(
     currency: input.preferredCurrency,
   })
 
-  const session = await stripe.checkout.sessions.create({
-    mode: input.purchaseMode === 'plan_auto_monthly' ? 'subscription' : 'payment',
-    customer: customer.customerId,
-    client_reference_id: input.userId,
-    line_items: [{ price: priceId, quantity: 1 }],
-    metadata: buildCheckoutMetadata(input),
-    ...(input.purchaseMode === 'plan_auto_monthly'
-      ? {
-          subscription_data: {
-            metadata: buildCheckoutMetadata(input),
-          },
-        }
-      : {}),
-    allow_promotion_codes: true,
-    customer_update: {
-      address: 'auto',
-      name: 'auto',
-    },
-    success_url: buildSuccessUrl(appUrl),
-    cancel_url: buildCancelUrl(appUrl),
-  })
+  const session = await withStripeErrorMapping('creating checkout session', () =>
+    stripe.checkout.sessions.create({
+      mode: input.purchaseMode === 'plan_auto_monthly' ? 'subscription' : 'payment',
+      customer: customer.customerId,
+      client_reference_id: input.userId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: buildCheckoutMetadata(input),
+      ...(input.purchaseMode === 'plan_auto_monthly'
+        ? {
+            subscription_data: {
+              metadata: buildCheckoutMetadata(input),
+            },
+          }
+        : {}),
+      allow_promotion_codes: true,
+      customer_update: {
+        address: 'auto',
+        name: 'auto',
+      },
+      success_url: buildSuccessUrl(appUrl),
+      cancel_url: buildCancelUrl(appUrl),
+    }),
+  )
 
   if (!session.url) {
-    throw new Error('Stripe checkout session url is missing')
+    throw new BillingError(
+      ErrorCode.BILLING_PROVIDER_ERROR,
+      'Stripe checkout session url is missing',
+      { sessionId: session.id, action: 'creating checkout session' },
+    )
   }
 
   return {

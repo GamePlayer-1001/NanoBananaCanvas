@@ -8,6 +8,7 @@
 import { BillingError, ErrorCode } from '@/lib/errors'
 
 import { getStripeBillingConfig } from './config'
+import { withStripeErrorMapping } from './stripe-error'
 import { getOrCreateStripeCustomer, getStripe, requireAppBaseUrl } from './stripe-client'
 
 export interface PortalSessionResult {
@@ -32,11 +33,13 @@ export async function createPortalSession(userId: string): Promise<PortalSession
     )
   }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: customer.customerId,
-    configuration: billingConfig.portalConfigurationId,
-    return_url: buildPortalReturnUrl(appUrl),
-  })
+  const session = await withStripeErrorMapping('opening billing portal', () =>
+    stripe.billingPortal.sessions.create({
+      customer: customer.customerId,
+      configuration: billingConfig.portalConfigurationId,
+      return_url: buildPortalReturnUrl(appUrl),
+    }),
+  )
 
   return {
     portalUrl: session.url,

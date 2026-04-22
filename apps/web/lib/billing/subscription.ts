@@ -11,6 +11,7 @@ import { getDb } from '@/lib/db'
 import { BillingError, ErrorCode, NotFoundError } from '@/lib/errors'
 
 import { FREE_PLAN_SNAPSHOT } from './plans'
+import { withStripeErrorMapping } from './stripe-error'
 import { getStripe } from './stripe-client'
 
 type SubscriptionRow = {
@@ -192,9 +193,12 @@ export async function cancelBillingSubscription(userId: string): Promise<Billing
   }
 
   const stripe = await getStripe()
-  const subscription = (await stripe.subscriptions.update(row.stripe_subscription_id, {
-    cancel_at_period_end: true,
-  })) as Stripe.Subscription
+  const stripeSubscriptionId = row.stripe_subscription_id
+  const subscription = (await withStripeErrorMapping('canceling subscription', () =>
+    stripe.subscriptions.update(stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    }),
+  )) as Stripe.Subscription
   const nextPeriod = getSubscriptionItemPeriod(subscription)
 
   const db = await getDb()
