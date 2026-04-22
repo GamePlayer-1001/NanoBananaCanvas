@@ -863,6 +863,23 @@
    - `next build` 仍会提示 `middleware` 约定已废弃
    - 这条当前属于已知兼容性债务：仓库此前已验证 OpenNext/Cloudflare 部署链仍依赖 `middleware.ts`，暂不宜为了消警告直接切成 `proxy.ts`
 
+#### Phase 10 Batch F 结论（2026-04-22）
+
+1. 已拿到 Stripe Live 侧非敏感接线信息
+   - Live publishable key 已获取
+   - `plan_auto_monthly / plan_one_time / credit_pack` 三类 Live Price ID 已全部获取
+   - 当前 Product 命名仍存在后台展示差异（如 `Ultimatex`），但内部运行时语义继续统一为 `ultimate`
+2. 当前密钥录入策略已明确分层
+   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` 与 Live Price IDs 可进入部署配置与迁移文档
+   - `STRIPE_SECRET_KEY` 与后续 `STRIPE_WEBHOOK_SECRET` 只允许由你手动写入生产环境，不进入 git 历史
+3. 当前 `SPAY-1006` 的真实状态
+   - Live Price IDs 与 publishable key 已具备
+   - 仍待你手动注入 `STRIPE_SECRET_KEY`，以及待创建正式 `Webhook signing secret`
+   - 因此 `SPAY-1006` 暂不冒充已完成，继续保持未收口
+4. 下一步最短路径
+   - 先在 Stripe Live 创建正式 Webhook endpoint
+   - 拿到 `whsec_...` 后，再一次性完成 Cloudflare 生产环境 Stripe 变量注入
+
 ---
 
 ## 三、推荐落地顺序
