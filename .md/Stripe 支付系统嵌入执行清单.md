@@ -643,7 +643,7 @@
 - [x] **SPAY-1000** 为 Price 解析器写单元测试
 - [ ] **SPAY-1001** 为 credits 三阶段事务写单元测试
 - [x] **SPAY-1002** 为 Webhook 幂等写单元测试
-- [ ] **SPAY-1003** 为 `/api/billing/checkout` 与 `/api/webhooks/stripe` 写集成测试
+- [x] **SPAY-1003** 为 `/api/billing/checkout` 与 `/api/webhooks/stripe` 写集成测试
 - [ ] **SPAY-1004** 手测三类订单：自动月付 / 一次性套餐 / 积分包
 - [ ] **SPAY-1005** 手测用户升级、降级、取消、续费、支付失败
 - [ ] **SPAY-1006** 补齐生产环境 Stripe 密钥
@@ -680,6 +680,25 @@
    - `BILLING_PRICE_NOT_CONFIGURED`
 3. 当前验证结果
    - `pnpm --filter @nano-banana/web test -- lib/billing/config.test.ts`
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
+
+#### Phase 10 Batch C 结论（2026-04-22）
+
+1. 已补 `SPAY-1003` 路由集成测试
+   - 新增 `apps/web/app/api/billing/checkout/route.test.ts`
+   - 新增 `apps/web/app/api/webhooks/stripe/route.test.ts`
+2. 当前 Checkout API 已覆盖的编排边界
+   - 限流命中时直接返回，不继续调用认证与结账服务
+   - 自动月付套餐请求会完成 `auth -> currency -> checkout` 编排
+   - `credit_pack` 请求会正确分流到积分包结账语义
+   - 计费异常会继续通过 `handleApiError()` 映射为统一 API 响应
+3. 当前 Stripe Webhook API 已覆盖的编排边界
+   - 成功验签后会调用 `processStripeWebhookEvent()`
+   - `BILLING_CONFIG_INVALID` 会映射为 `400`
+   - 非 `AppError` 的验签失败会映射为 `WEBHOOK_INVALID`
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web test -- app/api/billing/checkout/route.test.ts app/api/webhooks/stripe/route.test.ts`
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
 

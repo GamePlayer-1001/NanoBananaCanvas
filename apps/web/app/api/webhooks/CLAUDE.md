@@ -4,6 +4,7 @@
 成员清单
 clerk/route.ts: Clerk Webhook 入口，校验 Svix 签名并把 `user.created/user.updated/user.deleted` 同步到本地 `users` 镜像表。
 stripe/route.ts: Stripe Webhook 入口，校验 Stripe 签名并把 Checkout/Invoice/Subscription 事件同步到本地账本。
+stripe/route.test.ts: Stripe Webhook 集成测试，覆盖成功验签、配置错误与无效签名响应。
 
 法则: 成员完整·一行一文件·父级链接·技术词前置
 
