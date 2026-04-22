@@ -67,7 +67,7 @@
 - [x] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
 - [~] **SPAY-104** 为所有套餐与积分包补齐多币种 Price（当前 recurring 套餐 Price 已按同一 Price 下 `currency_options` 建模）
 - [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 作为后台可读性增强项保留待补）
-- [ ] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式
+- [~] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式（代码已接回，Stripe 后台配置与 `bpc_...` ID 仍待补）
 
 #### Phase 1 当前状态（2026-04-22）
 
@@ -207,7 +207,7 @@
 - [x] **SPAY-400** 重建 `lib/stripe.ts` 或拆分为 `lib/billing/stripe-client.ts`
 - [x] **SPAY-401** 实现 `getOrCreateStripeCustomer()`
 - [x] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单
-- [ ] **SPAY-403** 实现 Customer Portal Session 创建器
+- [x] **SPAY-403** 实现 Customer Portal Session 创建器
 - [ ] **SPAY-404** 实现 Subscription cancel 服务
 - [ ] **SPAY-405** 实现 Webhook 签名验证器
 - [ ] **SPAY-406** 实现 Webhook 幂等处理器
@@ -259,6 +259,18 @@
 4. 当前仍未完成项
    - Portal / Cancel / Webhook 签名与幂等
 
+#### Phase 4 Batch D 结论（2026-04-22）
+
+1. 已新增 `apps/web/lib/billing/portal.ts`
+   - 登录用户可复用现有 Stripe Customer 绑定逻辑
+   - 统一创建 Stripe Customer Portal Session
+2. Portal 回跳地址已固定到 `/account?billing=portal_return`
+   - 避免用户离开 Stripe 后回到匿名落点
+   - 后续 `/billing` 页面重建时再决定是否切到专用账单页
+3. 当前仍存在的外部阻塞
+   - 本地 `.env.local` 尚未写入 `STRIPE_PORTAL_CONFIGURATION_ID`
+   - Stripe Dashboard 里仍需创建可管理订阅/支付方式的 Portal Configuration
+
 ### Phase 5：积分与权益引擎
 
 - [ ] **SPAY-500** 重建 token 计费版本的 `model_pricing` 查询器
@@ -273,7 +285,7 @@
 ### Phase 6：API 路由
 
 - [x] **SPAY-600** 重建 `POST /api/billing/checkout`
-- [ ] **SPAY-601** 重建 `POST /api/billing/portal`
+- [x] **SPAY-601** 重建 `POST /api/billing/portal`
 - [ ] **SPAY-602** 重建 `POST /api/billing/cancel`
 - [ ] **SPAY-603** 重建 `GET /api/billing/subscription`
 - [ ] **SPAY-604** 重建 `GET /api/billing/packages`
@@ -330,6 +342,20 @@
    - `pnpm --filter @nano-banana/web test`
    - `pnpm --filter @nano-banana/web build`
 
+#### Phase 6 Batch D 结论（2026-04-22）
+
+1. 已恢复 `POST /api/billing/portal`
+   - 路由位置：`apps/web/app/api/billing/portal/route.ts`
+   - 当前必须登录，匿名用户不能直接进入 Stripe Customer Portal
+2. 当前 Portal API 行为
+   - 不接收客户端自定义账单参数
+   - 服务端只基于当前登录用户创建 Portal Session
+   - 如果缺少 `STRIPE_PORTAL_CONFIGURATION_ID`，会明确返回配置错误，而不是静默失败
+3. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test`
+   - `pnpm --filter @nano-banana/web build`
+
 #### Phase 4/6 主线同步记录（2026-04-22）
 
 1. `feat/stripe-checkout-phase4` 已于 2026-04-22 合并进入 `main`，后续 Stripe 重建统一直接在 `main` 推进。
@@ -352,7 +378,7 @@
 - [ ] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
 - [ ] **SPAY-803** 重建 `/billing` 页面
 - [ ] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
-- [ ] **SPAY-805** 在账户页接回账单入口
+- [x] **SPAY-805** 在账户页接回账单入口
 - [ ] **SPAY-806** 在侧边栏接回积分与升级入口，但不污染匿名主链
 - [x] **SPAY-807** 为未登录 Checkout 操作补登录跳转与回跳
 
@@ -394,6 +420,16 @@
 4. 当前仍未完成的 UI 范围
    - 币种手动切换
    - `/billing` 页面与账户侧账单入口
+
+#### Phase 8 Batch D 结论（2026-04-22）
+
+1. `/account` 的个人资料 Tab 已新增“管理订阅与账单”入口
+2. 登录用户点击后会请求 `POST /api/billing/portal`
+   - 成功时跳转到 Stripe Customer Portal
+   - 失败时在页面内用 toast 给出明确错误
+3. 当前仍未完成的 UI 范围
+   - `/billing` 专用账单页
+   - 币种手动切换
 
 ### Phase 9：文案、i18n 与法务
 

@@ -6,8 +6,9 @@ Next.js App Router API 路由层 — RESTful 端点 · SessionActor 上下文 ·
 ## 成员清单
 
 ```
-billing/                — Stripe 计费入口 (1 端点)
-  checkout/route.ts     — POST 套餐 Checkout Session 创建 (登录必需，当前先接 auto_monthly)
+billing/                — Stripe 计费入口 (2 端点)
+  checkout/route.ts     — POST 套餐/积分包 Checkout Session 创建 (登录必需，服务端解析真实 Price)
+  portal/route.ts       — POST Customer Portal Session 创建 (登录必需，返回 Stripe 订阅管理链接)
 
 pricing/                — 公开定价目录 (1 端点)
   plans/route.ts        — GET 动态套餐目录 (Stripe 拉价 + IP/currency 解析)
@@ -59,6 +60,6 @@ settings/               — 用户设置 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 商业化: Stripe Checkout 已恢复最小入口，公开价格目录也已接回；Webhook/Portal/credits 仍待后续接回
+- 商业化: Stripe Checkout、Portal 与公开价格目录已接回最小闭环；Webhook/credits 仍待后续接回
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
