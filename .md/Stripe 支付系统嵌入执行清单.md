@@ -826,6 +826,43 @@
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
 
+#### Phase 10 Batch D 结论（2026-04-22）
+
+1. 已补生产部署就绪层配置
+   - GitHub Actions 当前已从 `lint -> build -> deploy` 收口为 `lint -> test -> build -> deploy`
+   - `apps/web/wrangler.jsonc` 已补非敏感生产运行时变量 `NEXT_PUBLIC_APP_URL`
+   - `apps/worker/wrangler.toml` 已把 `ENVIRONMENT` 从 `development` 改回 `production`
+2. 已重写生产迁移清单，避免旧方案误导正式接线
+   - `.md/archive/生产环境迁移清单.md` 当前已对齐 `standard / pro / ultimate + credit_pack`
+   - Live Webhook 事件名已校正为当前代码真实消费的 `checkout.session.completed / invoice.paid / customer.subscription.updated / customer.subscription.deleted`
+3. 当前仍未完成的 Phase 10 事项
+   - `SPAY-1006` 需要你提供并录入 Stripe Live 密钥与 Price ID
+   - `SPAY-1007` 需要你在 Stripe Live Dashboard 创建正式 Webhook endpoint
+   - `SPAY-1008` 需要在代码检查完成后推送远程触发生产部署
+4. 当前验证状态
+   - 按当前阶段目标，这一轮先完成代码与部署配置收口
+   - 下一步再统一执行 lint / test / build，并做坏味道巡检
+
+#### Phase 10 Batch E 结论（2026-04-22）
+
+1. 已完成代码层统一质量闸门
+   - `pnpm lint`
+   - `pnpm test`
+   - `pnpm build`
+   - 当前三条检查均已通过
+2. 已顺手修掉两类真实回归
+   - `app/api/ai/execute/route.test.ts` 的计费 mock 未跟上 `estimateReservedTextExecutionUsage()`
+   - `lib/billing/config.test.ts` 的多币种断言仍停留在旧策略，未反映“`USD/CNY` 优先于共享 Price”的现状
+3. 当前剩余未完成项只剩 Phase 10 的生产接线与手测
+   - `SPAY-1004` 三类订单手测
+   - `SPAY-1005` 升级/降级/取消/续费/支付失败手测
+   - `SPAY-1006` Stripe Live 密钥与 Price ID
+   - `SPAY-1007` 正式 Stripe Webhook endpoint
+   - `SPAY-1008` 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
+4. 当前已识别的残留坏味道
+   - `next build` 仍会提示 `middleware` 约定已废弃
+   - 这条当前属于已知兼容性债务：仓库此前已验证 OpenNext/Cloudflare 部署链仍依赖 `middleware.ts`，暂不宜为了消警告直接切成 `proxy.ts`
+
 ---
 
 ## 三、推荐落地顺序

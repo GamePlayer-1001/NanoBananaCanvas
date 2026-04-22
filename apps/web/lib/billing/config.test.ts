@@ -141,7 +141,7 @@ describe('billing config', () => {
         },
         createConfig(),
       ),
-    ).resolves.toBe('price_std_sub_multi')
+    ).resolves.toBe('price_std_sub_cny')
   })
 
   it('should resolve credit pack prices by package/currency', async () => {

@@ -33,5 +33,10 @@
   // R2 绑定 — 用户上传资源存储
   "r2_buckets": [
     { "binding": "UPLOADS", "bucket_name": "nano-banana-uploads" }
-  ]
+  ],
+
+  // 非敏感运行时变量 — 生产部署默认值
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://nanobananacanvas.com"
+  }
 }

@@ -43,6 +43,8 @@ jobs:
 
       - run: pnpm lint
 
+      - run: pnpm test
+
       - run: pnpm build
         env:
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}

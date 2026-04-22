@@ -29,7 +29,7 @@ e2e/                 — Playwright E2E 测试
 | 缓存   | Cloudflare KV (限流/存储配额)                     |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk 会话桥接已接回运行时，账户级资源绑定继续收口中 |
-| 支付   | Stripe 商业化主链已接回运行时（Checkout / Portal / Webhook / Pricing / Billing / 账本读取）；真实执行扣费链继续沿 Stripe Phase 5/7 收口中 |
+| 支付   | Stripe 商业化主链与真实执行扣费链均已接回运行时；生产接线、正式部署与手测仍待完成 |
 | i18n   | next-intl (P1 接入)                               |
 | 部署   | @opennextjs/cloudflare → Cloudflare Workers        |
 | CI/CD  | GitHub Actions → wrangler deploy                   |
@@ -50,7 +50,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ```
 [locale]/(landing)/           — Landing Page (交互式 Hero Canvas + Footer)
-[locale]/(landing)/pricing    — 定价页 (Free/Pro 双档 + 周/月/年切换)
+[locale]/(landing)/pricing    — 定价页 (Free 默认态 + Standard/Pro/Ultimate + 一次性套餐/积分包)
 [locale]/(landing)/privacy    — 隐私政策
 [locale]/(landing)/terms      — 服务条款
 [locale]/(auth)/sign-in       — 登录页 (文件树位于 [locale] 下，外部 URL 暴露为 /sign-in)
@@ -81,11 +81,11 @@ pnpm format:check     # Prettier 检查 (CI 用)
 
 ## 环境模式
 
-> **当前状态: Clerk 会话桥接已接回运行时，账户级资源绑定已开始生效，Stripe 商业化主链已接回，执行扣费链仍在 Phase 5/7 收口**
+> **当前状态: Clerk 会话桥接已接回运行时，账户级资源绑定已开始生效，Stripe 商业化主链与执行扣费链已接回运行时，生产接线与手测仍待完成**
 >
 > - **基础设施**: D1 数据库、R2 存储、域名路由均已指向生产环境 (nanobananacanvas.com)
 > - **认证**: Landing 主 CTA 已进入 `/sign-in`；`/sign-in` 与 `/sign-up` 走隐藏 locale 前缀策略并接回真实 Clerk 卡片；`middleware.ts` 已注入 Clerk session，`lib/auth/session-actor.ts` 已把登录态映射到 `users` 表，工作流/文件夹/任务开始按真实 actor 归属
-> - **支付**: `/pricing`、`/billing`、Checkout、Portal、Webhook、订阅镜像、账本读取与积分包目录已回到运行时；`freeze / confirm / refund` 与执行链接线按 `.md/Stripe 支付系统嵌入执行清单.md` 持续推进
+> - **支付**: `/pricing`、`/billing`、Checkout、Portal、Webhook、订阅镜像、账本读取、积分包目录与 `freeze / confirm / refund` 执行扣费链均已回到运行时；生产接线与正式手测按 `.md/Stripe 支付系统嵌入执行清单.md` 推进
 > - **环境变量**: 统一通过 `lib/env.ts` (getEnv/requireEnv) 获取，底层走 getCloudflareContext()
 > - **重建**: 未来如需重新接回身份系统，以 `.md/Clerk 登录系统回装方案与清单.md` 为入口
 

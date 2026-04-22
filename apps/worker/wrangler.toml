@@ -40,4 +40,4 @@ crons = ["*/10 * * * *"]
 
 # ─── 环境变量 ───────────────────────────────────────────────
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"

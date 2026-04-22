@@ -30,6 +30,7 @@ vi.mock('@/lib/billing/metering', () => ({
   getModelPricing: vi.fn(),
   estimateBillableUnits: vi.fn(),
   estimateCreditsFromUsage: vi.fn(),
+  estimateReservedTextExecutionUsage: vi.fn(),
 }))
 
 vi.mock('@/services/ai', () => ({
@@ -43,6 +44,7 @@ import { confirmFrozenCredits, freezeCredits, refundFrozenCredits } from '@/lib/
 import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
+  estimateReservedTextExecutionUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
@@ -101,14 +103,13 @@ describe('POST /api/ai/execute', () => {
   })
 
   it('freezes reserved credits, confirms actual spend, and refunds unused remainder', async () => {
-    vi.mocked(estimateBillableUnits)
-      .mockReturnValueOnce({
-        category: 'text',
-        billableUnits: 5000,
-        unitLabel: 'tokens',
-        basis: 'message_char_estimate',
-      })
-      .mockReturnValueOnce({
+    vi.mocked(estimateReservedTextExecutionUsage).mockReturnValue({
+      category: 'text',
+      billableUnits: 5000,
+      unitLabel: 'tokens',
+      basis: 'message_char_estimate',
+    })
+    vi.mocked(estimateBillableUnits).mockReturnValue({
         category: 'text',
         billableUnits: 3200,
         unitLabel: 'tokens',
@@ -171,6 +172,12 @@ describe('POST /api/ai/execute', () => {
   })
 
   it('refunds the reserved credits when provider execution fails', async () => {
+    vi.mocked(estimateReservedTextExecutionUsage).mockReturnValue({
+      category: 'text',
+      billableUnits: 4000,
+      unitLabel: 'tokens',
+      basis: 'message_char_estimate',
+    })
     vi.mocked(estimateBillableUnits).mockReturnValue({
       category: 'text',
       billableUnits: 4000,
