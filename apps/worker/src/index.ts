@@ -63,7 +63,7 @@ export default {
     ctx.waitUntil(
       (async () => {
         const results = {
-          timedOut: 0,
+          timedOut: { timedOut: 0, refunded: 0 },
           cleaned: { deleted: 0, errors: 0 },
         }
 

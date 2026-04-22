@@ -564,10 +564,10 @@
 
 - [x] **SPAY-700** 在 `ai/execute` 中接回 token 预估与 credits freeze
 - [x] **SPAY-701** 在 `ai/stream` 中接回流式执行的 billing draft 与完成后结算
-- [ ] **SPAY-702** 在 `tasks/service` 中接回任务失败退款
-- [ ] **SPAY-703** 在 Worker/Cron 中接回超时任务退款
-- [ ] **SPAY-704** 在 Worker/Cron 中接回超时冻结解冻
-- [ ] **SPAY-705** 重新校准 `user_key` 模式：只记 usage log，不扣平台积分
+- [x] **SPAY-702** 在 `tasks/service` 中接回任务失败退款
+- [x] **SPAY-703** 在 Worker/Cron 中接回超时任务退款
+- [x] **SPAY-704** 在 Worker/Cron 中接回超时冻结解冻
+- [x] **SPAY-705** 重新校准 `user_key` 模式：只记 usage log，不扣平台积分
 
 #### Phase 7 Batch A 结论（2026-04-22）
 
@@ -602,6 +602,24 @@
 4. 当前未做的事
    - 还没有继续推进 `SPAY-702 ~ SPAY-705`
    - 这意味着异步任务链与 Worker/Cron 的退款/解冻职责仍待后续收口
+5. 当前验证状态
+   - 按当前约定，本轮未执行测试
+   - 待全部完成并部署生产后，再统一进行完整测试
+
+#### Phase 7 Batch C 结论（2026-04-22）
+
+1. 已在 `apps/web/lib/tasks/service.ts` 接回异步任务平台扣费链
+   - 平台模式任务现在会在 `submitTask()` 阶段按 `billingDraft.estimatedCredits` 先冻结 credits
+   - `checkTask()` 完成态会确认冻结，失败态会退款，取消态也会退回剩余冻结
+2. Worker/Cron 现已接住前端轮询之外的超时账本回收
+   - `apps/worker/src/cron/timeout.ts` 不再只是把任务标 `failed`
+   - 当前会同步按 `task.id` 作为 reference 回放剩余冻结，并把 credits 退回原来的 `monthly/permanent` 池
+3. `user_key` 模式的异步任务已与平台账本彻底解耦
+   - 当前 `user_key` 模式不再在 `input_data` 中写平台 `billingDraft`
+   - 这意味着 `user_key` 任务不会进入平台 credits 的 `freeze / confirm / refund` 语义
+4. 当前 Phase 7 的真实状态
+   - `SPAY-700 ~ SPAY-705` 已全部收口
+   - 同步执行、流式执行、异步任务与超时补偿现在都已接回平台账本闭环
 5. 当前验证状态
    - 按当前约定，本轮未执行测试
    - 待全部完成并部署生产后，再统一进行完整测试

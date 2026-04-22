@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
- *          依赖 @/lib/api-key-crypto 的 decryptApiKey,
+ *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks，并在完成态统一收口任务输出到账户级 R2
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks，并在平台模式下接回任务冻结/确认/退款
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,6 +12,11 @@ import { TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
 
 import { decryptApiKey } from '@/lib/api-key-crypto'
+import {
+  confirmFrozenCredits,
+  freezeCredits,
+  refundFrozenCredits,
+} from '@/lib/billing/ledger'
 import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
@@ -94,6 +99,10 @@ interface ReservedTaskBillingDraft {
   basis: string | null
 }
 
+interface TaskBillingInput extends Record<string, unknown> {
+  billingDraft?: ReservedTaskBillingDraft
+}
+
 export interface TaskDetail {
   id: string
   taskType: AsyncTaskType
@@ -145,17 +154,31 @@ function isTerminal(status: AsyncTaskStatus): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
 
-function createReservedTaskBillingDraft(): ReservedTaskBillingDraft {
-  return {
-    mode: 'reserved',
-    inputTokens: null,
-    outputTokens: null,
-    billableUnits: null,
-    estimatedCredits: null,
-    category: null,
-    unitLabel: null,
-    basis: null,
+function getReservedTaskCredits(input: Record<string, unknown>): number {
+  const billingDraft = (input as TaskBillingInput).billingDraft
+  const estimatedCredits = billingDraft?.estimatedCredits
+
+  if (typeof estimatedCredits !== 'number' || !Number.isFinite(estimatedCredits) || estimatedCredits <= 0) {
+    return 0
   }
+
+  return Math.round(estimatedCredits)
+}
+
+async function refundTaskCredits(input: {
+  userId: string
+  referenceId: string
+  source: string
+  description: string
+  requestedCredits?: number
+}) {
+  await refundFrozenCredits({
+    userId: input.userId,
+    referenceId: input.referenceId,
+    requestedCredits: input.requestedCredits,
+    source: input.source,
+    description: input.description,
+  })
 }
 
 async function estimateTaskBillingDraft(
@@ -436,7 +459,8 @@ export async function submitTask(
   let resolvedProvider = provider ?? ''
   let resolvedModelId = modelId ?? ''
   let resolvedInput = input
-  let billingDraft = createReservedTaskBillingDraft()
+  let reservedPlatformCredits = 0
+  const taskId = nanoid()
 
   /* 并发检查 */
   await checkConcurrency(db, userId)
@@ -448,7 +472,7 @@ export async function submitTask(
   try {
     if (executionMode === 'platform') {
       apiKey = await getTaskPlatformKey(provider as string)
-      billingDraft = await estimateTaskBillingDraft(db, {
+      const billingDraft = await estimateTaskBillingDraft(db, {
         provider: resolvedProvider,
         modelId: resolvedModelId,
         taskType,
@@ -457,6 +481,17 @@ export async function submitTask(
       resolvedInput = {
         ...input,
         billingDraft,
+      }
+      reservedPlatformCredits = getReservedTaskCredits(resolvedInput)
+
+      if (reservedPlatformCredits > 0) {
+        await freezeCredits({
+          userId,
+          requestedCredits: reservedPlatformCredits,
+          referenceId: taskId,
+          source: 'task_submit_platform_freeze',
+          description: `Freeze credits for async task ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        })
       }
     } else {
       const runtimeConfig = await getUserTaskRuntimeConfig(
@@ -471,16 +506,9 @@ export async function submitTask(
           : runtimeConfig.apiKey
       resolvedProvider = runtimeConfig.providerId
       resolvedModelId = runtimeConfig.modelId
-      billingDraft = await estimateTaskBillingDraft(db, {
-        provider: resolvedProvider,
-        modelId: resolvedModelId,
-        taskType,
-        taskInput: input,
-      })
       resolvedInput = {
         ...input,
         ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
-        billingDraft,
       }
     }
 
@@ -490,6 +518,15 @@ export async function submitTask(
       apiKey,
     )
   } catch (error) {
+    if (executionMode === 'platform' && reservedPlatformCredits > 0) {
+      await refundTaskCredits({
+        userId,
+        referenceId: taskId,
+        source: 'task_submit_platform_failure_refund',
+        description: `Refund failed async task submission ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+      })
+    }
+
     log.error('Task submit failed', error, {
       taskType,
       provider: requestProvider,
@@ -507,27 +544,39 @@ export async function submitTask(
   }
 
   /* 持久化到 D1 */
-  const taskId = nanoid()
   const now = new Date().toISOString()
   const initialStatus = submitResult.initialStatus
 
-  await db
-    .prepare(
-      `INSERT INTO async_tasks (
-        id, user_id, task_type, provider, model_id,
-        external_task_id, execution_mode, input_data,
-        status, progress, retry_count, max_retries, workflow_id, node_id,
-        created_at, started_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(
-      taskId, userId, taskType, requestProvider, resolvedModelId,
-      submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
-      initialStatus,
-      config.maxRetries, workflowId ?? null, nodeId ?? null,
-      now, initialStatus === 'running' ? now : null, now,
-    )
-    .run()
+  try {
+    await db
+      .prepare(
+        `INSERT INTO async_tasks (
+          id, user_id, task_type, provider, model_id,
+          external_task_id, execution_mode, input_data,
+          status, progress, retry_count, max_retries, workflow_id, node_id,
+          created_at, started_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(
+        taskId, userId, taskType, requestProvider, resolvedModelId,
+        submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
+        initialStatus,
+        config.maxRetries, workflowId ?? null, nodeId ?? null,
+        now, initialStatus === 'running' ? now : null, now,
+      )
+      .run()
+  } catch (error) {
+    if (executionMode === 'platform' && reservedPlatformCredits > 0) {
+      await refundTaskCredits({
+        userId,
+        referenceId: taskId,
+        source: 'task_submit_platform_insert_refund',
+        description: `Refund async task credits after persistence failure ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+      })
+    }
+
+    throw error
+  }
 
   log.info('Task submitted', {
     taskId,
@@ -724,6 +773,19 @@ export async function checkTask(
     if (check.status === 'completed' && check.result) {
       const persistedOutput = await persistTaskOutput(taskId, userId, check.result)
 
+      if (row.execution_mode === 'platform') {
+        const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
+        if (reservedCredits > 0) {
+          await confirmFrozenCredits({
+            userId,
+            referenceId: row.id,
+            requestedCredits: reservedCredits,
+            source: 'task_platform_confirm',
+            description: `Confirm async task billing ${row.task_type} ${processorProvider}/${row.model_id}`,
+          })
+        }
+      }
+
       await db
         .prepare(
           `UPDATE async_tasks
@@ -824,6 +886,18 @@ export async function cancelTask(
     }
   }
 
+  if (row.execution_mode === 'platform') {
+    const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
+    if (reservedCredits > 0) {
+      await refundTaskCredits({
+        userId: row.user_id,
+        referenceId: row.id,
+        source: 'task_platform_cancel_refund',
+        description: `Refund cancelled async task ${row.task_type} ${row.provider}/${row.model_id}`,
+      })
+    }
+  }
+
   /* 更新 D1 */
   const nowIso = new Date().toISOString()
   await db
@@ -893,6 +967,18 @@ async function handleFailure(
 ): Promise<TaskDetail> {
   const nowIso = new Date().toISOString()
 
+  if (row.execution_mode === 'platform') {
+    const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
+    if (reservedCredits > 0) {
+      await refundTaskCredits({
+        userId: row.user_id,
+        referenceId: row.id,
+        source: 'task_platform_failure_refund',
+        description: `Refund failed async task ${row.task_type} ${row.provider}/${row.model_id}`,
+      })
+    }
+  }
+
   await db
     .prepare(
       `UPDATE async_tasks
@@ -916,6 +1002,18 @@ async function handleFailure(
 
 async function handleTimeout(db: D1Database, row: TaskRow): Promise<void> {
   const nowIso = new Date().toISOString()
+
+  if (row.execution_mode === 'platform') {
+    const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
+    if (reservedCredits > 0) {
+      await refundTaskCredits({
+        userId: row.user_id,
+        referenceId: row.id,
+        source: 'task_platform_timeout_refund',
+        description: `Refund timed out async task ${row.task_type} ${row.provider}/${row.model_id}`,
+      })
+    }
+  }
 
   await db
     .prepare(
