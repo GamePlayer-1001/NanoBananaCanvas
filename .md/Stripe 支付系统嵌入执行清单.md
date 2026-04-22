@@ -67,7 +67,7 @@
 - [x] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
 - [~] **SPAY-104** 为所有套餐与积分包补齐多币种 Price（当前 recurring 套餐 Price 已按同一 Price 下 `currency_options` 建模）
 - [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 作为后台可读性增强项保留待补）
-- [~] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式（代码已接回，Stripe 后台配置与 `bpc_...` ID 仍待补）
+- [x] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式
 
 #### Phase 1 当前状态（2026-04-22）
 
@@ -100,6 +100,10 @@
    - Stripe 后台右侧红框“元数据”确实就是 metadata 编辑入口。
    - Product 级 metadata 只适合放所有子 Price 共享的键，例如 `kind=plan`、`purchase_mode=plan_one_time` 或 `kind=credit_pack`。
    - 像 `plan=standard/pro/ultimate`、`package_id=500/1200/3500/8000` 这类随 Price 变化的值，不应该三档共用一组 Product metadata。
+8. **Customer Portal 已在 Sandbox 完成基础配置**
+   - 当前 Portal Configuration ID：`bpc_1TOsxnEaFSfu5kGHU7OAQ9Zi`
+   - 当前测试链接已激活：`https://billing.stripe.com/p/login/test_4gM14n9NqfT66zO8088so00`
+   - 当前项目推荐的回跳落点仍是 `/account`，不建议长期把回跳落到 `/explore`
 
 ### Phase 2：环境变量与服务端配置
 
@@ -268,8 +272,8 @@
    - 避免用户离开 Stripe 后回到匿名落点
    - 后续 `/billing` 页面重建时再决定是否切到专用账单页
 3. 当前仍存在的外部阻塞
-   - 本地 `.env.local` 尚未写入 `STRIPE_PORTAL_CONFIGURATION_ID`
-   - Stripe Dashboard 里仍需创建可管理订阅/支付方式的 Portal Configuration
+   - 已解除：`STRIPE_PORTAL_CONFIGURATION_ID` 已获取，可写入本地运行时
+   - 后续只需在真实环境重复同样配置，并补正式 `bpc_...`
 
 ### Phase 5：积分与权益引擎
 
