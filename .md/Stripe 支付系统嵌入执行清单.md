@@ -642,13 +642,28 @@
 
 - [ ] **SPAY-1000** 为 Price 解析器写单元测试
 - [ ] **SPAY-1001** 为 credits 三阶段事务写单元测试
-- [ ] **SPAY-1002** 为 Webhook 幂等写单元测试
+- [x] **SPAY-1002** 为 Webhook 幂等写单元测试
 - [ ] **SPAY-1003** 为 `/api/billing/checkout` 与 `/api/webhooks/stripe` 写集成测试
 - [ ] **SPAY-1004** 手测三类订单：自动月付 / 一次性套餐 / 积分包
 - [ ] **SPAY-1005** 手测用户升级、降级、取消、续费、支付失败
 - [ ] **SPAY-1006** 补齐生产环境 Stripe 密钥
 - [ ] **SPAY-1007** 配置正式 Stripe Webhook 端点
 - [ ] **SPAY-1008** 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
+
+#### Phase 10 Batch A 结论（2026-04-22）
+
+1. 已补 `SPAY-1002` Webhook 幂等测试
+   - 新增 `apps/web/lib/billing/webhook.test.ts`
+   - 当前覆盖两条关键语义：
+   - 不支持的 Stripe 事件会被安全忽略，不触发幂等表写入与权益处理
+   - 相同 `event.id` 的重复投递只会在第一次执行真实降级逻辑，第二次会被 `processed_stripe_events` 闸门拦下
+2. 当前测试切入方式
+   - 选择 `customer.subscription.deleted` 作为最短执行链，避免把订单审计、续费重置和幂等语义混在同一条测试里
+   - 直接 mock `getDb()` 与 `applyFreePlanDowngrade()`，把断言焦点锁定在“重复事件不重复落账”
+3. 当前验证结果
+   - `pnpm --filter @nano-banana/web test -- lib/billing/webhook.test.ts`
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
 
 ---
 
