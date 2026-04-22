@@ -11,8 +11,10 @@ import { BillingError, ErrorCode } from '@/lib/errors'
 
 import {
   type StripeBillingConfig,
-  getCreditPackPriceEnvKey,
   getPlanPriceEnvKey,
+  getPlanPriceCurrencyEnvKey,
+  getCreditPackPriceEnvKey,
+  getCreditPackPriceCurrencyEnvKey,
   inferCurrencyFromCountry,
   resolveBillingCurrency,
   resolveStripePriceId,
@@ -27,36 +29,63 @@ function createConfig(): StripeBillingConfig {
     defaultCurrency: 'usd',
     planPrices: {
       standard: {
-        plan_auto_monthly: { usd: 'price_std_sub_usd', eur: 'price_std_sub_eur' },
-        plan_one_time: { usd: 'price_std_one_usd' },
+        plan_auto_monthly: {
+          defaultPriceId: 'price_std_sub_multi',
+          byCurrency: { usd: 'price_std_sub_usd', eur: 'price_std_sub_eur' },
+        },
+        plan_one_time: {
+          byCurrency: { usd: 'price_std_one_usd' },
+        },
       },
       pro: {
-        plan_auto_monthly: { usd: 'price_pro_sub_usd' },
-        plan_one_time: { usd: 'price_pro_one_usd', cny: 'price_pro_one_cny' },
+        plan_auto_monthly: {
+          defaultPriceId: 'price_pro_sub_multi',
+          byCurrency: { usd: 'price_pro_sub_usd' },
+        },
+        plan_one_time: {
+          byCurrency: { usd: 'price_pro_one_usd', cny: 'price_pro_one_cny' },
+        },
       },
       ultimate: {
-        plan_auto_monthly: { usd: 'price_ult_sub_usd' },
-        plan_one_time: { usd: 'price_ult_one_usd' },
+        plan_auto_monthly: {
+          defaultPriceId: 'price_ult_sub_multi',
+          byCurrency: { usd: 'price_ult_sub_usd' },
+        },
+        plan_one_time: {
+          byCurrency: { usd: 'price_ult_one_usd' },
+        },
       },
     },
     creditPackPrices: {
-      '500': { usd: 'price_pack_500_usd' },
-      '1200': { usd: 'price_pack_1200_usd', eur: 'price_pack_1200_eur' },
-      '3500': { usd: 'price_pack_3500_usd' },
-      '8000': { usd: 'price_pack_8000_usd' },
+      '500': { byCurrency: { usd: 'price_pack_500_usd' } },
+      '1200': { byCurrency: { usd: 'price_pack_1200_usd', eur: 'price_pack_1200_eur' } },
+      '3500': { byCurrency: { usd: 'price_pack_3500_usd' } },
+      '8000': { byCurrency: { usd: 'price_pack_8000_usd' } },
     },
   }
 }
 
 describe('billing config', () => {
-  it('should build plan env keys with canonical naming', () => {
-    expect(getPlanPriceEnvKey('standard', 'plan_auto_monthly', 'usd')).toBe(
+  it('should build shared plan env keys with canonical naming', () => {
+    expect(getPlanPriceEnvKey('standard', 'plan_auto_monthly')).toBe(
+      'STRIPE_PRICE_STANDARD_PLAN_AUTO_MONTHLY',
+    )
+  })
+
+  it('should build currency plan env keys with canonical naming', () => {
+    expect(getPlanPriceCurrencyEnvKey('standard', 'plan_auto_monthly', 'usd')).toBe(
       'STRIPE_PRICE_STANDARD_PLAN_AUTO_MONTHLY_USD',
     )
   })
 
-  it('should build credit pack env keys with canonical naming', () => {
-    expect(getCreditPackPriceEnvKey('1200', 'eur')).toBe(
+  it('should build shared credit pack env keys with canonical naming', () => {
+    expect(getCreditPackPriceEnvKey('1200')).toBe(
+      'STRIPE_PRICE_CREDIT_PACK_1200',
+    )
+  })
+
+  it('should build currency credit pack env keys with canonical naming', () => {
+    expect(getCreditPackPriceCurrencyEnvKey('1200', 'eur')).toBe(
       'STRIPE_PRICE_CREDIT_PACK_1200_EUR',
     )
   })
@@ -103,6 +132,19 @@ describe('billing config', () => {
         createConfig(),
       ),
     ).resolves.toBe('price_pro_one_cny')
+  })
+
+  it('should fall back to a shared multi-currency price id when present', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          plan: 'standard',
+          purchaseMode: 'plan_auto_monthly',
+          currency: 'gbp',
+        },
+        createConfig(),
+      ),
+    ).resolves.toBe('price_std_sub_multi')
   })
 
   it('should resolve credit pack prices by package/currency', async () => {

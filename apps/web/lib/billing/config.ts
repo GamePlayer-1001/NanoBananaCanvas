@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/env 的 getEnv/requireEnv，依赖 @/lib/errors 的 BillingError/ErrorCode
  * [OUTPUT]: 对外提供 StripeBillingConfig、币种白名单/国家推断、环境变量键生成器与 resolveStripePriceId()
- * [POS]: lib/billing 的配置真相源，先把 Price 解析与币种策略锁进一个收口模块，再让后续 checkout/webhook 复用
+ * [POS]: lib/billing 的配置真相源，兼容“单 Price 多币种”和“按币种拆 Price”两种 Stripe 建模方式
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -29,9 +29,21 @@ export interface StripeBillingConfig {
   defaultCurrency: BillingCurrency
   planPrices: Record<
     BillingPlan,
-    Record<PlanPurchaseMode, Partial<Record<BillingCurrency, string>>>
+    Record<
+      PlanPurchaseMode,
+      {
+        defaultPriceId?: string
+        byCurrency: Partial<Record<BillingCurrency, string>>
+      }
+    >
   >
-  creditPackPrices: Record<CreditPackId, Partial<Record<BillingCurrency, string>>>
+  creditPackPrices: Record<
+    CreditPackId,
+    {
+      defaultPriceId?: string
+      byCurrency: Partial<Record<BillingCurrency, string>>
+    }
+  >
 }
 
 export interface ResolveStripePriceIdInput {
@@ -124,16 +136,29 @@ export function resolveBillingCurrency(options: {
 export function getPlanPriceEnvKey(
   plan: BillingPlan,
   purchaseMode: PlanPurchaseMode,
+): string {
+  return `STRIPE_PRICE_${plan.toUpperCase()}_${purchaseMode.toUpperCase()}`
+}
+
+export function getPlanPriceCurrencyEnvKey(
+  plan: BillingPlan,
+  purchaseMode: PlanPurchaseMode,
   currency: BillingCurrency,
 ): string {
-  return `STRIPE_PRICE_${plan.toUpperCase()}_${purchaseMode.toUpperCase()}_${currency.toUpperCase()}`
+  return `${getPlanPriceEnvKey(plan, purchaseMode)}_${currency.toUpperCase()}`
 }
 
 export function getCreditPackPriceEnvKey(
   packageId: CreditPackId,
+): string {
+  return `STRIPE_PRICE_CREDIT_PACK_${packageId}`
+}
+
+export function getCreditPackPriceCurrencyEnvKey(
+  packageId: CreditPackId,
   currency: BillingCurrency,
 ): string {
-  return `STRIPE_PRICE_CREDIT_PACK_${packageId}_${currency.toUpperCase()}`
+  return `${getCreditPackPriceEnvKey(packageId)}_${currency.toUpperCase()}`
 }
 
 async function getOptionalEnv(key: string): Promise<string | undefined> {
@@ -148,16 +173,20 @@ async function readPlanPrices(): Promise<StripeBillingConfig['planPrices']> {
 
     for (const purchaseMode of PLAN_PURCHASE_MODES) {
       const byCurrency: Partial<Record<BillingCurrency, string>> = {}
+      const defaultPriceId = await getOptionalEnv(getPlanPriceEnvKey(plan, purchaseMode))
 
       for (const currency of BILLING_CURRENCIES) {
-        const envKey = getPlanPriceEnvKey(plan, purchaseMode, currency)
+        const envKey = getPlanPriceCurrencyEnvKey(plan, purchaseMode, currency)
         const priceId = await getOptionalEnv(envKey)
         if (priceId) {
           byCurrency[currency] = priceId
         }
       }
 
-      result[plan][purchaseMode] = byCurrency
+      result[plan][purchaseMode] = {
+        defaultPriceId,
+        byCurrency,
+      }
     }
   }
 
@@ -169,16 +198,20 @@ async function readCreditPackPrices(): Promise<StripeBillingConfig['creditPackPr
 
   for (const packageId of CREDIT_PACK_IDS) {
     const byCurrency: Partial<Record<BillingCurrency, string>> = {}
+    const defaultPriceId = await getOptionalEnv(getCreditPackPriceEnvKey(packageId))
 
     for (const currency of BILLING_CURRENCIES) {
-      const envKey = getCreditPackPriceEnvKey(packageId, currency)
+      const envKey = getCreditPackPriceCurrencyEnvKey(packageId, currency)
       const priceId = await getOptionalEnv(envKey)
       if (priceId) {
         byCurrency[currency] = priceId
       }
     }
 
-    result[packageId] = byCurrency
+    result[packageId] = {
+      defaultPriceId,
+      byCurrency,
+    }
   }
 
   return result
@@ -252,12 +285,13 @@ export async function resolveStripePriceId(
 
   if (input.purchaseMode === 'credit_pack') {
     const packageId = assertCreditPackId(input.packageId)
-    const priceId = resolvedConfig.creditPackPrices[packageId]?.[input.currency]
+    const bucket = resolvedConfig.creditPackPrices[packageId]
+    const priceId = bucket?.byCurrency[input.currency] ?? bucket?.defaultPriceId
 
     if (!priceId) {
       throw new BillingError(
         ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
-        'Stripe price is not configured for the requested credit pack/currency pair',
+        'Stripe price is not configured for the requested credit pack',
         { purchaseMode: input.purchaseMode, packageId, currency: input.currency },
       )
     }
@@ -267,12 +301,13 @@ export async function resolveStripePriceId(
 
   const plan = assertBillingPlan(input.plan)
   const purchaseMode = assertPlanPurchaseMode(input.purchaseMode)
-  const priceId = resolvedConfig.planPrices[plan]?.[purchaseMode]?.[input.currency]
+  const bucket = resolvedConfig.planPrices[plan]?.[purchaseMode]
+  const priceId = bucket?.byCurrency[input.currency] ?? bucket?.defaultPriceId
 
   if (!priceId) {
     throw new BillingError(
       ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
-      'Stripe price is not configured for the requested plan/mode/currency tuple',
+      'Stripe price is not configured for the requested plan/mode',
       { plan, purchaseMode, currency: input.currency },
     )
   }
