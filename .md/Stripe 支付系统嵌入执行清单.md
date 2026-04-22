@@ -212,7 +212,7 @@
 - [x] **SPAY-401** 实现 `getOrCreateStripeCustomer()`
 - [x] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单
 - [x] **SPAY-403** 实现 Customer Portal Session 创建器
-- [ ] **SPAY-404** 实现 Subscription cancel 服务
+- [x] **SPAY-404** 实现 Subscription cancel 服务
 - [ ] **SPAY-405** 实现 Webhook 签名验证器
 - [ ] **SPAY-406** 实现 Webhook 幂等处理器
 - [ ] **SPAY-407** 为 Stripe 错误码做本地异常映射
@@ -275,6 +275,18 @@
    - 已解除：`STRIPE_PORTAL_CONFIGURATION_ID` 已获取，可写入本地运行时
    - 后续只需在真实环境重复同样配置，并补正式 `bpc_...`
 
+#### Phase 4 Batch E 结论（2026-04-22）
+
+1. 已新增 `apps/web/lib/billing/subscription.ts`
+   - 统一读取本地 `subscriptions` 镜像摘要
+   - 统一暴露当前用户是否具备 Portal / Cancel 能力
+2. 已补 `cancelBillingSubscription()`
+   - 当前只处理 Stripe `auto_monthly` 自动月付订阅
+   - 取消策略先采用 `cancel_at_period_end=true`，避免立即打断已支付周期
+3. Stripe SDK 字段差异已对齐
+   - 当前订阅周期改从 `subscription.items.data[0]` 读取
+   - 与当前“单订阅单价格”套餐模型一致
+
 ### Phase 5：积分与权益引擎
 
 - [ ] **SPAY-500** 重建 token 计费版本的 `model_pricing` 查询器
@@ -290,8 +302,8 @@
 
 - [x] **SPAY-600** 重建 `POST /api/billing/checkout`
 - [x] **SPAY-601** 重建 `POST /api/billing/portal`
-- [ ] **SPAY-602** 重建 `POST /api/billing/cancel`
-- [ ] **SPAY-603** 重建 `GET /api/billing/subscription`
+- [x] **SPAY-602** 重建 `POST /api/billing/cancel`
+- [x] **SPAY-603** 重建 `GET /api/billing/subscription`
 - [ ] **SPAY-604** 重建 `GET /api/billing/packages`
 - [ ] **SPAY-605** 重建 `POST /api/billing/topup`
 - [ ] **SPAY-606** 重建 `POST /api/webhooks/stripe`
@@ -356,6 +368,23 @@
    - 服务端只基于当前登录用户创建 Portal Session
    - 如果缺少 `STRIPE_PORTAL_CONFIGURATION_ID`，会明确返回配置错误，而不是静默失败
 3. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test`
+   - `pnpm --filter @nano-banana/web build`
+
+#### Phase 6 Batch E 结论（2026-04-22）
+
+1. 已恢复 `GET /api/billing/subscription`
+   - 路由位置：`apps/web/app/api/billing/subscription/route.ts`
+   - 当前返回本地订阅镜像摘要：`plan / purchaseMode / status / currentPeriod / cancelAtPeriodEnd`
+2. 已恢复 `POST /api/billing/cancel`
+   - 路由位置：`apps/web/app/api/billing/cancel/route.ts`
+   - 当前只对 `auto_monthly` 自动月付订阅生效
+   - 当前策略不是立即删除订阅，而是标记 `cancel_at_period_end`
+3. 当前残留边界
+   - `one_time` 与 `credit_pack` 不应进入“取消订阅”语义，因此会被明确拒绝
+   - 真实到期后的降级与积分重置仍依赖后续 Webhook / 权益引擎接回
+4. 当前验证结果
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test`
    - `pnpm --filter @nano-banana/web build`
