@@ -627,7 +627,7 @@
 ### Phase 8：前端 UI
 
 - [x] **SPAY-800** 重建 `/pricing` 页面
-- [~] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换（前三者已完成，币种手动切换仍待补）
+- [x] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换
 - [x] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
 - [x] **SPAY-803** 重建 `/billing` 页面
 - [x] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
@@ -715,6 +715,21 @@
 4. 当前验证结果
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`
+
+#### Phase 8 Batch G 结论（2026-04-22）
+
+1. `/pricing` 已补齐 `USD / CNY` 手动币种切换
+   - 当前通过 `currency=usd|cny` 查询参数驱动服务端重新读取 Stripe 价格
+   - 不再把币种切换做成纯前端假切换，避免 UI 展示与真实 Checkout Price 脱节
+2. 当前币种策略继续与 Phase 1 收口保持一致
+   - 手动固定币种仍只有 `USD / CNY`
+   - 其他地区继续依赖 Stripe Adaptive Pricing 自动本地化，不回退到手动维护全币种 Price
+3. 当前 Phase 8 的真实状态
+   - `SPAY-800 ~ SPAY-807` 已全部收口
+   - `/pricing` 与 `/billing` 的 UI 主链都已具备真实使用条件
+4. 当前验证状态
+   - 按当前约定，本轮未执行测试
+   - 待全部完成并部署生产后，再统一进行完整测试
 
 ### Phase 9：文案、i18n 与法务
 

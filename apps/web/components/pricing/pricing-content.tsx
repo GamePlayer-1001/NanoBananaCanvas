@@ -1,23 +1,37 @@
 /**
- * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useLocale/useTranslations，依赖 @/components/ui/button
+ * [INPUT]: 依赖 react 的 useState，依赖 next/navigation 的 useSearchParams，依赖 next-intl 的 useLocale/useTranslations，
+ *          依赖 @/i18n/navigation 的 usePathname/useRouter，依赖 @/components/ui/button
  * [OUTPUT]: 对外提供 PricingContent 动态定价组件
- * [POS]: components/pricing 的主渲染器，被 /pricing 页面消费，负责展示 Stripe 动态价格并触发 Checkout
+ * [POS]: components/pricing 的主渲染器，被 /pricing 页面消费，负责展示 Stripe 动态价格、手动币种切换并触发 Checkout
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { Link, useRouter } from '@/i18n/navigation'
+import { Link, usePathname, useRouter } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
+import type { BillingCurrency } from '@/lib/billing/config'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 
 export interface PricingContentProps {
   isAuthenticated: boolean
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
+  activeCurrency: BillingCurrency
+}
+
+type PricingMode = 'plan_auto_monthly' | 'plan_one_time' | 'credit_pack'
+
+function resolvePricingMode(value: string | null): PricingMode {
+  if (value === 'plan_one_time' || value === 'credit_pack') {
+    return value
+  }
+
+  return 'plan_auto_monthly'
 }
 
 function formatMoney(locale: string, currency: string, amount: number): string {
@@ -28,14 +42,19 @@ function formatMoney(locale: string, currency: string, amount: number): string {
   }).format(amount / 100)
 }
 
-export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingContentProps) {
+export function PricingContent({
+  isAuthenticated,
+  plans,
+  creditPacks,
+  activeCurrency,
+}: PricingContentProps) {
   const t = useTranslations('pricing')
   const locale = useLocale()
   const router = useRouter()
-  const [selectedMode, setSelectedMode] = useState<
-    'plan_auto_monthly' | 'plan_one_time' | 'credit_pack'
-  >(
-    'plan_auto_monthly',
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [selectedMode, setSelectedMode] = useState<PricingMode>(
+    resolvePricingMode(searchParams.get('mode')),
   )
   const [pendingKey, setPendingKey] = useState<string | null>(null)
 
@@ -53,10 +72,32 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
 
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === selectedMode)
   const visibleCreditPacks = selectedMode === 'credit_pack' ? creditPacks : []
+  const pricingRedirectUrl = searchParams.toString() ? `/pricing?${searchParams.toString()}` : '/pricing'
+
+  function buildPricingLocation(next: {
+    currency?: BillingCurrency
+    mode?: PricingMode
+  }): string {
+    const nextParams = new URLSearchParams(searchParams.toString())
+
+    nextParams.set('currency', next.currency ?? activeCurrency)
+    nextParams.set('mode', next.mode ?? selectedMode)
+
+    return `${pathname}?${nextParams.toString()}`
+  }
+
+  function handleCurrencyToggle(nextCurrency: BillingCurrency) {
+    router.replace(buildPricingLocation({ currency: nextCurrency }))
+  }
+
+  function handleModeToggle(nextMode: PricingMode) {
+    setSelectedMode(nextMode)
+    router.replace(buildPricingLocation({ mode: nextMode }))
+  }
 
   async function handlePlanCheckout(plan: PublicBillingPlanPrice) {
     if (!isAuthenticated) {
-      router.push('/sign-in?redirect_url=/pricing')
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(pricingRedirectUrl)}`)
       return
     }
 
@@ -90,7 +131,7 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
 
   async function handleCreditPackCheckout(creditPack: PublicCreditPackPrice) {
     if (!isAuthenticated) {
-      router.push('/sign-in?redirect_url=/pricing')
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(pricingRedirectUrl)}`)
       return
     }
 
@@ -134,10 +175,34 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
             {t('description')}
           </p>
           <p className="mt-4 text-sm text-white/45">{t('livePriceNote')}</p>
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <p className="text-xs font-medium tracking-[0.16em] text-white/45 uppercase">
+              {t('currencyToggleLabel')}
+            </p>
+            <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
+              {(['usd', 'cny'] as const).map((currency) => (
+                <button
+                  key={currency}
+                  type="button"
+                  onClick={() => handleCurrencyToggle(currency)}
+                  className={`rounded-full px-4 py-2 text-sm transition ${
+                    activeCurrency === currency
+                      ? 'bg-white text-black'
+                      : 'text-white/65 hover:text-white'
+                  }`}
+                >
+                  {currency === 'usd' ? t('currencyOptionUsd') : t('currencyOptionCny')}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-white/45">
+              {t('currencyToggleHint', { currency: activeCurrency.toUpperCase() })}
+            </p>
+          </div>
           <div className="mt-8 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
             <button
               type="button"
-              onClick={() => setSelectedMode('plan_auto_monthly')}
+              onClick={() => handleModeToggle('plan_auto_monthly')}
               className={`rounded-full px-4 py-2 text-sm transition ${
                 selectedMode === 'plan_auto_monthly'
                   ? 'bg-white text-black'
@@ -148,7 +213,7 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
             </button>
             <button
               type="button"
-              onClick={() => setSelectedMode('plan_one_time')}
+              onClick={() => handleModeToggle('plan_one_time')}
               className={`rounded-full px-4 py-2 text-sm transition ${
                 selectedMode === 'plan_one_time'
                   ? 'bg-white text-black'
@@ -159,7 +224,7 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
             </button>
             <button
               type="button"
-              onClick={() => setSelectedMode('credit_pack')}
+              onClick={() => handleModeToggle('credit_pack')}
               className={`rounded-full px-4 py-2 text-sm transition ${
                 selectedMode === 'credit_pack'
                   ? 'bg-white text-black'
