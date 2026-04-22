@@ -21,6 +21,11 @@
 
 ## 二、阶段任务
 
+状态说明：
+- `[x]` 已完成并已在当前代码/配置中落地
+- `[ ]` 尚未开始或尚未形成可验证闭环
+- `[~]` 已部分完成，但仍有剩余人工配置、边界收口或非阻塞尾项待补
+
 ### Phase 0：预检与对齐
 
 - [x] **SPAY-000** 确认当前代码树中已删除的旧商业化残留边界，列出需要复活的目录与文件
@@ -547,12 +552,31 @@
 
 ### Phase 7：执行链路接回
 
-- [ ] **SPAY-700** 在 `ai/execute` 中接回 token 预估与 credits freeze
+- [x] **SPAY-700** 在 `ai/execute` 中接回 token 预估与 credits freeze
 - [ ] **SPAY-701** 在 `ai/stream` 中接回流式执行的 billing draft 与完成后结算
 - [ ] **SPAY-702** 在 `tasks/service` 中接回任务失败退款
 - [ ] **SPAY-703** 在 Worker/Cron 中接回超时任务退款
 - [ ] **SPAY-704** 在 Worker/Cron 中接回超时冻结解冻
 - [ ] **SPAY-705** 重新校准 `user_key` 模式：只记 usage log，不扣平台积分
+
+#### Phase 7 Batch A 结论（2026-04-22）
+
+1. 已在 `apps/web/app/api/ai/execute/route.ts` 接回平台模式扣费链
+   - 平台模式当前会先基于 `messages + maxTokens` 预估保守冻结额度
+   - Provider 成功返回后，再按真实 usage 计算实际 credits
+2. 已补齐“预冻结与实际消耗不完全相等”的结算能力
+   - `apps/web/lib/billing/ledger.ts` 当前支持对同一个 `referenceId` 做部分确认与剩余退款
+   - 这让 `ai/execute` 可以处理“先多冻，后按实际消耗确认”的真实运行时语义
+3. `user_key` 同步链当前仍保持不扣平台积分
+   - 当前 `ai/execute` 的 `user_key` 模式继续只写 usage log，不会误扣平台 credits
+   - 但 `tasks/service` 与 Worker/Cron 侧的 `SPAY-702 ~ SPAY-705` 仍未收口，不能据此宣称整条 Phase 7 已完成
+4. 已补充回归测试
+   - 新增 `apps/web/app/api/ai/execute/route.test.ts`
+   - `apps/web/lib/billing/ledger.test.ts` 已补 partial confirm 场景，保护“确认实际消耗 + 退回剩余冻结”的边界
+5. 当前验证结果
+   - `pnpm --filter @nano-banana/web test -- lib/billing/ledger.test.ts app/api/ai/execute/route.test.ts`
+   - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
+   - `pnpm --filter @nano-banana/web lint`
 
 ### Phase 8：前端 UI
 

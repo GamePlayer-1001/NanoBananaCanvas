@@ -136,6 +136,15 @@ function allocateCredits(
   return createBreakdown(monthly, permanent)
 }
 
+function allocateCreditsFromBreakdown(
+  available: CreditPoolBreakdown,
+  requestedCredits: number,
+): CreditPoolBreakdown {
+  const monthly = Math.min(available.monthly, requestedCredits)
+  const permanent = Math.max(0, requestedCredits - monthly)
+  return createBreakdown(monthly, permanent)
+}
+
 function buildCreditTransactionStatements(
   db: D1Database,
   userId: string,
@@ -322,13 +331,18 @@ async function finalizeFrozenCredits(
     referenceId: string
     source: string
     description: string
+    requestedCredits?: number
   },
   operation: LedgerOperationType,
 ): Promise<CreditFinalizeResult> {
   const db = await getDb()
   const balance = await readCreditBalanceRow(db, input.userId)
   const summary = await getReferenceCreditSummary(input.userId, input.referenceId)
-  const remaining = summary.remaining
+  const requestedCredits = clampCredits(input.requestedCredits ?? summary.remaining.total)
+  const remaining =
+    requestedCredits > 0
+      ? allocateCreditsFromBreakdown(summary.remaining, Math.min(requestedCredits, summary.remaining.total))
+      : createBreakdown(0, 0)
 
   if (remaining.total === 0) {
     return {
@@ -443,6 +457,7 @@ export async function confirmFrozenCredits(input: {
   referenceId: string
   source: string
   description: string
+  requestedCredits?: number
 }): Promise<CreditFinalizeResult> {
   return finalizeFrozenCredits(input, 'spend')
 }
@@ -452,6 +467,7 @@ export async function refundFrozenCredits(input: {
   referenceId: string
   source: string
   description: string
+  requestedCredits?: number
 }): Promise<CreditFinalizeResult> {
   return finalizeFrozenCredits(input, 'refund')
 }

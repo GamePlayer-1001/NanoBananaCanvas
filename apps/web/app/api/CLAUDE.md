@@ -24,7 +24,8 @@ pricing/                — 公开定价目录 (1 端点)
 
 ai/                     — AI 模型集成 (3 端点)
   models/route.ts       — GET  统一免费模型目录
-  execute/route.ts      — POST 双模式 AI 执行 (平台 Key/账号级多配置选择)
+  execute/route.ts      — POST 双模式 AI 执行 (平台模式已接回预冻结/确认/失败退款，user_key 继续只记 usage)
+  execute/route.test.ts — 非流式执行计费编排回归测试
   stream/route.ts       — POST SSE 流式 AI 执行 (平台 Key/账号级多配置选择)
 
 folders/                — 文件夹 CRUD (2+2 端点)
@@ -70,6 +71,6 @@ settings/               — 用户设置 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 商业化: Stripe Checkout、Topup、Portal、订阅摘要/取消、余额摘要、Webhook、公开价格目录与积分包目录已接回最小闭环；credits 扣费引擎仍待后续接回
+- 商业化: Stripe Checkout、Topup、Portal、订阅摘要/取消、余额摘要、Webhook、公开价格目录与积分包目录已接回最小闭环；`ai/execute` 已接回平台模式 credits 预冻结/确认/失败退款，`stream/tasks/worker` 仍待继续收口
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

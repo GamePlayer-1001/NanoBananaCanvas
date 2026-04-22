@@ -12,6 +12,11 @@ import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/api-key-crypto'
 import {
+  confirmFrozenCredits,
+  freezeCredits,
+  refundFrozenCredits,
+} from '@/lib/billing/ledger'
+import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
   getModelPricing,
@@ -30,6 +35,7 @@ import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:execute')
+const DEFAULT_RESERVED_OUTPUT_TOKENS = 1024
 
 /* ─── POST /api/ai/execute ───────────────────────────── */
 
@@ -75,8 +81,28 @@ async function executeWithPlatformKey(
 ) {
   const providerId = params.provider as string
   const modelId = params.modelId as string
+  const executionReferenceId = `ai_exec_${nanoid()}`
+  const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
+  const reservedUsage = estimateReservedExecutionUsage(params.messages, params.maxTokens)
+  const reservedCredits =
+    pricing
+      ? estimateCreditsFromUsage({
+          billableUnits: reservedUsage.billableUnits,
+          creditsPer1kUnits: pricing.creditsPer1kUnits,
+        })
+      : 0
 
   try {
+    if (reservedCredits > 0) {
+      await freezeCredits({
+        userId,
+        requestedCredits: reservedCredits,
+        referenceId: executionReferenceId,
+        source: 'ai_execute_platform_freeze',
+        description: `Freeze credits for platform execution ${providerId}/${modelId}`,
+      })
+    }
+
     const platformKey = await getPlatformKey(providerId)
     const provider = getProvider(providerId)
 
@@ -88,7 +114,6 @@ async function executeWithPlatformKey(
       apiKey: platformKey,
     })
 
-    const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
     const usageEstimate = estimateBillableUnits({
       category: pricing?.category ?? 'text',
       inputTokens: chatResult.usage?.promptTokens ?? null,
@@ -118,8 +143,60 @@ async function executeWithPlatformKey(
       status: 'success',
     })
 
+    if (pricing) {
+      const actualCredits = estimateCreditsFromUsage({
+        billableUnits: usageEstimate.billableUnits,
+        creditsPer1kUnits: pricing.creditsPer1kUnits,
+      })
+
+      if (actualCredits > reservedCredits) {
+        await freezeCredits({
+          userId,
+          requestedCredits: actualCredits - reservedCredits,
+          referenceId: executionReferenceId,
+          source: 'ai_execute_platform_adjust',
+          description: `Freeze additional credits for platform execution ${providerId}/${modelId}`,
+        })
+      }
+
+      await confirmFrozenCredits({
+        userId,
+        referenceId: executionReferenceId,
+        requestedCredits: actualCredits,
+        source: 'ai_execute_platform_confirm',
+        description: `Confirm platform execution billing ${providerId}/${modelId}`,
+      })
+
+      if (actualCredits < reservedCredits) {
+        await refundFrozenCredits({
+          userId,
+          referenceId: executionReferenceId,
+          source: 'ai_execute_platform_refund',
+          description: `Refund unused reserved credits for platform execution ${providerId}/${modelId}`,
+        })
+      }
+    }
+
     return apiOk({ result: chatResult.content })
   } catch (error) {
+    if (reservedCredits > 0) {
+      try {
+        await refundFrozenCredits({
+          userId,
+          referenceId: executionReferenceId,
+          source: 'ai_execute_platform_failure_refund',
+          description: `Refund failed platform execution ${providerId}/${modelId}`,
+        })
+      } catch (refundError) {
+        log.error('Failed to refund frozen credits after execute error', refundError as Error, {
+          userId,
+          providerId,
+          modelId,
+          executionReferenceId,
+        })
+      }
+    }
+
     await writeUsageLog(db, {
       userId,
       workflowId: params.workflowId,
@@ -134,6 +211,18 @@ async function executeWithPlatformKey(
 
     throw error
   }
+}
+
+function estimateReservedExecutionUsage(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string | unknown[] }>,
+  maxTokens: number | undefined,
+) {
+  const reservedOutputTokens = Math.max(1, maxTokens ?? DEFAULT_RESERVED_OUTPUT_TOKENS)
+  return estimateBillableUnits({
+    category: 'text',
+    messages,
+    outputText: 'x'.repeat(reservedOutputTokens * 4),
+  })
 }
 
 /* ─── User Key Mode ──────────────────────────────────── */

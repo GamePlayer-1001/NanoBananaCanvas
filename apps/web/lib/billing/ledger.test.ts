@@ -228,6 +228,66 @@ describe('billing ledger', () => {
     ])
   })
 
+  it('supports partially confirming a reference before refunding the remainder', async () => {
+    const recordedBatches: Array<Array<{ sql: string; args: unknown[] }>> = []
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        balanceRow: {
+          monthly_balance: 0,
+          permanent_balance: 350,
+          frozen_credits: 450,
+          total_earned: 900,
+          total_spent: 120,
+        },
+        referenceRows: [
+          { pool: 'monthly', frozen_amount: 300, settled_amount: 0 },
+          { pool: 'permanent', frozen_amount: 150, settled_amount: 0 },
+        ],
+        recordedBatches,
+      }),
+    )
+
+    const result = await confirmFrozenCredits({
+      userId: 'user-1',
+      referenceId: 'exec_partial',
+      source: 'ai_execute_confirm',
+      description: 'Confirm actual AI execution billing',
+      requestedCredits: 320,
+    })
+
+    expect(result).toEqual({
+      referenceId: 'exec_partial',
+      finalized: {
+        monthly: 300,
+        permanent: 20,
+        total: 320,
+      },
+      availableCreditsAfter: 350,
+      frozenCreditsAfter: 130,
+      totalSpentAfter: 440,
+    })
+
+    expect(recordedBatches[0]?.[0]?.args).toEqual([0, 350, 130, 440, 'user-1'])
+    expect(recordedBatches[0]?.[1]?.args.slice(2, 9)).toEqual([
+      'spend',
+      'monthly',
+      -300,
+      350,
+      'ai_execute_confirm',
+      'exec_partial',
+      'Confirm actual AI execution billing',
+    ])
+    expect(recordedBatches[0]?.[2]?.args.slice(2, 9)).toEqual([
+      'spend',
+      'permanent',
+      -20,
+      350,
+      'ai_execute_confirm',
+      'exec_partial',
+      'Confirm actual AI execution billing',
+    ])
+  })
+
   it('refunds frozen credits back to the original pools', async () => {
     const recordedBatches: Array<Array<{ sql: string; args: unknown[] }>> = []
     vi.mocked(getDb).mockResolvedValue(
