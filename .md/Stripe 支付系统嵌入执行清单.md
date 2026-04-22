@@ -640,7 +640,7 @@
 
 ### Phase 10：验证与部署
 
-- [ ] **SPAY-1000** 为 Price 解析器写单元测试
+- [x] **SPAY-1000** 为 Price 解析器写单元测试
 - [ ] **SPAY-1001** 为 credits 三阶段事务写单元测试
 - [x] **SPAY-1002** 为 Webhook 幂等写单元测试
 - [ ] **SPAY-1003** 为 `/api/billing/checkout` 与 `/api/webhooks/stripe` 写集成测试
@@ -662,6 +662,24 @@
    - 直接 mock `getDb()` 与 `applyFreePlanDowngrade()`，把断言焦点锁定在“重复事件不重复落账”
 3. 当前验证结果
    - `pnpm --filter @nano-banana/web test -- lib/billing/webhook.test.ts`
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
+
+#### Phase 10 Batch B 结论（2026-04-22）
+
+1. 已补 `SPAY-1000` Price 解析器单元测试
+   - 继续沿用 `apps/web/lib/billing/config.test.ts` 作为 `resolveStripePriceId()` 真相源测试入口
+   - 当前不仅覆盖成功解析，还补齐了非法币种、缺失 plan、缺失 packageId 与价格缺失等守卫分支
+2. 当前测试口径已覆盖的解析边界
+   - 套餐价按 `plan + purchaseMode + currency` 解析
+   - 共享 multi-currency Price 回退
+   - 积分包价格解析
+   - `BILLING_CURRENCY_UNSUPPORTED`
+   - `BILLING_PLAN_INVALID`
+   - `BILLING_PACKAGE_INVALID`
+   - `BILLING_PRICE_NOT_CONFIGURED`
+3. 当前验证结果
+   - `pnpm --filter @nano-banana/web test -- lib/billing/config.test.ts`
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
 

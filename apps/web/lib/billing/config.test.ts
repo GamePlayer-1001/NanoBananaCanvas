@@ -174,4 +174,62 @@ describe('billing config', () => {
       code: ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
     })
   })
+
+  it('should reject invalid plan purchase modes before reading plan prices', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          plan: 'standard',
+          purchaseMode: 'credit_pack',
+          currency: 'usd',
+        },
+        createConfig(),
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.BILLING_PACKAGE_INVALID,
+    })
+  })
+
+  it('should reject missing credit pack ids for credit pack purchases', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          purchaseMode: 'credit_pack',
+          currency: 'usd',
+        },
+        createConfig(),
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.BILLING_PACKAGE_INVALID,
+    })
+  })
+
+  it('should reject unsupported currencies at the price resolver boundary', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          plan: 'standard',
+          purchaseMode: 'plan_auto_monthly',
+          currency: 'jpy' as never,
+        },
+        createConfig(),
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.BILLING_CURRENCY_UNSUPPORTED,
+    })
+  })
+
+  it('should reject missing plan metadata for plan purchases', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          purchaseMode: 'plan_auto_monthly',
+          currency: 'usd',
+        },
+        createConfig(),
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.BILLING_PLAN_INVALID,
+    })
+  })
 })
