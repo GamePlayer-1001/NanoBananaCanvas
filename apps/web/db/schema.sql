@@ -309,6 +309,8 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
   execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
   input_tokens      INTEGER,
   output_tokens     INTEGER,
+  billable_units    INTEGER,
+  estimated_credits INTEGER,
   duration_ms       INTEGER,
   status            TEXT NOT NULL CHECK(status IN ('success','failed')),
   error_message     TEXT,

@@ -328,10 +328,10 @@
 
 ### Phase 5：积分与权益引擎
 
-- [ ] **SPAY-500** 重建 token 计费版本的 `model_pricing` 查询器
-- [ ] **SPAY-501** 实现 `estimateBillableUnits()`，统一文本/图片/视频/音频计费单位
-- [ ] **SPAY-502** 重建 `freeze / confirm / refund` 三阶段积分事务
-- [ ] **SPAY-503** 实现“订阅积分池 + 永久积分池”双池扣减顺序
+- [x] **SPAY-500** 重建 token 计费版本的 `model_pricing` 查询器
+- [x] **SPAY-501** 实现 `estimateBillableUnits()`，统一文本/图片/视频/音频计费单位
+- [x] **SPAY-502** 重建 `freeze / confirm / refund` 三阶段积分事务
+- [x] **SPAY-503** 实现“订阅积分池 + 永久积分池”双池扣减顺序
 - [x] **SPAY-504** 实现一次性套餐发放积分逻辑
 - [x] **SPAY-505** 实现自动月付续费后重置积分逻辑
 - [x] **SPAY-506** 实现套餐变化时的 `storageGB` 同步逻辑
@@ -357,6 +357,30 @@
 5. 当前仍未完成的权益引擎边界
    - `SPAY-500 ~ SPAY-503` 的 token 计费、预估计量、三阶段事务与双池扣减顺序仍待后续接回
    - 退款、争议、支付失败等反向账务事件仍不在本批闭环内
+
+#### Phase 5 Batch B 结论（2026-04-22）
+
+1. 已新增 `apps/web/lib/billing/metering.ts`
+   - 当前 `getModelPricing()` 已成为 token 计费版 `model_pricing` 查询真相源
+   - 当前 `estimateBillableUnits()` 已统一文本 / 图片 / 视频 / 音频四类 billable units 口径
+   - 当前 `estimateCreditsFromUsage()` 已统一把 billable units 按 `credits_per_1k_units` 折算为 credits
+2. 已新增 `apps/web/lib/billing/ledger.ts`
+   - 当前 `freezeCredits()` 已按“订阅积分池优先、永久积分池补位”执行双池冻结
+   - 当前 `confirmFrozenCredits()` / `refundFrozenCredits()` 已统一接住三阶段事务的确认消费与失败退回
+   - 当前冻结拆分不再额外写冗余状态列，而是复用 `credit_transactions.reference_id + pool + type` 回放 reference 级冻结/结算/剩余语义
+3. 异步任务计量草稿已补齐到双模式
+   - `apps/web/lib/tasks/service.ts` 当前会在 `platform / user_key` 两条任务提交链里都写入 `billingDraft`
+   - 这一步先把异步图片 / 视频 / 音频任务的预估计量挂进任务输入，为 Phase 7 真正接扣费链铺底
+4. usage 日志计量已与新口径对齐
+   - `apps/web/app/api/ai/execute/route.ts` 与 `stream/route.ts` 当前已写入 `billable_units / estimated_credits`
+   - `apps/web/lib/billing/credits.ts` 当前优先读取新列，旧 token 求和 SQL 只保留回退兼容
+5. 当前验证结果
+   - `pnpm --filter @nano-banana/web test -- lib/billing/ledger.test.ts lib/billing/metering.test.ts lib/billing/credits.test.ts`
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
+6. 当前仍保留的边界
+   - `ai/execute` / `ai/stream` 还没有真正调用 `freeze / confirm / refund`，目前先完成 usage 计量与事务真相源落地
+   - Worker/Cron 的超时退款、解冻与 `user_key` 模式“只记 usage 不扣平台积分”仍待 `SPAY-700 ~ SPAY-705`
 
 ### Phase 6：API 路由
 
@@ -656,7 +680,7 @@
 ### Phase 10：验证与部署
 
 - [x] **SPAY-1000** 为 Price 解析器写单元测试
-- [ ] **SPAY-1001** 为 credits 三阶段事务写单元测试
+- [x] **SPAY-1001** 为 credits 三阶段事务写单元测试
 - [x] **SPAY-1002** 为 Webhook 幂等写单元测试
 - [x] **SPAY-1003** 为 `/api/billing/checkout` 与 `/api/webhooks/stripe` 写集成测试
 - [ ] **SPAY-1004** 手测三类订单：自动月付 / 一次性套餐 / 积分包

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/db、@/lib/errors，依赖 ./plans 的 Free 套餐快照
+ * [INPUT]: 依赖 @/lib/db、@/lib/errors，依赖 ./metering、./plans 的 Free 套餐快照
  * [OUTPUT]: 对外提供积分余额、交易流水与 usage 摘要读取器
  * [POS]: lib/billing 的积分读取层，被 credits API 与后续 /billing 页面消费，负责从账本真相源汇总可展示资产与消耗数据
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -336,7 +336,12 @@ export async function getCreditUsage(
          SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
          SUM(COALESCE(u.input_tokens, 0)) AS total_input_tokens,
          SUM(COALESCE(u.output_tokens, 0)) AS total_output_tokens,
-         SUM(CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)) AS estimated_credits_spent
+         SUM(
+           COALESCE(
+             u.estimated_credits,
+             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
+           )
+         ) AS estimated_credits_spent
        FROM ai_usage_logs u
        LEFT JOIN model_pricing mp
          ON mp.provider = u.provider
@@ -357,7 +362,12 @@ export async function getCreditUsage(
          SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
          SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
          SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
-         SUM(CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)) AS estimated_credits_spent
+         SUM(
+           COALESCE(
+             u.estimated_credits,
+             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
+           )
+         ) AS estimated_credits_spent
        FROM ai_usage_logs u
        LEFT JOIN model_pricing mp
          ON mp.provider = u.provider
@@ -379,7 +389,12 @@ export async function getCreditUsage(
          SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
          SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
          SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
-         SUM(CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)) AS estimated_credits_spent
+         SUM(
+           COALESCE(
+             u.estimated_credits,
+             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
+           )
+         ) AS estimated_credits_spent
        FROM ai_usage_logs u
        LEFT JOIN model_pricing mp
          ON mp.provider = u.provider

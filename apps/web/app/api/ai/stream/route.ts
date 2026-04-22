@@ -13,6 +13,11 @@ import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/api-key-crypto'
+import {
+  estimateBillableUnits,
+  estimateCreditsFromUsage,
+  getModelPricing,
+} from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -82,6 +87,7 @@ export async function POST(req: Request) {
     const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
+    let streamedText = ''
 
     // 后台 chatStream → SSE 转发
     // 使用 ctx.waitUntil() 保障 Worker 在流结束后仍存活
@@ -96,12 +102,24 @@ export async function POST(req: Request) {
           maxTokens: params.maxTokens ?? 1024,
           apiKey,
           onChunk: async (chunk) => {
+            streamedText += chunk
             const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`
             await writer.write(encoder.encode(sseData))
           },
         })
 
         await writer.write(encoder.encode('data: [DONE]\n\n'))
+
+        const pricing = await getModelPricing(db, {
+          provider: providerId,
+          modelId: resolvedModelId,
+          activeOnly: false,
+        })
+        const usageEstimate = estimateBillableUnits({
+          category: pricing?.category ?? 'text',
+          messages: params.messages,
+          outputText: streamedText,
+        })
 
         await writeUsageLog(
           db,
@@ -110,6 +128,14 @@ export async function POST(req: Request) {
             ...params,
             provider: providerId,
             modelId: resolvedModelId,
+            billableUnits: usageEstimate.billableUnits,
+            estimatedCredits:
+              pricing
+                ? estimateCreditsFromUsage({
+                    billableUnits: usageEstimate.billableUnits,
+                    creditsPer1kUnits: pricing.creditsPer1kUnits,
+                  })
+                : null,
           },
           'success',
           Date.now() - startTime,
@@ -217,6 +243,8 @@ async function writeUsageLog(
     executionMode: string
     workflowId?: string
     nodeId?: string
+    billableUnits?: number | null
+    estimatedCredits?: number | null
   },
   status: string,
   durationMs: number,
@@ -226,8 +254,8 @@ async function writeUsageLog(
     await db
       .prepare(
         `INSERT INTO ai_usage_logs (id, user_id, workflow_id, node_id, provider, model_id,
-         execution_mode, duration_ms, status, error_message)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         execution_mode, billable_units, estimated_credits, duration_ms, status, error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -237,6 +265,8 @@ async function writeUsageLog(
         params.provider,
         params.modelId,
         params.executionMode,
+        params.billableUnits ?? null,
+        params.estimatedCredits ?? null,
         durationMs,
         status,
         errorMessage ?? null,

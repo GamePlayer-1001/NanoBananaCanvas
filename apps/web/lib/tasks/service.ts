@@ -12,6 +12,12 @@ import { TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
 
 import { decryptApiKey } from '@/lib/api-key-crypto'
+import {
+  estimateBillableUnits,
+  estimateCreditsFromUsage,
+  getModelPricing,
+  type BillableUsageEstimate,
+} from '@/lib/billing/metering'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
@@ -81,7 +87,11 @@ interface ReservedTaskBillingDraft {
   mode: 'reserved'
   inputTokens: null
   outputTokens: null
-  billableUnits: null
+  billableUnits: number | null
+  estimatedCredits: number | null
+  category: string | null
+  unitLabel: string | null
+  basis: string | null
 }
 
 export interface TaskDetail {
@@ -141,7 +151,78 @@ function createReservedTaskBillingDraft(): ReservedTaskBillingDraft {
     inputTokens: null,
     outputTokens: null,
     billableUnits: null,
+    estimatedCredits: null,
+    category: null,
+    unitLabel: null,
+    basis: null,
   }
+}
+
+async function estimateTaskBillingDraft(
+  db: D1Database,
+  input: {
+    provider: string
+    modelId: string
+    taskType: AsyncTaskType
+    taskInput: Record<string, unknown>
+  },
+): Promise<ReservedTaskBillingDraft> {
+  const pricing = await getModelPricing(db, {
+    provider: input.provider,
+    modelId: input.modelId,
+    activeOnly: false,
+  })
+
+  const estimate = estimateTaskBillableUnits(input.taskType, pricing?.category, input.taskInput)
+  return {
+    mode: 'reserved',
+    inputTokens: null,
+    outputTokens: null,
+    billableUnits: estimate.billableUnits,
+    estimatedCredits:
+      pricing
+        ? estimateCreditsFromUsage({
+            billableUnits: estimate.billableUnits,
+            creditsPer1kUnits: pricing.creditsPer1kUnits,
+          })
+        : null,
+    category: estimate.category,
+    unitLabel: estimate.unitLabel,
+    basis: estimate.basis,
+  }
+}
+
+function estimateTaskBillableUnits(
+  taskType: AsyncTaskType,
+  pricingCategory: string | undefined,
+  taskInput: Record<string, unknown>,
+): BillableUsageEstimate {
+  if (taskType === 'image_gen') {
+    return estimateBillableUnits({
+      category: (pricingCategory as 'image' | undefined) ?? 'image',
+      outputCount:
+        typeof taskInput.count === 'number'
+          ? taskInput.count
+          : typeof taskInput.n === 'number'
+            ? taskInput.n
+            : 1,
+    })
+  }
+
+  if (taskType === 'video_gen') {
+    return estimateBillableUnits({
+      category: (pricingCategory as 'video' | undefined) ?? 'video',
+      durationSeconds:
+        typeof taskInput.duration === 'string' || typeof taskInput.duration === 'number'
+          ? taskInput.duration
+          : 5,
+    })
+  }
+
+  return estimateBillableUnits({
+    category: (pricingCategory as 'audio' | undefined) ?? 'audio',
+    text: typeof taskInput.text === 'string' ? taskInput.text : '',
+  })
 }
 
 function toTaskProviderError(
@@ -355,7 +436,7 @@ export async function submitTask(
   let resolvedProvider = provider ?? ''
   let resolvedModelId = modelId ?? ''
   let resolvedInput = input
-  const billingDraft = createReservedTaskBillingDraft()
+  let billingDraft = createReservedTaskBillingDraft()
 
   /* 并发检查 */
   await checkConcurrency(db, userId)
@@ -367,6 +448,12 @@ export async function submitTask(
   try {
     if (executionMode === 'platform') {
       apiKey = await getTaskPlatformKey(provider as string)
+      billingDraft = await estimateTaskBillingDraft(db, {
+        provider: resolvedProvider,
+        modelId: resolvedModelId,
+        taskType,
+        taskInput: input,
+      })
       resolvedInput = {
         ...input,
         billingDraft,
@@ -384,6 +471,12 @@ export async function submitTask(
           : runtimeConfig.apiKey
       resolvedProvider = runtimeConfig.providerId
       resolvedModelId = runtimeConfig.modelId
+      billingDraft = await estimateTaskBillingDraft(db, {
+        provider: resolvedProvider,
+        modelId: resolvedModelId,
+        taskType,
+        taskInput: input,
+      })
       resolvedInput = {
         ...input,
         ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),

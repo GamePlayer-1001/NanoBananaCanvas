@@ -86,6 +86,7 @@ function errorCodeToStatus(code: string): number {
   if (code.startsWith('TASK_')) return 400
   if (code === 'BILLING_RATE_LIMITED') return 429
   if (code === 'BILLING_PAYMENT_DECLINED') return 402
+  if (code === 'BILLING_CREDITS_INSUFFICIENT') return 402
   if (code === 'BILLING_NETWORK_ERROR') return 503
   if (code === 'BILLING_PROVIDER_ERROR') return 502
   if (code === 'BILLING_PRICE_NOT_CONFIGURED') return 503

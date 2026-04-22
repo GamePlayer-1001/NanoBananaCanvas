@@ -11,6 +11,11 @@ import { requireAuth } from '@/lib/api/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/api-key-crypto'
+import {
+  estimateBillableUnits,
+  estimateCreditsFromUsage,
+  getModelPricing,
+} from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -83,6 +88,15 @@ async function executeWithPlatformKey(
       apiKey: platformKey,
     })
 
+    const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
+    const usageEstimate = estimateBillableUnits({
+      category: pricing?.category ?? 'text',
+      inputTokens: chatResult.usage?.promptTokens ?? null,
+      outputTokens: chatResult.usage?.completionTokens ?? null,
+      messages: params.messages,
+      outputText: chatResult.content,
+    })
+
     await writeUsageLog(db, {
       userId,
       workflowId: params.workflowId,
@@ -92,6 +106,14 @@ async function executeWithPlatformKey(
       executionMode: 'platform',
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
+      billableUnits: usageEstimate.billableUnits,
+      estimatedCredits:
+        pricing
+          ? estimateCreditsFromUsage({
+              billableUnits: usageEstimate.billableUnits,
+              creditsPer1kUnits: pricing.creditsPer1kUnits,
+            })
+          : null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
@@ -135,6 +157,19 @@ async function executeWithUserKey(
       apiKey: runtimeConfig.apiKey,
     })
 
+    const pricing = await getModelPricing(db, {
+      provider: runtimeConfig.providerId,
+      modelId: runtimeConfig.modelId,
+      activeOnly: false,
+    })
+    const usageEstimate = estimateBillableUnits({
+      category: pricing?.category ?? 'text',
+      inputTokens: chatResult.usage?.promptTokens ?? null,
+      outputTokens: chatResult.usage?.completionTokens ?? null,
+      messages: params.messages,
+      outputText: chatResult.content,
+    })
+
     // 更新 last_used_at
     await db
       .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
@@ -151,6 +186,14 @@ async function executeWithUserKey(
       executionMode: 'user_key',
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
+      billableUnits: usageEstimate.billableUnits,
+      estimatedCredits:
+        pricing
+          ? estimateCreditsFromUsage({
+              billableUnits: usageEstimate.billableUnits,
+              creditsPer1kUnits: pricing.creditsPer1kUnits,
+            })
+          : null,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
@@ -256,6 +299,8 @@ interface UsageLogParams {
   executionMode: string
   inputTokens?: number | null
   outputTokens?: number | null
+  billableUnits?: number | null
+  estimatedCredits?: number | null
   durationMs: number
   status: string
   errorMessage?: string
@@ -266,8 +311,8 @@ async function writeUsageLog(db: D1Database, params: UsageLogParams) {
     await db
       .prepare(
         `INSERT INTO ai_usage_logs (id, user_id, workflow_id, node_id, provider, model_id,
-         execution_mode, input_tokens, output_tokens, duration_ms, status, error_message)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         execution_mode, input_tokens, output_tokens, billable_units, estimated_credits, duration_ms, status, error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -279,6 +324,8 @@ async function writeUsageLog(db: D1Database, params: UsageLogParams) {
         params.executionMode,
         params.inputTokens ?? null,
         params.outputTokens ?? null,
+        params.billableUnits ?? null,
+        params.estimatedCredits ?? null,
         params.durationMs,
         params.status,
         params.errorMessage ?? null,
