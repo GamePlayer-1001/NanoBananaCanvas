@@ -63,7 +63,7 @@
 
 - [~] **SPAY-100** 在 Stripe Dashboard 建立付费套餐商品模型（当前为 `Nano Banana Canvas Bundle` 单 Product + 三个套餐 Price，后续如需拆 Product 再评估）
 - [~] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price（Sandbox 已建 Standard / Pro / Ultimate）
-- [ ] **SPAY-102** 为三档套餐分别创建 `one_time` 一次性 Price
+- [x] **SPAY-102** 为三档套餐分别创建 `one_time` 一次性 Price
 - [ ] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
 - [~] **SPAY-104** 为所有套餐与积分包补齐多币种 Price（当前 recurring 套餐 Price 已按同一 Price 下 `currency_options` 建模）
 - [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 仍待补齐）
@@ -84,6 +84,12 @@
 4. **命名现实与代码语义对齐**
    - 后台展示名曾出现 `Ultimatex`，但当前代码、数据库和文档统一继续使用内部语义 `ultimate`。
    - 这意味着 `Ultimatex` 只视为后台展示命名差异，不新增第四档套餐。
+5. **一次性套餐 Price 已补齐**
+   - 当前 one-time Product 为：`prod_UNdPVZafOiTcwD`
+   - `Standard`: `price_1TOs93EaFSfu5kGHfIDvE0jM`
+   - `Pro`: `price_1TOsAqEaFSfu5kGH8FKN3whW`
+   - `Ultimate`: `price_1TOsAPEaFSfu5kGHMqetM1Xq`
+   - 当前没有补 Stripe Dashboard metadata，不阻塞运行时推进；后续若需要让后台运营可读性更强，再回补即可
 
 ### Phase 2：环境变量与服务端配置
 
@@ -190,7 +196,7 @@
 
 - [x] **SPAY-400** 重建 `lib/stripe.ts` 或拆分为 `lib/billing/stripe-client.ts`
 - [x] **SPAY-401** 实现 `getOrCreateStripeCustomer()`
-- [~] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单（当前已打通 `plan_auto_monthly`，`plan_one_time / credit_pack` 待补）
+- [~] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单（当前已打通 `plan_auto_monthly + plan_one_time`，`credit_pack` 待补）
 - [ ] **SPAY-403** 实现 Customer Portal Session 创建器
 - [ ] **SPAY-404** 实现 Subscription cancel 服务
 - [ ] **SPAY-405** 实现 Webhook 签名验证器
@@ -211,7 +217,19 @@
    - 当前先打通 `plan_auto_monthly`
    - 创建 Checkout Session 时已把 `userId / plan / purchaseMode / monthlyCredits / storageGB` 写入 metadata
 4. 当前未完成项
-   - `plan_one_time`
+   - `credit_pack`
+   - Portal / Cancel / Webhook 签名与幂等
+
+#### Phase 4 Batch B 结论（2026-04-22）
+
+1. Checkout Session 创建器已接回 `plan_one_time`
+   - `plan_auto_monthly` 继续走 Stripe `subscription`
+   - `plan_one_time` 改走 Stripe `payment`
+2. 本地 `apps/web/.env.local` 已写入三档 one-time Price ID
+   - `STRIPE_PRICE_STANDARD_PLAN_ONE_TIME`
+   - `STRIPE_PRICE_PRO_PLAN_ONE_TIME`
+   - `STRIPE_PRICE_ULTIMATE_PLAN_ONE_TIME`
+3. 当前仍未完成项
    - `credit_pack`
    - Portal / Cancel / Webhook 签名与幂等
 
@@ -247,7 +265,7 @@
    - 当前必须登录，匿名用户不会直接进入结账
 2. 当前 Checkout API 行为
    - 请求体只接收业务语义：`plan`、`purchaseMode`
-   - `purchaseMode` 当前仅开放 `plan_auto_monthly`
+   - `purchaseMode` 当前已开放 `plan_auto_monthly / plan_one_time`
    - 币种偏好通过显式参数或 `CF-IPCountry` 推断得到，但不再强迫映射为“独立币种 Price ID”
 3. 当前验证结果
    - `eslint` 通过
@@ -310,6 +328,18 @@
    - `one_time / credit_pack / 币种手动切换`
    - `/billing` 页面与账户侧账单入口
    - Free 默认态说明文案的完整产品化表达
+
+#### Phase 8 Batch B 结论（2026-04-22）
+
+1. `/pricing` 已新增 `自动月付 / 一次性套餐` 切换
+2. 两种套餐价格都从 Stripe 实时读取，不在前端硬编码金额
+3. 登录后 CTA 行为已分流
+   - 月付套餐：创建 `subscription` Checkout Session
+   - 一次性套餐：创建 `payment` Checkout Session
+4. 当前仍未完成的 UI 范围
+   - `credit_pack`
+   - 币种手动切换
+   - `/billing` 页面与账户侧账单入口
 
 ### Phase 9：文案、i18n 与法务
 

@@ -19,7 +19,7 @@ import { getOrCreateStripeCustomer, getStripe, requireAppBaseUrl } from './strip
 export interface CreateCheckoutSessionInput {
   userId: string
   plan: BillingPlan
-  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly'>
+  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time'>
   preferredCurrency: BillingCurrency
 }
 
@@ -28,7 +28,7 @@ export interface CheckoutSessionResult {
   sessionId: string
   preferredCurrency: BillingCurrency
   plan: BillingPlan
-  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly'>
+  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time'>
 }
 
 function buildSuccessUrl(appUrl: string): string {
@@ -39,7 +39,7 @@ function buildCancelUrl(appUrl: string): string {
   return `${appUrl}/account?billing=checkout_canceled`
 }
 
-function buildSubscriptionMetadata(input: CreateCheckoutSessionInput): Stripe.MetadataParam {
+function buildCheckoutMetadata(input: CreateCheckoutSessionInput): Stripe.MetadataParam {
   const snapshot = getBillingPlanSnapshot(input.plan)
 
   return {
@@ -65,14 +65,18 @@ export async function createCheckoutSession(
   })
 
   const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
+    mode: input.purchaseMode === 'plan_auto_monthly' ? 'subscription' : 'payment',
     customer: customer.customerId,
     client_reference_id: input.userId,
     line_items: [{ price: priceId, quantity: 1 }],
-    metadata: buildSubscriptionMetadata(input),
-    subscription_data: {
-      metadata: buildSubscriptionMetadata(input),
-    },
+    metadata: buildCheckoutMetadata(input),
+    ...(input.purchaseMode === 'plan_auto_monthly'
+      ? {
+          subscription_data: {
+            metadata: buildCheckoutMetadata(input),
+          },
+        }
+      : {}),
     allow_promotion_codes: true,
     customer_update: {
       address: 'auto',

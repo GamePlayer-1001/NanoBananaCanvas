@@ -31,7 +31,10 @@ export function PricingContent({ isAuthenticated, plans }: PricingContentProps) 
   const t = useTranslations('pricing')
   const locale = useLocale()
   const router = useRouter()
-  const [pendingPlan, setPendingPlan] = useState<string | null>(null)
+  const [selectedMode, setSelectedMode] = useState<'plan_auto_monthly' | 'plan_one_time'>(
+    'plan_auto_monthly',
+  )
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
 
   const planLabels = {
     standard: t('standardName'),
@@ -45,13 +48,15 @@ export function PricingContent({ isAuthenticated, plans }: PricingContentProps) 
     ultimate: t('ultimateDescription'),
   } as const
 
+  const visiblePlans = plans.filter((plan) => plan.purchaseMode === selectedMode)
+
   async function handleCheckout(plan: PublicBillingPlanPrice) {
     if (!isAuthenticated) {
       router.push('/sign-in?redirect_url=/pricing')
       return
     }
 
-    setPendingPlan(plan.plan)
+    setPendingKey(`${plan.plan}:${plan.purchaseMode}`)
 
     try {
       const response = await fetch('/api/billing/checkout', {
@@ -75,7 +80,7 @@ export function PricingContent({ isAuthenticated, plans }: PricingContentProps) 
 
       window.location.href = payload.data.checkoutUrl
     } finally {
-      setPendingPlan(null)
+      setPendingKey(null)
     }
   }
 
@@ -91,11 +96,35 @@ export function PricingContent({ isAuthenticated, plans }: PricingContentProps) 
             {t('description')}
           </p>
           <p className="mt-4 text-sm text-white/45">{t('livePriceNote')}</p>
+          <div className="mt-8 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
+            <button
+              type="button"
+              onClick={() => setSelectedMode('plan_auto_monthly')}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                selectedMode === 'plan_auto_monthly'
+                  ? 'bg-white text-black'
+                  : 'text-white/65 hover:text-white'
+              }`}
+            >
+              {t('toggleMonthly')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMode('plan_one_time')}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                selectedMode === 'plan_one_time'
+                  ? 'bg-white text-black'
+                  : 'text-white/65 hover:text-white'
+              }`}
+            >
+              {t('toggleOneTime')}
+            </button>
+          </div>
         </div>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-3">
-          {plans.map((plan) => {
-            const isPending = pendingPlan === plan.plan
+          {visiblePlans.map((plan) => {
+            const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`
 
             return (
               <article
@@ -120,7 +149,11 @@ export function PricingContent({ isAuthenticated, plans }: PricingContentProps) 
                   <p className="text-4xl font-semibold">
                     {formatMoney(locale, plan.currency, plan.unitAmount)}
                   </p>
-                  <p className="mt-2 text-sm text-white/45">{t('billedMonthly')}</p>
+                  <p className="mt-2 text-sm text-white/45">
+                    {plan.purchaseMode === 'plan_auto_monthly'
+                      ? t('billedMonthly')
+                      : t('billedOneTime')}
+                  </p>
                 </div>
 
                 <div className="mt-8 space-y-3 text-sm text-white/78">
@@ -145,7 +178,9 @@ export function PricingContent({ isAuthenticated, plans }: PricingContentProps) 
                   {isPending
                     ? t('redirecting')
                     : isAuthenticated
-                      ? t('startSubscription')
+                      ? plan.purchaseMode === 'plan_auto_monthly'
+                        ? t('startSubscription')
+                        : t('buyOneTime')
                       : t('signInToSubscribe')}
                 </Button>
               </article>

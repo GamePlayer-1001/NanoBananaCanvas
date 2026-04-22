@@ -11,7 +11,7 @@ import { BILLING_CURRENCIES, BILLING_PLANS } from '@/lib/billing/config'
 
 export const checkoutSchema = z.object({
   plan: z.enum(BILLING_PLANS),
-  purchaseMode: z.literal('plan_auto_monthly').default('plan_auto_monthly'),
+  purchaseMode: z.enum(['plan_auto_monthly', 'plan_one_time']).default('plan_auto_monthly'),
   currency: z.enum(BILLING_CURRENCIES).optional(),
 })
 

@@ -20,11 +20,11 @@ import { getStripe } from './stripe-client'
 
 export interface PublicBillingPlanPrice {
   plan: (typeof BILLING_PLANS)[number]
-  purchaseMode: 'plan_auto_monthly'
+  purchaseMode: 'plan_auto_monthly' | 'plan_one_time'
   stripePriceId: string
   currency: BillingCurrency
   unitAmount: number
-  interval: 'month'
+  interval: 'month' | null
   monthlyCredits: number
   storageGB: number
 }
@@ -64,13 +64,17 @@ function resolveDisplayedAmount(
   }
 }
 
-function assertMonthlyRecurring(price: Stripe.Price): 'month' {
+function assertRecurringInterval(price: Stripe.Price): 'month' | null {
   const interval = price.recurring?.interval
+
+  if (!interval) {
+    return null
+  }
 
   if (interval !== 'month') {
     throw new BillingError(
       ErrorCode.BILLING_CONFIG_INVALID,
-      'Stripe price is not a monthly recurring plan',
+      'Stripe price uses an unsupported recurring interval',
       { priceId: price.id, interval },
     )
   }
@@ -89,27 +93,29 @@ export async function getPublicPricingPlans(options: {
   const stripe = await getStripe()
 
   const plans = await Promise.all(
-    BILLING_PLANS.map(async (plan) => {
-      const stripePriceId = await resolveStripePriceId({
-        plan,
-        purchaseMode: 'plan_auto_monthly',
-        currency: preferredCurrency,
-      })
-      const stripePrice = await stripe.prices.retrieve(stripePriceId)
-      const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
-      const snapshot = getBillingPlanSnapshot(plan)
+    BILLING_PLANS.flatMap((plan) =>
+      (['plan_auto_monthly', 'plan_one_time'] as const).map(async (purchaseMode) => {
+        const stripePriceId = await resolveStripePriceId({
+          plan,
+          purchaseMode,
+          currency: preferredCurrency,
+        })
+        const stripePrice = await stripe.prices.retrieve(stripePriceId)
+        const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
+        const snapshot = getBillingPlanSnapshot(plan)
 
-      return {
-        plan,
-        purchaseMode: 'plan_auto_monthly' as const,
-        stripePriceId,
-        currency: displayed.currency,
-        unitAmount: displayed.unitAmount,
-        interval: assertMonthlyRecurring(stripePrice),
-        monthlyCredits: snapshot.monthlyCredits,
-        storageGB: snapshot.storageGB,
-      }
-    }),
+        return {
+          plan,
+          purchaseMode,
+          stripePriceId,
+          currency: displayed.currency,
+          unitAmount: displayed.unitAmount,
+          interval: assertRecurringInterval(stripePrice),
+          monthlyCredits: snapshot.monthlyCredits,
+          storageGB: snapshot.storageGB,
+        }
+      }),
+    ),
   )
 
   return {
