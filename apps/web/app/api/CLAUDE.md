@@ -41,8 +41,9 @@ admin/                  — 运维管理 (1 端点)
   cleanup/route.ts      — POST 手动触发过期文件清理 (Bearer token 认证)
 og/route.tsx            — GET  Open Graph 动态图片生成
 health/route.ts         — GET  健康检查端点
-webhooks/               — Clerk 账户镜像同步 (1 端点)
+webhooks/               — 外部账户与计费事件同步 (2 端点)
   clerk/route.ts        — POST Clerk 用户 webhook (created/updated/deleted)
+  stripe/route.ts       — POST Stripe 账单 webhook (checkout/invoice/subscription)
 
 tasks/                  — P2 异步任务队列 (3 端点)
   route.ts              — POST 提交任务 / GET 任务列表
@@ -62,6 +63,6 @@ settings/               — 用户设置 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 商业化: Stripe Checkout、Portal、订阅摘要/取消 与公开价格目录已接回最小闭环；Webhook/credits 仍待后续接回
+- 商业化: Stripe Checkout、Portal、订阅摘要/取消、Webhook 与公开价格目录已接回最小闭环；credits 扣费引擎仍待后续接回
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

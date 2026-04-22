@@ -10,5 +10,6 @@ checkout.ts: Checkout 编排层，将登录用户的套餐购买语义翻译成 
 portal.ts: Customer Portal 编排层，将登录用户翻译成 Stripe Customer Portal Session
 pricing.ts: 公开价格读取层，服务端从 Stripe 拉取套餐价格并整理成 UI 可消费目录
 subscription.ts: 订阅镜像层，读取本地 subscriptions 摘要并执行自动月付到期取消
+webhook.ts: Stripe Webhook 处理层，负责验签后的幂等落账、续费同步与订阅降级
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

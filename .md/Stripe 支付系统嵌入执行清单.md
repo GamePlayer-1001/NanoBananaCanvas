@@ -213,8 +213,8 @@
 - [x] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单
 - [x] **SPAY-403** 实现 Customer Portal Session 创建器
 - [x] **SPAY-404** 实现 Subscription cancel 服务
-- [ ] **SPAY-405** 实现 Webhook 签名验证器
-- [ ] **SPAY-406** 实现 Webhook 幂等处理器
+- [x] **SPAY-405** 实现 Webhook 签名验证器
+- [x] **SPAY-406** 实现 Webhook 幂等处理器
 - [ ] **SPAY-407** 为 Stripe 错误码做本地异常映射
 
 #### Phase 4 Batch A 结论（2026-04-22）
@@ -287,6 +287,24 @@
    - 当前订阅周期改从 `subscription.items.data[0]` 读取
    - 与当前“单订阅单价格”套餐模型一致
 
+#### Phase 4 Batch F 结论（2026-04-22）
+
+1. 已新增 `apps/web/lib/billing/webhook.ts`
+   - 支持 Stripe Webhook 签名校验
+   - 支持 `processed_stripe_events` 幂等保护
+2. 当前已接回的 Stripe 事件
+   - `checkout.session.completed`
+   - `invoice.paid`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+3. 当前本地落账能力
+   - 自动月付订阅：同步 `subscriptions` 镜像、续费时重置月度积分
+   - 一次性套餐：落 `billing_orders` 审计，并同步本地套餐镜像
+   - 积分包：落 `billing_orders` 审计，并发放永久积分
+4. 当前仍保留的边界
+   - 退款、争议、支付失败等反向事件尚未接回
+   - 更复杂的积分冻结/确认/回滚仍待 Phase 5 权益引擎闭环
+
 ### Phase 5：积分与权益引擎
 
 - [ ] **SPAY-500** 重建 token 计费版本的 `model_pricing` 查询器
@@ -306,7 +324,7 @@
 - [x] **SPAY-603** 重建 `GET /api/billing/subscription`
 - [ ] **SPAY-604** 重建 `GET /api/billing/packages`
 - [ ] **SPAY-605** 重建 `POST /api/billing/topup`
-- [ ] **SPAY-606** 重建 `POST /api/webhooks/stripe`
+- [x] **SPAY-606** 重建 `POST /api/webhooks/stripe`
 - [ ] **SPAY-607** 重建 `GET /api/credits/balance`
 - [ ] **SPAY-608** 重建 `GET /api/credits/transactions`
 - [ ] **SPAY-609** 重建 `GET /api/credits/usage`
@@ -384,6 +402,23 @@
 3. 当前残留边界
    - `one_time` 与 `credit_pack` 不应进入“取消订阅”语义，因此会被明确拒绝
    - 真实到期后的降级与积分重置仍依赖后续 Webhook / 权益引擎接回
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test`
+   - `pnpm --filter @nano-banana/web build`
+
+#### Phase 6 Batch F 结论（2026-04-22）
+
+1. 已恢复 `POST /api/webhooks/stripe`
+   - 路由位置：`apps/web/app/api/webhooks/stripe/route.ts`
+   - 当前先处理 Stripe 支付主链最关键的 4 类事件
+2. 当前 Webhook 行为
+   - 先做签名校验，再做事件幂等
+   - 只对已支持的事件执行落账，其他事件会安全忽略
+3. 当前本地同步效果
+   - `checkout.session.completed`：记录一次性套餐/积分包订单，或补齐自动月付订阅镜像
+   - `invoice.paid`：自动月付续费后重置月度积分
+   - `customer.subscription.updated/deleted`：同步取消状态与降级到 `free`
 4. 当前验证结果
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test`
