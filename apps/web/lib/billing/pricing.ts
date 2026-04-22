@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 stripe SDK 类型，依赖 ./config、./plans、./stripe-client，依赖 @/lib/errors
- * [OUTPUT]: 对外提供 getPublicPricingPlans()，返回面向 UI 的动态套餐价格目录
- * [POS]: lib/billing 的公开价格读取层，把 Stripe Price 真相源收口为前端可消费的套餐视图
+ * [OUTPUT]: 对外提供 getPublicPricingPlans()/getPublicBillingPackages()，返回面向 UI 的动态套餐与积分包目录
+ * [POS]: lib/billing 的公开价格读取层，把 Stripe Price 真相源收口为前端可消费的套餐/积分包视图
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -46,6 +46,35 @@ export interface PublicCreditPackPrice {
   credits: number
   bonusCredits: number
   totalCredits: number
+}
+
+async function getPublicCreditPackPrices(
+  preferredCurrency: BillingCurrency,
+  stripe: Stripe,
+): Promise<PublicCreditPackPrice[]> {
+  return Promise.all(
+    CREDIT_PACK_IDS.map(async (packageId) => {
+      const stripePriceId = await resolveStripePriceId({
+        purchaseMode: 'credit_pack',
+        packageId,
+        currency: preferredCurrency,
+      })
+      const stripePrice = await stripe.prices.retrieve(stripePriceId)
+      const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
+      const snapshot = getCreditPackSnapshot(packageId)
+
+      return {
+        packageId,
+        purchaseMode: 'credit_pack' as const,
+        stripePriceId,
+        currency: displayed.currency,
+        unitAmount: displayed.unitAmount,
+        credits: snapshot.credits,
+        bonusCredits: snapshot.bonusCredits,
+        totalCredits: snapshot.totalCredits,
+      }
+    }),
+  )
 }
 
 function resolveDisplayedAmount(
@@ -132,33 +161,30 @@ export async function getPublicPricingPlans(options: {
     ),
   )
 
-  const creditPacks = await Promise.all(
-    CREDIT_PACK_IDS.map(async (packageId) => {
-      const stripePriceId = await resolveStripePriceId({
-        purchaseMode: 'credit_pack',
-        packageId,
-        currency: preferredCurrency,
-      })
-      const stripePrice = await stripe.prices.retrieve(stripePriceId)
-      const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
-      const snapshot = getCreditPackSnapshot(packageId)
-
-      return {
-        packageId,
-        purchaseMode: 'credit_pack' as const,
-        stripePriceId,
-        currency: displayed.currency,
-        unitAmount: displayed.unitAmount,
-        credits: snapshot.credits,
-        bonusCredits: snapshot.bonusCredits,
-        totalCredits: snapshot.totalCredits,
-      }
-    }),
-  )
+  const creditPacks = await getPublicCreditPackPrices(preferredCurrency, stripe)
 
   return {
     currency: preferredCurrency,
     plans,
     creditPacks,
+  }
+}
+
+export async function getPublicBillingPackages(options: {
+  requestedCurrency?: string | null
+  countryCode?: string | null
+}): Promise<{
+  currency: BillingCurrency
+  creditPacks: PublicCreditPackPrice[]
+}> {
+  const preferredCurrency = resolveBillingCurrency({
+    requestedCurrency: options.requestedCurrency,
+    countryCode: options.countryCode,
+  })
+  const stripe = await getStripe()
+
+  return {
+    currency: preferredCurrency,
+    creditPacks: await getPublicCreditPackPrices(preferredCurrency, stripe),
   }
 }

@@ -364,8 +364,8 @@
 - [x] **SPAY-601** 重建 `POST /api/billing/portal`
 - [x] **SPAY-602** 重建 `POST /api/billing/cancel`
 - [x] **SPAY-603** 重建 `GET /api/billing/subscription`
-- [ ] **SPAY-604** 重建 `GET /api/billing/packages`
-- [ ] **SPAY-605** 重建 `POST /api/billing/topup`
+- [x] **SPAY-604** 重建 `GET /api/billing/packages`
+- [x] **SPAY-605** 重建 `POST /api/billing/topup`
 - [x] **SPAY-606** 重建 `POST /api/webhooks/stripe`
 - [x] **SPAY-607** 重建 `GET /api/credits/balance`
 - [x] **SPAY-608** 重建 `GET /api/credits/transactions`
@@ -499,6 +499,21 @@
 4. 当前验证结果
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`
+
+#### Phase 6 Batch I 结论（2026-04-22）
+
+1. 已恢复 `GET /api/billing/packages`
+   - 路由位置：`apps/web/app/api/billing/packages/route.ts`
+   - 当前返回公开积分包目录：`currency + creditPacks`
+   - 当前继续复用 Stripe 动态价格，不在服务端硬编码金额
+2. 已恢复 `POST /api/billing/topup`
+   - 路由位置：`apps/web/app/api/billing/topup/route.ts`
+   - 当前必须登录，只接收 `packageId + currency` 业务语义
+   - 当前实际仍统一走 `credit_pack` Checkout Session 创建器，避免平行维护第二套支付编排
+3. 当前服务层收口方式
+   - `lib/billing/pricing.ts` 新增独立积分包目录读取能力
+   - `lib/validations/billing.ts` 新增 `topupSchema`
+   - 积分包目录读取与积分包充值不再被迫复用 `/pricing/plans` 与 `/billing/checkout` 的更宽泛语义
 
 #### Phase 4/6 主线同步记录（2026-04-22）
 

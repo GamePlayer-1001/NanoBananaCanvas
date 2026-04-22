@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 zod，依赖 @/lib/billing/config 的枚举常量
- * [OUTPUT]: 对外提供 checkoutSchema，校验套餐 Checkout 的业务语义参数
- * [POS]: lib/validations 的计费请求校验入口，先把 plan/mode/currency 的语义边界锁死
+ * [OUTPUT]: 对外提供 checkoutSchema / topupSchema，校验套餐 Checkout 与积分包充值的业务语义参数
+ * [POS]: lib/validations 的计费请求校验入口，先把 plan/mode/packageId/currency 的语义边界锁死
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -28,3 +28,10 @@ export const checkoutSchema = z.discriminatedUnion('purchaseMode', [
 ])
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>
+
+export const topupSchema = z.object({
+  packageId: z.enum(CREDIT_PACK_IDS),
+  currency: z.enum(BILLING_CURRENCIES).optional(),
+})
+
+export type TopupInput = z.infer<typeof topupSchema>

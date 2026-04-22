@@ -4,8 +4,10 @@
 成员清单
 checkout/route.ts — POST Stripe Checkout Session 创建入口，要求登录态，按 purchaseMode + IP/currency 解析生成结账链接
 checkout/route.test.ts — Checkout API 集成测试，覆盖限流阻断、套餐结账与积分包分流
+packages/route.ts — GET 公开积分包目录，按 IP/currency 解析 Stripe 动态价格
 portal/route.ts — POST Stripe Customer Portal Session 创建入口，要求登录态并返回订阅管理链接
 subscription/route.ts — GET 当前登录用户的订阅镜像摘要，供账户页与未来 /billing 页消费
 cancel/route.ts — POST 自动月付到期取消入口，要求登录态并标记 cancel_at_period_end
+topup/route.ts — POST 积分包充值入口，要求登录态并创建 credit_pack Checkout Session
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
