@@ -254,6 +254,12 @@
    - `vitest` 中 `lib/billing/config.test.ts` 通过
    - `pnpm --filter @nano-banana/web build` 通过
 
+#### Phase 4/6 主线同步记录（2026-04-22）
+
+1. `feat/stripe-checkout-phase4` 已于 2026-04-22 合并进入 `main`，后续 Stripe 重建统一直接在 `main` 推进。
+2. 这次主线同步没有新增运行时代码语义，只是把已完成的 `config / checkout / checkout API / 文档` 进度收口到主分支，避免后续继续在分叉状态下推进。
+3. 因此当前 `main` 的真实 Stripe 状态已经与本清单中的 `Phase 4 Batch A`、`Phase 6 Batch A` 描述一致。
+
 ### Phase 7：执行链路接回
 
 - [ ] **SPAY-700** 在 `ai/execute` 中接回 token 预估与 credits freeze
