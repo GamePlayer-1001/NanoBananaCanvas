@@ -14,8 +14,14 @@ import { checkRateLimit, rateLimitResponse } from '@/lib/api/rate-limit'
 import { apiError, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { decryptApiKey } from '@/lib/api-key-crypto'
 import {
+  confirmFrozenCredits,
+  freezeCredits,
+  refundFrozenCredits,
+} from '@/lib/billing/ledger'
+import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
+  estimateReservedTextExecutionUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
@@ -79,6 +85,37 @@ export async function POST(req: Request) {
       apiKey = await getPlatformKey(providerId)
     }
 
+    const executionReferenceId = `ai_stream_${nanoid()}`
+    const pricing =
+      params.executionMode === 'platform'
+        ? await getModelPricing(db, {
+            provider: providerId,
+            modelId: resolvedModelId,
+            activeOnly: false,
+          })
+        : null
+    const reservedUsage =
+      params.executionMode === 'platform'
+        ? estimateReservedTextExecutionUsage(params.messages, params.maxTokens)
+        : null
+    const reservedCredits =
+      pricing && reservedUsage
+        ? estimateCreditsFromUsage({
+            billableUnits: reservedUsage.billableUnits,
+            creditsPer1kUnits: pricing.creditsPer1kUnits,
+          })
+        : 0
+
+    if (params.executionMode === 'platform' && reservedCredits > 0) {
+      await freezeCredits({
+        userId,
+        requestedCredits: reservedCredits,
+        referenceId: executionReferenceId,
+        source: 'ai_stream_platform_freeze',
+        description: `Freeze credits for streaming platform execution ${providerId}/${resolvedModelId}`,
+      })
+    }
+
     // 通过 Provider 抽象层发起流式调用，转为 SSE
     const provider =
       runtimeConfig
@@ -110,16 +147,47 @@ export async function POST(req: Request) {
 
         await writer.write(encoder.encode('data: [DONE]\n\n'))
 
-        const pricing = await getModelPricing(db, {
-          provider: providerId,
-          modelId: resolvedModelId,
-          activeOnly: false,
-        })
         const usageEstimate = estimateBillableUnits({
           category: pricing?.category ?? 'text',
           messages: params.messages,
           outputText: streamedText,
         })
+        const actualCredits =
+          pricing
+            ? estimateCreditsFromUsage({
+                billableUnits: usageEstimate.billableUnits,
+                creditsPer1kUnits: pricing.creditsPer1kUnits,
+              })
+            : null
+
+        if (pricing && actualCredits != null) {
+          if (actualCredits > reservedCredits) {
+            await freezeCredits({
+              userId,
+              requestedCredits: actualCredits - reservedCredits,
+              referenceId: executionReferenceId,
+              source: 'ai_stream_platform_adjust',
+              description: `Freeze additional credits for streaming platform execution ${providerId}/${resolvedModelId}`,
+            })
+          }
+
+          await confirmFrozenCredits({
+            userId,
+            referenceId: executionReferenceId,
+            requestedCredits: actualCredits,
+            source: 'ai_stream_platform_confirm',
+            description: `Confirm streaming platform execution billing ${providerId}/${resolvedModelId}`,
+          })
+
+          if (actualCredits < reservedCredits) {
+            await refundFrozenCredits({
+              userId,
+              referenceId: executionReferenceId,
+              source: 'ai_stream_platform_refund',
+              description: `Refund unused reserved credits for streaming platform execution ${providerId}/${resolvedModelId}`,
+            })
+          }
+        }
 
         await writeUsageLog(
           db,
@@ -129,18 +197,30 @@ export async function POST(req: Request) {
             provider: providerId,
             modelId: resolvedModelId,
             billableUnits: usageEstimate.billableUnits,
-            estimatedCredits:
-              pricing
-                ? estimateCreditsFromUsage({
-                    billableUnits: usageEstimate.billableUnits,
-                    creditsPer1kUnits: pricing.creditsPer1kUnits,
-                  })
-                : null,
+            estimatedCredits: actualCredits,
           },
           'success',
           Date.now() - startTime,
         )
       } catch (err) {
+        if (params.executionMode === 'platform' && reservedCredits > 0) {
+          try {
+            await refundFrozenCredits({
+              userId,
+              referenceId: executionReferenceId,
+              source: 'ai_stream_platform_failure_refund',
+              description: `Refund failed streaming platform execution ${providerId}/${resolvedModelId}`,
+            })
+          } catch (refundError) {
+            log.error('Failed to refund frozen credits after stream error', refundError as Error, {
+              userId,
+              providerId,
+              modelId: resolvedModelId,
+              executionReferenceId,
+            })
+          }
+        }
+
         await writeUsageLog(
           db,
           userId,

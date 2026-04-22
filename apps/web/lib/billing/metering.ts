@@ -47,6 +47,8 @@ export interface BillableUsageEstimate {
     | 'video_duration'
 }
 
+const DEFAULT_RESERVED_OUTPUT_TOKENS = 1024
+
 type ModelPricingRow = {
   id: string
   provider: string
@@ -247,4 +249,17 @@ export function estimateCreditsFromUsage(input: {
   }
 
   return Math.round((billableUnits / 1000) * creditsPer1kUnits)
+}
+
+export function estimateReservedTextExecutionUsage(
+  messages: EstimateBillableUnitsInput['messages'],
+  maxTokens: number | undefined,
+): BillableUsageEstimate {
+  const reservedOutputTokens = Math.max(1, maxTokens ?? DEFAULT_RESERVED_OUTPUT_TOKENS)
+
+  return estimateBillableUnits({
+    category: 'text',
+    messages,
+    outputText: 'x'.repeat(reservedOutputTokens * 4),
+  })
 }

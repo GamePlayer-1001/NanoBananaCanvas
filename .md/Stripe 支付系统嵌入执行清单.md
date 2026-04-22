@@ -563,7 +563,7 @@
 ### Phase 7：执行链路接回
 
 - [x] **SPAY-700** 在 `ai/execute` 中接回 token 预估与 credits freeze
-- [ ] **SPAY-701** 在 `ai/stream` 中接回流式执行的 billing draft 与完成后结算
+- [x] **SPAY-701** 在 `ai/stream` 中接回流式执行的 billing draft 与完成后结算
 - [ ] **SPAY-702** 在 `tasks/service` 中接回任务失败退款
 - [ ] **SPAY-703** 在 Worker/Cron 中接回超时任务退款
 - [ ] **SPAY-704** 在 Worker/Cron 中接回超时冻结解冻
@@ -587,6 +587,24 @@
    - `pnpm --filter @nano-banana/web test -- lib/billing/ledger.test.ts app/api/ai/execute/route.test.ts`
    - `pnpm --filter @nano-banana/web exec -- tsc --noEmit`
    - `pnpm --filter @nano-banana/web lint`
+
+#### Phase 7 Batch B 结论（2026-04-22）
+
+1. 已在 `apps/web/app/api/ai/stream/route.ts` 接回平台模式流式扣费链
+   - 平台模式当前会在开始流式输出前先按 `messages + maxTokens` 预估冻结额度
+   - 流结束后会按实际输出文本重新估算 credits，并执行 `confirm / refund`
+2. 流式执行当前已与非流式执行共用同一套预冻结估算口径
+   - `apps/web/lib/billing/metering.ts` 当前新增 `estimateReservedTextExecutionUsage()`
+   - `ai/execute` 与 `ai/stream` 现在都复用这套 helper，避免两条文本主链的预冻结逻辑再次分叉
+3. `user_key` 模式继续保持“只记 usage、不扣平台积分”
+   - 当前 `ai/stream` 的 `user_key` 模式没有接入平台 credits 扣减
+   - 这样可以继续保持“平台模式扣平台账本，用户自带 Key 模式只记 usage”的边界清晰
+4. 当前未做的事
+   - 还没有继续推进 `SPAY-702 ~ SPAY-705`
+   - 这意味着异步任务链与 Worker/Cron 的退款/解冻职责仍待后续收口
+5. 当前验证状态
+   - 按当前约定，本轮未执行测试
+   - 待全部完成并部署生产后，再统一进行完整测试
 
 ### Phase 8：前端 UI
 

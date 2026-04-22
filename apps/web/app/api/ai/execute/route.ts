@@ -19,6 +19,7 @@ import {
 import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
+  estimateReservedTextExecutionUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
@@ -35,7 +36,6 @@ import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
 const log = createLogger('ai:execute')
-const DEFAULT_RESERVED_OUTPUT_TOKENS = 1024
 
 /* ─── POST /api/ai/execute ───────────────────────────── */
 
@@ -83,7 +83,7 @@ async function executeWithPlatformKey(
   const modelId = params.modelId as string
   const executionReferenceId = `ai_exec_${nanoid()}`
   const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
-  const reservedUsage = estimateReservedExecutionUsage(params.messages, params.maxTokens)
+  const reservedUsage = estimateReservedTextExecutionUsage(params.messages, params.maxTokens)
   const reservedCredits =
     pricing
       ? estimateCreditsFromUsage({
@@ -211,18 +211,6 @@ async function executeWithPlatformKey(
 
     throw error
   }
-}
-
-function estimateReservedExecutionUsage(
-  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string | unknown[] }>,
-  maxTokens: number | undefined,
-) {
-  const reservedOutputTokens = Math.max(1, maxTokens ?? DEFAULT_RESERVED_OUTPUT_TOKENS)
-  return estimateBillableUnits({
-    category: 'text',
-    messages,
-    outputText: 'x'.repeat(reservedOutputTokens * 4),
-  })
 }
 
 /* ─── User Key Mode ──────────────────────────────────── */
