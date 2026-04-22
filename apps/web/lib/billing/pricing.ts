@@ -17,7 +17,7 @@ import {
   resolveBillingCurrency,
   resolveStripePriceId,
 } from './config'
-import { getBillingPlanSnapshot } from './plans'
+import { getBillingPlanSnapshot, getCreditPackSnapshot } from './plans'
 import { getStripe } from './stripe-client'
 
 export interface PublicBillingPlanPrice {
@@ -46,16 +46,6 @@ export interface PublicCreditPackPrice {
   credits: number
   bonusCredits: number
   totalCredits: number
-}
-
-const CREDIT_PACK_SNAPSHOTS: Record<
-  CreditPackId,
-  { credits: number; bonusCredits: number }
-> = {
-  '500': { credits: 500, bonusCredits: 0 },
-  '1200': { credits: 1000, bonusCredits: 200 },
-  '3500': { credits: 2500, bonusCredits: 1000 },
-  '8000': { credits: 5000, bonusCredits: 3000 },
 }
 
 function resolveDisplayedAmount(
@@ -151,7 +141,7 @@ export async function getPublicPricingPlans(options: {
       })
       const stripePrice = await stripe.prices.retrieve(stripePriceId)
       const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
-      const snapshot = CREDIT_PACK_SNAPSHOTS[packageId]
+      const snapshot = getCreditPackSnapshot(packageId)
 
       return {
         packageId,
@@ -161,7 +151,7 @@ export async function getPublicPricingPlans(options: {
         unitAmount: displayed.unitAmount,
         credits: snapshot.credits,
         bonusCredits: snapshot.bonusCredits,
-        totalCredits: snapshot.credits + snapshot.bonusCredits,
+        totalCredits: snapshot.totalCredits,
       }
     }),
   )

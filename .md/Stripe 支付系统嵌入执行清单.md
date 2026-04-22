@@ -311,10 +311,31 @@
 - [ ] **SPAY-501** 实现 `estimateBillableUnits()`，统一文本/图片/视频/音频计费单位
 - [ ] **SPAY-502** 重建 `freeze / confirm / refund` 三阶段积分事务
 - [ ] **SPAY-503** 实现“订阅积分池 + 永久积分池”双池扣减顺序
-- [ ] **SPAY-504** 实现一次性套餐发放积分逻辑
-- [ ] **SPAY-505** 实现自动月付续费后重置积分逻辑
-- [ ] **SPAY-506** 实现套餐变化时的 `storageGB` 同步逻辑
-- [ ] **SPAY-507** 实现 `Free` 降级逻辑：积分归零、存储降级但不删数据
+- [x] **SPAY-504** 实现一次性套餐发放积分逻辑
+- [x] **SPAY-505** 实现自动月付续费后重置积分逻辑
+- [x] **SPAY-506** 实现套餐变化时的 `storageGB` 同步逻辑
+- [x] **SPAY-507** 实现 `Free` 降级逻辑：订阅积分归零、存储降级但不删数据
+
+#### Phase 5 Batch A 结论（2026-04-22）
+
+1. 已新增 `apps/web/lib/billing/entitlements.ts`
+   - 统一维护 `subscriptions` 本地镜像
+   - 统一维护 `users.plan / membership_status`
+   - 统一维护月度积分重置、一次性套餐积分发放与 Free 降级
+2. 套餐与积分包 snapshot 已收口到 `apps/web/lib/billing/plans.ts`
+   - `Standard / Pro / Ultimate` 继续作为 `monthlyCredits / storageGB` 唯一真相源
+   - `500 / 1200 / 3500 / 8000` 积分包不再在 `pricing.ts` 与 `webhook.ts` 双写
+3. Webhook 当前不再直接操纵权益细节
+   - `checkout.session.completed` 先记录订单，再调用权益兑现层发放一次性套餐/积分包积分
+   - `invoice.paid` 先同步订阅镜像，再通过权益兑现层重置月度积分
+   - `customer.subscription.updated/deleted` 统一复用权益兑现层处理存储与会员状态同步
+4. 当前降级语义已澄清
+   - 降级到 `Free` 时会把订阅积分池重置为 `0`
+   - 永久积分池保留，不删除用户已购买的积分资产
+   - `storageGB` 降为 Free 档镜像，但不主动删除既有文件
+5. 当前仍未完成的权益引擎边界
+   - `SPAY-500 ~ SPAY-503` 的 token 计费、预估计量、三阶段事务与双池扣减顺序仍待后续接回
+   - 退款、争议、支付失败等反向账务事件仍不在本批闭环内
 
 ### Phase 6：API 路由
 
