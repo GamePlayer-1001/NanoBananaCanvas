@@ -7,12 +7,24 @@
 
 import { z } from 'zod'
 
-import { BILLING_CURRENCIES, BILLING_PLANS } from '@/lib/billing/config'
+import { BILLING_CURRENCIES, BILLING_PLANS, CREDIT_PACK_IDS } from '@/lib/billing/config'
 
-export const checkoutSchema = z.object({
-  plan: z.enum(BILLING_PLANS),
-  purchaseMode: z.enum(['plan_auto_monthly', 'plan_one_time']).default('plan_auto_monthly'),
-  currency: z.enum(BILLING_CURRENCIES).optional(),
-})
+export const checkoutSchema = z.discriminatedUnion('purchaseMode', [
+  z.object({
+    purchaseMode: z.literal('plan_auto_monthly').default('plan_auto_monthly'),
+    plan: z.enum(BILLING_PLANS),
+    currency: z.enum(BILLING_CURRENCIES).optional(),
+  }),
+  z.object({
+    purchaseMode: z.literal('plan_one_time'),
+    plan: z.enum(BILLING_PLANS),
+    currency: z.enum(BILLING_CURRENCIES).optional(),
+  }),
+  z.object({
+    purchaseMode: z.literal('credit_pack'),
+    packageId: z.enum(CREDIT_PACK_IDS),
+    currency: z.enum(BILLING_CURRENCIES).optional(),
+  }),
+])
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>

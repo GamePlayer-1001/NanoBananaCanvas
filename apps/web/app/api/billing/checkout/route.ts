@@ -29,12 +29,20 @@ export async function POST(req: Request) {
       countryCode: req.headers.get('cf-ipcountry'),
     })
 
-    const result = await createCheckoutSession({
-      userId,
-      plan: params.plan,
-      purchaseMode: params.purchaseMode,
-      preferredCurrency,
-    })
+    const result =
+      params.purchaseMode === 'credit_pack'
+        ? await createCheckoutSession({
+            userId,
+            purchaseMode: 'credit_pack',
+            packageId: params.packageId,
+            preferredCurrency,
+          })
+        : await createCheckoutSession({
+            userId,
+            purchaseMode: params.purchaseMode,
+            plan: params.plan,
+            preferredCurrency,
+          })
 
     return apiOk(result, 201)
   } catch (error) {

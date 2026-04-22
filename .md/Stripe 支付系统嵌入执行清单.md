@@ -64,9 +64,9 @@
 - [~] **SPAY-100** 在 Stripe Dashboard 建立付费套餐商品模型（当前为 `Nano Banana Canvas Bundle` 单 Product + 三个套餐 Price，后续如需拆 Product 再评估）
 - [~] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price（Sandbox 已建 Standard / Pro / Ultimate）
 - [x] **SPAY-102** 为三档套餐分别创建 `one_time` 一次性 Price
-- [ ] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
+- [x] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
 - [~] **SPAY-104** 为所有套餐与积分包补齐多币种 Price（当前 recurring 套餐 Price 已按同一 Price 下 `currency_options` 建模）
-- [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 仍待补齐）
+- [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 作为后台可读性增强项保留待补）
 - [ ] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式
 
 #### Phase 1 当前状态（2026-04-22）
@@ -90,6 +90,16 @@
    - `Pro`: `price_1TOsAqEaFSfu5kGH8FKN3whW`
    - `Ultimate`: `price_1TOsAPEaFSfu5kGHMqetM1Xq`
    - 当前没有补 Stripe Dashboard metadata，不阻塞运行时推进；后续若需要让后台运营可读性更强，再回补即可
+6. **积分包 Product 与 Price 已补齐**
+   - 当前 credit-pack Product 为：`prod_UNdhVWSY14g6f8`
+   - `500 credits`: `price_1TOsQ2EaFSfu5kGHPXzmTO2P`
+   - `1200 credits`: `price_1TOsQdEaFSfu5kGHdeuL7JfC`
+   - `3500 credits`: `price_1TOsR4EaFSfu5kGHGdEJkr2z`
+   - `8000 credits`: `price_1TOsRQEaFSfu5kGH4xurdNtz`
+7. **Metadata 当前定位已澄清**
+   - Stripe 后台右侧红框“元数据”确实就是 metadata 编辑入口。
+   - Product 级 metadata 只适合放所有子 Price 共享的键，例如 `kind=plan`、`purchase_mode=plan_one_time` 或 `kind=credit_pack`。
+   - 像 `plan=standard/pro/ultimate`、`package_id=500/1200/3500/8000` 这类随 Price 变化的值，不应该三档共用一组 Product metadata。
 
 ### Phase 2：环境变量与服务端配置
 
@@ -196,7 +206,7 @@
 
 - [x] **SPAY-400** 重建 `lib/stripe.ts` 或拆分为 `lib/billing/stripe-client.ts`
 - [x] **SPAY-401** 实现 `getOrCreateStripeCustomer()`
-- [~] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单（当前已打通 `plan_auto_monthly + plan_one_time`，`credit_pack` 待补）
+- [x] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单
 - [ ] **SPAY-403** 实现 Customer Portal Session 创建器
 - [ ] **SPAY-404** 实现 Subscription cancel 服务
 - [ ] **SPAY-405** 实现 Webhook 签名验证器
@@ -231,6 +241,22 @@
    - `STRIPE_PRICE_ULTIMATE_PLAN_ONE_TIME`
 3. 当前仍未完成项
    - `credit_pack`
+   - Portal / Cancel / Webhook 签名与幂等
+
+#### Phase 4 Batch C 结论（2026-04-22）
+
+1. Checkout Session 创建器已补齐 `credit_pack`
+   - `plan_auto_monthly` 继续走 Stripe `subscription`
+   - `plan_one_time` 与 `credit_pack` 统一走 Stripe `payment`
+2. 本地 `apps/web/.env.local` 已写入四档积分包 Price ID
+   - `STRIPE_PRICE_CREDIT_PACK_500`
+   - `STRIPE_PRICE_CREDIT_PACK_1200`
+   - `STRIPE_PRICE_CREDIT_PACK_3500`
+   - `STRIPE_PRICE_CREDIT_PACK_8000`
+3. `checkout` metadata 已按订单类型分流
+   - 套餐单保留 `plan / purchaseMode / monthlyCredits / storageGB`
+   - 积分包单改写为 `packageId / purchaseMode / preferredCurrency`
+4. 当前仍未完成项
    - Portal / Cancel / Webhook 签名与幂等
 
 ### Phase 5：积分与权益引擎
@@ -287,6 +313,23 @@
    - `pnpm --filter @nano-banana/web test`
    - `pnpm --filter @nano-banana/web build`
 
+#### Phase 6 Batch C 结论（2026-04-22）
+
+1. `POST /api/billing/checkout` 已支持三类业务语义
+   - `plan_auto_monthly`
+   - `plan_one_time`
+   - `credit_pack`
+2. 当前请求体继续只接业务字段，不接客户端伪造价格
+   - 套餐链路传 `plan + purchaseMode`
+   - 积分包链路传 `packageId + purchaseMode`
+3. Stripe Checkout Session 的真实 Price 仍由服务端解析
+   - 继续依据 `purchaseMode / plan / packageId / currency`
+   - 不把 UI 金额当作支付真相源
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test`
+   - `pnpm --filter @nano-banana/web build`
+
 #### Phase 4/6 主线同步记录（2026-04-22）
 
 1. `feat/stripe-checkout-phase4` 已于 2026-04-22 合并进入 `main`，后续 Stripe 重建统一直接在 `main` 推进。
@@ -305,7 +348,7 @@
 ### Phase 8：前端 UI
 
 - [x] **SPAY-800** 重建 `/pricing` 页面
-- [ ] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换
+- [~] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换（前三者已完成，币种手动切换仍待补）
 - [ ] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
 - [ ] **SPAY-803** 重建 `/billing` 页面
 - [ ] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
@@ -338,6 +381,17 @@
    - 一次性套餐：创建 `payment` Checkout Session
 4. 当前仍未完成的 UI 范围
    - `credit_pack`
+   - 币种手动切换
+   - `/billing` 页面与账户侧账单入口
+
+#### Phase 8 Batch C 结论（2026-04-22）
+
+1. `/pricing` 已新增第三个购买维度：`积分包`
+2. 积分包价格同样从 Stripe 实时读取，不在前端硬编码金额
+3. 积分包 CTA 已接到统一 Checkout API
+   - 登录用户直接创建 `credit_pack` Checkout Session
+   - 匿名用户继续先跳登录，再回跳 `/pricing`
+4. 当前仍未完成的 UI 范围
    - 币种手动切换
    - `/billing` 页面与账户侧账单入口
 

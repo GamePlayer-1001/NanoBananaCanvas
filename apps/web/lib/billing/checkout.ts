@@ -11,24 +11,33 @@ import {
   type BillingCurrency,
   type BillingPlan,
   type BillingPurchaseMode,
+  type CreditPackId,
   resolveStripePriceId,
 } from './config'
 import { getBillingPlanSnapshot } from './plans'
 import { getOrCreateStripeCustomer, getStripe, requireAppBaseUrl } from './stripe-client'
 
-export interface CreateCheckoutSessionInput {
-  userId: string
-  plan: BillingPlan
-  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time'>
-  preferredCurrency: BillingCurrency
-}
+export type CreateCheckoutSessionInput =
+  | {
+      userId: string
+      plan: BillingPlan
+      purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time'>
+      preferredCurrency: BillingCurrency
+    }
+  | {
+      userId: string
+      packageId: CreditPackId
+      purchaseMode: Extract<BillingPurchaseMode, 'credit_pack'>
+      preferredCurrency: BillingCurrency
+    }
 
 export interface CheckoutSessionResult {
   checkoutUrl: string
   sessionId: string
   preferredCurrency: BillingCurrency
-  plan: BillingPlan
-  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time'>
+  plan?: BillingPlan
+  packageId?: CreditPackId
+  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time' | 'credit_pack'>
 }
 
 function buildSuccessUrl(appUrl: string): string {
@@ -40,6 +49,15 @@ function buildCancelUrl(appUrl: string): string {
 }
 
 function buildCheckoutMetadata(input: CreateCheckoutSessionInput): Stripe.MetadataParam {
+  if (input.purchaseMode === 'credit_pack') {
+    return {
+      userId: input.userId,
+      purchaseMode: input.purchaseMode,
+      packageId: input.packageId,
+      preferredCurrency: input.preferredCurrency,
+    }
+  }
+
   const snapshot = getBillingPlanSnapshot(input.plan)
 
   return {
@@ -60,7 +78,8 @@ export async function createCheckoutSession(
   const customer = await getOrCreateStripeCustomer(input.userId)
   const priceId = await resolveStripePriceId({
     purchaseMode: input.purchaseMode,
-    plan: input.plan,
+    plan: input.purchaseMode === 'credit_pack' ? undefined : input.plan,
+    packageId: input.purchaseMode === 'credit_pack' ? input.packageId : undefined,
     currency: input.preferredCurrency,
   })
 
@@ -94,7 +113,8 @@ export async function createCheckoutSession(
     checkoutUrl: session.url,
     sessionId: session.id,
     preferredCurrency: input.preferredCurrency,
-    plan: input.plan,
+    plan: input.purchaseMode === 'credit_pack' ? undefined : input.plan,
+    packageId: input.purchaseMode === 'credit_pack' ? input.packageId : undefined,
     purchaseMode: input.purchaseMode,
   }
 }

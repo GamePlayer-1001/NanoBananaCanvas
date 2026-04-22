@@ -54,6 +54,7 @@ export default async function PricingPage({
       <PricingContent
         isAuthenticated={Boolean(auth?.isAuthenticated)}
         plans={pricing.plans}
+        creditPacks={pricing.creditPacks}
       />
     </main>
   )

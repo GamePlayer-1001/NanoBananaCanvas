@@ -12,6 +12,8 @@ import { BillingError, ErrorCode } from '@/lib/errors'
 import {
   BILLING_PLANS,
   type BillingCurrency,
+  CREDIT_PACK_IDS,
+  type CreditPackId,
   resolveBillingCurrency,
   resolveStripePriceId,
 } from './config'
@@ -32,6 +34,28 @@ export interface PublicBillingPlanPrice {
 export interface PublicPricingPlansResult {
   currency: BillingCurrency
   plans: PublicBillingPlanPrice[]
+  creditPacks: PublicCreditPackPrice[]
+}
+
+export interface PublicCreditPackPrice {
+  packageId: CreditPackId
+  purchaseMode: 'credit_pack'
+  stripePriceId: string
+  currency: BillingCurrency
+  unitAmount: number
+  credits: number
+  bonusCredits: number
+  totalCredits: number
+}
+
+const CREDIT_PACK_SNAPSHOTS: Record<
+  CreditPackId,
+  { credits: number; bonusCredits: number }
+> = {
+  '500': { credits: 500, bonusCredits: 0 },
+  '1200': { credits: 1000, bonusCredits: 200 },
+  '3500': { credits: 2500, bonusCredits: 1000 },
+  '8000': { credits: 5000, bonusCredits: 3000 },
 }
 
 function resolveDisplayedAmount(
@@ -118,8 +142,33 @@ export async function getPublicPricingPlans(options: {
     ),
   )
 
+  const creditPacks = await Promise.all(
+    CREDIT_PACK_IDS.map(async (packageId) => {
+      const stripePriceId = await resolveStripePriceId({
+        purchaseMode: 'credit_pack',
+        packageId,
+        currency: preferredCurrency,
+      })
+      const stripePrice = await stripe.prices.retrieve(stripePriceId)
+      const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
+      const snapshot = CREDIT_PACK_SNAPSHOTS[packageId]
+
+      return {
+        packageId,
+        purchaseMode: 'credit_pack' as const,
+        stripePriceId,
+        currency: displayed.currency,
+        unitAmount: displayed.unitAmount,
+        credits: snapshot.credits,
+        bonusCredits: snapshot.bonusCredits,
+        totalCredits: snapshot.credits + snapshot.bonusCredits,
+      }
+    }),
+  )
+
   return {
     currency: preferredCurrency,
     plans,
+    creditPacks,
   }
 }
