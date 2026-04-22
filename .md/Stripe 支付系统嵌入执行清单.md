@@ -61,13 +61,29 @@
 
 ### Phase 1：Stripe Dashboard 建模
 
-- [ ] **SPAY-100** 在 Stripe Dashboard 创建 `Standard / Pro / Ultimate` 三个套餐 Product
-- [ ] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price
+- [~] **SPAY-100** 在 Stripe Dashboard 建立付费套餐商品模型（当前为 `Nano Banana Canvas Bundle` 单 Product + 三个套餐 Price，后续如需拆 Product 再评估）
+- [~] **SPAY-101** 为三档套餐分别创建 `auto_monthly` 订阅 Price（Sandbox 已建 Standard / Pro / Ultimate）
 - [ ] **SPAY-102** 为三档套餐分别创建 `one_time` 一次性 Price
 - [ ] **SPAY-103** 创建四个积分包 Product：`500 / 1200 / 3500 / 8000`
-- [ ] **SPAY-104** 为所有套餐与积分包补齐多币种 Price
-- [ ] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范
+- [~] **SPAY-104** 为所有套餐与积分包补齐多币种 Price（当前 recurring 套餐 Price 已按同一 Price 下 `currency_options` 建模）
+- [~] **SPAY-105** 统一 Product / Price 命名规范与 Metadata 规范（Sandbox 命名已落地一版，metadata 仍待补齐）
 - [ ] **SPAY-106** 配置 Stripe Customer Portal 可管理订阅、取消订阅与支付方式
+
+#### Phase 1 当前状态（2026-04-22）
+
+1. **当前 Dashboard 模型已从“多 Product”收口为“单 Product Bundle + 多 Price”**
+   - 当前沙盒 Product 为：`prod_UNKvLrNY5h3O8j`（Nano Banana Canvas Bundle）。
+   - 当前不再坚持“Standard / Pro / Ultimate 各一个 Product”的教条，而是接受 Stripe 后台更简洁的一个 Product 承载多个套餐 Price。
+2. **Sandbox 已存在三条 recurring 套餐 Price**
+   - `Standard`: `price_1TOaFXEaFSfu5kGH9qYwD8tK`
+   - `Pro`: `price_1TOaIGEaFSfu5kGH2s6ocPIe`
+   - `Ultimate`: `price_1TOaIpEaFSfu5kGHIqYjzQ1i`
+3. **多币种建模已确认采用 Stripe 官方推荐的“单 Price 多币种”**
+   - 同一个 Price 下通过 `currency_options` 维护 `usd / eur / gbp / cny` 等本地化金额。
+   - 代码侧不再要求每个币种都维护一组独立 Price ID；只有未来确实拆 Price 时才回退到按币种单独配置。
+4. **命名现实与代码语义对齐**
+   - 后台展示名曾出现 `Ultimatex`，但当前代码、数据库和文档统一继续使用内部语义 `ultimate`。
+   - 这意味着 `Ultimatex` 只视为后台展示命名差异，不新增第四档套餐。
 
 ### Phase 2：环境变量与服务端配置
 
@@ -81,15 +97,15 @@
 
 1. 已在 `apps/web/.env.example` 完成 Stripe 新方案占位：
    - 新增 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`、`STRIPE_PORTAL_CONFIGURATION_ID`、`STRIPE_DEFAULT_CURRENCY`
-   - 新增 `Standard / Pro / Ultimate` 三档在 `plan_auto_monthly / plan_one_time` 下的四币种 Price ID 占位
-   - 新增 `500 / 1200 / 3500 / 8000` 四个积分包在四币种下的 Price ID 占位
+   - 初版为 `Standard / Pro / Ultimate` 与积分包预留“按币种拆 Price”占位
+   - 后续已在 2026-04-22 收口为“优先共享 Price ID，按需兼容币种拆 Price”的更贴近 Stripe 官方模型的写法
 2. 已新增 `apps/web/lib/billing/config.ts` 作为当前 Stripe 配置真相源：
    - 集中解析 Secret Key / Webhook Secret / Portal Config / Price IDs
    - 提供 `getPlanPriceEnvKey()`、`getCreditPackPriceEnvKey()` 命名规范生成器
    - 提供 `getStripeBillingConfig()` 统一配置入口
 3. 已实现 `resolveStripePriceId()`：
-   - 套餐模式按 `plan + purchaseMode + currency` 解析
-   - 积分包模式按 `packageId + currency` 解析
+   - 套餐模式优先解析共享 Price ID，必要时才回退到 `plan + purchaseMode + currency`
+   - 积分包模式优先解析共享 Price ID，必要时才回退到 `packageId + currency`
    - Price 缺失时统一抛出 `BILLING_PRICE_NOT_CONFIGURED`
 4. 已实现币种白名单与推断器：
    - 白名单固定为 `usd / eur / gbp / cny`
@@ -105,6 +121,21 @@
 6. 已完成本地验证：
    - `pnpm --filter @nano-banana/web test -- lib/billing/config.test.ts lib/api/response.test.ts`
    - `pnpm --filter @nano-banana/web exec tsc --noEmit`
+
+#### Phase 2 Batch B 结论（2026-04-22）
+
+1. **多币种 Price 建模已纠偏**
+   - 从“每个币种一组独立 Price ID”的错误假设，修正为“优先单 Price + `currency_options`”。
+   - `.env.example` 已同步改成：共享 Price ID 为主，币种拆分 Price 作为兼容备用。
+2. **配置层已兼容两种 Stripe 后台建模**
+   - 场景 A：一个 Stripe Price 内部挂多币种 → 只需要一个 Price ID。
+   - 场景 B：不同币种真的拆成不同 Price → 仍可通过 `*_USD / *_EUR / *_GBP / *_CNY` 补充。
+3. **Checkout 不再把“IP 推断币种”误当成“必须独立 Price 解析”**
+   - IP 推断保留为展示/偏好语义。
+   - 真正的本地币种展示交由 Stripe Checkout 对 multi-currency Price 的原生支持处理。
+4. **本地验证已再次通过**
+   - `pnpm --filter @nano-banana/web test -- lib/billing/config.test.ts`
+   - `pnpm --filter @nano-banana/web build`
 
 ### Phase 3：数据库与账本结构
 
@@ -157,14 +188,32 @@
 
 ### Phase 4：Stripe 服务层
 
-- [ ] **SPAY-400** 重建 `lib/stripe.ts` 或拆分为 `lib/billing/stripe-client.ts`
-- [ ] **SPAY-401** 实现 `getOrCreateStripeCustomer()`
-- [ ] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单
+- [x] **SPAY-400** 重建 `lib/stripe.ts` 或拆分为 `lib/billing/stripe-client.ts`
+- [x] **SPAY-401** 实现 `getOrCreateStripeCustomer()`
+- [~] **SPAY-402** 实现 Checkout Session 创建器，支持三类订单（当前已打通 `plan_auto_monthly`，`plan_one_time / credit_pack` 待补）
 - [ ] **SPAY-403** 实现 Customer Portal Session 创建器
 - [ ] **SPAY-404** 实现 Subscription cancel 服务
 - [ ] **SPAY-405** 实现 Webhook 签名验证器
 - [ ] **SPAY-406** 实现 Webhook 幂等处理器
 - [ ] **SPAY-407** 为 Stripe 错误码做本地异常映射
+
+#### Phase 4 Batch A 结论（2026-04-22）
+
+1. 已新增 `apps/web/lib/billing/stripe-client.ts`
+   - 负责 Stripe SDK 初始化
+   - 校验 `NEXT_PUBLIC_APP_URL`
+   - 绑定或创建 Stripe Customer
+   - 预留并维护本地 `subscriptions` 镜像占位
+2. 已新增 `apps/web/lib/billing/plans.ts`
+   - 统一维护 `standard / pro / ultimate` 的 `monthlyCredits / storageGB`
+   - 避免把套餐权益散落到 route handler 中
+3. 已新增 `apps/web/lib/billing/checkout.ts`
+   - 当前先打通 `plan_auto_monthly`
+   - 创建 Checkout Session 时已把 `userId / plan / purchaseMode / monthlyCredits / storageGB` 写入 metadata
+4. 当前未完成项
+   - `plan_one_time`
+   - `credit_pack`
+   - Portal / Cancel / Webhook 签名与幂等
 
 ### Phase 5：积分与权益引擎
 
@@ -179,7 +228,7 @@
 
 ### Phase 6：API 路由
 
-- [ ] **SPAY-600** 重建 `POST /api/billing/checkout`
+- [x] **SPAY-600** 重建 `POST /api/billing/checkout`
 - [ ] **SPAY-601** 重建 `POST /api/billing/portal`
 - [ ] **SPAY-602** 重建 `POST /api/billing/cancel`
 - [ ] **SPAY-603** 重建 `GET /api/billing/subscription`
@@ -190,6 +239,20 @@
 - [ ] **SPAY-608** 重建 `GET /api/credits/transactions`
 - [ ] **SPAY-609** 重建 `GET /api/credits/usage`
 - [ ] **SPAY-610** 重建 `GET /api/pricing/plans`
+
+#### Phase 6 Batch A 结论（2026-04-22）
+
+1. 已恢复 `POST /api/billing/checkout`
+   - 路由位置：`apps/web/app/api/billing/checkout/route.ts`
+   - 当前必须登录，匿名用户不会直接进入结账
+2. 当前 Checkout API 行为
+   - 请求体只接收业务语义：`plan`、`purchaseMode`
+   - `purchaseMode` 当前仅开放 `plan_auto_monthly`
+   - 币种偏好通过显式参数或 `CF-IPCountry` 推断得到，但不再强迫映射为“独立币种 Price ID”
+3. 当前验证结果
+   - `eslint` 通过
+   - `vitest` 中 `lib/billing/config.test.ts` 通过
+   - `pnpm --filter @nano-banana/web build` 通过
 
 ### Phase 7：执行链路接回
 
