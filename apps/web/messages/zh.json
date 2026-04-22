@@ -82,6 +82,29 @@
       "builtFor": "为电影人创作者而生"
     }
   },
+  "pricing": {
+    "metaTitle": "AI 工作流套餐价格",
+    "metaDescription": "查看 Nano Banana Canvas 的动态订阅价格，价格由 Stripe 实时返回，并根据地区解析展示币种。",
+    "eyebrow": "Stripe 实时价格",
+    "title": "选择适合你生产规模的套餐",
+    "description": "页面价格在请求时直接从 Stripe 读取，不再把金额硬编码在 UI 里，这样后台改价后前端展示会自动跟上。",
+    "livePriceNote": "展示币种会根据你的地区和 Stripe 价格配置自动解析。",
+    "billedMonthly": "按月订阅",
+    "monthlyCredits": "每月积分",
+    "storageIncluded": "存储空间",
+    "storageValue": "{value} GB",
+    "currencyResolved": "结账币种：{currency}",
+    "startSubscription": "开始订阅",
+    "signInToSubscribe": "登录后订阅",
+    "redirecting": "跳转中...",
+    "popularBadge": "推荐",
+    "standardName": "Standard",
+    "standardDescription": "适合个人创作者，提供稳定的月度积分额度和基础生产存储空间。",
+    "proName": "Pro",
+    "proDescription": "适合高频创作个人与小团队，覆盖更多图片、视频与工作流产出。",
+    "ultimateName": "Ultimate",
+    "ultimateDescription": "适合更重度的生产团队，提供更大的积分预算与更长的存储缓冲。"
+  },
   "auth": {
     "brandName": "Nano Banana Canvas",
     "loginTitle": "欢迎回来",

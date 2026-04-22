@@ -238,7 +238,7 @@
 - [ ] **SPAY-607** 重建 `GET /api/credits/balance`
 - [ ] **SPAY-608** 重建 `GET /api/credits/transactions`
 - [ ] **SPAY-609** 重建 `GET /api/credits/usage`
-- [ ] **SPAY-610** 重建 `GET /api/pricing/plans`
+- [x] **SPAY-610** 重建 `GET /api/pricing/plans`
 
 #### Phase 6 Batch A 结论（2026-04-22）
 
@@ -253,6 +253,21 @@
    - `eslint` 通过
    - `vitest` 中 `lib/billing/config.test.ts` 通过
    - `pnpm --filter @nano-banana/web build` 通过
+
+#### Phase 6 Batch B 结论（2026-04-22）
+
+1. 已恢复 `GET /api/pricing/plans`
+   - 路由位置：`apps/web/app/api/pricing/plans/route.ts`
+   - 当前按 `CF-IPCountry` 或显式 `currency` 参数解析展示币种
+   - 数据不是本地硬编码，而是服务端实时读取 Stripe `plan_auto_monthly` Price
+2. 当前返回内容
+   - `standard / pro / ultimate` 三档公开套餐
+   - `unitAmount / currency / monthlyCredits / storageGB / stripePriceId`
+   - 当前只覆盖 `auto_monthly` 订阅价，不混入 `one_time / credit_pack`
+3. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test`
+   - `pnpm --filter @nano-banana/web build`
 
 #### Phase 4/6 主线同步记录（2026-04-22）
 
@@ -271,14 +286,30 @@
 
 ### Phase 8：前端 UI
 
-- [ ] **SPAY-800** 重建 `/pricing` 页面
+- [x] **SPAY-800** 重建 `/pricing` 页面
 - [ ] **SPAY-801** 在 Pricing 页面增加 `自动月付 / 一次性套餐 / 积分包 / 币种` 切换
 - [ ] **SPAY-802** 实现 Free 默认态展示文案，不显示“购买 Free”
 - [ ] **SPAY-803** 重建 `/billing` 页面
 - [ ] **SPAY-804** 重建 `CreditBalance` / `PaymentHistory` / `UsageChart`
 - [ ] **SPAY-805** 在账户页接回账单入口
 - [ ] **SPAY-806** 在侧边栏接回积分与升级入口，但不污染匿名主链
-- [ ] **SPAY-807** 为未登录 Checkout 操作补登录跳转与回跳
+- [x] **SPAY-807** 为未登录 Checkout 操作补登录跳转与回跳
+
+#### Phase 8 Batch A 结论（2026-04-22）
+
+1. 已恢复公开 `/pricing` 页面
+   - 路由位置：`apps/web/app/[locale]/(landing)/pricing/page.tsx`
+   - 页面当前动态读取 Stripe 套餐价格，不再在 UI 中硬编码金额
+2. 已新增 `components/pricing/pricing-content.tsx`
+   - 展示 `standard / pro / ultimate` 三档 `auto_monthly` 订阅价
+   - 同时展示本地权益镜像：`monthlyCredits / storageGB`
+3. 未登录结账动作已接回登录跳转
+   - 匿名用户点击 CTA 会跳到 `/sign-in?redirect_url=/pricing`
+   - 已登录用户点击 CTA 会调用 `POST /api/billing/checkout`
+4. 当前仍未完成的 UI 范围
+   - `one_time / credit_pack / 币种手动切换`
+   - `/billing` 页面与账户侧账单入口
+   - Free 默认态说明文案的完整产品化表达
 
 ### Phase 9：文案、i18n 与法务
 

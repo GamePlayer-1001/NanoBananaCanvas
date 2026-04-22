@@ -50,7 +50,7 @@ export function LandingFooter() {
       links: [
         { label: t('features'), href: '/#features' },
         { label: t('enterprise'), href: '/' },
-        { label: t('getStarted'), href: '/workspace' },
+        { label: t('getStarted'), href: '/pricing' },
       ],
     },
     {

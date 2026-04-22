@@ -82,6 +82,29 @@
       "builtFor": "Built for filmmakers and creators"
     }
   },
+  "pricing": {
+    "metaTitle": "AI Workflow Pricing Plans",
+    "metaDescription": "View Nano Banana Canvas subscription pricing with live Stripe-backed prices and region-aware currencies.",
+    "eyebrow": "Live Stripe pricing",
+    "title": "Choose the plan that matches your production volume",
+    "description": "Plan prices are loaded from Stripe at request time so the UI stays aligned with the real billing configuration instead of drifting behind hard-coded numbers.",
+    "livePriceNote": "Displayed currency is resolved from your region and Stripe price configuration.",
+    "billedMonthly": "Billed monthly",
+    "monthlyCredits": "Monthly credits",
+    "storageIncluded": "Storage included",
+    "storageValue": "{value} GB",
+    "currencyResolved": "Checkout currency: {currency}",
+    "startSubscription": "Start subscription",
+    "signInToSubscribe": "Sign in to subscribe",
+    "redirecting": "Redirecting...",
+    "popularBadge": "Popular",
+    "standardName": "Standard",
+    "standardDescription": "For solo creators who need a stable monthly credit pool and room for production assets.",
+    "proName": "Pro",
+    "proDescription": "For active operators and small teams shipping more image, video, and workflow output each month.",
+    "ultimateName": "Ultimate",
+    "ultimateDescription": "For heavier production teams that need a much larger credit budget and longer storage runway."
+  },
   "auth": {
     "brandName": "Nano Banana Canvas",
     "loginTitle": "Welcome back",

@@ -12,12 +12,13 @@ not-found.tsx               — 全局 404 页面
 globals.css                 — Tailwind v4 + Lux 主题 + 品牌色 Indigo + landing-dark
 robots.ts                   — robots.txt 动态生成 (SEO)
 sitemap.ts                  — sitemap.xml 动态生成 (SEO)
-api/                        — RESTful API 路由层 (见 api/CLAUDE.md，27 端点: billing/ai/files/tasks/workflows/explore/settings/webhooks...)
+api/                        — RESTful API 路由层 (见 api/CLAUDE.md，28 端点: pricing/billing/ai/files/tasks/workflows/explore/settings/webhooks...)
 
 [locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传)
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (HeroSection + LandingFooter)
+[locale]/(landing)/pricing/page.tsx        — 定价页 (Stripe 动态价格 + 登录/Checkout CTA)
 [locale]/(landing)/privacy/page.tsx        — 隐私政策 (PrivacyContent)
 [locale]/(landing)/terms/page.tsx          — 服务条款 (TermsContent)
 [locale]/(auth)/layout.tsx                  — 认证布局 (参考 martini.art 的双栏认证壳层，承载 Clerk 登录/注册页)
