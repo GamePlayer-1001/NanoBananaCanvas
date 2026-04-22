@@ -12,6 +12,9 @@ billing/                — Stripe 计费入口 (2 端点)
   subscription/route.ts — GET 当前用户订阅镜像摘要 (登录必需)
   cancel/route.ts       — POST 自动月付到期取消 (登录必需)
 
+credits/                — 积分账本读取入口 (1 端点)
+  balance/route.ts      — GET 当前用户双池积分余额摘要 (登录必需)
+
 pricing/                — 公开定价目录 (1 端点)
   plans/route.ts        — GET 动态套餐目录 (Stripe 拉价 + IP/currency 解析)
 
@@ -63,6 +66,6 @@ settings/               — 用户设置 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 商业化: Stripe Checkout、Portal、订阅摘要/取消、Webhook 与公开价格目录已接回最小闭环；credits 扣费引擎仍待后续接回
+- 商业化: Stripe Checkout、Portal、订阅摘要/取消、余额摘要、Webhook 与公开价格目录已接回最小闭环；credits 扣费引擎仍待后续接回
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

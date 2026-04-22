@@ -346,7 +346,7 @@
 - [ ] **SPAY-604** 重建 `GET /api/billing/packages`
 - [ ] **SPAY-605** 重建 `POST /api/billing/topup`
 - [x] **SPAY-606** 重建 `POST /api/webhooks/stripe`
-- [ ] **SPAY-607** 重建 `GET /api/credits/balance`
+- [x] **SPAY-607** 重建 `GET /api/credits/balance`
 - [ ] **SPAY-608** 重建 `GET /api/credits/transactions`
 - [ ] **SPAY-609** 重建 `GET /api/credits/usage`
 - [x] **SPAY-610** 重建 `GET /api/pricing/plans`
@@ -444,6 +444,22 @@
    - `pnpm --filter @nano-banana/web lint`
    - `pnpm --filter @nano-banana/web test`
    - `pnpm --filter @nano-banana/web build`
+
+#### Phase 6 Batch G 结论（2026-04-22）
+
+1. 已恢复 `GET /api/credits/balance`
+   - 路由位置：`apps/web/app/api/credits/balance/route.ts`
+   - 当前必须登录，匿名用户不能直接读取积分账本摘要
+2. 当前余额 API 返回口径
+   - 双池余额：`monthlyBalance / permanentBalance / frozenCredits`
+   - 聚合结果：`availableCredits / totalCredits`
+   - 套餐镜像：`plan / membershipStatus / currentPlanMonthlyCredits / storageGB`
+3. 当前实现方式
+   - 新增 `apps/web/lib/billing/credits.ts` 统一读取 `users + credit_balances + subscriptions`
+   - 如果用户已有账户但尚未生成 `credit_balances` 行，会先自动补齐空余额行，再返回摘要
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/web lint`
+   - `pnpm --filter @nano-banana/web test -- lib/billing/credits.test.ts`
 
 #### Phase 4/6 主线同步记录（2026-04-22）
 
