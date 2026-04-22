@@ -10,8 +10,7 @@ import { requireAuthenticatedAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { createCheckoutSession } from '@/lib/billing/checkout'
-import { getStripeBillingConfig, resolveBillingCurrency } from '@/lib/billing/config'
-import { ErrorCode, isAppError } from '@/lib/errors'
+import { resolveBillingCurrency } from '@/lib/billing/config'
 import { checkoutSchema } from '@/lib/validations/billing'
 
 export async function POST(req: Request) {
@@ -25,41 +24,17 @@ export async function POST(req: Request) {
     const { userId } = await requireAuthenticatedAuth()
     const body = await req.json()
     const params = checkoutSchema.parse(body)
-    const requestedCurrency = resolveBillingCurrency({
+    const preferredCurrency = resolveBillingCurrency({
       requestedCurrency: params.currency,
       countryCode: req.headers.get('cf-ipcountry'),
     })
 
-    let result
-
-    try {
-      result = await createCheckoutSession({
-        userId,
-        plan: params.plan,
-        purchaseMode: params.purchaseMode,
-        currency: requestedCurrency,
-      })
-    } catch (error) {
-      if (
-        isAppError(error) &&
-        error.code === ErrorCode.BILLING_PRICE_NOT_CONFIGURED
-      ) {
-        const config = await getStripeBillingConfig()
-
-        if (requestedCurrency !== config.defaultCurrency) {
-          result = await createCheckoutSession({
-            userId,
-            plan: params.plan,
-            purchaseMode: params.purchaseMode,
-            currency: config.defaultCurrency,
-          })
-        } else {
-          throw error
-        }
-      } else {
-        throw error
-      }
-    }
+    const result = await createCheckoutSession({
+      userId,
+      plan: params.plan,
+      purchaseMode: params.purchaseMode,
+      preferredCurrency,
+    })
 
     return apiOk(result, 201)
   } catch (error) {

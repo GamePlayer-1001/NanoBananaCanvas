@@ -20,13 +20,13 @@ export interface CreateCheckoutSessionInput {
   userId: string
   plan: BillingPlan
   purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly'>
-  currency: BillingCurrency
+  preferredCurrency: BillingCurrency
 }
 
 export interface CheckoutSessionResult {
   checkoutUrl: string
   sessionId: string
-  currency: BillingCurrency
+  preferredCurrency: BillingCurrency
   plan: BillingPlan
   purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly'>
 }
@@ -46,7 +46,7 @@ function buildSubscriptionMetadata(input: CreateCheckoutSessionInput): Stripe.Me
     userId: input.userId,
     plan: input.plan,
     purchaseMode: input.purchaseMode,
-    currency: input.currency,
+    preferredCurrency: input.preferredCurrency,
     monthlyCredits: String(snapshot.monthlyCredits),
     storageGB: String(snapshot.storageGB),
   }
@@ -61,7 +61,7 @@ export async function createCheckoutSession(
   const priceId = await resolveStripePriceId({
     purchaseMode: input.purchaseMode,
     plan: input.plan,
-    currency: input.currency,
+    currency: input.preferredCurrency,
   })
 
   const session = await stripe.checkout.sessions.create({
@@ -89,7 +89,7 @@ export async function createCheckoutSession(
   return {
     checkoutUrl: session.url,
     sessionId: session.id,
-    currency: input.currency,
+    preferredCurrency: input.preferredCurrency,
     plan: input.plan,
     purchaseMode: input.purchaseMode,
   }
