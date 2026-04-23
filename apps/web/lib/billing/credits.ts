@@ -9,6 +9,7 @@ import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 
 import { FREE_PLAN_SNAPSHOT } from './plans'
+import { getBillingSchemaInfo } from './schema'
 
 type CreditBalanceSummaryRow = {
   user_id: string
@@ -140,6 +141,11 @@ export interface CreditUsageResult {
 }
 
 async function ensureCreditBalanceRow(userId: string) {
+  const schema = await getBillingSchemaInfo()
+  if (!schema.hasCreditBalances) {
+    return
+  }
+
   const db = await getDb()
   await db
     .prepare(
@@ -186,29 +192,66 @@ function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSumm
   }
 }
 
-export async function getCreditBalanceSummary(userId: string): Promise<CreditBalanceSummary> {
-  await ensureCreditBalanceRow(userId)
+function hasUserColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.usersColumns.has(column)
+}
 
-  const db = await getDb()
-  const row = await db
-    .prepare(
-      `SELECT
-         u.id AS user_id,
-         u.plan,
-         u.membership_status,
-         cb.monthly_balance,
+function buildBalanceSummaryQuery(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+): string {
+  const planExpr = hasUserColumn(schema, 'plan') ? 'u.plan AS plan' : "'free' AS plan"
+  const membershipExpr = hasUserColumn(schema, 'membership_status')
+    ? 'u.membership_status AS membership_status'
+    : hasUserColumn(schema, 'plan')
+      ? 'u.plan AS membership_status'
+      : "'free' AS membership_status"
+  const balanceSelect = schema.hasCreditBalances
+    ? `cb.monthly_balance,
          cb.permanent_balance,
          cb.frozen_credits,
          cb.total_earned,
          cb.total_spent,
-         cb.updated_at,
-         s.monthly_credits AS subscription_monthly_credits,
-         s.storage_gb
+         cb.updated_at`
+    : `0 AS monthly_balance,
+         0 AS permanent_balance,
+         0 AS frozen_credits,
+         0 AS total_earned,
+         0 AS total_spent,
+         NULL AS updated_at`
+  const subscriptionSelect = schema.hasSubscriptions
+    ? `s.monthly_credits AS subscription_monthly_credits,
+         s.storage_gb`
+    : `NULL AS subscription_monthly_credits,
+         NULL AS storage_gb`
+  const balanceJoin = schema.hasCreditBalances
+    ? 'LEFT JOIN credit_balances cb ON cb.user_id = u.id'
+    : ''
+  const subscriptionJoin = schema.hasSubscriptions
+    ? 'LEFT JOIN subscriptions s ON s.user_id = u.id'
+    : ''
+
+  return `SELECT
+         u.id AS user_id,
+         ${planExpr},
+         ${membershipExpr},
+         ${balanceSelect},
+         ${subscriptionSelect}
        FROM users u
-       LEFT JOIN credit_balances cb ON cb.user_id = u.id
-       LEFT JOIN subscriptions s ON s.user_id = u.id
-       WHERE u.id = ?`,
-    )
+       ${balanceJoin}
+       ${subscriptionJoin}
+       WHERE u.id = ?`
+}
+
+export async function getCreditBalanceSummary(userId: string): Promise<CreditBalanceSummary> {
+  await ensureCreditBalanceRow(userId)
+
+  const schema = await getBillingSchemaInfo()
+  const db = await getDb()
+  const row = await db
+    .prepare(buildBalanceSummaryQuery(schema))
     .bind(userId)
     .first<CreditBalanceSummaryRow>()
 
@@ -242,6 +285,18 @@ export async function getCreditTransactions(
   const page = normalizePositiveInt(options?.page, 1, 500)
   const pageSize = normalizePositiveInt(options?.pageSize, 20, 100)
   const offset = (page - 1) * pageSize
+  const schema = await getBillingSchemaInfo()
+
+  if (!schema.hasCreditTransactions) {
+    return {
+      items: [],
+      total: 0,
+      page,
+      pageSize,
+      hasMore: false,
+    }
+  }
+
   const db = await getDb()
 
   const countRow = await db
@@ -326,6 +381,30 @@ export async function getCreditUsage(
   options?: { windowDays?: number },
 ): Promise<CreditUsageResult> {
   const windowDays = normalizePositiveInt(options?.windowDays, 30, 365)
+  const schema = await getBillingSchemaInfo()
+
+  if (!schema.hasAiUsageLogs) {
+    return {
+      windowDays,
+      summary: toUsageSummary(null),
+      byModel: [],
+      daily: [],
+    }
+  }
+
+  const pricingJoin = schema.hasModelPricing
+    ? `LEFT JOIN model_pricing mp
+         ON mp.provider = u.provider
+        AND mp.model_id = u.model_id`
+    : ''
+  const estimatedCreditsSql = schema.hasModelPricing
+    ? `SUM(
+           COALESCE(
+             u.estimated_credits,
+             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
+           )
+         )`
+    : 'SUM(COALESCE(u.estimated_credits, 0))'
   const db = await getDb()
 
   const summaryRow = await db
@@ -336,16 +415,9 @@ export async function getCreditUsage(
          SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
          SUM(COALESCE(u.input_tokens, 0)) AS total_input_tokens,
          SUM(COALESCE(u.output_tokens, 0)) AS total_output_tokens,
-         SUM(
-           COALESCE(
-             u.estimated_credits,
-             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
-           )
-         ) AS estimated_credits_spent
+         ${estimatedCreditsSql} AS estimated_credits_spent
        FROM ai_usage_logs u
-       LEFT JOIN model_pricing mp
-         ON mp.provider = u.provider
-        AND mp.model_id = u.model_id
+       ${pricingJoin}
        WHERE u.user_id = ?
          AND u.created_at >= datetime('now', ?)` ,
     )
@@ -362,16 +434,9 @@ export async function getCreditUsage(
          SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
          SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
          SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
-         SUM(
-           COALESCE(
-             u.estimated_credits,
-             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
-           )
-         ) AS estimated_credits_spent
+         ${estimatedCreditsSql} AS estimated_credits_spent
        FROM ai_usage_logs u
-       LEFT JOIN model_pricing mp
-         ON mp.provider = u.provider
-        AND mp.model_id = u.model_id
+       ${pricingJoin}
        WHERE u.user_id = ?
          AND u.created_at >= datetime('now', ?)
        GROUP BY u.provider, u.model_id
@@ -389,16 +454,9 @@ export async function getCreditUsage(
          SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
          SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
          SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
-         SUM(
-           COALESCE(
-             u.estimated_credits,
-             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
-           )
-         ) AS estimated_credits_spent
+         ${estimatedCreditsSql} AS estimated_credits_spent
        FROM ai_usage_logs u
-       LEFT JOIN model_pricing mp
-         ON mp.provider = u.provider
-        AND mp.model_id = u.model_id
+       ${pricingJoin}
        WHERE u.user_id = ?
          AND u.created_at >= datetime('now', ?)
        GROUP BY date(u.created_at)

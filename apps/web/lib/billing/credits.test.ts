@@ -15,17 +15,66 @@ import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 
 import { getCreditBalanceSummary, getCreditTransactions, getCreditUsage } from './credits'
+import { resetBillingSchemaCache } from './schema'
 
 function createDbMock(options: {
+  userColumns?: string[]
+  existingTables?: string[]
   balanceRow?: Record<string, unknown> | null
   transactionCountRow?: Record<string, unknown> | null
   transactionRows?: Record<string, unknown>[]
   usageSummaryRow?: Record<string, unknown> | null
   usageByModelRows?: Record<string, unknown>[]
   usageDailyRows?: Record<string, unknown>[]
+  onSql?: (sql: string) => void
 }): D1Database {
+  const existingTables = new Set(
+    options.existingTables ?? [
+      'users',
+      'credit_balances',
+      'credit_transactions',
+      'subscriptions',
+      'ai_usage_logs',
+      'model_pricing',
+    ],
+  )
+  const userColumns =
+    options.userColumns ??
+    [
+      'id',
+      'clerk_id',
+      'email',
+      'username',
+      'first_name',
+      'last_name',
+      'name',
+      'avatar_url',
+      'plan',
+      'membership_status',
+      'created_at',
+      'updated_at',
+    ]
+
   return {
     prepare: vi.fn((sql: string) => {
+      options.onSql?.(sql)
+
+      if (sql.includes("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+        return {
+          bind: vi.fn((tableName: string) => ({
+            first: vi.fn().mockResolvedValue(existingTables.has(tableName) ? { name: tableName } : null),
+          })),
+        }
+      }
+
+      if (sql.includes("PRAGMA table_info('users')")) {
+        return {
+          all: vi.fn().mockResolvedValue({
+            results: userColumns.map((name) => ({ name })),
+          }),
+        }
+      }
+
       if (sql.includes('INSERT OR IGNORE INTO credit_balances')) {
         return {
           bind: vi.fn().mockReturnValue({
@@ -90,6 +139,7 @@ function createDbMock(options: {
 describe('getCreditBalanceSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetBillingSchemaCache()
   })
 
   it('returns merged balances from monthly, permanent and frozen pools', async () => {
@@ -132,6 +182,50 @@ describe('getCreditBalanceSummary', () => {
     vi.mocked(getDb).mockResolvedValue(createDbMock({ balanceRow: null }))
 
     await expect(getCreditBalanceSummary('missing-user')).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('falls back to free defaults when billing tables are missing', async () => {
+    const capturedSql: string[] = []
+
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        existingTables: ['users'],
+        userColumns: ['id', 'clerk_id', 'email', 'created_at'],
+        balanceRow: {
+          user_id: 'legacy-user',
+          plan: 'free',
+          membership_status: 'free',
+          monthly_balance: 0,
+          permanent_balance: 0,
+          frozen_credits: 0,
+          total_earned: 0,
+          total_spent: 0,
+          updated_at: null,
+          subscription_monthly_credits: null,
+          storage_gb: null,
+        },
+        onSql: (sql) => capturedSql.push(sql),
+      }),
+    )
+
+    await expect(getCreditBalanceSummary('legacy-user')).resolves.toEqual({
+      userId: 'legacy-user',
+      plan: 'free',
+      membershipStatus: 'free',
+      monthlyBalance: 0,
+      permanentBalance: 0,
+      frozenCredits: 0,
+      availableCredits: 0,
+      totalCredits: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+      currentPlanMonthlyCredits: 0,
+      storageGB: 1,
+      updatedAt: null,
+    })
+
+    expect(capturedSql.some((sql) => sql.includes('LEFT JOIN subscriptions'))).toBe(false)
+    expect(capturedSql.some((sql) => sql.includes('LEFT JOIN credit_balances'))).toBe(false)
   })
 
   it('returns paginated credit transactions ordered by newest first', async () => {

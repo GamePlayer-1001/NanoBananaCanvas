@@ -11,6 +11,7 @@ import { getDb } from '@/lib/db'
 import { BillingError, ErrorCode, NotFoundError } from '@/lib/errors'
 
 import { FREE_PLAN_SNAPSHOT } from './plans'
+import { getBillingSchemaInfo } from './schema'
 import { withStripeErrorMapping } from './stripe-error'
 import { getStripe } from './stripe-client'
 
@@ -123,15 +124,24 @@ function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary
   }
 }
 
-async function getSubscriptionRow(userId: string): Promise<SubscriptionRow> {
-  const db = await getDb()
-  const row = await db
-    .prepare(
-      `SELECT
-         u.id AS user_id,
-         u.plan AS user_plan,
-         u.membership_status,
-         s.id,
+function hasUserColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.usersColumns.has(column)
+}
+
+function buildSubscriptionQuery(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+): string {
+  const userPlanExpr = hasUserColumn(schema, 'plan') ? 'u.plan AS user_plan' : "'free' AS user_plan"
+  const membershipExpr = hasUserColumn(schema, 'membership_status')
+    ? 'u.membership_status AS membership_status'
+    : hasUserColumn(schema, 'plan')
+      ? 'u.plan AS membership_status'
+      : "'free' AS membership_status"
+  const subscriptionSelect = schema.hasSubscriptions
+    ? `s.id,
          s.stripe_subscription_id,
          s.stripe_customer_id,
          s.plan,
@@ -144,11 +154,40 @@ async function getSubscriptionRow(userId: string): Promise<SubscriptionRow> {
          s.storage_gb,
          s.cancel_at_period_end,
          s.created_at,
-         s.updated_at
+         s.updated_at`
+    : `NULL AS id,
+         NULL AS stripe_subscription_id,
+         NULL AS stripe_customer_id,
+         NULL AS plan,
+         NULL AS purchase_mode,
+         NULL AS billing_period,
+         NULL AS status,
+         NULL AS current_period_start,
+         NULL AS current_period_end,
+         NULL AS monthly_credits,
+         NULL AS storage_gb,
+         NULL AS cancel_at_period_end,
+         NULL AS created_at,
+         NULL AS updated_at`
+  const subscriptionJoin = schema.hasSubscriptions
+    ? 'LEFT JOIN subscriptions s ON s.user_id = u.id'
+    : ''
+
+  return `SELECT
+         u.id AS user_id,
+         ${userPlanExpr},
+         ${membershipExpr},
+         ${subscriptionSelect}
        FROM users u
-       LEFT JOIN subscriptions s ON s.user_id = u.id
-       WHERE u.id = ?`,
-    )
+       ${subscriptionJoin}
+       WHERE u.id = ?`
+}
+
+async function getSubscriptionRow(userId: string): Promise<SubscriptionRow> {
+  const schema = await getBillingSchemaInfo()
+  const db = await getDb()
+  const row = await db
+    .prepare(buildSubscriptionQuery(schema))
     .bind(userId)
     .first<SubscriptionRow>()
 
