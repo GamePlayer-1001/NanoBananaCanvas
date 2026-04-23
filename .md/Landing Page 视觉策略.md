@@ -1,7 +1,8 @@
 # Nano Banana Canvas - Landing Page 视觉策略
 
-> 文档版本：v1.0
+> 文档版本：v2.0
 > 创建日期：2026-03-04
+> 更新日期：2026-04-23
 > 关联文档：项目框架结构.md、项目执行规范.md、archive/差距分析报告.md
 
 ---
@@ -508,11 +509,250 @@ const animationDuration = shouldReduceMotion ? 0 : 600
 
 ---
 
-## 十、更新日志
+## 十、v2.0 Landingpage UI 迭代方案
 
-| 日期       | 版本 | 变更内容                                                           |
-| ---------- | ---- | ------------------------------------------------------------------ |
-| 2026-03-04 | v1.0 | 初始版本：视觉叙事策略、双引擎动效架构、Section 详细设计、色彩系统 |
+### 10.1 现象诊断
+
+当前 Landing 的真实代码结构是 `HeroSection + SEO 内容区 + LandingFooter`，Hero 内部是文字节点卡片与 SVG 连线，导航包含无效按钮，FAQ 是三列静态卡片。该结构能表达“画布工具”，但还没有表达“图像生成逻辑”和“多模型生产网络”，因此用户感知会停留在工具截图，而不是创作叙事。
+
+需求中的核心矛盾不是“多加动画”，而是视觉叙事缺少单一主轴。新的主轴应改为：
+
+```
+图像特征输入 -> 人物融合 -> 场景融合 -> 动态视频输出 -> 多模型网络支撑 -> 功能与价格证明 -> FAQ 消除顾虑 -> CTA 转化
+```
+
+### 10.2 本质方案
+
+Landing 应从“深色科技展示页”升级为“黑白电影感的全屏创作旅程”。页面不再依赖零散卡片堆叠，而是采用全屏 Section snap：鼠标滚轮一次推进一个叙事板块，右侧以自动隐藏的节点式进度轨提示当前位置。能被一屏讲清的内容不跨屏重复，能用图像讲清的能力不再用文字节点解释。
+
+最适合解决该任务的团队组合是：
+
+| 角色                          | 代入方式                                   | 落地标准                     |
+| ----------------------------- | ------------------------------------------ | ---------------------------- |
+| Framer/ReactBits 视觉动效团队 | 先定义滚动节奏和动效语法，再拆组件         | 动效服务叙事，不做无意义漂浮 |
+| Linear/Stripe 信息架构团队    | 去掉无效入口，把价格、FAQ、法务路径变清楚  | 每个链接都有明确目标         |
+| Google Search 技术 SEO 团队   | 子页面树服务搜索意图，FAQ 与结构化数据同源 | 不造假、不堆关键词、不做门页 |
+| 顶级电影概念设计团队          | 用图像节点表达 1+1=2 的生成逻辑            | Hero 一眼看懂“画布如何创造”  |
+
+### 10.3 新页面结构
+
+```
+Hero 首屏区
+模型支持动态脑图区
+Features 功能特性展示区
+Pricing 定价预览区
+Testimonials 社会证明区
+FAQ 常见问题区
+CTA + Footer 底部转化区
+```
+
+执行原则：
+
+- Hero 负责建立“可视化生成逻辑”，不要承载所有功能说明。
+- 模型支持区负责证明生态广度，不要塞到 Hero 的小字里。
+- Features 负责图文并茂地解释核心能力，每个功能对应一张视觉资产或动效演示。
+- Pricing 首页只展示四档摘要，复杂购买模式继续交给 `/pricing`。
+- Testimonials 如果没有真实用户反馈，先用“使用场景证明卡”替代，避免伪造评价污染信任与 SEO。
+- FAQ 保留在首页但改为手风琴，结构化数据只引用页面真实可见问答。
+
+### 10.4 视觉系统修订
+
+| 项目      | v1.0                | v2.0                                           |
+| --------- | ------------------- | ---------------------------------------------- |
+| 主色      | 低饱和紫蓝强调      | 黑白为主，银灰与玻璃质感为辅                   |
+| CTA       | 品牌紫蓝按钮        | 黑底白字、白底黑字，两种高对比按钮             |
+| 品牌字标  | `font-brand` 已接入 | 全站统一放大艺术手写字标，优先复用 `BrandMark` |
+| 背景      | 暗色渐变 + 点阵     | 满屏黑色电影感背景 + 颗粒、柔光、玻璃反射      |
+| 内容密度  | 多卡片并列          | 一屏一主题，少字大图，大留白但不空洞           |
+| Hero 节点 | 文本节点            | 图片节点，表达人物、特征、场景、动态结果       |
+
+推荐配色：
+
+```css
+:root {
+  --landing-bg-base: #030303;
+  --landing-bg-panel: #0a0a0a;
+  --landing-ink: #f7f4ee;
+  --landing-muted: rgba(247, 244, 238, 0.62);
+  --landing-faint: rgba(247, 244, 238, 0.34);
+  --landing-line: rgba(247, 244, 238, 0.14);
+  --landing-glass: rgba(255, 255, 255, 0.055);
+  --landing-cta-dark: #050505;
+  --landing-cta-light: #f7f4ee;
+  --landing-reflection: rgba(255, 255, 255, 0.18);
+}
+```
+
+保留约束：
+
+- 不使用大面积蓝白按钮。
+- 不使用荧光色与彩虹渐变。
+- 不用三层以上嵌套的特殊动画逻辑。
+- 品牌字标统一走 `BrandMark`，不在各组件里各自写字体。
+
+### 10.5 Hero 图像节点叙事
+
+Hero 画板应扩大为接近全屏的视觉容器，节点不再是文字卡片，而是六个图像节点：
+
+| 节点 | 内容                             | 连接语义           |
+| ---- | -------------------------------- | ------------------ |
+| 1    | 女孩 A 的脸部特征特写            | 提供人物特征       |
+| 2    | 女孩 B 的人像                    | 提供人物主体       |
+| 3    | 融合结果：拥有 A 特征的女孩 B    | 节点 1 + 节点 2    |
+| 4    | 风景背景图                       | 提供环境           |
+| 5    | 女孩置入风景                     | 节点 3 + 节点 4    |
+| 6    | 女孩在动态风景中行走的视频感预览 | 节点 5 -> 动态输出 |
+
+Hero 连线消失问题的正确修法不是增加更多边界 if，而是统一坐标系：
+
+- 画板使用固定逻辑坐标和响应式缩放。
+- SVG 使用与节点相同的逻辑尺寸和 `overflow: visible`。
+- 节点拖动被限制在逻辑画板安全边界内。
+- 连线路径从节点中心端口计算，不依赖容器裁剪。
+
+### 10.6 滚动与动效策略
+
+桌面端采用 Section snap：
+
+- 页面容器使用 `scroll-snap-type: y mandatory`。
+- 每个核心板块使用 `min-height: 100svh` 与 `scroll-snap-align: start`。
+- 滚轮一次只推进一个板块，避免轻触滚轮滚过多屏。
+- 右侧进度条改为节点式 rail，默认透明，滚动或鼠标接近时展示。
+
+动效职责：
+
+| 场景              | 首选实现                               | 说明                     |
+| ----------------- | -------------------------------------- | ------------------------ |
+| Section 进入/离开 | CSS + IntersectionObserver 或 anime.js | 先做可控，不为依赖而依赖 |
+| Hero 连线流光     | SVG stroke-dashoffset / anime.js       | 表达数据流               |
+| 模型脑图聚合      | anime.js timeline                      | 多点进入、聚合、离场     |
+| FAQ 展开          | shadcn Collapsible + CSS transition    | 轻交互，少依赖           |
+| Pricing 切换      | 现有 React state + CSS transition      | 保持现有稳定逻辑         |
+
+当前代码未安装 `animejs` 与 `framer-motion`。执行时应先做依赖决策：如果只需要 Section reveal、FAQ、CTA hover，CSS 与 React 即可；如果要实现复杂脑图时间线，再引入 `animejs`。不要为了追求“看起来高级”提前引入两套动画引擎。
+
+### 10.7 模型支持动态脑图
+
+模型区采用云脑图，而不是横向 logo 堆砌。中心节点是 `Nano Banana Canvas`，四个能力簇围绕展开：
+
+- 文本与推理：OpenAI、Anthropic、xAI、Groq、Qwen、DeepSeek、OpenRouter、Google Gemini。
+- 图像：Midjourney、Black Forest Labs、Qwen Image、Google Imagen/Gemini、OpenAI、Stability。
+- 视频：Runway、Luma、Kling、Vidu、MiniMax、ByteDance、Alibaba Wan、Google。
+- 音频：OpenAI Audio、ElevenLabs、MiniMax、Google。
+
+页面文案必须区分“当前真实运行时支持”和“生态规划支持”。真实运行时以 `ai_models`、`MODEL_PROVIDER_OPTIONS`、`ai-node-config` 为准；视觉展示可以表达生态方向，但不能误导为全部已接线可用。
+
+### 10.8 子页面树
+
+公开页面树建议如下：
+
+```
+/
+/features
+/features/visual-workflow
+/features/image-generation
+/features/video-generation
+/features/model-routing
+/models
+/pricing
+/docs
+/community
+/about
+/contact
+/terms
+/privacy
+/refund-policy
+/acceptable-use
+/cookie-settings
+```
+
+执行约束：
+
+- 当前 `/contact` 位于 `(app)` 路由组，若要作为公开资源入口，应迁移到 `(landing)` 路由组，避免公开页进入 AppSidebar 语义。
+- 新增页面必须同步 `sitemap.ts`、metadata、i18n、对应 `CLAUDE.md`。
+- `features/*` 页面不做薄内容，每页必须有独立主意图、图像资产、FAQ 或可验证能力说明。
+
+### 10.9 Auth 页面方向
+
+登录页左侧视觉保留“好看”的大图氛围，但移除左上品牌标识与左下解释性旧需求文案。新的左侧图像方向：
+
+```
+迷幻夜晚，表层颗粒反光，流光溢彩，大量热气球从起伏地面升空，仰拍视角，远处未升空与已升空的热气球和星星交相辉映，镜头眩光材质，电影感，梦幻但不甜腻。
+```
+
+右侧调整：
+
+- Logo 必须展示，并使用放大的 `BrandMark`。
+- 删除“输入邮箱和密码...”这类说明性句子。
+- Clerk 卡片阴影改为向下投影，距离略远，扩散更大，避免贴纸感。
+
+### 10.10 图像资产提示词
+
+Hero 六节点统一风格提示词：
+
+```text
+Cinematic monochrome editorial still, subtle silver highlights, soft film grain, reflective glass surface, high-end AI creative workflow aesthetic, black background, realistic but dreamlike, 16:10, no text, no watermark.
+```
+
+节点 1：
+
+```text
+Close-up portrait crop of a young woman's facial features, expressive eyes, delicate cheek structure, cinematic monochrome, silver reflection, soft grain, black background, no text.
+```
+
+节点 2：
+
+```text
+Half-body portrait of another young woman, calm confident expression, minimal black studio background, cinematic monochrome, subtle glass reflection, no text.
+```
+
+节点 3：
+
+```text
+Portrait of the second woman carrying the distinctive facial features from the first reference, elegant and coherent identity fusion, cinematic monochrome, silver highlights, no text.
+```
+
+节点 4：
+
+```text
+Surreal night landscape, rolling ground, distant lights, subtle mist, cinematic monochrome with silver highlights, empty space for composition, no text.
+```
+
+节点 5：
+
+```text
+The fused woman standing inside the surreal night landscape, coherent lighting, cinematic monochrome, reflective particles, soft lens bloom, no text.
+```
+
+节点 6：
+
+```text
+Video keyframe feeling: the same woman walking through the dynamic surreal night landscape, motion blur, flowing particles, cinematic monochrome, silver lens flare, no text.
+```
+
+登录页左侧图像提示词：
+
+```text
+Psychedelic dreamlike night scene, surface-level granular reflections, iridescent flowing light, many hot air balloons rising from uneven rolling ground, low angle upward view, distant balloons still on the ground and others already in the sky, stars interweaving with balloon lights, lens flare material, cinematic, magical but premium, no text, no logo.
+```
+
+### 10.11 验收标准
+
+- 首页每个核心板块一屏完成主要表达，桌面端滚轮一次推进一屏。
+- Hero 图像节点拖动时连线不消失，节点不会被容器硬裁掉。
+- 主 CTA 全部改为黑白高对比，不再使用蓝白主按钮。
+- 导航不再出现无效按钮，企业版入口移除。
+- FAQ 改为可展开收起，结构化数据与页面可见内容一致。
+- 新子页面树进入 sitemap，私有页面继续 noindex。
+- `BrandMark` 是唯一品牌字标入口，主页、导航、登录页全部使用艺术手写字体。
+- 移动端不强行执行复杂 snap，优先保证阅读和 CTA 可达。
+
+## 十一、更新日志
+
+| 日期       | 版本 | 变更内容                                                                                                          |
+| ---------- | ---- | ----------------------------------------------------------------------------------------------------------------- |
+| 2026-03-04 | v1.0 | 初始版本：视觉叙事策略、双引擎动效架构、Section 详细设计、色彩系统                                                |
+| 2026-04-23 | v2.0 | 根据 UI 迭代需求更新 Landing 为黑白电影感、满屏板块滚动、图像节点叙事、模型动态脑图、FAQ 手风琴与公开子页面树方案 |
 
 ---
 
