@@ -141,6 +141,9 @@ importers:
       vitest:
         specifier: ^4.0.18
         version: 4.0.18(@types/node@20.19.35)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(lightningcss@1.31.1)(msw@2.12.10(@types/node@20.19.35)(typescript@5.9.3))(terser@5.16.9)(yaml@2.8.2)
+      wrangler:
+        specifier: ^4.40.0
+        version: 4.70.0(@cloudflare/workers-types@4.20260301.1)
 
   apps/worker:
     dependencies:

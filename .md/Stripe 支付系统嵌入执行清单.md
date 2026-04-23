@@ -988,6 +988,21 @@
    - 生产部署阻塞点已进一步收敛为“等待带有浏览器安装 + D1 重置链的新回合验证”
    - 修复已落地，但仍需再次推送 `main` 触发新回合验证后才能把 `SPAY-1008` 划掉
 
+#### Phase 10 Batch N 结论（2026-04-23）
+
+1. 已拿到第六次 CI 失败的最终根因
+   - `1c0c11d` 推送后，远端已确认 Playwright Chromium 安装成功，`pnpm lint` 也已恢复
+   - 当前失败点收敛为 `apps/web` 的 `db:init` 仍依赖机器全局 `wrangler`，GitHub Actions 干净环境在 `Playwright webServer` 启动时直接报出 `sh: 1: wrangler: not found`
+2. 已把 Cloudflare/D1 本地工具链收口为项目内依赖
+   - `apps/web/package.json` 当前已把 `db:init / db:seed / db:seed-models / dev:cf` 全部改为 `pnpm exec wrangler`
+   - `apps/web` 当前新增本地开发依赖 `wrangler@^4.40.0`，彻底消除“本地靠全局安装、CI 无法启动”的特殊情况
+3. 已完成本地回归验证
+   - `pnpm --filter @nano-banana/e2e test` 已通过（21/21）
+   - `pnpm --filter @nano-banana/web test` 已通过（24 文件 / 155 测试）
+4. 当前 `SPAY-1008` 的真实状态
+   - 生产部署阻塞点已进一步收敛为“等待带有项目内 wrangler 工具链的新回合验证”
+   - 修复与本地验证都已完成，但仍需再次推送 `main` 触发 CI/CD 后才能把 `SPAY-1008` 划掉
+
 ---
 
 ## 三、推荐落地顺序
