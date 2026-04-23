@@ -51,16 +51,16 @@ export function LandingFooter() {
       title: t('product'),
       links: [
         { label: t('features'), href: '/#features' },
-        { label: t('enterprise'), href: '/' },
-        { label: t('getStarted'), href: '/pricing' },
+        { label: t('models'), href: '/#models' },
+        { label: t('pricing'), href: '/pricing' },
       ],
     },
     {
       title: t('company'),
       links: [
-        { label: t('about'), href: '/' },
-        { label: t('joinUs'), href: '/' },
-        { label: t('trustSafety'), href: '/' },
+        { label: t('about'), href: '/contact' },
+        { label: t('contactUs'), href: '/contact' },
+        { label: t('faq'), href: '/#faq' },
         { label: t('terms'), href: '/terms' },
         { label: t('privacy'), href: '/privacy' },
       ],
@@ -68,8 +68,8 @@ export function LandingFooter() {
     {
       title: t('contact'),
       links: [
-        { label: t('creatorCommunity'), href: '/' },
-        { label: t('creativePartners'), href: '/' },
+        { label: t('creatorCommunity'), href: '/workflows' },
+        { label: t('creativePartners'), href: '/contact' },
       ],
     },
   ]
@@ -86,20 +86,19 @@ export function LandingFooter() {
               <BrandMark className="text-xl text-white" />
             </div>
             <p className="mb-4 text-sm text-white/40">{t('tagline')}</p>
-            {/* 社交图标占位 */}
-            <div className="flex gap-4 text-white/30">
-              <span className="cursor-pointer transition-colors hover:text-white/60">
-                💬
-              </span>
-              <span className="cursor-pointer transition-colors hover:text-white/60">
-                🔗
-              </span>
-              <span className="cursor-pointer transition-colors hover:text-white/60">
-                📷
-              </span>
-              <span className="cursor-pointer transition-colors hover:text-white/60">
-                ✉️
-              </span>
+            <div className="flex flex-wrap gap-3 text-sm text-white/35">
+              <Link href="/contact" className="transition-colors hover:text-white/70">
+                Telegram
+              </Link>
+              <Link href="/contact" className="transition-colors hover:text-white/70">
+                Discord
+              </Link>
+              <Link href="/contact" className="transition-colors hover:text-white/70">
+                X
+              </Link>
+              <Link href="/contact" className="transition-colors hover:text-white/70">
+                Instagram
+              </Link>
             </div>
           </div>
 

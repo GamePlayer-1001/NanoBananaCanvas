@@ -2,12 +2,13 @@
 
 > L2 | 父级: apps/web/CLAUDE.md
 
-Landing 首页专用组件 — 交互式画板 Hero
+Landing 首页专用组件 — 交互式画板 Hero + 首页面叙事区块
 
 ## 成员清单
 
 ```
 hero-section.tsx     — HeroSection 交互式画板 (可拖动节点 + SVG bezier 连线 + 标题覆盖层)
+landing-sections.tsx — Landing 首页内容区集合 (模型动态脑图 / Features / Pricing 四档 / Testimonials / FAQ / CTA)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

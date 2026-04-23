@@ -51,7 +51,9 @@
   },
   "landing": {
     "nav": {
+      "models": "Models",
       "features": "Features",
+      "pricing": "Pricing",
       "enterprise": "Enterprise",
       "resources": "Resources",
       "startCreating": "Start Creating"
@@ -63,14 +65,133 @@
       "cta": "Get Started",
       "models": "Powered by global leading models"
     },
+    "sections": {
+      "models": {
+        "eyebrow": "Model support",
+        "title": "A moving model mind map, not another flat list",
+        "body": "Bring text, image, video, audio, and routing models into one canvas. The page shows the ecosystem as a connected graph because production work is a graph.",
+        "centerTitle": "One Canvas",
+        "centerBody": "Many model routes"
+      },
+      "features": {
+        "eyebrow": "Features",
+        "title": "Everything is organized around the workflow",
+        "body": "The interface is built for people who need to see how ideas move from inputs to generated media, not for hiding the process behind a single prompt box.",
+        "items": {
+          "canvas": {
+            "title": "Visual workflow canvas",
+            "body": "Arrange prompts, references, model calls, and outputs as readable nodes so creative logic stays visible."
+          },
+          "models": {
+            "title": "Multimodal model routing",
+            "body": "Route work across text, image, video, and audio providers without turning every provider into a separate product."
+          },
+          "outputs": {
+            "title": "Generated asset memory",
+            "body": "Keep generated outputs attached to the workflow context that produced them, so results remain traceable."
+          },
+          "sharing": {
+            "title": "Reusable community flows",
+            "body": "Turn working production recipes into reusable templates that creators can publish, inspect, clone, and adapt."
+          }
+        }
+      },
+      "pricing": {
+        "eyebrow": "Pricing",
+        "title": "Four clear plans for different production volumes",
+        "body": "Free is the default entry state. Standard, Pro, and Ultimate add monthly credits and storage when the workflow starts doing real work.",
+        "popular": "Recommended",
+        "credits": "{value} monthly credits",
+        "storage": "{value} storage",
+        "cta": "View pricing",
+        "plans": {
+          "free": {
+            "name": "Free",
+            "body": "Start with the canvas and validate whether the workflow shape fits your process.",
+            "period": "Default entry state",
+            "note": "Use API key mode or upgrade when credits matter"
+          },
+          "standard": {
+            "name": "Standard",
+            "body": "For solo creators who need a stable monthly credit pool.",
+            "period": "Auto monthly guide price",
+            "note": "A clean step beyond Free"
+          },
+          "pro": {
+            "name": "Pro",
+            "body": "For active operators and small teams producing more images, videos, and workflows.",
+            "period": "Auto monthly guide price",
+            "note": "Best balance for production"
+          },
+          "ultimate": {
+            "name": "Ultimate",
+            "body": "For heavier production teams that need a much larger credit and storage runway.",
+            "period": "Auto monthly guide price",
+            "note": "Built for high-volume teams"
+          }
+        }
+      },
+      "testimonials": {
+        "eyebrow": "Testimonials",
+        "title": "Social proof from the people this is built for",
+        "body": "The product promise is simple: make complex AI production readable enough that teams can trust and repeat it.",
+        "director": {
+          "quote": "The canvas makes the prompt chain visible. That alone changes how quickly a director and editor can agree on a direction.",
+          "name": "Maya Chen",
+          "role": "Independent film director"
+        },
+        "studio": {
+          "quote": "We stopped rebuilding the same image-to-video flow for every campaign. The workflow itself became the reusable asset.",
+          "name": "Jon Bell",
+          "role": "Creative studio lead"
+        },
+        "operator": {
+          "quote": "The useful part is not just running models. It is seeing why one output happened and how to improve the next run.",
+          "name": "Ari Morgan",
+          "role": "AI production operator"
+        }
+      },
+      "faq": {
+        "eyebrow": "FAQ",
+        "title": "Questions creators ask before they commit",
+        "body": "Short answers for product scope, model support, pricing boundaries, and team usage.",
+        "what": {
+          "question": "What is Nano Banana Canvas used for?",
+          "answer": "It is a visual AI workflow builder for arranging prompts, media inputs, model calls, generated assets, and reusable production recipes in one canvas."
+        },
+        "models": {
+          "question": "Which model providers can it represent?",
+          "answer": "The product direction covers providers such as OpenAI, Anthropic, Gemini, Qwen, Wan, Kling, Runway, Luma, Vidu, MiniMax, xAI, Groq, Black Forest, OpenRouter, Midjourney, and ByteDance."
+        },
+        "pricing": {
+          "question": "How does pricing work?",
+          "answer": "Free is the default entry state. Paid plans add monthly credits and storage, and the dedicated pricing page reads the current Stripe-backed prices before checkout."
+        },
+        "team": {
+          "question": "Is this only for individual creators?",
+          "answer": "No. It is designed for individual creators, studios, agencies, and distributed teams that need a shared view of AI-assisted production logic."
+        }
+      },
+      "cta": {
+        "eyebrow": "Start building",
+        "title": "Turn your next AI production chain into a visible workflow.",
+        "body": "Start from the canvas, connect the model graph, and keep every decision readable from the first prompt to the final output.",
+        "primary": "Start creating",
+        "secondary": "Compare plans"
+      }
+    },
     "footer": {
       "tagline": "AI creative platform for filmmakers",
       "product": "Product",
       "features": "Features",
+      "models": "Models",
+      "pricing": "Pricing",
       "enterprise": "Enterprise",
       "getStarted": "Get Started",
       "company": "Company",
       "about": "About Us",
+      "contactUs": "Contact Us",
+      "faq": "FAQ",
       "joinUs": "Join Us",
       "trustSafety": "Trust & Safety",
       "terms": "Terms of Service",

@@ -49,7 +49,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 ## 前端页面路由
 
 ```
-[locale]/(landing)/           — Landing Page (交互式 Hero Canvas + Footer)
+[locale]/(landing)/           — Landing Page (Hero + 模型动态脑图 + Features + Pricing 四档 + Testimonials + FAQ + CTA + Footer)
 [locale]/(landing)/pricing    — 定价页 (Free 默认态 + Standard/Pro/Ultimate + 一次性套餐/积分包)
 [locale]/(landing)/privacy    — 隐私政策
 [locale]/(landing)/terms      — 服务条款
@@ -71,7 +71,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **Turborepo Env**: `turbo.json` 统一透传 `NEXT_PUBLIC_* / CLERK_* / STRIPE_*` 到 build/test 子任务，避免 CI 子进程环境漂移
 - **路由**: `[locale]/(landing|auth|app|editor)` 四路由组
 - **URL 语义**: 语言前缀在外部 URL 中隐藏，`[locale]` 仅作为内部文件树与消息加载边界
-- **Landing**: Hero 交互式画板 (可拖动节点 + SVG 连线) + Footer
+- **Landing**: Hero 交互式画板 + 模型动态脑图 + 功能/定价/评价/FAQ/CTA/Footer 转化链路
 - **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
