@@ -12,13 +12,22 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 /**
  * 统一的环境变量获取入口
  *
- * 内部通过 getCloudflareContext() 读取 Cloudflare Workers 环境变量
- * 本地开发时由 wrangler/next-dev 自动注入
+ * 内部优先通过 getCloudflareContext() 读取 Cloudflare Workers 环境变量
+ * 本地开发时如果 Cloudflare context 尚未注入，则回退到 process.env
  * 生产环境由 wrangler.toml [vars] 和 secrets 提供
  */
 export async function getEnv(key: string): Promise<string | undefined> {
-  const { env } = await getCloudflareContext()
-  return (env as unknown as Record<string, string>)[key]
+  try {
+    const { env } = await getCloudflareContext()
+    const runtimeValue = (env as unknown as Record<string, string | undefined>)[key]
+    if (runtimeValue != null) {
+      return runtimeValue
+    }
+  } catch {
+    // 本地 next dev / vitest 无 Cloudflare context 时继续回退
+  }
+
+  return process.env[key]
 }
 
 /**

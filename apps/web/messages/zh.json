@@ -491,7 +491,15 @@
   },
   "contact": {
     "title": "联系我们",
-    "subtitle": "通过 Telegram、Discord、X 和 Instagram 与 Nano Banana Canvas 团队及社区取得联系。"
+    "subtitle": "通过 Telegram、Discord、X 和 Instagram 与 Nano Banana Canvas 团队及社区取得联系。",
+    "telegram": "Telegram",
+    "telegramDesc": "加入 Telegram 频道，获取产品更新和社区讨论。",
+    "discord": "Discord",
+    "discordDesc": "和创作者交流、分享工作流，并从社区获得帮助。",
+    "twitter": "X",
+    "twitterDesc": "关注产品公告、路线图更新和版本发布动态。",
+    "instagram": "Instagram",
+    "instagramDesc": "查看视觉更新、创作者案例和幕后内容。"
   },
   "legal": {
     "termsTitle": "服务条款",

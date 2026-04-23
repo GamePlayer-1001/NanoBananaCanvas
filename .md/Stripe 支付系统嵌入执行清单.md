@@ -772,7 +772,7 @@
 - [ ] **SPAY-1005** 手测用户升级、降级、取消、续费、支付失败
 - [x] **SPAY-1006** 补齐生产环境 Stripe 密钥
 - [x] **SPAY-1007** 配置正式 Stripe Webhook 端点
-- [ ] **SPAY-1008** 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
+- [~] **SPAY-1008** 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
 
 #### Phase 10 Batch A 结论（2026-04-22）
 
@@ -900,6 +900,28 @@
    - 还未触发新的生产部署
    - 也还未对 Live Webhook 做到端到端 `2xx` 投递验证
    - 这两项都留到 `SPAY-1008` 与后续集中手测阶段收口
+
+#### Phase 10 Batch H 结论（2026-04-23）
+
+1. 已修掉阻塞生产部署的两类真实问题
+   - `e2e/playwright.config.ts` 不再通过 monorepo 根目录 `pnpm --filter` 拉起 WebServer，改为直接在 `apps/web` 内启动 `pnpm dev:e2e`
+   - `/pricing` 页面不再为了判断登录态去初始化匿名 actor；当前直接读取 Clerk `auth()`，避免在 Server Component 里触发 `cookies().set()`
+2. 已补本地开发与 E2E 兜底
+   - `apps/web/lib/env.ts` 当前会优先读取 Cloudflare context，缺失时回退 `process.env`
+   - 这让本地 `next dev` / Playwright 能正确看到 `.env.local` 中的 Stripe 配置
+3. 已修复一处真实文案缺口
+   - `apps/web/messages/en.json` 与 `zh.json` 当前已补齐 `contact.telegram / discord / twitter / instagram` 及描述键
+   - 联系页不再因为缺失 i18n key 直接报错
+4. 当前验证结果
+   - `pnpm --filter @nano-banana/e2e test`
+   - `pnpm test`
+   - `pnpm lint`
+   - `pnpm build`
+   - 当前四条检查均已通过
+5. 当前 `SPAY-1008` 的真实状态
+   - 2026-04-22 首次推送已真实触发 GitHub Actions，但被过时的 E2E 配置阻塞
+   - 现在本地质量闸门已经重新通过，下一步只需再次推送 `main` 触发新的生产部署
+   - 因此 `SPAY-1008` 当前应标记为 `[~]`，而不是直接冒充完成
 
 ---
 

@@ -491,7 +491,15 @@
   },
   "contact": {
     "title": "Contact Us",
-    "subtitle": "Talk with the Nano Banana Canvas team and community across Telegram, Discord, X, and Instagram."
+    "subtitle": "Talk with the Nano Banana Canvas team and community across Telegram, Discord, X, and Instagram.",
+    "telegram": "Telegram",
+    "telegramDesc": "Join the Telegram channel for product updates and community discussion.",
+    "discord": "Discord",
+    "discordDesc": "Chat with creators, share workflows, and get help from the community.",
+    "twitter": "X",
+    "twitterDesc": "Follow product announcements, roadmap notes, and release highlights.",
+    "instagram": "Instagram",
+    "instagramDesc": "See visual updates, creator showcases, and behind-the-scenes content."
   },
   "legal": {
     "termsTitle": "Terms of Service",
