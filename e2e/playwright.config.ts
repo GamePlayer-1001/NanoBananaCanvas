@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @playwright/test 的 defineConfig
  * [OUTPUT]: 对外提供 Playwright E2E 测试配置
- * [POS]: e2e 的测试运行器配置，直接在 apps/web 内启动 dev server，并固定本地端口
+ * [POS]: e2e 的测试运行器配置，直接在 apps/web 内启动 dev server，并为 CI 提供更宽的冷启动窗口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -29,6 +29,6 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     cwd: '../apps/web',
-    timeout: 120_000,
+    timeout: process.env.CI ? 300_000 : 120_000,
   },
 })

@@ -923,6 +923,21 @@
    - 现在本地质量闸门已经重新通过，下一步只需再次推送 `main` 触发新的生产部署
    - 因此 `SPAY-1008` 当前应标记为 `[~]`，而不是直接冒充完成
 
+#### Phase 10 Batch I 结论（2026-04-23）
+
+1. 已定位第二次生产部署失败的真实根因
+   - `ef85883` 推送后，GitHub Actions 不再卡在断言层，而是 `@nano-banana/e2e` 的 Playwright `webServer` 等待超时
+   - 问题本质不是 Stripe 代码回归，而是 CI 的 `pnpm test` 步骤没有注入公开页真实依赖的 Clerk / Stripe 运行时变量，同时 CI 冷启动窗口也偏紧
+2. 已修正 CI 与 E2E 启动协议
+   - `.github/workflows/deploy.yml` 当前已为 `pnpm test` 显式注入 `NEXT_PUBLIC_APP_URL`、`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`、`STRIPE_SECRET_KEY`、`STRIPE_DEFAULT_CURRENCY`、`STRIPE_PORTAL_CONFIGURATION_ID` 与全部 10 个 `STRIPE_PRICE_*`
+   - `e2e/playwright.config.ts` 当前已把 CI 场景的 `webServer.timeout` 从 `120s` 放宽到 `300s`
+3. 已完成 GitHub Actions 配置写入
+   - 仓库级 `Variables` 已补齐 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`、`STRIPE_DEFAULT_CURRENCY`、`STRIPE_PORTAL_CONFIGURATION_ID` 与全部 Live Price IDs
+   - 仓库级 `Secrets` 已补齐 `STRIPE_SECRET_KEY` 与 `STRIPE_WEBHOOK_SECRET`
+4. 当前 `SPAY-1008` 的真实状态
+   - 生产部署链的剩余阻塞点已从“代码缺陷”收敛为“等待新的 CI/CD 回合验证”
+   - 在新的推送回合真实跑完前，`SPAY-1008` 仍应保持 `[~]`
+
 ---
 
 ## 三、推荐落地顺序
