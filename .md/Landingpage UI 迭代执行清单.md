@@ -167,7 +167,7 @@
 - [x] LUI-1005 新建 `/features/model-routing`。
 - [x] LUI-1006 新建 `/models`。
 - [x] LUI-1007 新建 `/docs`。
-- [ ] LUI-1008 新建 `/community` 或将公开社区入口明确指向现有 `/explore`。
+- [x] LUI-1008 新建 `/community` 或将公开社区入口明确指向现有 `/explore`；当前导航与页脚 Community 均指向 `/explore`。
 - [x] LUI-1009 新建 `/about`。
 - [ ] LUI-1010 决定并执行 `/contact` 公开化迁移。
 - [ ] LUI-1011 新建 `/refund-policy`。
