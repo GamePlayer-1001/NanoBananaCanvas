@@ -1003,6 +1003,18 @@
    - 生产部署阻塞点已进一步收敛为“等待带有项目内 wrangler 工具链的新回合验证”
    - 修复与本地验证都已完成，但仍需再次推送 `main` 触发 CI/CD 后才能把 `SPAY-1008` 划掉
 
+#### Phase 10 Batch O 结论（2026-04-23）
+
+1. 已拿到第七次 CI 失败的最终根因
+   - `8f1fd7e` 推送后，远端已确认 `wrangler` 缺失问题被消除，`@nano-banana/web` 的 Vitest 也已完整通过
+   - 当前失败点收敛为 `Playwright webServer` 启动后的 `/pricing` 页面会读取 Stripe billing 配置，但 GitHub Actions 的 `pnpm test` 步骤尚未注入 `STRIPE_WEBHOOK_SECRET`，导致远端只在 E2E 阶段报出 `Missing required environment variable: STRIPE_WEBHOOK_SECRET`
+2. 已把 Stripe 测试运行时补齐到与本地一致
+   - `.github/workflows/deploy.yml` 当前已在 `pnpm test` 步骤补上 `STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}`
+   - `.github/CLAUDE.md` 已同步声明测试阶段会注入 Stripe Webhook secret
+3. 当前 `SPAY-1008` 的真实状态
+   - 生产部署阻塞点已进一步收敛为“等待带有完整 Stripe secret 注入的新回合验证”
+   - 修复已落地，但仍需再次推送 `main` 触发 CI/CD 后才能把 `SPAY-1008` 划掉
+
 ---
 
 ## 三、推荐落地顺序
