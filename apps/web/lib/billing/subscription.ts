@@ -8,7 +8,7 @@
 import type Stripe from 'stripe'
 
 import { getDb } from '@/lib/db'
-import { BillingError, ErrorCode, NotFoundError } from '@/lib/errors'
+import { BillingError, ErrorCode } from '@/lib/errors'
 
 import { FREE_PLAN_SNAPSHOT } from './plans'
 import { getBillingSchemaInfo } from './schema'
@@ -124,6 +124,28 @@ function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary
   }
 }
 
+function createFreeSubscriptionRow(userId: string): SubscriptionRow {
+  return {
+    id: null,
+    user_id: userId,
+    stripe_subscription_id: null,
+    stripe_customer_id: null,
+    plan: FREE_PLAN_SNAPSHOT.plan,
+    purchase_mode: null,
+    billing_period: null,
+    status: 'active',
+    current_period_start: null,
+    current_period_end: null,
+    monthly_credits: FREE_PLAN_SNAPSHOT.monthlyCredits,
+    storage_gb: FREE_PLAN_SNAPSHOT.storageGB,
+    cancel_at_period_end: null,
+    created_at: null,
+    updated_at: null,
+    user_plan: FREE_PLAN_SNAPSHOT.plan,
+    membership_status: FREE_PLAN_SNAPSHOT.plan,
+  }
+}
+
 function hasUserColumn(
   schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
   column: string,
@@ -140,6 +162,10 @@ function hasSubscriptionColumn(
 
 function canReadSubscriptions(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
   return schema.hasSubscriptions && hasSubscriptionColumn(schema, 'user_id')
+}
+
+function canReadUsers(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return schema.usersColumns.has('id')
 }
 
 function subscriptionColumn(
@@ -205,6 +231,10 @@ function buildSubscriptionQuery(
 
 async function getSubscriptionRow(userId: string): Promise<SubscriptionRow> {
   const schema = await getBillingSchemaInfo()
+  if (!canReadUsers(schema)) {
+    return createFreeSubscriptionRow(userId)
+  }
+
   const db = await getDb()
   const row = await db
     .prepare(buildSubscriptionQuery(schema))
@@ -212,7 +242,7 @@ async function getSubscriptionRow(userId: string): Promise<SubscriptionRow> {
     .first<SubscriptionRow>()
 
   if (!row) {
-    throw new NotFoundError('billing_user', userId)
+    return createFreeSubscriptionRow(userId)
   }
 
   return row

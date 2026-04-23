@@ -89,6 +89,7 @@
     "title": "Choose the plan that matches your production volume",
     "description": "Plan prices are loaded from Stripe at request time so the UI stays aligned with the real billing configuration instead of drifting behind hard-coded numbers.",
     "livePriceNote": "Displayed currency is resolved automatically from your region and Stripe price configuration.",
+    "pricingUnavailable": "Paid prices cannot be loaded from Stripe right now. You can still use the Free entry point; paid checkout will return when billing configuration is available.",
     "freeEyebrow": "Free is the default entry state",
     "freeTitle": "Start on Free first. Upgrade only when your production volume actually grows.",
     "freeDescription": "Free is not a checkout product. It is the account state you land in by default, so you can enter the canvas, validate the workflow, and only move into paid plans when monthly credits or storage become the real bottleneck.",
@@ -316,12 +317,16 @@
     "currentBaseUrl": "Current base URL: {baseUrl}",
     "capability_text": "Text",
     "capability_text_desc": "Manage API providers and models used by text-generation nodes.",
+    "capability_text_model_placeholder": "e.g. openai/gpt-4o-mini",
     "capability_image": "Image",
     "capability_image_desc": "Manage API providers and models used by image-generation nodes.",
+    "capability_image_model_placeholder": "e.g. gemini-2.5-flash-image",
     "capability_video": "Video",
     "capability_video_desc": "Manage API providers and models used by video-generation nodes.",
+    "capability_video_model_placeholder": "e.g. kling-v1",
     "capability_audio": "Audio",
-    "capability_audio_desc": "Manage API providers and models used by audio-generation nodes."
+    "capability_audio_desc": "Manage API providers and models used by audio-generation nodes.",
+    "capability_audio_model_placeholder": "e.g. tts-1"
   },
   "billing": {
     "eyebrow": "Billing workspace",

@@ -12,8 +12,6 @@ vi.mock('@/lib/db', () => ({
 }))
 
 import { getDb } from '@/lib/db'
-import { NotFoundError } from '@/lib/errors'
-
 import { getCreditBalanceSummary, getCreditTransactions, getCreditUsage } from './credits'
 import { resetBillingSchemaCache } from './schema'
 
@@ -236,10 +234,24 @@ describe('getCreditBalanceSummary', () => {
     })
   })
 
-  it('throws when the user row does not exist', async () => {
+  it('falls back to free defaults when the user row does not exist', async () => {
     vi.mocked(getDb).mockResolvedValue(createDbMock({ balanceRow: null }))
 
-    await expect(getCreditBalanceSummary('missing-user')).rejects.toBeInstanceOf(NotFoundError)
+    await expect(getCreditBalanceSummary('missing-user')).resolves.toEqual({
+      userId: 'missing-user',
+      plan: 'free',
+      membershipStatus: 'free',
+      monthlyBalance: 0,
+      permanentBalance: 0,
+      frozenCredits: 0,
+      availableCredits: 0,
+      totalCredits: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+      currentPlanMonthlyCredits: 0,
+      storageGB: 1,
+      updatedAt: null,
+    })
   })
 
   it('falls back to free defaults when billing tables are missing', async () => {

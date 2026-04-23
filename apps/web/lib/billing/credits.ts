@@ -6,8 +6,6 @@
  */
 
 import { getDb } from '@/lib/db'
-import { NotFoundError } from '@/lib/errors'
-
 import { FREE_PLAN_SNAPSHOT } from './plans'
 import { getBillingSchemaInfo } from './schema'
 
@@ -200,32 +198,6 @@ function canReadCreditTransactions(schema: Awaited<ReturnType<typeof getBillingS
   )
 }
 
-async function ensureCreditBalanceRow(userId: string) {
-  const schema = await getBillingSchemaInfo()
-  if (!canReadCreditBalances(schema)) {
-    return
-  }
-
-  const writableColumns = [
-    'monthly_balance',
-    'permanent_balance',
-    'frozen_credits',
-    'total_earned',
-    'total_spent',
-  ].filter((column) => hasCreditBalanceColumn(schema, column))
-  const columns = ['user_id', ...writableColumns]
-  const placeholders = columns.map(() => '?').join(', ')
-  const values = [userId, ...writableColumns.map(() => 0)]
-  const db = await getDb()
-  await db
-    .prepare(
-      `INSERT OR IGNORE INTO credit_balances (${columns.join(', ')})
-       VALUES (${placeholders})`,
-    )
-    .bind(...values)
-    .run()
-}
-
 function normalizePositiveInt(value: number | undefined, fallback: number, max: number): number {
   if (!value || Number.isNaN(value)) {
     return fallback
@@ -253,6 +225,28 @@ function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSumm
     currentPlanMonthlyCredits: row.subscription_monthly_credits ?? FREE_PLAN_SNAPSHOT.monthlyCredits,
     storageGB: row.storage_gb ?? FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: row.updated_at,
+  }
+}
+
+function canReadUsers(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return schema.usersColumns.has('id')
+}
+
+function createFreeCreditBalanceSummary(userId: string): CreditBalanceSummary {
+  return {
+    userId,
+    plan: FREE_PLAN_SNAPSHOT.plan,
+    membershipStatus: FREE_PLAN_SNAPSHOT.plan,
+    monthlyBalance: 0,
+    permanentBalance: 0,
+    frozenCredits: 0,
+    availableCredits: 0,
+    totalCredits: 0,
+    totalEarned: 0,
+    totalSpent: 0,
+    currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
+    storageGB: FREE_PLAN_SNAPSHOT.storageGB,
+    updatedAt: null,
   }
 }
 
@@ -313,9 +307,11 @@ function buildBalanceSummaryQuery(
 }
 
 export async function getCreditBalanceSummary(userId: string): Promise<CreditBalanceSummary> {
-  await ensureCreditBalanceRow(userId)
-
   const schema = await getBillingSchemaInfo()
+  if (!canReadUsers(schema)) {
+    return createFreeCreditBalanceSummary(userId)
+  }
+
   const db = await getDb()
   const row = await db
     .prepare(buildBalanceSummaryQuery(schema))
@@ -323,7 +319,7 @@ export async function getCreditBalanceSummary(userId: string): Promise<CreditBal
     .first<CreditBalanceSummaryRow>()
 
   if (!row) {
-    throw new NotFoundError('billing_user', userId)
+    return createFreeCreditBalanceSummary(userId)
   }
 
   return toCreditBalanceSummary(row)
@@ -347,8 +343,6 @@ export async function getCreditTransactions(
   userId: string,
   options?: { page?: number; pageSize?: number },
 ): Promise<CreditTransactionsResult> {
-  await ensureCreditBalanceRow(userId)
-
   const page = normalizePositiveInt(options?.page, 1, 500)
   const pageSize = normalizePositiveInt(options?.pageSize, 20, 100)
   const offset = (page - 1) * pageSize

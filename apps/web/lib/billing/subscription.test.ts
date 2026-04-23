@@ -153,4 +153,26 @@ describe('getBillingSubscription', () => {
 
     expect(capturedSql.some((sql) => sql.includes('LEFT JOIN subscriptions'))).toBe(false)
   })
+
+  it('falls back to free summary when the user mirror row is missing', async () => {
+    vi.mocked(getDb).mockResolvedValue(createDbMock({ subscriptionRow: null }))
+
+    await expect(getBillingSubscription('missing-user')).resolves.toEqual({
+      userId: 'missing-user',
+      plan: 'free',
+      membershipStatus: 'free',
+      purchaseMode: 'free',
+      billingPeriod: 'monthly',
+      status: 'active',
+      monthlyCredits: 0,
+      storageGB: 1,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      portalEligible: false,
+      cancelEligible: false,
+    })
+  })
 })

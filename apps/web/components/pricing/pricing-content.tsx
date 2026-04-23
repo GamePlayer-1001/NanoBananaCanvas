@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useLocale/useTranslations，依赖 @/i18n/navigation 的 Link/useRouter，
  *          依赖 @/components/ui/button
  * [OUTPUT]: 对外提供 PricingContent 动态定价组件
- * [POS]: components/pricing 的主渲染器，被 /pricing 页面消费，负责展示 Stripe 动态价格并触发 Checkout
+ * [POS]: components/pricing 的主渲染器，被 /pricing 页面消费，负责展示 Stripe 动态价格、Free 降级态并触发 Checkout
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -17,6 +17,7 @@ import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billin
 
 export interface PricingContentProps {
   isAuthenticated: boolean
+  isPricingReady?: boolean
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
 }
@@ -29,7 +30,12 @@ function formatMoney(locale: string, currency: string, amount: number): string {
   }).format(amount / 100)
 }
 
-export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingContentProps) {
+export function PricingContent({
+  isAuthenticated,
+  isPricingReady = true,
+  plans,
+  creditPacks,
+}: PricingContentProps) {
   const t = useTranslations('pricing')
   const locale = useLocale()
   const router = useRouter()
@@ -135,6 +141,11 @@ export function PricingContent({ isAuthenticated, plans, creditPacks }: PricingC
             {t('description')}
           </p>
           <p className="mt-4 text-sm text-white/45">{t('livePriceNote')}</p>
+          {!isPricingReady ? (
+            <p className="mx-auto mt-4 max-w-2xl rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">
+              {t('pricingUnavailable')}
+            </p>
+          ) : null}
           <div className="mt-8 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
             <button
               type="button"

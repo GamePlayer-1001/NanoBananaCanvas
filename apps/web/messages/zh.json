@@ -89,6 +89,7 @@
     "title": "选择适合你生产规模的套餐",
     "description": "页面价格在请求时直接从 Stripe 读取，不再把金额硬编码在 UI 里，这样后台改价后前端展示会自动跟上。",
     "livePriceNote": "展示币种会根据你的地区和 Stripe 价格配置自动解析，无需手动切换。",
+    "pricingUnavailable": "付费价格暂时无法从 Stripe 读取。你仍然可以使用 Free 入口；付费购买会在计费配置恢复后开放。",
     "freeEyebrow": "Free 是默认进入态",
     "freeTitle": "先从 Free 开始，只有当生产规模真的上来时再升级。",
     "freeDescription": "Free 不是一个需要结账的商品，而是账户默认进入状态。你可以先进入画布、验证工作流是否成立，只有当每月积分或存储空间真的变成瓶颈时，再进入付费套餐。",
@@ -316,12 +317,16 @@
     "currentBaseUrl": "当前 Base URL：{baseUrl}",
     "capability_text": "文本",
     "capability_text_desc": "管理文本生成节点使用的 API 提供商与模型配置。",
+    "capability_text_model_placeholder": "例如：openai/gpt-4o-mini",
     "capability_image": "图像",
     "capability_image_desc": "管理图像生成节点使用的 API 提供商与模型配置。",
+    "capability_image_model_placeholder": "例如：gemini-2.5-flash-image",
     "capability_video": "视频",
     "capability_video_desc": "管理视频生成节点使用的 API 提供商与模型配置。",
+    "capability_video_model_placeholder": "例如：kling-v1",
     "capability_audio": "音频",
-    "capability_audio_desc": "管理音频生成节点使用的 API 提供商与模型配置。"
+    "capability_audio_desc": "管理音频生成节点使用的 API 提供商与模型配置。",
+    "capability_audio_model_placeholder": "例如：tts-1"
   },
   "billing": {
     "eyebrow": "账单工作台",

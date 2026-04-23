@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 react 的 useState，
  *          依赖 ./profile-tab, ./works-tab, ./notifications-tab, ./model-preferences-tab
  * [OUTPUT]: 对外提供 AccountContent 账户页主内容组件
- * [POS]: profile 的页面式账户中心，被 /account 路由消费
+ * [POS]: profile 的页面式账户中心，被 /account 路由消费，默认展示个人资料
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -35,7 +35,7 @@ const TAB_CONTENT: Record<TabId, React.FC> = {
 
 export function AccountContent() {
   const t = useTranslations('profile')
-  const [activeTab, setActiveTab] = useState<TabId>('modelPreferences')
+  const [activeTab, setActiveTab] = useState<TabId>('profile')
   const ActiveContent = TAB_CONTENT[activeTab]
 
   return (

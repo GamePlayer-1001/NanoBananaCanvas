@@ -3,7 +3,7 @@
 
 ## 成员清单
 
-account-content.tsx: AccountContent 账户页主内容，左侧二级导航 sticky + 右侧内容面板
+account-content.tsx: AccountContent 账户页主内容，左侧二级导航 sticky + 右侧内容面板，默认停留个人资料
 profile-modal.tsx: ProfileModal 旧个人中心弹窗，已不再作为主入口
 profile-tab.tsx: ProfileTab 个人资料面板，展示 actor 资料镜像 + 匿名/登录状态说明 + 本地账单页/Stripe Portal 入口
 model-preferences-tab.tsx: ModelPreferencesTab API 接入配置面板，四类能力卡片 + 每卡多条配置 + 名称/脱敏状态/新增测试删除

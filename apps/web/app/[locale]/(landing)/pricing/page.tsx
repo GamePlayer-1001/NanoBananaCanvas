@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @clerk/nextjs/server 的 auth，依赖 next-intl/server 的 getTranslations/setRequestLocale，依赖 next/headers 的 headers，
  *          依赖 @/components/pricing/pricing-content，依赖 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 `/pricing` 公开定价页
- * [POS]: (landing) 路由组的商业化入口页，展示 Stripe 动态套餐价格并按地区自动解析展示币种
+ * [POS]: (landing) 路由组的商业化入口页，展示 Stripe 动态套餐价格并在计费配置异常时保留 Free 入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -42,19 +42,21 @@ export default async function PricingPage({
   setRequestLocale(locale)
 
   const requestHeaders = await headers()
-  const [{ userId }, pricing] = await Promise.all([
-    auth(),
-    getPublicPricingPlans({
-      countryCode: requestHeaders.get('cf-ipcountry'),
-    }),
-  ])
+  const { userId } = await auth()
+  const pricing = await getPublicPricingPlans({
+    countryCode: requestHeaders.get('cf-ipcountry'),
+  }).catch((error: unknown) => {
+    console.error('[pricing] Failed to load Stripe prices', error)
+    return null
+  })
 
   return (
     <main>
       <PricingContent
         isAuthenticated={Boolean(userId)}
-        plans={pricing.plans}
-        creditPacks={pricing.creditPacks}
+        isPricingReady={Boolean(pricing)}
+        plans={pricing?.plans ?? []}
+        creditPacks={pricing?.creditPacks ?? []}
       />
     </main>
   )
