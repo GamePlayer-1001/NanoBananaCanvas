@@ -116,12 +116,12 @@
 
 ### Phase 5 - 模型支持动态脑图
 
-- [ ] LUI-501 新建 `ModelMindMapSection`。
-- [ ] LUI-502 中心节点为 Nano Banana Canvas，四类能力簇为 Text、Image、Video、Audio。
-- [ ] LUI-503 展示模型与厂商：MiniMax、Vidu、Qwen、OpenAI、Midjourney、Luma、Groq、xAI、Black Forest Labs、Runway、ByteDance、Google、Kling、Anthropic、Gemini、Alibaba Wan、OpenRouter、DeepSeek、ElevenLabs、Stability。
-- [ ] LUI-504 明确区分“当前真实运行时支持”和“生态展示/规划支持”。
-- [ ] LUI-505 进入与离开时做聚合/散开动画，避免静态 logo 墙。
-- [ ] LUI-506 若引入 `animejs`，同步更新 `package.json`、lockfile、项目框架结构与视觉策略依赖说明。
+- [x] LUI-501 新建 `ModelMindMapSection`。
+- [x] LUI-502 中心节点为 Nano Banana Canvas，四类能力簇为 Text、Image、Video、Audio。
+- [x] LUI-503 展示模型与厂商：MiniMax、Vidu、Qwen、OpenAI、Midjourney、Luma、Groq、xAI、Black Forest Labs、Runway、ByteDance、Google、Kling、Anthropic、Gemini、Alibaba Wan、OpenRouter、DeepSeek、ElevenLabs、Stability。
+- [x] LUI-504 明确区分“当前真实运行时支持”和“生态展示/规划支持”。
+- [x] LUI-505 进入与离开时做聚合/散开动画，避免静态 logo 墙。
+- [x] LUI-506 未引入 `animejs`，本轮采用 CSS 动效 + `prefers-reduced-motion`，因此无需更新 `package.json` 与 lockfile。
 
 ### Phase 6 - Features 图文板块
 

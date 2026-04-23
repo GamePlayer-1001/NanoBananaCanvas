@@ -191,8 +191,7 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-brand:
-    var(--font-brand-script), var(--font-geist-sans), ui-sans-serif, system-ui,
-    sans-serif;
+    var(--font-brand-script), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* 圆角 */
   --radius-sm: calc(var(--radius) - 4px);
@@ -333,6 +332,40 @@
   }
 }
 
+@keyframes landing-model-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes landing-model-drift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -7px;
+  }
+}
+
+@keyframes landing-model-link-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -34;
+  }
+}
+
 .landing-flow-line {
   animation: landing-flow 2.2s linear infinite;
 }
@@ -342,8 +375,52 @@
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px),
     radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px),
     radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px);
-  background-size: 120px 120px, 160px 160px, 180px 180px;
+  background-size:
+    120px 120px,
+    160px 160px,
+    180px 180px;
   animation: landing-grain-drift 12s linear infinite alternate;
+}
+
+.landing-model-link {
+  stroke: rgba(247, 244, 238, 0.22);
+  stroke-width: 0.18;
+  stroke-dasharray: 1.4 1.8;
+  vector-effect: non-scaling-stroke;
+  animation: landing-model-link-flow 3.8s linear infinite;
+}
+
+.landing-model-link-runtime {
+  stroke: rgba(247, 244, 238, 0.52);
+  stroke-width: 0.26;
+}
+
+.landing-model-link-muted {
+  stroke: rgba(247, 244, 238, 0.14);
+}
+
+.landing-model-center::before,
+.landing-model-bubble::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: inherit;
+  border: 1px solid rgba(247, 244, 238, 0.08);
+  animation: landing-model-breathe 3.8s ease-in-out infinite;
+}
+
+.landing-model-bubble,
+.landing-model-provider {
+  left: var(--x);
+  top: var(--y);
+}
+
+.landing-model-bubble {
+  animation: landing-model-drift 6s ease-in-out infinite;
+}
+
+.landing-model-provider {
+  animation: landing-model-drift 7.5s ease-in-out infinite;
 }
 
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
@@ -368,7 +445,12 @@
   }
 
   .landing-flow-line,
-  .landing-grain {
+  .landing-grain,
+  .landing-model-link,
+  .landing-model-center::before,
+  .landing-model-bubble,
+  .landing-model-bubble::before,
+  .landing-model-provider {
     animation: none;
   }
 }
