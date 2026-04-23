@@ -938,6 +938,19 @@
    - 生产部署链的剩余阻塞点已从“代码缺陷”收敛为“等待新的 CI/CD 回合验证”
    - 在新的推送回合真实跑完前，`SPAY-1008` 仍应保持 `[~]`
 
+#### Phase 10 Batch J 结论（2026-04-23）
+
+1. 已拿到第三次 CI 失败的精确根因
+   - `ba54d22` 推送后，GitHub Actions 已成功把 Stripe 变量注入到 `pnpm test`
+   - 但 Playwright `webServer` 日志明确显示：`@clerk/nextjs: Missing secretKey`
+   - 这说明当前阻塞已进一步收敛为 Clerk 服务端密钥未注入测试步骤，而非 Stripe 或 E2E 断言本身
+2. 已按最小修复原则补齐 workflow
+   - `.github/workflows/deploy.yml` 的 `pnpm test` 当前已新增 `CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}`
+   - 这样 Playwright 拉起的本地 Next dev server 将同时具备 Clerk `publishable + secret` 与 Stripe 运行时配置
+3. 当前 `SPAY-1008` 的真实状态
+   - 生产部署链已经连续三轮收敛根因，当前剩余动作仅是再次推送 `main` 触发新回合验证
+   - 在该回合真实通过前，`SPAY-1008` 继续保持 `[~]`
+
 ---
 
 ## 三、推荐落地顺序
