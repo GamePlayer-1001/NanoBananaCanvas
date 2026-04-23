@@ -125,15 +125,15 @@
 
 ### Phase 6 - Features 图文板块
 
-- [ ] LUI-601 新建 `FeaturesSection`。
-- [ ] LUI-602 功能 1：Visual Workflow，配图展示节点画布如何组织生产逻辑。
-- [ ] LUI-603 功能 2：Image Fusion，配图展示人物、风格、场景融合。
-- [ ] LUI-604 功能 3：Video Generation，配图展示静帧到动态镜头。
-- [ ] LUI-605 功能 4：Model Routing，配图展示多 Provider 统一接入。
-- [ ] LUI-606 所有图像资产使用统一提示词风格，不混用廉价 3D 或荧光风。
-- [ ] LUI-607 文案全部进入 `messages/en.json` 与 `messages/zh.json`。
-- [ ] LUI-608 为 Hero 六节点、Features 配图、登录页左侧主视觉提供可用图片资产，或提供可直接生成的高质量提示词包。
-- [ ] LUI-609 如果本轮不直接出图，必须产出按场景拆分的提示词清单与风格统一说明。
+- [x] LUI-601 新建 `FeaturesSection`。
+- [x] LUI-602 功能 1：Visual Workflow，配图展示节点画布如何组织生产逻辑。
+- [x] LUI-603 功能 2：Image Fusion，配图展示人物、风格、场景融合。
+- [x] LUI-604 功能 3：Video Generation，配图展示静帧到动态镜头。
+- [x] LUI-605 功能 4：Model Routing，配图展示多 Provider 统一接入。
+- [x] LUI-606 所有图像资产使用统一提示词风格，不混用廉价 3D 或荧光风。
+- [x] LUI-607 文案全部进入 `messages/en.json` 与 `messages/zh.json`。
+- [x] LUI-608 为 Hero 六节点、Features 配图、登录页左侧主视觉提供可用图片资产，或提供可直接生成的高质量提示词包。
+- [x] LUI-609 如果本轮不直接出图，必须产出按场景拆分的提示词清单与风格统一说明。
 
 ### Phase 7 - Pricing 首页摘要
 
@@ -215,6 +215,36 @@ Cinematic monochrome editorial still, subtle silver highlights, soft film grain,
 
 ```text
 Psychedelic dreamlike night scene, surface-level granular reflections, iridescent flowing light, many hot air balloons rising from uneven rolling ground, low angle upward view, distant balloons still on the ground and others already in the sky, stars interweaving with balloon lights, lens flare material, cinematic, magical but premium, no text, no logo.
+```
+
+Features 图文区统一风格：
+
+```text
+Premium cinematic monochrome product still, deep black background, silver glass reflections, soft film grain, high-end AI workflow interface, subtle volumetric light, no neon, no cheap 3D, no text, no watermark, 16:10.
+```
+
+Visual Workflow 配图：
+
+```text
+Premium cinematic monochrome product still of a node-based AI workflow canvas, four glass nodes connected by silver flowing lines, visible prompt node, branching logic node, model node, output node, deep black background, soft film grain, no text, no watermark, 16:10.
+```
+
+Image Fusion 配图：
+
+```text
+Premium cinematic monochrome product still showing image fusion logic, two source portrait cards and one scene reference card merging into a coherent final portrait-in-scene result, silver glass panels, visible connection lines, deep black background, no text, no watermark, 16:10.
+```
+
+Video Generation 配图：
+
+```text
+Premium cinematic monochrome product still showing still frames evolving into motion, three sequential video keyframes on a dark glass timeline, subtle motion blur and silver progress path, cinematic AI production interface, no text, no watermark, 16:10.
+```
+
+Model Routing 配图：
+
+```text
+Premium cinematic monochrome product still showing a central AI router node connected to multiple provider nodes, OpenAI-like text model route, image route, video route, storage route, silver glass network lines, deep black background, no logos, no text, no watermark, 16:10.
 ```
 
 ---

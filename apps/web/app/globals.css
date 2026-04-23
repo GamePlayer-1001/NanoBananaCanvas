@@ -366,6 +366,19 @@
   }
 }
 
+@keyframes landing-feature-line-sheen {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translateX(-6%);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(6%);
+  }
+}
+
 .landing-flow-line {
   animation: landing-flow 2.2s linear infinite;
 }
@@ -423,6 +436,10 @@
   animation: landing-model-drift 7.5s ease-in-out infinite;
 }
 
+.landing-feature-line {
+  animation: landing-feature-line-sheen 3.6s ease-in-out infinite;
+}
+
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
   .landing-snap {
     height: 100svh;
@@ -450,7 +467,8 @@
   .landing-model-center::before,
   .landing-model-bubble,
   .landing-model-bubble::before,
-  .landing-model-provider {
+  .landing-model-provider,
+  .landing-feature-line {
     animation: none;
   }
 }
