@@ -196,6 +196,7 @@
 - [ ] LUI-1206 检查移动端、桌面端、`prefers-reduced-motion`。
 - [x] LUI-1207 检查 L3 文件头、L2 CLAUDE、L1 CLAUDE 是否需要同步。
 - [ ] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交。
+- [x] LUI-1209 坏味道治理：拆分 `hero-section.tsx` 与 `landing-sections.tsx` 的多职责结构，新增 `hero-canvas.tsx` 与 `landing/sections/` 子模块。
 
 ---
 
