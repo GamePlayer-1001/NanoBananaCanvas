@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 app/components/hooks/lib 中的翻译函数调用
- * [OUTPUT]: 对外提供消息 key 使用索引与已消费 key 列表
+ * [INPUT]: 依赖 app/components/hooks/lib 中的翻译函数调用与声明式动态 key 来源
+ * [OUTPUT]: 对外提供消息 key 使用索引、动态 key 来源索引与已消费 key 列表
  * [POS]: i18n 的生成使用索引文件，被运维校验与后续死 key 清理消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  *
@@ -646,6 +646,59 @@ export const MESSAGE_USAGE_INDEX = {
     "canvas.workflowCompleted"
   ]
 } as const
+
+export const MESSAGE_STATIC_DYNAMIC_KEY_INDEX = {
+  "components/canvas/canvas-toolbar.tsx": [
+    "toolbar.hand",
+    "toolbar.select"
+  ],
+  "components/nodes/plugin-registry.ts": [
+    "toolbar.audioGen",
+    "toolbar.conditional",
+    "toolbar.display",
+    "toolbar.group",
+    "toolbar.imageGen",
+    "toolbar.imageInput",
+    "toolbar.imageMerge",
+    "toolbar.llm",
+    "toolbar.loop",
+    "toolbar.note",
+    "toolbar.textInput",
+    "toolbar.textMerge",
+    "toolbar.videoGen"
+  ],
+  "components/canvas/node-entry-config.ts": [
+    "contextMenu.addAudioGen",
+    "contextMenu.addConditional",
+    "contextMenu.addDisplay",
+    "contextMenu.addGroup",
+    "contextMenu.addImageGen",
+    "contextMenu.addImageInput",
+    "contextMenu.addImageMerge",
+    "contextMenu.addLLM",
+    "contextMenu.addLoop",
+    "contextMenu.addNote",
+    "contextMenu.addTextInput",
+    "contextMenu.addTextMerge",
+    "contextMenu.addVideoGen",
+    "contextMenu.groupAudio",
+    "contextMenu.groupDisplay",
+    "contextMenu.groupImage",
+    "contextMenu.groupInputs",
+    "contextMenu.groupMisc",
+    "contextMenu.groupText",
+    "contextMenu.groupTools",
+    "contextMenu.groupVideo"
+  ],
+  "components/explore/detail/report-dialog.tsx": [
+    "exploreDetail.reason_copyright",
+    "exploreDetail.reason_nsfw",
+    "exploreDetail.reason_other",
+    "exploreDetail.reason_spam"
+  ]
+} as const
+
+export const MESSAGE_MANIFEST_LEAF_KEYS = [] as const
 
 export const MESSAGE_DYNAMIC_LEAF_KEYS = [
   "contextMenu.addAudioGen",

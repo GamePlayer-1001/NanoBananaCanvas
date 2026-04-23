@@ -28,8 +28,8 @@ zh.json: 中文翻译，与 en.json 结构完全对称并通过脚本校验
 - `profileWorks` — 账户页作品区文案
 - `notifications` — 通知面板文案
 - `canvas` — 画布操作 (Run/Stop/Import/Export/toast)
-- `toolbar` — 画布底部工具栏 tooltip 文案，动态 key 来自节点注册表
-- `contextMenu` — 右键菜单项
+- `toolbar` — 画布底部工具栏 tooltip 文案，动态 key 由 i18n 工具从工具栏与节点注册表自动抽取
+- `contextMenu` — 右键菜单项，动态 key 由 i18n 工具从节点入口配置自动抽取
 - `nodes` — 节点组件标签/占位符
 - `exploreDetail` — 广场详情与举报交互文案
 - `contact` — 联系方式与社媒入口文案
@@ -39,7 +39,7 @@ zh.json: 中文翻译，与 en.json 结构完全对称并通过脚本校验
 
 - 新增语言前先运行 `pnpm i18n:add-locale <locale>`
 - 补翻译或重排 key 后运行 `pnpm i18n:sync` 与 `pnpm i18n:check`
-- 动态拼接 key 先登记到 `i18n/message-usage-manifest.json`，再运行 `pnpm i18n:check`
+- 动态 key 优先放在声明式来源中让 `pnpm i18n:check` 自动抽取；只有无法静态推导时才登记到 `i18n/message-usage-manifest.json`
 - 历史死 key 清理走 `pnpm i18n:prune-unused`，让索引与消息文件同步收口
 - `en.json` 是当前结构基准，其他 locale 文件必须与其 leaf key 完全对称
 
