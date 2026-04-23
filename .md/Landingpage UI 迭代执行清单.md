@@ -137,11 +137,11 @@
 
 ### Phase 7 - Pricing 首页摘要
 
-- [ ] LUI-701 首页定价区展示四档：Free、Standard、Pro、Ultimate。
-- [ ] LUI-702 首页只展示核心权益与进入 `/pricing` 的 CTA，不重复完整 Checkout 逻辑。
-- [ ] LUI-703 保留 Free 默认态解释，避免“购买 Free”心智。
-- [ ] LUI-704 定价 CTA 保持 Landing 深色科技按钮体系；黑白高对比仅用于 Hero 与标签栏/胶囊按钮。
-- [ ] LUI-705 `/pricing` 保持真实 Stripe 动态价格主链。
+- [x] LUI-701 首页定价区展示四档：Free、Standard、Pro、Ultimate。
+- [x] LUI-702 首页只展示核心权益与进入 `/pricing` 的 CTA，不重复完整 Checkout 逻辑。
+- [x] LUI-703 保留 Free 默认态解释，避免“购买 Free”心智。
+- [x] LUI-704 定价 CTA 保持 Landing 深色科技按钮体系；黑白高对比仅用于 Hero 与标签栏/胶囊按钮。
+- [x] LUI-705 `/pricing` 保持真实 Stripe 动态价格主链。
 
 ### Phase 8 - Proof 与 FAQ
 

@@ -61,7 +61,7 @@ export function PricingSummarySection() {
         {PLANS.map((plan) => (
           <article
             key={plan}
-            className={`rounded-[30px] border p-6 md:p-7 ${plan === 'pro' ? 'border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.03))]' : 'border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]'}`}
+            className={`rounded-lg border p-6 md:p-7 ${plan === 'pro' ? 'border-white/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.03))]' : 'border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]'}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -93,8 +93,9 @@ export function PricingSummarySection() {
       <div className="mt-8 flex justify-center">
         <Button
           asChild
+          variant="ghost"
           size="lg"
-          className="rounded-full bg-[var(--landing-ink)] px-7 text-black hover:bg-white"
+          className="rounded-lg border border-white/16 bg-white/[0.055] px-7 text-[var(--landing-ink)] hover:border-white/24 hover:bg-white/[0.09] hover:text-[var(--landing-ink)]"
         >
           <Link href="/pricing">
             {t('pricing.cta')}
