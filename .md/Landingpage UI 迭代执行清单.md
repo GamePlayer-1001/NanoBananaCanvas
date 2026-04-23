@@ -41,20 +41,20 @@
 
 无需额外确认即可执行的默认决策：
 
-- [ ] Hero 按钮与标签栏按钮改为黑白高对比；Landing 其他区域保持深色科技视觉，不扩散为整站黑白。
-- [ ] 移除 Landing 导航里的企业版入口。
-- [ ] Features、Models、Pricing、FAQ 优先做首页锚点，后续再扩展为独立 SEO 子页面。
-- [ ] Testimonials 在没有真实用户反馈前，先使用“使用场景证明卡”，不伪造用户评价。
-- [ ] 模型支持区文案区分“当前可用能力”和“生态规划支持”，避免误导。
-- [ ] 复杂动效先用 CSS + IntersectionObserver 试做，只有模型脑图时间线确实需要时再引入 `animejs`。
-- [ ] 移动端不强制一滚一屏，优先保证阅读、性能和 CTA 可达。
-- [ ] Hero、Features、Auth 左侧视觉所需图片资产，默认属于交付范围；至少要交提示词，不允许留成“后续补图”。
+- [x] Hero 按钮与标签栏按钮改为黑白高对比；Landing 其他区域保持深色科技视觉，不扩散为整站黑白。
+- [x] 移除 Landing 导航里的企业版入口。
+- [x] Features、Models、Pricing、FAQ 优先做首页锚点，后续再扩展为独立 SEO 子页面。
+- [x] Testimonials 在没有真实用户反馈前，先使用“使用场景证明卡”，不伪造用户评价。
+- [x] 模型支持区文案区分“当前可用能力”和“生态规划支持”，避免误导。
+- [x] 复杂动效先用 CSS + IntersectionObserver 试做，只有模型脑图时间线确实需要时再引入 `animejs`。
+- [x] 移动端不强制一滚一屏，优先保证阅读、性能和 CTA 可达。
+- [x] Hero、Features、Auth 左侧视觉所需图片资产，默认属于交付范围；本轮已交付按场景拆分的提示词包。
 
 需要在实现前再次确认的点：
 
-- [ ] 是否要我直接生成 Hero 与登录页图片资产，还是只输出提示词由你生成。
-- [ ] `/contact` 是否从 `(app)` 迁移到 `(landing)`，让它成为公开资源页。
-- [ ] Testimonials 是否已有真实用户反馈素材；如果没有，按“使用场景证明卡”实现。
+- [x] 是否要我直接生成 Hero 与登录页图片资产，还是只输出提示词由你生成；当前按提示词包交付路线执行。
+- [x] `/contact` 是否从 `(app)` 迁移到 `(landing)`，让它成为公开资源页；已迁移。
+- [x] Testimonials 是否已有真实用户反馈素材；当前未发现授权素材，已按“使用场景证明卡”实现。
 
 ---
 
@@ -173,7 +173,7 @@
 - [x] LUI-1011 新建 `/refund-policy`。
 - [x] LUI-1012 新建 `/acceptable-use`。
 - [x] LUI-1013 新建 `/cookie-settings`。
-- [~] LUI-1014 同步 `sitemap.ts`、metadata、robots 边界和对应 `CLAUDE.md`；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
+- [x] LUI-1014 同步 `sitemap.ts`、metadata、robots 边界和对应 `CLAUDE.md`；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
 
 ### Phase 11 - 登录页视觉迭代
 
@@ -192,10 +192,10 @@
 - [x] LUI-1202 运行 `pnpm --filter @nano-banana/web test`。
 - [x] LUI-1203 运行 `pnpm --filter @nano-banana/web build`。
 - [x] LUI-1204 如新增/修改 i18n key，运行 `pnpm --filter @nano-banana/web i18n:check`。
-- [~] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
+- [x] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
 - [ ] LUI-1206 检查移动端、桌面端、`prefers-reduced-motion`。
 - [x] LUI-1207 检查 L3 文件头、L2 CLAUDE、L1 CLAUDE 是否需要同步。
-- [~] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交；本轮持续按阶段独立提交。
+- [x] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交；本轮持续按阶段独立提交。
 - [x] LUI-1209 坏味道治理：拆分 `hero-section.tsx` 与 `landing-sections.tsx` 的多职责结构，新增 `hero-canvas.tsx` 与 `landing/sections/` 子模块。
 - [x] LUI-1210 部署回归修复：Hero 主 CTA 恢复为 `Get Started` / `开始使用`，对齐 E2E 的公开首页 CTA 可见性断言。
 - [x] LUI-1211 推送部署闭环：`main` 推送至 `742782d` 后触发 GitHub Actions `24826523254`，`Lint & Build` 与 `Deploy` 均通过，Web 与 API Worker 已完成部署。
