@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useTranslations，
  *          依赖 @/components/ui/collapsible，依赖 @/components/landing/sections/section-shell，
+ *          依赖 @/components/landing/landing-faq 的 LANDING_FAQ_ITEMS，
  *          依赖 lucide-react 的 ChevronDown
  * [OUTPUT]: 对外提供 ProofSection 与 FaqSection
  * [POS]: landing/sections 的社会证明与 FAQ 板块，被 landing-sections.tsx 消费
@@ -13,6 +14,7 @@ import { type ReactNode, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { LANDING_FAQ_ITEMS } from '@/components/landing/landing-faq'
 import { SectionShell } from '@/components/landing/sections/section-shell'
 import {
   Collapsible,
@@ -72,11 +74,10 @@ export function FaqSection() {
   const seoT = useTranslations('landingSeo')
   const [openFaq, setOpenFaq] = useState<number | null>(0)
 
-  const faqItems = [
-    { question: seoT('faqQuestion1'), answer: seoT('faqAnswer1') },
-    { question: seoT('faqQuestion2'), answer: seoT('faqAnswer2') },
-    { question: seoT('faqQuestion3'), answer: seoT('faqAnswer3') },
-  ]
+  const faqItems = LANDING_FAQ_ITEMS.map((item) => ({
+    question: seoT(item.questionKey),
+    answer: seoT(item.answerKey),
+  }))
 
   return (
     <SectionShell

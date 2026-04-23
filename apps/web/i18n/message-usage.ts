@@ -189,12 +189,6 @@ export const MESSAGE_USAGE_INDEX = {
     "landingSeo.coverageRegionAmericas",
     "landingSeo.coverageRegionApac",
     "landingSeo.coverageRegionEurope",
-    "landingSeo.faqAnswer1",
-    "landingSeo.faqAnswer2",
-    "landingSeo.faqAnswer3",
-    "landingSeo.faqQuestion1",
-    "landingSeo.faqQuestion2",
-    "landingSeo.faqQuestion3",
     "landingSeo.featureImageVideo",
     "landingSeo.featureTemplates",
     "landingSeo.featureWorkflow",
@@ -420,12 +414,6 @@ export const MESSAGE_USAGE_INDEX = {
     "landingSeo.coverageRegionApac",
     "landingSeo.coverageRegionEurope",
     "landingSeo.coverageTitle",
-    "landingSeo.faqAnswer1",
-    "landingSeo.faqAnswer2",
-    "landingSeo.faqAnswer3",
-    "landingSeo.faqQuestion1",
-    "landingSeo.faqQuestion2",
-    "landingSeo.faqQuestion3",
     "landingSeo.faqTitle",
     "landingSeo.featureImageVideo",
     "landingSeo.featureTemplates",
@@ -903,7 +891,14 @@ export const MESSAGE_STATIC_DYNAMIC_KEY_INDEX = {
   ]
 } as const
 
-export const MESSAGE_MANIFEST_LEAF_KEYS = [] as const
+export const MESSAGE_MANIFEST_LEAF_KEYS = [
+  "landingSeo.faqAnswer1",
+  "landingSeo.faqAnswer2",
+  "landingSeo.faqAnswer3",
+  "landingSeo.faqQuestion1",
+  "landingSeo.faqQuestion2",
+  "landingSeo.faqQuestion3"
+] as const
 
 export const MESSAGE_DYNAMIC_LEAF_KEYS = [
   "contextMenu.addAudioGen",
@@ -931,6 +926,12 @@ export const MESSAGE_DYNAMIC_LEAF_KEYS = [
   "exploreDetail.reason_nsfw",
   "exploreDetail.reason_other",
   "exploreDetail.reason_spam",
+  "landingSeo.faqAnswer1",
+  "landingSeo.faqAnswer2",
+  "landingSeo.faqAnswer3",
+  "landingSeo.faqQuestion1",
+  "landingSeo.faqQuestion2",
+  "landingSeo.faqQuestion3",
   "toolbar.audioGen",
   "toolbar.conditional",
   "toolbar.display",

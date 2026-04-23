@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 setRequestLocale，
  *          依赖 @/components/landing/hero-section，依赖 @/components/landing/landing-sections，
+ *          依赖 @/components/landing/landing-faq 的 LANDING_FAQ_ITEMS，
  *          依赖 @/components/layout/landing-footer
  * [OUTPUT]: 对外提供 Landing Page 首页
  * [POS]: (landing) 路由组的首页，SSG 渲染，承载 Hero、模型区、功能区、FAQ 与 CTA
@@ -10,6 +11,7 @@
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { LANDING_FAQ_ITEMS } from '@/components/landing/landing-faq'
 import { HeroSection } from '@/components/landing/hero-section'
 import { LandingSections } from '@/components/landing/landing-sections'
 import { LandingFooter } from '@/components/layout/landing-footer'
@@ -45,20 +47,10 @@ export default async function LandingPage({
   setRequestLocale(locale)
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
 
-  const faqItems = [
-    {
-      question: seoT('faqQuestion1'),
-      answer: seoT('faqAnswer1'),
-    },
-    {
-      question: seoT('faqQuestion2'),
-      answer: seoT('faqAnswer2'),
-    },
-    {
-      question: seoT('faqQuestion3'),
-      answer: seoT('faqAnswer3'),
-    },
-  ]
+  const faqItems = LANDING_FAQ_ITEMS.map((item) => ({
+    question: seoT(item.questionKey),
+    answer: seoT(item.answerKey),
+  }))
 
   const jsonLd = [
     {

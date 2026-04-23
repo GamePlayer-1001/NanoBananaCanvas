@@ -1,3 +1,10 @@
 {
-  "dynamicKeys": []
+  "dynamicKeys": [
+    "landingSeo.faqAnswer1",
+    "landingSeo.faqAnswer2",
+    "landingSeo.faqAnswer3",
+    "landingSeo.faqQuestion1",
+    "landingSeo.faqQuestion2",
+    "landingSeo.faqQuestion3"
+  ]
 }

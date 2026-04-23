@@ -201,6 +201,7 @@
 - [x] LUI-1210 部署回归修复：Hero 主 CTA 恢复为 `Get Started` / `开始使用`，对齐 E2E 的公开首页 CTA 可见性断言。
 - [x] LUI-1211 推送部署闭环：`main` 推送至 `742782d` 后触发 GitHub Actions `24826523254`，`Lint & Build` 与 `Deploy` 均通过，Web 与 API Worker 已完成部署。
 - [x] LUI-1212 部署坏味道清理：删除缺失 `.gitmodules` 映射的 `.md/Google-SEOs.skill` gitlink 与本地目录，`git submodule status --recursive` 不再报错。
+- [x] LUI-1213 代码层完成度审计：静态搜索确认无企业版/TODO/无效 `href="#"`/未安装动效依赖残留；生产模式浏览器审计确认 14 个公开路由 200、首页 7 个 section、Hero 六节点、FAQ JSON-LD、四档 Pricing、核心 Provider 均成立；同时抽出 `LANDING_FAQ_ITEMS`，让 FAQ JSON-LD 与可见手风琴共享代码级数据契约，并用 i18n manifest 保留动态 key。
 
 ---
 
