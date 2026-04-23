@@ -765,6 +765,7 @@
     "reportFailed": "Failed to submit report"
   },
   "contact": {
+    "eyebrow": "Public contact",
     "title": "Contact Us",
     "subtitle": "Talk with the Nano Banana Canvas team and community across Telegram, Discord, X, and Instagram.",
     "telegram": "Telegram",

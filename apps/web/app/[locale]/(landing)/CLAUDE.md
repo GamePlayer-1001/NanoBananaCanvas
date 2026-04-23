@@ -11,6 +11,7 @@ features/video-generation/page.tsx: Video Generation 公开细分页，解释静
 features/model-routing/page.tsx: Model Routing 公开细分页，解释多 Provider 路由边界
 models/page.tsx: Models 公开总览页，承接模型生态解释与真实支持边界
 docs/page.tsx: Docs 公开入口页，承接 Resources 菜单与后续文档树
+contact/page.tsx: Contact 公开联系页，展示四个平台联系方式与 Organization JSON-LD
 about/page.tsx: About 公开介绍页，承接页脚公司信息入口
 pricing/page.tsx: 动态定价页，服务端读取 Stripe 套餐价格并按 `CF-IPCountry` 自动解析展示币种
 privacy/page.tsx: 隐私政策页面

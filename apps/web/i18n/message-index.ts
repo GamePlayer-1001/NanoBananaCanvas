@@ -761,6 +761,7 @@ export const MESSAGE_NAMESPACE_INDEX = {
   "contact": [
     "discord",
     "discordDesc",
+    "eyebrow",
     "instagram",
     "instagramDesc",
     "subtitle",
@@ -915,6 +916,7 @@ export const MESSAGE_LEAF_KEYS = [
   "common.unexpectedError",
   "contact.discord",
   "contact.discordDesc",
+  "contact.eyebrow",
   "contact.instagram",
   "contact.instagramDesc",
   "contact.subtitle",

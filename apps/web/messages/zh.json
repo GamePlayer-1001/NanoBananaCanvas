@@ -765,6 +765,7 @@
     "reportFailed": "举报提交失败"
   },
   "contact": {
+    "eyebrow": "公开联系入口",
     "title": "联系我们",
     "subtitle": "通过 Telegram、Discord、X 和 Instagram 与 Nano Banana Canvas 团队及社区取得联系。",
     "telegram": "Telegram",

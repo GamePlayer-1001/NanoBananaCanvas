@@ -169,7 +169,7 @@
 - [x] LUI-1007 新建 `/docs`。
 - [x] LUI-1008 新建 `/community` 或将公开社区入口明确指向现有 `/explore`；当前导航与页脚 Community 均指向 `/explore`。
 - [x] LUI-1009 新建 `/about`。
-- [ ] LUI-1010 决定并执行 `/contact` 公开化迁移。
+- [x] LUI-1010 决定并执行 `/contact` 公开化迁移。
 - [ ] LUI-1011 新建 `/refund-policy`。
 - [ ] LUI-1012 新建 `/acceptable-use`。
 - [ ] LUI-1013 新建 `/cookie-settings`。

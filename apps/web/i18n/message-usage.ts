@@ -8,10 +8,6 @@
  */
 
 export const MESSAGE_USAGE_INDEX = {
-  "app/[locale]/(app)/contact/page.tsx": [
-    "contact.subtitle",
-    "contact.title"
-  ],
   "app/[locale]/(app)/explore/page.tsx": [
     "metadata.exploreDescription",
     "metadata.exploreTitle"
@@ -75,6 +71,10 @@ export const MESSAGE_USAGE_INDEX = {
     "landing.publicPages.about.primaryCta",
     "landing.publicPages.about.secondaryCta",
     "landing.publicPages.about.title"
+  ],
+  "app/[locale]/(landing)/contact/page.tsx": [
+    "contact.subtitle",
+    "contact.title"
   ],
   "app/[locale]/(landing)/docs/page.tsx": [
     "landing.publicPages.docs.description",
@@ -270,6 +270,7 @@ export const MESSAGE_USAGE_INDEX = {
     "contextMenu.duplicate"
   ],
   "components/contact/contact-content.tsx": [
+    "contact.eyebrow",
     "contact.subtitle",
     "contact.title"
   ],
@@ -1006,6 +1007,7 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "common.retry",
   "common.save",
   "common.unexpectedError",
+  "contact.eyebrow",
   "contact.subtitle",
   "contact.title",
   "contextMenu.addAudioGen",
