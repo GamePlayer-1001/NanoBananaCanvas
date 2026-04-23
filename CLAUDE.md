@@ -68,6 +68,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 ## 架构约定
 
 - **Monorepo**: pnpm workspace + Turborepo
+- **Turborepo Env**: `turbo.json` 统一透传 `NEXT_PUBLIC_* / CLERK_* / STRIPE_*` 到 build/test 子任务，避免 CI 子进程环境漂移
 - **路由**: `[locale]/(landing|auth|app|editor)` 四路由组
 - **URL 语义**: 语言前缀在外部 URL 中隐藏，`[locale]` 仅作为内部文件树与消息加载边界
 - **Landing**: Hero 交互式画板 (可拖动节点 + SVG 连线) + Footer

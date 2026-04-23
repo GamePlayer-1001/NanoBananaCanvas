@@ -951,6 +951,19 @@
    - 生产部署链已经连续三轮收敛根因，当前剩余动作仅是再次推送 `main` 触发新回合验证
    - 在该回合真实通过前，`SPAY-1008` 继续保持 `[~]`
 
+#### Phase 10 Batch K 结论（2026-04-23）
+
+1. 已抓到第四次 CI 失败的本质根因
+   - GitHub Actions 的 `pnpm test` 步骤日志已经证明 `CLERK_SECRET_KEY` 在 step 级环境里存在
+   - 但 `@nano-banana/e2e#test` 里的 Playwright `webServer` 仍然报 `@clerk/nextjs: Missing secretKey`
+   - 这说明问题不在 GitHub secret 本身，而在 Turborepo 子任务没有继承这些环境变量
+2. 已把环境透传提升为 monorepo 级真相源
+   - `turbo.json` 当前新增 `globalEnv: ["NEXT_PUBLIC_*", "CLERK_*", "STRIPE_*"]`
+   - 这样 `build / test` 子任务与 Playwright 拉起的本地 Next dev server 都会共享同一套运行时变量
+3. 当前 `SPAY-1008` 的真实状态
+   - 生产部署阻塞点已从“workflow 没配”进一步收敛为“monorepo 任务环境隔离”
+   - 修复已落地，但仍需再次推送 `main` 触发新回合验证后才能把 `SPAY-1008` 划掉
+
 ---
 
 ## 三、推荐落地顺序
