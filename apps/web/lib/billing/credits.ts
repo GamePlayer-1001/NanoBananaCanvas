@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/db、@/lib/errors，依赖 ./metering、./plans 的 Free 套餐快照
+ * [INPUT]: 依赖 @/lib/db、@/lib/errors，依赖 ./plans 的 Free 套餐快照，依赖 ./schema 的 billing 表/列探测
  * [OUTPUT]: 对外提供积分余额、交易流水与 usage 摘要读取器
  * [POS]: lib/billing 的积分读取层，被 credits API 与后续 /billing 页面消费，负责从账本真相源汇总可展示资产与消耗数据
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -140,25 +140,89 @@ export interface CreditUsageResult {
   daily: CreditUsageDailyItem[]
 }
 
+function hasUserColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.usersColumns.has(column)
+}
+
+function hasCreditBalanceColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.creditBalancesColumns.has(column)
+}
+
+function hasSubscriptionColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.subscriptionsColumns.has(column)
+}
+
+function hasCreditTransactionColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.creditTransactionsColumns.has(column)
+}
+
+function canReadCreditBalances(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return (
+    schema.hasCreditBalances &&
+    hasCreditBalanceColumn(schema, 'user_id') &&
+    hasCreditBalanceColumn(schema, 'monthly_balance') &&
+    hasCreditBalanceColumn(schema, 'permanent_balance') &&
+    hasCreditBalanceColumn(schema, 'frozen_credits')
+  )
+}
+
+function canReadSubscriptions(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return schema.hasSubscriptions && hasSubscriptionColumn(schema, 'user_id')
+}
+
+function canReadCreditTransactions(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return (
+    schema.hasCreditTransactions &&
+    [
+      'user_id',
+      'id',
+      'type',
+      'pool',
+      'amount',
+      'balance_after',
+      'source',
+      'reference_id',
+      'description',
+      'created_at',
+    ].every((column) => hasCreditTransactionColumn(schema, column))
+  )
+}
+
 async function ensureCreditBalanceRow(userId: string) {
   const schema = await getBillingSchemaInfo()
-  if (!schema.hasCreditBalances) {
+  if (!canReadCreditBalances(schema)) {
     return
   }
 
+  const writableColumns = [
+    'monthly_balance',
+    'permanent_balance',
+    'frozen_credits',
+    'total_earned',
+    'total_spent',
+  ].filter((column) => hasCreditBalanceColumn(schema, column))
+  const columns = ['user_id', ...writableColumns]
+  const placeholders = columns.map(() => '?').join(', ')
+  const values = [userId, ...writableColumns.map(() => 0)]
   const db = await getDb()
   await db
     .prepare(
-      `INSERT OR IGNORE INTO credit_balances (
-         user_id,
-         monthly_balance,
-         permanent_balance,
-         frozen_credits,
-         total_earned,
-         total_spent
-       ) VALUES (?, 0, 0, 0, 0, 0)`,
+      `INSERT OR IGNORE INTO credit_balances (${columns.join(', ')})
+       VALUES (${placeholders})`,
     )
-    .bind(userId)
+    .bind(...values)
     .run()
 }
 
@@ -192,13 +256,6 @@ function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSumm
   }
 }
 
-function hasUserColumn(
-  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
-  column: string,
-): boolean {
-  return schema.usersColumns.has(column)
-}
-
 function buildBalanceSummaryQuery(
   schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
 ): string {
@@ -208,28 +265,38 @@ function buildBalanceSummaryQuery(
     : hasUserColumn(schema, 'plan')
       ? 'u.plan AS membership_status'
       : "'free' AS membership_status"
-  const balanceSelect = schema.hasCreditBalances
+  const readableBalances = canReadCreditBalances(schema)
+  const readableSubscriptions = canReadSubscriptions(schema)
+  const balanceSelect = readableBalances
     ? `cb.monthly_balance,
          cb.permanent_balance,
          cb.frozen_credits,
-         cb.total_earned,
-         cb.total_spent,
-         cb.updated_at`
+         ${
+           hasCreditBalanceColumn(schema, 'total_earned')
+             ? 'cb.total_earned'
+             : '0 AS total_earned'
+         },
+         ${hasCreditBalanceColumn(schema, 'total_spent') ? 'cb.total_spent' : '0 AS total_spent'},
+         ${hasCreditBalanceColumn(schema, 'updated_at') ? 'cb.updated_at' : 'NULL AS updated_at'}`
     : `0 AS monthly_balance,
          0 AS permanent_balance,
          0 AS frozen_credits,
          0 AS total_earned,
          0 AS total_spent,
          NULL AS updated_at`
-  const subscriptionSelect = schema.hasSubscriptions
-    ? `s.monthly_credits AS subscription_monthly_credits,
-         s.storage_gb`
+  const subscriptionSelect = readableSubscriptions
+    ? `${
+        hasSubscriptionColumn(schema, 'monthly_credits')
+          ? 's.monthly_credits'
+          : 'NULL'
+      } AS subscription_monthly_credits,
+         ${hasSubscriptionColumn(schema, 'storage_gb') ? 's.storage_gb' : 'NULL AS storage_gb'}`
     : `NULL AS subscription_monthly_credits,
          NULL AS storage_gb`
-  const balanceJoin = schema.hasCreditBalances
+  const balanceJoin = readableBalances
     ? 'LEFT JOIN credit_balances cb ON cb.user_id = u.id'
     : ''
-  const subscriptionJoin = schema.hasSubscriptions
+  const subscriptionJoin = readableSubscriptions
     ? 'LEFT JOIN subscriptions s ON s.user_id = u.id'
     : ''
 
@@ -287,7 +354,7 @@ export async function getCreditTransactions(
   const offset = (page - 1) * pageSize
   const schema = await getBillingSchemaInfo()
 
-  if (!schema.hasCreditTransactions) {
+  if (!canReadCreditTransactions(schema)) {
     return {
       items: [],
       total: 0,

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 vitest，依赖 @/lib/db mock，依赖 ./credits
+ * [INPUT]: 依赖 vitest，依赖 @/lib/db mock，依赖 ./credits 与 ./schema 缓存重置
  * [OUTPUT]: 对外提供积分余额/流水/usage 测试，覆盖账本摘要与聚合查询口径
  * [POS]: lib/billing 的积分读取层回归测试，防止账本展示口径漂移
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -19,6 +19,7 @@ import { resetBillingSchemaCache } from './schema'
 
 function createDbMock(options: {
   userColumns?: string[]
+  tableColumns?: Record<string, string[]>
   existingTables?: string[]
   balanceRow?: Record<string, unknown> | null
   transactionCountRow?: Record<string, unknown> | null
@@ -54,6 +55,61 @@ function createDbMock(options: {
       'created_at',
       'updated_at',
     ]
+  const defaultTableColumns: Record<string, string[]> = {
+    users: userColumns,
+    credit_balances: [
+      'user_id',
+      'monthly_balance',
+      'permanent_balance',
+      'frozen_credits',
+      'total_earned',
+      'total_spent',
+      'created_at',
+      'updated_at',
+    ],
+    credit_transactions: [
+      'id',
+      'user_id',
+      'type',
+      'pool',
+      'amount',
+      'balance_after',
+      'source',
+      'reference_id',
+      'description',
+      'created_at',
+    ],
+    subscriptions: [
+      'id',
+      'user_id',
+      'stripe_subscription_id',
+      'stripe_customer_id',
+      'plan',
+      'purchase_mode',
+      'billing_period',
+      'status',
+      'current_period_start',
+      'current_period_end',
+      'monthly_credits',
+      'storage_gb',
+      'cancel_at_period_end',
+      'created_at',
+      'updated_at',
+    ],
+    ai_usage_logs: [
+      'id',
+      'user_id',
+      'provider',
+      'model_id',
+      'input_tokens',
+      'output_tokens',
+      'estimated_credits',
+      'status',
+      'created_at',
+    ],
+    model_pricing: ['id', 'provider', 'model_id', 'credits_per_1k_units'],
+  }
+  const tableColumns = { ...defaultTableColumns, ...options.tableColumns }
 
   return {
     prepare: vi.fn((sql: string) => {
@@ -67,10 +123,12 @@ function createDbMock(options: {
         }
       }
 
-      if (sql.includes("PRAGMA table_info('users')")) {
+      const tableInfoMatch = sql.match(/PRAGMA table_info\('([^']+)'\)/u)
+      if (tableInfoMatch) {
+        const tableName = tableInfoMatch[1]
         return {
           all: vi.fn().mockResolvedValue({
-            results: userColumns.map((name) => ({ name })),
+            results: (tableColumns[tableName] ?? []).map((name) => ({ name })),
           }),
         }
       }
@@ -226,6 +284,47 @@ describe('getCreditBalanceSummary', () => {
 
     expect(capturedSql.some((sql) => sql.includes('LEFT JOIN subscriptions'))).toBe(false)
     expect(capturedSql.some((sql) => sql.includes('LEFT JOIN credit_balances'))).toBe(false)
+  })
+
+  it('falls back when billing tables exist with legacy columns', async () => {
+    const capturedSql: string[] = []
+
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        tableColumns: {
+          credit_balances: ['user_id', 'balance', 'frozen', 'updated_at'],
+          subscriptions: ['id', 'user_id', 'stripe_customer_id'],
+        },
+        balanceRow: {
+          user_id: 'legacy-user',
+          plan: 'free',
+          membership_status: 'free',
+          monthly_balance: 0,
+          permanent_balance: 0,
+          frozen_credits: 0,
+          total_earned: 0,
+          total_spent: 0,
+          updated_at: null,
+          subscription_monthly_credits: null,
+          storage_gb: null,
+        },
+        onSql: (sql) => capturedSql.push(sql),
+      }),
+    )
+
+    await expect(getCreditBalanceSummary('legacy-user')).resolves.toMatchObject({
+      userId: 'legacy-user',
+      monthlyBalance: 0,
+      permanentBalance: 0,
+      frozenCredits: 0,
+      currentPlanMonthlyCredits: 0,
+      storageGB: 1,
+    })
+
+    expect(capturedSql.some((sql) => sql.includes('INSERT OR IGNORE INTO credit_balances'))).toBe(false)
+    expect(capturedSql.some((sql) => sql.includes('LEFT JOIN credit_balances'))).toBe(false)
+    expect(capturedSql.some((sql) => sql.includes('s.monthly_credits'))).toBe(false)
+    expect(capturedSql.some((sql) => sql.includes('s.storage_gb'))).toBe(false)
   })
 
   it('returns paginated credit transactions ordered by newest first', async () => {

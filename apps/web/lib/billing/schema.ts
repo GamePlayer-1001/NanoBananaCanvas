@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/db，依赖 sqlite_master / PRAGMA table_info 元数据查询
- * [OUTPUT]: 对外提供 getBillingSchemaInfo()/resetBillingSchemaCache()，返回 users 列信息与 billing 相关表存在性
+ * [OUTPUT]: 对外提供 getBillingSchemaInfo()/resetBillingSchemaCache()，返回 billing 相关表存在性与列信息
  * [POS]: lib/billing 的 schema 兼容探测层，被 credits/subscription 等读取器复用，用来吸收生产库历史漂移
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -21,6 +21,11 @@ type BillingTableName =
 
 export interface BillingSchemaInfo {
   usersColumns: Set<string>
+  subscriptionsColumns: Set<string>
+  creditBalancesColumns: Set<string>
+  creditTransactionsColumns: Set<string>
+  aiUsageLogsColumns: Set<string>
+  modelPricingColumns: Set<string>
   hasSubscriptions: boolean
   hasCreditBalances: boolean
   hasCreditTransactions: boolean
@@ -56,6 +61,11 @@ export async function getBillingSchemaInfo(): Promise<BillingSchemaInfo> {
     billingSchemaPromise = (async () => {
       const [
         usersColumns,
+        subscriptionsColumns,
+        creditBalancesColumns,
+        creditTransactionsColumns,
+        aiUsageLogsColumns,
+        modelPricingColumns,
         hasSubscriptions,
         hasCreditBalances,
         hasCreditTransactions,
@@ -63,6 +73,11 @@ export async function getBillingSchemaInfo(): Promise<BillingSchemaInfo> {
         hasModelPricing,
       ] = await Promise.all([
         readTableColumns('users'),
+        readTableColumns('subscriptions'),
+        readTableColumns('credit_balances'),
+        readTableColumns('credit_transactions'),
+        readTableColumns('ai_usage_logs'),
+        readTableColumns('model_pricing'),
         readTableExists('subscriptions'),
         readTableExists('credit_balances'),
         readTableExists('credit_transactions'),
@@ -72,6 +87,11 @@ export async function getBillingSchemaInfo(): Promise<BillingSchemaInfo> {
 
       return {
         usersColumns,
+        subscriptionsColumns,
+        creditBalancesColumns,
+        creditTransactionsColumns,
+        aiUsageLogsColumns,
+        modelPricingColumns,
         hasSubscriptions,
         hasCreditBalances,
         hasCreditTransactions,

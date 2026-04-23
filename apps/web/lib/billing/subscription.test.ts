@@ -18,6 +18,7 @@ import { resetBillingSchemaCache } from './schema'
 
 function createDbMock(options: {
   userColumns?: string[]
+  tableColumns?: Record<string, string[]>
   existingTables?: string[]
   subscriptionRow?: Record<string, unknown> | null
   onSql?: (sql: string) => void
@@ -39,6 +40,27 @@ function createDbMock(options: {
       'created_at',
       'updated_at',
     ]
+  const defaultTableColumns: Record<string, string[]> = {
+    users: userColumns,
+    subscriptions: [
+      'id',
+      'user_id',
+      'stripe_subscription_id',
+      'stripe_customer_id',
+      'plan',
+      'purchase_mode',
+      'billing_period',
+      'status',
+      'current_period_start',
+      'current_period_end',
+      'monthly_credits',
+      'storage_gb',
+      'cancel_at_period_end',
+      'created_at',
+      'updated_at',
+    ],
+  }
+  const tableColumns = { ...defaultTableColumns, ...options.tableColumns }
 
   return {
     prepare: vi.fn((sql: string) => {
@@ -52,10 +74,12 @@ function createDbMock(options: {
         }
       }
 
-      if (sql.includes("PRAGMA table_info('users')")) {
+      const tableInfoMatch = sql.match(/PRAGMA table_info\('([^']+)'\)/u)
+      if (tableInfoMatch) {
+        const tableName = tableInfoMatch[1]
         return {
           all: vi.fn().mockResolvedValue({
-            results: userColumns.map((name) => ({ name })),
+            results: (tableColumns[tableName] ?? []).map((name) => ({ name })),
           }),
         }
       }

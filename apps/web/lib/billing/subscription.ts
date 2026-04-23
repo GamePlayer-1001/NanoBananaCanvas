@@ -131,6 +131,25 @@ function hasUserColumn(
   return schema.usersColumns.has(column)
 }
 
+function hasSubscriptionColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.subscriptionsColumns.has(column)
+}
+
+function canReadSubscriptions(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return schema.hasSubscriptions && hasSubscriptionColumn(schema, 'user_id')
+}
+
+function subscriptionColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+  fallback = 'NULL',
+): string {
+  return hasSubscriptionColumn(schema, column) ? `s.${column}` : `${fallback} AS ${column}`
+}
+
 function buildSubscriptionQuery(
   schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
 ): string {
@@ -140,21 +159,22 @@ function buildSubscriptionQuery(
     : hasUserColumn(schema, 'plan')
       ? 'u.plan AS membership_status'
       : "'free' AS membership_status"
-  const subscriptionSelect = schema.hasSubscriptions
-    ? `s.id,
-         s.stripe_subscription_id,
-         s.stripe_customer_id,
-         s.plan,
-         s.purchase_mode,
-         s.billing_period,
-         s.status,
-         s.current_period_start,
-         s.current_period_end,
-         s.monthly_credits,
-         s.storage_gb,
-         s.cancel_at_period_end,
-         s.created_at,
-         s.updated_at`
+  const readableSubscriptions = canReadSubscriptions(schema)
+  const subscriptionSelect = readableSubscriptions
+    ? `${subscriptionColumn(schema, 'id')},
+         ${subscriptionColumn(schema, 'stripe_subscription_id')},
+         ${subscriptionColumn(schema, 'stripe_customer_id')},
+         ${subscriptionColumn(schema, 'plan')},
+         ${subscriptionColumn(schema, 'purchase_mode')},
+         ${subscriptionColumn(schema, 'billing_period')},
+         ${subscriptionColumn(schema, 'status')},
+         ${subscriptionColumn(schema, 'current_period_start')},
+         ${subscriptionColumn(schema, 'current_period_end')},
+         ${subscriptionColumn(schema, 'monthly_credits')},
+         ${subscriptionColumn(schema, 'storage_gb')},
+         ${subscriptionColumn(schema, 'cancel_at_period_end')},
+         ${subscriptionColumn(schema, 'created_at')},
+         ${subscriptionColumn(schema, 'updated_at')}`
     : `NULL AS id,
          NULL AS stripe_subscription_id,
          NULL AS stripe_customer_id,
@@ -169,7 +189,7 @@ function buildSubscriptionQuery(
          NULL AS cancel_at_period_end,
          NULL AS created_at,
          NULL AS updated_at`
-  const subscriptionJoin = schema.hasSubscriptions
+  const subscriptionJoin = readableSubscriptions
     ? 'LEFT JOIN subscriptions s ON s.user_id = u.id'
     : ''
 
