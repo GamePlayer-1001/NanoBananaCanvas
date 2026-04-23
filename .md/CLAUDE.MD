@@ -13,10 +13,10 @@
 异步任务队列架构设计.md: D1-as-Queue 异步任务架构与生命周期  
 SEO 与 Open Graph 策略.md: SEO、OG、Sitemap 与结构化数据策略  
 Landing Page 视觉策略.md: Landing 页视觉语言与动效策略  
+UI迭代需求.md: Landing 与 Auth UI 迭代的原始需求源，定义品牌字标、Hero 图像节点、板块滚动、模型脑图、FAQ、公开子页面与登录页视觉诉求  
 Landingpage UI 迭代执行清单.md: Landingpage UI 重构执行清单，拆解黑白视觉、板块滚动、模型脑图、子页面树与登录页迭代任务  
 AI Provider 适配层设计.md: 多 Provider 抽象层与接入差异说明  
 Clerk 登录系统回装方案与清单.md: Clerk 接入主清单与结案文档，记录已完成闭环、环境核验状态与后续阶段边界
-Stripe 支付系统嵌入执行清单.md: Stripe 商业化重建的活任务清单，按阶段拆解 Dashboard、后端、前端、测试与部署任务
 
 ## 历史归档
 
@@ -27,6 +27,7 @@ archive/差距分析报告.md: 对标 martini.art 的阶段性差距审计
 archive/登录系统移除清单.md: 旧 Clerk 登录体系拆除清单  
 archive/商业化移除清单.md: 旧商业化体系拆除清单  
 archive/生产环境迁移清单.md: 当前生产环境迁移清单，记录 Stripe/Clerk/Cloudflare 正式切换步骤
+archive/Stripe 支付系统嵌入执行清单.md: Stripe 商业化重建的归档任务清单，保留 Dashboard、后端、前端、测试与部署闭环记录
 
 ## 阅读顺序
 

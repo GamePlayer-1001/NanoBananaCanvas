@@ -246,12 +246,18 @@
 /* ─── Landing 深色主题 ──────────────────────────────────── */
 
 .landing-dark {
-  --landing-bg: #0b0b0f;
-  --landing-surface: #13131a;
-  --landing-border: rgba(255, 255, 255, 0.06);
-  --landing-text: #e2e8f0;
-  --landing-text-muted: #94a3b8;
-  --landing-glow: rgba(99, 102, 241, 0.15);
+  --landing-bg: #030303;
+  --landing-panel: #0a0a0a;
+  --landing-surface: rgba(255, 255, 255, 0.03);
+  --landing-surface-strong: rgba(255, 255, 255, 0.06);
+  --landing-border: rgba(247, 244, 238, 0.12);
+  --landing-line: rgba(247, 244, 238, 0.16);
+  --landing-text: #f7f4ee;
+  --landing-ink: #f7f4ee;
+  --landing-muted: rgba(247, 244, 238, 0.68);
+  --landing-faint: rgba(247, 244, 238, 0.4);
+  --landing-reflection: rgba(255, 255, 255, 0.18);
+  --landing-glow: rgba(255, 255, 255, 0.1);
 }
 
 /* ─── Base Styles ───────────────────────────────────────── */
@@ -301,4 +307,41 @@
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+@keyframes landing-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -56;
+  }
+}
+
+@keyframes landing-grain-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-1.5%, 1.5%, 0);
+  }
+
+  100% {
+    transform: translate3d(1%, -1%, 0);
+  }
+}
+
+.landing-flow-line {
+  animation: landing-flow 2.2s linear infinite;
+}
+
+.landing-grain {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px);
+  background-size: 120px 120px, 160px 160px, 180px 180px;
+  animation: landing-grain-drift 12s linear infinite alternate;
 }

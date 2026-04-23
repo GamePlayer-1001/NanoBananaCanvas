@@ -3,12 +3,12 @@
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 AuthShell 认证双栏壳组件
- * [POS]: auth 模块的核心展示组件，被 sign-in/sign-up 页面复用
+ * [POS]: auth 模块的核心展示组件，被 sign-in/sign-up 页面复用，负责诗性左侧视觉与右侧品牌登录区
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { ReactNode } from 'react'
-import { ArrowRight, PanelsTopLeft, Sparkles } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { BrandMark } from '@/components/shared/brand-mark'
@@ -41,7 +41,6 @@ interface AuthShellProps {
 }
 
 export function AuthShell({
-  mode,
   title,
   subtitle,
   switchLabel,
@@ -50,55 +49,47 @@ export function AuthShell({
   children,
   t,
 }: AuthShellProps) {
-  const isSignIn = mode === 'sign-in'
-
   return (
-    <div className="min-h-screen bg-[#f6f3ef]">
-      <div className="grid min-h-screen lg:grid-cols-[1.02fr_0.98fr]">
-        <section className="relative hidden overflow-hidden bg-[#1a120f] lg:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_22%,_rgba(255,226,205,0.42),_transparent_18%),radial-gradient(circle_at_70%_18%,_rgba(254,114,144,0.18),_transparent_22%),radial-gradient(circle_at_28%_82%,_rgba(236,72,153,0.18),_transparent_18%),radial-gradient(circle_at_78%_72%,_rgba(59,130,246,0.15),_transparent_20%),linear-gradient(180deg,_rgba(12,8,7,0.16),_rgba(12,8,7,0.42))]" />
-          <div className="absolute inset-0 opacity-80 [background-image:radial-gradient(circle_at_center,_rgba(255,255,255,0.55)_0,_transparent_18%),radial-gradient(circle_at_center,_rgba(96,165,250,0.6)_0,_transparent_12%),radial-gradient(circle_at_center,_rgba(251,113,133,0.5)_0,_transparent_12%)] [background-position:0_0,40px_40px,80px_12px] [background-size:140px_140px,180px_180px,220px_220px]" />
-          <div className="absolute inset-0 backdrop-blur-[2px]" />
+    <div className="min-h-screen bg-[#050505]">
+      <div className="grid min-h-screen lg:grid-cols-[1.06fr_0.94fr]">
+        <section className="relative hidden overflow-hidden border-r border-white/8 bg-[#030303] lg:block">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(255,255,255,0.16),transparent_16%),radial-gradient(circle_at_72%_18%,rgba(255,255,255,0.08),transparent_14%),linear-gradient(180deg,#050505_0%,#101010_38%,#020202_100%)]" />
+          <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:88px_88px]" />
+          <div className="absolute inset-0 backdrop-blur-[1px]" />
 
-          <div className="absolute -left-16 bottom-[-8%] h-[34rem] w-[28rem] rotate-[-14deg] rounded-[58%_42%_62%_38%/48%_44%_56%_52%] border border-white/10 bg-[radial-gradient(circle_at_35%_35%,_rgba(255,228,228,0.88),_rgba(237,145,163,0.72)_42%,_rgba(115,44,54,0.16)_78%,_transparent_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.4)]" />
-          <div className="absolute left-[16%] top-[12%] h-[22rem] w-[18rem] rotate-[8deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/12 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,234,234,0.92),_rgba(238,164,176,0.76)_46%,_rgba(117,57,69,0.18)_84%,_transparent_100%)] shadow-[0_36px_90px_rgba(0,0,0,0.34)]" />
-          <div className="absolute right-[8%] bottom-[18%] h-36 w-24 rotate-[12deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/10 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,230,236,0.9),_rgba(234,113,135,0.78)_46%,_rgba(105,35,54,0.12)_84%,_transparent_100%)] shadow-[0_22px_60px_rgba(0,0,0,0.34)]" />
+          <div className="absolute left-[10%] top-[14%] h-28 w-28 rounded-full border border-white/12 bg-[radial-gradient(circle_at_32%_30%,rgba(255,255,255,0.92),rgba(255,255,255,0.22)_34%,rgba(255,255,255,0.02)_76%,transparent_100%)] shadow-[0_20px_70px_rgba(255,255,255,0.08)]" />
+          <div className="absolute left-[18%] top-[28%] h-44 w-44 rounded-full border border-white/12 bg-[radial-gradient(circle_at_34%_30%,rgba(255,255,255,0.92),rgba(255,255,255,0.22)_36%,rgba(255,255,255,0.03)_78%,transparent_100%)] shadow-[0_28px_100px_rgba(255,255,255,0.08)]" />
+          <div className="absolute left-[44%] top-[18%] h-20 w-20 rounded-full border border-white/12 bg-[radial-gradient(circle_at_34%_30%,rgba(255,255,255,0.82),rgba(255,255,255,0.18)_34%,rgba(255,255,255,0.02)_76%,transparent_100%)] shadow-[0_18px_52px_rgba(255,255,255,0.06)]" />
+          <div className="absolute left-[56%] top-[30%] h-56 w-56 rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_30%,rgba(255,255,255,0.92),rgba(255,255,255,0.18)_36%,rgba(255,255,255,0.03)_78%,transparent_100%)] shadow-[0_32px_120px_rgba(255,255,255,0.07)]" />
+          <div className="absolute left-[74%] top-[22%] h-24 w-24 rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_30%,rgba(255,255,255,0.82),rgba(255,255,255,0.14)_34%,rgba(255,255,255,0.02)_76%,transparent_100%)] shadow-[0_18px_50px_rgba(255,255,255,0.05)]" />
+          <div className="absolute left-[28%] top-[48%] h-[22rem] w-[22rem] rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_30%,rgba(255,255,255,0.92),rgba(255,255,255,0.16)_36%,rgba(255,255,255,0.03)_78%,transparent_100%)] shadow-[0_40px_140px_rgba(255,255,255,0.08)]" />
+          <div className="absolute left-[62%] top-[56%] h-40 w-40 rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_30%,rgba(255,255,255,0.84),rgba(255,255,255,0.14)_34%,rgba(255,255,255,0.02)_76%,transparent_100%)] shadow-[0_24px_80px_rgba(255,255,255,0.06)]" />
 
-          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/8 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/28 to-transparent" />
+          <div className="absolute left-[23%] top-[24%] h-30 w-px bg-[linear-gradient(180deg,rgba(255,255,255,0.28),transparent)]" />
+          <div className="absolute left-[65%] top-[38%] h-40 w-px bg-[linear-gradient(180deg,rgba(255,255,255,0.22),transparent)]" />
+          <div className="absolute left-[38%] top-[68%] h-24 w-px bg-[linear-gradient(180deg,rgba(255,255,255,0.2),transparent)]" />
 
-          <div className="relative flex h-full flex-col justify-between px-10 py-10 text-white xl:px-14">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-                <PanelsTopLeft className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] tracking-[0.3em] text-white/58 uppercase">
-                  {t.visualEyebrow}
-                </p>
-                <BrandMark className="text-xl text-white">{t.brandName}</BrandMark>
-              </div>
-            </div>
+          <div className="absolute inset-x-0 bottom-0 h-[42%] bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.12)_18%,rgba(0,0,0,0.56)_100%)]" />
+          <div className="absolute inset-x-0 bottom-[-8%] h-[34%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_62%)]" />
 
-            <div className="max-w-xl space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[11px] tracking-[0.28em] text-white/70 uppercase backdrop-blur-sm">
+          <div className="relative flex h-full items-end px-12 py-14 text-white xl:px-16">
+            <div className="max-w-[40rem] space-y-7">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-[11px] tracking-[0.28em] text-white/72 uppercase backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                {isSignIn ? 'Sign In Gateway' : 'Create Account'}
+                {t.visualEyebrow}
               </div>
-              <h1 className="max-w-xl font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
+              <h1 className="max-w-[38rem] font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
                 {t.visualHeadline}
               </h1>
-              <p className="max-w-lg text-lg leading-8 text-white/72">
-                {t.visualDescription}
-              </p>
+              <p className="max-w-[34rem] text-lg leading-8 text-white/72">{t.visualDescription}</p>
 
               <div className="grid gap-4 md:grid-cols-3">
                 {[t.visualPointOne, t.visualPointTwo, t.visualPointThree].map((point) => (
                   <div
                     key={point}
-                    className="rounded-[28px] border border-white/12 bg-black/16 px-5 py-5 backdrop-blur-md"
+                    className="rounded-[30px] border border-white/10 bg-black/18 px-5 py-5 backdrop-blur-md"
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06]">
                       <ArrowRight className="h-4 w-4" />
                     </div>
                     <p className="mt-4 text-sm leading-6 text-white/72">{point}</p>
@@ -106,60 +97,50 @@ export function AuthShell({
                 ))}
               </div>
             </div>
-
-            <div className="text-sm text-white/54">{t.previewHint}</div>
           </div>
         </section>
 
         <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-8 lg:px-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.9),_transparent_32%),linear-gradient(180deg,_#f8f6f3_0%,_#f5f1ed_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_30%),linear-gradient(180deg,#060606_0%,#101010_100%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-black/6" />
 
           <div className="relative z-10 w-full max-w-[560px]">
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-3 lg:hidden">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white shadow-sm">
-                  <PanelsTopLeft className="h-4.5 w-4.5 text-black" />
-                </div>
-                <BrandMark className="text-lg text-black">{t.brandName}</BrandMark>
+                <BrandMark className="text-2xl text-white">{t.brandName}</BrandMark>
               </div>
               <div className="ml-auto">
                 <LocaleSwitcher />
               </div>
             </div>
 
-            <div className="mb-8 space-y-3 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-black/8 bg-white shadow-[0_16px_40px_rgba(20,20,20,0.08)]">
-                <PanelsTopLeft className="h-7 w-7 text-black" />
-              </div>
+            <div className="mb-8 space-y-4 text-center">
+              <BrandMark className="text-4xl text-white md:text-5xl">{t.brandName}</BrandMark>
               <div className="space-y-2">
-                <div>
-                  <BrandMark className="text-xl text-black/58">{t.brandName}</BrandMark>
-                </div>
-                <h2 className="font-serif text-4xl tracking-tight text-[#111111]">{title}</h2>
-                <p className="mx-auto max-w-md text-sm leading-7 text-black/54">{subtitle}</p>
+                <h2 className="font-serif text-4xl tracking-tight text-white">{title}</h2>
+                <p className="mx-auto max-w-md text-sm leading-7 text-white/52">{subtitle}</p>
               </div>
             </div>
 
             <div className="flex justify-center">{children}</div>
 
             <div className="mt-6 space-y-3 text-center">
-              <p className="text-sm leading-6 text-black/54">
+              <p className="text-sm leading-6 text-white/56">
                 {switchLabel}{' '}
                 <Link
                   href={switchHref}
-                  className="font-medium text-[#5b53c7] transition-colors hover:text-[#4b45ad]"
+                  className="font-medium text-white transition-colors hover:text-white/76"
                 >
                   {switchText}
                 </Link>
               </p>
-              <p className="text-xs leading-6 text-black/38">
+              <p className="text-xs leading-6 text-white/34">
                 {t.termsPrefix}{' '}
-                <Link href="/terms" className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]">
+                <Link href="/terms" className="text-white/72 transition-colors hover:text-white">
                   {t.termsLink}
                 </Link>{' '}
                 {t.and}{' '}
-                <Link href="/privacy" className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]">
+                <Link href="/privacy" className="text-white/72 transition-colors hover:text-white">
                   {t.privacyLink}
                 </Link>
               </p>

@@ -20,24 +20,24 @@ const CLERK_CARD_APPEARANCE = {
   elements: {
     rootBox: 'w-full',
     cardBox: 'w-full shadow-none',
-    card: 'w-full rounded-[28px] border border-black/8 bg-white px-6 py-7 shadow-[0_18px_50px_rgba(17,17,17,0.08)]',
+    card: 'w-full rounded-[30px] border border-white/10 bg-[#f5f1eb] px-6 py-7 shadow-[0_34px_90px_rgba(0,0,0,0.36)]',
     header: 'hidden',
     footer: 'hidden',
     socialButtonsBlockButton:
-      'h-12 rounded-2xl border border-black/10 bg-white text-[15px] font-medium text-[#111111] shadow-none transition-colors hover:bg-black/[0.03]',
+      'h-12 rounded-2xl border border-black/8 bg-white text-[15px] font-medium text-[#111111] shadow-none transition-colors hover:bg-black/[0.03]',
     socialButtonsBlockButtonText: 'text-[15px] font-medium text-[#111111]',
-    dividerLine: 'bg-black/10',
+    dividerLine: 'bg-black/12',
     dividerText: 'text-xs tracking-[0.18em] text-black/38 uppercase',
     formFieldLabel: 'text-sm font-medium text-[#111111]',
     formFieldInput:
-      'h-11 rounded-2xl border border-black/10 bg-white text-[15px] text-[#111111] placeholder:text-black/30 shadow-none focus:border-[#5b53c7] focus:ring-4 focus:ring-[#5b53c7]/12',
+      'h-11 rounded-2xl border border-black/10 bg-white text-[15px] text-[#111111] placeholder:text-black/30 shadow-none focus:border-black focus:ring-4 focus:ring-black/10',
     formButtonPrimary:
-      'h-12 rounded-2xl border-0 bg-[#5b53c7] text-[15px] font-medium text-white shadow-none transition-colors hover:bg-[#4d46b4]',
-    formFieldAction: 'text-sm font-medium text-black/48 hover:text-[#5b53c7]',
+      'h-12 rounded-2xl border-0 bg-black text-[15px] font-medium text-white shadow-none transition-colors hover:bg-black/82',
+    formFieldAction: 'text-sm font-medium text-black/48 hover:text-black',
     identityPreviewText: 'text-black/58',
-    formResendCodeLink: 'text-[#5b53c7] hover:text-[#4d46b4]',
+    formResendCodeLink: 'text-black hover:text-black/72',
     otpCodeFieldInput:
-      'h-12 w-10 rounded-2xl border border-black/10 bg-white text-[#111111] shadow-none focus:border-[#5b53c7] focus:ring-4 focus:ring-[#5b53c7]/12',
+      'h-12 w-10 rounded-2xl border border-black/10 bg-white text-[#111111] shadow-none focus:border-black focus:ring-4 focus:ring-black/10',
     alertText: 'text-sm',
     formHeaderTitle: 'hidden',
     formHeaderSubtitle: 'hidden',

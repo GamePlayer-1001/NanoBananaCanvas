@@ -13,6 +13,11 @@ import { buildAbsoluteUrl } from '@/lib/seo'
 // ─── 常量 ───────────────────────────────────────────────
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
+  { path: '/features', changeFrequency: 'weekly' as const, priority: 0.86 },
+  { path: '/models', changeFrequency: 'weekly' as const, priority: 0.82 },
+  { path: '/pricing', changeFrequency: 'weekly' as const, priority: 0.8 },
+  { path: '/docs', changeFrequency: 'weekly' as const, priority: 0.72 },
+  { path: '/about', changeFrequency: 'monthly' as const, priority: 0.58 },
   { path: '/explore', changeFrequency: 'daily' as const, priority: 0.9 },
   { path: '/workflows', changeFrequency: 'daily' as const, priority: 0.8 },
   { path: '/video-analysis', changeFrequency: 'weekly' as const, priority: 0.75 },
