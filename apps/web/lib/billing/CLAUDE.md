@@ -14,6 +14,7 @@ metering.test.ts: 计量测试，覆盖 model_pricing 查询、文本/图片/视
 plans.ts: 套餐与积分包权益真相源，统一维护 Standard / Pro / Ultimate 与 credit_pack 的本地 snapshot
 entitlements.ts: 权益兑现层，统一维护 subscriptions 镜像、membership、月度积分重置、一次性积分发放与 Free 降级
 stripe-client.ts: Stripe SDK 门面，负责 secret key 初始化、App URL 校验与 Stripe Customer 绑定
+stripe-client.test.ts: Stripe Customer 绑定兼容测试，覆盖 subscriptions 缺失时受控失败而非制造孤儿 Customer
 stripe-error.ts: Stripe 异常映射层，把 Stripe 原生错误统一翻译成 BillingError
 stripe-error.test.ts: Stripe 异常映射测试，覆盖支付拒绝、限流、配置拒绝、网络异常与通用异常
 checkout.ts: Checkout 编排层，将登录用户的套餐购买语义翻译成 Stripe Checkout Session
