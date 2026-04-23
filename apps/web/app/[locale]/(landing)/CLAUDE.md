@@ -16,5 +16,8 @@ about/page.tsx: About 公开介绍页，承接页脚公司信息入口
 pricing/page.tsx: 动态定价页，服务端读取 Stripe 套餐价格并按 `CF-IPCountry` 自动解析展示币种
 privacy/page.tsx: 隐私政策页面
 terms/page.tsx: 服务条款页面
+refund-policy/page.tsx: Refund Policy 公开法律资源页，解释退款边界
+acceptable-use/page.tsx: Acceptable Use 公开法律资源页，解释平台使用边界
+cookie-settings/page.tsx: Cookie Settings 公开法律资源页，解释 Cookie 与偏好设置边界
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

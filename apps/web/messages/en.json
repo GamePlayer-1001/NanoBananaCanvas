@@ -216,6 +216,9 @@
       "legal": "Legal",
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
+      "refundPolicy": "Refund policy",
+      "acceptableUse": "Acceptable use",
+      "cookieSettings": "Cookie settings",
       "copyright": "© 2026 Nano Banana Canvas. All rights reserved.",
       "builtFor": "Built for creators who want their workflow logic to stay visible."
     },
@@ -316,6 +319,42 @@
         "highlight3": "As the system grows, the public surface should still feel coherent enough that a new visitor can understand the core idea in a few screens.",
         "primaryCta": "Start creating",
         "secondaryCta": "Contact the team"
+      },
+      "refundPolicy": {
+        "metaTitle": "Refund Policy",
+        "metaDescription": "Read the Nano Banana Canvas refund boundary for Free accounts, subscriptions, one-time plans, and credit packs.",
+        "eyebrow": "Refund boundary",
+        "title": "Refunds should be clear before checkout, not improvised after confusion.",
+        "description": "This page summarizes the public refund boundary for Nano Banana Canvas. It does not replace the Terms, but it makes the billing posture easier to inspect before a team pays.",
+        "highlight1": "Free is the default account state and is not a Stripe checkout product, so there is no “buy Free” refund path.",
+        "highlight2": "Auto monthly subscriptions can be cancelled through billing controls. Cancellation stops future renewal; past usage is handled under the Terms and Stripe records.",
+        "highlight3": "One-time plans and credit packs are charged once. Refund exceptions are reviewed case by case for duplicate charges, failed delivery, or clear billing errors.",
+        "primaryCta": "Review pricing",
+        "secondaryCta": "Read terms"
+      },
+      "acceptableUse": {
+        "metaTitle": "Acceptable Use Policy",
+        "metaDescription": "Understand the acceptable use boundary for Nano Banana Canvas workflows, generated media, public templates, and platform behavior.",
+        "eyebrow": "Use boundary",
+        "title": "Creative systems need boundaries so teams can build without turning the platform into a liability.",
+        "description": "This page explains the practical use boundary for AI workflows, public templates, model outputs, and community surfaces on Nano Banana Canvas.",
+        "highlight1": "Do not use workflows to create or distribute unlawful, abusive, deceptive, exploitative, or rights-infringing content.",
+        "highlight2": "Published templates and public workflow details must respect privacy, consent, intellectual property, and platform safety expectations.",
+        "highlight3": "Automation that attacks, scrapes, overloads, evades billing, or manipulates platform integrity is outside acceptable use.",
+        "primaryCta": "Enter workspace",
+        "secondaryCta": "Read terms"
+      },
+      "cookieSettings": {
+        "metaTitle": "Cookie Settings",
+        "metaDescription": "Review the current Nano Banana Canvas cookie and preference boundary, including necessary cookies and future preference controls.",
+        "eyebrow": "Cookie settings",
+        "title": "Cookie controls should explain what is necessary, what is optional, and where preferences belong.",
+        "description": "This page records the current public cookie boundary. It keeps the path visible while the product’s privacy controls continue to mature.",
+        "highlight1": "Necessary cookies and session storage support authentication, locale routing, security, billing handoff, and core product operation.",
+        "highlight2": "Optional analytics or preference controls should stay separate from required product operation and be explained before expansion.",
+        "highlight3": "If a browser, region, or future product setting exposes additional controls, this page is the public place that should stay aligned with that reality.",
+        "primaryCta": "Read privacy",
+        "secondaryCta": "Contact us"
       }
     }
   },

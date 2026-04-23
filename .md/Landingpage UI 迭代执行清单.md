@@ -170,10 +170,10 @@
 - [x] LUI-1008 新建 `/community` 或将公开社区入口明确指向现有 `/explore`；当前导航与页脚 Community 均指向 `/explore`。
 - [x] LUI-1009 新建 `/about`。
 - [x] LUI-1010 决定并执行 `/contact` 公开化迁移。
-- [ ] LUI-1011 新建 `/refund-policy`。
-- [ ] LUI-1012 新建 `/acceptable-use`。
-- [ ] LUI-1013 新建 `/cookie-settings`。
-- [~] LUI-1014 同步 `sitemap.ts`、metadata、robots 边界和对应 `CLAUDE.md`；本轮已覆盖四个 Features 细分页。
+- [x] LUI-1011 新建 `/refund-policy`。
+- [x] LUI-1012 新建 `/acceptable-use`。
+- [x] LUI-1013 新建 `/cookie-settings`。
+- [~] LUI-1014 同步 `sitemap.ts`、metadata、robots 边界和对应 `CLAUDE.md`；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
 
 ### Phase 11 - 登录页视觉迭代
 
@@ -192,7 +192,7 @@
 - [x] LUI-1202 运行 `pnpm --filter @nano-banana/web test`。
 - [x] LUI-1203 运行 `pnpm --filter @nano-banana/web build`。
 - [x] LUI-1204 如新增/修改 i18n key，运行 `pnpm --filter @nano-banana/web i18n:check`。
-- [~] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical；本轮已覆盖四个 Features 细分页。
+- [~] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
 - [ ] LUI-1206 检查移动端、桌面端、`prefers-reduced-motion`。
 - [x] LUI-1207 检查 L3 文件头、L2 CLAUDE、L1 CLAUDE 是否需要同步。
 - [~] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交；本轮持续按阶段独立提交。

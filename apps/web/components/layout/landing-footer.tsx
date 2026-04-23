@@ -60,7 +60,12 @@ function FooterColumn({
       </h3>
       <div className="space-y-3">
         {links.map((link) => (
-          <FooterLink key={link.label} href={link.href} label={link.label} external={link.external} />
+          <FooterLink
+            key={link.label}
+            href={link.href}
+            label={link.label}
+            external={link.external}
+          />
         ))}
       </div>
     </div>
@@ -99,15 +104,26 @@ export function LandingFooter() {
       links: [
         { label: t('terms'), href: '/terms' },
         { label: t('privacy'), href: '/privacy' },
+        { label: t('refundPolicy'), href: '/refund-policy' },
+        { label: t('acceptableUse'), href: '/acceptable-use' },
+        { label: t('cookieSettings'), href: '/cookie-settings' },
       ],
     },
   ]
 
   const socialLinks = [
     { icon: Send, href: 'https://t.me/nanobananacanvas', label: 'Telegram' },
-    { icon: MessageCircle, href: 'https://discord.gg/nanobananacanvas', label: 'Discord' },
+    {
+      icon: MessageCircle,
+      href: 'https://discord.gg/nanobananacanvas',
+      label: 'Discord',
+    },
     { icon: Disc3, href: 'https://x.com/nanobananacanvas', label: 'X' },
-    { icon: Instagram, href: 'https://instagram.com/nanobananacanvas', label: 'Instagram' },
+    {
+      icon: Instagram,
+      href: 'https://instagram.com/nanobananacanvas',
+      label: 'Instagram',
+    },
   ]
 
   return (
@@ -116,7 +132,9 @@ export function LandingFooter() {
         <div className="flex flex-col gap-12 xl:flex-row xl:justify-between">
           <div className="max-w-[28rem]">
             <BrandMark className="text-3xl text-[var(--landing-ink)] md:text-4xl" />
-            <p className="mt-4 text-sm leading-7 text-[var(--landing-muted)]">{t('tagline')}</p>
+            <p className="mt-4 text-sm leading-7 text-[var(--landing-muted)]">
+              {t('tagline')}
+            </p>
             <div className="mt-6 flex items-center gap-3">
               {socialLinks.map((item) => (
                 <a
@@ -135,7 +153,11 @@ export function LandingFooter() {
 
           <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-4">
             {columns.map((column) => (
-              <FooterColumn key={column.title} title={column.title} links={column.links} />
+              <FooterColumn
+                key={column.title}
+                title={column.title}
+                links={column.links}
+              />
             ))}
           </div>
         </div>

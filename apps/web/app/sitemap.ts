@@ -40,6 +40,9 @@ const STATIC_ROUTES = [
   { path: '/contact', changeFrequency: 'monthly' as const, priority: 0.6 },
   { path: '/terms', changeFrequency: 'yearly' as const, priority: 0.3 },
   { path: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },
+  { path: '/refund-policy', changeFrequency: 'yearly' as const, priority: 0.28 },
+  { path: '/acceptable-use', changeFrequency: 'yearly' as const, priority: 0.28 },
+  { path: '/cookie-settings', changeFrequency: 'yearly' as const, priority: 0.24 },
 ]
 
 // ─── Sitemap 生成 ───────────────────────────────────────

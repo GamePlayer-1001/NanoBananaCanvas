@@ -216,6 +216,9 @@
       "legal": "法律",
       "terms": "服务条款",
       "privacy": "隐私政策",
+      "refundPolicy": "退款政策",
+      "acceptableUse": "可接受使用",
+      "cookieSettings": "Cookie 设置",
       "copyright": "© 2026 Nano Banana Canvas. 版权所有",
       "builtFor": "为希望把工作流逻辑保持可见的创作者而造。"
     },
@@ -316,6 +319,42 @@
         "highlight3": "即使系统继续长大，公开表面也应该保持足够清楚，让新访客在几屏内理解核心想法。",
         "primaryCta": "立即创作",
         "secondaryCta": "联系团队"
+      },
+      "refundPolicy": {
+        "metaTitle": "退款政策",
+        "metaDescription": "阅读 Nano Banana Canvas 关于 Free 账户、订阅、一次性套餐与积分包的退款边界。",
+        "eyebrow": "退款边界",
+        "title": "退款边界应该在结账前讲清楚，而不是等用户困惑后再临时解释。",
+        "description": "这个页面总结 Nano Banana Canvas 的公开退款边界。它不替代服务条款，但会让团队在付款前更容易检查计费立场。",
+        "highlight1": "Free 是默认账户状态，不是 Stripe 结账商品，因此不存在“购买 Free”后的退款路径。",
+        "highlight2": "自动月付订阅可以通过账单控制取消。取消会停止未来续费，历史使用按服务条款与 Stripe 记录处理。",
+        "highlight3": "一次性套餐与积分包只扣费一次。重复扣费、发放失败或明确计费错误等例外会按个案审核。",
+        "primaryCta": "查看定价",
+        "secondaryCta": "阅读条款"
+      },
+      "acceptableUse": {
+        "metaTitle": "可接受使用政策",
+        "metaDescription": "了解 Nano Banana Canvas 对工作流、生成媒体、公开模板和平台行为的可接受使用边界。",
+        "eyebrow": "使用边界",
+        "title": "创作系统需要边界，团队才能安心构建，而不是把平台变成风险源。",
+        "description": "这个页面解释 Nano Banana Canvas 对 AI 工作流、公开模板、模型输出和社区表面的实际使用边界。",
+        "highlight1": "不得使用工作流创建或分发违法、滥用、欺骗、剥削或侵犯权利的内容。",
+        "highlight2": "发布模板与公开工作流详情必须尊重隐私、同意、知识产权和平台安全预期。",
+        "highlight3": "攻击、抓取、压垮服务、规避计费或操纵平台完整性的自动化行为都不属于可接受使用。",
+        "primaryCta": "进入工作区",
+        "secondaryCta": "阅读条款"
+      },
+      "cookieSettings": {
+        "metaTitle": "Cookie 设置",
+        "metaDescription": "查看 Nano Banana Canvas 当前 Cookie 与偏好设置边界，包括必要 Cookie 和后续偏好控制方向。",
+        "eyebrow": "Cookie 设置",
+        "title": "Cookie 控制应该解释什么是必要的、什么是可选的，以及偏好设置应该放在哪里。",
+        "description": "这个页面记录当前公开 Cookie 边界。它让路径保持可见，同时为产品隐私控制继续成熟留下位置。",
+        "highlight1": "必要 Cookie 与会话存储用于认证、语言路由、安全、账单跳转和核心产品运行。",
+        "highlight2": "可选分析或偏好控制应与必要产品运行分开，并在扩展前解释清楚。",
+        "highlight3": "如果浏览器、地区或未来产品设置提供更多控制，这个页面就是需要与现实保持一致的公开位置。",
+        "primaryCta": "阅读隐私政策",
+        "secondaryCta": "联系我们"
       }
     }
   },
