@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 Link，依赖 @/components/locale-switcher，
- *          依赖 lucide-react 的 ChevronDown
+ *          依赖 @/components/shared/brand-mark，依赖 lucide-react 的 ChevronDown
  * [OUTPUT]: 对外提供 LandingNav 导航栏组件
  * [POS]: components/layout 的 Landing 导航栏，被 (landing)/layout.tsx 消费，保持公开页无 Clerk 依赖
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -13,6 +13,7 @@ import { ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Link } from '@/i18n/navigation'
@@ -29,8 +30,8 @@ export function LandingNav() {
           {/* ── Logo ───────────────────────────────────── */}
           <div className="flex items-center gap-2">
             <span className="text-xl leading-none">🎨</span>
-            <Link href="/" className="text-lg font-bold tracking-tight text-white">
-              Nano Banana Canvas
+            <Link href="/" className="text-white">
+              <BrandMark className="text-xl text-white md:text-[1.4rem]" />
             </Link>
           </div>
 

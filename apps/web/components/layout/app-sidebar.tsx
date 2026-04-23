@@ -4,6 +4,7 @@
  *          依赖 lucide-react 图标，
  *          依赖 @/components/ui/avatar，
  *          依赖 @/components/shared/search-command，
+ *          依赖 @/components/shared/brand-mark，
  *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
@@ -32,6 +33,7 @@ import {
 
 import { Link, usePathname } from '@/i18n/navigation'
 import { SignOutAction } from '@/components/auth/sign-out-action'
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
@@ -219,8 +221,8 @@ export function AppSidebar() {
       {/* ── Header ────────────────────────────────────── */}
       <div className="px-4 pt-5 pb-2">
         <Link href="/explore" className="block">
-          <h1 className="font-serif text-sm italic tracking-wide text-foreground">
-            Nano Banana Canvas
+          <h1>
+            <BrandMark className="text-sm text-foreground" />
           </h1>
         </Link>
         <p className="mt-0.5 text-[8px] text-muted-foreground">{t('personal')}</p>

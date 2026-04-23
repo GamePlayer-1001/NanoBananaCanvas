@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 @/components/layout/app-sidebar 的 AppSidebar，
- *          依赖 @/components/ui/sheet，依赖 lucide-react，依赖 @/i18n/navigation
+ *          依赖 @/components/shared/brand-mark，依赖 @/components/ui/sheet，
+ *          依赖 lucide-react，依赖 @/i18n/navigation
  * [OUTPUT]: 对外提供 MobileHeader 移动端顶栏组件 (汉堡菜单 + Sheet 抽屉)
  * [POS]: layout 的移动端导航，被 (app)/layout.tsx 消费，仅 < lg 可见
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,6 +13,7 @@ import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import { AppSidebar } from '@/components/layout/app-sidebar'
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { VisuallyHidden } from 'radix-ui'
@@ -35,8 +37,8 @@ export function MobileHeader() {
 
       {/* Logo */}
       <Link href="/explore" className="flex-1">
-        <h1 className="font-serif text-sm italic tracking-wide text-foreground">
-          Nano Banana Canvas
+        <h1>
+          <BrandMark className="text-sm text-foreground" />
         </h1>
       </Link>
 

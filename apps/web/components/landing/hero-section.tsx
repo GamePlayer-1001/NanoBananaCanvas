@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useState/useCallback/useRef/useEffect，
- *          依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
+ *          依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
+ *          依赖 @/components/shared/brand-mark
  * [OUTPUT]: 对外提供 HeroSection 交互式画板组件
  * [POS]: landing 的主视觉区域，被 (landing)/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Link } from '@/i18n/navigation'
 
 /* ─── Types ──────────────────────────────────────────────── */
@@ -320,8 +322,10 @@ export function HeroSection() {
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
           <div className="pointer-events-none text-center">
             {/* 品牌名 */}
-            <h2 className="mb-1 font-serif text-2xl tracking-wide text-white/80 italic md:text-3xl">
-              {t('heading')}
+            <h2 className="mb-1">
+              <BrandMark className="text-3xl text-white/82 md:text-4xl">
+                {t('heading')}
+              </BrandMark>
             </h2>
 
             {/* 主标语 */}

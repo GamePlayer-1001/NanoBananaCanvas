@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode，依赖 lucide-react 图标，
- *          依赖 @/components/locale-switcher，依赖 @/i18n/navigation 的 Link
+ *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
+ *          依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 AuthShell 认证双栏壳组件
  * [POS]: auth 模块的核心展示组件，被 sign-in/sign-up 页面复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,6 +11,7 @@ import type { ReactNode } from 'react'
 import { ArrowRight, PanelsTopLeft, Sparkles } from 'lucide-react'
 
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Link } from '@/i18n/navigation'
 
 type AuthMode = 'sign-in' | 'sign-up'
@@ -74,7 +76,7 @@ export function AuthShell({
                 <p className="text-[11px] tracking-[0.3em] text-white/58 uppercase">
                   {t.visualEyebrow}
                 </p>
-                <p className="text-base font-semibold">{t.brandName}</p>
+                <BrandMark className="text-xl text-white">{t.brandName}</BrandMark>
               </div>
             </div>
 
@@ -119,7 +121,7 @@ export function AuthShell({
                 <div className="flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white shadow-sm">
                   <PanelsTopLeft className="h-4.5 w-4.5 text-black" />
                 </div>
-                <span className="font-semibold tracking-tight text-black">{t.brandName}</span>
+                <BrandMark className="text-lg text-black">{t.brandName}</BrandMark>
               </div>
               <div className="ml-auto">
                 <LocaleSwitcher />
@@ -131,9 +133,9 @@ export function AuthShell({
                 <PanelsTopLeft className="h-7 w-7 text-black" />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium tracking-[0.24em] text-black/42 uppercase">
-                  {t.brandName}
-                </p>
+                <div>
+                  <BrandMark className="text-xl text-black/58">{t.brandName}</BrandMark>
+                </div>
                 <h2 className="font-serif text-4xl tracking-tight text-[#111111]">{title}</h2>
                 <p className="mx-auto max-w-md text-sm leading-7 text-black/54">{subtitle}</p>
               </div>

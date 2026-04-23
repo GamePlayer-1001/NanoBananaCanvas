@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
+ *          依赖 @/components/shared/brand-mark
  * [OUTPUT]: 对外提供 LandingFooter 组件
  * [POS]: components/layout 的 Landing 页脚，被 (landing)/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,6 +10,7 @@
 
 import { useTranslations } from 'next-intl'
 
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Link } from '@/i18n/navigation'
 
 /* ─── Footer Column ──────────────────────────────────── */
@@ -81,9 +83,7 @@ export function LandingFooter() {
           <div className="min-w-[200px]">
             <div className="mb-3 flex items-center gap-2">
               <span className="text-xl">🎨</span>
-              <span className="font-serif text-lg font-bold italic text-white">
-                Nano Banana Canvas
-              </span>
+              <BrandMark className="text-xl text-white" />
             </div>
             <p className="mb-4 text-sm text-white/40">{t('tagline')}</p>
             {/* 社交图标占位 */}
