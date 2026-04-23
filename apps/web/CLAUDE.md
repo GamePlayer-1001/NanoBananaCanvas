@@ -27,6 +27,7 @@ scripts/            — 项目级脚本 (Cloudflare 部署包装 + i18n/L10N 索
 ```
 next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + next-intl 插件)
 middleware.ts       — Edge 路由中间件 (Clerk 会话注入 + 可开关 Frontend API 代理 + 裸域规范化 + next-intl locale 检测/重写，外部 URL 隐藏语言前缀)
+package.json        — 前端脚本入口 (`dev:e2e` 先执行 `db:reset-local -> db:init` 再启动 Next dev，确保 Playwright 在干净环境下也有全新的本地 D1 schema)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
 postcss.config.mjs  — PostCSS (@tailwindcss/postcss)

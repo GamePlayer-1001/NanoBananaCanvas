@@ -964,6 +964,30 @@
    - 生产部署阻塞点已从“workflow 没配”进一步收敛为“monorepo 任务环境隔离”
    - 修复已落地，但仍需再次推送 `main` 触发新回合验证后才能把 `SPAY-1008` 划掉
 
+#### Phase 10 Batch L 结论（2026-04-23）
+
+1. 已拿到第五次 CI 失败的两条最终根因
+   - `e93c8a9` 推送后，远端已不再报 Clerk/Stripe 环境缺失，Playwright `webServer` 也已成功拉起
+   - 当前失败点收敛为两项基础设施缺口：GitHub Actions 没有安装 Playwright Chromium；CI 的干净环境下本地 D1 没有 `users / folders` 等表
+2. 已把 E2E 前置条件收口为确定性步骤
+   - `.github/workflows/deploy.yml` 当前已在 `pnpm install` 后显式执行 `pnpm --filter @nano-banana/e2e exec playwright install --with-deps chromium`
+   - `apps/web/package.json` 的 `dev:e2e` 当前会先执行 `pnpm run db:init`，再启动 `next dev --turbopack --port 3000`
+3. 当前 `SPAY-1008` 的真实状态
+   - 生产部署阻塞点已进一步从“环境透传”收敛为“浏览器依赖 + 本地 D1 schema 初始化”
+   - 修复已落地，但仍需再次推送 `main` 触发新回合验证后才能把 `SPAY-1008` 划掉
+
+#### Phase 10 Batch M 结论（2026-04-23）
+
+1. 已拿到本地回归验证里的最后一个不确定点
+   - `pnpm test` 在改造 `dev:e2e` 后首次回归时，`wrangler d1 execute --local` 报出旧 schema 遗留导致的 `no such column: folder_id`
+   - 这说明单纯执行 `db:init` 还不够，本地 `.wrangler/state/v3/d1` 必须先清空，才能保证每次 E2E 都从同一张白纸开始
+2. 已把 `dev:e2e` 升级成真正确定性的冷启动链
+   - `apps/web/package.json` 当前新增 `db:reset-local`
+   - `dev:e2e` 当前固定为 `db:reset-local -> db:init -> next dev`
+3. 当前 `SPAY-1008` 的真实状态
+   - 生产部署阻塞点已进一步收敛为“等待带有浏览器安装 + D1 重置链的新回合验证”
+   - 修复已落地，但仍需再次推送 `main` 触发新回合验证后才能把 `SPAY-1008` 划掉
+
 ---
 
 ## 三、推荐落地顺序
