@@ -161,10 +161,10 @@
 ### Phase 10 - 公开子页面树
 
 - [x] LUI-1001 新建 `/features` 总览页。
-- [ ] LUI-1002 新建 `/features/visual-workflow`。
-- [ ] LUI-1003 新建 `/features/image-generation`。
-- [ ] LUI-1004 新建 `/features/video-generation`。
-- [ ] LUI-1005 新建 `/features/model-routing`。
+- [x] LUI-1002 新建 `/features/visual-workflow`。
+- [x] LUI-1003 新建 `/features/image-generation`。
+- [x] LUI-1004 新建 `/features/video-generation`。
+- [x] LUI-1005 新建 `/features/model-routing`。
 - [x] LUI-1006 新建 `/models`。
 - [x] LUI-1007 新建 `/docs`。
 - [ ] LUI-1008 新建 `/community` 或将公开社区入口明确指向现有 `/explore`。
@@ -173,7 +173,7 @@
 - [ ] LUI-1011 新建 `/refund-policy`。
 - [ ] LUI-1012 新建 `/acceptable-use`。
 - [ ] LUI-1013 新建 `/cookie-settings`。
-- [~] LUI-1014 同步 `sitemap.ts`、metadata、robots 边界和对应 `CLAUDE.md`。
+- [~] LUI-1014 同步 `sitemap.ts`、metadata、robots 边界和对应 `CLAUDE.md`；本轮已覆盖四个 Features 细分页。
 
 ### Phase 11 - 登录页视觉迭代
 
@@ -192,10 +192,10 @@
 - [x] LUI-1202 运行 `pnpm --filter @nano-banana/web test`。
 - [x] LUI-1203 运行 `pnpm --filter @nano-banana/web build`。
 - [x] LUI-1204 如新增/修改 i18n key，运行 `pnpm --filter @nano-banana/web i18n:check`。
-- [ ] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical。
+- [~] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical；本轮已覆盖四个 Features 细分页。
 - [ ] LUI-1206 检查移动端、桌面端、`prefers-reduced-motion`。
 - [x] LUI-1207 检查 L3 文件头、L2 CLAUDE、L1 CLAUDE 是否需要同步。
-- [ ] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交。
+- [~] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交；本轮持续按阶段独立提交。
 - [x] LUI-1209 坏味道治理：拆分 `hero-section.tsx` 与 `landing-sections.tsx` 的多职责结构，新增 `hero-canvas.tsx` 与 `landing/sections/` 子模块。
 - [x] LUI-1210 部署回归修复：Hero 主 CTA 恢复为 `Get Started` / `开始使用`，对齐 E2E 的公开首页 CTA 可见性断言。
 - [x] LUI-1211 推送部署闭环：`main` 推送至 `742782d` 后触发 GitHub Actions `24826523254`，`Lint & Build` 与 `Deploy` 均通过，Web 与 API Worker 已完成部署。

@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，依赖 next 的 Metadata，
  *          依赖 @/components/landing/public-resource-page，依赖 @/lib/seo 的 buildPageMetadata
- * [OUTPUT]: 对外提供 /features 公开总览页
- * [POS]: (landing) 路由组的功能总览页，被公开导航与 sitemap 消费
+ * [OUTPUT]: 对外提供 /features/video-generation 公开功能细分页
+ * [POS]: features 子树的视频生成说明页，被 sitemap 与功能总览页消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -18,23 +18,29 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'landing.publicPages.features' })
+  const t = await getTranslations({
+    locale,
+    namespace: 'landing.publicPages.videoGeneration',
+  })
 
   return buildPageMetadata({
     title: t('metaTitle'),
     description: t('metaDescription'),
-    path: '/features',
+    path: '/features/video-generation',
     locale,
   })
 }
 
-export default async function FeaturesPage({
+export default async function VideoGenerationPage({
   params,
 }: {
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'landing.publicPages.features' })
+  const t = await getTranslations({
+    locale,
+    namespace: 'landing.publicPages.videoGeneration',
+  })
 
   setRequestLocale(locale)
 
@@ -43,17 +49,11 @@ export default async function FeaturesPage({
       eyebrow={t('eyebrow')}
       title={t('title')}
       description={t('description')}
-      highlights={[t('highlight1'), t('highlight2'), t('highlight3'), t('highlight4')]}
-      highlightHrefs={[
-        '/features/visual-workflow',
-        '/features/image-generation',
-        '/features/video-generation',
-        '/features/model-routing',
-      ]}
+      highlights={[t('highlight1'), t('highlight2'), t('highlight3')]}
       primaryLabel={t('primaryCta')}
       primaryHref="/sign-in?redirect_url=/workspace"
       secondaryLabel={t('secondaryCta')}
-      secondaryHref="/pricing"
+      secondaryHref="/features"
     />
   )
 }

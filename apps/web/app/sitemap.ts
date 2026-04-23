@@ -14,6 +14,22 @@ import { buildAbsoluteUrl } from '@/lib/seo'
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
   { path: '/features', changeFrequency: 'weekly' as const, priority: 0.86 },
+  {
+    path: '/features/visual-workflow',
+    changeFrequency: 'weekly' as const,
+    priority: 0.78,
+  },
+  {
+    path: '/features/image-generation',
+    changeFrequency: 'weekly' as const,
+    priority: 0.78,
+  },
+  {
+    path: '/features/video-generation',
+    changeFrequency: 'weekly' as const,
+    priority: 0.78,
+  },
+  { path: '/features/model-routing', changeFrequency: 'weekly' as const, priority: 0.78 },
   { path: '/models', changeFrequency: 'weekly' as const, priority: 0.82 },
   { path: '/pricing', changeFrequency: 'weekly' as const, priority: 0.8 },
   { path: '/docs', changeFrequency: 'weekly' as const, priority: 0.72 },
@@ -43,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         `SELECT id, updated_at FROM workflows
          WHERE is_public = 1
          ORDER BY updated_at DESC
-         LIMIT 5000`
+         LIMIT 5000`,
       )
       .all<{ id: string; updated_at: string }>()
 
