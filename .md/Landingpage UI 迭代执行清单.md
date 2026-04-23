@@ -197,6 +197,7 @@
 - [x] LUI-1207 检查 L3 文件头、L2 CLAUDE、L1 CLAUDE 是否需要同步。
 - [ ] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交。
 - [x] LUI-1209 坏味道治理：拆分 `hero-section.tsx` 与 `landing-sections.tsx` 的多职责结构，新增 `hero-canvas.tsx` 与 `landing/sections/` 子模块。
+- [x] LUI-1210 部署回归修复：Hero 主 CTA 恢复为 `Get Started` / `开始使用`，对齐 E2E 的公开首页 CTA 可见性断言。
 
 ---
 

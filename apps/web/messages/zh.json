@@ -67,7 +67,7 @@
       "heading": "Nano Banana Canvas",
       "tagline": "先把图像生成逻辑讲清，再去生成图像本身。",
       "description": "先给出脸部特征，再给出人物主体，然后做身份融合、加入风景、落入场景，最后进入动态结果。Landing 首屏应该让这条因果链一眼可读。",
-      "primaryCta": "进入工作区",
+      "primaryCta": "开始使用",
       "secondaryCta": "查看定价",
       "models": "当前真实接入与生态规划支持被明确区分，避免公开页叙事先于运行时现实。",
       "nodeFaceEyebrow": "节点 01",

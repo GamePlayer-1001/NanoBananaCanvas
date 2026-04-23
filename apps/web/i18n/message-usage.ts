@@ -278,18 +278,25 @@ export const MESSAGE_USAGE_INDEX = {
     "landing.hero.secondaryCta",
     "landing.hero.tagline"
   ],
-  "components/landing/landing-sections.tsx": [
+  "components/landing/sections/cta-section.tsx": [
     "landing.sections.cta.body",
     "landing.sections.cta.description",
     "landing.sections.cta.eyebrow",
     "landing.sections.cta.primary",
     "landing.sections.cta.secondary",
-    "landing.sections.cta.title",
-    "landing.sections.faq.description",
-    "landing.sections.faq.eyebrow",
+    "landing.sections.cta.title"
+  ],
+  "components/landing/sections/features-pricing-section.tsx": [
     "landing.sections.features.description",
     "landing.sections.features.eyebrow",
     "landing.sections.features.title",
+    "landing.sections.pricing.cta",
+    "landing.sections.pricing.description",
+    "landing.sections.pricing.eyebrow",
+    "landing.sections.pricing.recommended",
+    "landing.sections.pricing.title"
+  ],
+  "components/landing/sections/model-section.tsx": [
     "landing.sections.models.clusterAudio",
     "landing.sections.models.clusterImage",
     "landing.sections.models.clusterText",
@@ -301,12 +308,11 @@ export const MESSAGE_USAGE_INDEX = {
     "landing.sections.models.ecosystemLabel",
     "landing.sections.models.explore",
     "landing.sections.models.eyebrow",
-    "landing.sections.models.title",
-    "landing.sections.pricing.cta",
-    "landing.sections.pricing.description",
-    "landing.sections.pricing.eyebrow",
-    "landing.sections.pricing.recommended",
-    "landing.sections.pricing.title",
+    "landing.sections.models.title"
+  ],
+  "components/landing/sections/proof-faq-section.tsx": [
+    "landing.sections.faq.description",
+    "landing.sections.faq.eyebrow",
     "landing.sections.proof.description",
     "landing.sections.proof.eyebrow",
     "landing.sections.proof.title",
