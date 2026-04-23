@@ -14,7 +14,11 @@ import { ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { SectionShell } from '@/components/landing/sections/section-shell'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 
 export function ProofSection() {
   const t = useTranslations('landing.sections')
@@ -38,21 +42,25 @@ export function ProofSection() {
 
         <ProofCard title={seoT('capabilityTitle')} body={seoT('capabilityBody')}>
           <div className="mt-6 flex flex-wrap gap-2">
-            {[seoT('featureWorkflow'), seoT('featureImageVideo'), seoT('featureTemplates')].map(
-              (item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-[var(--landing-ink)]"
-                >
-                  {item}
-                </span>
-              ),
-            )}
+            {[
+              seoT('featureWorkflow'),
+              seoT('featureImageVideo'),
+              seoT('featureTemplates'),
+            ].map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-[var(--landing-ink)]"
+              >
+                {item}
+              </span>
+            ))}
           </div>
         </ProofCard>
 
         <ProofCard title={seoT('geoTitle')} body={seoT('geoBody')}>
-          <p className="mt-6 text-sm leading-7 text-[var(--landing-ink)]">{seoT('geoNote')}</p>
+          <p className="mt-6 text-sm leading-7 text-[var(--landing-ink)]">
+            {seoT('geoNote')}
+          </p>
         </ProofCard>
       </div>
     </SectionShell>
@@ -86,7 +94,7 @@ export function FaqSection() {
               key={item.question}
               open={open}
               onOpenChange={(nextOpen) => setOpenFaq(nextOpen ? index : null)}
-              className="rounded-[28px] border border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-6"
+              className="rounded-lg border border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-6"
             >
               <CollapsibleTrigger className="flex w-full items-center justify-between gap-6 py-6 text-left">
                 <span className="text-lg font-medium text-[var(--landing-ink)] md:text-xl">
@@ -98,7 +106,7 @@ export function FaqSection() {
                   <ChevronDown className="size-4 text-[var(--landing-ink)]" />
                 </span>
               </CollapsibleTrigger>
-              <CollapsibleContent className="overflow-hidden pb-6 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
+              <CollapsibleContent className="data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 overflow-hidden pb-6">
                 <p className="max-w-[52rem] text-sm leading-8 text-[var(--landing-muted)]">
                   {item.answer}
                 </p>
@@ -121,7 +129,7 @@ function ProofCard({
   children: ReactNode
 }) {
   return (
-    <article className="rounded-[30px] border border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
+    <article className="rounded-lg border border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
       <p className="text-[11px] tracking-[0.26em] text-[var(--landing-faint)] uppercase">
         {title}
       </p>
