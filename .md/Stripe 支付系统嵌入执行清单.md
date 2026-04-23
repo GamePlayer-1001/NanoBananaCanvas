@@ -772,7 +772,7 @@
 - [ ] **SPAY-1005** 手测用户升级、降级、取消、续费、支付失败
 - [x] **SPAY-1006** 补齐生产环境 Stripe 密钥
 - [x] **SPAY-1007** 配置正式 Stripe Webhook 端点
-- [~] **SPAY-1008** 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
+- [x] **SPAY-1008** 推送 `main` 触发 GitHub Actions 与 Cloudflare 生产部署
 
 #### Phase 10 Batch A 结论（2026-04-22）
 
@@ -1014,6 +1014,19 @@
 3. 当前 `SPAY-1008` 的真实状态
    - 生产部署阻塞点已进一步收敛为“等待带有完整 Stripe secret 注入的新回合验证”
    - 修复已落地，但仍需再次推送 `main` 触发 CI/CD 后才能把 `SPAY-1008` 划掉
+
+#### Phase 10 Batch P 结论（2026-04-23）
+
+1. 生产部署链已真实恢复
+   - 提交 `fe71ebb` 触发的 GitHub Actions `CI/CD` 已完整通过
+   - `Lint & Build` 已成功完成 `pnpm lint / pnpm test / pnpm build`
+   - `Deploy` 已成功完成 `Build for Cloudflare / Deploy Web / Deploy API Worker`
+2. `SPAY-1008` 当前已满足完成条件
+   - 代码修复、远端验证、Cloudflare 生产部署三者都已落地
+   - 因此 `SPAY-1008` 现已从 `[~]` 正式改为 `[x]`
+3. Phase 10 当前剩余项
+   - 只剩 `SPAY-1004` 与 `SPAY-1005` 两类生产手测闭环
+   - 下一步应转入集中手动测试，而不是继续修改部署链
 
 ---
 
