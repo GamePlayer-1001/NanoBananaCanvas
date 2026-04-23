@@ -8,7 +8,7 @@ Landing 首页专用组件 — Hero、内容板块与公开资源页模板
 
 ```
 hero-section.tsx          — HeroSection 黑白电影感图像节点画板，表达人物特征到动态输出的因果链
-landing-sections.tsx     — Landing 中后段板块，承载 models/features/pricing/proof/faq/cta 与右侧节点 rail
+landing-sections.tsx     — Landing 中后段板块，承载 hero/models/features/pricing/proof/faq/cta 的右侧节点 rail 与板块激活状态
 public-resource-page.tsx — 公开资源页通用模板，被 /features /models /docs /about 复用
 ```
 

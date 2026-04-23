@@ -121,7 +121,7 @@ export default async function LandingPage({
   ]
 
   return (
-    <main>
+    <main className="landing-snap">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

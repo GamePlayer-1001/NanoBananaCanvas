@@ -108,11 +108,11 @@
 
 ### Phase 4 - Section Snap 与节点式滚动条
 
-- [ ] LUI-401 新建 Landing section shell，统一 `min-height: 100svh`、`scroll-snap-align`、宽度铺满。
-- [ ] LUI-402 桌面端启用一滚一屏，移动端降级为自然滚动。
-- [ ] LUI-403 新建右侧节点式滚动 rail，显示 Hero、Models、Features、Pricing、Proof、FAQ、CTA。
-- [ ] LUI-404 rail 默认隐藏，滚动或鼠标接近时显示。
-- [ ] LUI-405 处理 `prefers-reduced-motion`，禁用非必要动画。
+- [x] LUI-401 新建 Landing section shell，统一 `min-height: 100svh`、`scroll-snap-align`、宽度铺满。
+- [x] LUI-402 桌面端启用一滚一屏，移动端降级为自然滚动。
+- [x] LUI-403 新建右侧节点式滚动 rail，显示 Hero、Models、Features、Pricing、Proof、FAQ、CTA。
+- [x] LUI-404 rail 默认隐藏，滚动或鼠标接近时显示。
+- [x] LUI-405 处理 `prefers-reduced-motion`，禁用非必要动画。
 
 ### Phase 5 - 模型支持动态脑图
 

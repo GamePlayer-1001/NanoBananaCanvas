@@ -345,3 +345,30 @@
   background-size: 120px 120px, 160px 160px, 180px 180px;
   animation: landing-grain-drift 12s linear infinite alternate;
 }
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .landing-snap {
+    height: 100svh;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+  }
+
+  .landing-snap-section {
+    min-height: 100svh;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-snap {
+    scroll-behavior: auto;
+  }
+
+  .landing-flow-line,
+  .landing-grain {
+    animation: none;
+  }
+}

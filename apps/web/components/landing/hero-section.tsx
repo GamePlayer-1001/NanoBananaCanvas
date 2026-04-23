@@ -352,7 +352,7 @@ export function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden border-b border-white/6 bg-[var(--landing-bg)] px-5 pb-18 pt-28 sm:pt-32 md:pb-24"
+      className="landing-snap-section relative overflow-hidden border-b border-white/6 bg-[var(--landing-bg)] px-5 pb-18 pt-28 sm:pt-32 md:pb-24"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,#030303_0%,#080808_44%,#020202_100%)]" />

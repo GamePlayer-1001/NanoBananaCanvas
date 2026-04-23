@@ -91,6 +91,7 @@
     },
     "sections": {
       "rail": {
+        "hero": "Hero",
         "models": "Models",
         "features": "Features",
         "pricing": "Pricing",

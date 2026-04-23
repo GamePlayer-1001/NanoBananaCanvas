@@ -4,7 +4,7 @@
  *          依赖 @/components/ui/collapsible，依赖 @/i18n/navigation 的 Link，
  *          依赖 lucide-react 的 ChevronDown/ArrowRight/ArrowUpRight
  * [OUTPUT]: 对外提供 Landing 中后段板块组件与右侧节点式滚动 rail
- * [POS]: landing 的主体信息区，被 (landing)/page.tsx 消费，承接 models/features/pricing/proof/faq/cta
+ * [POS]: landing 的主体信息区，被 (landing)/page.tsx 消费，承接 hero/models/features/pricing/proof/faq/cta 进度导航
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -19,7 +19,9 @@ import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Link } from '@/i18n/navigation'
 
-const SECTION_IDS = ['models', 'features', 'pricing', 'proof', 'faq', 'cta'] as const
+const SECTION_IDS = ['hero', 'models', 'features', 'pricing', 'proof', 'faq', 'cta'] as const
+type LandingSectionId = (typeof SECTION_IDS)[number]
+type ContentSectionId = Exclude<LandingSectionId, 'hero'>
 
 function SectionShell({
   id,
@@ -28,7 +30,7 @@ function SectionShell({
   description,
   children,
 }: {
-  id: (typeof SECTION_IDS)[number]
+  id: ContentSectionId
   eyebrow: string
   title: string
   description: string
@@ -37,7 +39,7 @@ function SectionShell({
   return (
     <section
       id={id}
-      className="relative border-t border-white/6 px-5 py-20 md:py-28 lg:min-h-[100svh] lg:scroll-mt-24"
+      className="landing-snap-section relative border-t border-white/6 px-5 py-20 md:py-28 lg:scroll-mt-24"
     >
       <div className="mx-auto max-w-[1380px]">
         <div className="mb-10 max-w-[760px] md:mb-14">
@@ -93,7 +95,7 @@ export function LandingSections() {
   const t = useTranslations('landing.sections')
   const seoT = useTranslations('landingSeo')
 
-  const [activeId, setActiveId] = useState<string>('models')
+  const [activeId, setActiveId] = useState<string>('hero')
   const [railVisible, setRailVisible] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
 

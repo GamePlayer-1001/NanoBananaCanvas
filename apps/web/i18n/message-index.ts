@@ -264,6 +264,7 @@ export const MESSAGE_NAMESPACE_INDEX = {
     "sections.rail.cta",
     "sections.rail.faq",
     "sections.rail.features",
+    "sections.rail.hero",
     "sections.rail.models",
     "sections.rail.pricing",
     "sections.rail.proof"
@@ -1103,6 +1104,7 @@ export const MESSAGE_LEAF_KEYS = [
   "landing.sections.rail.cta",
   "landing.sections.rail.faq",
   "landing.sections.rail.features",
+  "landing.sections.rail.hero",
   "landing.sections.rail.models",
   "landing.sections.rail.pricing",
   "landing.sections.rail.proof",

@@ -91,6 +91,7 @@
     },
     "sections": {
       "rail": {
+        "hero": "首屏",
         "models": "模型",
         "features": "功能",
         "pricing": "定价",
