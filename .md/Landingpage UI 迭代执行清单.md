@@ -157,6 +157,7 @@
 - [x] LUI-902 Footer 调整为 Product、Resources、Company、Legal、Social。
 - [x] LUI-903 Footer 链接必须指向真实页面或明确待建页面，不允许全部回到 `/`。
 - [x] LUI-904 社交图标避免 emoji 占位，使用 Lucide 或真实品牌图标方案。
+- [x] LUI-905 校准末屏 CTA 按钮为深色玻璃体系，黑白高对比按钮只保留在 Hero 与顶部标签/导航按钮语境。
 
 ### Phase 10 - 公开子页面树
 
@@ -193,7 +194,7 @@
 - [x] LUI-1203 运行 `pnpm --filter @nano-banana/web build`。
 - [x] LUI-1204 如新增/修改 i18n key，运行 `pnpm --filter @nano-banana/web i18n:check`。
 - [x] LUI-1205 如新增公开页面，检查 `sitemap.xml` 路由与 canonical；本轮已覆盖 Features 细分页、Contact 公开化与三个 Legal 公开页。
-- [ ] LUI-1206 检查移动端、桌面端、`prefers-reduced-motion`。
+- [x] LUI-1206 检查移动端、桌面端、`prefers-reduced-motion`；本轮已用 Playwright 覆盖 1440x900 桌面 snap、390x844 移动端自然滚动、reduced motion 动画禁用、无横向溢出与末屏 CTA 非纯黑白按钮。
 - [x] LUI-1207 检查 L3 文件头、L2 CLAUDE、L1 CLAUDE 是否需要同步。
 - [x] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交；本轮持续按阶段独立提交。
 - [x] LUI-1209 坏味道治理：拆分 `hero-section.tsx` 与 `landing-sections.tsx` 的多职责结构，新增 `hero-canvas.tsx` 与 `landing/sections/` 子模块。
@@ -263,13 +264,13 @@ Premium cinematic monochrome product still showing a central AI router node conn
 
 完成不等于 UI 看起来更炫。完成必须同时满足：
 
-- [ ] 需求文档中的视觉、导航、Hero、FAQ、模型区、子页面树、登录页诉求均已覆盖。
-- [ ] Hero 六节点仍保留“脸部特征 -> 人物主体 -> 人物融合 -> 风景 -> 场景融合 -> 动态输出”的因果叙事。
-- [ ] 公开页没有无效链接。
-- [ ] i18n、metadata、sitemap、robots 与页面现实一致。
-- [ ] 文档 L1/L2/L3 完成回环。
-- [ ] lint/test/build 已运行，或明确记录未运行原因。
-- [ ] 每个阶段都有清晰 git 留痕。
+- [x] 需求文档中的视觉、导航、Hero、FAQ、模型区、子页面树、登录页诉求均已覆盖。
+- [x] Hero 六节点仍保留“脸部特征 -> 人物主体 -> 人物融合 -> 风景 -> 场景融合 -> 动态输出”的因果叙事。
+- [x] 公开页没有无效链接。
+- [x] i18n、metadata、sitemap、robots 与页面现实一致。
+- [x] 文档 L1/L2/L3 完成回环。
+- [x] lint/test/build 已运行，或明确记录未运行原因。
+- [x] 每个阶段都有清晰 git 留痕。
 
 ---
 

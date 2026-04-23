@@ -39,7 +39,7 @@ export function FinalCtaSection() {
             <Button
               asChild
               size="lg"
-              className="rounded-full bg-[var(--landing-ink)] px-7 text-black hover:bg-white"
+              className="rounded-full border border-white/16 bg-white/[0.07] px-7 text-[var(--landing-ink)] shadow-[0_18px_54px_rgba(0,0,0,0.28)] hover:border-white/24 hover:bg-white/[0.11] hover:text-[var(--landing-ink)]"
             >
               <Link href="/sign-in?redirect_url=/workspace">
                 {t('cta.primary')}
@@ -50,7 +50,7 @@ export function FinalCtaSection() {
               asChild
               size="lg"
               variant="outline"
-              className="rounded-full border-white/14 bg-white/[0.02] px-7 text-[var(--landing-ink)] hover:bg-white/[0.06]"
+              className="rounded-full border-white/12 bg-black/24 px-7 text-[var(--landing-ink)] hover:border-white/22 hover:bg-white/[0.06] hover:text-[var(--landing-ink)]"
             >
               <Link href="/docs">
                 {t('cta.secondary')}
