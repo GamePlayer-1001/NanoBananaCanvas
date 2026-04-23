@@ -3,7 +3,7 @@
  *          依赖 @/components/layout/mobile-header 的 MobileHeader，
  *          依赖 react 的 Suspense
  * [OUTPUT]: 对外提供应用动态布局（桌面侧边栏 + 移动端抽屉菜单 + 主内容区）
- * [POS]: (app) 路由组布局，包裹 workspace/explore/workflows/video-analysis 等应用页面
+ * [POS]: (app) 路由组布局，包裹 workspace/explore/workflows/video-analysis/contact
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

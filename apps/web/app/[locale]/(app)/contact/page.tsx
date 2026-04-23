@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 setRequestLocale/getTranslations，
- *          依赖 @/components/contact/contact-content，依赖 @/lib/seo 的 SEO 工具
- * [OUTPUT]: 对外提供 /contact 公开联系页面 + Organization JSON-LD
- * [POS]: (landing) 路由组的公开联系页面，被 Landing 导航、页脚与 sitemap 消费
+ *          依赖 @/components/contact/contact-content
+ * [OUTPUT]: 对外提供联系我们页面 + SEO metadata
+ * [POS]: (app) 路由组的联系页面，展示 Telegram/Discord/X/Instagram 四平台
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,7 +20,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'contact' })
-
   return buildPageMetadata({
     title: t('title'),
     description: t('subtitle'),
@@ -28,6 +27,8 @@ export async function generateMetadata({
     locale,
   })
 }
+
+/* ─── Page ───────────────────────────────────────────── */
 
 export default async function ContactPage({
   params,

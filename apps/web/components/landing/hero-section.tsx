@@ -1,78 +1,355 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/components/shared/brand-mark，
- *          依赖 @/components/ui/button，依赖 @/components/landing/hero-canvas，
- *          依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 HeroSection 首屏品牌叙事组件
- * [POS]: landing 的首屏文案壳，图像节点画布下沉给 hero-canvas.tsx
+ * [INPUT]: 依赖 react 的 useState/useCallback/useRef/useEffect，
+ *          依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
+ *          依赖 @/components/shared/brand-mark
+ * [OUTPUT]: 对外提供 HeroSection 交互式画板组件
+ * [POS]: landing 的主视觉区域，被 (landing)/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { ArrowRight, Play } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { HeroCanvas } from '@/components/landing/hero-canvas'
 import { BrandMark } from '@/components/shared/brand-mark'
-import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
+
+/* ─── Types ──────────────────────────────────────────────── */
+
+interface DemoNode {
+  id: string
+  label: string
+  model: string
+  x: number
+  y: number
+  gradient: string
+  w: number
+  h: number
+}
+
+interface Connection {
+  from: string
+  to: string
+  route?: 'rightArc'
+}
+
+/* ─── Constants ──────────────────────────────────────────── */
+
+const INITIAL_NODES: DemoNode[] = [
+  {
+    id: 'a',
+    label: 'Text Prompt',
+    model: 'GPT-4o',
+    x: 80,
+    y: 80,
+    gradient: 'from-indigo-600/50 to-violet-600/50',
+    w: 152,
+    h: 80,
+  },
+  {
+    id: 'b',
+    label: 'Style Guide',
+    model: 'Claude',
+    x: 60,
+    y: 320,
+    gradient: 'from-amber-500/50 to-orange-600/50',
+    w: 152,
+    h: 80,
+  },
+  {
+    id: 'c',
+    label: 'LLM Compose',
+    model: 'Gemini 2.5',
+    x: 360,
+    y: 20,
+    gradient: 'from-cyan-500/50 to-blue-600/50',
+    w: 160,
+    h: 80,
+  },
+  {
+    id: 'd',
+    label: 'Image Gen',
+    model: 'FLUX Pro',
+    x: 680,
+    y: 100,
+    gradient: 'from-pink-500/50 to-rose-600/50',
+    w: 152,
+    h: 80,
+  },
+  {
+    id: 'e',
+    label: 'Enhance',
+    model: 'DALL-E 3',
+    x: 660,
+    y: 330,
+    gradient: 'from-emerald-500/50 to-teal-600/50',
+    w: 152,
+    h: 80,
+  },
+  {
+    id: 'f',
+    label: 'Output',
+    model: 'Display',
+    x: 920,
+    y: 210,
+    gradient: 'from-purple-500/50 to-fuchsia-600/50',
+    w: 140,
+    h: 80,
+  },
+]
+
+const CONNECTIONS: Connection[] = [
+  { from: 'a', to: 'c' },
+  { from: 'b', to: 'c' },
+  { from: 'c', to: 'd' },
+  { from: 'c', to: 'e', route: 'rightArc' },
+  { from: 'd', to: 'f' },
+  { from: 'e', to: 'f' },
+]
+
+/* ─── Bezier Path ────────────────────────────────────────── */
+
+function bezierPath(
+  sx: number,
+  sy: number,
+  tx: number,
+  ty: number,
+  route?: Connection['route'],
+): string {
+  if (route === 'rightArc') {
+    const cx = Math.max(sx, tx) + 260
+    return `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ty}, ${tx} ${ty}`
+  }
+
+  const dx = Math.abs(tx - sx) * 0.5
+  return `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`
+}
+
+/* ─── Connection Line ────────────────────────────────────── */
+
+function ConnectionLine({
+  from,
+  to,
+  nodes,
+  route,
+}: {
+  from: string
+  to: string
+  nodes: DemoNode[]
+  route?: Connection['route']
+}) {
+  const s = nodes.find((n) => n.id === from)
+  const t = nodes.find((n) => n.id === to)
+  if (!s || !t) return null
+
+  const sx = s.x + s.w
+  const sy = s.y + s.h / 2
+  const tx = t.x
+  const ty = t.y + t.h / 2
+
+  const d = bezierPath(sx, sy, tx, ty, route)
+
+  return (
+    <g>
+      <path
+        d={d}
+        fill="none"
+        stroke="var(--brand-400)"
+        strokeWidth={2}
+        strokeOpacity={0.4}
+      />
+      {/* 流动光点 */}
+      <circle r={3} fill="var(--brand-400)" opacity={0.8}>
+        <animateMotion dur="3s" repeatCount="indefinite" path={d} />
+      </circle>
+    </g>
+  )
+}
+
+/* ─── Demo Node Card ─────────────────────────────────────── */
+
+function DemoNodeCard({
+  node,
+  onPointerDown,
+}: {
+  node: DemoNode
+  onPointerDown: (e: React.PointerEvent, id: string) => void
+}) {
+  return (
+    <div
+      className="group absolute cursor-grab select-none active:cursor-grabbing"
+      style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+      onPointerDown={(e) => onPointerDown(e, node.id)}
+    >
+      {/* 卡片主体 */}
+      <div
+        className={`relative h-full w-full rounded-lg border border-white/10 bg-gradient-to-br shadow-lg transition-shadow group-hover:shadow-xl ${node.gradient}`}
+      >
+        {/* 左侧输入端口 */}
+        <div className="absolute top-1/2 -left-1.5 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white/20 bg-white/10" />
+
+        {/* 右侧输出端口 */}
+        <div className="bg-brand-500/40 absolute top-1/2 -right-1.5 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white/30" />
+
+        {/* 标签 */}
+        <div className="flex h-full flex-col justify-center px-3">
+          <span className="text-xs font-medium text-white/90">{node.label}</span>
+          <span className="mt-0.5 text-[10px] text-white/50">{node.model}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Main Component ─────────────────────────────────────── */
 
 export function HeroSection() {
   const t = useTranslations('landing.hero')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [nodes, setNodes] = useState<DemoNode[]>(INITIAL_NODES)
+  const [scale, setScale] = useState(1)
+  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null)
+
+  /* ── 响应式缩放 ──────────────────────────────────────── */
+  useEffect(() => {
+    function updateScale() {
+      if (!containerRef.current) return
+      const w = containerRef.current.clientWidth
+      setScale(Math.min(1, w / 1100))
+    }
+    updateScale()
+    window.addEventListener('resize', updateScale)
+    return () => window.removeEventListener('resize', updateScale)
+  }, [])
+
+  /* ── 拖拽 ────────────────────────────────────────────── */
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent, id: string) => {
+      if (scale < 0.6) return // 移动端禁用拖拽
+      const node = nodes.find((n) => n.id === id)
+      if (!node || !containerRef.current) return
+
+      const rect = containerRef.current.getBoundingClientRect()
+      dragRef.current = {
+        id,
+        offsetX: e.clientX / scale - rect.left / scale - node.x,
+        offsetY: e.clientY / scale - rect.top / scale - node.y,
+      }
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    },
+    [nodes, scale],
+  )
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag || !containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = e.clientX / scale - rect.left / scale - drag.offsetX
+      const y = e.clientY / scale - rect.top / scale - drag.offsetY
+
+      setNodes((prev) => prev.map((n) => (n.id === drag.id ? { ...n, x, y } : n)))
+    },
+    [scale],
+  )
+
+  const handlePointerUp = useCallback(() => {
+    dragRef.current = null
+  }, [])
+
+  /* ── Canvas 画板尺寸 ─────────────────────────────────── */
+  const canvasW = 1100
+  const canvasH = 460
 
   return (
-    <section
-      id="hero"
-      className="landing-snap-section relative overflow-hidden border-b border-white/6 bg-[var(--landing-bg)] px-5 pb-18 pt-28 sm:pt-32 md:pb-24"
-    >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,#030303_0%,#080808_44%,#020202_100%)]" />
-        <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:84px_84px]" />
-        <div className="landing-grain absolute inset-0 opacity-40" />
-        <div className="absolute left-1/2 top-[18%] h-[38rem] w-[38rem] -translate-x-1/2 rounded-full bg-white/8 blur-[160px]" />
-      </div>
+    <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#0a0a0a] pt-16">
+      {/* ── 背景点阵 ───────────────────────────────────── */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+      />
 
-      <div className="relative mx-auto max-w-[1480px]">
-        <div className="mb-10 max-w-[760px]">
-          <p className="mb-5 text-[11px] tracking-[0.34em] text-[var(--landing-muted)] uppercase">
-            {t('eyebrow')}
-          </p>
-          <BrandMark className="text-4xl text-[var(--landing-ink)] md:text-6xl">
-            {t('heading')}
-          </BrandMark>
-          <h1 className="mt-5 max-w-[900px] text-5xl font-semibold tracking-[-0.04em] text-[var(--landing-ink)] md:text-7xl">
-            {t('tagline')}
-          </h1>
-          <p className="mt-5 max-w-[620px] text-base leading-8 text-[var(--landing-muted)] md:text-lg">
-            {t('description')}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Button
-              asChild
-              size="lg"
-              className="h-12 rounded-full bg-[var(--landing-ink)] px-7 text-sm font-medium text-black shadow-[0_18px_44px_rgba(255,255,255,0.18)] transition hover:bg-white"
-            >
-              <Link href="/sign-in?redirect_url=/workspace">
-                {t('primaryCta')}
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="h-12 rounded-full border-white/16 bg-white/[0.02] px-7 text-sm font-medium text-[var(--landing-ink)] shadow-none hover:bg-white/[0.06]"
-            >
-              <Link href="/pricing">
-                <Play className="size-4 fill-current" />
-                {t('secondaryCta')}
-              </Link>
-            </Button>
-          </div>
-          <p className="mt-5 text-sm text-[var(--landing-faint)]">{t('models')}</p>
+      {/* ── 中央辉光 ───────────────────────────────────── */}
+      <div className="bg-brand-500/8 pointer-events-none absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[150px]" />
+
+      {/* ── 画板容器 ───────────────────────────────────── */}
+      <div
+        ref={containerRef}
+        className="relative mx-auto w-full max-w-[1100px] px-4"
+        style={{ height: canvasH * scale }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        {/* 缩放层 */}
+        <div
+          className="origin-top-center absolute left-1/2"
+          style={{
+            width: canvasW,
+            height: canvasH,
+            transform: `translateX(-50%) scale(${scale})`,
+          }}
+        >
+          {/* ── SVG 连线层 ──────────────────────────────── */}
+          <svg
+            className="pointer-events-none absolute inset-0"
+            width={canvasW}
+            height={canvasH}
+          >
+            {CONNECTIONS.map((conn) => (
+              <ConnectionLine
+                key={`${conn.from}-${conn.to}`}
+                from={conn.from}
+                to={conn.to}
+                nodes={nodes}
+                route={conn.route}
+              />
+            ))}
+          </svg>
+
+          {/* ── 节点层 ─────────────────────────────────── */}
+          {nodes.map((node) => (
+            <DemoNodeCard key={node.id} node={node} onPointerDown={handlePointerDown} />
+          ))}
         </div>
 
-        <HeroCanvas />
+        {/* ── 标题覆盖层 (位于画板中央) ────────────────── */}
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <div className="pointer-events-none text-center">
+            {/* 品牌名 */}
+            <h2 className="mb-1">
+              <BrandMark className="text-3xl text-white/82 md:text-4xl">
+                {t('heading')}
+              </BrandMark>
+            </h2>
+
+            {/* 主标语 */}
+            <h1 className="from-brand-300 mb-4 bg-gradient-to-r to-white bg-clip-text text-3xl font-bold text-transparent md:text-5xl">
+              {t('tagline')}
+            </h1>
+
+            {/* 描述 */}
+            <p className="mx-auto mb-6 max-w-md text-xs leading-relaxed whitespace-pre-line text-white/40 md:text-sm">
+              {t('description')}
+            </p>
+
+            {/* CTA */}
+            <Link
+              href="/sign-in"
+              className="border-brand-500/50 bg-brand-500/15 hover:bg-brand-500/25 pointer-events-auto inline-flex h-11 items-center rounded-lg border px-7 text-sm font-medium text-white backdrop-blur-sm transition-all"
+            >
+              {t('cta')}
+            </Link>
+
+            {/* 模型标签 */}
+            <p className="mt-3 text-[11px] tracking-wide text-white/25">{t('models')}</p>
+          </div>
+        </div>
       </div>
     </section>
   )

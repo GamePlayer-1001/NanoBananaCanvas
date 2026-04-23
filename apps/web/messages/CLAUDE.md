@@ -14,7 +14,7 @@ zh.json: 中文翻译，与 en.json 结构完全对称并通过脚本校验
   当前同时承载 loading/retry/error-boundary 这类跨页面兜底文案
 - `metadata` — 页面 SEO 元数据
 - `notFound` — 404 页面
-- `landing` — Landing Page 内容 (含导航、Hero、模型/功能/定价/FAQ/CTA、页脚与公开子页面文案)
+- `landing` — Landing Page 内容 (含 signIn/dashboard 认证按钮文案)
 - `landingSeo` — Landing 页 SEO/GEO 内容层与 FAQ，可见语义与结构化数据共用事实源
 - `auth` — 登录/注册页面文案与认证视觉区说明
 - `sidebar` — 已登录侧边栏与访客态导航文案

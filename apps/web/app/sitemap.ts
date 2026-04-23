@@ -13,36 +13,12 @@ import { buildAbsoluteUrl } from '@/lib/seo'
 // ─── 常量 ───────────────────────────────────────────────
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
-  { path: '/features', changeFrequency: 'weekly' as const, priority: 0.86 },
-  {
-    path: '/features/visual-workflow',
-    changeFrequency: 'weekly' as const,
-    priority: 0.78,
-  },
-  {
-    path: '/features/image-generation',
-    changeFrequency: 'weekly' as const,
-    priority: 0.78,
-  },
-  {
-    path: '/features/video-generation',
-    changeFrequency: 'weekly' as const,
-    priority: 0.78,
-  },
-  { path: '/features/model-routing', changeFrequency: 'weekly' as const, priority: 0.78 },
-  { path: '/models', changeFrequency: 'weekly' as const, priority: 0.82 },
-  { path: '/pricing', changeFrequency: 'weekly' as const, priority: 0.8 },
-  { path: '/docs', changeFrequency: 'weekly' as const, priority: 0.72 },
-  { path: '/about', changeFrequency: 'monthly' as const, priority: 0.58 },
   { path: '/explore', changeFrequency: 'daily' as const, priority: 0.9 },
   { path: '/workflows', changeFrequency: 'daily' as const, priority: 0.8 },
   { path: '/video-analysis', changeFrequency: 'weekly' as const, priority: 0.75 },
   { path: '/contact', changeFrequency: 'monthly' as const, priority: 0.6 },
   { path: '/terms', changeFrequency: 'yearly' as const, priority: 0.3 },
   { path: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },
-  { path: '/refund-policy', changeFrequency: 'yearly' as const, priority: 0.28 },
-  { path: '/acceptable-use', changeFrequency: 'yearly' as const, priority: 0.28 },
-  { path: '/cookie-settings', changeFrequency: 'yearly' as const, priority: 0.24 },
 ]
 
 // ─── Sitemap 生成 ───────────────────────────────────────
@@ -62,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         `SELECT id, updated_at FROM workflows
          WHERE is_public = 1
          ORDER BY updated_at DESC
-         LIMIT 5000`,
+         LIMIT 5000`
       )
       .all<{ id: string; updated_at: string }>()
 

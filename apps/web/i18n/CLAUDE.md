@@ -11,6 +11,6 @@ request.ts: 服务端请求配置，校验 locale 参数 + 动态加载 messages
 navigation.ts: i18n 感知导航工具集 (Link/redirect/usePathname/useRouter)，替代 next/link 和 next/navigation
 message-index.ts: 由脚本生成的消息索引文件，提供 locale 列表、命名空间索引与全量 leaf key 索引，供校验链和未来类型提示使用
 message-usage.ts: 由脚本生成的使用索引文件，记录代码中实际引用的翻译 key、自动抽取的声明式动态 key 与 manifest 兜底 key，用于缺 key 校验与死 key 清理
-message-usage-manifest.json: 无法从声明式来源自动抽取时的动态翻译 key 兜底清单，当前显式保留 Landing FAQ 的 JSON-LD/手风琴共享 key
+message-usage-manifest.json: 无法从声明式来源自动抽取时的动态翻译 key 兜底清单，默认应保持为空
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

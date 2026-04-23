@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
  * [OUTPUT]: 对外提供 ContactContent 四平台联系卡片组件
- * [POS]: contact 的客户端内容组件，被 (landing)/contact/page.tsx 消费
+ * [POS]: contact 的客户端内容组件，被 (app)/contact/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -52,7 +52,7 @@ const PLATFORMS = [
     descKey: 'telegramDesc' as const,
     icon: TelegramIcon,
     href: 'https://t.me/nanobananacanvas',
-    color: 'hover:border-sky-400/60 hover:bg-white/[0.065]',
+    color: 'hover:border-sky-400 hover:bg-sky-50',
     iconColor: 'text-sky-500',
   },
   {
@@ -60,7 +60,7 @@ const PLATFORMS = [
     descKey: 'discordDesc' as const,
     icon: DiscordIcon,
     href: 'https://discord.gg/nanobananacanvas',
-    color: 'hover:border-indigo-400/60 hover:bg-white/[0.065]',
+    color: 'hover:border-indigo-400 hover:bg-indigo-50',
     iconColor: 'text-indigo-500',
   },
   {
@@ -68,15 +68,15 @@ const PLATFORMS = [
     descKey: 'twitterDesc' as const,
     icon: XIcon,
     href: 'https://x.com/nanobananacanvas',
-    color: 'hover:border-white/40 hover:bg-white/[0.065]',
-    iconColor: 'text-[var(--landing-ink)]',
+    color: 'hover:border-neutral-400 hover:bg-neutral-50',
+    iconColor: 'text-foreground',
   },
   {
     key: 'instagram' as const,
     descKey: 'instagramDesc' as const,
     icon: InstagramIcon,
     href: 'https://instagram.com/nanobananacanvas',
-    color: 'hover:border-pink-400/60 hover:bg-white/[0.065]',
+    color: 'hover:border-pink-400 hover:bg-pink-50',
     iconColor: 'text-pink-500',
   },
 ]
@@ -87,48 +87,32 @@ export function ContactContent() {
   const t = useTranslations('contact')
 
   return (
-    <main className="bg-[var(--landing-bg)] px-5 pt-28 pb-20 text-[var(--landing-ink)] md:pt-32 md:pb-28">
-      <div className="mx-auto max-w-[900px]">
-        <p className="text-[11px] tracking-[0.32em] text-[var(--landing-muted)] uppercase">
-          {t('eyebrow')}
-        </p>
-        <h1 className="mt-5 text-5xl font-semibold tracking-[-0.05em] md:text-7xl">
-          {t('title')}
-        </h1>
-        <p className="mt-5 max-w-[680px] text-base leading-8 text-[var(--landing-muted)] md:text-lg">
-          {t('subtitle')}
-        </p>
+    <div className="mx-auto max-w-[800px] px-6 py-16">
+      <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{t('subtitle')}</p>
 
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {PLATFORMS.map(({ key, descKey, icon: Icon, href, color, iconColor }) => (
-            <a
-              key={key}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`group flex items-start gap-4 rounded-lg border border-[var(--landing-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 transition-colors ${color}`}
-            >
-              <div className={`mt-0.5 ${iconColor}`}>
-                <Icon className="h-7 w-7" />
+      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {PLATFORMS.map(({ key, descKey, icon: Icon, href, color, iconColor }) => (
+          <a
+            key={key}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group flex items-start gap-4 rounded-xl border border-border bg-background p-5 transition-colors ${color}`}
+          >
+            <div className={`mt-0.5 ${iconColor}`}>
+              <Icon className="h-7 w-7" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">{t(key)}</span>
+                <ExternalLink size={12} className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[var(--landing-ink)]">
-                    {t(key)}
-                  </span>
-                  <ExternalLink
-                    size={12}
-                    className="text-[var(--landing-muted)] opacity-0 transition-opacity group-hover:opacity-100"
-                  />
-                </div>
-                <p className="mt-1 text-xs leading-6 text-[var(--landing-muted)]">
-                  {t(descKey)}
-                </p>
-              </div>
-            </a>
-          ))}
-        </div>
+              <p className="mt-1 text-xs text-muted-foreground">{t(descKey)}</p>
+            </div>
+          </a>
+        ))}
       </div>
-    </main>
+    </div>
   )
 }
