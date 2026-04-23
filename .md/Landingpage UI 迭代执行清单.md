@@ -198,6 +198,7 @@
 - [ ] LUI-1208 每个阶段完成后做本地 commit，避免巨大不可回溯提交。
 - [x] LUI-1209 坏味道治理：拆分 `hero-section.tsx` 与 `landing-sections.tsx` 的多职责结构，新增 `hero-canvas.tsx` 与 `landing/sections/` 子模块。
 - [x] LUI-1210 部署回归修复：Hero 主 CTA 恢复为 `Get Started` / `开始使用`，对齐 E2E 的公开首页 CTA 可见性断言。
+- [x] LUI-1211 推送部署闭环：`main` 推送至 `742782d` 后触发 GitHub Actions `24826523254`，`Lint & Build` 与 `Deploy` 均通过，Web 与 API Worker 已完成部署。
 
 ---
 
