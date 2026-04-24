@@ -36,9 +36,43 @@ interface Connection {
   route?: 'rightArc'
 }
 
+interface StageSize {
+  width: number
+  height: number
+}
+
 /* ─── Constants ──────────────────────────────────────────── */
 
-const INITIAL_NODES: DemoNode[] = [
+const DESIGN_STAGE_WIDTH = 1800
+const DESIGN_STAGE_HEIGHT = 620
+
+function toResponsiveNode(node: {
+  id: string
+  labelKey: string
+  model: string
+  artwork: HeroArtwork
+  x: number
+  y: number
+  w: number
+  h: number
+}): DemoNode {
+  return {
+    ...node,
+    x: node.x / (DESIGN_STAGE_WIDTH - node.w),
+    y: node.y / (DESIGN_STAGE_HEIGHT - node.h),
+  }
+}
+
+const INITIAL_NODE_BLUEPRINTS: Array<{
+  id: string
+  labelKey: string
+  model: string
+  artwork: HeroArtwork
+  x: number
+  y: number
+  w: number
+  h: number
+}> = [
   {
     id: 'a',
     labelKey: 'feature',
@@ -101,6 +135,8 @@ const INITIAL_NODES: DemoNode[] = [
   },
 ]
 
+const INITIAL_NODES: DemoNode[] = INITIAL_NODE_BLUEPRINTS.map(toResponsiveNode)
+
 const CONNECTIONS: Connection[] = [
   { from: 'a', to: 'c' },
   { from: 'b', to: 'c' },
@@ -109,9 +145,26 @@ const CONNECTIONS: Connection[] = [
   { from: 'e', to: 'f' },
 ]
 
-const HERO_CANVAS_WIDTH = 1800
-const HERO_CANVAS_HEIGHT = 620
-const HERO_DRAG_PADDING = 24
+const HERO_MIN_STAGE_HEIGHT = 700
+
+function getNodeScale(stage: StageSize) {
+  return Math.min(stage.width / DESIGN_STAGE_WIDTH, stage.height / DESIGN_STAGE_HEIGHT)
+}
+
+function resolveNodeRect(node: DemoNode, stage: StageSize) {
+  const scale = getNodeScale(stage)
+  const w = node.w * scale
+  const h = node.h * scale
+  const maxX = Math.max(stage.width - w, 0)
+  const maxY = Math.max(stage.height - h, 0)
+
+  return {
+    x: node.x * maxX,
+    y: node.y * maxY,
+    w,
+    h,
+  }
+}
 
 /* ─── Bezier Path ────────────────────────────────────────── */
 
@@ -120,10 +173,11 @@ function bezierPath(
   sy: number,
   tx: number,
   ty: number,
+  stageWidth: number,
   route?: Connection['route'],
 ): string {
   if (route === 'rightArc') {
-    const cx = Math.max(sx, tx) + 280
+    const cx = Math.min(stageWidth - 24, Math.max(sx, tx) + Math.min(280, stageWidth * 0.14))
     return `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ty}, ${tx} ${ty}`
   }
 
@@ -137,22 +191,26 @@ function ConnectionLine({
   from,
   to,
   nodes,
+  stage,
   route,
 }: {
   from: string
   to: string
   nodes: DemoNode[]
+  stage: StageSize
   route?: Connection['route']
 }) {
   const s = nodes.find((node) => node.id === from)
   const t = nodes.find((node) => node.id === to)
   if (!s || !t) return null
 
-  const sx = s.x + s.w
-  const sy = s.y + s.h / 2
-  const tx = t.x
-  const ty = t.y + t.h / 2
-  const d = bezierPath(sx, sy, tx, ty, route)
+  const source = resolveNodeRect(s, stage)
+  const target = resolveNodeRect(t, stage)
+  const sx = source.x + source.w
+  const sy = source.y + source.h / 2
+  const tx = target.x
+  const ty = target.y + target.h / 2
+  const d = bezierPath(sx, sy, tx, ty, stage.width, route)
 
   return (
     <g>
@@ -406,19 +464,23 @@ function NodeArtwork({ artwork }: { artwork: HeroArtwork }) {
 
 function DemoNodeCard({
   node,
+  stage,
   label,
   mediaLabel,
   onPointerDown,
 }: {
   node: DemoNode
+  stage: StageSize
   label: string
   mediaLabel: string
   onPointerDown: (e: React.PointerEvent, id: string) => void
 }) {
+  const rect = resolveNodeRect(node, stage)
+
   return (
     <div
       className="group absolute cursor-grab select-none active:cursor-grabbing"
-      style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+      style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
       onPointerDown={(e) => onPointerDown(e, node.id)}
     >
       <div className="pointer-events-none absolute -top-5 left-1 text-[11px] text-white/42">
@@ -447,37 +509,52 @@ export function HeroSection() {
   const t = useTranslations('landing.hero')
   const containerRef = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<DemoNode[]>(INITIAL_NODES)
-  const [scale, setScale] = useState(1)
+  const [stageSize, setStageSize] = useState<StageSize>({
+    width: DESIGN_STAGE_WIDTH,
+    height: HERO_MIN_STAGE_HEIGHT,
+  })
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null)
+  const nodeScale = getNodeScale(stageSize)
 
   useEffect(() => {
-    function updateScale() {
+    if (!containerRef.current) return
+
+    function updateStageSize() {
       if (!containerRef.current) return
-      const width = containerRef.current.clientWidth
-      setScale(Math.min(1, width / 1500))
+      setStageSize({
+        width: containerRef.current.clientWidth,
+        height: containerRef.current.clientHeight,
+      })
     }
 
-    updateScale()
-    window.addEventListener('resize', updateScale)
-    return () => window.removeEventListener('resize', updateScale)
+    const observer = new ResizeObserver(updateStageSize)
+    observer.observe(containerRef.current)
+    updateStageSize()
+    window.addEventListener('resize', updateStageSize)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateStageSize)
+    }
   }, [])
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, id: string) => {
-      if (scale < 0.66) return
+      if (nodeScale < 0.66) return
 
       const node = nodes.find((item) => item.id === id)
       if (!node || !containerRef.current) return
 
+      const nodeRect = resolveNodeRect(node, stageSize)
       const rect = containerRef.current.getBoundingClientRect()
       dragRef.current = {
         id,
-        offsetX: e.clientX / scale - rect.left / scale - node.x,
-        offsetY: e.clientY / scale - rect.top / scale - node.y,
+        offsetX: e.clientX - rect.left - nodeRect.x,
+        offsetY: e.clientY - rect.top - nodeRect.y,
       }
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     },
-    [nodes, scale],
+    [nodeScale, nodes, stageSize],
   )
 
   const handlePointerMove = useCallback(
@@ -486,35 +563,31 @@ export function HeroSection() {
       if (!drag || !containerRef.current) return
 
       const rect = containerRef.current.getBoundingClientRect()
-      const rawX = e.clientX / scale - rect.left / scale - drag.offsetX
-      const rawY = e.clientY / scale - rect.top / scale - drag.offsetY
+      const rawX = e.clientX - rect.left - drag.offsetX
+      const rawY = e.clientY - rect.top - drag.offsetY
 
       setNodes((prev) =>
         prev.map((node) => {
           if (node.id !== drag.id) return node
 
-          const minX = HERO_DRAG_PADDING
-          const minY = HERO_DRAG_PADDING
-          const maxX = HERO_CANVAS_WIDTH - node.w - HERO_DRAG_PADDING
-          const maxY = HERO_CANVAS_HEIGHT - node.h - HERO_DRAG_PADDING
+          const nodeRect = resolveNodeRect(node, stageSize)
+          const maxX = Math.max(stageSize.width - nodeRect.w, 0)
+          const maxY = Math.max(stageSize.height - nodeRect.h, 0)
 
           return {
             ...node,
-            x: Math.min(Math.max(rawX, minX), maxX),
-            y: Math.min(Math.max(rawY, minY), maxY),
+            x: maxX === 0 ? 0 : Math.min(Math.max(rawX, 0), maxX) / maxX,
+            y: maxY === 0 ? 0 : Math.min(Math.max(rawY, 0), maxY) / maxY,
           }
         }),
       )
     },
-    [scale],
+    [stageSize],
   )
 
   const handlePointerUp = useCallback(() => {
     dragRef.current = null
   }, [])
-
-  const canvasW = HERO_CANVAS_WIDTH
-  const canvasH = HERO_CANVAS_HEIGHT
 
   return (
     <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#0a0a0a] pt-16">
@@ -531,24 +604,16 @@ export function HeroSection() {
 
       <div
         ref={containerRef}
-        className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-10"
-        style={{ height: canvasH * scale }}
+        className="relative h-[calc(100vh-64px)] min-h-[700px] w-full px-4 sm:px-6 lg:px-8 xl:px-10"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
-        <div
-          className="origin-top-center absolute left-1/2 overflow-visible"
-          style={{
-            width: canvasW,
-            height: canvasH,
-            transform: `translateX(-50%) scale(${scale})`,
-          }}
-        >
+        <div className="absolute inset-0 overflow-visible">
           <svg
             className="pointer-events-none absolute inset-0 overflow-visible"
-            width={canvasW}
-            height={canvasH}
+            width={stageSize.width}
+            height={stageSize.height}
             style={{ overflow: 'visible' }}
           >
             {CONNECTIONS.map((connection) => (
@@ -557,6 +622,7 @@ export function HeroSection() {
                 from={connection.from}
                 to={connection.to}
                 nodes={nodes}
+                stage={stageSize}
                 route={connection.route}
               />
             ))}
@@ -566,6 +632,7 @@ export function HeroSection() {
             <DemoNodeCard
               key={node.id}
               node={node}
+              stage={stageSize}
               label={t(`nodes.${node.labelKey}`)}
               mediaLabel={t(node.artwork === 'motion' ? 'badges.video' : 'badges.image')}
               onPointerDown={handlePointerDown}
