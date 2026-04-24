@@ -284,14 +284,21 @@ const PRICING_PLANS = [
   },
 ] as const
 
-const TESTIMONIAL_KEYS = [
-  'director',
-  'studio',
-  'operator',
-  'previz',
-  'ecommerce',
-  'producer',
+const TESTIMONIAL_ITEMS = [
+  'pixel',
+  'lena',
+  'prompt',
+  'frame',
+  'neo',
+  'moodboard',
+  'indie',
+  'workflow',
+  'cyber',
+  'canvas',
+  'vfx',
+  'dream',
 ] as const
+const TESTIMONIAL_AVATAR_BASE = 'https://api.dicebear.com/9.x/notionists-neutral/png'
 const FAQ_KEYS = [
   'what',
   'models',
@@ -926,11 +933,11 @@ export function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {TESTIMONIAL_KEYS.map((key, index) => (
+        <div className="mt-14 gap-5 md:columns-2 xl:columns-4 [&>*]:mb-5">
+          {TESTIMONIAL_ITEMS.map((key, index) => (
             <article
               key={key}
-              className={`rounded-[28px] border p-6 shadow-[0_20px_60px_rgba(0,0,0,0.16)] ${
+              className={`break-inside-avoid rounded-[28px] border p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-6 ${
                 index % 3 === 0
                   ? 'border-[#23314a] bg-[linear-gradient(180deg,rgba(16,22,36,0.96),rgba(10,13,22,0.96))]'
                   : index % 3 === 1
@@ -938,22 +945,28 @@ export function TestimonialsSection() {
                     : 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))]'
               }`}
             >
-              <p className="text-[0.74rem] font-semibold tracking-[0.24em] text-white/36 uppercase">
-                {testimonialsT(`${key}.eyebrow`)}
-              </p>
-              <h3 className="mt-4 max-w-[18rem] text-[1.38rem] leading-[1.18] font-semibold tracking-tight text-white">
-                {testimonialsT(`${key}.title`)}
-              </h3>
-
-              <p className="mt-5 text-[0.98rem] leading-8 text-white/76">
-                {testimonialsT(`${key}.quote`)}
-              </p>
-
-              <div className="mt-7 border-t border-white/8 pt-5">
-                <p className="text-sm font-medium text-white/92">
-                  {testimonialsT(`${key}.role`)}
-                </p>
+              <div className="flex items-center gap-3.5">
+                <Image
+                  src={`${TESTIMONIAL_AVATAR_BASE}?seed=${key}`}
+                  alt={`${testimonialsT(`${key}.handle`)} avatar`}
+                  width={48}
+                  height={48}
+                  unoptimized
+                  className="h-12 w-12 rounded-full border border-white/12 bg-white/8 object-cover"
+                />
+                <div>
+                  <p className="text-[0.98rem] font-semibold text-white">
+                    {testimonialsT(`${key}.handle`)}
+                  </p>
+                  <p className="mt-0.5 text-xs tracking-[0.16em] text-white/38 uppercase">
+                    {testimonialsT(`${key}.role`)}
+                  </p>
+                </div>
               </div>
+
+              <p className="mt-5 text-[0.94rem] leading-7 text-white/74">
+                “{testimonialsT(`${key}.quote`)}”
+              </p>
             </article>
           ))}
         </div>

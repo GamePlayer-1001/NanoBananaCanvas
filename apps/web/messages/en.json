@@ -173,44 +173,68 @@
         }
       },
       "testimonials": {
-        "eyebrow": "Creator Scenarios",
-        "title": "Common feedback from different creative teams",
-        "body": "The focus here is simple: whether the workflow feels clear, whether collaboration becomes easier, and whether output gets more repeatable.",
-        "director": {
-          "eyebrow": "Independent Director",
-          "title": "We finally stopped jumping across ten different tools",
-          "quote": "The biggest improvement is not the first output. It is that prompts, references, and video attempts now live together, so the team aligns faster and the direction stays more consistent.",
-          "role": "Director Team"
+        "eyebrow": "Creator Voices",
+        "title": "What creators are saying",
+        "body": "Short notes from filmmakers, designers, and AI workflow builders using Nano Banana Canvas as their creative workspace.",
+        "pixel": {
+          "handle": "@PixelPioneer",
+          "role": "Creator",
+          "quote": "Finally, a canvas that doesn’t limit my imagination. Nano Banana Canvas turns scattered ideas into visual flows. Absolutely next-level."
         },
-        "studio": {
-          "eyebrow": "Creative Studio",
-          "title": "What stays with us now is the process, not just the final file",
-          "quote": "After a few projects, the most obvious difference is that nobody needs to explain the whole setup from scratch anymore. The workflow itself becomes something the team can reuse and improve.",
-          "role": "Creative Studio"
+        "lena": {
+          "handle": "@Lena_Dir",
+          "role": "Filmmaker",
+          "quote": "The cinematic quality I get from connecting Midjourney + Pika on one infinite board is insane. My moodboard-to-shot pipeline just got 10x faster. Future of previs."
         },
-        "operator": {
-          "eyebrow": "AI Operator",
-          "title": "Now we can actually tell why something changed",
-          "quote": "The problem was never only failed generations. It was not knowing why one version worked and another did not. With the flow visible, iteration feels much less chaotic.",
-          "role": "AI Operator"
+        "prompt": {
+          "handle": "@PromptWizard",
+          "role": "Prompt Artist",
+          "quote": "No more tab switching. I link SDXL, Runway, and ElevenLabs in one workspace. The “creative flow” is real. Nano Banana Canvas is a spatial computer for storytellers."
         },
-        "previz": {
-          "eyebrow": "Previs Team",
-          "title": "Shot discussions feel grounded instead of vague now",
-          "quote": "Before, meetings were mostly about describing a feeling. Once frames, motion attempts, and versions sit in one place, conversations become clearer and decisions happen faster.",
-          "role": "Previs Team"
+        "frame": {
+          "handle": "@FrameSmith",
+          "role": "Workflow Lead",
+          "quote": "Enterprise-grade AI orchestration. The node-based workflow on an infinite canvas feels like Unreal for prompt chains. Indispensable."
         },
-        "ecommerce": {
-          "eyebrow": "Ecommerce Content",
-          "title": "Keeping style consistent got much less painful",
-          "quote": "Product images, short-form video, and campaign assets used to drift apart. Now they can follow the same line, and the content output feels more stable from one person to the next.",
-          "role": "Ecommerce Content Team"
+        "neo": {
+          "handle": "@NeoStory",
+          "role": "Story Artist",
+          "quote": "I was skeptical. Then I built a 4-shot storyboard, animated each frame, and rendered a rough cut – all inside one infinite canvas. Nano Banana Canvas is legit."
         },
-        "producer": {
-          "eyebrow": "Content Producer",
-          "title": "Delivery stopped feeling like a knot we untie at the very end",
-          "quote": "For production, the main value is control. It is much easier to see where assets come from, how versions move forward, and what can run in parallel without losing track.",
-          "role": "Content Producer"
+        "moodboard": {
+          "handle": "@MoodboardMaven",
+          "role": "Visual Thinker",
+          "quote": "My ideas usually die in scattered notes. Now they flow visually. Connecting LLMs to image generators on a never-ending canvas? That’s the creative OS I’ve waited for."
+        },
+        "indie": {
+          "handle": "@IndieAuteur",
+          "role": "Indie Director",
+          "quote": "Finally a tool that respects my messiness. Infinite canvas, infinite possibilities. Nano Banana Canvas feels like the future of filmmaking."
+        },
+        "workflow": {
+          "handle": "@WorkflowNinja",
+          "role": "Power User",
+          "quote": "Pros: real-time node linking, 4K exports, low latency. Connects to ComfyUI, Kling, Pika, and GPT-4o. Cons: none yet. This is how AI for creators should work."
+        },
+        "cyber": {
+          "handle": "@CyberDancer",
+          "role": "Creative Technologist",
+          "quote": "Imagine Miro + Unreal Engine + ComfyUI had a baby. That’s Nano Banana Canvas. The “film sense” is baked in – even my rough generations look cinematic."
+        },
+        "canvas": {
+          "handle": "@CanvasCat",
+          "role": "Designer",
+          "quote": "Infinite canvas. Connected models. Pure creative flow. Thank you, Nano Banana Canvas. My burnouts are gone."
+        },
+        "vfx": {
+          "handle": "@VFXonABudget",
+          "role": "Solo Creator",
+          "quote": "As a solo creator, I need one space to sketch, prompt, generate, and refine. Nano Banana Canvas gives me that. The ability to drag a video output into a new prompt chain – on the same infinite board – changed my pre-production completely. Feels professional, not gimmicky."
+        },
+        "dream": {
+          "handle": "@DreamChaser",
+          "role": "Storyteller",
+          "quote": "This is not just another AI wrapper. It’s a spatial workflow for visual storytellers. Nano Banana Canvas understands: creativity doesn’t live in linear timelines. It lives on an infinite canvas. 10/10."
         }
       },
       "faq": {
