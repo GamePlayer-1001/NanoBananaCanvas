@@ -292,33 +292,33 @@ const LANDING_PRICING_GROUPS = [
     icon: BadgeDollarSign,
     titleKey: 'toggleMonthly',
     className:
-      'border-emerald-300/18 bg-[radial-gradient(circle_at_top,rgba(100,255,195,0.16),transparent_26%),linear-gradient(180deg,rgba(15,28,30,0.98),rgba(7,12,18,0.98))] shadow-[0_30px_100px_rgba(24,147,111,0.16)]',
+      'border-[#6b5cff]/45 bg-[linear-gradient(180deg,rgba(19,18,29,0.98),rgba(13,13,21,0.98))] shadow-[0_22px_70px_rgba(88,76,214,0.14)]',
     badgeClassName:
-      'border-emerald-300/18 bg-emerald-300/10 text-emerald-100',
+      'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d0c9ff]',
     buttonClassName:
-      'bg-[linear-gradient(135deg,#e7fff8,#8dffcf)] text-black hover:brightness-95',
+      'bg-[#7b65ff] text-white hover:bg-[#8a76ff]',
   },
   {
     key: 'oneTime',
     icon: ShieldCheck,
     titleKey: 'toggleOneTime',
     className:
-      'border-amber-300/18 bg-[radial-gradient(circle_at_top,rgba(255,195,98,0.16),transparent_26%),linear-gradient(180deg,rgba(34,25,18,0.98),rgba(13,10,8,0.98))] shadow-[0_30px_100px_rgba(187,124,32,0.14)]',
+      'border-white/8 bg-[linear-gradient(180deg,rgba(23,23,28,0.98),rgba(16,16,20,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
     badgeClassName:
-      'border-amber-300/18 bg-amber-300/10 text-amber-100',
+      'border-white/10 bg-white/6 text-white/78',
     buttonClassName:
-      'bg-[linear-gradient(135deg,#fff0d3,#ffbc66)] text-black hover:brightness-95',
+      'bg-[#5d55d6] text-white hover:bg-[#6a63e2]',
   },
   {
     key: 'credits',
     icon: Coins,
     titleKey: 'toggleCredits',
     className:
-      'border-violet-300/18 bg-[radial-gradient(circle_at_top,rgba(168,117,255,0.18),transparent_26%),linear-gradient(180deg,rgba(24,15,38,0.98),rgba(9,8,18,0.98))] shadow-[0_30px_100px_rgba(113,72,187,0.16)]',
+      'border-white/8 bg-[linear-gradient(180deg,rgba(28,28,26,0.98),rgba(20,20,19,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
     badgeClassName:
-      'border-violet-300/18 bg-violet-300/10 text-violet-100',
+      'border-white/10 bg-white/6 text-white/78',
     buttonClassName:
-      'bg-[linear-gradient(135deg,#f3ecff,#b38bff)] text-black hover:brightness-95',
+      'bg-[#4c4c50] text-white hover:bg-[#5a5a60]',
   },
 ] as const
 
@@ -927,9 +927,8 @@ export function PricingSection() {
             return (
               <article
                 key={group.key}
-                className={`relative overflow-hidden rounded-[32px] border p-6 md:p-7 ${group.className}`}
+                className={`relative overflow-hidden rounded-[30px] border p-6 md:p-7 ${group.className}`}
               >
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_28%)]" />
                 <div className="relative flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -939,7 +938,7 @@ export function PricingSection() {
                         {pricingT(`groups.${group.key}.badge`)}
                       </span>
                       <div className="mt-5 flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-white/80">
                           <Icon className="h-5.5 w-5.5" />
                         </div>
                         <div>
@@ -953,7 +952,7 @@ export function PricingSection() {
                       </div>
                     </div>
                     {group.key === 'monthly' ? (
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-black">
+                      <span className="rounded-full border border-[#6b5cff]/35 bg-[#6b5cff]/12 px-3 py-1 text-xs font-medium text-[#d3ccff]">
                         {pricingT('popular')}
                       </span>
                     ) : null}
@@ -966,7 +965,11 @@ export function PricingSection() {
                           return (
                             <div
                               key={packageId}
-                              className="rounded-[24px] border border-white/8 bg-black/18 p-4"
+                              className={`rounded-[24px] border p-4 ${
+                                packageId === '3500'
+                                  ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
+                                  : 'border-white/8 bg-white/[0.03]'
+                              }`}
                             >
                               <div className="flex items-start justify-between gap-4">
                                 <div>
@@ -986,7 +989,7 @@ export function PricingSection() {
                                         })}
                                   </p>
                                 </div>
-                                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-white/80">
+                                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-white/72">
                                   {billingT('toggleCredits')}
                                 </span>
                               </div>
@@ -1005,8 +1008,8 @@ export function PricingSection() {
                               key={`${group.key}-${planKey}`}
                               className={`rounded-[24px] border p-4 ${
                                 planKey === 'pro'
-                                  ? 'border-white/16 bg-white/8 shadow-[0_18px_40px_rgba(255,255,255,0.06)]'
-                                  : 'border-white/8 bg-black/18'
+                                  ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
+                                  : 'border-white/8 bg-white/[0.03]'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-4">
@@ -1016,7 +1019,7 @@ export function PricingSection() {
                                       {billingT(`${planKey}Name`)}
                                     </p>
                                     {planKey === 'pro' ? (
-                                      <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.14em] text-white/82 uppercase">
+                                      <span className="rounded-full border border-[#6b5cff]/30 bg-[#6b5cff]/12 px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.14em] text-[#d3ccff] uppercase">
                                         {pricingT('popular')}
                                       </span>
                                     ) : null}
