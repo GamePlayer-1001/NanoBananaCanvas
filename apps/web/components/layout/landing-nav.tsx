@@ -25,7 +25,7 @@ export function LandingNav() {
   return (
     <TooltipProvider>
       <header className="fixed top-0 right-0 left-0 z-50 border-b border-white/10 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
+        <nav className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
           {/* ── Logo ───────────────────────────────────── */}
           <div className="flex items-center gap-2">
             <span className="text-xl leading-none">🎨</span>

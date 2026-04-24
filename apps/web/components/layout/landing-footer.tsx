@@ -75,8 +75,8 @@ export function LandingFooter() {
   ]
 
   return (
-    <footer className="border-t border-white/5 px-5 py-12">
-      <div className="mx-auto max-w-[1400px]">
+    <footer className="border-t border-white/5 px-4 py-12 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full">
         {/* ── Top Section ────────────────────────── */}
         <div className="flex flex-col gap-12 md:flex-row md:gap-24">
           {/* Brand Column */}

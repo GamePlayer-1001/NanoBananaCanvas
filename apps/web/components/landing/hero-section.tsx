@@ -41,8 +41,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'a',
     label: 'Text Prompt',
     model: 'GPT-4o',
-    x: 80,
-    y: 80,
+    x: 120,
+    y: 100,
     gradient: 'from-indigo-600/50 to-violet-600/50',
     w: 152,
     h: 80,
@@ -51,8 +51,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'b',
     label: 'Style Guide',
     model: 'Claude',
-    x: 60,
-    y: 320,
+    x: 110,
+    y: 400,
     gradient: 'from-amber-500/50 to-orange-600/50',
     w: 152,
     h: 80,
@@ -61,8 +61,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'c',
     label: 'LLM Compose',
     model: 'Gemini 2.5',
-    x: 360,
-    y: 20,
+    x: 520,
+    y: 40,
     gradient: 'from-cyan-500/50 to-blue-600/50',
     w: 160,
     h: 80,
@@ -71,8 +71,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'd',
     label: 'Image Gen',
     model: 'FLUX Pro',
-    x: 680,
-    y: 100,
+    x: 900,
+    y: 130,
     gradient: 'from-pink-500/50 to-rose-600/50',
     w: 152,
     h: 80,
@@ -81,8 +81,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'e',
     label: 'Enhance',
     model: 'DALL-E 3',
-    x: 660,
-    y: 330,
+    x: 880,
+    y: 410,
     gradient: 'from-emerald-500/50 to-teal-600/50',
     w: 152,
     h: 80,
@@ -91,8 +91,8 @@ const INITIAL_NODES: DemoNode[] = [
     id: 'f',
     label: 'Output',
     model: 'Display',
-    x: 920,
-    y: 210,
+    x: 1190,
+    y: 265,
     gradient: 'from-purple-500/50 to-fuchsia-600/50',
     w: 140,
     h: 80,
@@ -259,8 +259,8 @@ export function HeroSection() {
   }, [])
 
   /* ── Canvas 画板尺寸 ─────────────────────────────────── */
-  const canvasW = 1100
-  const canvasH = 460
+  const canvasW = 1440
+  const canvasH = 580
 
   return (
     <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#0a0a0a] pt-16">
@@ -280,7 +280,7 @@ export function HeroSection() {
       {/* ── 画板容器 ───────────────────────────────────── */}
       <div
         ref={containerRef}
-        className="relative mx-auto w-full max-w-[1100px] px-4"
+        className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-10"
         style={{ height: canvasH * scale }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -334,7 +334,7 @@ export function HeroSection() {
             </h1>
 
             {/* 描述 */}
-            <p className="mx-auto mb-6 max-w-md text-xs leading-relaxed whitespace-pre-line text-white/40 md:text-sm">
+            <p className="mb-6 px-4 text-xs leading-relaxed whitespace-pre-line text-white/40 md:text-sm">
               {t('description')}
             </p>
 

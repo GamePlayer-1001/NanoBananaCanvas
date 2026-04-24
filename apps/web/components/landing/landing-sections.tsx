@@ -57,12 +57,14 @@ function SectionHeader({
   body: string
 }) {
   return (
-    <div className="mx-auto max-w-3xl text-center">
-      <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-        {eyebrow}
-      </p>
-      <h2 className="mt-4 text-3xl font-semibold text-white md:text-5xl">{title}</h2>
-      <p className="mt-5 text-base leading-7 text-white/62 md:text-lg">{body}</p>
+    <div className="grid w-full gap-6 text-left lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
+      <div>
+        <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
+          {eyebrow}
+        </p>
+        <h2 className="mt-4 text-3xl font-semibold text-white md:text-5xl">{title}</h2>
+      </div>
+      <p className="text-base leading-7 text-white/62 md:text-lg lg:pb-1">{body}</p>
     </div>
   )
 }
@@ -71,16 +73,16 @@ export function ModelMindMapSection() {
   const modelT = useTranslations('landing.sections.models')
 
   return (
-    <section id="models" className="relative overflow-hidden bg-[#09090d] px-5 py-24">
+    <section id="models" className="relative overflow-hidden bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(99,102,241,0.16),transparent_34%),radial-gradient(circle_at_15%_80%,rgba(20,184,166,0.12),transparent_28%)]" />
-      <div className="relative mx-auto max-w-[1400px]">
+      <div className="relative w-full">
         <SectionHeader
           eyebrow={modelT('eyebrow')}
           title={modelT('title')}
           body={modelT('body')}
         />
 
-        <div className="relative mx-auto mt-14 min-h-[520px] max-w-6xl overflow-hidden rounded-[32px] border border-white/8 bg-black/24 p-6 md:p-10">
+        <div className="relative mt-14 min-h-[520px] w-full overflow-hidden rounded-[32px] border border-white/8 bg-black/24 p-6 md:p-10">
           <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]" />
           <div className="relative flex min-h-[460px] items-center justify-center">
             <div className="absolute h-48 w-48 rounded-full border border-white/12 bg-white/[0.04] shadow-[0_0_80px_rgba(255,255,255,0.08)]" />
@@ -131,8 +133,8 @@ export function FeaturesSection() {
   const featuresT = useTranslations('landing.sections.features')
 
   return (
-    <section id="features" className="bg-[#0b0b0f] px-5 py-24">
-      <div className="mx-auto max-w-[1400px]">
+    <section id="features" className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full">
         <SectionHeader
           eyebrow={featuresT('eyebrow')}
           title={featuresT('title')}
@@ -176,8 +178,8 @@ export function PricingSection() {
   const pricingT = useTranslations('landing.sections.pricing')
 
   return (
-    <section id="pricing" className="bg-[#09090d] px-5 py-24">
-      <div className="mx-auto max-w-[1400px]">
+    <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full">
         <SectionHeader
           eyebrow={pricingT('eyebrow')}
           title={pricingT('title')}
@@ -252,8 +254,8 @@ export function TestimonialsSection() {
   const testimonialsT = useTranslations('landing.sections.testimonials')
 
   return (
-    <section className="bg-[#0b0b0f] px-5 py-24">
-      <div className="mx-auto max-w-[1400px]">
+    <section className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full">
         <SectionHeader
           eyebrow={testimonialsT('eyebrow')}
           title={testimonialsT('title')}
@@ -292,8 +294,8 @@ export function FaqSection() {
   const faqT = useTranslations('landing.sections.faq')
 
   return (
-    <section id="faq" className="bg-[#09090d] px-5 py-24">
-      <div className="mx-auto max-w-5xl">
+    <section id="faq" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full">
         <SectionHeader
           eyebrow={faqT('eyebrow')}
           title={faqT('title')}
@@ -325,18 +327,20 @@ export function CtaSection() {
   const ctaT = useTranslations('landing.sections.cta')
 
   return (
-    <section className="bg-[#0b0b0f] px-5 py-24">
-      <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
+    <section className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+      <div className="grid w-full gap-8 text-left lg:grid-cols-[1fr_auto] lg:items-end">
+        <div>
         <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
           {ctaT('eyebrow')}
         </p>
-        <h2 className="mt-5 max-w-3xl text-4xl font-semibold text-white md:text-6xl">
+        <h2 className="mt-5 text-4xl font-semibold text-white md:text-6xl">
           {ctaT('title')}
         </h2>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-white/62 md:text-lg">
+        <p className="mt-6 text-base leading-7 text-white/62 md:text-lg">
           {ctaT('body')}
         </p>
-        <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
           <Link
             href="/sign-in"
             className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-7 text-sm font-medium text-black transition hover:bg-white/88"
