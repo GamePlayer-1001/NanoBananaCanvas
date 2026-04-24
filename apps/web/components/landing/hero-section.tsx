@@ -489,30 +489,32 @@ export function HeroSection() {
           ))}
         </div>
 
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <div className="pointer-events-none text-center">
-            <h2 className="mb-1">
-              <BrandMark className="text-3xl text-white/82 md:text-4xl">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
+          <div className="pointer-events-none mx-auto max-w-[860px] text-center">
+            <h2 className="mb-2 md:mb-3">
+              <BrandMark className="text-4xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-5xl lg:text-6xl">
                 {t('heading')}
               </BrandMark>
             </h2>
 
-            <h1 className="from-brand-300 mb-4 bg-gradient-to-r to-white bg-clip-text text-3xl font-bold text-transparent md:text-5xl">
+            <h1 className="from-brand-300 mb-5 bg-gradient-to-r to-white bg-clip-text text-5xl leading-[0.92] font-bold tracking-tight text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-6xl md:mb-6 md:text-7xl lg:text-[84px]">
               {t('tagline')}
             </h1>
 
-            <p className="mb-6 px-4 text-xs leading-relaxed whitespace-pre-line text-white/40 md:text-sm">
+            <p className="mx-auto mb-8 max-w-[620px] px-4 text-base leading-relaxed whitespace-pre-line text-white/56 md:mb-9 md:text-lg">
               {t('description')}
             </p>
 
             <Link
               href="/sign-in"
-              className="pointer-events-auto inline-flex h-11 items-center rounded-lg bg-white px-7 text-sm font-medium text-black shadow-[0_18px_60px_rgba(255,255,255,0.14)] transition-all hover:bg-white/88"
+              className="pointer-events-auto inline-flex h-14 items-center rounded-2xl bg-white px-9 text-base font-semibold text-black shadow-[0_22px_70px_rgba(255,255,255,0.18)] transition-all hover:bg-white/88 md:h-16 md:px-11 md:text-lg"
             >
               {t('cta')}
             </Link>
 
-            <p className="mt-3 text-[11px] tracking-wide text-white/25">{t('models')}</p>
+            <p className="mt-4 text-sm tracking-[0.18em] text-white/30 md:mt-5 md:text-[15px]">
+              {t('models')}
+            </p>
           </div>
         </div>
       </div>
