@@ -284,13 +284,15 @@ function HeroMedia({
   if (media.kind === 'video') {
     return (
       <video
-        className="h-full w-full object-cover"
+        className="pointer-events-none h-full w-full select-none object-cover"
         autoPlay
         loop
         muted
         playsInline
         preload="metadata"
         poster={media.poster}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         style={{ objectPosition: media.objectPosition }}
       >
         <source src={media.src} type="video/mp4" />
@@ -304,7 +306,8 @@ function HeroMedia({
       alt={label}
       fill
       sizes="(max-width: 768px) 40vw, 22vw"
-      className="object-cover"
+      className="pointer-events-none select-none object-cover"
+      draggable={false}
       style={{ objectPosition: media.objectPosition }}
     />
   )
@@ -329,9 +332,14 @@ function DemoNodeCard({
 
   return (
     <div
-      className="group absolute cursor-grab select-none active:cursor-grabbing"
+      className="group absolute cursor-grab touch-none select-none active:cursor-grabbing"
       style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
-      onPointerDown={(e) => onPointerDown(e, node.id)}
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        e.preventDefault()
+        onPointerDown(e, node.id)
+      }}
     >
       <div className="pointer-events-none absolute -top-5 left-1 text-[11px] text-white/42">
         {label}
@@ -343,7 +351,9 @@ function DemoNodeCard({
       <div className="relative h-full w-full overflow-hidden rounded-[26px] border border-white/10 bg-[#090b14] shadow-[0_24px_80px_rgba(0,0,0,0.28)] transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_30px_96px_rgba(0,0,0,0.38)]">
         <div className="absolute top-1/2 -left-1.5 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white/20 bg-white/10" />
         <div className="bg-brand-500/40 absolute top-1/2 -right-1.5 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white/30" />
-        <HeroMedia artwork={node.artwork} label={label} />
+        <div className="pointer-events-none absolute inset-0 select-none">
+          <HeroMedia artwork={node.artwork} label={label} />
+        </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="pointer-events-none absolute right-3 bottom-3 rounded-full border border-white/14 bg-black/28 px-2.5 py-1 text-[10px] tracking-[0.18em] text-white/76 uppercase backdrop-blur-sm">
           {mediaLabel}
