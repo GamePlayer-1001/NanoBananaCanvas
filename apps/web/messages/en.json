@@ -63,7 +63,19 @@
       "tagline": "Infinite Canvas, Infinite Imagination",
       "description": "From script to screen, start your creative journey.\nCreate freely, the canvas is yours to control.",
       "cta": "Get Started",
-      "models": "Powered by global leading models"
+      "models": "Powered by global leading models",
+      "nodes": {
+        "feature": "Eye feature",
+        "portrait": "Base portrait",
+        "merge": "Feature merge",
+        "landscape": "Scene plate",
+        "scene": "Scene merge",
+        "motion": "Motion output"
+      },
+      "badges": {
+        "image": "image",
+        "video": "motion"
+      }
     },
     "sections": {
       "models": {

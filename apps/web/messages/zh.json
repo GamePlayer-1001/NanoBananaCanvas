@@ -63,7 +63,19 @@
       "tagline": "无限画布，无限想象",
       "description": "从剧本到银幕，开启您的创意之旅\n随心创作，画布由你掌控",
       "cta": "立即开始",
-      "models": "汇聚全球领先模型"
+      "models": "汇聚全球领先模型",
+      "nodes": {
+        "feature": "眼部特征",
+        "portrait": "人物底稿",
+        "merge": "特征融合",
+        "landscape": "场景底片",
+        "scene": "场景合成",
+        "motion": "动态输出"
+      },
+      "badges": {
+        "image": "图像",
+        "video": "动态"
+      }
     },
     "sections": {
       "models": {
