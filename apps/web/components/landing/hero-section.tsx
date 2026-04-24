@@ -109,6 +109,10 @@ const CONNECTIONS: Connection[] = [
   { from: 'e', to: 'f' },
 ]
 
+const HERO_CANVAS_WIDTH = 1800
+const HERO_CANVAS_HEIGHT = 620
+const HERO_DRAG_PADDING = 24
+
 /* ─── Bezier Path ────────────────────────────────────────── */
 
 function bezierPath(
@@ -482,10 +486,25 @@ export function HeroSection() {
       if (!drag || !containerRef.current) return
 
       const rect = containerRef.current.getBoundingClientRect()
-      const x = e.clientX / scale - rect.left / scale - drag.offsetX
-      const y = e.clientY / scale - rect.top / scale - drag.offsetY
+      const rawX = e.clientX / scale - rect.left / scale - drag.offsetX
+      const rawY = e.clientY / scale - rect.top / scale - drag.offsetY
 
-      setNodes((prev) => prev.map((node) => (node.id === drag.id ? { ...node, x, y } : node)))
+      setNodes((prev) =>
+        prev.map((node) => {
+          if (node.id !== drag.id) return node
+
+          const minX = HERO_DRAG_PADDING
+          const minY = HERO_DRAG_PADDING
+          const maxX = HERO_CANVAS_WIDTH - node.w - HERO_DRAG_PADDING
+          const maxY = HERO_CANVAS_HEIGHT - node.h - HERO_DRAG_PADDING
+
+          return {
+            ...node,
+            x: Math.min(Math.max(rawX, minX), maxX),
+            y: Math.min(Math.max(rawY, minY), maxY),
+          }
+        }),
+      )
     },
     [scale],
   )
@@ -494,8 +513,8 @@ export function HeroSection() {
     dragRef.current = null
   }, [])
 
-  const canvasW = 1800
-  const canvasH = 620
+  const canvasW = HERO_CANVAS_WIDTH
+  const canvasH = HERO_CANVAS_HEIGHT
 
   return (
     <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#0a0a0a] pt-16">
@@ -519,7 +538,7 @@ export function HeroSection() {
         onPointerLeave={handlePointerUp}
       >
         <div
-          className="origin-top-center absolute left-1/2"
+          className="origin-top-center absolute left-1/2 overflow-visible"
           style={{
             width: canvasW,
             height: canvasH,
@@ -527,9 +546,10 @@ export function HeroSection() {
           }}
         >
           <svg
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none absolute inset-0 overflow-visible"
             width={canvasW}
             height={canvasH}
+            style={{ overflow: 'visible' }}
           >
             {CONNECTIONS.map((connection) => (
               <ConnectionLine
