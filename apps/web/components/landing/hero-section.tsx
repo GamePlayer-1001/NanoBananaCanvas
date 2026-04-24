@@ -35,7 +35,6 @@ interface DemoNode {
 interface Connection {
   from: string
   to: string
-  route?: 'rightArc'
 }
 
 interface StageSize {
@@ -150,7 +149,7 @@ const CONNECTIONS: Connection[] = [
   { from: 'a', to: 'c' },
   { from: 'b', to: 'c' },
   { from: 'c', to: 'e' },
-  { from: 'd', to: 'e', route: 'rightArc' },
+  { from: 'd', to: 'e' },
   { from: 'e', to: 'f' },
 ]
 
@@ -215,14 +214,7 @@ function bezierPath(
   sy: number,
   tx: number,
   ty: number,
-  stageWidth: number,
-  route?: Connection['route'],
 ): string {
-  if (route === 'rightArc') {
-    const cx = Math.min(stageWidth - 24, Math.max(sx, tx) + Math.min(280, stageWidth * 0.14))
-    return `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ty}, ${tx} ${ty}`
-  }
-
   const dx = Math.abs(tx - sx) * 0.5
   return `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`
 }
@@ -234,13 +226,11 @@ function ConnectionLine({
   to,
   nodes,
   stage,
-  route,
 }: {
   from: string
   to: string
   nodes: DemoNode[]
   stage: StageSize
-  route?: Connection['route']
 }) {
   const s = nodes.find((node) => node.id === from)
   const t = nodes.find((node) => node.id === to)
@@ -252,7 +242,7 @@ function ConnectionLine({
   const sy = source.y + source.h / 2
   const tx = target.x
   const ty = target.y + target.h / 2
-  const d = bezierPath(sx, sy, tx, ty, stage.width, route)
+  const d = bezierPath(sx, sy, tx, ty)
 
   return (
     <g>
@@ -483,7 +473,6 @@ export function HeroSection() {
                 to={connection.to}
                 nodes={nodes}
                 stage={stageSize}
-                route={connection.route}
               />
             ))}
           </svg>
