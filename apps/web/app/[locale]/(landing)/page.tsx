@@ -22,12 +22,7 @@ import {
 } from '@/components/landing/landing-sections'
 import { LandingFooter } from '@/components/layout/landing-footer'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
-import {
-  BASE_URL,
-  SITE_NAME,
-  buildAbsoluteUrl,
-  buildPageMetadata,
-} from '@/lib/seo'
+import { BASE_URL, SITE_NAME, buildAbsoluteUrl, buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -54,7 +49,19 @@ export default async function LandingPage({
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
 
-  const faqItems = ['what', 'models', 'pricing', 'team'].map((key) => ({
+  const faqItems = [
+    'what',
+    'models',
+    'canvas',
+    'compare',
+    'pricing',
+    'team',
+    'gpu',
+    'privacy',
+    'credits',
+    'commercial',
+    'contact',
+  ].map((key) => ({
     question: faqT(`${key}.question`),
     answer: faqT(`${key}.answer`),
   }))

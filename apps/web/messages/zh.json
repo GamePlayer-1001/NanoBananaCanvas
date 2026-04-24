@@ -194,23 +194,51 @@
       },
       "faq": {
         "eyebrow": "FAQ",
-        "title": "创作者在开始前最常问的问题",
-        "body": "用更宽松的问答形式说明产品范围、模型支持、计费边界和团队使用方式。",
+        "title": "常见问题",
+        "body": "关于使用 Nano Banana Canvas 进行 AI 创作、协作与交付，你需要了解的一切。",
         "what": {
-          "question": "Nano Banana Canvas 主要用来做什么？",
-          "answer": "它是一个可视化 AI 工作流构建器，用来组织提示词、媒体输入、模型调用、生成资产和可复用生产流程。"
+          "question": "什么是 Nano Banana Canvas？",
+          "answer": "Nano Banana Canvas 是一个面向创作者、工作室与团队的 AI 创作工作台。它把提示词、参考图、模型调用、视频生成、版本迭代和交付流程放进同一张可视化画布里，让你不再在多个工具之间来回拼接流程。"
         },
         "models": {
-          "question": "它可以表达哪些模型 Provider？",
-          "answer": "产品方向覆盖 OpenAI、Anthropic、Gemini、Qwen、Wan、Kling、Runway、Luma、Vidu、MiniMax、xAI、Groq、Black Forest、OpenRouter、Midjourney、ByteDance 等 Provider。"
+          "question": "支持哪些 AI 模型与 Provider？",
+          "answer": "当前产品方向覆盖 OpenAI、Anthropic、Gemini、Qwen、Alibaba Wan、Kling、Runway、Luma、Vidu、MiniMax、xAI、Groq、Black Forest、OpenRouter、Midjourney、ByteDance 等主流 Provider，并支持继续扩展更多模型接入。"
+        },
+        "canvas": {
+          "question": "无限画布与节点工作区是如何运作的？",
+          "answer": "你可以把每一步创作动作都作为节点摆在画布上，例如提示词、参考图、模型选择、输出结果、二次编辑和发布分支。画布不是装饰，它承担的是生产流程的组织、复用、对比和回溯，让复杂创作变得可视可控。"
+        },
+        "compare": {
+          "question": "Nano Banana Canvas 与 ComfyUI 有何不同？",
+          "answer": "ComfyUI 更偏向本地化、工程化和节点级实验环境；Nano Banana Canvas 更强调创作链路、团队协作、跨模型调度和结果交付。我们追求的是让导演、创意团队和运营也能快速读懂工作流，而不是只有技术用户才能维护。"
         },
         "pricing": {
-          "question": "定价是怎么工作的？",
-          "answer": "Free 是默认进入态。付费套餐提供月度积分和存储空间，专门的定价页会在结账前读取当前 Stripe 价格。"
+          "question": "Nano Banana Canvas 的收费方式是怎样的？",
+          "answer": "产品提供免费进入态和多档付费套餐。不同套餐主要体现在可用积分、存储空间、并发能力和团队协作权限上，正式结账前会以定价页读取到的实时价格为准。"
         },
         "team": {
-          "question": "这只适合个人创作者吗？",
-          "answer": "不是。它同样面向创意工作室、代理团队和分布式团队，帮助大家共享同一套 AI 辅助生产逻辑。"
+          "question": "可以与团队协作吗？",
+          "answer": "可以。Nano Banana Canvas 不只适合个人创作者，也面向创意工作室、代理团队和分布式协作团队。大家可以围绕同一条工作流共享上下文、复用节点逻辑，并减少口头交接带来的理解损耗。"
+        },
+        "gpu": {
+          "question": "需要高性能电脑或本地 GPU 吗？",
+          "answer": "不一定。产品的设计方向是让用户优先在云端工作，不把本地显卡作为使用门槛。你可以在普通办公设备上完成流程搭建、素材组织与结果查看，而不必先配置复杂的本地推理环境。"
+        },
+        "privacy": {
+          "question": "我的内容是否安全且受到隐私保护？",
+          "answer": "我们会把项目内容、上传素材和生成结果视作工作资产来对待，并优先采用清晰的权限边界、访问控制和数据隔离策略。涉及隐私、团队共享和外部发布的能力，也会在产品中明确区分使用边界。"
+        },
+        "credits": {
+          "question": "积分（Credits）是如何运作的？",
+          "answer": "积分通常用于覆盖模型调用、媒体生成和部分计算资源消耗。不同模型和任务的消耗会有所区别，系统会尽量让你在执行前看到成本预期，避免在创作过程中失去预算感知。"
+        },
+        "commercial": {
+          "question": "AI 生成的内容可以商用吗？",
+          "answer": "能否商用取决于你所选模型、输入素材来源、输出内容场景以及适用条款。Nano Banana Canvas 会尽量把工作流和来源链路保留清楚，但最终是否可商用，仍需要结合具体模型政策和你的法务标准判断。"
+        },
+        "contact": {
+          "question": "如何联系我们？",
+          "answer": "如果你想咨询产品、合作、企业方案或定制接入，可以直接通过站内联系入口与我们沟通。对于工作室、代理团队和更大规模的创作组织，我们也可以按使用场景继续讨论接入方式。"
         }
       },
       "cta": {

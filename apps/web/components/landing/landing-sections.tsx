@@ -14,7 +14,7 @@ import {
   AudioLines,
   BrainCircuit,
   Check,
-  CircleHelp,
+  ChevronDown,
   Cuboid,
   ImageIcon,
   Play,
@@ -283,7 +283,19 @@ const PRICING_PLANS = [
 ] as const
 
 const TESTIMONIAL_KEYS = ['director', 'studio', 'operator'] as const
-const FAQ_KEYS = ['what', 'models', 'pricing', 'team'] as const
+const FAQ_KEYS = [
+  'what',
+  'models',
+  'canvas',
+  'compare',
+  'pricing',
+  'team',
+  'gpu',
+  'privacy',
+  'credits',
+  'commercial',
+  'contact',
+] as const
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -930,27 +942,42 @@ export function FaqSection() {
   const faqT = useTranslations('landing.sections.faq')
 
   return (
-    <section id="faq" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="w-full">
-        <SectionHeader
-          eyebrow={faqT('eyebrow')}
-          title={faqT('title')}
-          body={faqT('body')}
-        />
+    <section
+      id="faq"
+      className="relative overflow-hidden bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(120,92,255,0.08),transparent_26%),linear-gradient(180deg,#09090d_0%,#07080d_100%)]" />
+      <div className="relative mx-auto w-full max-w-[1080px]">
+        <div className="mx-auto max-w-[42rem] text-center">
+          <p className="text-sm font-medium tracking-[0.24em] text-white/42 uppercase">
+            {faqT('eyebrow')}
+          </p>
+          <h2 className="mt-5 text-[2.8rem] leading-[0.94] font-semibold tracking-tight text-white md:text-[4rem]">
+            {faqT('title')}
+          </h2>
+          <p className="mt-6 text-[1rem] leading-8 text-white/54 md:text-[1.12rem]">
+            {faqT('body')}
+          </p>
+        </div>
 
-        <div className="mt-12 space-y-4">
-          {FAQ_KEYS.map((key) => (
+        <div className="mx-auto mt-16 max-w-[860px]">
+          {FAQ_KEYS.map((key, index) => (
             <details
               key={key}
-              className="group rounded-2xl border border-white/8 bg-white/[0.035] p-6"
+              open={index === 0}
+              className="group border-b border-white/8 first:border-t"
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium text-white">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-7 text-left text-[1.18rem] font-semibold tracking-tight text-white marker:content-none">
                 <span>{faqT(`${key}.question`)}</span>
-                <CircleHelp className="h-5 w-5 shrink-0 text-white/45 transition group-open:rotate-45" />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/58 transition-colors duration-200 group-open:text-white group-hover:text-white">
+                  <ChevronDown className="h-4.5 w-4.5 transition-transform duration-200 group-open:rotate-180" />
+                </span>
               </summary>
-              <p className="mt-5 text-sm leading-7 text-white/62">
-                {faqT(`${key}.answer`)}
-              </p>
+              <div className="pb-7">
+                <p className="max-w-[48rem] text-[1rem] leading-8 text-white/62 md:text-[1.05rem]">
+                  {faqT(`${key}.answer`)}
+                </p>
+              </div>
             </details>
           ))}
         </div>

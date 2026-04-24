@@ -194,23 +194,51 @@
       },
       "faq": {
         "eyebrow": "FAQ",
-        "title": "Questions creators ask before they commit",
-        "body": "Short answers for product scope, model support, pricing boundaries, and team usage.",
+        "title": "Frequently Asked Questions",
+        "body": "Everything you need to know about creating, collaborating, and delivering work with Nano Banana Canvas.",
         "what": {
-          "question": "What is Nano Banana Canvas used for?",
-          "answer": "It is a visual AI workflow builder for arranging prompts, media inputs, model calls, generated assets, and reusable production recipes in one canvas."
+          "question": "What is Nano Banana Canvas?",
+          "answer": "Nano Banana Canvas is an AI creation workspace for creators, studios, and teams. It brings prompts, references, model calls, video generation, iteration history, and delivery flows into one visual canvas so you do not have to stitch a production process together across disconnected tools."
         },
         "models": {
-          "question": "Which model providers can it represent?",
-          "answer": "The product direction covers providers such as OpenAI, Anthropic, Gemini, Qwen, Wan, Kling, Runway, Luma, Vidu, MiniMax, xAI, Groq, Black Forest, OpenRouter, Midjourney, and ByteDance."
+          "question": "Which AI models and providers are supported?",
+          "answer": "The current product direction covers major providers such as OpenAI, Anthropic, Gemini, Qwen, Alibaba Wan, Kling, Runway, Luma, Vidu, MiniMax, xAI, Groq, Black Forest, OpenRouter, Midjourney, and ByteDance, with room to keep expanding support."
+        },
+        "canvas": {
+          "question": "How does the infinite canvas and node workspace work?",
+          "answer": "Every creative step can live as a node on the canvas, including prompts, references, model choices, generated outputs, edits, and branching paths. The canvas is not decorative. It is the operating surface for organizing, reusing, comparing, and tracing complex creative workflows."
+        },
+        "compare": {
+          "question": "How is Nano Banana Canvas different from ComfyUI?",
+          "answer": "ComfyUI is closer to a local, engineering-first, node experimentation environment. Nano Banana Canvas is designed around creative flow, team collaboration, cross-model orchestration, and delivery. The goal is to make workflows legible to directors, operators, and studios, not only technical power users."
         },
         "pricing": {
           "question": "How does pricing work?",
-          "answer": "Free is the default entry state. Paid plans add monthly credits and storage, and the dedicated pricing page reads the current Stripe-backed prices before checkout."
+          "answer": "The product offers a free entry point and multiple paid tiers. The main differences are credits, storage, concurrency, and collaboration scope, and the final checkout experience uses the live pricing surfaced on the pricing page."
         },
         "team": {
-          "question": "Is this only for individual creators?",
-          "answer": "No. It is designed for individual creators, studios, agencies, and distributed teams that need a shared view of AI-assisted production logic."
+          "question": "Can I collaborate with a team?",
+          "answer": "Yes. Nano Banana Canvas is built for individual creators, creative studios, agencies, and distributed teams. People can share the same workflow context, reuse node logic, and reduce the communication loss that happens when production steps are passed around verbally."
+        },
+        "gpu": {
+          "question": "Do I need a powerful computer or local GPU?",
+          "answer": "Not necessarily. The product direction is cloud-first, so local hardware is not meant to be a barrier. You should be able to design workflows, organize assets, and review outputs without first setting up a complex local inference stack."
+        },
+        "privacy": {
+          "question": "Is my content secure and privacy-protected?",
+          "answer": "Project content, uploaded assets, and generated outputs should be treated like production assets. The system is designed around clear permission boundaries, access control, and data separation, especially for private projects, team sharing, and outward delivery flows."
+        },
+        "credits": {
+          "question": "How do credits work?",
+          "answer": "Credits are typically used to cover model calls, media generation, and certain compute costs. Different models and tasks can consume credits differently, and the product direction is to keep cost expectations visible before execution so creators can stay budget-aware."
+        },
+        "commercial": {
+          "question": "Can AI-generated content be used commercially?",
+          "answer": "Commercial use depends on the model you choose, the source of your input materials, the type of output, and the terms that apply to that workflow. Nano Banana Canvas can help preserve workflow traceability, but final commercial suitability still needs to be evaluated against model policies and your own legal standards."
+        },
+        "contact": {
+          "question": "How can I contact the team?",
+          "answer": "If you want to talk about the product, partnerships, enterprise use, or custom integrations, you can reach out through the contact entry points on the site. We can also continue the conversation around studio, agency, or larger team adoption scenarios."
         }
       },
       "cta": {
