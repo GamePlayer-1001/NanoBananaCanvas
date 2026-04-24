@@ -57,8 +57,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'OpenAI',
     logoUrl: buildSimpleIconUrl('openai'),
-    x: 520,
-    y: 62,
+    x: 486,
+    y: 94,
     size: 'lg',
     tone: 'azure',
     logoFilter:
@@ -67,16 +67,16 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'Google',
     logoUrl: buildSimpleIconUrl('google'),
-    x: 736,
-    y: 122,
+    x: 668,
+    y: 160,
     size: 'lg',
     tone: 'amber',
   },
   {
     name: 'Anthropic',
     logoUrl: buildSimpleIconUrl('anthropic'),
-    x: 922,
-    y: 236,
+    x: 774,
+    y: 244,
     size: 'lg',
     tone: 'violet',
     logoFilter:
@@ -85,16 +85,16 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'Gemini',
     logoUrl: buildSimpleIconUrl('googlegemini'),
-    x: 1012,
-    y: 402,
+    x: 846,
+    y: 392,
     size: 'md',
     tone: 'violet',
   },
   {
     name: 'Alibaba Wan',
     logoUrl: buildSimpleIconUrl('alibabacloud'),
-    x: 1044,
-    y: 570,
+    x: 838,
+    y: 538,
     size: 'md',
     tone: 'amber',
     logoScale: 0.68,
@@ -102,16 +102,16 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'Midjourney',
     logoUrl: buildVendorFaviconUrl('midjourney.com'),
-    x: 924,
-    y: 692,
+    x: 728,
+    y: 628,
     size: 'md',
     tone: 'amber',
   },
   {
     name: 'OpenRouter',
     logoUrl: buildSimpleIconUrl('openrouter'),
-    x: 636,
-    y: 794,
+    x: 542,
+    y: 718,
     size: 'md',
     tone: 'violet',
     logoScale: 0.7,
@@ -121,114 +121,114 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'Runway',
     logoUrl: buildVendorFaviconUrl('runwayml.com'),
-    x: 146,
-    y: 608,
+    x: 168,
+    y: 556,
     size: 'md',
     tone: 'azure',
   },
   {
     name: 'Luma',
     logoUrl: buildVendorFaviconUrl('luma.ai'),
-    x: 34,
-    y: 480,
+    x: 82,
+    y: 468,
     size: 'lg',
     tone: 'teal',
   },
   {
     name: 'Vidu',
     logoUrl: buildVendorFaviconUrl('vidu.com'),
-    x: 170,
-    y: 320,
+    x: 136,
+    y: 316,
     size: 'md',
     tone: 'azure',
   },
   {
     name: 'Groq',
     logoUrl: buildVendorFaviconUrl('groq.com'),
-    x: 320,
-    y: 184,
+    x: 246,
+    y: 204,
     size: 'md',
     tone: 'azure',
   },
   {
     name: 'xAI',
     logoUrl: buildVendorFaviconUrl('x.ai'),
-    x: 408,
-    y: 102,
+    x: 348,
+    y: 150,
     size: 'lg',
     tone: 'teal',
   },
   {
     name: 'ByteDance',
     logoUrl: buildSimpleIconUrl('bytedance'),
-    x: 856,
-    y: 530,
+    x: 684,
+    y: 458,
     size: 'md',
     tone: 'violet',
   },
   {
     name: 'Kling',
     logoUrl: buildVendorFaviconUrl('klingai.com'),
-    x: 740,
-    y: 720,
+    x: 628,
+    y: 612,
     size: 'md',
     tone: 'teal',
   },
   {
     name: 'Qwen',
     logoUrl: buildVendorFaviconUrl('chat.qwen.ai'),
-    x: 494,
-    y: 688,
+    x: 448,
+    y: 626,
     size: 'sm',
     tone: 'violet',
   },
   {
     name: 'Black Forest',
     logoUrl: buildVendorFaviconUrl('blackforestlabs.ai'),
-    x: 292,
-    y: 722,
+    x: 284,
+    y: 674,
     size: 'sm',
     tone: 'teal',
   },
   {
     name: 'MiniMax',
     logoUrl: buildSimpleIconUrl('minimax'),
-    x: 336,
-    y: 470,
+    x: 274,
+    y: 444,
     size: 'md',
     tone: 'rose',
   },
   {
     name: 'DeepSeek',
     logoUrl: buildVendorFaviconUrl('deepseek.com'),
-    x: 236,
-    y: 564,
+    x: 238,
+    y: 522,
     size: 'sm',
     tone: 'azure',
   },
 ]
 
 const MODEL_CANVAS = {
-  width: 1120,
-  height: 840,
-  centerX: 560,
-  centerY: 418,
+  width: 980,
+  height: 790,
+  centerX: 490,
+  centerY: 398,
 } as const
 
-const MODEL_RING_RADII = [154, 246, 342] as const
+const MODEL_RING_RADII = [146, 234, 324] as const
 const MODEL_NODE_SIZES = {
-  sm: 88,
-  md: 100,
-  lg: 114,
+  sm: 84,
+  md: 96,
+  lg: 110,
 } as const
 const MODEL_SPARKS = [
-  { x: 448, y: 236, tone: 'azure' },
-  { x: 760, y: 234, tone: 'rose' },
-  { x: 812, y: 320, tone: 'violet' },
-  { x: 560, y: 642, tone: 'violet' },
-  { x: 376, y: 600, tone: 'azure' },
-  { x: 196, y: 364, tone: 'azure' },
-  { x: 774, y: 664, tone: 'rose' },
+  { x: 388, y: 248, tone: 'azure' },
+  { x: 672, y: 248, tone: 'rose' },
+  { x: 732, y: 332, tone: 'violet' },
+  { x: 492, y: 638, tone: 'violet' },
+  { x: 316, y: 584, tone: 'azure' },
+  { x: 202, y: 362, tone: 'azure' },
+  { x: 690, y: 638, tone: 'rose' },
 ] as const
 
 const MODEL_TONE_STYLES = {
@@ -426,26 +426,26 @@ export function ModelMindMapSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_76%,rgba(44,146,164,0.16),transparent_24%),radial-gradient(circle_at_57%_48%,rgba(112,84,255,0.2),transparent_24%),radial-gradient(circle_at_81%_53%,rgba(190,58,255,0.14),transparent_18%),linear-gradient(180deg,#090b13_0%,#05070e_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(102,137,255,0.4),transparent)]" />
       <div className="relative w-full">
-        <div className="grid gap-10 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.08fr)_minmax(270px,0.42fr)] xl:items-center">
+        <div className="grid gap-8 xl:relative xl:block xl:min-h-[820px]">
           <div
-            className="max-w-[34rem] pt-3 transition-[opacity,transform] duration-300 ease-out"
+            className="max-w-[33rem] pt-3 transition-[opacity,transform] duration-300 ease-out xl:absolute xl:top-[132px] xl:left-0 xl:z-20 xl:w-[600px] xl:max-w-none xl:pt-0"
             style={{
-              opacity: 0.14 + revealProgress * 0.86,
-              transform: `translate3d(${-68 * (1 - revealProgress)}px, ${
-                30 * (1 - revealProgress) - drift * 18
+              opacity: 0.24 + revealProgress * 0.76,
+              transform: `translate3d(${-42 * (1 - revealProgress)}px, ${
+                18 * (1 - revealProgress) - drift * 14
               }px, 0)`,
             }}
           >
             <p className="text-[0.95rem] font-medium tracking-[0.22em] text-[#8b9bb6] uppercase">
               {modelT('eyebrow')}
             </p>
-            <h2 className="mt-7 max-w-[44rem] text-[3.05rem] leading-[0.9] font-semibold tracking-[-0.07em] text-white md:text-[4rem] xl:text-[4.2rem] 2xl:text-[4.25rem]">
-              <span className="block xl:whitespace-nowrap">{modelT('title')}</span>
-              <span className="mt-2 block bg-[linear-gradient(90deg,#75afff_0%,#6692ff_35%,#9a5fff_100%)] bg-clip-text text-transparent xl:whitespace-nowrap">
+            <h2 className="mt-7 w-max max-w-none text-[3.05rem] leading-[0.9] font-semibold tracking-[-0.1em] text-white md:text-[3.55rem] xl:text-[3.32rem] 2xl:text-[3.55rem]">
+              <span className="block whitespace-nowrap">{modelT('title')}</span>
+              <span className="mt-2 block origin-left bg-[linear-gradient(90deg,#78b8ff_0%,#6e8cff_36%,#b35cff_100%)] bg-clip-text whitespace-nowrap text-transparent xl:scale-x-[0.82] 2xl:scale-x-[0.86]">
                 {modelT('highlight')}
               </span>
             </h2>
-            <p className="mt-8 max-w-[31rem] text-[1.04rem] leading-[1.88] text-[#9aa7bc] md:text-[1.16rem]">
+            <p className="mt-8 max-w-[31rem] text-[1.04rem] leading-[1.88] text-[#9aa7bc] md:text-[1.16rem] xl:max-w-[40rem]">
               {modelT('body')}
             </p>
             <Link
@@ -457,29 +457,29 @@ export function ModelMindMapSection() {
               </span>
               <span>{modelT('cta')}</span>
             </Link>
-            <div className="mt-34 inline-flex max-w-[25rem] items-center gap-3 rounded-[14px] border border-[#14383a] bg-[linear-gradient(135deg,rgba(8,29,29,0.92),rgba(8,13,22,0.96))] px-5 py-3.5 text-sm leading-7 text-[#d3e4de] shadow-[0_18px_60px_rgba(0,0,0,0.22)] md:text-[0.93rem]">
+            <div className="mt-30 inline-flex max-w-[24rem] items-center gap-3 rounded-[14px] border border-[#14383a] bg-[linear-gradient(135deg,rgba(8,29,29,0.92),rgba(8,13,22,0.96))] px-5 py-3.5 text-sm leading-7 text-[#d3e4de] shadow-[0_18px_60px_rgba(0,0,0,0.22)] md:text-[0.93rem]">
               <span className="text-lg text-[#ffd15f]">⚡</span>
               <span>{modelT('banner')}</span>
             </div>
           </div>
 
           <div
-            className="relative min-h-[34rem] transition-[opacity,transform] duration-300 ease-out md:min-h-[46rem]"
+            className="relative min-h-[34rem] transition-[opacity,transform] duration-300 ease-out md:min-h-[46rem] xl:absolute xl:top-[62px] xl:right-[252px] xl:left-[520px] xl:z-10 xl:min-h-0"
             style={{
-              opacity: 0.18 + revealProgress * 0.82,
-              transform: `translate3d(0, ${56 * (1 - revealProgress) - drift * 24}px, 0)`,
+              opacity: 0.32 + revealProgress * 0.68,
+              transform: `translate3d(0, ${28 * (1 - revealProgress) - drift * 18}px, 0)`,
             }}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_48%_46%,rgba(112,88,255,0.14),transparent_18%),radial-gradient(circle_at_50%_48%,rgba(190,61,255,0.1),transparent_26%),radial-gradient(circle_at_27%_56%,rgba(48,162,255,0.08),transparent_18%)]" />
-            <div className="relative flex min-h-[34rem] items-center justify-center md:min-h-[42rem] xl:pl-5">
-              <div className="relative h-[840px] w-[1120px] origin-center scale-[0.38] sm:scale-[0.46] lg:scale-[0.56] xl:-translate-x-16 xl:scale-[0.62] 2xl:-translate-x-14 2xl:scale-[0.72]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_48%_46%,rgba(112,88,255,0.18),transparent_18%),radial-gradient(circle_at_58%_48%,rgba(190,61,255,0.14),transparent_28%),radial-gradient(circle_at_24%_58%,rgba(48,162,255,0.08),transparent_18%)]" />
+            <div className="relative flex min-h-[34rem] items-center justify-center md:min-h-[42rem] xl:min-h-[760px] xl:pr-0">
+              <div className="relative h-[790px] w-[980px] origin-center scale-[0.44] sm:scale-[0.54] lg:scale-[0.68] xl:translate-x-0 xl:scale-[0.75] 2xl:translate-x-2 2xl:scale-[0.83]">
                 <div
                   className="relative h-full w-full transition-[transform,opacity] duration-300 ease-out"
                   style={{
-                    opacity: 0.18 + revealProgress * 0.82,
-                    transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 18}px, 0) scale(${
+                    opacity: 0.34 + revealProgress * 0.66,
+                    transform: `translate3d(0, ${10 * (1 - revealProgress) - drift * 12}px, 0) scale(${
                       0.9 + revealProgress * 0.1
-                    }) rotate(${drift * 2.4}deg)`,
+                    }) rotate(${drift * 1.8}deg)`,
                   }}
                 >
                   <svg
@@ -511,7 +511,7 @@ export function ModelMindMapSection() {
                         r={spark.tone === 'rose' ? 8 : 7}
                         fill={MODEL_TONE_STYLES[spark.tone].ring}
                         style={{
-                          opacity: 0.18 + revealProgress * 0.78,
+                          opacity: 0.28 + revealProgress * 0.72,
                         }}
                       />
                     ))}
@@ -560,9 +560,9 @@ export function ModelMindMapSection() {
                   </svg>
 
                   <div
-                    className="absolute top-1/2 left-1/2 z-20 h-[290px] w-[290px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#6f59ff]/30 bg-[radial-gradient(circle_at_50%_36%,rgba(101,124,255,0.26),rgba(85,40,172,0.84)_58%,rgba(15,12,33,0.96)_100%)] shadow-[0_0_0_24px_rgba(121,90,255,0.05),0_0_120px_rgba(118,74,255,0.2)]"
+                    className="absolute top-1/2 left-1/2 z-20 h-[336px] w-[336px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#6f59ff]/32 bg-[radial-gradient(circle_at_50%_36%,rgba(101,124,255,0.28),rgba(85,40,172,0.84)_58%,rgba(15,12,33,0.97)_100%)] shadow-[0_0_0_24px_rgba(121,90,255,0.05),0_0_120px_rgba(118,74,255,0.2)]"
                     style={{
-                      opacity: 0.28 + revealProgress * 0.72,
+                      opacity: 0.42 + revealProgress * 0.58,
                       animation: prefersReducedMotion
                         ? 'none'
                         : 'corePulse 6s ease-in-out infinite',
@@ -573,14 +573,14 @@ export function ModelMindMapSection() {
                       })`,
                     }}
                   >
-                    <div className="absolute inset-[18px] rounded-full border border-white/10" />
-                    <div className="absolute inset-[-18px] rounded-full border border-[#5b72ff]/12" />
+                    <div className="absolute inset-[20px] rounded-full border border-white/10" />
+                    <div className="absolute inset-[-16px] rounded-full border border-[#5b72ff]/12" />
                     <div className="relative flex h-full flex-col items-center justify-center px-10 text-center">
-                      <BrainCircuit className="h-15 w-15 text-[#85adff]" />
-                      <p className="mt-5 text-[2.25rem] font-semibold tracking-tight text-white">
+                      <BrainCircuit className="h-[4.4rem] w-[4.4rem] text-[#76a1ff]" />
+                      <p className="mt-5 text-[2.35rem] font-semibold tracking-tight text-white">
                         {modelT('centerTitle')}
                       </p>
-                      <p className="mt-3 max-w-[12rem] text-[0.98rem] leading-7 text-[#cfd6f4]">
+                      <p className="mt-3 max-w-[12rem] text-[0.96rem] leading-7 text-[#cfd6f4]">
                         {modelT('centerBody')}
                       </p>
                     </div>
@@ -599,15 +599,15 @@ export function ModelMindMapSection() {
                         style={{
                           left: `${provider.x}px`,
                           top: `${provider.y}px`,
-                          width: `${nodeSize + 40}px`,
+                          width: `${nodeSize + 36}px`,
                           transform: `translate(-50%, -50%) translate(${
-                            deltaX / 28 + drift * (provider.size === 'lg' ? 5 : 3)
+                            deltaX / 36 + drift * (provider.size === 'lg' ? 5 : 3)
                           }px, ${
-                            deltaY / 30 -
+                            deltaY / 38 -
                             drift * (provider.size === 'lg' ? 4 : 2) +
-                            18 * (1 - revealProgress)
+                            8 * (1 - revealProgress)
                           }px) scale(${0.72 + revealProgress * 0.28})`,
-                          opacity: 0.08 + revealProgress * 0.92,
+                          opacity: 0.18 + revealProgress * 0.82,
                           transitionDuration: prefersReducedMotion
                             ? '0ms'
                             : `${320 + (provider.size === 'lg' ? 120 : 80)}ms`,
@@ -659,7 +659,7 @@ export function ModelMindMapSection() {
                               />
                             </div>
                           </div>
-                          <p className="mt-3 max-w-[9rem] text-[1.02rem] leading-tight font-semibold text-white">
+                          <p className="mt-3 max-w-[8.4rem] text-[0.98rem] leading-tight font-semibold text-white">
                             {provider.name}
                           </p>
                         </div>
@@ -672,18 +672,18 @@ export function ModelMindMapSection() {
           </div>
 
           <aside
-            className="rounded-[26px] border border-white/7 bg-[linear-gradient(180deg,rgba(13,17,25,0.96),rgba(9,12,20,0.98))] p-6 shadow-[0_22px_100px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-300 ease-out md:p-6 xl:mt-1"
+            className="w-[312px] justify-self-end rounded-[22px] border border-white/7 bg-[linear-gradient(180deg,rgba(13,17,25,0.96),rgba(9,12,20,0.98))] p-6 shadow-[0_22px_100px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-300 ease-out md:p-6 xl:absolute xl:top-[52px] xl:right-0 xl:z-20 xl:w-[262px] xl:px-5"
             style={{
-              opacity: 0.12 + revealProgress * 0.88,
-              transform: `translate3d(${58 * (1 - revealProgress)}px, ${
-                18 * (1 - revealProgress) + drift * 14
+              opacity: 0.22 + revealProgress * 0.78,
+              transform: `translate3d(${34 * (1 - revealProgress)}px, ${
+                10 * (1 - revealProgress) + drift * 10
               }px, 0)`,
             }}
           >
-            <p className="text-[1.75rem] font-semibold tracking-tight text-white">
+            <p className="text-[1.62rem] font-semibold tracking-tight text-white">
               {modelT('summaryTitle')}
             </p>
-            <div className="mt-6 space-y-3">
+            <div className="mt-5 space-y-3">
               {MODEL_SUMMARY_KEYS.map((key) => {
                 const Icon =
                   key === 'text'
@@ -699,16 +699,16 @@ export function ModelMindMapSection() {
                 return (
                   <div
                     key={key}
-                    className="flex items-start gap-3 rounded-[18px] border border-white/6 bg-white/[0.025] px-4 py-3.5"
+                    className="flex items-start gap-3 rounded-[18px] border border-white/6 bg-white/[0.025] px-4 py-3"
                   >
                     <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border border-[#1f3555] bg-[#091321] text-[#4ad7ff]">
                       <Icon className="h-4.5 w-4.5" />
                     </div>
                     <div>
-                      <p className="text-[1rem] font-semibold text-white">
+                      <p className="text-[0.98rem] font-semibold text-white">
                         {modelT(`capabilities.${key}.title`)}
                       </p>
-                      <p className="mt-1 text-[0.92rem] leading-6 text-[#9db0c6]">
+                      <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
                         {modelT(`capabilities.${key}.body`)}
                       </p>
                     </div>
@@ -717,7 +717,7 @@ export function ModelMindMapSection() {
               })}
             </div>
 
-            <div className="mt-7 border-t border-white/8 pt-6">
+            <div className="mt-6 border-t border-white/8 pt-6">
               <p className="text-sm tracking-[0.2em] text-[#89a0b8] uppercase">
                 {modelT('summaryCountLabel')}
               </p>
