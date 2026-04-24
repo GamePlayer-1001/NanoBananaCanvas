@@ -101,18 +101,18 @@
             "title": "视频生成",
             "body": "动态视频创作、镜头扩写与场景延展。"
           },
+          "threed": {
+            "title": "3D 生成",
+            "body": "三维模型生成与空间内容构建。"
+          },
           "audio": {
             "title": "语音合成",
             "body": "自然语音生成、音频处理与多模态配音。"
-          },
-          "routing": {
-            "title": "模型路由",
-            "body": "让不同模型按节点协同工作，而不是彼此割裂。"
           }
         },
         "summaryCountLabel": "已接入模型",
         "summaryCountValue": "{count}+",
-        "summaryStatus": "持续更新中"
+        "summaryStatus": "持续更新中..."
       },
       "features": {
         "eyebrow": "功能特性",

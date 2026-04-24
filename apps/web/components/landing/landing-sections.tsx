@@ -15,9 +15,9 @@ import {
   BrainCircuit,
   Check,
   CircleHelp,
+  Cuboid,
   ImageIcon,
   Play,
-  Route,
   Sparkles,
   Star,
   Video,
@@ -31,10 +31,12 @@ import { Link } from '@/i18n/navigation'
 type ModelProvider = {
   name: string
   logoUrl: string
-  orbit: 1 | 2 | 3
-  angle: number
-  tone: 'ice' | 'teal' | 'amber' | 'coral'
+  x: number
+  y: number
+  size: 'sm' | 'md' | 'lg'
+  tone: 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
   logoScale?: number
+  logoFilter?: string
 }
 
 type ModelMotionState = {
@@ -54,177 +56,215 @@ function buildVendorFaviconUrl(domain: string) {
 const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'OpenAI',
-    logoUrl: buildVendorFaviconUrl('openai.com'),
-    orbit: 3,
-    angle: -88,
-    tone: 'ice',
+    logoUrl: buildSimpleIconUrl('openai'),
+    x: 520,
+    y: 62,
+    size: 'lg',
+    tone: 'azure',
+    logoFilter:
+      'brightness(0) saturate(100%) invert(98%) sepia(6%) saturate(396%) hue-rotate(182deg) brightness(106%) contrast(100%)',
   },
   {
     name: 'Google',
     logoUrl: buildSimpleIconUrl('google'),
-    orbit: 3,
-    angle: -38,
+    x: 736,
+    y: 122,
+    size: 'lg',
     tone: 'amber',
   },
   {
     name: 'Anthropic',
     logoUrl: buildSimpleIconUrl('anthropic'),
-    orbit: 3,
-    angle: -2,
-    tone: 'coral',
+    x: 922,
+    y: 236,
+    size: 'lg',
+    tone: 'violet',
+    logoFilter:
+      'brightness(0) saturate(100%) invert(97%) sepia(18%) saturate(329%) hue-rotate(188deg) brightness(102%) contrast(101%)',
   },
   {
     name: 'Gemini',
     logoUrl: buildSimpleIconUrl('googlegemini'),
-    orbit: 3,
-    angle: 28,
-    tone: 'ice',
+    x: 1012,
+    y: 402,
+    size: 'md',
+    tone: 'violet',
   },
   {
     name: 'Alibaba Wan',
     logoUrl: buildSimpleIconUrl('alibabacloud'),
-    orbit: 3,
-    angle: 48,
+    x: 1044,
+    y: 570,
+    size: 'md',
     tone: 'amber',
     logoScale: 0.68,
   },
   {
     name: 'Midjourney',
     logoUrl: buildVendorFaviconUrl('midjourney.com'),
-    orbit: 3,
-    angle: 76,
+    x: 924,
+    y: 692,
+    size: 'md',
     tone: 'amber',
   },
   {
     name: 'OpenRouter',
     logoUrl: buildSimpleIconUrl('openrouter'),
-    orbit: 3,
-    angle: 112,
-    tone: 'ice',
+    x: 636,
+    y: 794,
+    size: 'md',
+    tone: 'violet',
     logoScale: 0.7,
+    logoFilter:
+      'brightness(0) saturate(100%) invert(99%) sepia(3%) saturate(437%) hue-rotate(183deg) brightness(112%) contrast(100%)',
   },
   {
     name: 'Runway',
     logoUrl: buildVendorFaviconUrl('runwayml.com'),
-    orbit: 3,
-    angle: 166,
-    tone: 'teal',
+    x: 146,
+    y: 608,
+    size: 'md',
+    tone: 'azure',
   },
   {
     name: 'Luma',
     logoUrl: buildVendorFaviconUrl('luma.ai'),
-    orbit: 3,
-    angle: 198,
+    x: 34,
+    y: 480,
+    size: 'lg',
     tone: 'teal',
   },
   {
     name: 'Vidu',
     logoUrl: buildVendorFaviconUrl('vidu.com'),
-    orbit: 3,
-    angle: 232,
-    tone: 'ice',
+    x: 170,
+    y: 320,
+    size: 'md',
+    tone: 'azure',
   },
   {
     name: 'Groq',
     logoUrl: buildVendorFaviconUrl('groq.com'),
-    orbit: 3,
-    angle: 258,
-    tone: 'ice',
+    x: 320,
+    y: 184,
+    size: 'md',
+    tone: 'azure',
   },
   {
     name: 'xAI',
     logoUrl: buildVendorFaviconUrl('x.ai'),
-    orbit: 3,
-    angle: 300,
+    x: 408,
+    y: 102,
+    size: 'lg',
     tone: 'teal',
   },
   {
     name: 'ByteDance',
     logoUrl: buildSimpleIconUrl('bytedance'),
-    orbit: 2,
-    angle: 18,
-    tone: 'ice',
+    x: 856,
+    y: 530,
+    size: 'md',
+    tone: 'violet',
   },
   {
     name: 'Kling',
     logoUrl: buildVendorFaviconUrl('klingai.com'),
-    orbit: 2,
-    angle: 66,
+    x: 740,
+    y: 720,
+    size: 'md',
     tone: 'teal',
   },
   {
     name: 'Qwen',
     logoUrl: buildVendorFaviconUrl('chat.qwen.ai'),
-    orbit: 2,
-    angle: 136,
-    tone: 'coral',
+    x: 494,
+    y: 688,
+    size: 'sm',
+    tone: 'violet',
   },
   {
     name: 'Black Forest',
     logoUrl: buildVendorFaviconUrl('blackforestlabs.ai'),
-    orbit: 2,
-    angle: 154,
+    x: 292,
+    y: 722,
+    size: 'sm',
     tone: 'teal',
   },
   {
     name: 'MiniMax',
     logoUrl: buildSimpleIconUrl('minimax'),
-    orbit: 2,
-    angle: 214,
-    tone: 'coral',
+    x: 336,
+    y: 470,
+    size: 'md',
+    tone: 'rose',
   },
   {
     name: 'DeepSeek',
     logoUrl: buildVendorFaviconUrl('deepseek.com'),
-    orbit: 1,
-    angle: 150,
-    tone: 'ice',
+    x: 236,
+    y: 564,
+    size: 'sm',
+    tone: 'azure',
   },
 ]
 
 const MODEL_CANVAS = {
-  width: 1180,
-  height: 860,
-  centerX: 590,
-  centerY: 420,
+  width: 1120,
+  height: 840,
+  centerX: 560,
+  centerY: 418,
 } as const
 
-const MODEL_RING_RADII = [168, 272, 384] as const
-
-const MODEL_ORBITS = {
-  1: { x: 236, y: 182 },
-  2: { x: 344, y: 262 },
-  3: { x: 438, y: 332 },
+const MODEL_RING_RADII = [154, 246, 342] as const
+const MODEL_NODE_SIZES = {
+  sm: 88,
+  md: 100,
+  lg: 114,
 } as const
+const MODEL_SPARKS = [
+  { x: 448, y: 236, tone: 'azure' },
+  { x: 760, y: 234, tone: 'rose' },
+  { x: 812, y: 320, tone: 'violet' },
+  { x: 560, y: 642, tone: 'violet' },
+  { x: 376, y: 600, tone: 'azure' },
+  { x: 196, y: 364, tone: 'azure' },
+  { x: 774, y: 664, tone: 'rose' },
+] as const
 
 const MODEL_TONE_STYLES = {
-  ice: {
-    ring: 'rgba(117, 207, 255, 0.42)',
-    glow: 'rgba(117, 207, 255, 0.22)',
-    text: '#dff4ff',
-    fill: 'radial-gradient(circle at 30% 25%, rgba(117,207,255,0.18), rgba(7,14,24,0.96) 72%)',
+  azure: {
+    ring: 'rgba(95, 173, 255, 0.72)',
+    glow: 'rgba(95, 173, 255, 0.18)',
+    text: '#eef7ff',
+    fill: 'radial-gradient(circle at 30% 26%, rgba(80,158,255,0.22), rgba(8,11,18,0.94) 72%)',
   },
   teal: {
-    ring: 'rgba(96, 214, 193, 0.4)',
-    glow: 'rgba(96, 214, 193, 0.2)',
-    text: '#dcfff6',
-    fill: 'radial-gradient(circle at 32% 28%, rgba(96,214,193,0.18), rgba(6,14,18,0.96) 72%)',
+    ring: 'rgba(84, 214, 188, 0.68)',
+    glow: 'rgba(84, 214, 188, 0.16)',
+    text: '#ebfffa',
+    fill: 'radial-gradient(circle at 30% 26%, rgba(84,214,188,0.18), rgba(6,12,18,0.94) 72%)',
   },
   amber: {
-    ring: 'rgba(245, 187, 102, 0.42)',
-    glow: 'rgba(245, 187, 102, 0.2)',
-    text: '#fff3d8',
-    fill: 'radial-gradient(circle at 34% 26%, rgba(245,187,102,0.17), rgba(18,14,10,0.96) 72%)',
+    ring: 'rgba(255, 162, 75, 0.66)',
+    glow: 'rgba(255, 162, 75, 0.16)',
+    text: '#fff3e6',
+    fill: 'radial-gradient(circle at 30% 26%, rgba(255,162,75,0.18), rgba(19,13,10,0.95) 72%)',
   },
-  coral: {
-    ring: 'rgba(255, 152, 122, 0.38)',
-    glow: 'rgba(255, 152, 122, 0.18)',
-    text: '#ffe7df',
-    fill: 'radial-gradient(circle at 34% 26%, rgba(255,152,122,0.16), rgba(20,12,13,0.96) 72%)',
+  violet: {
+    ring: 'rgba(166, 103, 255, 0.72)',
+    glow: 'rgba(166, 103, 255, 0.18)',
+    text: '#f3eaff',
+    fill: 'radial-gradient(circle at 30% 26%, rgba(166,103,255,0.2), rgba(13,10,22,0.95) 72%)',
+  },
+  rose: {
+    ring: 'rgba(255, 96, 179, 0.68)',
+    glow: 'rgba(255, 96, 179, 0.16)',
+    text: '#ffeaf4',
+    fill: 'radial-gradient(circle at 30% 26%, rgba(255,96,179,0.2), rgba(20,8,17,0.95) 72%)',
   },
 } as const
 
-const MODEL_SUMMARY_KEYS = ['text', 'image', 'video', 'audio', 'routing'] as const
+const MODEL_SUMMARY_KEYS = ['text', 'image', 'video', 'threed', 'audio'] as const
 const INITIAL_MODEL_MOTION: ModelMotionState = { progress: 0, reveal: 0, drift: -1 }
 
 const FEATURE_KEYS = ['canvas', 'models', 'outputs', 'sharing'] as const
@@ -381,13 +421,14 @@ export function ModelMindMapSection() {
     <section
       ref={sectionRef}
       id="models"
-      className="relative overflow-hidden bg-[#080b11] px-4 py-28 sm:px-6 lg:px-8 lg:py-32 xl:px-10"
+      className="relative overflow-hidden bg-[#06080f] px-4 py-18 sm:px-6 lg:min-h-[calc(100vh-64px)] lg:px-8 lg:py-20 xl:px-10"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_58%_44%,rgba(70,122,205,0.16),transparent_26%),radial-gradient(circle_at_18%_88%,rgba(74,179,162,0.14),transparent_28%),linear-gradient(180deg,rgba(5,8,13,0.12),rgba(5,8,13,0.72))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_76%,rgba(44,146,164,0.16),transparent_24%),radial-gradient(circle_at_57%_48%,rgba(112,84,255,0.2),transparent_24%),radial-gradient(circle_at_81%_53%,rgba(190,58,255,0.14),transparent_18%),linear-gradient(180deg,#090b13_0%,#05070e_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(102,137,255,0.4),transparent)]" />
       <div className="relative w-full">
-        <div className="grid gap-8 xl:grid-cols-[0.82fr_1.2fr_0.62fr] xl:items-start">
+        <div className="grid gap-10 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.08fr)_minmax(270px,0.42fr)] xl:items-center">
           <div
-            className="max-w-[37rem] pt-4 transition-[opacity,transform] duration-300 ease-out"
+            className="max-w-[34rem] pt-3 transition-[opacity,transform] duration-300 ease-out"
             style={{
               opacity: 0.14 + revealProgress * 0.86,
               transform: `translate3d(${-68 * (1 - revealProgress)}px, ${
@@ -395,51 +436,50 @@ export function ModelMindMapSection() {
               }px, 0)`,
             }}
           >
-            <p className="text-[0.95rem] font-medium tracking-[0.22em] text-[#7f92a8] uppercase">
+            <p className="text-[0.95rem] font-medium tracking-[0.22em] text-[#8b9bb6] uppercase">
               {modelT('eyebrow')}
             </p>
-            <h2 className="mt-7 max-w-[37rem] text-[3rem] leading-[0.92] font-semibold tracking-[-0.04em] text-white md:text-[4.6rem] xl:text-[5.2rem]">
+            <h2 className="mt-7 max-w-[44rem] text-[3.05rem] leading-[0.9] font-semibold tracking-[-0.07em] text-white md:text-[4rem] xl:text-[4.2rem] 2xl:text-[4.25rem]">
               <span className="block xl:whitespace-nowrap">{modelT('title')}</span>
-              <span className="mt-2 block bg-[linear-gradient(90deg,#78b8ff_0%,#7fd9d7_42%,#cdd997_74%,#b55cff_100%)] bg-clip-text text-transparent xl:whitespace-nowrap">
+              <span className="mt-2 block bg-[linear-gradient(90deg,#75afff_0%,#6692ff_35%,#9a5fff_100%)] bg-clip-text text-transparent xl:whitespace-nowrap">
                 {modelT('highlight')}
               </span>
             </h2>
-            <p className="mt-8 max-w-[32rem] text-[1rem] leading-[1.82] text-[#98a4b6] md:text-[1.13rem] md:leading-[1.84]">
+            <p className="mt-8 max-w-[31rem] text-[1.04rem] leading-[1.88] text-[#9aa7bc] md:text-[1.16rem]">
               {modelT('body')}
             </p>
             <Link
               href="/contact"
-              className="mt-10 inline-flex items-center gap-3 rounded-full border border-[#2d3858] bg-[linear-gradient(180deg,rgba(26,34,58,0.96),rgba(16,23,38,0.96))] px-6 py-4 text-[1rem] font-semibold text-white shadow-[0_14px_42px_rgba(10,16,36,0.28)] transition-transform duration-200 hover:-translate-y-0.5"
+              className="mt-10 inline-flex items-center gap-3 rounded-full border border-[#2a3555] bg-[linear-gradient(180deg,rgba(18,24,44,0.98),rgba(11,16,28,0.96))] px-7 py-4 text-[1rem] font-semibold text-white shadow-[0_18px_50px_rgba(3,8,18,0.34)] transition-transform duration-200 hover:-translate-y-0.5"
             >
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#5f69ff]/18 text-[#7b83ff]">
                 <Play className="ml-0.5 h-3 w-3 fill-current" />
               </span>
               <span>{modelT('cta')}</span>
             </Link>
-            <div className="mt-36 inline-flex max-w-[25rem] items-center gap-3 rounded-[14px] border border-[#1b3d3a] bg-[linear-gradient(135deg,rgba(12,27,29,0.92),rgba(10,15,24,0.94))] px-5 py-3.5 text-sm leading-7 text-[#d2e5dd] shadow-[0_18px_60px_rgba(0,0,0,0.18)] md:text-[0.93rem]">
-              <span className="text-lg text-[#f8c46f]">✦</span>
+            <div className="mt-34 inline-flex max-w-[25rem] items-center gap-3 rounded-[14px] border border-[#14383a] bg-[linear-gradient(135deg,rgba(8,29,29,0.92),rgba(8,13,22,0.96))] px-5 py-3.5 text-sm leading-7 text-[#d3e4de] shadow-[0_18px_60px_rgba(0,0,0,0.22)] md:text-[0.93rem]">
+              <span className="text-lg text-[#ffd15f]">⚡</span>
               <span>{modelT('banner')}</span>
             </div>
           </div>
 
           <div
-            className="relative min-h-[36rem] overflow-hidden rounded-[36px] border border-white/8 bg-[linear-gradient(180deg,rgba(8,12,18,0.98),rgba(6,9,14,0.94))] px-3 py-4 shadow-[0_36px_140px_rgba(0,0,0,0.36)] transition-[opacity,transform] duration-300 ease-out md:min-h-[46rem] md:px-5 md:py-6"
+            className="relative min-h-[34rem] transition-[opacity,transform] duration-300 ease-out md:min-h-[46rem]"
             style={{
               opacity: 0.18 + revealProgress * 0.82,
               transform: `translate3d(0, ${56 * (1 - revealProgress) - drift * 24}px, 0)`,
             }}
           >
-            <div className="absolute inset-0 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:42px_42px] opacity-40" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(70,122,205,0.16),transparent_25%),radial-gradient(circle_at_26%_76%,rgba(74,179,162,0.13),transparent_22%),radial-gradient(circle_at_78%_72%,rgba(245,187,102,0.12),transparent_21%)]" />
-            <div className="relative flex min-h-[33rem] items-center justify-center md:min-h-[42rem]">
-              <div className="relative h-[860px] w-[1180px] origin-center scale-[0.45] sm:scale-[0.55] lg:scale-[0.68] xl:scale-[0.8] 2xl:scale-[0.92]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_48%_46%,rgba(112,88,255,0.14),transparent_18%),radial-gradient(circle_at_50%_48%,rgba(190,61,255,0.1),transparent_26%),radial-gradient(circle_at_27%_56%,rgba(48,162,255,0.08),transparent_18%)]" />
+            <div className="relative flex min-h-[34rem] items-center justify-center md:min-h-[42rem] xl:pl-5">
+              <div className="relative h-[840px] w-[1120px] origin-center scale-[0.38] sm:scale-[0.46] lg:scale-[0.56] xl:-translate-x-16 xl:scale-[0.62] 2xl:-translate-x-14 2xl:scale-[0.72]">
                 <div
                   className="relative h-full w-full transition-[transform,opacity] duration-300 ease-out"
                   style={{
                     opacity: 0.18 + revealProgress * 0.82,
                     transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 18}px, 0) scale(${
-                      0.88 + revealProgress * 0.12
-                    }) rotate(${drift * 2.8}deg)`,
+                      0.9 + revealProgress * 0.1
+                    }) rotate(${drift * 2.4}deg)`,
                   }}
                 >
                   <svg
@@ -454,44 +494,61 @@ export function ModelMindMapSection() {
                         cx={MODEL_CANVAS.centerX}
                         cy={MODEL_CANVAS.centerY}
                         r={radius}
-                        stroke="rgba(163,189,217,0.13)"
+                        stroke={
+                          index === 0
+                            ? 'rgba(112,141,255,0.18)'
+                            : 'rgba(118,132,188,0.12)'
+                        }
                         strokeWidth={index === 0 ? 1.4 : 1}
                       />
                     ))}
 
+                    {MODEL_SPARKS.map((spark, index) => (
+                      <circle
+                        key={`${spark.x}-${spark.y}-${index}`}
+                        cx={spark.x}
+                        cy={spark.y}
+                        r={spark.tone === 'rose' ? 8 : 7}
+                        fill={MODEL_TONE_STYLES[spark.tone].ring}
+                        style={{
+                          opacity: 0.18 + revealProgress * 0.78,
+                        }}
+                      />
+                    ))}
+
                     {MODEL_PROVIDERS.map((provider, index) => {
-                      const angle = (provider.angle * Math.PI) / 180
-                      const orbit = MODEL_ORBITS[provider.orbit]
                       const tone = MODEL_TONE_STYLES[provider.tone]
-                      const x = MODEL_CANVAS.centerX + Math.cos(angle) * orbit.x
-                      const y = MODEL_CANVAS.centerY + Math.sin(angle) * orbit.y
-                      const c1x = MODEL_CANVAS.centerX + Math.cos(angle) * orbit.x * 0.28
-                      const c1y = MODEL_CANVAS.centerY + Math.sin(angle) * orbit.y * 0.12
-                      const c2x = MODEL_CANVAS.centerX + Math.cos(angle) * orbit.x * 0.78
-                      const c2y = MODEL_CANVAS.centerY + Math.sin(angle) * orbit.y * 0.88
+                      const deltaX = provider.x - MODEL_CANVAS.centerX
+                      const deltaY = provider.y - MODEL_CANVAS.centerY
+                      const c1x =
+                        MODEL_CANVAS.centerX + deltaX * 0.24 + (deltaY > 0 ? 18 : -18)
+                      const c1y = MODEL_CANVAS.centerY + deltaY * 0.1
+                      const c2x =
+                        MODEL_CANVAS.centerX + deltaX * 0.76 - (deltaY > 0 ? 10 : -10)
+                      const c2y = MODEL_CANVAS.centerY + deltaY * 0.88
 
                       return (
                         <g key={provider.name}>
                           <path
-                            d={`M${MODEL_CANVAS.centerX} ${MODEL_CANVAS.centerY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x} ${y}`}
+                            d={`M${MODEL_CANVAS.centerX} ${MODEL_CANVAS.centerY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${provider.x} ${provider.y}`}
                             stroke={tone.ring}
-                            strokeWidth={provider.orbit === 3 ? 1.8 : 1.45}
+                            strokeWidth={provider.size === 'lg' ? 1.7 : 1.4}
                             strokeLinecap="round"
-                            strokeDasharray="5 11"
+                            strokeDasharray="4 11"
                             className="transition-opacity duration-700 ease-out"
                             style={{
-                              opacity: 0.12 + revealProgress * 0.74,
-                              animation: `dashFlow ${4.6 + provider.orbit * 0.5}s linear infinite`,
+                              opacity: 0.16 + revealProgress * 0.72,
+                              animation: `dashFlow ${4.8 + (index % 4) * 0.45}s linear infinite`,
                               animationDelay: `${index * 0.12}s`,
                             }}
                           />
                           <circle
-                            cx={x}
-                            cy={y}
-                            r="4.8"
+                            cx={provider.x}
+                            cy={provider.y}
+                            r="5.5"
                             fill={tone.ring}
                             style={{
-                              opacity: 0.2 + revealProgress * 0.8,
+                              opacity: 0.26 + revealProgress * 0.74,
                               transition: prefersReducedMotion
                                 ? 'opacity 0ms linear'
                                 : 'opacity 280ms ease',
@@ -503,61 +560,57 @@ export function ModelMindMapSection() {
                   </svg>
 
                   <div
-                    className="absolute top-1/2 left-1/2 z-20 h-[268px] w-[268px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[radial-gradient(circle_at_40%_34%,rgba(110,156,239,0.36),rgba(26,33,64,0.95)_58%,rgba(8,10,18,0.98)_100%)] shadow-[0_0_0_18px_rgba(129,150,208,0.05),0_0_90px_rgba(77,121,214,0.18)]"
+                    className="absolute top-1/2 left-1/2 z-20 h-[290px] w-[290px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#6f59ff]/30 bg-[radial-gradient(circle_at_50%_36%,rgba(101,124,255,0.26),rgba(85,40,172,0.84)_58%,rgba(15,12,33,0.96)_100%)] shadow-[0_0_0_24px_rgba(121,90,255,0.05),0_0_120px_rgba(118,74,255,0.2)]"
                     style={{
-                      opacity: 0.24 + revealProgress * 0.76,
+                      opacity: 0.28 + revealProgress * 0.72,
                       animation: prefersReducedMotion
                         ? 'none'
                         : 'corePulse 6s ease-in-out infinite',
-                      boxShadow: `0 0 0 ${8 + revealProgress * 10}px rgba(129,150,208,${
-                        0.02 + revealProgress * 0.03
-                      }), 0 0 ${48 + revealProgress * 46}px rgba(77,121,214,${
-                        0.1 + revealProgress * 0.1
+                      boxShadow: `0 0 0 ${12 + revealProgress * 12}px rgba(118,95,255,${
+                        0.03 + revealProgress * 0.03
+                      }), 0 0 ${56 + revealProgress * 58}px rgba(125,77,255,${
+                        0.12 + revealProgress * 0.1
                       })`,
                     }}
                   >
                     <div className="absolute inset-[18px] rounded-full border border-white/10" />
+                    <div className="absolute inset-[-18px] rounded-full border border-[#5b72ff]/12" />
                     <div className="relative flex h-full flex-col items-center justify-center px-10 text-center">
-                      <BrainCircuit className="h-14 w-14 text-[#cfe2ff]" />
-                      <p className="mt-5 text-[2rem] font-semibold tracking-tight text-white">
+                      <BrainCircuit className="h-15 w-15 text-[#85adff]" />
+                      <p className="mt-5 text-[2.25rem] font-semibold tracking-tight text-white">
                         {modelT('centerTitle')}
                       </p>
-                      <p className="mt-3 max-w-[12rem] text-[0.96rem] leading-7 text-[#c8d3df]">
+                      <p className="mt-3 max-w-[12rem] text-[0.98rem] leading-7 text-[#cfd6f4]">
                         {modelT('centerBody')}
                       </p>
                     </div>
                   </div>
 
                   {MODEL_PROVIDERS.map((provider, index) => {
-                    const angle = (provider.angle * Math.PI) / 180
-                    const orbit = MODEL_ORBITS[provider.orbit]
                     const tone = MODEL_TONE_STYLES[provider.tone]
-                    const x = MODEL_CANVAS.centerX + Math.cos(angle) * orbit.x
-                    const y = MODEL_CANVAS.centerY + Math.sin(angle) * orbit.y
+                    const nodeSize = MODEL_NODE_SIZES[provider.size]
+                    const deltaX = provider.x - MODEL_CANVAS.centerX
+                    const deltaY = provider.y - MODEL_CANVAS.centerY
 
                     return (
                       <div
                         key={provider.name}
                         className="absolute z-30 transition-all ease-out"
                         style={{
-                          left: `${x}px`,
-                          top: `${y}px`,
-                          width:
-                            provider.orbit === 3
-                              ? '138px'
-                              : provider.orbit === 2
-                                ? '126px'
-                                : '118px',
+                          left: `${provider.x}px`,
+                          top: `${provider.y}px`,
+                          width: `${nodeSize + 40}px`,
                           transform: `translate(-50%, -50%) translate(${
-                            Math.cos(angle) * (42 * (1 - revealProgress) + drift * 12)
+                            deltaX / 28 + drift * (provider.size === 'lg' ? 5 : 3)
                           }px, ${
-                            Math.sin(angle) * (42 * (1 - revealProgress) - drift * 10) +
-                            16 * (1 - revealProgress)
+                            deltaY / 30 -
+                            drift * (provider.size === 'lg' ? 4 : 2) +
+                            18 * (1 - revealProgress)
                           }px) scale(${0.72 + revealProgress * 0.28})`,
                           opacity: 0.08 + revealProgress * 0.92,
                           transitionDuration: prefersReducedMotion
                             ? '0ms'
-                            : `${280 + provider.orbit * 80}ms`,
+                            : `${320 + (provider.size === 'lg' ? 120 : 80)}ms`,
                           transitionDelay: prefersReducedMotion
                             ? '0ms'
                             : `${80 + index * 18}ms`,
@@ -568,20 +621,29 @@ export function ModelMindMapSection() {
                           style={{
                             animation: prefersReducedMotion
                               ? 'none'
-                              : `providerBob ${5.2 + (index % 5) * 0.45}s ease-in-out infinite`,
+                              : `providerBob ${5.4 + (index % 5) * 0.42}s ease-in-out infinite`,
                           }}
                         >
                           <div
-                            className="flex h-[88px] w-[88px] items-center justify-center rounded-full border bg-[#070b12]/92 shadow-[0_22px_60px_rgba(0,0,0,0.34)]"
+                            className="relative flex items-center justify-center rounded-full border bg-[#070b12]/92 shadow-[0_24px_64px_rgba(0,0,0,0.34)]"
                             style={{
+                              height: `${nodeSize}px`,
+                              width: `${nodeSize}px`,
                               borderColor: tone.ring,
-                              boxShadow: `0 0 0 ${6 + revealProgress * 4}px ${tone.glow}, 0 ${
-                                16 + revealProgress * 10
-                              }px ${36 + revealProgress * 24}px rgba(0,0,0,0.34)`,
+                              boxShadow: `0 0 0 ${7 + revealProgress * 5}px ${tone.glow}, 0 ${
+                                18 + revealProgress * 12
+                              }px ${40 + revealProgress * 26}px rgba(0,0,0,0.36)`,
                               background: tone.fill,
                             }}
                           >
-                            <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-white/5 p-2">
+                            <div className="absolute inset-[7px] rounded-full border border-white/6" />
+                            <div
+                              className="relative flex items-center justify-center rounded-full bg-white/5 p-2"
+                              style={{
+                                height: `${Math.round(nodeSize * 0.44)}px`,
+                                width: `${Math.round(nodeSize * 0.44)}px`,
+                              }}
+                            >
                               <Image
                                 src={provider.logoUrl}
                                 alt={`${provider.name} logo`}
@@ -592,11 +654,12 @@ export function ModelMindMapSection() {
                                 referrerPolicy="no-referrer"
                                 style={{
                                   transform: `scale(${provider.logoScale ?? 1})`,
+                                  filter: provider.logoFilter,
                                 }}
                               />
                             </div>
                           </div>
-                          <p className="mt-3 max-w-[9rem] text-[0.98rem] leading-tight font-semibold text-white">
+                          <p className="mt-3 max-w-[9rem] text-[1.02rem] leading-tight font-semibold text-white">
                             {provider.name}
                           </p>
                         </div>
@@ -609,7 +672,7 @@ export function ModelMindMapSection() {
           </div>
 
           <aside
-            className="rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(13,17,25,0.96),rgba(8,11,17,0.98))] p-6 shadow-[0_22px_100px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-300 ease-out md:p-7 xl:mt-1"
+            className="rounded-[26px] border border-white/7 bg-[linear-gradient(180deg,rgba(13,17,25,0.96),rgba(9,12,20,0.98))] p-6 shadow-[0_22px_100px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-300 ease-out md:p-6 xl:mt-1"
             style={{
               opacity: 0.12 + revealProgress * 0.88,
               transform: `translate3d(${58 * (1 - revealProgress)}px, ${
@@ -617,7 +680,7 @@ export function ModelMindMapSection() {
               }px, 0)`,
             }}
           >
-            <p className="text-[1.65rem] font-semibold tracking-tight text-white">
+            <p className="text-[1.75rem] font-semibold tracking-tight text-white">
               {modelT('summaryTitle')}
             </p>
             <div className="mt-6 space-y-3">
@@ -629,16 +692,16 @@ export function ModelMindMapSection() {
                       ? ImageIcon
                       : key === 'video'
                         ? Video
-                        : key === 'audio'
-                          ? AudioLines
-                          : Route
+                        : key === 'threed'
+                          ? Cuboid
+                          : AudioLines
 
                 return (
                   <div
                     key={key}
-                    className="flex items-start gap-3 rounded-[22px] border border-white/6 bg-white/[0.025] px-4 py-3.5"
+                    className="flex items-start gap-3 rounded-[18px] border border-white/6 bg-white/[0.025] px-4 py-3.5"
                   >
-                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border border-[#243446] bg-[#0b1320] text-[#8cc4ff]">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border border-[#1f3555] bg-[#091321] text-[#4ad7ff]">
                       <Icon className="h-4.5 w-4.5" />
                     </div>
                     <div>
@@ -659,7 +722,7 @@ export function ModelMindMapSection() {
                 {modelT('summaryCountLabel')}
               </p>
               <div className="mt-3 flex items-end gap-3">
-                <span className="text-[3.2rem] leading-none font-semibold text-white">
+                <span className="bg-[linear-gradient(180deg,#ffffff_0%,#9d6fff_100%)] bg-clip-text text-[3.4rem] leading-none font-semibold text-transparent">
                   {modelT('summaryCountValue', { count: vendorCount })}
                 </span>
                 <span className="pb-2 text-sm text-[#8fb3d2]">
@@ -693,7 +756,7 @@ export function ModelMindMapSection() {
               transform: translate(-50%, -50%) scale(1);
             }
             50% {
-              transform: translate(-50%, -50%) scale(1.025);
+              transform: translate(-50%, -50%) scale(1.03);
             }
           }
         `}</style>

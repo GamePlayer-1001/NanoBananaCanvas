@@ -101,18 +101,18 @@
             "title": "Video generation",
             "body": "Motion creation, shot extension, and scene continuation."
           },
+          "threed": {
+            "title": "3D generation",
+            "body": "Build 3D assets and spatial scenes."
+          },
           "audio": {
             "title": "Audio synthesis",
             "body": "Natural voice generation, audio processing, and multimodal dubbing."
-          },
-          "routing": {
-            "title": "Model routing",
-            "body": "Make different models collaborate as one graph instead of isolated tools."
           }
         },
         "summaryCountLabel": "Integrated models",
         "summaryCountValue": "{count}+",
-        "summaryStatus": "Growing continuously"
+        "summaryStatus": "Growing continuously..."
       },
       "features": {
         "eyebrow": "Features",
