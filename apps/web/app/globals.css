@@ -191,8 +191,7 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-brand:
-    var(--font-brand-script), var(--font-geist-sans), ui-sans-serif, system-ui,
-    sans-serif;
+    var(--font-brand-script), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* 圆角 */
   --radius-sm: calc(var(--radius) - 4px);
@@ -258,22 +257,55 @@
 
 /* 滚动条美化 */
 @media (pointer: fine) {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
   }
 
-  ::-webkit-scrollbar-track {
+  [data-scrollbar-host] {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  html::-webkit-scrollbar,
+  [data-scrollbar-host]::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  html::-webkit-scrollbar-track,
+  [data-scrollbar-host]::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+  html::-webkit-scrollbar-thumb,
+  [data-scrollbar-host]::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+  html[data-scrollbars-visible='true'] {
+    scrollbar-color: rgba(148, 163, 184, 0.42) transparent;
+  }
+
+  html[data-scrollbars-visible='true'] [data-scrollbar-host],
+  [data-scrollbar-host][data-scrollbars-visible='true'] {
+    scrollbar-color: rgba(148, 163, 184, 0.42) transparent;
+  }
+
+  html[data-scrollbars-visible='true']::-webkit-scrollbar-thumb,
+  html[data-scrollbars-visible='true'] [data-scrollbar-host]::-webkit-scrollbar-thumb,
+  [data-scrollbar-host][data-scrollbars-visible='true']::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.42);
+  }
+
+  html[data-scrollbars-visible='true']::-webkit-scrollbar-thumb:hover,
+  html[data-scrollbars-visible='true']
+    [data-scrollbar-host]::-webkit-scrollbar-thumb:hover,
+  [data-scrollbar-host][data-scrollbars-visible='true']::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.68);
   }
 }
 

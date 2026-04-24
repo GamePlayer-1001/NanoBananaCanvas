@@ -17,6 +17,7 @@ import { zhCN } from '@clerk/localizations'
 import { ClerkProvider } from '@clerk/nextjs'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { headers } from 'next/headers'
+import Script from 'next/script'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { Geist, Geist_Mono, Kaushan_Script } from 'next/font/google'
@@ -85,7 +86,8 @@ export default async function LocaleLayout({
   setRequestLocale(locale)
   const messages = await getMessages()
   const requestHeaders = await headers()
-  const requestHost = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? ''
+  const requestHost =
+    requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? ''
   const shouldBypassClerkForLocalPreview =
     CLERK_PUBLISHABLE_KEY.startsWith('pk_live_') && isLocalPreviewHost(requestHost)
 
@@ -102,11 +104,78 @@ export default async function LocaleLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${brandScript.variable} antialiased`}
       >
+        <Script id="scrollbar-visibility" strategy="afterInteractive">
+          {`
+            (() => {
+              if (typeof window === 'undefined') return;
+              const mediaQuery = window.matchMedia('(pointer: fine)');
+              if (!mediaQuery.matches) return;
+
+              const root = document.documentElement;
+              let hideTimer = 0;
+
+              const setVisible = (visible) => {
+                if (visible) {
+                  root.setAttribute('data-scrollbars-visible', 'true');
+                } else {
+                  root.removeAttribute('data-scrollbars-visible');
+                }
+              };
+
+              const scheduleHide = (delay = 900) => {
+                window.clearTimeout(hideTimer);
+                hideTimer = window.setTimeout(() => setVisible(false), delay);
+              };
+
+              const showForAWhile = (delay = 900) => {
+                setVisible(true);
+                scheduleHide(delay);
+              };
+
+              const syncPointer = (event) => {
+                const nearRightEdge = window.innerWidth - event.clientX <= 28;
+                const nearBottomEdge = window.innerHeight - event.clientY <= 28;
+
+                if (nearRightEdge || nearBottomEdge) {
+                  showForAWhile(1200);
+                  return;
+                }
+
+                scheduleHide(180);
+              };
+
+              const handlePointerLeave = () => {
+                scheduleHide(120);
+              };
+
+              const handleKeyboardScroll = (event) => {
+                if (
+                  ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'Space'].includes(
+                    event.code,
+                  )
+                ) {
+                  showForAWhile(1100);
+                }
+              };
+
+              document.addEventListener('pointermove', syncPointer, { passive: true });
+              document.addEventListener('wheel', () => showForAWhile(1100), { passive: true });
+              document.addEventListener('scroll', () => showForAWhile(950), {
+                passive: true,
+                capture: true,
+              });
+              window.addEventListener('keydown', handleKeyboardScroll, { passive: true });
+              document.addEventListener('mouseleave', handlePointerLeave);
+            })();
+          `}
+        </Script>
         {shouldBypassClerkForLocalPreview ? (
           appTree
         ) : (
           <ClerkProvider
-            localization={localeDefinition.clerkLocalizationKey === 'zhCN' ? zhCN : undefined}
+            localization={
+              localeDefinition.clerkLocalizationKey === 'zhCN' ? zhCN : undefined
+            }
             signInUrl={CLERK_SIGN_IN_URL}
             signUpUrl={CLERK_SIGN_UP_URL}
             signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
