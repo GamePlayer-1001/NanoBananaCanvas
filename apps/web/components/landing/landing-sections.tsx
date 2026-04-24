@@ -288,11 +288,8 @@ const TESTIMONIAL_KEYS = [
   'director',
   'studio',
   'operator',
-  'agency',
   'previz',
   'ecommerce',
-  'education',
-  'game',
   'producer',
 ] as const
 const FAQ_KEYS = [
@@ -914,29 +911,26 @@ export function TestimonialsSection() {
   const testimonialsT = useTranslations('landing.sections.testimonials')
 
   return (
-    <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:min-h-screen lg:px-8 lg:py-28 xl:px-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_12%,rgba(79,70,229,0.14),transparent_22%),radial-gradient(circle_at_82%_78%,rgba(34,197,94,0.08),transparent_20%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
-      <div className="relative mx-auto w-full max-w-[1380px]">
-        <div className="mx-auto max-w-[56rem] text-center">
+    <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-22 sm:px-6 lg:px-8 lg:py-24 xl:px-10">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(79,70,229,0.1),transparent_20%),radial-gradient(circle_at_80%_78%,rgba(34,197,94,0.06),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
+      <div className="relative mx-auto w-full max-w-[1280px]">
+        <div className="mx-auto max-w-[48rem] text-center">
           <p className="text-sm font-medium tracking-[0.24em] text-white/42 uppercase">
             {testimonialsT('eyebrow')}
           </p>
-          <h2 className="mt-5 text-[2.85rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.4rem]">
+          <h2 className="mt-5 text-[2.35rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[3.45rem]">
             {testimonialsT('title')}
           </h2>
-          <p className="mx-auto mt-6 max-w-[48rem] text-[1rem] leading-8 text-white/58 md:text-[1.14rem] md:leading-9">
+          <p className="mx-auto mt-5 max-w-[42rem] text-[0.98rem] leading-8 text-white/58 md:text-[1.08rem]">
             {testimonialsT('body')}
-          </p>
-          <p className="mx-auto mt-5 max-w-[44rem] text-sm leading-7 text-white/34">
-            {testimonialsT('note')}
           </p>
         </div>
 
-        <div className="mt-16 columns-1 gap-5 md:columns-2 xl:columns-3">
+        <div className="mt-14 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {TESTIMONIAL_KEYS.map((key, index) => (
             <article
               key={key}
-              className={`mb-5 break-inside-avoid rounded-[30px] border p-6 shadow-[0_24px_70px_rgba(0,0,0,0.16)] ${
+              className={`rounded-[28px] border p-6 shadow-[0_20px_60px_rgba(0,0,0,0.16)] ${
                 index % 3 === 0
                   ? 'border-[#23314a] bg-[linear-gradient(180deg,rgba(16,22,36,0.96),rgba(10,13,22,0.96))]'
                   : index % 3 === 1
@@ -944,41 +938,20 @@ export function TestimonialsSection() {
                     : 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))]'
               }`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[0.75rem] font-semibold tracking-[0.26em] text-white/38 uppercase">
-                    {testimonialsT(`${key}.eyebrow`)}
-                  </p>
-                  <h3 className="mt-4 max-w-[16rem] text-[1.55rem] leading-[1.15] font-semibold tracking-tight text-white">
-                    {testimonialsT(`${key}.title`)}
-                  </h3>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[0.7rem] font-semibold tracking-[0.16em] text-white/46 uppercase">
-                  {testimonialsT('scenarioBadge')}
-                </span>
-              </div>
+              <p className="text-[0.74rem] font-semibold tracking-[0.24em] text-white/36 uppercase">
+                {testimonialsT(`${key}.eyebrow`)}
+              </p>
+              <h3 className="mt-4 max-w-[18rem] text-[1.38rem] leading-[1.18] font-semibold tracking-tight text-white">
+                {testimonialsT(`${key}.title`)}
+              </h3>
 
-              <p className="mt-6 text-[1.02rem] leading-8 text-white/78">
+              <p className="mt-5 text-[0.98rem] leading-8 text-white/76">
                 {testimonialsT(`${key}.quote`)}
               </p>
-
-              <div className="mt-6 flex flex-wrap gap-2">
-                {['tagOne', 'tagTwo', 'tagThree'].map((tagKey) => (
-                  <span
-                    key={tagKey}
-                    className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-[0.74rem] font-medium tracking-[0.08em] text-white/58 uppercase"
-                  >
-                    {testimonialsT(`${key}.${tagKey}`)}
-                  </span>
-                ))}
-              </div>
 
               <div className="mt-7 border-t border-white/8 pt-5">
                 <p className="text-sm font-medium text-white/92">
                   {testimonialsT(`${key}.role`)}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-white/42">
-                  {testimonialsT(`${key}.meta`)}
                 </p>
               </div>
             </article>
