@@ -16,6 +16,7 @@ import {
   Check,
   CircleHelp,
   ImageIcon,
+  Play,
   Route,
   Sparkles,
   Star,
@@ -375,15 +376,6 @@ export function ModelMindMapSection() {
   const revealProgress = prefersReducedMotion ? 1 : motion.reveal
   const drift = prefersReducedMotion ? 0 : motion.drift
   const vendorCount = MODEL_PROVIDERS.length
-  const titleText = modelT('title')
-  const highlightText = modelT('highlight')
-  const highlightDivider = highlightText.includes('，')
-    ? '，'
-    : highlightText.includes(',')
-      ? ','
-      : ''
-  const [highlightLead, ...highlightTailParts] = highlightText.split(/[，,]/)
-  const highlightTail = highlightTailParts.join(' ').trim()
 
   return (
     <section
@@ -393,9 +385,9 @@ export function ModelMindMapSection() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_58%_44%,rgba(70,122,205,0.16),transparent_26%),radial-gradient(circle_at_18%_88%,rgba(74,179,162,0.14),transparent_28%),linear-gradient(180deg,rgba(5,8,13,0.12),rgba(5,8,13,0.72))]" />
       <div className="relative w-full">
-        <div className="grid gap-8 xl:grid-cols-[0.7fr_1.32fr_0.64fr] xl:items-start">
+        <div className="grid gap-8 xl:grid-cols-[0.82fr_1.2fr_0.62fr] xl:items-start">
           <div
-            className="max-w-[31rem] pt-4 transition-[opacity,transform] duration-300 ease-out"
+            className="max-w-[37rem] pt-4 transition-[opacity,transform] duration-300 ease-out"
             style={{
               opacity: 0.14 + revealProgress * 0.86,
               transform: `translate3d(${-68 * (1 - revealProgress)}px, ${
@@ -403,25 +395,28 @@ export function ModelMindMapSection() {
               }px, 0)`,
             }}
           >
-            <p className="text-sm font-medium tracking-[0.24em] text-[#8aa0b8] uppercase">
+            <p className="text-[0.95rem] font-medium tracking-[0.22em] text-[#7f92a8] uppercase">
               {modelT('eyebrow')}
             </p>
-            <h2 className="mt-5 text-[3rem] leading-[0.92] font-semibold tracking-tight text-white md:text-[4.6rem] lg:text-[5.25rem]">
-              <span className="block lg:whitespace-nowrap">{titleText}</span>
-              <span className="mt-3 block bg-[linear-gradient(90deg,#8cc4ff_0%,#76d5c2_44%,#ffbe74_100%)] bg-clip-text text-transparent">
-                <span className="block lg:whitespace-nowrap">
-                  {highlightLead}
-                  {highlightDivider}
-                </span>
-                {highlightTail ? (
-                  <span className="block lg:whitespace-nowrap">{highlightTail}</span>
-                ) : null}
+            <h2 className="mt-7 max-w-[37rem] text-[3rem] leading-[0.92] font-semibold tracking-[-0.04em] text-white md:text-[4.6rem] xl:text-[5.2rem]">
+              <span className="block xl:whitespace-nowrap">{modelT('title')}</span>
+              <span className="mt-2 block bg-[linear-gradient(90deg,#78b8ff_0%,#7fd9d7_42%,#cdd997_74%,#b55cff_100%)] bg-clip-text text-transparent xl:whitespace-nowrap">
+                {modelT('highlight')}
               </span>
             </h2>
-            <p className="mt-8 max-w-[27rem] text-[1rem] leading-[1.95] text-[#b9c5d4] md:text-[1.12rem] md:leading-[1.9]">
+            <p className="mt-8 max-w-[32rem] text-[1rem] leading-[1.82] text-[#98a4b6] md:text-[1.13rem] md:leading-[1.84]">
               {modelT('body')}
             </p>
-            <div className="mt-9 inline-flex max-w-[26rem] items-center gap-3 rounded-2xl border border-[#23443f] bg-[linear-gradient(135deg,rgba(13,37,35,0.98),rgba(10,18,24,0.92))] px-5 py-4 text-sm leading-7 text-[#d9efe9] shadow-[0_18px_60px_rgba(0,0,0,0.28)] md:text-[0.96rem]">
+            <Link
+              href="/contact"
+              className="mt-10 inline-flex items-center gap-3 rounded-full border border-[#2d3858] bg-[linear-gradient(180deg,rgba(26,34,58,0.96),rgba(16,23,38,0.96))] px-6 py-4 text-[1rem] font-semibold text-white shadow-[0_14px_42px_rgba(10,16,36,0.28)] transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#5f69ff]/18 text-[#7b83ff]">
+                <Play className="ml-0.5 h-3 w-3 fill-current" />
+              </span>
+              <span>{modelT('cta')}</span>
+            </Link>
+            <div className="mt-36 inline-flex max-w-[25rem] items-center gap-3 rounded-[14px] border border-[#1b3d3a] bg-[linear-gradient(135deg,rgba(12,27,29,0.92),rgba(10,15,24,0.94))] px-5 py-3.5 text-sm leading-7 text-[#d2e5dd] shadow-[0_18px_60px_rgba(0,0,0,0.18)] md:text-[0.93rem]">
               <span className="text-lg text-[#f8c46f]">✦</span>
               <span>{modelT('banner')}</span>
             </div>
