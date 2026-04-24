@@ -7,8 +7,8 @@
 ## 成员清单
 
 ```
-landing-nav.tsx    — LandingNav Landing 全宽导航栏 (Logo + 模型/功能/定价/资源锚点链接 + 多语言切换 + 黑白 CTA)
-landing-footer.tsx — LandingFooter Landing 全宽页脚 (品牌列 + 产品/公司/联系链接 + 社媒入口 + 版权)
+landing-nav.tsx    — LandingNav Landing 全宽导航栏 (Logo + 模型/功能/定价真实路由 + Resources 下拉 + 多语言切换 + 主 CTA，企业版入口已移除)
+landing-footer.tsx — LandingFooter Landing 全宽页脚 (品牌列 + 产品/资源/公司/法务链接 + 社媒入口 + 版权；全部落到真实公开子页面)
 app-sidebar.tsx    — AppSidebar 应用侧边栏 200px (导航/工作区/底部链接/用户 Footer + 搜索命令入口 + 登录/登出状态入口 + 登录态积分/升级入口)
 mobile-header.tsx  — MobileHeader 移动端顶栏 (汉堡菜单 + Logo + Sheet 抽屉复用 AppSidebar，< lg 可见)
 ```

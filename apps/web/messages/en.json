@@ -22,7 +22,7 @@
   "landingSeo": {
     "eyebrow": "Search-ready AI workflow platform",
     "title": "One visual AI workflow builder for prompt systems, image pipelines, and video analysis",
-    "intro": "Nano Banana Canvas helps creators and teams design repeatable AI workflows in one visual canvas. Map prompts, connect models, share reusable templates, and keep production logic readable from idea to delivery.",
+    "intro": "Nano Banana Canvas helps creators and teams design repeatable AI workflows in one visual canvas. Map prompts, connect models, test GPT Image 2 prompt systems, share reusable templates, and keep production logic readable from idea to delivery.",
     "coverageTitle": "Global team coverage",
     "coverageBody": "The current product is built for distributed creator teams that need one shared workflow surface across time zones, languages, and production contexts.",
     "coverageRegionAmericas": "North America and remote US creator teams",
@@ -42,7 +42,7 @@
     "faqAnswer3": "Yes. The current product positioning explicitly supports distributed teams across North America, Europe, and Asia-Pacific, with English and Chinese product messaging available today.",
     "structuredDescription": "Visual AI workflow builder for creators and teams. Build prompt systems, image pipelines, video analysis flows, and reusable templates in one canvas.",
     "featureWorkflow": "Visual workflow builder for prompt systems and creator operations",
-    "featureImageVideo": "Image generation, video analysis, and multimodal production pipelines",
+    "featureImageVideo": "Image generation, GPT Image 2 prompt systems, video analysis, and multimodal production pipelines",
     "featureTemplates": "Reusable workflow templates for teams and community sharing"
   },
   "notFound": {
@@ -54,14 +54,27 @@
       "models": "Models",
       "features": "Features",
       "pricing": "Pricing",
-      "enterprise": "Enterprise",
       "resources": "Resources",
-      "startCreating": "Start Creating"
+      "startCreating": "Start Creating",
+      "resourcesItems": {
+        "docs": {
+          "title": "Docs",
+          "body": "Read the product map, quick starts, and public operating notes."
+        },
+        "community": {
+          "title": "Community",
+          "body": "Discover published workflows, creator feedback, and public examples."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Talk with the Nano Banana Canvas team across public support channels."
+        }
+      }
     },
     "hero": {
       "heading": "Nano Banana Canvas",
       "tagline": "Infinite Canvas. Infinite Flow.",
-      "description": "Build cinematic stories on an infinite canvas. Connect image, video, LLM, and 3D models in one visual workflow — from first prompt to final cut.",
+      "description": "Build cinematic stories on an infinite canvas. Connect image, video, LLM, GPT Image 2 prompt experiments, and 3D models in one visual workflow — from first prompt to final cut.",
       "cta": "Start Creating",
       "models": "The visual AI platform for filmmakers and creators.",
       "nodes": {
@@ -82,7 +95,7 @@
         "eyebrow": "Model cloud",
         "title": "Connect Models Visually.",
         "highlight": "Like a Living Cloud.",
-        "body": "Drag any AI node — Stable Diffusion, Pika, Runway, GPT-4o, ElevenLabs — onto the infinite canvas. Connect them visually. Run sequences, loop generations, build conditional paths. Your entire pre-production and production pipeline lives here.",
+        "body": "Drag any AI node — GPT Image 2 style image prompts, Black Forest image models, Runway, GPT-4o, ElevenLabs — onto the infinite canvas. Connect them visually. Run sequences, loop generations, build conditional paths. Your entire pre-production and production pipeline lives here.",
         "cta": "Explore model support",
         "banner": "A model cloud you arrange. A workflow that stays on the canvas.",
         "centerTitle": "Visual orchestration, not tool-hopping",
@@ -135,7 +148,8 @@
             "title": "Custom logic",
             "body": "Loops, conditional branches, and parallel runs."
           }
-        }
+        },
+        "exploreCta": "Explore feature details"
       },
       "pricing": {
         "eyebrow": "Pricing",
@@ -239,27 +253,47 @@
       },
       "faq": {
         "eyebrow": "FAQ",
-        "title": "Frequently Asked Questions (GEO-Friendly)",
-        "body": "Common questions from creators evaluating Nano Banana Canvas for real production workflows.",
+        "title": "Frequently Asked Questions",
+        "body": "Everything creators usually want to know before moving real image, video, and workflow production into Nano Banana Canvas.",
         "what": {
           "question": "What is Nano Banana Canvas?",
           "answer": "A visual AI platform where creators connect different models (image, video, LLM, 3D) on an infinite canvas to turn ideas into workflows — designed specifically for filmmakers and digital storytellers."
         },
         "models": {
-          "question": "Do I need to code to build workflows?",
-          "answer": "No. Drag, drop, and connect on the infinite canvas. It’s as visual as a storyboard."
+          "question": "Which AI models can I orchestrate here?",
+          "answer": "You can map image, video, language, vision, and audio providers in one place, including OpenAI, Google, Anthropic, Runway, Kling, Qwen, Wan, Black Forest, and other routing layers you already use."
         },
         "canvas": {
-          "question": "Can I use my own API keys (OpenAI, Replicate, etc.)?",
-          "answer": "Yes. Bring your own keys or use our hosted models — the canvas works with both."
+          "question": "Do I need to code to build workflows?",
+          "answer": "No. Drag, drop, branch, and sequence steps visually. The canvas is meant to feel closer to a storyboard wall than a developer console."
         },
-        "compare": {
-          "question": "What makes it different from ComfyUI or Runway alone?",
-          "answer": "Nano Banana Canvas is a spatial, multi-model workspace. You don’t just run one generator — you connect several models in a single visual flow, from text to image to video to audio."
+        "gptImage": {
+          "question": "Can I use Nano Banana Canvas for GPT Image 2 workflows?",
+          "answer": "Yes. Many teams use the canvas to map GPT Image 2 prompt studies, review reference images, and connect those outputs into broader image-to-video or prompt-to-story workflows."
         },
         "pricing": {
-          "question": "Is it optimized for cinematic generation?",
-          "answer": "Yes. Every output preset, node connection, and export setting is tuned toward film-grade quality. Many users call it “the future of AI storyboarding.”"
+          "question": "Can I bring my own API keys?",
+          "answer": "Yes. The product is designed to support both hosted execution paths and bring-your-own-key setups, so teams can keep flexibility around cost, routing, and provider choice."
+        },
+        "api": {
+          "question": "How is pricing structured?",
+          "answer": "Pricing is split between Free, recurring plans, one-time plans, and credit packs. The public pricing page explains the billing boundary clearly, and checkout stays on Stripe."
+        },
+        "team": {
+          "question": "Is this only for solo creators?",
+          "answer": "No. The product is framed for solo operators, creative studios, and distributed teams that need one shared canvas for prompts, assets, and handoff notes."
+        },
+        "commercial": {
+          "question": "Can I use generated output in commercial production?",
+          "answer": "Commercial use depends on the providers and assets in your workflow, but the platform is built to help teams keep those steps visible instead of burying them across disconnected tools."
+        },
+        "privacy": {
+          "question": "How do privacy and account-scoped settings work?",
+          "answer": "Account-scoped configuration is isolated to the signed-in user context, while public legal pages explain how billing, cookies, and privacy are handled at the product level."
+        },
+        "contact": {
+          "question": "Where can I find docs, community, or contact channels?",
+          "answer": "Use the public Docs, Community, and Contact pages from the top navigation or Footer. They exist as standalone landing pages so search engines and teams can reach the right context directly."
         }
       },
       "cta": {
@@ -277,19 +311,19 @@
       "features": "Features",
       "models": "Models",
       "pricing": "Pricing",
-      "enterprise": "Enterprise",
-      "getStarted": "Get Started",
+      "docs": "Docs",
+      "resources": "Resources",
+      "community": "Community",
+      "legal": "Legal",
       "company": "Company",
       "about": "About Us",
       "contactUs": "Contact Us",
       "faq": "FAQ",
-      "joinUs": "Join Us",
-      "trustSafety": "Trust & Safety",
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
-      "contact": "Contact",
-      "creatorCommunity": "Creator Community",
-      "creativePartners": "Creative Partners",
+      "refundPolicy": "Refund Policy",
+      "acceptableUse": "Acceptable Use",
+      "cookieSettings": "Cookie Settings",
       "copyright": "© 2026 Nano Banana Canvas. All rights reserved.",
       "builtFor": "Built for filmmakers and creators"
     }
@@ -348,6 +382,657 @@
     "proDescription": "For active operators and small teams shipping more image, video, and workflow output each month.",
     "ultimateName": "Ultimate",
     "ultimateDescription": "For heavier production teams that need a much larger credit budget and longer storage runway."
+  },
+  "sitePages": {
+    "features": {
+      "metaTitle": "Feature Details for Visual AI Workflow Production",
+      "metaDescription": "Explore Nano Banana Canvas feature details for visual workflow orchestration, GPT Image 2 prompt mapping, multimodal production, and team-ready operating flows.",
+      "heroEyebrow": "Feature details",
+      "heroTitle": "A visual operating layer for image, video, and prompt production.",
+      "heroBody": "The landing page introduces the product. This page explains how the workflow layer actually behaves once you start mapping prompts, image systems, video tools, and reusable production logic across a single canvas.",
+      "primaryCta": "Start creating",
+      "secondaryCta": "Browse models",
+      "heroFacts": {
+        "1": {
+          "title": "One shared surface",
+          "body": "Keep prompts, references, routing logic, and asset handoff visible in one place instead of splitting them across tabs."
+        },
+        "2": {
+          "title": "SEO-ready detail page",
+          "body": "This route exists to give search and answer engines a stable page for capability-level queries."
+        },
+        "3": {
+          "title": "Built for production operators",
+          "body": "Use it for storyboard systems, look-dev passes, GPT Image 2 prompt studies, and image-to-video chains."
+        }
+      },
+      "sections": {
+        "orchestration": {
+          "eyebrow": "Workflow logic",
+          "title": "Map the flow, not just the prompt.",
+          "body": "The product is strongest when the logic stays visible. Instead of hiding decisions in chat history or scattered notebooks, you keep the workflow legible as a sequence of connected media operations.",
+          "cards": {
+            "canvas": {
+              "eyebrow": "Infinite canvas",
+              "title": "Spatial workflow composition",
+              "body": "Lay out prompt planning, reference gathering, generation passes, and review nodes on one surface so the relationship between steps stays obvious."
+            },
+            "branching": {
+              "eyebrow": "Branching",
+              "title": "Readable conditions and alternates",
+              "body": "Keep multiple image directions, branch-specific prompts, and fallback paths visible instead of burying them in duplicated documents."
+            },
+            "handoff": {
+              "eyebrow": "Handoffs",
+              "title": "From one model to the next",
+              "body": "Treat each provider as one stage in a larger creative chain, whether you are moving from text planning to images or from still frames into motion."
+            }
+          }
+        },
+        "production": {
+          "eyebrow": "Multimodal output",
+          "title": "Keep the image, video, and asset chain connected.",
+          "body": "Nano Banana Canvas is not a single generator. It is the operating layer that lets you move through multiple generation stages without losing the context behind each output.",
+          "cards": {
+            "image": {
+              "eyebrow": "Image workflows",
+              "title": "Prompt systems for image generation",
+              "body": "Use one board to compare GPT Image 2 prompt structures, Qwen image directions, Black Forest look-dev passes, and reference image notes.",
+              "bullets": {
+                "1": "Compare subject, style, and lighting changes side by side.",
+                "2": "Keep source references and prompt revisions attached to the same visual step.",
+                "3": "Hand the selected frame cleanly into a downstream motion workflow."
+              }
+            },
+            "video": {
+              "eyebrow": "Motion workflows",
+              "title": "Image-to-video sequencing",
+              "body": "Take approved still frames into Kling, Wan, Runway, or other motion systems while keeping the earlier prompt logic visible.",
+              "bullets": {
+                "1": "Track which still image led to which motion output.",
+                "2": "Keep duration, camera intent, and scene notes readable near the node.",
+                "3": "Reduce guesswork when the team needs to regenerate a shot."
+              }
+            },
+            "library": {
+              "eyebrow": "Reusable systems",
+              "title": "Templates that stay operational",
+              "body": "Turn working flows into reusable systems for concept art, ad iteration, campaign look-dev, or previs without flattening the creative context.",
+              "bullets": {
+                "1": "Use templates as starting systems instead of blank boards.",
+                "2": "Share operating patterns with the team without forcing a rigid pipeline.",
+                "3": "Keep the logic understandable for whoever opens the workflow later."
+              }
+            }
+          }
+        },
+        "team": {
+          "eyebrow": "Production teams",
+          "title": "Designed for people who need to ship, not just experiment.",
+          "body": "The best workflows are easy to reopen, explain, and continue. This page exists because capability pages should help operators understand how the product fits real production rhythms.",
+          "cards": {
+            "roles": {
+              "eyebrow": "Shared context",
+              "title": "Readable by multiple roles",
+              "body": "Creative leads, prompt operators, and editors can follow the same flow without reverse-engineering what happened."
+            },
+            "ops": {
+              "eyebrow": "Operational clarity",
+              "title": "Less tab chaos",
+              "body": "Reduce the handoff loss that happens when prompt docs, image boards, and output references live in different tools."
+            },
+            "handover": {
+              "eyebrow": "Search intent",
+              "title": "Feature detail pages that explain the product",
+              "body": "Dedicated feature pages give search engines a stronger route for product understanding than one crowded homepage alone."
+            }
+          }
+        }
+      },
+      "footerCta": {
+        "title": "See how the feature layer connects to pricing and model support.",
+        "body": "Use the public page tree to understand the product by topic, then move into the canvas only when you are ready to test the workflow for real.",
+        "primary": "View pricing",
+        "secondary": "Read docs"
+      }
+    },
+    "models": {
+      "metaTitle": "AI Model Directory for Image, Video, Audio, and Prompt Workflows",
+      "metaDescription": "Browse the Nano Banana Canvas AI model directory, including GPT Image 2 workflow mapping, OpenAI, Google, Anthropic, Kling, Runway, Wan, Qwen, and more.",
+      "heroEyebrow": "Model directory",
+      "heroTitle": "A model layer built for orchestration, not logo collecting.",
+      "heroBody": "This page explains the role each model family plays inside Nano Banana Canvas. The goal is not to list brands for decoration. The goal is to show how image, video, language, audio, and routing systems can live inside one readable workflow.",
+      "primaryCta": "Explore features",
+      "secondaryCta": "View pricing",
+      "heroFacts": {
+        "1": {
+          "title": "Image, video, text, audio",
+          "body": "The product frames model choice as part of the workflow, not a separate shopping list."
+        },
+        "2": {
+          "title": "Prompt-system friendly",
+          "body": "Use the canvas to compare prompt structures, route image outputs, and hold references beside the actual generation step."
+        },
+        "3": {
+          "title": "Includes GPT Image 2 intent",
+          "body": "Queries around GPT Image 2, image workflow design, and multimodal orchestration now land on a dedicated public page."
+        }
+      },
+      "sections": {
+        "images": {
+          "eyebrow": "Image models",
+          "title": "Image generation systems that feed a larger production chain.",
+          "body": "Image models matter most when they plug into something larger: storyboards, campaign look-dev, asset packs, motion prep, and repeatable prompting systems.",
+          "cards": {
+            "gptImage": {
+              "eyebrow": "OpenAI image work",
+              "title": "GPT Image 2 prompt tracks",
+              "body": "Use the canvas to map subject prompts, reference images, composition changes, and downstream approvals around GPT Image 2 style image generation research.",
+              "bullets": {
+                "1": "Track which prompt revision produced the keeper frame.",
+                "2": "Keep reference imagery visible beside the generation step.",
+                "3": "Hand the result into video tools without losing the prompt context."
+              }
+            },
+            "flux": {
+              "eyebrow": "Black Forest",
+              "title": "Look-dev with Black Forest image models",
+              "body": "Organize lighting, texture, and style variants while keeping the broader workflow understandable to the rest of the team.",
+              "bullets": {
+                "1": "Compare style families in parallel branches.",
+                "2": "Keep model-specific notes near the actual node.",
+                "3": "Reuse winning setups as templates."
+              }
+            },
+            "qwen": {
+              "eyebrow": "Qwen image",
+              "title": "Regional and multilingual image pipelines",
+              "body": "When a workflow needs multilingual prompting or region-specific image tooling, Qwen-style image systems fit into the same board instead of becoming another isolated stack.",
+              "bullets": {
+                "1": "Mix bilingual prompting with shared references.",
+                "2": "Keep revisions transparent for cross-functional review.",
+                "3": "Move selected frames cleanly into motion generation."
+              }
+            }
+          }
+        },
+        "video": {
+          "eyebrow": "Video models",
+          "title": "From still frames to motion systems.",
+          "body": "Kling, Runway, Wan, and similar tools become more useful when the still frame, prompt logic, and motion note are documented in one place.",
+          "cards": {
+            "runway": {
+              "eyebrow": "Runway",
+              "title": "Shot-level motion design",
+              "body": "Capture scene intent, camera notes, and look-dev choices before they disappear into a single prompt box."
+            },
+            "kling": {
+              "eyebrow": "Kling",
+              "title": "Image-to-video continuity",
+              "body": "Use Kling stages where continuity and shot carry-over matter, while keeping the earlier frame choice visible beside the motion pass."
+            },
+            "wan": {
+              "eyebrow": "Wan / Alibaba",
+              "title": "Structured video experimentation",
+              "body": "Use Wan-style steps for experiments that benefit from multiple input conditions, then route the result into review or follow-up generation."
+            }
+          }
+        },
+        "platform": {
+          "eyebrow": "Platform layer",
+          "title": "Language, routing, vision, and operations are part of the same system.",
+          "body": "A real production workflow rarely stops at one generator. It includes language planning, routing layers, reference analysis, and reusable logic for the next run.",
+          "cards": {
+            "llm": {
+              "eyebrow": "Language models",
+              "title": "Prompt planning and script logic",
+              "body": "Use OpenAI, Anthropic, Google, Groq, or other language providers as planning and rewrite stages around visual production."
+            },
+            "routing": {
+              "eyebrow": "Routing providers",
+              "title": "Model selection without losing clarity",
+              "body": "Services like OpenRouter can sit inside the workflow as routing layers rather than becoming invisible configuration."
+            },
+            "ops": {
+              "eyebrow": "Operating systems",
+              "title": "Asset context next to each node",
+              "body": "Store references, timing notes, and handoff logic next to the model step that actually uses them."
+            },
+            "vision": {
+              "eyebrow": "Vision inputs",
+              "title": "Image understanding as workflow fuel",
+              "body": "Vision models help extract details, annotate references, and keep the workflow aware of the source image instead of starting blind."
+            }
+          }
+        }
+      },
+      "footerCta": {
+        "title": "Move from model awareness to workflow design.",
+        "body": "Read the feature page if you need to understand how these models connect operationally, then step into the canvas when you want to test the flow for yourself.",
+        "primary": "Start creating",
+        "secondary": "Visit community"
+      }
+    },
+    "about": {
+      "metaTitle": "About Nano Banana Canvas",
+      "metaDescription": "Learn what Nano Banana Canvas is building, who it is for, and why the product is organized around visual AI workflow clarity instead of fragmented tool-hopping.",
+      "heroEyebrow": "About the product",
+      "heroTitle": "We are building a calmer operating layer for modern AI production.",
+      "heroBody": "Nano Banana Canvas exists because image, video, and prompt work usually gets split across too many tools, too many tabs, and too much hidden context. We want the workflow itself to stay visible, reusable, and understandable.",
+      "primaryCta": "Contact the team",
+      "secondaryCta": "Visit community",
+      "heroFacts": {
+        "1": {
+          "title": "Built for creators and operators",
+          "body": "The product is aimed at filmmakers, creative studios, independent operators, and teams who need process clarity."
+        },
+        "2": {
+          "title": "Product-first public pages",
+          "body": "This marketing tree exists so every major topic has a dedicated, searchable page instead of being buried on the homepage."
+        },
+        "3": {
+          "title": "Workflow taste matters",
+          "body": "We care about visual quality, but also about whether a workflow still makes sense a week later when someone else opens it."
+        }
+      },
+      "sections": {
+        "principles": {
+          "eyebrow": "Principles",
+          "title": "The product follows three simple design beliefs.",
+          "body": "Good workflow software should reduce ambiguity, not just add another glossy surface on top of complexity.",
+          "cards": {
+            "clarity": {
+              "eyebrow": "Clarity",
+              "title": "Keep the logic visible",
+              "body": "Prompts, references, asset notes, and generation paths should stay readable in the same workspace."
+            },
+            "systems": {
+              "eyebrow": "Systems",
+              "title": "Make good work reusable",
+              "body": "A great workflow should become a reusable operating system, not a one-off heroic effort that dies in screenshots."
+            },
+            "taste": {
+              "eyebrow": "Taste",
+              "title": "Calm interfaces create better judgment",
+              "body": "The interface should stay deliberate and spacious enough for teams to evaluate work clearly."
+            }
+          }
+        },
+        "build": {
+          "eyebrow": "Who this is for",
+          "title": "Built for people who need to reopen and explain the work.",
+          "body": "The product becomes more useful as more people touch the workflow, because the point is not just generating outputs. The point is making the system readable.",
+          "cards": {
+            "operators": {
+              "eyebrow": "Operators",
+              "title": "Prompt and workflow specialists",
+              "body": "Use the canvas to keep experiments, references, and final operating paths in one place."
+            },
+            "shared": {
+              "eyebrow": "Teams",
+              "title": "Studios and distributed collaborators",
+              "body": "Share a workflow that can survive time zones, async review, and multiple media formats."
+            },
+            "shipping": {
+              "eyebrow": "Delivery",
+              "title": "People who need to ship repeatedly",
+              "body": "Repeatable image, video, and campaign systems matter more than one perfect output generated in isolation."
+            }
+          }
+        }
+      },
+      "footerCta": {
+        "title": "Need the product map rather than the brand story?",
+        "body": "The docs and feature pages explain the workflow surface in more concrete terms, while the community page shows how public sharing fits into the wider site.",
+        "primary": "Read docs",
+        "secondary": "Start creating"
+      }
+    },
+    "docs": {
+      "metaTitle": "Public Docs and Product Map",
+      "metaDescription": "Read the public product map for Nano Banana Canvas, including quick starts, feature orientation, model support, and workflow operating guidance.",
+      "heroEyebrow": "Public docs",
+      "heroTitle": "The public product map for getting oriented fast.",
+      "heroBody": "This docs page is a public-facing navigation layer. It helps operators, collaborators, and search engines understand where to start without forcing everything through one landing page.",
+      "primaryCta": "Browse features",
+      "secondaryCta": "Contact us",
+      "heroFacts": {
+        "1": {
+          "title": "Quick orientation",
+          "body": "Jump to features, models, pricing, or community depending on the question you actually have."
+        },
+        "2": {
+          "title": "Search-friendly structure",
+          "body": "Public docs pages make it easier for specific product queries to land in the right context."
+        },
+        "3": {
+          "title": "Human-readable first",
+          "body": "The goal is fast understanding, not encyclopedic volume."
+        }
+      },
+      "sections": {
+        "quickStart": {
+          "eyebrow": "Quick start",
+          "title": "Three good ways to enter the product story.",
+          "body": "Different visitors arrive with different intent. The public docs should respect that instead of flattening everyone into the same homepage path.",
+          "cards": {
+            "start": {
+              "eyebrow": "Start",
+              "title": "Enter the canvas directly",
+              "body": "If you already know what you want, go straight into the product and test the workflow yourself.",
+              "href": "/sign-in",
+              "action": "Open the product"
+            },
+            "models": {
+              "eyebrow": "Models",
+              "title": "Understand the model layer first",
+              "body": "Use the model page when your first question is provider fit, GPT Image 2 mapping, or multimodal coverage.",
+              "href": "/models",
+              "action": "Read model support"
+            },
+            "pricing": {
+              "eyebrow": "Pricing",
+              "title": "Check the billing boundary",
+              "body": "Use the pricing page when you need to understand Free, plans, credit packs, or Stripe-backed purchase modes.",
+              "href": "/pricing",
+              "action": "View pricing"
+            }
+          }
+        },
+        "operating": {
+          "eyebrow": "Operating notes",
+          "title": "What the public docs are designed to explain.",
+          "body": "The goal is to describe how the public site is organized so new visitors can navigate by topic instead of by guesswork.",
+          "cards": {
+            "workflow": {
+              "eyebrow": "Workflow logic",
+              "title": "How the canvas is supposed to be used",
+              "body": "Feature pages explain why the product is organized around visible workflow logic instead of isolated generators."
+            },
+            "assets": {
+              "eyebrow": "Asset flow",
+              "title": "How outputs move through the system",
+              "body": "Model pages explain how image, video, language, and reference systems connect into one production chain."
+            },
+            "team": {
+              "eyebrow": "Team fit",
+              "title": "Who the product is meant to help",
+              "body": "About, community, and contact pages explain the audience, operating posture, and public support channels."
+            }
+          }
+        }
+      },
+      "footerCta": {
+        "title": "Ready to stop reading and test the workflow directly?",
+        "body": "The docs are meant to shorten orientation time. Once you know where the product fits, the canvas itself is the real proof.",
+        "primary": "Start creating",
+        "secondary": "Visit community"
+      }
+    },
+    "community": {
+      "metaTitle": "Community Workflows and Creator Sharing",
+      "metaDescription": "Learn how Nano Banana Canvas community pages connect public workflows, creator sharing, published examples, and reusable operating patterns.",
+      "heroEyebrow": "Community",
+      "heroTitle": "A public layer for shared workflows, examples, and creator momentum.",
+      "heroBody": "The community route exists to explain how public workflows fit into the wider product. It helps visitors understand that the platform is not only for building privately, but also for sharing, studying, and reusing working systems.",
+      "primaryCta": "Browse explore",
+      "secondaryCta": "Open workflows",
+      "heroFacts": {
+        "1": {
+          "title": "Public examples",
+          "body": "Community pages turn workflows into public references instead of leaving them trapped inside private production boards."
+        },
+        "2": {
+          "title": "Reusable patterns",
+          "body": "Good community examples are useful because they reveal how the workflow was structured, not only what it produced."
+        },
+        "3": {
+          "title": "More than a gallery",
+          "body": "The public layer supports discovery, critique, and faster onboarding for new operators."
+        }
+      },
+      "sections": {
+        "share": {
+          "eyebrow": "Public value",
+          "title": "Why a community layer matters for workflow software.",
+          "body": "Publishing useful workflows is one of the fastest ways to teach a product category. It shows how other operators think, sequence, and recover from ambiguity.",
+          "cards": {
+            "explore": {
+              "eyebrow": "Discovery",
+              "title": "Explore public workflows",
+              "body": "Browse finished examples, inspect published work, and understand how other creators structure a production flow."
+            },
+            "workflow": {
+              "eyebrow": "Reuse",
+              "title": "Start from working systems",
+              "body": "Community workflows are most valuable when they act as launchpads instead of static inspiration boards."
+            },
+            "feedback": {
+              "eyebrow": "Signal",
+              "title": "Let feedback improve the operating pattern",
+              "body": "Public sharing helps the best workflow structures surface faster than private trial-and-error alone."
+            }
+          }
+        },
+        "participation": {
+          "eyebrow": "Where to go next",
+          "title": "Use the public site tree to enter the right community surface.",
+          "body": "Some visitors want published examples. Others want reusable templates or direct contact. This page gives each of those routes a cleaner entry point.",
+          "cards": {
+            "operators": {
+              "eyebrow": "Explore",
+              "title": "Browse published outputs",
+              "body": "Use the Explore route when you want public examples, creator context, and shareable work.",
+              "href": "/explore",
+              "action": "Open explore"
+            },
+            "templates": {
+              "eyebrow": "Workflows",
+              "title": "See reusable workflow systems",
+              "body": "Use the workflow-sharing route when you want reusable operating structures instead of just browsing outputs.",
+              "href": "/workflows",
+              "action": "Open workflows"
+            },
+            "support": {
+              "eyebrow": "Contact",
+              "title": "Reach the team and public channels",
+              "body": "Use the contact page if you need support, public channel entry points, or direct product questions.",
+              "href": "/contact",
+              "action": "Contact us"
+            }
+          }
+        }
+      },
+      "footerCta": {
+        "title": "Need the people layer instead of the gallery layer?",
+        "body": "Move into contact or docs if you need direct support, product orientation, or a clearer read on how the public site connects to the private canvas.",
+        "primary": "Contact us",
+        "secondary": "Read docs"
+      }
+    },
+    "refundPolicy": {
+      "metaTitle": "Refund Policy",
+      "metaDescription": "Review the Nano Banana Canvas refund policy for subscriptions, one-time plans, credit packs, and billing exceptions.",
+      "heroEyebrow": "Refund policy",
+      "heroTitle": "A plain-language view of our refund boundary.",
+      "heroBody": "This page exists to explain the practical refund boundary in public. It does not replace the Terms of Service, but it gives teams a cleaner place to understand how recurring plans, one-time plans, and credit packs are treated.",
+      "heroFacts": {
+        "1": {
+          "title": "Recurring plans",
+          "body": "Auto-monthly subscriptions stay active through the paid period after cancellation."
+        },
+        "2": {
+          "title": "One-time billing value",
+          "body": "One-time plans and credit packs are generally treated as delivered digital value once provisioned."
+        },
+        "3": {
+          "title": "Exceptions exist",
+          "body": "Duplicate charges and technical provisioning failures can still be reviewed case by case."
+        }
+      },
+      "sections": {
+        "rules": {
+          "eyebrow": "Policy summary",
+          "title": "The four situations most people actually care about.",
+          "body": "The public refund page should clarify the big billing cases without forcing users to scan long legal text just to understand the core boundary.",
+          "cards": {
+            "subscriptions": {
+              "eyebrow": "Auto monthly",
+              "title": "Recurring subscriptions",
+              "body": "If you cancel a recurring plan, the plan remains active until the paid billing period ends.",
+              "bullets": {
+                "1": "The current paid cycle is generally not retroactively refunded.",
+                "2": "Future renewal is stopped once the cancellation takes effect."
+              }
+            },
+            "oneTime": {
+              "eyebrow": "One-time plans",
+              "title": "One-time plan purchases",
+              "body": "One-time plans deliver a bundled billing value rather than a recurring subscription contract.",
+              "bullets": {
+                "1": "They do not auto-renew.",
+                "2": "They are generally treated as consumed digital value once provisioned."
+              }
+            },
+            "creditPacks": {
+              "eyebrow": "Credit packs",
+              "title": "Permanent credit purchases",
+              "body": "Credit packs exist for capacity top-ups and are handled separately from subscription state.",
+              "bullets": {
+                "1": "They are usually not refundable after successful provisioning.",
+                "2": "They do not change your plan tier by themselves."
+              }
+            },
+            "exceptions": {
+              "eyebrow": "Case review",
+              "title": "Billing exceptions",
+              "body": "We may review refunds for edge cases where the billing event clearly failed the intended product outcome.",
+              "bullets": {
+                "1": "Examples include duplicate charges or technical entitlement failures.",
+                "2": "Review depends on Stripe records and the specific account history."
+              }
+            }
+          }
+        }
+      }
+    },
+    "acceptableUse": {
+      "metaTitle": "Acceptable Use Policy",
+      "metaDescription": "Read the Nano Banana Canvas acceptable use policy covering safe workflow publishing, provider compliance, and prohibited misuse.",
+      "heroEyebrow": "Acceptable use",
+      "heroTitle": "Use the canvas creatively, but keep the operating boundary clear.",
+      "heroBody": "This page summarizes the main usage boundary in a way that product teams, creators, and collaborators can understand quickly before they start publishing or sharing workflows.",
+      "heroFacts": {
+        "1": {
+          "title": "Provider rules still apply",
+          "body": "You remain responsible for following the rules of the model providers used inside your workflow."
+        },
+        "2": {
+          "title": "Public sharing matters",
+          "body": "Published workflows and assets should be lawful, non-abusive, and safe to surface on a public platform."
+        },
+        "3": {
+          "title": "Visibility helps accountability",
+          "body": "The product is designed to keep context visible, which also helps teams notice risky use sooner."
+        }
+      },
+      "sections": {
+        "rules": {
+          "eyebrow": "Usage boundary",
+          "title": "What is welcome, restricted, and expected.",
+          "body": "A strong acceptable use page does not try to cover every imaginable abuse case. It explains the operating boundary that most users need in plain language.",
+          "cards": {
+            "allowed": {
+              "eyebrow": "Allowed",
+              "title": "Creative and commercial workflow building",
+              "body": "You may build, test, organize, and publish lawful workflows for creative development, production planning, and approved commercial work.",
+              "bullets": {
+                "1": "Use the product for storyboards, campaign systems, look-dev, and process design.",
+                "2": "Share reusable workflows when you have the right to share the inputs and outputs.",
+                "3": "Use public pages and contact routes responsibly."
+              }
+            },
+            "restricted": {
+              "eyebrow": "Restricted",
+              "title": "Abuse, deception, or unlawful harm",
+              "body": "You may not use the platform to create or distribute unlawful, deceptive, exploitative, or abusive workflows and content.",
+              "bullets": {
+                "1": "Do not publish material that violates law, privacy, or third-party rights.",
+                "2": "Do not use the service to facilitate harassment, fraud, or platform abuse.",
+                "3": "Do not bypass provider, billing, or account restrictions through misuse."
+              }
+            },
+            "sharing": {
+              "eyebrow": "Publishing",
+              "title": "Public workflows should stay reviewable",
+              "body": "The public community layer works best when shared workflows are understandable, safe, and honest about what they do.",
+              "bullets": {
+                "1": "Add enough context for others to understand the published workflow.",
+                "2": "Do not misrepresent generated output as something it is not.",
+                "3": "Expect published assets to be removed if they create safety or compliance risk."
+              }
+            }
+          }
+        }
+      }
+    },
+    "cookies": {
+      "metaTitle": "Cookie Settings",
+      "metaDescription": "Learn how Nano Banana Canvas uses cookies and related storage for authentication, analytics, preferences, and checkout continuity.",
+      "heroEyebrow": "Cookie settings",
+      "heroTitle": "A public explanation of the cookie categories that keep the site working.",
+      "heroBody": "This page explains the role cookies and related browser storage play across sign-in, analytics, and product continuity. It is meant to complement the privacy page with a faster, more direct summary.",
+      "heroFacts": {
+        "1": {
+          "title": "Essential cookies",
+          "body": "Required for account continuity, sign-in, and secure product access."
+        },
+        "2": {
+          "title": "Analytics signals",
+          "body": "Used to understand public site and product usage patterns so the team can improve the experience."
+        },
+        "3": {
+          "title": "Preference storage",
+          "body": "Helps preserve settings such as locale or other browser-level experience choices."
+        }
+      },
+      "sections": {
+        "categories": {
+          "eyebrow": "Cookie categories",
+          "title": "The categories most visitors need to understand.",
+          "body": "The cookie page should help visitors understand why certain browser storage exists before they decide what to allow or block.",
+          "cards": {
+            "essential": {
+              "eyebrow": "Essential",
+              "title": "Authentication and secure continuity",
+              "body": "These cookies support sign-in, session continuity, and secure transitions through protected account features.",
+              "bullets": {
+                "1": "Blocking them can break login and account-scoped settings.",
+                "2": "They also help protect checkout and other secure flows."
+              }
+            },
+            "analytics": {
+              "eyebrow": "Analytics",
+              "title": "Usage understanding",
+              "body": "Analytics cookies help the team understand what public pages and product areas are actually useful so they can improve navigation and content structure.",
+              "bullets": {
+                "1": "They are used for site and product improvement rather than ad-targeting narratives.",
+                "2": "Exact implementation may evolve with the analytics stack."
+              }
+            },
+            "preferences": {
+              "eyebrow": "Preferences",
+              "title": "Experience and locale preferences",
+              "body": "Preference storage helps preserve a calmer product experience by remembering choices that affect how the site is displayed.",
+              "bullets": {
+                "1": "Examples include language selection or other low-risk display preferences.",
+                "2": "Removing them may reset parts of the browsing experience."
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "auth": {
     "brandName": "Nano Banana Canvas",

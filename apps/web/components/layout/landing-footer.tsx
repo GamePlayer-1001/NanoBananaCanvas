@@ -50,26 +50,36 @@ export function LandingFooter() {
     {
       title: t('product'),
       links: [
-        { label: t('features'), href: '/#features' },
-        { label: t('models'), href: '/#models' },
+        { label: t('features'), href: '/features' },
+        { label: t('models'), href: '/models' },
         { label: t('pricing'), href: '/pricing' },
+        { label: t('docs'), href: '/docs' },
+      ],
+    },
+    {
+      title: t('resources'),
+      links: [
+        { label: t('community'), href: '/community' },
+        { label: t('contactUs'), href: '/contact' },
+        { label: t('faq'), href: '/#faq' },
       ],
     },
     {
       title: t('company'),
       links: [
-        { label: t('about'), href: '/contact' },
+        { label: t('about'), href: '/about' },
         { label: t('contactUs'), href: '/contact' },
-        { label: t('faq'), href: '/#faq' },
-        { label: t('terms'), href: '/terms' },
-        { label: t('privacy'), href: '/privacy' },
+        { label: t('docs'), href: '/docs' },
       ],
     },
     {
-      title: t('contact'),
+      title: t('legal'),
       links: [
-        { label: t('creatorCommunity'), href: '/workflows' },
-        { label: t('creativePartners'), href: '/contact' },
+        { label: t('terms'), href: '/terms' },
+        { label: t('privacy'), href: '/privacy' },
+        { label: t('refundPolicy'), href: '/refund-policy' },
+        { label: t('acceptableUse'), href: '/acceptable-use' },
+        { label: t('cookieSettings'), href: '/cookies' },
       ],
     },
   ]

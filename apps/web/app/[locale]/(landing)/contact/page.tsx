@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl/server 的 setRequestLocale/getTranslations，
  *          依赖 @/components/contact/contact-content
  * [OUTPUT]: 对外提供联系我们页面 + SEO metadata
- * [POS]: (app) 路由组的联系页面，展示 Telegram/Discord/X/Instagram 四平台
+ * [POS]: (landing) 路由组的联系页面，展示 Telegram/Discord/X/Instagram 四平台并承接公开站点资源入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -27,8 +27,6 @@ export async function generateMetadata({
     locale,
   })
 }
-
-/* ─── Page ───────────────────────────────────────────── */
 
 export default async function ContactPage({
   params,

@@ -13,7 +13,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HeroSection } from '@/components/landing/hero-section'
 import {
-  CtaSection,
   FaqSection,
   FeaturesSection,
   ModelMindMapSection,
@@ -36,6 +35,13 @@ export async function generateMetadata({
     description: t('landingDescription'),
     path: '/',
     locale,
+    keywords: [
+      'AI workflow builder',
+      'gpt image 2',
+      'image generation workflow',
+      'visual AI canvas',
+      'multimodal production',
+    ],
   })
 }
 
@@ -49,7 +55,18 @@ export default async function LandingPage({
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
 
-  const faqItems = ['what', 'models', 'canvas', 'compare', 'pricing'].map((key) => ({
+  const faqItems = [
+    'what',
+    'models',
+    'canvas',
+    'gptImage',
+    'pricing',
+    'api',
+    'team',
+    'commercial',
+    'privacy',
+    'contact',
+  ].map((key) => ({
     question: faqT(`${key}.question`),
     answer: faqT(`${key}.answer`),
   }))
@@ -126,7 +143,6 @@ export default async function LandingPage({
       <PricingSection />
       <TestimonialsSection />
       <FaqSection />
-      <CtaSection />
       <LandingFooter />
     </main>
   )

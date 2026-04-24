@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的远程图片渲染，
  *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的图标集合，
  *          依赖 @/components/shared/brand-mark，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection、CtaSection
+ * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
  * [POS]: components/landing 的首页内容区集合，被 (landing)/page.tsx 按首屏后叙事顺序消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -28,7 +28,6 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { BrandMark } from '@/components/shared/brand-mark'
 import { Link } from '@/i18n/navigation'
 
 type ModelProvider = {
@@ -320,7 +319,18 @@ const TESTIMONIAL_AVATARS: Record<(typeof TESTIMONIAL_ITEMS)[number], string> = 
   vfx: 'https://randomuser.me/api/portraits/men/41.jpg',
   dream: 'https://randomuser.me/api/portraits/women/12.jpg',
 }
-const FAQ_KEYS = ['what', 'models', 'canvas', 'compare', 'pricing'] as const
+const FAQ_KEYS = [
+  'what',
+  'models',
+  'canvas',
+  'gptImage',
+  'pricing',
+  'api',
+  'team',
+  'commercial',
+  'privacy',
+  'contact',
+] as const
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -834,13 +844,20 @@ export function FeaturesSection() {
               <p className="mt-4 text-sm leading-7 text-white/62">
                 {featuresT(`items.${key}.body`)}
               </p>
-              <div className="mt-7 h-28 rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.02))] p-3">
-                <div className="grid h-full grid-cols-3 gap-2">
-                  <div className="rounded-xl bg-white/10" />
-                  <div className="rounded-xl bg-emerald-300/18" />
-                  <div className="rounded-xl bg-amber-300/18" />
+              <div className="mt-7 rounded-[22px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.02))] p-3">
+                <div className="grid h-34 grid-cols-3 gap-2 overflow-hidden rounded-[18px] bg-[#07080d] p-2">
+                  <div className="rounded-[14px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.2),rgba(87,99,255,0.18),rgba(7,8,13,0.95))]" />
+                  <div className="rounded-[14px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),rgba(91,214,183,0.14),rgba(7,8,13,0.95))]" />
+                  <div className="rounded-[14px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),rgba(255,164,77,0.16),rgba(7,8,13,0.95))]" />
                 </div>
               </div>
+              <Link
+                href="/features"
+                className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-white/82 transition hover:text-white"
+              >
+                {featuresT('exploreCta')}
+                <ChevronDown className="-rotate-90 h-4 w-4" />
+              </Link>
             </article>
           ))}
         </div>
@@ -992,24 +1009,23 @@ export function FaqSection() {
       className="relative overflow-hidden bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(120,92,255,0.08),transparent_26%),linear-gradient(180deg,#09090d_0%,#07080d_100%)]" />
-      <div className="relative mx-auto w-full max-w-[1080px]">
-        <div className="mx-auto max-w-[42rem] text-center">
+      <div className="relative mx-auto w-full max-w-[1120px]">
+        <div className="mx-auto max-w-[48rem] text-center">
           <p className="text-sm font-medium tracking-[0.24em] text-white/42 uppercase">
             {faqT('eyebrow')}
           </p>
-          <h2 className="mt-5 text-[2.8rem] leading-[0.94] font-semibold tracking-tight text-white md:text-[4rem]">
+          <h2 className="mt-5 text-[2.7rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[3.9rem]">
             {faqT('title')}
           </h2>
-          <p className="mt-6 text-[1rem] leading-8 text-white/54 md:text-[1.12rem]">
+          <p className="mt-6 text-[1rem] leading-8 text-white/54 md:text-[1.08rem]">
             {faqT('body')}
           </p>
         </div>
 
-        <div className="mx-auto mt-16 max-w-[860px]">
-          {FAQ_KEYS.map((key, index) => (
+        <div className="mx-auto mt-18 max-w-[920px]">
+          {FAQ_KEYS.map((key) => (
             <details
               key={key}
-              open={index === 0}
               className="group border-b border-white/8 first:border-t"
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-7 text-left text-[1.18rem] font-semibold tracking-tight text-white marker:content-none">
@@ -1025,62 +1041,6 @@ export function FaqSection() {
               </div>
             </details>
           ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-export function CtaSection() {
-  const ctaT = useTranslations('landing.sections.cta')
-
-  return (
-    <section className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="w-full">
-        <div className="relative overflow-hidden rounded-[44px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_50%_0%,rgba(114,130,255,0.1),transparent_18%),linear-gradient(180deg,#121318_0%,#08090d_100%)] px-6 py-18 text-center shadow-[0_50px_120px_rgba(0,0,0,0.32)] sm:px-10 md:px-16 md:py-24">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.12),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.06),transparent_26%)]" />
-          <div className="pointer-events-none absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/14" />
-          <div className="pointer-events-none absolute top-0 left-1/2 h-28 w-28 -translate-x-1/2 -translate-y-[42%] rounded-full border border-white/10" />
-
-          <div className="relative mx-auto max-w-[48rem]">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
-              <BrandMark
-                withLogo
-                showText={false}
-                className="text-[2.6rem] text-white"
-                logoClassName="drop-shadow-[0_6px_16px_rgba(255,255,255,0.16)]"
-              />
-            </div>
-
-            <p className="mt-8 text-[0.82rem] font-semibold tracking-[0.34em] text-white/42 uppercase">
-              {ctaT('eyebrow')}
-            </p>
-            <h2 className="mt-5 text-[2.7rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.5rem]">
-              {ctaT('title')}
-            </h2>
-            <p className="mx-auto mt-6 max-w-[40rem] text-[1.05rem] leading-8 text-white/62 md:text-[1.22rem] md:leading-9">
-              {ctaT('body')}
-            </p>
-
-            <div className="mt-11 flex flex-col items-center gap-4 md:flex-row md:justify-center">
-              <Link
-                href="/sign-in"
-                className="inline-flex h-15 items-center justify-center rounded-full bg-white px-10 text-[1rem] font-semibold text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white/90"
-              >
-                {ctaT('primary')}
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex h-15 items-center justify-center rounded-full border border-white/14 px-10 text-[1rem] font-semibold text-white transition-colors duration-200 hover:bg-white/8"
-              >
-                {ctaT('secondary')}
-              </Link>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-white/42">
-              <span>{ctaT('note')}</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

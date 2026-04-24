@@ -47,6 +47,7 @@ export function buildPageMetadata({
   type = 'website',
   ogTitle,
   ogSubtitle,
+  keywords,
 }: {
   title: string
   description: string
@@ -55,6 +56,7 @@ export function buildPageMetadata({
   type?: 'website' | 'article'
   ogTitle?: string
   ogSubtitle?: string
+  keywords?: string[]
 }): Metadata {
   const canonical = buildAbsoluteUrl(path)
   const imageTitle = ogTitle ?? title
@@ -64,6 +66,7 @@ export function buildPageMetadata({
   return {
     title,
     description,
+    keywords,
     alternates: {
       canonical,
     },

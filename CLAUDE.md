@@ -49,10 +49,19 @@ pnpm format:check     # Prettier 检查 (CI 用)
 ## 前端页面路由
 
 ```
-[locale]/(landing)/           — Landing Page (Hero + 模型动态脑图 + Features + Pricing 四档 + Testimonials + FAQ + CTA + Footer)
+[locale]/(landing)/           — Landing Page (Hero + 模型动态脑图 + Features + Pricing 四档 + Testimonials + FAQ + Footer，CTA 召回区已移除)
+[locale]/(landing)/features   — 功能详情页 (可视化工作流 / 多模态生产 / 团队协作说明)
+[locale]/(landing)/models     — AI 模型罗列页 (GPT Image 2 / OpenAI / Kling / Runway / Wan / Qwen 等)
+[locale]/(landing)/docs       — 公开文档导航页 (快速开始 + 产品地图 + 导航承接)
+[locale]/(landing)/community  — 社区说明页 (Explore / Workflows / 联系入口)
+[locale]/(landing)/about      — 关于我们 (产品定位 / 设计原则 / 适用对象)
 [locale]/(landing)/pricing    — 定价页 (Free 默认态 + Standard/Pro/Ultimate + 一次性套餐/积分包)
+[locale]/(landing)/contact    — 联系我们 (Telegram/Discord/X/Instagram，公开站资源入口)
 [locale]/(landing)/privacy    — 隐私政策
 [locale]/(landing)/terms      — 服务条款
+[locale]/(landing)/refund-policy  — 退款政策
+[locale]/(landing)/acceptable-use — 合理使用政策
+[locale]/(landing)/cookies    — Cookie 设置说明
 [locale]/(auth)/sign-in       — 登录页 (文件树位于 [locale] 下，外部 URL 暴露为 /sign-in)
 [locale]/(auth)/sign-up       — 注册页 (文件树位于 [locale] 下，外部 URL 暴露为 /sign-up)
 [locale]/(app)/explore        — 社区广场 (视频卡片网格 + 标签筛选)
@@ -61,7 +70,6 @@ pnpm format:check     # Prettier 检查 (CI 用)
 [locale]/(app)/video-analysis — 视频分析 (上传 + AI 模型 + 历史)
 [locale]/(app)/workspace      — 工作区 (项目卡片网格 + 文件夹分组 + 新建弹窗)
 [locale]/(app)/workspace/[id] — 重定向到 /canvas/[id] (兼容旧链接)
-[locale]/(app)/contact        — 联系我们 (Telegram/Discord/X/Instagram)
 [locale]/(editor)/canvas/[id] — 全屏画布编辑器 (ReactFlow, 无侧边栏)
 ```
 
@@ -71,7 +79,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **Turborepo Env**: `turbo.json` 统一透传 `NEXT_PUBLIC_* / CLERK_* / STRIPE_*` 到 build/test 子任务，避免 CI 子进程环境漂移
 - **路由**: `[locale]/(landing|auth|app|editor)` 四路由组
 - **URL 语义**: 语言前缀在外部 URL 中隐藏，`[locale]` 仅作为内部文件树与消息加载边界
-- **Landing**: Hero 交互式画板 + 模型动态脑图 + 功能/定价/评价/FAQ/CTA/Footer 转化链路
+- **Landing**: 首页承接品牌叙事，公开子页面树承接功能/模型/资源/法务/公司信息，导航与 Footer 全部落到真实路由
 - **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
