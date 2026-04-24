@@ -154,7 +154,7 @@
       "pricing": {
         "eyebrow": "定价",
         "title": "从第一帧到最终成片。",
-        "body": "适配不同创作规模的定价方案。",
+        "body": "围绕持续生产、项目制交付与积分补能设计的三类套餐结构。",
         "popular": "推荐",
         "credits": "每月 {value} 积分",
         "storage": "{value} 存储空间",
@@ -183,6 +183,21 @@
             "body": "提供更高模型吞吐、团队容量与 8K 导出空间。",
             "period": "按月",
             "note": "面向工作室级产能"
+          }
+        },
+        "summaryNote": "月付适合稳定生产，一次性套餐适合项目制购买，积分充值适合高峰期快速补能。",
+        "groups": {
+          "monthly": {
+            "badge": "持续生产",
+            "body": "Standard / Pro / Ultimate 三档月付，适合稳定输出与长期使用。"
+          },
+          "oneTime": {
+            "badge": "项目制买断",
+            "body": "同样提供 Standard / Pro / Ultimate 三档一次性购买，不产生自动续费。"
+          },
+          "credits": {
+            "badge": "快速补能",
+            "body": "500、1200、3500、8000 四档积分充值，用于创作冲刺与临时扩容。"
           }
         }
       },
@@ -381,7 +396,8 @@
     "proName": "Pro",
     "proDescription": "适合高频创作个人与小团队，覆盖更多图片、视频与工作流产出。",
     "ultimateName": "Ultimate",
-    "ultimateDescription": "适合更重度的生产团队，提供更大的积分预算与更长的存储缓冲。"
+    "ultimateDescription": "适合更重度的生产团队，提供更大的积分预算与更长的存储缓冲。",
+    "permanentCredits": "永久积分"
   },
   "auth": {
     "brandName": "Nano Banana Canvas",

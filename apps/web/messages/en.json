@@ -154,7 +154,7 @@
       "pricing": {
         "eyebrow": "Pricing",
         "title": "From First Frame to Final Cut",
-        "body": "Pricing for every creative volume.",
+        "body": "Three purchase modes designed for ongoing production, project-based delivery, and fast credit top-ups.",
         "popular": "Recommended",
         "credits": "{value} monthly credits",
         "storage": "{value} storage",
@@ -183,6 +183,21 @@
             "body": "Adds the heaviest model volume, team capacity, and 8K-oriented export room.",
             "period": "Per month",
             "note": "For studio-scale throughput"
+          }
+        },
+        "summaryNote": "Auto monthly plans fit steady production, one-time plans fit project-based buying, and credit packs fit fast top-ups during busy runs.",
+        "groups": {
+          "monthly": {
+            "badge": "Ongoing output",
+            "body": "Standard, Pro, and Ultimate monthly plans for teams that produce continuously."
+          },
+          "oneTime": {
+            "badge": "Project buyout",
+            "body": "The same Standard, Pro, and Ultimate tiers are available as one-time purchases with no automatic renewal."
+          },
+          "credits": {
+            "badge": "Fast top-up",
+            "body": "Four credit packs: 500, 1200, 3500, and 8000 credits for surges, deadlines, and temporary capacity."
           }
         }
       },
@@ -381,7 +396,8 @@
     "proName": "Pro",
     "proDescription": "For active operators and small teams shipping more image, video, and workflow output each month.",
     "ultimateName": "Ultimate",
-    "ultimateDescription": "For heavier production teams that need a much larger credit budget and longer storage runway."
+    "ultimateDescription": "For heavier production teams that need a much larger credit budget and longer storage runway.",
+    "permanentCredits": "Permanent credits"
   },
   "sitePages": {
     "features": {

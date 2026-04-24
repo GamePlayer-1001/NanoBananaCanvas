@@ -13,13 +13,15 @@ import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import {
   AudioLines,
+  BadgeDollarSign,
   BrainCircuit,
-  Check,
   ChevronDown,
+  Coins,
   Cuboid,
   Eye,
   ImageIcon,
   Play,
+  ShieldCheck,
   Sparkles,
   Star,
   Video,
@@ -28,6 +30,10 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import {
+  BILLING_CREDIT_PACK_SNAPSHOTS,
+  BILLING_PLAN_SNAPSHOTS,
+} from '@/lib/billing/plans'
 import { Link } from '@/i18n/navigation'
 
 type ModelProvider = {
@@ -278,16 +284,41 @@ const INITIAL_MODEL_MOTION: ModelMotionState = { progress: 0, reveal: 0, drift: 
 
 const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
 
-const PRICING_PLANS = [
-  { key: 'free', price: '$0', credits: '0', storage: '1 GB', popular: false },
-  { key: 'standard', price: '$20', credits: '1,600', storage: '10 GB', popular: false },
-  { key: 'pro', price: '$50', credits: '5,400', storage: '50 GB', popular: true },
+const LANDING_BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
+const LANDING_CREDIT_PACKS = ['500', '1200', '3500', '8000'] as const
+const LANDING_PRICING_GROUPS = [
   {
-    key: 'ultimate',
-    price: '$150',
-    credits: '17,000',
-    storage: '200 GB',
-    popular: false,
+    key: 'monthly',
+    icon: BadgeDollarSign,
+    titleKey: 'toggleMonthly',
+    className:
+      'border-emerald-300/18 bg-[radial-gradient(circle_at_top,rgba(100,255,195,0.16),transparent_26%),linear-gradient(180deg,rgba(15,28,30,0.98),rgba(7,12,18,0.98))] shadow-[0_30px_100px_rgba(24,147,111,0.16)]',
+    badgeClassName:
+      'border-emerald-300/18 bg-emerald-300/10 text-emerald-100',
+    buttonClassName:
+      'bg-[linear-gradient(135deg,#e7fff8,#8dffcf)] text-black hover:brightness-95',
+  },
+  {
+    key: 'oneTime',
+    icon: ShieldCheck,
+    titleKey: 'toggleOneTime',
+    className:
+      'border-amber-300/18 bg-[radial-gradient(circle_at_top,rgba(255,195,98,0.16),transparent_26%),linear-gradient(180deg,rgba(34,25,18,0.98),rgba(13,10,8,0.98))] shadow-[0_30px_100px_rgba(187,124,32,0.14)]',
+    badgeClassName:
+      'border-amber-300/18 bg-amber-300/10 text-amber-100',
+    buttonClassName:
+      'bg-[linear-gradient(135deg,#fff0d3,#ffbc66)] text-black hover:brightness-95',
+  },
+  {
+    key: 'credits',
+    icon: Coins,
+    titleKey: 'toggleCredits',
+    className:
+      'border-violet-300/18 bg-[radial-gradient(circle_at_top,rgba(168,117,255,0.18),transparent_26%),linear-gradient(180deg,rgba(24,15,38,0.98),rgba(9,8,18,0.98))] shadow-[0_30px_100px_rgba(113,72,187,0.16)]',
+    badgeClassName:
+      'border-violet-300/18 bg-violet-300/10 text-violet-100',
+    buttonClassName:
+      'bg-[linear-gradient(135deg,#f3ecff,#b38bff)] text-black hover:brightness-95',
   },
 ] as const
 
@@ -868,6 +899,13 @@ export function FeaturesSection() {
 
 export function PricingSection() {
   const pricingT = useTranslations('landing.sections.pricing')
+  const billingT = useTranslations('pricing')
+
+  const planDescriptions = {
+    standard: billingT('standardDescription'),
+    pro: billingT('proDescription'),
+    ultimate: billingT('ultimateDescription'),
+  } as const
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
@@ -878,64 +916,149 @@ export function PricingSection() {
           body={pricingT('body')}
         />
 
-        <div className="mt-14 grid gap-5 lg:grid-cols-4">
-          {PRICING_PLANS.map((plan) => (
-            <article
-              key={plan.key}
-              className={`flex min-h-[430px] flex-col rounded-[28px] border p-6 ${
-                plan.popular
-                  ? 'border-white/24 bg-white/[0.075] shadow-[0_28px_100px_rgba(255,255,255,0.08)]'
-                  : 'border-white/8 bg-white/[0.035]'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-2xl font-semibold text-white">
-                    {pricingT(`plans.${plan.key}.name`)}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-white/58">
-                    {pricingT(`plans.${plan.key}.body`)}
-                  </p>
-                </div>
-                {plan.popular ? (
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-black">
-                    {pricingT('popular')}
-                  </span>
-                ) : null}
-              </div>
+        <p className="mt-6 max-w-[52rem] text-sm leading-7 text-white/48 md:text-base">
+          {pricingT('summaryNote')}
+        </p>
 
-              <p className="mt-8 text-5xl font-semibold text-white">{plan.price}</p>
-              <p className="mt-2 text-sm text-white/45">
-                {pricingT(`plans.${plan.key}.period`)}
-              </p>
+        <div className="mt-14 grid gap-6 xl:grid-cols-[1.05fr_1.05fr_0.9fr]">
+          {LANDING_PRICING_GROUPS.map((group) => {
+            const Icon = group.icon
 
-              <div className="mt-8 space-y-3 text-sm text-white/78">
-                <div className="flex items-center gap-3">
-                  <Check className="h-4 w-4 text-emerald-300" />
-                  {pricingT('credits', { value: plan.credits })}
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="h-4 w-4 text-emerald-300" />
-                  {pricingT('storage', { value: plan.storage })}
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="h-4 w-4 text-emerald-300" />
-                  {pricingT(`plans.${plan.key}.note`)}
-                </div>
-              </div>
-
-              <Link
-                href="/pricing"
-                className={`mt-auto inline-flex h-11 items-center justify-center rounded-xl text-sm font-medium transition ${
-                  plan.popular
-                    ? 'bg-white text-black hover:bg-white/88'
-                    : 'border border-white/12 text-white hover:bg-white/8'
-                }`}
+            return (
+              <article
+                key={group.key}
+                className={`relative overflow-hidden rounded-[32px] border p-6 md:p-7 ${group.className}`}
               >
-                {pricingT('cta')}
-              </Link>
-            </article>
-          ))}
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_28%)]" />
+                <div className="relative flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] uppercase ${group.badgeClassName}`}
+                      >
+                        {pricingT(`groups.${group.key}.badge`)}
+                      </span>
+                      <div className="mt-5 flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white">
+                          <Icon className="h-5.5 w-5.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-[1.65rem] font-semibold tracking-tight text-white">
+                            {billingT(group.titleKey)}
+                          </h3>
+                          <p className="mt-1 text-sm leading-6 text-white/60">
+                            {pricingT(`groups.${group.key}.body`)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {group.key === 'monthly' ? (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-black">
+                        {pricingT('popular')}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-8 space-y-3">
+                    {group.key === 'credits'
+                      ? LANDING_CREDIT_PACKS.map((packageId) => {
+                          const pack = BILLING_CREDIT_PACK_SNAPSHOTS[packageId]
+                          return (
+                            <div
+                              key={packageId}
+                              className="rounded-[24px] border border-white/8 bg-black/18 p-4"
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <p className="text-xl font-semibold text-white">
+                                    {billingT('creditsValue', {
+                                      value: pack.totalCredits.toLocaleString(),
+                                    })}
+                                  </p>
+                                  <p className="mt-2 text-sm text-white/58">
+                                    {pack.bonusCredits > 0
+                                      ? billingT('creditsBonus', {
+                                          base: pack.credits.toLocaleString(),
+                                          bonus: pack.bonusCredits.toLocaleString(),
+                                        })
+                                      : billingT('creditsBaseOnly', {
+                                          base: pack.credits.toLocaleString(),
+                                        })}
+                                  </p>
+                                </div>
+                                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-white/80">
+                                  {billingT('toggleCredits')}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })
+                      : LANDING_BILLING_PLANS.map((planKey) => {
+                          const snapshot = BILLING_PLAN_SNAPSHOTS[planKey]
+                          const creditsLabel =
+                            group.key === 'monthly'
+                              ? billingT('monthlyCredits')
+                              : billingT('permanentCredits')
+
+                          return (
+                            <div
+                              key={`${group.key}-${planKey}`}
+                              className={`rounded-[24px] border p-4 ${
+                                planKey === 'pro'
+                                  ? 'border-white/16 bg-white/8 shadow-[0_18px_40px_rgba(255,255,255,0.06)]'
+                                  : 'border-white/8 bg-black/18'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xl font-semibold text-white">
+                                      {billingT(`${planKey}Name`)}
+                                    </p>
+                                    {planKey === 'pro' ? (
+                                      <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.14em] text-white/82 uppercase">
+                                        {pricingT('popular')}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="mt-2 text-sm leading-6 text-white/58">
+                                    {planDescriptions[planKey]}
+                                  </p>
+                                </div>
+                                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-white/80">
+                                  {group.key === 'monthly'
+                                    ? pricingT(`plans.${planKey}.period`)
+                                    : billingT('billedOneTime')}
+                                </span>
+                              </div>
+
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-white/88">
+                                  {creditsLabel} ·{' '}
+                                  {snapshot.monthlyCredits.toLocaleString()}
+                                </span>
+                                <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-white/88">
+                                  {billingT('storageIncluded')} ·{' '}
+                                  {billingT('storageValue', {
+                                    value: snapshot.storageGB,
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                  </div>
+
+                  <Link
+                    href="/pricing"
+                    className={`mt-6 inline-flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition ${group.buttonClassName}`}
+                  >
+                    {pricingT('cta')}
+                  </Link>
+                </div>
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>

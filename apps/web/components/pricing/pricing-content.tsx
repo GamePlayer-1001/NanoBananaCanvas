@@ -57,6 +57,55 @@ export function PricingContent({
     pro: t('proDescription'),
     ultimate: t('ultimateDescription'),
   } as const
+  const planCardStyles = {
+    standard: {
+      shell:
+        'border-cyan-300/18 bg-[radial-gradient(circle_at_top,rgba(86,196,255,0.18),transparent_26%),linear-gradient(180deg,rgba(11,24,34,0.98),rgba(8,12,18,0.98))] shadow-[0_26px_90px_rgba(28,122,171,0.18)]',
+      badge: 'border-cyan-300/20 bg-cyan-300/10 text-cyan-100',
+      button:
+        'bg-[linear-gradient(135deg,#e7fbff,#77deff)] text-black hover:brightness-95',
+    },
+    pro: {
+      shell:
+        'border-emerald-300/20 bg-[radial-gradient(circle_at_top,rgba(104,255,196,0.18),transparent_28%),linear-gradient(180deg,rgba(10,30,24,0.98),rgba(8,15,12,0.98))] shadow-[0_28px_100px_rgba(18,147,104,0.2)]',
+      badge: 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100',
+      button:
+        'bg-[linear-gradient(135deg,#f2fff8,#87ffcc)] text-black hover:brightness-95',
+    },
+    ultimate: {
+      shell:
+        'border-violet-300/20 bg-[radial-gradient(circle_at_top,rgba(176,117,255,0.2),transparent_28%),linear-gradient(180deg,rgba(26,16,38,0.98),rgba(9,8,17,0.98))] shadow-[0_28px_100px_rgba(104,68,177,0.2)]',
+      badge: 'border-violet-300/20 bg-violet-300/10 text-violet-100',
+      button:
+        'bg-[linear-gradient(135deg,#f7efff,#bf96ff)] text-black hover:brightness-95',
+    },
+  } as const
+  const creditPackCardStyles = {
+    '500': {
+      shell:
+        'border-amber-300/18 bg-[radial-gradient(circle_at_top,rgba(255,194,93,0.18),transparent_28%),linear-gradient(180deg,rgba(34,25,18,0.98),rgba(15,11,9,0.98))] shadow-[0_26px_90px_rgba(166,110,33,0.16)]',
+      button:
+        'bg-[linear-gradient(135deg,#fff0d1,#ffc771)] text-black hover:brightness-95',
+    },
+    '1200': {
+      shell:
+        'border-sky-300/18 bg-[radial-gradient(circle_at_top,rgba(112,204,255,0.18),transparent_28%),linear-gradient(180deg,rgba(14,23,38,0.98),rgba(7,12,18,0.98))] shadow-[0_26px_90px_rgba(55,117,183,0.16)]',
+      button:
+        'bg-[linear-gradient(135deg,#ebf7ff,#7ec7ff)] text-black hover:brightness-95',
+    },
+    '3500': {
+      shell:
+        'border-fuchsia-300/18 bg-[radial-gradient(circle_at_top,rgba(220,120,255,0.18),transparent_28%),linear-gradient(180deg,rgba(30,14,36,0.98),rgba(11,8,18,0.98))] shadow-[0_26px_90px_rgba(143,68,171,0.16)]',
+      button:
+        'bg-[linear-gradient(135deg,#fdefff,#d78cff)] text-black hover:brightness-95',
+    },
+    '8000': {
+      shell:
+        'border-emerald-300/18 bg-[radial-gradient(circle_at_top,rgba(112,255,196,0.2),transparent_28%),linear-gradient(180deg,rgba(10,29,23,0.98),rgba(8,14,12,0.98))] shadow-[0_26px_90px_rgba(28,147,104,0.18)]',
+      button:
+        'bg-[linear-gradient(135deg,#effff7,#89ffcb)] text-black hover:brightness-95',
+    },
+  } as const
 
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === selectedMode)
   const visibleCreditPacks = selectedMode === 'credit_pack' ? creditPacks : []
@@ -146,13 +195,13 @@ export function PricingContent({
               {t('pricingUnavailable')}
             </p>
           ) : null}
-          <div className="mt-8 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
+          <div className="mt-8 inline-flex rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
             <button
               type="button"
               onClick={() => setSelectedMode('plan_auto_monthly')}
-              className={`rounded-full px-4 py-2 text-sm transition ${
+              className={`rounded-2xl px-4 py-2.5 text-sm transition ${
                 selectedMode === 'plan_auto_monthly'
-                  ? 'bg-white text-black'
+                  ? 'bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]'
                   : 'text-white/65 hover:text-white'
               }`}
             >
@@ -161,9 +210,9 @@ export function PricingContent({
             <button
               type="button"
               onClick={() => setSelectedMode('plan_one_time')}
-              className={`rounded-full px-4 py-2 text-sm transition ${
+              className={`rounded-2xl px-4 py-2.5 text-sm transition ${
                 selectedMode === 'plan_one_time'
-                  ? 'bg-white text-black'
+                  ? 'bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]'
                   : 'text-white/65 hover:text-white'
               }`}
             >
@@ -172,9 +221,9 @@ export function PricingContent({
             <button
               type="button"
               onClick={() => setSelectedMode('credit_pack')}
-              className={`rounded-full px-4 py-2 text-sm transition ${
+              className={`rounded-2xl px-4 py-2.5 text-sm transition ${
                 selectedMode === 'credit_pack'
-                  ? 'bg-white text-black'
+                  ? 'bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]'
                   : 'text-white/65 hover:text-white'
               }`}
             >
@@ -266,9 +315,13 @@ export function PricingContent({
               return (
                 <article
                   key={creditPack.packageId}
-                  className="flex h-full flex-col rounded-[28px] border border-white/10 bg-white/[0.04] p-7 shadow-[0_20px_80px_rgba(0,0,0,0.22)]"
+                  className={`relative flex h-full flex-col overflow-hidden rounded-[30px] border p-7 ${creditPackCardStyles[creditPack.packageId].shell}`}
                 >
-                  <div>
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_30%)]" />
+                  <div className="relative">
+                    <span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] text-white/80 uppercase">
+                      {t('toggleCredits')}
+                    </span>
                     <h2 className="text-2xl font-semibold">
                       {t('creditsValue', { value: creditPack.totalCredits.toLocaleString(locale) })}
                     </h2>
@@ -284,29 +337,29 @@ export function PricingContent({
                     </p>
                   </div>
 
-                  <div className="mt-8">
-                    <p className="text-4xl font-semibold">
+                  <div className="relative mt-8">
+                    <p className="text-5xl font-semibold tracking-tight">
                       {formatMoney(locale, creditPack.currency, creditPack.unitAmount)}
                     </p>
                     <p className="mt-2 text-sm text-white/45">{t('billedOneTime')}</p>
                   </div>
 
                   <div className="mt-8 space-y-3 text-sm text-white/78">
-                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/18 px-4 py-3">
                       <span>{t('creditsIncluded')}</span>
                       <span className="font-medium">{creditPack.credits.toLocaleString(locale)}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/18 px-4 py-3">
                       <span>{t('creditsBonusLabel')}</span>
                       <span className="font-medium">+{creditPack.bonusCredits.toLocaleString(locale)}</span>
                     </div>
-                    <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-white/55">
+                    <div className="rounded-2xl border border-white/8 bg-black/18 px-4 py-3 text-white/55">
                       {t('currencyResolved', { currency: creditPack.currency.toUpperCase() })}
                     </div>
                   </div>
 
                   <Button
-                    className="mt-8 h-11 w-full rounded-xl"
+                    className={`mt-8 h-12 w-full rounded-2xl border-0 text-sm font-semibold ${creditPackCardStyles[creditPack.packageId].button}`}
                     onClick={() => handleCreditPackCheckout(creditPack)}
                     disabled={isPending}
                   >
@@ -328,10 +381,18 @@ export function PricingContent({
             return (
               <article
                 key={plan.plan}
-                className="flex h-full flex-col rounded-[28px] border border-white/10 bg-white/[0.04] p-7 shadow-[0_20px_80px_rgba(0,0,0,0.22)]"
+                className={`relative flex h-full flex-col overflow-hidden rounded-[30px] border p-7 ${planCardStyles[plan.plan].shell}`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_30%)]" />
+                <div className="relative flex items-start justify-between gap-4">
                   <div>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] uppercase ${planCardStyles[plan.plan].badge}`}
+                    >
+                      {plan.purchaseMode === 'plan_auto_monthly'
+                        ? t('toggleMonthly')
+                        : t('toggleOneTime')}
+                    </span>
                     <h2 className="text-2xl font-semibold">{planLabels[plan.plan]}</h2>
                     <p className="mt-2 text-sm leading-6 text-white/60">
                       {planDescriptions[plan.plan]}
@@ -344,8 +405,8 @@ export function PricingContent({
                   ) : null}
                 </div>
 
-                <div className="mt-8">
-                  <p className="text-4xl font-semibold">
+                <div className="relative mt-8">
+                  <p className="text-5xl font-semibold tracking-tight">
                     {formatMoney(locale, plan.currency, plan.unitAmount)}
                   </p>
                   <p className="mt-2 text-sm text-white/45">
@@ -356,21 +417,25 @@ export function PricingContent({
                 </div>
 
                 <div className="mt-8 space-y-3 text-sm text-white/78">
-                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
-                    <span>{t('monthlyCredits')}</span>
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/18 px-4 py-3">
+                    <span>
+                      {plan.purchaseMode === 'plan_auto_monthly'
+                        ? t('monthlyCredits')
+                        : t('permanentCredits')}
+                    </span>
                     <span className="font-medium">{plan.monthlyCredits.toLocaleString(locale)}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-black/18 px-4 py-3">
                     <span>{t('storageIncluded')}</span>
                     <span className="font-medium">{t('storageValue', { value: plan.storageGB })}</span>
                   </div>
-                  <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-white/55">
+                  <div className="rounded-2xl border border-white/8 bg-black/18 px-4 py-3 text-white/55">
                     {t('currencyResolved', { currency: plan.currency.toUpperCase() })}
                   </div>
                 </div>
 
                 <Button
-                  className="mt-8 h-11 w-full rounded-xl"
+                  className={`mt-8 h-12 w-full rounded-2xl border-0 text-sm font-semibold ${planCardStyles[plan.plan].button}`}
                   onClick={() => handlePlanCheckout(plan)}
                   disabled={isPending}
                 >
