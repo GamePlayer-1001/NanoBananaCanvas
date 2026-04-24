@@ -472,7 +472,7 @@ export function ModelMindMapSection() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_76%,rgba(44,146,164,0.16),transparent_24%),radial-gradient(circle_at_57%_48%,rgba(112,84,255,0.2),transparent_24%),radial-gradient(circle_at_81%_53%,rgba(190,58,255,0.14),transparent_18%),linear-gradient(180deg,#090b13_0%,#05070e_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(102,137,255,0.4),transparent)]" />
-      <div className="relative w-full">
+      <div className="relative mx-auto w-full max-w-[1440px]">
         <div className="grid gap-8 xl:relative xl:block xl:min-h-[820px]">
           <div
             className="max-w-[33rem] pt-3 transition-[opacity,transform] duration-300 ease-out xl:absolute xl:top-[132px] xl:left-0 xl:z-20 xl:w-[600px] xl:max-w-none xl:pt-0"
@@ -819,7 +819,7 @@ export function FeaturesSection() {
 
   return (
     <section id="features" className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="w-full">
+      <div className="mx-auto w-full max-w-[1240px]">
         <SectionHeader
           eyebrow={featuresT('eyebrow')}
           title={featuresT('title')}
@@ -871,7 +871,7 @@ export function PricingSection() {
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="w-full">
+      <div className="mx-auto w-full max-w-[1240px]">
         <SectionHeader
           eyebrow={pricingT('eyebrow')}
           title={pricingT('title')}
@@ -948,7 +948,7 @@ export function TestimonialsSection() {
   return (
     <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-22 sm:px-6 lg:px-8 lg:py-24 xl:px-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.07),transparent_20%),radial-gradient(circle_at_82%_74%,rgba(110,124,255,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
-      <div className="relative w-full">
+      <div className="relative mx-auto w-full max-w-[1240px]">
         <SectionHeader
           eyebrow={testimonialsT('eyebrow')}
           title={testimonialsT('title')}
@@ -1009,7 +1009,7 @@ export function FaqSection() {
       className="relative overflow-hidden bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(120,92,255,0.08),transparent_26%),linear-gradient(180deg,#09090d_0%,#07080d_100%)]" />
-      <div className="relative mx-auto w-full max-w-[1120px]">
+      <div className="relative mx-auto w-full max-w-[1060px]">
         <div className="mx-auto max-w-[48rem] text-center">
           <p className="text-sm font-medium tracking-[0.24em] text-white/42 uppercase">
             {faqT('eyebrow')}
@@ -1022,7 +1022,7 @@ export function FaqSection() {
           </p>
         </div>
 
-        <div className="mx-auto mt-18 max-w-[920px]">
+        <div className="mx-auto mt-18 max-w-[880px]">
           {FAQ_KEYS.map((key) => (
             <details
               key={key}
