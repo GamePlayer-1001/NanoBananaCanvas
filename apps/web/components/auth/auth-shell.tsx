@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { ArrowRight, PanelsTopLeft, Sparkles } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { BrandMark } from '@/components/shared/brand-mark'
@@ -57,11 +57,11 @@ export function AuthShell({
       <div className="grid min-h-screen lg:grid-cols-[1.02fr_0.98fr]">
         <section className="relative hidden overflow-hidden bg-[#1a120f] lg:block">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_22%,_rgba(255,226,205,0.42),_transparent_18%),radial-gradient(circle_at_70%_18%,_rgba(254,114,144,0.18),_transparent_22%),radial-gradient(circle_at_28%_82%,_rgba(236,72,153,0.18),_transparent_18%),radial-gradient(circle_at_78%_72%,_rgba(59,130,246,0.15),_transparent_20%),linear-gradient(180deg,_rgba(12,8,7,0.16),_rgba(12,8,7,0.42))]" />
-          <div className="absolute inset-0 opacity-80 [background-image:radial-gradient(circle_at_center,_rgba(255,255,255,0.55)_0,_transparent_18%),radial-gradient(circle_at_center,_rgba(96,165,250,0.6)_0,_transparent_12%),radial-gradient(circle_at_center,_rgba(251,113,133,0.5)_0,_transparent_12%)] [background-position:0_0,40px_40px,80px_12px] [background-size:140px_140px,180px_180px,220px_220px]" />
+          <div className="absolute inset-0 [background-image:radial-gradient(circle_at_center,_rgba(255,255,255,0.55)_0,_transparent_18%),radial-gradient(circle_at_center,_rgba(96,165,250,0.6)_0,_transparent_12%),radial-gradient(circle_at_center,_rgba(251,113,133,0.5)_0,_transparent_12%)] [background-size:140px_140px,180px_180px,220px_220px] [background-position:0_0,40px_40px,80px_12px] opacity-80" />
           <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-          <div className="absolute -left-16 bottom-[-8%] h-[34rem] w-[28rem] rotate-[-14deg] rounded-[58%_42%_62%_38%/48%_44%_56%_52%] border border-white/10 bg-[radial-gradient(circle_at_35%_35%,_rgba(255,228,228,0.88),_rgba(237,145,163,0.72)_42%,_rgba(115,44,54,0.16)_78%,_transparent_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.4)]" />
-          <div className="absolute left-[16%] top-[12%] h-[22rem] w-[18rem] rotate-[8deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/12 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,234,234,0.92),_rgba(238,164,176,0.76)_46%,_rgba(117,57,69,0.18)_84%,_transparent_100%)] shadow-[0_36px_90px_rgba(0,0,0,0.34)]" />
+          <div className="absolute bottom-[-8%] -left-16 h-[34rem] w-[28rem] rotate-[-14deg] rounded-[58%_42%_62%_38%/48%_44%_56%_52%] border border-white/10 bg-[radial-gradient(circle_at_35%_35%,_rgba(255,228,228,0.88),_rgba(237,145,163,0.72)_42%,_rgba(115,44,54,0.16)_78%,_transparent_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.4)]" />
+          <div className="absolute top-[12%] left-[16%] h-[22rem] w-[18rem] rotate-[8deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/12 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,234,234,0.92),_rgba(238,164,176,0.76)_46%,_rgba(117,57,69,0.18)_84%,_transparent_100%)] shadow-[0_36px_90px_rgba(0,0,0,0.34)]" />
           <div className="absolute right-[8%] bottom-[18%] h-36 w-24 rotate-[12deg] rounded-[56%_44%_60%_40%/42%_52%_48%_58%] border border-white/10 bg-[radial-gradient(circle_at_38%_30%,_rgba(255,230,236,0.9),_rgba(234,113,135,0.78)_46%,_rgba(105,35,54,0.12)_84%,_transparent_100%)] shadow-[0_22px_60px_rgba(0,0,0,0.34)]" />
 
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/8 to-transparent" />
@@ -70,13 +70,19 @@ export function AuthShell({
           <div className="relative flex h-full flex-col justify-between px-10 py-10 text-white xl:px-14">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-                <PanelsTopLeft className="h-5 w-5" />
+                <BrandMark
+                  withLogo
+                  showText={false}
+                  className="text-[1.15rem] text-white"
+                />
               </div>
               <div className="space-y-1">
                 <p className="text-[11px] tracking-[0.3em] text-white/58 uppercase">
                   {t.visualEyebrow}
                 </p>
-                <BrandMark className="text-xl text-white">{t.brandName}</BrandMark>
+                <BrandMark withLogo className="text-xl text-white">
+                  {t.brandName}
+                </BrandMark>
               </div>
             </div>
 
@@ -117,11 +123,10 @@ export function AuthShell({
 
           <div className="relative z-10 w-full max-w-[560px]">
             <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-3 lg:hidden">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white shadow-sm">
-                  <PanelsTopLeft className="h-4.5 w-4.5 text-black" />
-                </div>
-                <BrandMark className="text-lg text-black">{t.brandName}</BrandMark>
+              <div className="lg:hidden">
+                <BrandMark withLogo className="text-lg text-black">
+                  {t.brandName}
+                </BrandMark>
               </div>
               <div className="ml-auto">
                 <LocaleSwitcher />
@@ -130,14 +135,24 @@ export function AuthShell({
 
             <div className="mb-8 space-y-3 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-black/8 bg-white shadow-[0_16px_40px_rgba(20,20,20,0.08)]">
-                <PanelsTopLeft className="h-7 w-7 text-black" />
+                <BrandMark
+                  withLogo
+                  showText={false}
+                  className="text-[1.85rem] text-black"
+                />
               </div>
               <div className="space-y-2">
                 <div>
-                  <BrandMark className="text-xl text-black/58">{t.brandName}</BrandMark>
+                  <BrandMark withLogo className="text-xl text-black/58">
+                    {t.brandName}
+                  </BrandMark>
                 </div>
-                <h2 className="font-serif text-4xl tracking-tight text-[#111111]">{title}</h2>
-                <p className="mx-auto max-w-md text-sm leading-7 text-black/54">{subtitle}</p>
+                <h2 className="font-serif text-4xl tracking-tight text-[#111111]">
+                  {title}
+                </h2>
+                <p className="mx-auto max-w-md text-sm leading-7 text-black/54">
+                  {subtitle}
+                </p>
               </div>
             </div>
 
@@ -155,11 +170,17 @@ export function AuthShell({
               </p>
               <p className="text-xs leading-6 text-black/38">
                 {t.termsPrefix}{' '}
-                <Link href="/terms" className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]">
+                <Link
+                  href="/terms"
+                  className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]"
+                >
                   {t.termsLink}
                 </Link>{' '}
                 {t.and}{' '}
-                <Link href="/privacy" className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]">
+                <Link
+                  href="/privacy"
+                  className="text-[#5b53c7] transition-colors hover:text-[#4b45ad]"
+                >
                   {t.privacyLink}
                 </Link>
               </p>

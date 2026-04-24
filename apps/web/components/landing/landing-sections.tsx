@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的远程图片渲染，
- *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的图标集合，依赖 @/i18n/navigation 的 Link
+ *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的图标集合，
+ *          依赖 @/components/shared/brand-mark，依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection、CtaSection
  * [POS]: components/landing 的首页内容区集合，被 (landing)/page.tsx 按首屏后叙事顺序消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Link } from '@/i18n/navigation'
 
 type ModelProvider = {
@@ -991,31 +993,52 @@ export function CtaSection() {
 
   return (
     <section className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="grid w-full gap-8 text-left lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
-          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-            {ctaT('eyebrow')}
-          </p>
-          <h2 className="mt-5 text-4xl font-semibold text-white md:text-6xl">
-            {ctaT('title')}
-          </h2>
-          <p className="mt-6 text-base leading-7 text-white/62 md:text-lg">
-            {ctaT('body')}
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
-          <Link
-            href="/sign-in"
-            className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-7 text-sm font-medium text-black transition hover:bg-white/88"
-          >
-            {ctaT('primary')}
-          </Link>
-          <Link
-            href="/pricing"
-            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/12 px-7 text-sm font-medium text-white transition hover:bg-white/8"
-          >
-            {ctaT('secondary')}
-          </Link>
+      <div className="mx-auto w-full max-w-[1180px]">
+        <div className="relative overflow-hidden rounded-[44px] border border-[#efdbbd] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6),transparent_28%),radial-gradient(circle_at_50%_0%,rgba(242,179,76,0.18),transparent_18%),linear-gradient(180deg,#f9f1e1_0%,#f3e7d2_100%)] px-6 py-18 text-center shadow-[0_50px_120px_rgba(0,0,0,0.22)] sm:px-10 md:px-16 md:py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.55),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.18),transparent_26%)]" />
+          <div className="pointer-events-none absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f3c77d]/60" />
+          <div className="pointer-events-none absolute top-0 left-1/2 h-28 w-28 -translate-x-1/2 -translate-y-[42%] rounded-full border border-[#f3c77d]/45" />
+
+          <div className="relative mx-auto max-w-[48rem]">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-[#f3c77d]/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,232,203,0.9))] shadow-[0_18px_40px_rgba(231,170,67,0.18)]">
+              <BrandMark
+                withLogo
+                showText={false}
+                className="text-[2.6rem]"
+                logoClassName="drop-shadow-[0_6px_16px_rgba(232,171,61,0.22)]"
+              />
+            </div>
+
+            <p className="mt-8 text-[0.82rem] font-semibold tracking-[0.34em] text-[#b88637] uppercase">
+              {ctaT('eyebrow')}
+            </p>
+            <h2 className="mt-5 text-[2.7rem] leading-[0.95] font-semibold tracking-tight text-[#131313] md:text-[4.5rem]">
+              {ctaT('title')}
+            </h2>
+            <p className="mx-auto mt-6 max-w-[40rem] text-[1.05rem] leading-8 text-[#7e7464] md:text-[1.22rem] md:leading-9">
+              {ctaT('body')}
+            </p>
+
+            <div className="mt-11 flex flex-col items-center gap-4">
+              <Link
+                href="/sign-in"
+                className="inline-flex h-15 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffb11a_0%,#f39b08_100%)] px-10 text-[1rem] font-semibold text-white shadow-[0_20px_40px_rgba(243,155,8,0.28)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_26px_54px_rgba(243,155,8,0.34)]"
+              >
+                {ctaT('primary')}
+              </Link>
+
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-[#7f725e]">
+                <span>{ctaT('note')}</span>
+                <span className="text-[#c7b293]">·</span>
+                <Link
+                  href="/pricing"
+                  className="font-medium text-[#3a3126] transition-colors hover:text-black"
+                >
+                  {ctaT('secondary')}
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

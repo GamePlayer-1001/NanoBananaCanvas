@@ -24,7 +24,7 @@ export function MobileHeader() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="flex items-center gap-3 border-b border-border px-4 py-2.5 lg:hidden">
+    <header className="border-border flex items-center gap-3 border-b px-4 py-2.5 lg:hidden">
       {/* 汉堡按钮 */}
       <Button
         variant="ghost"
@@ -38,7 +38,7 @@ export function MobileHeader() {
       {/* Logo */}
       <Link href="/explore" className="flex-1">
         <h1>
-          <BrandMark className="text-sm text-foreground" />
+          <BrandMark withLogo className="text-foreground text-sm" />
         </h1>
       </Link>
 

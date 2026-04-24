@@ -37,7 +37,12 @@ import { BrandMark } from '@/components/shared/brand-mark'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
-import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '@/hooks/use-folders'
+import {
+  useFolders,
+  useCreateFolder,
+  useUpdateFolder,
+  useDeleteFolder,
+} from '@/hooks/use-folders'
 import { useCreditBalance } from '@/hooks/use-billing'
 import { useCurrentUser } from '@/hooks/use-user'
 import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
@@ -89,7 +94,7 @@ function SidebarNavItem({
       <Icon size={16} />
       <span className="flex-1">{label}</span>
       {badge && (
-        <span className="rounded border border-brand-200 bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-brand-600">
+        <span className="border-brand-200 bg-brand-50 text-brand-600 rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase">
           {badge}
         </span>
       )}
@@ -133,7 +138,7 @@ function FolderItem({
   if (isEditing) {
     return (
       <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
-        <Folder size={16} className="shrink-0 text-muted-foreground" />
+        <Folder size={16} className="text-muted-foreground shrink-0" />
         <input
           ref={inputRef}
           value={editName}
@@ -146,7 +151,7 @@ function FolderItem({
               setIsEditing(false)
             }
           }}
-          className="flex-1 bg-transparent text-sm outline-none border-b border-brand-400"
+          className="border-brand-400 flex-1 border-b bg-transparent text-sm outline-none"
           autoFocus
         />
       </div>
@@ -174,11 +179,9 @@ function FolderItem({
         </Link>
       </ContextMenuPrimitive.Trigger>
       <ContextMenuPrimitive.Portal>
-        <ContextMenuPrimitive.Content
-          className="z-50 min-w-[120px] rounded-md border border-border bg-popover p-1 shadow-md"
-        >
+        <ContextMenuPrimitive.Content className="border-border bg-popover z-50 min-w-[120px] rounded-md border p-1 shadow-md">
           <ContextMenuPrimitive.Item
-            className="flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm text-destructive outline-none hover:bg-destructive/10"
+            className="text-destructive hover:bg-destructive/10 flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none"
             onSelect={() => deleteFolder.mutate(folder.id)}
           >
             {deleteLabel}
@@ -217,190 +220,192 @@ export function AppSidebar() {
 
   return (
     <>
-    <aside className="flex h-screen w-[200px] flex-col border-r border-border bg-background">
-      {/* ── Header ────────────────────────────────────── */}
-      <div className="px-4 pt-5 pb-2">
-        <Link href="/explore" className="block">
-          <h1>
-            <BrandMark className="text-sm text-foreground" />
-          </h1>
-        </Link>
-        <p className="mt-0.5 text-[8px] text-muted-foreground">{t('personal')}</p>
-      </div>
-
-      {/* ── Search ─────────────────────────────────────── */}
-      <div className="px-3 pt-1 pb-1">
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
-        >
-          <Search size={13} />
-          <span className="flex-1 text-left">{t('search')}</span>
-          <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px]">⌘K</kbd>
-        </button>
-      </div>
-
-      {/* ── Main Nav ──────────────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto px-2 pt-2">
-        {/* 导航项 */}
-        <div className="space-y-0.5">
-          {NAV_ITEMS.map((item) => (
-            <SidebarNavItem
-              key={item.href}
-              href={item.href}
-              icon={item.icon}
-              label={t(item.labelKey)}
-              badge={item.badge ? t(item.badge) : undefined}
-              active={pathname.startsWith(item.href)}
-            />
-          ))}
+      <aside className="border-border bg-background flex h-screen w-[200px] flex-col border-r">
+        {/* ── Header ────────────────────────────────────── */}
+        <div className="px-4 pt-5 pb-2">
+          <Link href="/explore" className="block">
+            <h1>
+              <BrandMark withLogo className="text-foreground text-sm" />
+            </h1>
+          </Link>
+          <p className="text-muted-foreground mt-0.5 text-[8px]">{t('personal')}</p>
         </div>
 
-        {/* 工作区 */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between px-3 py-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t('workspace')}
-            </span>
-            <button
-              onClick={handleCreateFolder}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+        {/* ── Search ─────────────────────────────────────── */}
+        <div className="px-3 pt-1 pb-1">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="border-border text-muted-foreground hover:bg-muted flex w-full items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors"
+          >
+            <Search size={13} />
+            <span className="flex-1 text-left">{t('search')}</span>
+            <kbd className="border-border bg-muted rounded border px-1 py-0.5 text-[10px]">
+              ⌘K
+            </kbd>
+          </button>
+        </div>
 
-          <div className="mt-1 space-y-0.5">
-            {WORKSPACE_ITEMS.map((item) => (
+        {/* ── Main Nav ──────────────────────────────────── */}
+        <nav className="flex-1 overflow-y-auto px-2 pt-2">
+          {/* 导航项 */}
+          <div className="space-y-0.5">
+            {NAV_ITEMS.map((item) => (
               <SidebarNavItem
                 key={item.href}
                 href={item.href}
                 icon={item.icon}
                 label={t(item.labelKey)}
-                active={pathname === item.href && !activeFolderId}
-              />
-            ))}
-
-            {/* 文件夹列表 */}
-            {(folders as { id: string; name: string }[] | undefined)?.map((folder) => (
-              <FolderItem
-                key={folder.id}
-                folder={folder}
-                active={pathname === '/workspace' && activeFolderId === folder.id}
-                deleteLabel={t('deleteFolder')}
+                badge={item.badge ? t(item.badge) : undefined}
+                active={pathname.startsWith(item.href)}
               />
             ))}
           </div>
 
-          {/* 空文件夹提示 */}
-          {(!folders || (folders as unknown[]).length === 0) && (
-            <p className="mt-2 px-3 text-xs text-muted-foreground/60">
-              {t('noFolders')}
-            </p>
-          )}
-        </div>
-      </nav>
-
-      {/* ── Bottom Links ──────────────────────────────── */}
-      <div className="border-t border-border px-2 py-3 space-y-0.5">
-        {/* 联系我们 */}
-        <Link
-          href="/contact"
-          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-            pathname === '/contact'
-              ? 'bg-brand-50 text-brand-600 font-medium'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-          }`}
-        >
-          <MessageCircle size={14} />
-          <span>{t('contactUs')}</span>
-        </Link>
-      </div>
-
-      {/* ── Footer ────────────────────────────────────── */}
-      <div className="border-t border-border px-3 py-3 space-y-2">
-        {/* 用户信息 */}
-        <div className="flex items-start gap-2 px-1">
-          <span className="mt-0.5 rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {user?.plan ? t('planBadge', { plan: user.plan }) : t('freePlan')}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <Link href="/account" className="ml-auto">
-                <Avatar size="sm">
-                  {user?.avatarUrl && (
-                    <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
-                  )}
-                  <AvatarFallback>
-                    {user?.name?.charAt(0) ?? 'G'}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-            </div>
-
-            <div className="mt-1 min-w-0">
-              <p className="truncate text-xs font-medium text-foreground">
-                {user?.name ?? 'Guest'}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {user?.isAuthenticated ? user.email || t('signedIn') : t('guestMode')}
-              </p>
-            </div>
-
-            {user?.isAuthenticated ? (
-              <>
-                <div className="mt-3 space-y-1.5">
-                  <Link
-                    href="/billing"
-                    className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-[11px] transition-colors ${
-                      pathname === '/billing'
-                        ? 'border-brand-200 bg-brand-50 text-brand-700'
-                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Coins size={12} />
-                      {t('creditsEntry')}
-                    </span>
-                    <span className="font-medium text-foreground">
-                      {balance?.availableCredits?.toLocaleString() ?? '...'}
-                    </span>
-                  </Link>
-
-                  <Link
-                    href="/pricing"
-                    className="flex items-center justify-between rounded-lg border border-border px-2.5 py-2 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles size={12} />
-                      {t('upgradeEntry')}
-                    </span>
-                    <span className="font-medium text-brand-600">{t('upgradeCta')}</span>
-                  </Link>
-                </div>
-
-                <SignOutAction
-                  redirectUrl={signOutRedirect}
-                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <LogOut size={12} />
-                  {t('signOut')}
-                </SignOutAction>
-              </>
-            ) : (
-              <Link
-                href="/sign-in?redirect_url=/workspace"
-                className="mt-2 inline-flex text-[11px] font-medium text-brand-600 transition hover:text-brand-700"
+          {/* 工作区 */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between px-3 py-1">
+              <span className="text-muted-foreground text-xs font-medium">
+                {t('workspace')}
+              </span>
+              <button
+                onClick={handleCreateFolder}
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                {t('signIn')}
-              </Link>
+                <Plus size={14} />
+              </button>
+            </div>
+
+            <div className="mt-1 space-y-0.5">
+              {WORKSPACE_ITEMS.map((item) => (
+                <SidebarNavItem
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={t(item.labelKey)}
+                  active={pathname === item.href && !activeFolderId}
+                />
+              ))}
+
+              {/* 文件夹列表 */}
+              {(folders as { id: string; name: string }[] | undefined)?.map((folder) => (
+                <FolderItem
+                  key={folder.id}
+                  folder={folder}
+                  active={pathname === '/workspace' && activeFolderId === folder.id}
+                  deleteLabel={t('deleteFolder')}
+                />
+              ))}
+            </div>
+
+            {/* 空文件夹提示 */}
+            {(!folders || (folders as unknown[]).length === 0) && (
+              <p className="text-muted-foreground/60 mt-2 px-3 text-xs">
+                {t('noFolders')}
+              </p>
             )}
           </div>
-        </div>
-      </div>
-    </aside>
+        </nav>
 
-    {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
+        {/* ── Bottom Links ──────────────────────────────── */}
+        <div className="border-border space-y-0.5 border-t px-2 py-3">
+          {/* 联系我们 */}
+          <Link
+            href="/contact"
+            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+              pathname === '/contact'
+                ? 'bg-brand-50 text-brand-600 font-medium'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <MessageCircle size={14} />
+            <span>{t('contactUs')}</span>
+          </Link>
+        </div>
+
+        {/* ── Footer ────────────────────────────────────── */}
+        <div className="border-border space-y-2 border-t px-3 py-3">
+          {/* 用户信息 */}
+          <div className="flex items-start gap-2 px-1">
+            <span className="bg-muted text-muted-foreground mt-0.5 rounded px-2 py-0.5 text-[10px] font-medium">
+              {user?.plan ? t('planBadge', { plan: user.plan }) : t('freePlan')}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Link href="/account" className="ml-auto">
+                  <Avatar size="sm">
+                    {user?.avatarUrl && (
+                      <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
+                    )}
+                    <AvatarFallback>{user?.name?.charAt(0) ?? 'G'}</AvatarFallback>
+                  </Avatar>
+                </Link>
+              </div>
+
+              <div className="mt-1 min-w-0">
+                <p className="text-foreground truncate text-xs font-medium">
+                  {user?.name ?? 'Guest'}
+                </p>
+                <p className="text-muted-foreground truncate text-[11px]">
+                  {user?.isAuthenticated ? user.email || t('signedIn') : t('guestMode')}
+                </p>
+              </div>
+
+              {user?.isAuthenticated ? (
+                <>
+                  <div className="mt-3 space-y-1.5">
+                    <Link
+                      href="/billing"
+                      className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-[11px] transition-colors ${
+                        pathname === '/billing'
+                          ? 'border-brand-200 bg-brand-50 text-brand-700'
+                          : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Coins size={12} />
+                        {t('creditsEntry')}
+                      </span>
+                      <span className="text-foreground font-medium">
+                        {balance?.availableCredits?.toLocaleString() ?? '...'}
+                      </span>
+                    </Link>
+
+                    <Link
+                      href="/pricing"
+                      className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between rounded-lg border px-2.5 py-2 text-[11px] transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles size={12} />
+                        {t('upgradeEntry')}
+                      </span>
+                      <span className="text-brand-600 font-medium">
+                        {t('upgradeCta')}
+                      </span>
+                    </Link>
+                  </div>
+
+                  <SignOutAction
+                    redirectUrl={signOutRedirect}
+                    className="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <LogOut size={12} />
+                    {t('signOut')}
+                  </SignOutAction>
+                </>
+              ) : (
+                <Link
+                  href="/sign-in?redirect_url=/workspace"
+                  className="text-brand-600 hover:text-brand-700 mt-2 inline-flex text-[11px] font-medium transition"
+                >
+                  {t('signIn')}
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
     </>
   )
 }

@@ -243,10 +243,11 @@
       },
       "cta": {
         "eyebrow": "Start building",
-        "title": "Turn your next AI production chain into a visible workflow.",
-        "body": "Start from the canvas, connect the model graph, and keep every decision readable from the first prompt to the final output.",
+        "title": "Turn your next AI creation chain into a reusable production system.",
+        "body": "Bring prompts, references, model orchestration, version iteration, and team collaboration into one canvas, so creation stops feeling like scattered experiments and starts becoming a repeatable output engine.",
         "primary": "Start creating",
-        "secondary": "Compare plans"
+        "secondary": "Compare plans",
+        "note": "No complex setup required"
       }
     },
     "footer": {

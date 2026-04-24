@@ -81,9 +81,8 @@ export function LandingFooter() {
         <div className="flex flex-col gap-12 md:flex-row md:gap-24">
           {/* Brand Column */}
           <div className="min-w-[200px]">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-xl">🎨</span>
-              <BrandMark className="text-xl text-white" />
+            <div className="mb-3">
+              <BrandMark withLogo className="text-xl text-white" />
             </div>
             <p className="mb-4 text-sm text-white/40">{t('tagline')}</p>
             <div className="flex flex-wrap gap-3 text-sm text-white/35">

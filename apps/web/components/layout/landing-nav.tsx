@@ -27,12 +27,9 @@ export function LandingNav() {
       <header className="fixed top-0 right-0 left-0 z-50 border-b border-white/10 backdrop-blur-md">
         <nav className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
           {/* ── Logo ───────────────────────────────────── */}
-          <div className="flex items-center gap-2">
-            <span className="text-xl leading-none">🎨</span>
-            <Link href="/" className="text-white">
-              <BrandMark className="text-xl text-white md:text-[1.4rem]" />
-            </Link>
-          </div>
+          <Link href="/" className="text-white">
+            <BrandMark withLogo className="text-xl text-white md:text-[1.4rem]" />
+          </Link>
 
           {/* ── Center Nav Links ────────────────────────── */}
           <div className="hidden items-center gap-8 md:flex">
@@ -66,10 +63,7 @@ export function LandingNav() {
           <div className="flex items-center gap-3">
             <LocaleSwitcher />
             <Link href="/sign-in">
-              <Button
-                size="sm"
-                className="bg-white text-sm text-black hover:bg-white/88"
-              >
+              <Button size="sm" className="bg-white text-sm text-black hover:bg-white/88">
                 {t('nav.startCreating')}
               </Button>
             </Link>

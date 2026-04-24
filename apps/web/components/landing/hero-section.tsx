@@ -209,12 +209,7 @@ function resolveNodeRect(node: DemoNode, stage: StageSize) {
 
 /* ─── Bezier Path ────────────────────────────────────────── */
 
-function bezierPath(
-  sx: number,
-  sy: number,
-  tx: number,
-  ty: number,
-): string {
+function bezierPath(sx: number, sy: number, tx: number, ty: number): string {
   const dx = Math.abs(tx - sx) * 0.5
   return `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`
 }
@@ -262,19 +257,13 @@ function ConnectionLine({
 
 /* ─── Artwork Nodes ──────────────────────────────────────── */
 
-function HeroMedia({
-  artwork,
-  label,
-}: {
-  artwork: HeroArtwork
-  label: string
-}) {
+function HeroMedia({ artwork, label }: { artwork: HeroArtwork; label: string }) {
   const media = HERO_MEDIA[artwork]
 
   if (media.kind === 'video') {
     return (
       <video
-        className="pointer-events-none h-full w-full select-none object-cover"
+        className="pointer-events-none h-full w-full object-cover select-none"
         autoPlay
         loop
         muted
@@ -296,7 +285,7 @@ function HeroMedia({
       alt={label}
       fill
       sizes="(max-width: 768px) 40vw, 22vw"
-      className="pointer-events-none select-none object-cover"
+      className="pointer-events-none object-cover select-none"
       draggable={false}
       style={{ objectPosition: media.objectPosition }}
     />
@@ -492,7 +481,10 @@ export function HeroSection() {
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
           <div className="pointer-events-none mx-auto max-w-[860px] text-center">
             <h2 className="mb-2 md:mb-3">
-              <BrandMark className="text-4xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-5xl lg:text-6xl">
+              <BrandMark
+                withLogo
+                className="text-4xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-5xl lg:text-6xl"
+              >
                 {t('heading')}
               </BrandMark>
             </h2>

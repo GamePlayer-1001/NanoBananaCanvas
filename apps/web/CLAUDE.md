@@ -18,7 +18,7 @@ styles/             — 额外样式文件 (reactflow.css)
 services/           — API 调用层 (ai/openrouter + storage/持久化)
 i18n/               — next-intl 国际化配置与消息索引 (config/routing/request/navigation/message-index/message-usage/message-usage-manifest)
 messages/           — i18n 翻译文件 (en.json + zh.json，配合脚本做全键对校验/死 key 清理)
-public/             — 静态资源 (SVG 图标 + landing/hero 真实媒体素材)
+public/             — 静态资源 (brand/logo-1024.png 品牌 logo + SVG 图标 + landing/hero 真实媒体素材)
 scripts/            — 项目级脚本 (Cloudflare 部署包装 + i18n/L10N 索引/校验/修剪/脚手架)
 ```
 
