@@ -1,33 +1,101 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
+ * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，
+ *          依赖 lucide-react 的图标集合，依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection、CtaSection
  * [POS]: components/landing 的首页内容区集合，被 (landing)/page.tsx 按首屏后叙事顺序消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { Check, CircleHelp, Sparkles, Star, Workflow, Zap } from 'lucide-react'
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import {
+  AudioLines,
+  BrainCircuit,
+  Check,
+  CircleHelp,
+  ImageIcon,
+  Route,
+  Sparkles,
+  Star,
+  Video,
+  Workflow,
+  Zap,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
 
-const MODEL_PROVIDERS = [
-  'OpenAI',
-  'Anthropic',
-  'Gemini',
-  'Qwen',
-  'Wan',
-  'Kling',
-  'Runway',
-  'Luma',
-  'Vidu',
-  'MiniMax',
-  'xAI',
-  'Groq',
-  'Black Forest',
-  'OpenRouter',
-  'Midjourney',
-  'ByteDance',
+type ModelProvider = {
+  name: string
+  mark: string
+  orbit: 1 | 2 | 3
+  angle: number
+  tone: 'ice' | 'teal' | 'amber' | 'coral'
+}
+
+type ModelMotionState = {
+  progress: number
+  reveal: number
+  drift: number
+}
+
+const MODEL_PROVIDERS: ModelProvider[] = [
+  { name: 'OpenAI', mark: '◎', orbit: 3, angle: -86, tone: 'ice' },
+  { name: 'Google', mark: 'G', orbit: 3, angle: -42, tone: 'amber' },
+  { name: 'Anthropic', mark: 'AI', orbit: 3, angle: -10, tone: 'coral' },
+  { name: 'Gemini', mark: '✦', orbit: 3, angle: 22, tone: 'ice' },
+  { name: 'Alibaba Wan', mark: 'e', orbit: 3, angle: 56, tone: 'amber' },
+  { name: 'Midjourney', mark: 'MJ', orbit: 3, angle: 92, tone: 'amber' },
+  { name: 'OpenRouter', mark: '↗', orbit: 3, angle: 126, tone: 'ice' },
+  { name: 'Runway', mark: 'R', orbit: 3, angle: 160, tone: 'teal' },
+  { name: 'Luma', mark: 'L', orbit: 3, angle: 194, tone: 'teal' },
+  { name: 'Vidu', mark: 'V', orbit: 3, angle: 228, tone: 'ice' },
+  { name: 'Groq', mark: 'g', orbit: 3, angle: 262, tone: 'ice' },
+  { name: 'xAI', mark: 'X', orbit: 3, angle: 300, tone: 'teal' },
+  { name: 'ByteDance', mark: 'BD', orbit: 2, angle: 16, tone: 'ice' },
+  { name: 'Kling', mark: 'K', orbit: 2, angle: 62, tone: 'teal' },
+  { name: 'Qwen', mark: 'Q', orbit: 2, angle: 106, tone: 'coral' },
+  { name: 'Black Forest', mark: 'BF', orbit: 2, angle: 144, tone: 'teal' },
+  { name: 'MiniMax', mark: 'MM', orbit: 2, angle: 212, tone: 'coral' },
+  { name: 'DeepSeek', mark: 'DS', orbit: 1, angle: 198, tone: 'ice' },
 ]
+
+const MODEL_ORBITS = {
+  1: { x: 208, y: 164 },
+  2: { x: 286, y: 228 },
+  3: { x: 356, y: 286 },
+} as const
+
+const MODEL_TONE_STYLES = {
+  ice: {
+    ring: 'rgba(117, 207, 255, 0.42)',
+    glow: 'rgba(117, 207, 255, 0.22)',
+    text: '#dff4ff',
+    fill: 'radial-gradient(circle at 30% 25%, rgba(117,207,255,0.18), rgba(7,14,24,0.96) 72%)',
+  },
+  teal: {
+    ring: 'rgba(96, 214, 193, 0.4)',
+    glow: 'rgba(96, 214, 193, 0.2)',
+    text: '#dcfff6',
+    fill: 'radial-gradient(circle at 32% 28%, rgba(96,214,193,0.18), rgba(6,14,18,0.96) 72%)',
+  },
+  amber: {
+    ring: 'rgba(245, 187, 102, 0.42)',
+    glow: 'rgba(245, 187, 102, 0.2)',
+    text: '#fff3d8',
+    fill: 'radial-gradient(circle at 34% 26%, rgba(245,187,102,0.17), rgba(18,14,10,0.96) 72%)',
+  },
+  coral: {
+    ring: 'rgba(255, 152, 122, 0.38)',
+    glow: 'rgba(255, 152, 122, 0.18)',
+    text: '#ffe7df',
+    fill: 'radial-gradient(circle at 34% 26%, rgba(255,152,122,0.16), rgba(20,12,13,0.96) 72%)',
+  },
+} as const
+
+const MODEL_SUMMARY_KEYS = ['text', 'image', 'video', 'audio', 'routing'] as const
+const INITIAL_MODEL_MOTION: ModelMotionState = { progress: 0, reveal: 0, drift: -1 }
 
 const FEATURE_KEYS = ['canvas', 'models', 'outputs', 'sharing'] as const
 
@@ -46,6 +114,10 @@ const PRICING_PLANS = [
 
 const TESTIMONIAL_KEYS = ['director', 'studio', 'operator'] as const
 const FAQ_KEYS = ['what', 'models', 'pricing', 'team'] as const
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
 
 function SectionHeader({
   eyebrow,
@@ -97,67 +169,387 @@ function SectionHeader({
 
 export function ModelMindMapSection() {
   const modelT = useTranslations('landing.sections.models')
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [motion, setMotion] = useState(INITIAL_MODEL_MOTION)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches)
+
+    syncPreference()
+    mediaQuery.addEventListener('change', syncPreference)
+
+    return () => mediaQuery.removeEventListener('change', syncPreference)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const section = sectionRef.current
+
+    if (!section) return undefined
+
+    let frame = 0
+
+    const measure = () => {
+      frame = 0
+
+      const rect = section.getBoundingClientRect()
+      const viewportHeight = window.innerHeight || 1
+      const progress = clamp(
+        (viewportHeight - rect.top) / (viewportHeight + rect.height),
+        0,
+        1,
+      )
+      const enter = clamp(
+        (viewportHeight * 0.9 - rect.top) / (viewportHeight * 0.62),
+        0,
+        1,
+      )
+      const leave = clamp(
+        (rect.bottom - viewportHeight * 0.12) / (viewportHeight * 0.54),
+        0,
+        1,
+      )
+      const reveal = clamp(Math.min(enter, leave), 0, 1)
+      const drift = clamp((progress - 0.5) * 2, -1, 1)
+
+      setMotion((previous) => {
+        const hasChanged =
+          Math.abs(previous.progress - progress) > 0.006 ||
+          Math.abs(previous.reveal - reveal) > 0.006 ||
+          Math.abs(previous.drift - drift) > 0.006
+
+        return hasChanged ? { progress, reveal, drift } : previous
+      })
+    }
+
+    const requestMeasure = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(measure)
+    }
+
+    requestMeasure()
+    window.addEventListener('scroll', requestMeasure, { passive: true })
+    window.addEventListener('resize', requestMeasure)
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', requestMeasure)
+      window.removeEventListener('resize', requestMeasure)
+    }
+  }, [])
+
+  const revealProgress = prefersReducedMotion ? 1 : motion.reveal
+  const drift = prefersReducedMotion ? 0 : motion.drift
+  const vendorCount = MODEL_PROVIDERS.length
 
   return (
     <section
+      ref={sectionRef}
       id="models"
-      className="relative overflow-hidden bg-[#09090d] px-4 py-28 sm:px-6 lg:px-8 lg:py-32 xl:px-10"
+      className="relative overflow-hidden bg-[#080b11] px-4 py-28 sm:px-6 lg:px-8 lg:py-32 xl:px-10"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(99,102,241,0.16),transparent_34%),radial-gradient(circle_at_15%_80%,rgba(20,184,166,0.12),transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_58%_44%,rgba(70,122,205,0.16),transparent_26%),radial-gradient(circle_at_18%_88%,rgba(74,179,162,0.14),transparent_28%),linear-gradient(180deg,rgba(5,8,13,0.12),rgba(5,8,13,0.72))]" />
       <div className="relative w-full">
-        <SectionHeader
-          eyebrow={modelT('eyebrow')}
-          title={modelT('title')}
-          body={modelT('body')}
-          size="featured"
-        />
-
-        <div className="relative mt-16 min-h-[600px] w-full overflow-hidden rounded-[36px] border border-white/8 bg-black/24 p-6 md:min-h-[680px] md:p-10 lg:min-h-[760px] lg:p-14">
-          <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]" />
-          <div className="relative flex min-h-[540px] items-center justify-center md:min-h-[600px] lg:min-h-[660px]">
-            <div className="absolute h-60 w-60 rounded-full border border-white/12 bg-white/[0.04] shadow-[0_0_100px_rgba(255,255,255,0.08)] md:h-72 md:w-72" />
-            <div className="relative z-10 flex h-48 w-48 flex-col items-center justify-center rounded-full border border-white/16 bg-white px-6 text-center text-black shadow-[0_30px_140px_rgba(0,0,0,0.38)] md:h-60 md:w-60">
-              <Workflow className="h-8 w-8 md:h-10 md:w-10" />
-              <p className="mt-4 text-base font-semibold md:text-lg">
-                {modelT('centerTitle')}
-              </p>
-              <p className="mt-2 text-[13px] leading-5 text-black/55 md:text-sm md:leading-6">
-                {modelT('centerBody')}
-              </p>
-            </div>
-
-            {MODEL_PROVIDERS.map((provider, index) => {
-              const angle = (index / MODEL_PROVIDERS.length) * Math.PI * 2
-              const radiusX = 480
-              const radiusY = 230
-              const x = Math.cos(angle) * radiusX
-              const y = Math.sin(angle) * radiusY
-
-              return (
-                <div
-                  key={provider}
-                  className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block"
-                  style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
-                >
-                  <div className="rounded-full border border-white/10 bg-white/[0.055] px-5 py-2.5 text-base text-white/80 shadow-[0_20px_70px_rgba(0,0,0,0.24)]">
-                    {provider}
-                  </div>
-                </div>
-              )
-            })}
-
-            <div className="grid w-full gap-3 md:hidden">
-              {MODEL_PROVIDERS.slice(0, 12).map((provider) => (
-                <div
-                  key={provider}
-                  className="rounded-full border border-white/10 bg-white/[0.055] px-4 py-3 text-center text-base text-white/78"
-                >
-                  {provider}
-                </div>
-              ))}
+        <div className="grid gap-10 xl:grid-cols-[0.88fr_1.2fr_0.72fr] xl:items-start">
+          <div
+            className="max-w-[34rem] transition-[opacity,transform] duration-300 ease-out"
+            style={{
+              opacity: 0.14 + revealProgress * 0.86,
+              transform: `translate3d(${-68 * (1 - revealProgress)}px, ${
+                30 * (1 - revealProgress) - drift * 18
+              }px, 0)`,
+            }}
+          >
+            <p className="text-sm font-medium tracking-[0.24em] text-[#8aa0b8] uppercase">
+              {modelT('eyebrow')}
+            </p>
+            <h2 className="mt-5 text-[3rem] leading-[0.94] font-semibold tracking-tight text-white md:text-[4.8rem] lg:text-[5.6rem]">
+              {modelT('title')}
+              <span className="mt-2 block bg-[linear-gradient(90deg,#8cc4ff_0%,#76d5c2_44%,#ffbe74_100%)] bg-clip-text text-transparent">
+                {modelT('highlight')}
+              </span>
+            </h2>
+            <p className="mt-7 max-w-[34rem] text-lg leading-8 text-[#b9c5d4] md:text-[1.28rem] md:leading-9">
+              {modelT('body')}
+            </p>
+            <div className="mt-8 inline-flex max-w-[28rem] items-center gap-3 rounded-2xl border border-[#23443f] bg-[linear-gradient(135deg,rgba(13,37,35,0.98),rgba(10,18,24,0.92))] px-5 py-4 text-sm text-[#d9efe9] shadow-[0_18px_60px_rgba(0,0,0,0.28)] md:text-base">
+              <span className="text-lg text-[#f8c46f]">✦</span>
+              <span>{modelT('banner')}</span>
             </div>
           </div>
+
+          <div
+            className="relative min-h-[34rem] overflow-hidden rounded-[36px] border border-white/8 bg-[linear-gradient(180deg,rgba(8,12,18,0.98),rgba(6,9,14,0.94))] px-4 py-4 shadow-[0_36px_140px_rgba(0,0,0,0.36)] transition-[opacity,transform] duration-300 ease-out md:min-h-[43rem] md:px-6 md:py-6"
+            style={{
+              opacity: 0.18 + revealProgress * 0.82,
+              transform: `translate3d(0, ${56 * (1 - revealProgress) - drift * 24}px, 0)`,
+            }}
+          >
+            <div className="absolute inset-0 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:42px_42px] opacity-40" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(70,122,205,0.16),transparent_25%),radial-gradient(circle_at_26%_76%,rgba(74,179,162,0.13),transparent_22%),radial-gradient(circle_at_78%_72%,rgba(245,187,102,0.12),transparent_21%)]" />
+            <div className="relative flex min-h-[31rem] items-center justify-center md:min-h-[39rem]">
+              <div className="relative h-[760px] w-[1000px] origin-center scale-[0.5] sm:scale-[0.62] lg:scale-[0.76] xl:scale-[0.9] 2xl:scale-100">
+                <div
+                  className="relative h-full w-full transition-[transform,opacity] duration-300 ease-out"
+                  style={{
+                    opacity: 0.18 + revealProgress * 0.82,
+                    transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 18}px, 0) scale(${
+                      0.88 + revealProgress * 0.12
+                    }) rotate(${drift * 2.8}deg)`,
+                  }}
+                >
+                  <svg
+                    className="absolute inset-0 h-full w-full overflow-visible"
+                    viewBox="0 0 1000 760"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    {[140, 224, 304].map((radius, index) => (
+                      <circle
+                        key={radius}
+                        cx="500"
+                        cy="380"
+                        r={radius}
+                        stroke="rgba(163,189,217,0.13)"
+                        strokeWidth={index === 0 ? 1.4 : 1}
+                      />
+                    ))}
+
+                    {MODEL_PROVIDERS.map((provider, index) => {
+                      const angle = (provider.angle * Math.PI) / 180
+                      const orbit = MODEL_ORBITS[provider.orbit]
+                      const tone = MODEL_TONE_STYLES[provider.tone]
+                      const x = 500 + Math.cos(angle) * orbit.x
+                      const y = 380 + Math.sin(angle) * orbit.y
+                      const c1x = 500 + Math.cos(angle) * orbit.x * 0.32
+                      const c1y = 380 + Math.sin(angle) * orbit.y * 0.16
+                      const c2x = 500 + Math.cos(angle) * orbit.x * 0.74
+                      const c2y = 380 + Math.sin(angle) * orbit.y * 0.86
+
+                      return (
+                        <g key={provider.name}>
+                          <path
+                            d={`M500 380 C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x} ${y}`}
+                            stroke={tone.ring}
+                            strokeWidth={provider.orbit === 3 ? 1.8 : 1.45}
+                            strokeLinecap="round"
+                            strokeDasharray="5 11"
+                            className="transition-opacity duration-700 ease-out"
+                            style={{
+                              opacity: 0.12 + revealProgress * 0.74,
+                              animation: `dashFlow ${4.6 + provider.orbit * 0.5}s linear infinite`,
+                              animationDelay: `${index * 0.12}s`,
+                            }}
+                          />
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r="4.8"
+                            fill={tone.ring}
+                            style={{
+                              opacity: 0.2 + revealProgress * 0.8,
+                              transition: prefersReducedMotion
+                                ? 'opacity 0ms linear'
+                                : 'opacity 280ms ease',
+                            }}
+                          />
+                        </g>
+                      )
+                    })}
+                  </svg>
+
+                  <div
+                    className="absolute top-1/2 left-1/2 z-20 h-[286px] w-[286px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[radial-gradient(circle_at_40%_34%,rgba(110,156,239,0.36),rgba(26,33,64,0.95)_58%,rgba(8,10,18,0.98)_100%)] shadow-[0_0_0_18px_rgba(129,150,208,0.05),0_0_90px_rgba(77,121,214,0.18)]"
+                    style={{
+                      opacity: 0.24 + revealProgress * 0.76,
+                      animation: prefersReducedMotion
+                        ? 'none'
+                        : 'corePulse 6s ease-in-out infinite',
+                      boxShadow: `0 0 0 ${8 + revealProgress * 10}px rgba(129,150,208,${
+                        0.02 + revealProgress * 0.03
+                      }), 0 0 ${48 + revealProgress * 46}px rgba(77,121,214,${
+                        0.1 + revealProgress * 0.1
+                      })`,
+                    }}
+                  >
+                    <div className="absolute inset-[18px] rounded-full border border-white/10" />
+                    <div className="relative flex h-full flex-col items-center justify-center px-10 text-center">
+                      <BrainCircuit className="h-14 w-14 text-[#cfe2ff]" />
+                      <p className="mt-5 text-[2rem] font-semibold tracking-tight text-white">
+                        {modelT('centerTitle')}
+                      </p>
+                      <p className="mt-3 text-[1rem] leading-7 text-[#c8d3df]">
+                        {modelT('centerBody')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {MODEL_PROVIDERS.map((provider, index) => {
+                    const angle = (provider.angle * Math.PI) / 180
+                    const orbit = MODEL_ORBITS[provider.orbit]
+                    const tone = MODEL_TONE_STYLES[provider.tone]
+                    const x = 500 + Math.cos(angle) * orbit.x
+                    const y = 380 + Math.sin(angle) * orbit.y
+
+                    return (
+                      <div
+                        key={provider.name}
+                        className="absolute z-30 transition-all ease-out"
+                        style={{
+                          left: `${x}px`,
+                          top: `${y}px`,
+                          width:
+                            provider.orbit === 3
+                              ? '156px'
+                              : provider.orbit === 2
+                                ? '142px'
+                                : '128px',
+                          transform: `translate(-50%, -50%) translate(${
+                            Math.cos(angle) * (36 * (1 - revealProgress) + drift * 10)
+                          }px, ${
+                            Math.sin(angle) * (36 * (1 - revealProgress) - drift * 8) +
+                            16 * (1 - revealProgress)
+                          }px) scale(${0.72 + revealProgress * 0.28})`,
+                          opacity: 0.08 + revealProgress * 0.92,
+                          transitionDuration: prefersReducedMotion
+                            ? '0ms'
+                            : `${280 + provider.orbit * 80}ms`,
+                          transitionDelay: prefersReducedMotion
+                            ? '0ms'
+                            : `${80 + index * 18}ms`,
+                        }}
+                      >
+                        <div
+                          className="flex flex-col items-center text-center"
+                          style={{
+                            animation: prefersReducedMotion
+                              ? 'none'
+                              : `providerBob ${5.2 + (index % 5) * 0.45}s ease-in-out infinite`,
+                          }}
+                        >
+                          <div
+                            className="flex h-[92px] w-[92px] items-center justify-center rounded-full border bg-[#070b12]/92 shadow-[0_22px_60px_rgba(0,0,0,0.34)]"
+                            style={{
+                              borderColor: tone.ring,
+                              boxShadow: `0 0 0 ${6 + revealProgress * 4}px ${tone.glow}, 0 ${
+                                16 + revealProgress * 10
+                              }px ${36 + revealProgress * 24}px rgba(0,0,0,0.34)`,
+                              background: tone.fill,
+                            }}
+                          >
+                            <span
+                              className="text-[2rem] font-semibold tracking-tight"
+                              style={{ color: tone.text }}
+                            >
+                              {provider.mark}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-[1.1rem] leading-tight font-semibold text-white">
+                            {provider.name}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside
+            className="rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(13,17,25,0.96),rgba(8,11,17,0.98))] p-6 shadow-[0_22px_100px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-300 ease-out md:p-7"
+            style={{
+              opacity: 0.12 + revealProgress * 0.88,
+              transform: `translate3d(${58 * (1 - revealProgress)}px, ${
+                18 * (1 - revealProgress) + drift * 14
+              }px, 0)`,
+            }}
+          >
+            <p className="text-[1.8rem] font-semibold tracking-tight text-white">
+              {modelT('summaryTitle')}
+            </p>
+            <div className="mt-7 space-y-4">
+              {MODEL_SUMMARY_KEYS.map((key) => {
+                const Icon =
+                  key === 'text'
+                    ? Sparkles
+                    : key === 'image'
+                      ? ImageIcon
+                      : key === 'video'
+                        ? Video
+                        : key === 'audio'
+                          ? AudioLines
+                          : Route
+
+                return (
+                  <div
+                    key={key}
+                    className="flex items-start gap-4 rounded-2xl border border-white/6 bg-white/[0.025] px-4 py-4"
+                  >
+                    <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#243446] bg-[#0b1320] text-[#8cc4ff]">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-white">
+                        {modelT(`capabilities.${key}.title`)}
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-[#9db0c6]">
+                        {modelT(`capabilities.${key}.body`)}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-7 border-t border-white/8 pt-6">
+              <p className="text-sm tracking-[0.2em] text-[#89a0b8] uppercase">
+                {modelT('summaryCountLabel')}
+              </p>
+              <div className="mt-3 flex items-end gap-3">
+                <span className="text-[3.2rem] leading-none font-semibold text-white">
+                  {modelT('summaryCountValue', { count: vendorCount })}
+                </span>
+                <span className="pb-2 text-sm text-[#8fb3d2]">
+                  {modelT('summaryStatus')}
+                </span>
+              </div>
+            </div>
+          </aside>
         </div>
+
+        <style jsx>{`
+          @keyframes providerBob {
+            0%,
+            100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-8px);
+            }
+          }
+
+          @keyframes dashFlow {
+            to {
+              stroke-dashoffset: -96;
+            }
+          }
+
+          @keyframes corePulse {
+            0%,
+            100% {
+              transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+              transform: translate(-50%, -50%) scale(1.025);
+            }
+          }
+        `}</style>
       </div>
     </section>
   )
@@ -364,15 +756,15 @@ export function CtaSection() {
     <section className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="grid w-full gap-8 text-left lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
-        <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-          {ctaT('eyebrow')}
-        </p>
-        <h2 className="mt-5 text-4xl font-semibold text-white md:text-6xl">
-          {ctaT('title')}
-        </h2>
-        <p className="mt-6 text-base leading-7 text-white/62 md:text-lg">
-          {ctaT('body')}
-        </p>
+          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
+            {ctaT('eyebrow')}
+          </p>
+          <h2 className="mt-5 text-4xl font-semibold text-white md:text-6xl">
+            {ctaT('title')}
+          </h2>
+          <p className="mt-6 text-base leading-7 text-white/62 md:text-lg">
+            {ctaT('body')}
+          </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
           <Link

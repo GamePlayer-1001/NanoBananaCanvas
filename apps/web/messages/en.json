@@ -80,10 +80,38 @@
     "sections": {
       "models": {
         "eyebrow": "Model support",
-        "title": "A moving model mind map, not another flat list",
-        "body": "Bring text, image, video, audio, and routing models into one canvas. The page shows the ecosystem as a connected graph because production work is a graph.",
-        "centerTitle": "One Canvas",
-        "centerBody": "Many model routes"
+        "title": "Model Support Cloud Graph",
+        "highlight": "One canvas, infinite connections",
+        "body": "Bring leading model vendors into one surface and orchestrate them as a living graph, so creation, reasoning, and media generation move together.",
+        "banner": "Mix multiple models freely and lean on each provider where it is strongest",
+        "centerTitle": "Multimodal intelligence hub",
+        "centerBody": "Flexible routing, free combination, faster creation",
+        "summaryTitle": "Model capability overview",
+        "capabilities": {
+          "text": {
+            "title": "Text generation",
+            "body": "Multi-model writing, reasoning, and prompt refinement."
+          },
+          "image": {
+            "title": "Image generation",
+            "body": "High-quality image generation, reference fusion, and visual expansion."
+          },
+          "video": {
+            "title": "Video generation",
+            "body": "Motion creation, shot extension, and scene continuation."
+          },
+          "audio": {
+            "title": "Audio synthesis",
+            "body": "Natural voice generation, audio processing, and multimodal dubbing."
+          },
+          "routing": {
+            "title": "Model routing",
+            "body": "Make different models collaborate as one graph instead of isolated tools."
+          }
+        },
+        "summaryCountLabel": "Integrated models",
+        "summaryCountValue": "{count}+",
+        "summaryStatus": "Growing continuously"
       },
       "features": {
         "eyebrow": "Features",
