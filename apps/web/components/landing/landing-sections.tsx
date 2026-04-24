@@ -17,6 +17,7 @@ import {
   Check,
   ChevronDown,
   Cuboid,
+  Eye,
   ImageIcon,
   Play,
   Sparkles,
@@ -266,10 +267,17 @@ const MODEL_TONE_STYLES = {
   },
 } as const
 
-const MODEL_SUMMARY_KEYS = ['text', 'image', 'video', 'threed', 'audio'] as const
+const MODEL_SUMMARY_KEYS = [
+  'image',
+  'video',
+  'threed',
+  'text',
+  'audio',
+  'vision',
+] as const
 const INITIAL_MODEL_MOTION: ModelMotionState = { progress: 0, reveal: 0, drift: -1 }
 
-const FEATURE_KEYS = ['canvas', 'models', 'outputs', 'sharing'] as const
+const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
 
 const PRICING_PLANS = [
   { key: 'free', price: '$0', credits: '0', storage: '1 GB', popular: false },
@@ -298,20 +306,21 @@ const TESTIMONIAL_ITEMS = [
   'vfx',
   'dream',
 ] as const
-const TESTIMONIAL_AVATAR_BASE = 'https://api.dicebear.com/9.x/notionists-neutral/png'
-const FAQ_KEYS = [
-  'what',
-  'models',
-  'canvas',
-  'compare',
-  'pricing',
-  'team',
-  'gpu',
-  'privacy',
-  'credits',
-  'commercial',
-  'contact',
-] as const
+const TESTIMONIAL_AVATARS: Record<(typeof TESTIMONIAL_ITEMS)[number], string> = {
+  pixel: 'https://randomuser.me/api/portraits/women/68.jpg',
+  lena: 'https://randomuser.me/api/portraits/women/44.jpg',
+  prompt: 'https://randomuser.me/api/portraits/men/32.jpg',
+  frame: 'https://randomuser.me/api/portraits/men/52.jpg',
+  neo: 'https://randomuser.me/api/portraits/women/33.jpg',
+  moodboard: 'https://randomuser.me/api/portraits/women/63.jpg',
+  indie: 'https://randomuser.me/api/portraits/men/75.jpg',
+  workflow: 'https://randomuser.me/api/portraits/men/22.jpg',
+  cyber: 'https://randomuser.me/api/portraits/women/90.jpg',
+  canvas: 'https://randomuser.me/api/portraits/women/17.jpg',
+  vfx: 'https://randomuser.me/api/portraits/men/41.jpg',
+  dream: 'https://randomuser.me/api/portraits/women/12.jpg',
+}
+const FAQ_KEYS = ['what', 'models', 'canvas', 'compare', 'pricing'] as const
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -714,15 +723,17 @@ export function ModelMindMapSection() {
             <div className="mt-5 space-y-3">
               {MODEL_SUMMARY_KEYS.map((key) => {
                 const Icon =
-                  key === 'text'
-                    ? Sparkles
-                    : key === 'image'
-                      ? ImageIcon
-                      : key === 'video'
-                        ? Video
-                        : key === 'threed'
-                          ? Cuboid
-                          : AudioLines
+                  key === 'image'
+                    ? ImageIcon
+                    : key === 'video'
+                      ? Video
+                      : key === 'threed'
+                        ? Cuboid
+                        : key === 'text'
+                          ? Sparkles
+                          : key === 'audio'
+                            ? AudioLines
+                            : Eye
 
                 return (
                   <div
@@ -805,7 +816,7 @@ export function FeaturesSection() {
           body={featuresT('body')}
         />
 
-        <div className="mt-14 grid gap-5 lg:grid-cols-4">
+        <div className="mt-14 grid gap-5 lg:grid-cols-3">
           {FEATURE_KEYS.map((key, index) => (
             <article
               key={key}
@@ -919,40 +930,37 @@ export function TestimonialsSection() {
 
   return (
     <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-22 sm:px-6 lg:px-8 lg:py-24 xl:px-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(79,70,229,0.1),transparent_20%),radial-gradient(circle_at_80%_78%,rgba(34,197,94,0.06),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
-      <div className="relative mx-auto w-full max-w-[1280px]">
-        <div className="mx-auto max-w-[48rem] text-center">
-          <p className="text-sm font-medium tracking-[0.24em] text-white/42 uppercase">
-            {testimonialsT('eyebrow')}
-          </p>
-          <h2 className="mt-5 text-[2.35rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[3.45rem]">
-            {testimonialsT('title')}
-          </h2>
-          <p className="mx-auto mt-5 max-w-[42rem] text-[0.98rem] leading-8 text-white/58 md:text-[1.08rem]">
-            {testimonialsT('body')}
-          </p>
-        </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.07),transparent_20%),radial-gradient(circle_at_82%_74%,rgba(110,124,255,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
+      <div className="relative w-full">
+        <SectionHeader
+          eyebrow={testimonialsT('eyebrow')}
+          title={testimonialsT('title')}
+          body={testimonialsT('body')}
+        />
 
         <div className="mt-14 gap-5 md:columns-2 xl:columns-4 [&>*]:mb-5">
           {TESTIMONIAL_ITEMS.map((key, index) => (
             <article
               key={key}
               className={`break-inside-avoid rounded-[28px] border p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-6 ${
-                index % 3 === 0
-                  ? 'border-[#23314a] bg-[linear-gradient(180deg,rgba(16,22,36,0.96),rgba(10,13,22,0.96))]'
-                  : index % 3 === 1
-                    ? 'border-[#2e2a20] bg-[linear-gradient(180deg,rgba(24,20,14,0.92),rgba(13,12,10,0.96))]'
-                    : 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))]'
+                index % 4 === 0
+                  ? 'border-white/10 bg-[linear-gradient(180deg,rgba(19,20,24,0.96),rgba(11,12,15,0.98))]'
+                  : index % 4 === 1
+                    ? 'border-[#303640] bg-[linear-gradient(180deg,rgba(18,24,31,0.96),rgba(10,13,18,0.98))]'
+                    : index % 4 === 2
+                      ? 'border-[#3a342d] bg-[linear-gradient(180deg,rgba(28,24,19,0.94),rgba(13,12,10,0.98))]'
+                      : 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.028))]'
               }`}
             >
               <div className="flex items-center gap-3.5">
                 <Image
-                  src={`${TESTIMONIAL_AVATAR_BASE}?seed=${key}`}
+                  src={TESTIMONIAL_AVATARS[key]}
                   alt={`${testimonialsT(`${key}.handle`)} avatar`}
                   width={48}
                   height={48}
                   unoptimized
                   className="h-12 w-12 rounded-full border border-white/12 bg-white/8 object-cover"
+                  referrerPolicy="no-referrer"
                 />
                 <div>
                   <p className="text-[0.98rem] font-semibold text-white">
@@ -1028,50 +1036,49 @@ export function CtaSection() {
 
   return (
     <section className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="mx-auto w-full max-w-[1180px]">
-        <div className="relative overflow-hidden rounded-[44px] border border-[#efdbbd] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6),transparent_28%),radial-gradient(circle_at_50%_0%,rgba(242,179,76,0.18),transparent_18%),linear-gradient(180deg,#f9f1e1_0%,#f3e7d2_100%)] px-6 py-18 text-center shadow-[0_50px_120px_rgba(0,0,0,0.22)] sm:px-10 md:px-16 md:py-24">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.55),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.18),transparent_26%)]" />
-          <div className="pointer-events-none absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f3c77d]/60" />
-          <div className="pointer-events-none absolute top-0 left-1/2 h-28 w-28 -translate-x-1/2 -translate-y-[42%] rounded-full border border-[#f3c77d]/45" />
+      <div className="w-full">
+        <div className="relative overflow-hidden rounded-[44px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_50%_0%,rgba(114,130,255,0.1),transparent_18%),linear-gradient(180deg,#121318_0%,#08090d_100%)] px-6 py-18 text-center shadow-[0_50px_120px_rgba(0,0,0,0.32)] sm:px-10 md:px-16 md:py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.12),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.06),transparent_26%)]" />
+          <div className="pointer-events-none absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/14" />
+          <div className="pointer-events-none absolute top-0 left-1/2 h-28 w-28 -translate-x-1/2 -translate-y-[42%] rounded-full border border-white/10" />
 
           <div className="relative mx-auto max-w-[48rem]">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-[#f3c77d]/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,232,203,0.9))] shadow-[0_18px_40px_rgba(231,170,67,0.18)]">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04))] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
               <BrandMark
                 withLogo
                 showText={false}
-                className="text-[2.6rem]"
-                logoClassName="drop-shadow-[0_6px_16px_rgba(232,171,61,0.22)]"
+                className="text-[2.6rem] text-white"
+                logoClassName="drop-shadow-[0_6px_16px_rgba(255,255,255,0.16)]"
               />
             </div>
 
-            <p className="mt-8 text-[0.82rem] font-semibold tracking-[0.34em] text-[#b88637] uppercase">
+            <p className="mt-8 text-[0.82rem] font-semibold tracking-[0.34em] text-white/42 uppercase">
               {ctaT('eyebrow')}
             </p>
-            <h2 className="mt-5 text-[2.7rem] leading-[0.95] font-semibold tracking-tight text-[#131313] md:text-[4.5rem]">
+            <h2 className="mt-5 text-[2.7rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.5rem]">
               {ctaT('title')}
             </h2>
-            <p className="mx-auto mt-6 max-w-[40rem] text-[1.05rem] leading-8 text-[#7e7464] md:text-[1.22rem] md:leading-9">
+            <p className="mx-auto mt-6 max-w-[40rem] text-[1.05rem] leading-8 text-white/62 md:text-[1.22rem] md:leading-9">
               {ctaT('body')}
             </p>
 
-            <div className="mt-11 flex flex-col items-center gap-4">
+            <div className="mt-11 flex flex-col items-center gap-4 md:flex-row md:justify-center">
               <Link
                 href="/sign-in"
-                className="inline-flex h-15 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffb11a_0%,#f39b08_100%)] px-10 text-[1rem] font-semibold text-white shadow-[0_20px_40px_rgba(243,155,8,0.28)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_26px_54px_rgba(243,155,8,0.34)]"
+                className="inline-flex h-15 items-center justify-center rounded-full bg-white px-10 text-[1rem] font-semibold text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white/90"
               >
                 {ctaT('primary')}
               </Link>
+              <Link
+                href="/pricing"
+                className="inline-flex h-15 items-center justify-center rounded-full border border-white/14 px-10 text-[1rem] font-semibold text-white transition-colors duration-200 hover:bg-white/8"
+              >
+                {ctaT('secondary')}
+              </Link>
+            </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-[#7f725e]">
-                <span>{ctaT('note')}</span>
-                <span className="text-[#c7b293]">·</span>
-                <Link
-                  href="/pricing"
-                  className="font-medium text-[#3a3126] transition-colors hover:text-black"
-                >
-                  {ctaT('secondary')}
-                </Link>
-              </div>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-white/42">
+              <span>{ctaT('note')}</span>
             </div>
           </div>
         </div>

@@ -60,10 +60,10 @@
     },
     "hero": {
       "heading": "Nano Banana Canvas",
-      "tagline": "无限画布，无限想象",
-      "description": "从剧本到银幕，开启您的创意之旅\n随心创作，画布由你掌控",
-      "cta": "立即开始",
-      "models": "汇聚全球领先模型",
+      "tagline": "无限画布。无限流动。",
+      "description": "在无限画布上构建电影级故事。将图像、视频、大语言模型与 3D 模型连接至同一个可视化工作流中 —— 从第一句提示词到最终成片。",
+      "cta": "立即创作",
+      "models": "为电影人与创作者而生的可视化 AI 平台。",
       "nodes": {
         "feature": "眼部特征",
         "portrait": "人物底稿",
@@ -79,68 +79,68 @@
     },
     "sections": {
       "models": {
-        "eyebrow": "模型支持",
-        "title": "模型支持云图谱",
-        "highlight": "一张画布，连接无限可能",
-        "body": "汇聚全球顶尖模型服务商，支持多模型接入与组合调度，让创意、推理与生成能力在同一张画布上自由流动。",
-        "cta": "查看接入文档",
-        "banner": "支持自由组合使用多个模型，发挥各模型优势",
-        "centerTitle": "多模型智能中枢",
-        "centerBody": "灵活调度，自由组合，高效创作",
-        "summaryTitle": "模型能力总览",
+        "eyebrow": "模型云图",
+        "title": "像一朵活的云一样，",
+        "highlight": "可视化地连接模型。",
+        "body": "把任意 AI 节点（Stable Diffusion、Pika、Runway、GPT-4o、ElevenLabs）拖拽到无限画布上，像搭分镜一样连接它们，执行序列、循环生成、建立条件分支。你的整个前期与正式制作流程，全都在这里。",
+        "cta": "查看模型支持",
+        "banner": "一个由你编排的模型云，一个永远留在画布上的工作流。",
+        "centerTitle": "不再跳工具，而是编排流程",
+        "centerBody": "序列执行、循环生成、条件分支与模型接力，都在同一个活着的工作区里保持可读。",
+        "summaryTitle": "一张画布，囊括你需要的每一种创意模型。",
         "capabilities": {
-          "text": {
-            "title": "文本生成",
-            "body": "多模型文本创作、推理与改写。"
-          },
           "image": {
             "title": "图像生成",
-            "body": "高质量图像生成、参考融合与风格延展。"
+            "body": "从提示词到镜头。"
           },
           "video": {
             "title": "视频生成",
-            "body": "动态视频创作、镜头扩写与场景延展。"
+            "body": "从分镜到动态画面。"
           },
           "threed": {
             "title": "3D 生成",
-            "body": "三维模型生成与空间内容构建。"
+            "body": "构建场景。"
+          },
+          "text": {
+            "title": "大语言模型",
+            "body": "剧本、改写、沉淀。"
           },
           "audio": {
-            "title": "语音合成",
-            "body": "自然语音生成、音频处理与多模态配音。"
+            "title": "语音与音频",
+            "body": "对白、拟音、环境音。"
+          },
+          "vision": {
+            "title": "图像识别",
+            "body": "提取、参考、再创作。"
           }
         },
-        "summaryCountLabel": "已接入模型",
+        "summaryCountLabel": "已连接提供商",
         "summaryCountValue": "{count}+",
-        "summaryStatus": "持续更新中..."
+        "summaryStatus": "会继续随着工作流扩展"
       },
       "features": {
-        "eyebrow": "功能特性",
-        "title": "所有能力都围绕工作流组织",
-        "body": "界面服务于那些需要看清创意如何从输入流向生成结果的人，而不是把过程藏进一个单独的提示词输入框里。",
+        "eyebrow": "真实工作流",
+        "title": "围绕你的真实创作方式构建。",
+        "body": "无论你是独立电影人还是工作室团队，Nano Banana Canvas 都能把零散的 AI 工具整合成一条完整的创意流。",
         "items": {
           "canvas": {
-            "title": "可视化工作流画布",
-            "body": "把提示词、参考素材、模型调用和输出结果组织成可读节点，让创意逻辑保持可见。"
+            "title": "可视化工作流构建器",
+            "body": "拖拽连接模型，无需写代码。"
           },
           "models": {
-            "title": "多模态模型路由",
-            "body": "在文本、图像、视频和音频模型之间编排任务，不把每个 Provider 都变成割裂产品。"
+            "title": "自动执行",
+            "body": "批量生成、优化、再生成，一气呵成。"
           },
           "outputs": {
-            "title": "生成资产留痕",
-            "body": "让生成结果保留在产生它的工作流上下文中，方便回溯、复用和继续迭代。"
-          },
-          "sharing": {
-            "title": "社区可复用流程",
-            "body": "把有效的生产配方变成模板，供创作者发布、查看、克隆并改造成自己的工作流。"
+            "title": "自定义逻辑",
+            "body": "循环、条件分支、并行运行。"
           }
         }
       },
       "pricing": {
         "eyebrow": "定价",
-        "title": "四档清晰套餐，对应不同生产规模",
-        "body": "Free 是默认进入态。Standard、Pro、Ultimate 在工作流真正开始消耗生产资源时，提供月度积分和存储空间。",
+        "title": "从第一帧到最终成片。",
+        "body": "适配不同创作规模的定价方案。",
         "popular": "推荐",
         "credits": "每月 {value} 积分",
         "storage": "{value} 存储空间",
@@ -148,151 +148,127 @@
         "plans": {
           "free": {
             "name": "Free",
-            "body": "先进入画布，验证这个工作流形态是否适合你的创作过程。",
-            "period": "默认进入态",
-            "note": "可用 API Key 模式，或在需要积分时升级"
+            "body": "所有套餐都包含无限画布与可视化工作流构建器。",
+            "period": "从这里开始",
+            "note": "适合先体验创作流"
           },
           "standard": {
             "name": "Standard",
-            "body": "适合需要稳定月度积分池的个人创作者。",
-            "period": "自动月付参考价",
-            "note": "从 Free 迈出的干净一步"
+            "body": "提供更多模型调用额度，适合稳定周更的个人创作者。",
+            "period": "按月",
+            "note": "适合独立创作者"
           },
           "pro": {
             "name": "Pro",
-            "body": "适合高频操作者和小团队，承接更多图片、视频和工作流产出。",
-            "period": "自动月付参考价",
-            "note": "最适合生产使用的平衡档"
+            "body": "增加团队席位与 4K 导出空间，适合持续生产中的团队。",
+            "period": "按月",
+            "note": "最适合真实生产的平衡档"
           },
           "ultimate": {
             "name": "Ultimate",
-            "body": "适合更重度的生产团队，需要更大的积分预算和存储缓冲。",
-            "period": "自动月付参考价",
-            "note": "面向高产量团队"
+            "body": "提供更高模型吞吐、团队容量与 8K 导出空间。",
+            "period": "按月",
+            "note": "面向工作室级产能"
           }
         }
       },
       "testimonials": {
-        "eyebrow": "Creator Voices",
-        "title": "What creators are saying",
-        "body": "Short notes from filmmakers, designers, and AI workflow builders using Nano Banana Canvas as their creative workspace.",
+        "eyebrow": "真实评价",
+        "title": "电影人与创作者的真实评价。",
+        "body": "来自电影人、视觉艺术家与创意技术工作者的真实反馈，他们正把 Nano Banana Canvas 当作自己的无限画布工作区。",
         "pixel": {
           "handle": "@PixelPioneer",
-          "role": "Creator",
-          "quote": "Finally, a canvas that doesn’t limit my imagination. Nano Banana Canvas turns scattered ideas into visual flows. Absolutely next-level."
+          "role": "设计技术创作者",
+          "quote": "终于有一块不会限制我想象力的画布了。Nano Banana Canvas 把零散灵感变成可视化流程，真的太超前了。"
         },
         "lena": {
           "handle": "@Lena_Dir",
-          "role": "Filmmaker",
-          "quote": "The cinematic quality I get from connecting Midjourney + Pika on one infinite board is insane. My moodboard-to-shot pipeline just got 10x faster. Future of previs."
+          "role": "独立电影人",
+          "quote": "在一张无限画布上把 Midjourney 和 Pika 连起来后得到的电影质感太夸张了。我的情绪板到镜头流程直接快了 10 倍。前期预演的未来就是这样。"
         },
         "prompt": {
           "handle": "@PromptWizard",
-          "role": "Prompt Artist",
-          "quote": "No more tab switching. I link SDXL, Runway, and ElevenLabs in one workspace. The “creative flow” is real. Nano Banana Canvas is a spatial computer for storytellers."
+          "role": "创意技术工作者",
+          "quote": "终于不用在一堆标签页里来回切了。我把 SDXL、Runway 和 ElevenLabs 放在同一个工作区里，所谓“创意流”这次是真的。Nano Banana Canvas 就像是为叙事者准备的空间计算机。"
         },
         "frame": {
           "handle": "@FrameSmith",
-          "role": "Workflow Lead",
-          "quote": "Enterprise-grade AI orchestration. The node-based workflow on an infinite canvas feels like Unreal for prompt chains. Indispensable."
+          "role": "AI 流程负责人",
+          "quote": "企业级的 AI 编排能力。无限画布上的节点工作流有种“提示词链版 Unreal”的感觉，已经离不开了。"
         },
         "neo": {
           "handle": "@NeoStory",
-          "role": "Story Artist",
-          "quote": "I was skeptical. Then I built a 4-shot storyboard, animated each frame, and rendered a rough cut – all inside one infinite canvas. Nano Banana Canvas is legit."
+          "role": "分镜艺术家",
+          "quote": "一开始我其实是怀疑的。结果我在同一张无限画布里做完了 4 镜头分镜、逐帧动画化，还顺手出了一个粗剪版本。Nano Banana Canvas 这次真是来真的。"
         },
         "moodboard": {
           "handle": "@MoodboardMaven",
-          "role": "Visual Thinker",
-          "quote": "My ideas usually die in scattered notes. Now they flow visually. Connecting LLMs to image generators on a never-ending canvas? That’s the creative OS I’ve waited for."
+          "role": "创意总监",
+          "quote": "我的灵感以前总是死在零碎笔记里。现在它们终于开始以视觉的方式流动了。在一张没有尽头的画布上把 LLM 和图像生成器连起来？这就是我一直在等的创作者操作系统。"
         },
         "indie": {
           "handle": "@IndieAuteur",
-          "role": "Indie Director",
-          "quote": "Finally a tool that respects my messiness. Infinite canvas, infinite possibilities. Nano Banana Canvas feels like the future of filmmaking."
+          "role": "独立电影人",
+          "quote": "终于有一个工具愿意尊重我的混乱了。无限画布，无限可能。Nano Banana Canvas 就像电影创作的未来。"
         },
         "workflow": {
           "handle": "@WorkflowNinja",
-          "role": "Power User",
-          "quote": "Pros: real-time node linking, 4K exports, low latency. Connects to ComfyUI, Kling, Pika, and GPT-4o. Cons: none yet. This is how AI for creators should work."
+          "role": "后期预演主管",
+          "quote": "优点：实时节点连接、4K 导出、低延迟。还能接 ComfyUI、Kling、Pika 和 GPT-4o。缺点：暂时没发现。这才是创作者应该拥有的 AI 工作方式。"
         },
         "cyber": {
           "handle": "@CyberDancer",
-          "role": "Creative Technologist",
-          "quote": "Imagine Miro + Unreal Engine + ComfyUI had a baby. That’s Nano Banana Canvas. The “film sense” is baked in – even my rough generations look cinematic."
+          "role": "视觉艺术家",
+          "quote": "想象一下 Miro + Unreal Engine + ComfyUI 生了个孩子，那就是 Nano Banana Canvas。它骨子里就有一种“电影感”，连我随手出的粗生成看起来都很像电影镜头。"
         },
         "canvas": {
           "handle": "@CanvasCat",
-          "role": "Designer",
-          "quote": "Infinite canvas. Connected models. Pure creative flow. Thank you, Nano Banana Canvas. My burnouts are gone."
+          "role": "动态设计师",
+          "quote": "无限画布，连接模型，纯粹的创意流。谢谢你，Nano Banana Canvas。我的创作倦怠真的缓过来了。"
         },
         "vfx": {
           "handle": "@VFXonABudget",
-          "role": "Solo Creator",
-          "quote": "As a solo creator, I need one space to sketch, prompt, generate, and refine. Nano Banana Canvas gives me that. The ability to drag a video output into a new prompt chain – on the same infinite board – changed my pre-production completely. Feels professional, not gimmicky."
+          "role": "独立 VFX 创作者",
+          "quote": "作为一个独立创作者，我需要一个能同时草图、写提示词、生成、再精修的地方。Nano Banana Canvas 正好给了我这件事。能在同一张无限画布里把一个视频输出直接拖进下一条提示词链，几乎彻底改变了我的前期制作方式。它是专业工具，不是噱头。"
         },
         "dream": {
           "handle": "@DreamChaser",
-          "role": "Storyteller",
-          "quote": "This is not just another AI wrapper. It’s a spatial workflow for visual storytellers. Nano Banana Canvas understands: creativity doesn’t live in linear timelines. It lives on an infinite canvas. 10/10."
+          "role": "视觉艺术家",
+          "quote": "这不是又一个 AI 套壳工具。这是为视觉叙事者准备的空间化工作流。Nano Banana Canvas 明白一件事：创意不活在线性的时间轴里，它活在无限画布上。10/10。"
         }
       },
       "faq": {
         "eyebrow": "FAQ",
-        "title": "常见问题",
-        "body": "关于使用 Nano Banana Canvas 进行 AI 创作、协作与交付，你需要了解的一切。",
+        "title": "常见问题（为生成式搜索优化）",
+        "body": "这是创作者在评估 Nano Banana Canvas 是否适合真实生产流程时最常问的几个问题。",
         "what": {
           "question": "什么是 Nano Banana Canvas？",
-          "answer": "Nano Banana Canvas 是一个面向创作者、工作室与团队的 AI 创作工作台。它把提示词、参考图、模型调用、视频生成、版本迭代和交付流程放进同一张可视化画布里，让你不再在多个工具之间来回拼接流程。"
+          "answer": "一个可视化 AI 平台，让创作者可以在无限画布上连接不同的模型（图像、视频、大语言模型、3D），将灵感转化为工作流 —— 专为电影人和数字故事讲述者设计。"
         },
         "models": {
-          "question": "支持哪些 AI 模型与 Provider？",
-          "answer": "当前产品方向覆盖 OpenAI、Anthropic、Gemini、Qwen、Alibaba Wan、Kling、Runway、Luma、Vidu、MiniMax、xAI、Groq、Black Forest、OpenRouter、Midjourney、ByteDance 等主流 Provider，并支持继续扩展更多模型接入。"
+          "question": "搭建工作流需要写代码吗？",
+          "answer": "不用。在无限画布上拖拽、放置、连接即可，像分镜一样直观。"
         },
         "canvas": {
-          "question": "无限画布与节点工作区是如何运作的？",
-          "answer": "你可以把每一步创作动作都作为节点摆在画布上，例如提示词、参考图、模型选择、输出结果、二次编辑和发布分支。画布不是装饰，它承担的是生产流程的组织、复用、对比和回溯，让复杂创作变得可视可控。"
+          "question": "我可以使用自己的 API 密钥（OpenAI、Replicate 等）吗？",
+          "answer": "可以。你可以使用自己的密钥，也可以使用我们托管的模型 —— 画布两者都支持。"
         },
         "compare": {
-          "question": "Nano Banana Canvas 与 ComfyUI 有何不同？",
-          "answer": "ComfyUI 更偏向本地化、工程化和节点级实验环境；Nano Banana Canvas 更强调创作链路、团队协作、跨模型调度和结果交付。我们追求的是让导演、创意团队和运营也能快速读懂工作流，而不是只有技术用户才能维护。"
+          "question": "它与 ComfyUI 或单独使用 Runway 有什么不同？",
+          "answer": "Nano Banana Canvas 是一个空间化的多模型工作区。你不只是运行一个生成器 —— 而是在一个可视化流程里连接多个模型，从文本到图像、视频、音频一路贯通。"
         },
         "pricing": {
-          "question": "Nano Banana Canvas 的收费方式是怎样的？",
-          "answer": "产品提供免费进入态和多档付费套餐。不同套餐主要体现在可用积分、存储空间、并发能力和团队协作权限上，正式结账前会以定价页读取到的实时价格为准。"
-        },
-        "team": {
-          "question": "可以与团队协作吗？",
-          "answer": "可以。Nano Banana Canvas 不只适合个人创作者，也面向创意工作室、代理团队和分布式协作团队。大家可以围绕同一条工作流共享上下文、复用节点逻辑，并减少口头交接带来的理解损耗。"
-        },
-        "gpu": {
-          "question": "需要高性能电脑或本地 GPU 吗？",
-          "answer": "不一定。产品的设计方向是让用户优先在云端工作，不把本地显卡作为使用门槛。你可以在普通办公设备上完成流程搭建、素材组织与结果查看，而不必先配置复杂的本地推理环境。"
-        },
-        "privacy": {
-          "question": "我的内容是否安全且受到隐私保护？",
-          "answer": "我们会把项目内容、上传素材和生成结果视作工作资产来对待，并优先采用清晰的权限边界、访问控制和数据隔离策略。涉及隐私、团队共享和外部发布的能力，也会在产品中明确区分使用边界。"
-        },
-        "credits": {
-          "question": "积分（Credits）是如何运作的？",
-          "answer": "积分通常用于覆盖模型调用、媒体生成和部分计算资源消耗。不同模型和任务的消耗会有所区别，系统会尽量让你在执行前看到成本预期，避免在创作过程中失去预算感知。"
-        },
-        "commercial": {
-          "question": "AI 生成的内容可以商用吗？",
-          "answer": "能否商用取决于你所选模型、输入素材来源、输出内容场景以及适用条款。Nano Banana Canvas 会尽量把工作流和来源链路保留清楚，但最终是否可商用，仍需要结合具体模型政策和你的法务标准判断。"
-        },
-        "contact": {
-          "question": "如何联系我们？",
-          "answer": "如果你想咨询产品、合作、企业方案或定制接入，可以直接通过站内联系入口与我们沟通。对于工作室、代理团队和更大规模的创作组织，我们也可以按使用场景继续讨论接入方式。"
+          "question": "它针对电影级生成做了优化吗？",
+          "answer": "是的。每一个输出预设、节点连接和导出设置都向电影级质量看齐。很多用户称它为“AI 故事板分镜的未来”。"
         }
       },
       "cta": {
-        "eyebrow": "开始构建",
-        "title": "让下一条 AI 创作链路，真正长成可复用的生产系统。",
-        "body": "从第一句提示词、第一张参考图到最后一次交付，把模型调度、版本迭代与团队协作收进同一张画布，让创作不再只是零散试验，而是稳定产出。",
+        "eyebrow": "开始你的工作流",
+        "title": "把下一条电影级工作流，放进同一张无限画布里。",
+        "body": "把图像、视频、语言与 3D 模型组织成一条单一可视化流程，让从第一句提示词到最终成片的每一步都保持清晰可读。",
         "primary": "立即创作",
-        "secondary": "比较套餐",
-        "note": "无需复杂部署"
+        "secondary": "查看定价",
+        "note": "无需复杂配置"
       }
     },
     "footer": {

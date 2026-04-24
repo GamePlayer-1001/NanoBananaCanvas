@@ -60,10 +60,10 @@
     },
     "hero": {
       "heading": "Nano Banana Canvas",
-      "tagline": "Infinite Canvas, Infinite Imagination",
-      "description": "From script to screen, start your creative journey.\nCreate freely, the canvas is yours to control.",
-      "cta": "Get Started",
-      "models": "Powered by global leading models",
+      "tagline": "Infinite Canvas. Infinite Flow.",
+      "description": "Build cinematic stories on an infinite canvas. Connect image, video, LLM, and 3D models in one visual workflow — from first prompt to final cut.",
+      "cta": "Start Creating",
+      "models": "The visual AI platform for filmmakers and creators.",
       "nodes": {
         "feature": "Eye feature",
         "portrait": "Base portrait",
@@ -79,68 +79,68 @@
     },
     "sections": {
       "models": {
-        "eyebrow": "Model support",
-        "title": "Model Support Cloud Graph",
-        "highlight": "One canvas, infinite connections",
-        "body": "Bring leading model vendors into one surface and orchestrate them as a living graph, so creation, reasoning, and media generation move together.",
-        "cta": "View integration docs",
-        "banner": "Mix multiple models freely and lean on each provider where it is strongest",
-        "centerTitle": "Multimodal intelligence hub",
-        "centerBody": "Flexible routing, free combination, faster creation",
-        "summaryTitle": "Model capability overview",
+        "eyebrow": "Model cloud",
+        "title": "Connect Models Visually.",
+        "highlight": "Like a Living Cloud.",
+        "body": "Drag any AI node — Stable Diffusion, Pika, Runway, GPT-4o, ElevenLabs — onto the infinite canvas. Connect them visually. Run sequences, loop generations, build conditional paths. Your entire pre-production and production pipeline lives here.",
+        "cta": "Explore model support",
+        "banner": "A model cloud you arrange. A workflow that stays on the canvas.",
+        "centerTitle": "Visual orchestration, not tool-hopping",
+        "centerBody": "Sequence runs, loops, branches, and model handoffs stay readable in one living workspace.",
+        "summaryTitle": "One Canvas. Every Creative Model You Need.",
         "capabilities": {
-          "text": {
-            "title": "Text generation",
-            "body": "Multi-model writing, reasoning, and prompt refinement."
-          },
           "image": {
             "title": "Image generation",
-            "body": "High-quality image generation, reference fusion, and visual expansion."
+            "body": "Prompt to frame."
           },
           "video": {
             "title": "Video generation",
-            "body": "Motion creation, shot extension, and scene continuation."
+            "body": "Storyboard to motion."
           },
           "threed": {
             "title": "3D generation",
-            "body": "Build 3D assets and spatial scenes."
+            "body": "Scene building."
+          },
+          "text": {
+            "title": "Large language models",
+            "body": "Script, rewrite, reflect."
           },
           "audio": {
-            "title": "Audio synthesis",
-            "body": "Natural voice generation, audio processing, and multimodal dubbing."
+            "title": "Speech & audio",
+            "body": "Dialogue, foley, atmosphere."
+          },
+          "vision": {
+            "title": "Image recognition",
+            "body": "Extract, reference, remix."
           }
         },
-        "summaryCountLabel": "Integrated models",
+        "summaryCountLabel": "Connected providers",
         "summaryCountValue": "{count}+",
-        "summaryStatus": "Growing continuously..."
+        "summaryStatus": "Expanding with the workflow"
       },
       "features": {
-        "eyebrow": "Features",
-        "title": "Everything is organized around the workflow",
-        "body": "The interface is built for people who need to see how ideas move from inputs to generated media, not for hiding the process behind a single prompt box.",
+        "eyebrow": "Workflow-first",
+        "title": "Built Around How You Actually Work",
+        "body": "Whether you’re a solo filmmaker or a studio team, Nano Banana Canvas turns fragmented AI tools into one creative flow.",
         "items": {
           "canvas": {
-            "title": "Visual workflow canvas",
-            "body": "Arrange prompts, references, model calls, and outputs as readable nodes so creative logic stays visible."
+            "title": "Visual workflow builder",
+            "body": "Drag-to-connect models without code."
           },
           "models": {
-            "title": "Multimodal model routing",
-            "body": "Route work across text, image, video, and audio providers without turning every provider into a separate product."
+            "title": "Auto-execution",
+            "body": "Batch generate, refine, and regenerate in one flow."
           },
           "outputs": {
-            "title": "Generated asset memory",
-            "body": "Keep generated outputs attached to the workflow context that produced them, so results remain traceable."
-          },
-          "sharing": {
-            "title": "Reusable community flows",
-            "body": "Turn working production recipes into reusable templates that creators can publish, inspect, clone, and adapt."
+            "title": "Custom logic",
+            "body": "Loops, conditional branches, and parallel runs."
           }
         }
       },
       "pricing": {
         "eyebrow": "Pricing",
-        "title": "Four clear plans for different production volumes",
-        "body": "Free is the default entry state. Standard, Pro, and Ultimate add monthly credits and storage when the workflow starts doing real work.",
+        "title": "From First Frame to Final Cut",
+        "body": "Pricing for every creative volume.",
         "popular": "Recommended",
         "credits": "{value} monthly credits",
         "storage": "{value} storage",
@@ -148,151 +148,127 @@
         "plans": {
           "free": {
             "name": "Free",
-            "body": "Start with the canvas and validate whether the workflow shape fits your process.",
-            "period": "Default entry state",
-            "note": "Use API key mode or upgrade when credits matter"
+            "body": "All plans include the infinite canvas and visual workflow builder.",
+            "period": "Start here",
+            "note": "Built for early exploration"
           },
           "standard": {
             "name": "Standard",
-            "body": "For solo creators who need a stable monthly credit pool.",
-            "period": "Auto monthly guide price",
-            "note": "A clean step beyond Free"
+            "body": "Adds more model calls and room for consistent weekly output.",
+            "period": "Per month",
+            "note": "For individual creators"
           },
           "pro": {
             "name": "Pro",
-            "body": "For active operators and small teams producing more images, videos, and workflows.",
-            "period": "Auto monthly guide price",
-            "note": "Best balance for production"
+            "body": "Adds more team seats plus 4K export headroom for active production.",
+            "period": "Per month",
+            "note": "Best balance for working teams"
           },
           "ultimate": {
             "name": "Ultimate",
-            "body": "For heavier production teams that need a much larger credit and storage runway.",
-            "period": "Auto monthly guide price",
-            "note": "Built for high-volume teams"
+            "body": "Adds the heaviest model volume, team capacity, and 8K-oriented export room.",
+            "period": "Per month",
+            "note": "For studio-scale throughput"
           }
         }
       },
       "testimonials": {
-        "eyebrow": "Creator Voices",
-        "title": "What creators are saying",
-        "body": "Short notes from filmmakers, designers, and AI workflow builders using Nano Banana Canvas as their creative workspace.",
+        "eyebrow": "Testimonials",
+        "title": "What Filmmakers and Creators Are Saying",
+        "body": "Real notes from filmmakers, visual artists, and creative technologists building on one infinite canvas.",
         "pixel": {
           "handle": "@PixelPioneer",
-          "role": "Creator",
+          "role": "Design Technologist",
           "quote": "Finally, a canvas that doesn’t limit my imagination. Nano Banana Canvas turns scattered ideas into visual flows. Absolutely next-level."
         },
         "lena": {
           "handle": "@Lena_Dir",
-          "role": "Filmmaker",
+          "role": "Independent Filmmaker",
           "quote": "The cinematic quality I get from connecting Midjourney + Pika on one infinite board is insane. My moodboard-to-shot pipeline just got 10x faster. Future of previs."
         },
         "prompt": {
           "handle": "@PromptWizard",
-          "role": "Prompt Artist",
+          "role": "Creative Technologist",
           "quote": "No more tab switching. I link SDXL, Runway, and ElevenLabs in one workspace. The “creative flow” is real. Nano Banana Canvas is a spatial computer for storytellers."
         },
         "frame": {
           "handle": "@FrameSmith",
-          "role": "Workflow Lead",
+          "role": "AI Pipeline Lead",
           "quote": "Enterprise-grade AI orchestration. The node-based workflow on an infinite canvas feels like Unreal for prompt chains. Indispensable."
         },
         "neo": {
           "handle": "@NeoStory",
-          "role": "Story Artist",
+          "role": "Storyboard Artist",
           "quote": "I was skeptical. Then I built a 4-shot storyboard, animated each frame, and rendered a rough cut – all inside one infinite canvas. Nano Banana Canvas is legit."
         },
         "moodboard": {
           "handle": "@MoodboardMaven",
-          "role": "Visual Thinker",
+          "role": "Creative Director",
           "quote": "My ideas usually die in scattered notes. Now they flow visually. Connecting LLMs to image generators on a never-ending canvas? That’s the creative OS I’ve waited for."
         },
         "indie": {
           "handle": "@IndieAuteur",
-          "role": "Indie Director",
+          "role": "Indie Filmmaker",
           "quote": "Finally a tool that respects my messiness. Infinite canvas, infinite possibilities. Nano Banana Canvas feels like the future of filmmaking."
         },
         "workflow": {
           "handle": "@WorkflowNinja",
-          "role": "Power User",
+          "role": "Postvis Supervisor",
           "quote": "Pros: real-time node linking, 4K exports, low latency. Connects to ComfyUI, Kling, Pika, and GPT-4o. Cons: none yet. This is how AI for creators should work."
         },
         "cyber": {
           "handle": "@CyberDancer",
-          "role": "Creative Technologist",
+          "role": "Visual Artist",
           "quote": "Imagine Miro + Unreal Engine + ComfyUI had a baby. That’s Nano Banana Canvas. The “film sense” is baked in – even my rough generations look cinematic."
         },
         "canvas": {
           "handle": "@CanvasCat",
-          "role": "Designer",
+          "role": "Motion Designer",
           "quote": "Infinite canvas. Connected models. Pure creative flow. Thank you, Nano Banana Canvas. My burnouts are gone."
         },
         "vfx": {
           "handle": "@VFXonABudget",
-          "role": "Solo Creator",
+          "role": "Solo VFX Creator",
           "quote": "As a solo creator, I need one space to sketch, prompt, generate, and refine. Nano Banana Canvas gives me that. The ability to drag a video output into a new prompt chain – on the same infinite board – changed my pre-production completely. Feels professional, not gimmicky."
         },
         "dream": {
           "handle": "@DreamChaser",
-          "role": "Storyteller",
+          "role": "Visual Artist",
           "quote": "This is not just another AI wrapper. It’s a spatial workflow for visual storytellers. Nano Banana Canvas understands: creativity doesn’t live in linear timelines. It lives on an infinite canvas. 10/10."
         }
       },
       "faq": {
         "eyebrow": "FAQ",
-        "title": "Frequently Asked Questions",
-        "body": "Everything you need to know about creating, collaborating, and delivering work with Nano Banana Canvas.",
+        "title": "Frequently Asked Questions (GEO-Friendly)",
+        "body": "Common questions from creators evaluating Nano Banana Canvas for real production workflows.",
         "what": {
           "question": "What is Nano Banana Canvas?",
-          "answer": "Nano Banana Canvas is an AI creation workspace for creators, studios, and teams. It brings prompts, references, model calls, video generation, iteration history, and delivery flows into one visual canvas so you do not have to stitch a production process together across disconnected tools."
+          "answer": "A visual AI platform where creators connect different models (image, video, LLM, 3D) on an infinite canvas to turn ideas into workflows — designed specifically for filmmakers and digital storytellers."
         },
         "models": {
-          "question": "Which AI models and providers are supported?",
-          "answer": "The current product direction covers major providers such as OpenAI, Anthropic, Gemini, Qwen, Alibaba Wan, Kling, Runway, Luma, Vidu, MiniMax, xAI, Groq, Black Forest, OpenRouter, Midjourney, and ByteDance, with room to keep expanding support."
+          "question": "Do I need to code to build workflows?",
+          "answer": "No. Drag, drop, and connect on the infinite canvas. It’s as visual as a storyboard."
         },
         "canvas": {
-          "question": "How does the infinite canvas and node workspace work?",
-          "answer": "Every creative step can live as a node on the canvas, including prompts, references, model choices, generated outputs, edits, and branching paths. The canvas is not decorative. It is the operating surface for organizing, reusing, comparing, and tracing complex creative workflows."
+          "question": "Can I use my own API keys (OpenAI, Replicate, etc.)?",
+          "answer": "Yes. Bring your own keys or use our hosted models — the canvas works with both."
         },
         "compare": {
-          "question": "How is Nano Banana Canvas different from ComfyUI?",
-          "answer": "ComfyUI is closer to a local, engineering-first, node experimentation environment. Nano Banana Canvas is designed around creative flow, team collaboration, cross-model orchestration, and delivery. The goal is to make workflows legible to directors, operators, and studios, not only technical power users."
+          "question": "What makes it different from ComfyUI or Runway alone?",
+          "answer": "Nano Banana Canvas is a spatial, multi-model workspace. You don’t just run one generator — you connect several models in a single visual flow, from text to image to video to audio."
         },
         "pricing": {
-          "question": "How does pricing work?",
-          "answer": "The product offers a free entry point and multiple paid tiers. The main differences are credits, storage, concurrency, and collaboration scope, and the final checkout experience uses the live pricing surfaced on the pricing page."
-        },
-        "team": {
-          "question": "Can I collaborate with a team?",
-          "answer": "Yes. Nano Banana Canvas is built for individual creators, creative studios, agencies, and distributed teams. People can share the same workflow context, reuse node logic, and reduce the communication loss that happens when production steps are passed around verbally."
-        },
-        "gpu": {
-          "question": "Do I need a powerful computer or local GPU?",
-          "answer": "Not necessarily. The product direction is cloud-first, so local hardware is not meant to be a barrier. You should be able to design workflows, organize assets, and review outputs without first setting up a complex local inference stack."
-        },
-        "privacy": {
-          "question": "Is my content secure and privacy-protected?",
-          "answer": "Project content, uploaded assets, and generated outputs should be treated like production assets. The system is designed around clear permission boundaries, access control, and data separation, especially for private projects, team sharing, and outward delivery flows."
-        },
-        "credits": {
-          "question": "How do credits work?",
-          "answer": "Credits are typically used to cover model calls, media generation, and certain compute costs. Different models and tasks can consume credits differently, and the product direction is to keep cost expectations visible before execution so creators can stay budget-aware."
-        },
-        "commercial": {
-          "question": "Can AI-generated content be used commercially?",
-          "answer": "Commercial use depends on the model you choose, the source of your input materials, the type of output, and the terms that apply to that workflow. Nano Banana Canvas can help preserve workflow traceability, but final commercial suitability still needs to be evaluated against model policies and your own legal standards."
-        },
-        "contact": {
-          "question": "How can I contact the team?",
-          "answer": "If you want to talk about the product, partnerships, enterprise use, or custom integrations, you can reach out through the contact entry points on the site. We can also continue the conversation around studio, agency, or larger team adoption scenarios."
+          "question": "Is it optimized for cinematic generation?",
+          "answer": "Yes. Every output preset, node connection, and export setting is tuned toward film-grade quality. Many users call it “the future of AI storyboarding.”"
         }
       },
       "cta": {
-        "eyebrow": "Start building",
-        "title": "Turn your next AI creation chain into a reusable production system.",
-        "body": "Bring prompts, references, model orchestration, version iteration, and team collaboration into one canvas, so creation stops feeling like scattered experiments and starts becoming a repeatable output engine.",
-        "primary": "Start creating",
-        "secondary": "Compare plans",
-        "note": "No complex setup required"
+        "eyebrow": "Start your workflow",
+        "title": "Build your next cinematic workflow on one infinite canvas.",
+        "body": "Bring image, video, language, and 3D models into a single visual flow that stays readable from first prompt to final cut.",
+        "primary": "Start Creating",
+        "secondary": "View Pricing",
+        "note": "No complicated setup required"
       }
     },
     "footer": {

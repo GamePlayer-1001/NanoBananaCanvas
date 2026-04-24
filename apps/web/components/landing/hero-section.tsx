@@ -493,7 +493,11 @@ export function HeroSection() {
               {t('tagline')}
             </h1>
 
-            <p className="mx-auto mb-8 max-w-[620px] px-4 text-base leading-relaxed whitespace-pre-line text-white/56 md:mb-9 md:text-lg">
+            <p className="mx-auto mb-5 max-w-[720px] px-4 text-lg leading-relaxed text-white/72 md:text-[1.35rem]">
+              {t('models')}
+            </p>
+
+            <p className="mx-auto mb-8 max-w-[760px] px-4 text-base leading-relaxed whitespace-pre-line text-white/56 md:mb-9 md:text-lg">
               {t('description')}
             </p>
 
@@ -503,10 +507,6 @@ export function HeroSection() {
             >
               {t('cta')}
             </Link>
-
-            <p className="mt-4 text-sm tracking-[0.18em] text-white/30 md:mt-5 md:text-[15px]">
-              {t('models')}
-            </p>
           </div>
         </div>
       </div>

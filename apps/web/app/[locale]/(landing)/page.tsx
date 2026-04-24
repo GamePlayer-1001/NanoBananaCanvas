@@ -49,19 +49,7 @@ export default async function LandingPage({
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
 
-  const faqItems = [
-    'what',
-    'models',
-    'canvas',
-    'compare',
-    'pricing',
-    'team',
-    'gpu',
-    'privacy',
-    'credits',
-    'commercial',
-    'contact',
-  ].map((key) => ({
+  const faqItems = ['what', 'models', 'canvas', 'compare', 'pricing'].map((key) => ({
     question: faqT(`${key}.question`),
     answer: faqT(`${key}.answer`),
   }))
