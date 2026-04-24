@@ -17,7 +17,7 @@ test.describe('Landing Page', () => {
     await expect(page.locator('h1').first()).toBeVisible()
 
     // 至少有一个 CTA 按钮
-    const cta = page.getByRole('link', { name: /get started|开始/i })
+    const cta = page.getByRole('link', { name: /start creating|立即创作/i })
     await expect(cta.first()).toBeVisible()
   })
 
