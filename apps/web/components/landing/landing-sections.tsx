@@ -1011,15 +1011,9 @@ export function FaqSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(120,92,255,0.08),transparent_26%),linear-gradient(180deg,#09090d_0%,#07080d_100%)]" />
       <div className="relative mx-auto w-full max-w-[1060px]">
         <div className="mx-auto max-w-[48rem] text-center">
-          <p className="text-sm font-medium tracking-[0.24em] text-white/42 uppercase">
-            {faqT('eyebrow')}
-          </p>
-          <h2 className="mt-5 text-[2.7rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[3.9rem]">
+          <h2 className="text-[2.7rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[3.9rem]">
             {faqT('title')}
           </h2>
-          <p className="mt-6 text-[1rem] leading-8 text-white/54 md:text-[1.08rem]">
-            {faqT('body')}
-          </p>
         </div>
 
         <div className="mx-auto mt-18 max-w-[880px]">
