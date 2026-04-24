@@ -51,20 +51,46 @@ function SectionHeader({
   eyebrow,
   title,
   body,
+  size = 'default',
 }: {
   eyebrow: string
   title: string
   body: string
+  size?: 'default' | 'featured'
 }) {
+  const isFeatured = size === 'featured'
+
   return (
-    <div className="grid w-full gap-6 text-left lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
+    <div
+      className={`grid w-full text-left lg:items-end ${
+        isFeatured
+          ? 'gap-8 lg:grid-cols-[0.96fr_1.04fr]'
+          : 'gap-6 lg:grid-cols-[0.92fr_1.08fr]'
+      }`}
+    >
       <div>
         <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
           {eyebrow}
         </p>
-        <h2 className="mt-4 text-3xl font-semibold text-white md:text-5xl">{title}</h2>
+        <h2
+          className={`mt-4 font-semibold text-white ${
+            isFeatured
+              ? 'max-w-[13ch] text-[2.75rem] leading-[0.95] tracking-tight md:text-[4.6rem] lg:text-[5.3rem]'
+              : 'text-3xl md:text-5xl'
+          }`}
+        >
+          {title}
+        </h2>
       </div>
-      <p className="text-base leading-7 text-white/62 md:text-lg lg:pb-1">{body}</p>
+      <p
+        className={`text-white/62 ${
+          isFeatured
+            ? 'max-w-[44rem] text-lg leading-8 md:text-[1.3rem] md:leading-9 lg:pb-2'
+            : 'text-base leading-7 md:text-lg lg:pb-1'
+        }`}
+      >
+        {body}
+      </p>
     </div>
   )
 }
@@ -73,29 +99,37 @@ export function ModelMindMapSection() {
   const modelT = useTranslations('landing.sections.models')
 
   return (
-    <section id="models" className="relative overflow-hidden bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+    <section
+      id="models"
+      className="relative overflow-hidden bg-[#09090d] px-4 py-28 sm:px-6 lg:px-8 lg:py-32 xl:px-10"
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(99,102,241,0.16),transparent_34%),radial-gradient(circle_at_15%_80%,rgba(20,184,166,0.12),transparent_28%)]" />
       <div className="relative w-full">
         <SectionHeader
           eyebrow={modelT('eyebrow')}
           title={modelT('title')}
           body={modelT('body')}
+          size="featured"
         />
 
-        <div className="relative mt-14 min-h-[520px] w-full overflow-hidden rounded-[32px] border border-white/8 bg-black/24 p-6 md:p-10">
+        <div className="relative mt-16 min-h-[600px] w-full overflow-hidden rounded-[36px] border border-white/8 bg-black/24 p-6 md:min-h-[680px] md:p-10 lg:min-h-[760px] lg:p-14">
           <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]" />
-          <div className="relative flex min-h-[460px] items-center justify-center">
-            <div className="absolute h-48 w-48 rounded-full border border-white/12 bg-white/[0.04] shadow-[0_0_80px_rgba(255,255,255,0.08)]" />
-            <div className="relative z-10 flex h-40 w-40 flex-col items-center justify-center rounded-full border border-white/16 bg-white text-center text-black shadow-[0_28px_120px_rgba(0,0,0,0.35)]">
-              <Workflow className="h-7 w-7" />
-              <p className="mt-3 text-sm font-semibold">{modelT('centerTitle')}</p>
-              <p className="mt-1 text-xs text-black/55">{modelT('centerBody')}</p>
+          <div className="relative flex min-h-[540px] items-center justify-center md:min-h-[600px] lg:min-h-[660px]">
+            <div className="absolute h-60 w-60 rounded-full border border-white/12 bg-white/[0.04] shadow-[0_0_100px_rgba(255,255,255,0.08)] md:h-72 md:w-72" />
+            <div className="relative z-10 flex h-48 w-48 flex-col items-center justify-center rounded-full border border-white/16 bg-white px-6 text-center text-black shadow-[0_30px_140px_rgba(0,0,0,0.38)] md:h-60 md:w-60">
+              <Workflow className="h-8 w-8 md:h-10 md:w-10" />
+              <p className="mt-4 text-base font-semibold md:text-lg">
+                {modelT('centerTitle')}
+              </p>
+              <p className="mt-2 text-[13px] leading-5 text-black/55 md:text-sm md:leading-6">
+                {modelT('centerBody')}
+              </p>
             </div>
 
             {MODEL_PROVIDERS.map((provider, index) => {
               const angle = (index / MODEL_PROVIDERS.length) * Math.PI * 2
-              const radiusX = 430
-              const radiusY = 188
+              const radiusX = 480
+              const radiusY = 230
               const x = Math.cos(angle) * radiusX
               const y = Math.sin(angle) * radiusY
 
@@ -105,7 +139,7 @@ export function ModelMindMapSection() {
                   className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block"
                   style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
                 >
-                  <div className="rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm text-white/78 shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
+                  <div className="rounded-full border border-white/10 bg-white/[0.055] px-5 py-2.5 text-base text-white/80 shadow-[0_20px_70px_rgba(0,0,0,0.24)]">
                     {provider}
                   </div>
                 </div>
@@ -116,7 +150,7 @@ export function ModelMindMapSection() {
               {MODEL_PROVIDERS.slice(0, 12).map((provider) => (
                 <div
                   key={provider}
-                  className="rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-center text-sm text-white/78"
+                  className="rounded-full border border-white/10 bg-white/[0.055] px-4 py-3 text-center text-base text-white/78"
                 >
                   {provider}
                 </div>
