@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，
- *          依赖 lucide-react 的图标集合，依赖 @/i18n/navigation 的 Link
+ * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的远程图片渲染，
+ *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的图标集合，依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection、CtaSection
  * [POS]: components/landing 的首页内容区集合，被 (landing)/page.tsx 按首屏后叙事顺序消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,6 +8,7 @@
 
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import {
   AudioLines,
@@ -28,10 +29,11 @@ import { Link } from '@/i18n/navigation'
 
 type ModelProvider = {
   name: string
-  mark: string
+  logoUrl: string
   orbit: 1 | 2 | 3
   angle: number
   tone: 'ice' | 'teal' | 'amber' | 'coral'
+  logoScale?: number
 }
 
 type ModelMotionState = {
@@ -40,31 +42,149 @@ type ModelMotionState = {
   drift: number
 }
 
+function buildSimpleIconUrl(slug: string) {
+  return `https://cdn.jsdelivr.net/npm/simple-icons@v16/icons/${slug}.svg`
+}
+
+function buildVendorFaviconUrl(domain: string) {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+}
+
 const MODEL_PROVIDERS: ModelProvider[] = [
-  { name: 'OpenAI', mark: '◎', orbit: 3, angle: -86, tone: 'ice' },
-  { name: 'Google', mark: 'G', orbit: 3, angle: -42, tone: 'amber' },
-  { name: 'Anthropic', mark: 'AI', orbit: 3, angle: -10, tone: 'coral' },
-  { name: 'Gemini', mark: '✦', orbit: 3, angle: 22, tone: 'ice' },
-  { name: 'Alibaba Wan', mark: 'e', orbit: 3, angle: 56, tone: 'amber' },
-  { name: 'Midjourney', mark: 'MJ', orbit: 3, angle: 92, tone: 'amber' },
-  { name: 'OpenRouter', mark: '↗', orbit: 3, angle: 126, tone: 'ice' },
-  { name: 'Runway', mark: 'R', orbit: 3, angle: 160, tone: 'teal' },
-  { name: 'Luma', mark: 'L', orbit: 3, angle: 194, tone: 'teal' },
-  { name: 'Vidu', mark: 'V', orbit: 3, angle: 228, tone: 'ice' },
-  { name: 'Groq', mark: 'g', orbit: 3, angle: 262, tone: 'ice' },
-  { name: 'xAI', mark: 'X', orbit: 3, angle: 300, tone: 'teal' },
-  { name: 'ByteDance', mark: 'BD', orbit: 2, angle: 16, tone: 'ice' },
-  { name: 'Kling', mark: 'K', orbit: 2, angle: 62, tone: 'teal' },
-  { name: 'Qwen', mark: 'Q', orbit: 2, angle: 106, tone: 'coral' },
-  { name: 'Black Forest', mark: 'BF', orbit: 2, angle: 144, tone: 'teal' },
-  { name: 'MiniMax', mark: 'MM', orbit: 2, angle: 212, tone: 'coral' },
-  { name: 'DeepSeek', mark: 'DS', orbit: 1, angle: 198, tone: 'ice' },
+  {
+    name: 'OpenAI',
+    logoUrl: buildVendorFaviconUrl('openai.com'),
+    orbit: 3,
+    angle: -86,
+    tone: 'ice',
+  },
+  {
+    name: 'Google',
+    logoUrl: buildSimpleIconUrl('google'),
+    orbit: 3,
+    angle: -42,
+    tone: 'amber',
+  },
+  {
+    name: 'Anthropic',
+    logoUrl: buildSimpleIconUrl('anthropic'),
+    orbit: 3,
+    angle: -6,
+    tone: 'coral',
+  },
+  {
+    name: 'Gemini',
+    logoUrl: buildSimpleIconUrl('googlegemini'),
+    orbit: 3,
+    angle: 28,
+    tone: 'ice',
+  },
+  {
+    name: 'Alibaba Wan',
+    logoUrl: buildSimpleIconUrl('alibabacloud'),
+    orbit: 3,
+    angle: 58,
+    tone: 'amber',
+    logoScale: 0.68,
+  },
+  {
+    name: 'Midjourney',
+    logoUrl: buildVendorFaviconUrl('midjourney.com'),
+    orbit: 3,
+    angle: 96,
+    tone: 'amber',
+  },
+  {
+    name: 'OpenRouter',
+    logoUrl: buildSimpleIconUrl('openrouter'),
+    orbit: 3,
+    angle: 134,
+    tone: 'ice',
+    logoScale: 0.7,
+  },
+  {
+    name: 'Runway',
+    logoUrl: buildVendorFaviconUrl('runwayml.com'),
+    orbit: 3,
+    angle: 172,
+    tone: 'teal',
+  },
+  {
+    name: 'Luma',
+    logoUrl: buildVendorFaviconUrl('luma.ai'),
+    orbit: 3,
+    angle: 206,
+    tone: 'teal',
+  },
+  {
+    name: 'Vidu',
+    logoUrl: buildVendorFaviconUrl('vidu.com'),
+    orbit: 3,
+    angle: 236,
+    tone: 'ice',
+  },
+  {
+    name: 'Groq',
+    logoUrl: buildVendorFaviconUrl('groq.com'),
+    orbit: 3,
+    angle: 264,
+    tone: 'ice',
+  },
+  {
+    name: 'xAI',
+    logoUrl: buildVendorFaviconUrl('x.ai'),
+    orbit: 3,
+    angle: 302,
+    tone: 'teal',
+  },
+  {
+    name: 'ByteDance',
+    logoUrl: buildSimpleIconUrl('bytedance'),
+    orbit: 2,
+    angle: 18,
+    tone: 'ice',
+  },
+  {
+    name: 'Kling',
+    logoUrl: buildVendorFaviconUrl('klingai.com'),
+    orbit: 2,
+    angle: 66,
+    tone: 'teal',
+  },
+  {
+    name: 'Qwen',
+    logoUrl: buildVendorFaviconUrl('chat.qwen.ai'),
+    orbit: 2,
+    angle: 108,
+    tone: 'coral',
+  },
+  {
+    name: 'Black Forest',
+    logoUrl: buildVendorFaviconUrl('blackforestlabs.ai'),
+    orbit: 2,
+    angle: 146,
+    tone: 'teal',
+  },
+  {
+    name: 'MiniMax',
+    logoUrl: buildSimpleIconUrl('minimax'),
+    orbit: 2,
+    angle: 214,
+    tone: 'coral',
+  },
+  {
+    name: 'DeepSeek',
+    logoUrl: buildVendorFaviconUrl('deepseek.com'),
+    orbit: 1,
+    angle: 202,
+    tone: 'ice',
+  },
 ]
 
 const MODEL_ORBITS = {
-  1: { x: 208, y: 164 },
-  2: { x: 286, y: 228 },
-  3: { x: 356, y: 286 },
+  1: { x: 188, y: 148 },
+  2: { x: 268, y: 214 },
+  3: { x: 334, y: 272 },
 } as const
 
 const MODEL_TONE_STYLES = {
@@ -255,9 +375,9 @@ export function ModelMindMapSection() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_58%_44%,rgba(70,122,205,0.16),transparent_26%),radial-gradient(circle_at_18%_88%,rgba(74,179,162,0.14),transparent_28%),linear-gradient(180deg,rgba(5,8,13,0.12),rgba(5,8,13,0.72))]" />
       <div className="relative w-full">
-        <div className="grid gap-10 xl:grid-cols-[0.88fr_1.2fr_0.72fr] xl:items-start">
+        <div className="grid gap-10 xl:grid-cols-[0.76fr_1.18fr_0.72fr] xl:items-start">
           <div
-            className="max-w-[34rem] transition-[opacity,transform] duration-300 ease-out"
+            className="max-w-[31rem] transition-[opacity,transform] duration-300 ease-out"
             style={{
               opacity: 0.14 + revealProgress * 0.86,
               transform: `translate3d(${-68 * (1 - revealProgress)}px, ${
@@ -268,16 +388,16 @@ export function ModelMindMapSection() {
             <p className="text-sm font-medium tracking-[0.24em] text-[#8aa0b8] uppercase">
               {modelT('eyebrow')}
             </p>
-            <h2 className="mt-5 text-[3rem] leading-[0.94] font-semibold tracking-tight text-white md:text-[4.8rem] lg:text-[5.6rem]">
-              {modelT('title')}
-              <span className="mt-2 block bg-[linear-gradient(90deg,#8cc4ff_0%,#76d5c2_44%,#ffbe74_100%)] bg-clip-text text-transparent">
+            <h2 className="mt-5 max-w-[10.5ch] text-[2.7rem] leading-[0.9] font-semibold tracking-tight text-white md:text-[4.35rem] lg:text-[5rem]">
+              <span className="block">{modelT('title')}</span>
+              <span className="mt-3 block bg-[linear-gradient(90deg,#8cc4ff_0%,#76d5c2_44%,#ffbe74_100%)] bg-clip-text text-transparent">
                 {modelT('highlight')}
               </span>
             </h2>
-            <p className="mt-7 max-w-[34rem] text-lg leading-8 text-[#b9c5d4] md:text-[1.28rem] md:leading-9">
+            <p className="mt-7 max-w-[29rem] text-[1.05rem] leading-8 text-[#b9c5d4] md:text-[1.18rem] md:leading-8">
               {modelT('body')}
             </p>
-            <div className="mt-8 inline-flex max-w-[28rem] items-center gap-3 rounded-2xl border border-[#23443f] bg-[linear-gradient(135deg,rgba(13,37,35,0.98),rgba(10,18,24,0.92))] px-5 py-4 text-sm text-[#d9efe9] shadow-[0_18px_60px_rgba(0,0,0,0.28)] md:text-base">
+            <div className="mt-8 inline-flex max-w-[28rem] items-center gap-3 rounded-2xl border border-[#23443f] bg-[linear-gradient(135deg,rgba(13,37,35,0.98),rgba(10,18,24,0.92))] px-5 py-4 text-sm leading-7 text-[#d9efe9] shadow-[0_18px_60px_rgba(0,0,0,0.28)] md:text-[0.98rem]">
               <span className="text-lg text-[#f8c46f]">✦</span>
               <span>{modelT('banner')}</span>
             </div>
@@ -383,7 +503,7 @@ export function ModelMindMapSection() {
                       <p className="mt-5 text-[2rem] font-semibold tracking-tight text-white">
                         {modelT('centerTitle')}
                       </p>
-                      <p className="mt-3 text-[1rem] leading-7 text-[#c8d3df]">
+                      <p className="mt-3 max-w-[12rem] text-[0.96rem] leading-7 text-[#c8d3df]">
                         {modelT('centerBody')}
                       </p>
                     </div>
@@ -405,10 +525,10 @@ export function ModelMindMapSection() {
                           top: `${y}px`,
                           width:
                             provider.orbit === 3
-                              ? '156px'
+                              ? '150px'
                               : provider.orbit === 2
-                                ? '142px'
-                                : '128px',
+                                ? '136px'
+                                : '122px',
                           transform: `translate(-50%, -50%) translate(${
                             Math.cos(angle) * (36 * (1 - revealProgress) + drift * 10)
                           }px, ${
@@ -442,14 +562,22 @@ export function ModelMindMapSection() {
                               background: tone.fill,
                             }}
                           >
-                            <span
-                              className="text-[2rem] font-semibold tracking-tight"
-                              style={{ color: tone.text }}
-                            >
-                              {provider.mark}
-                            </span>
+                            <div className="flex h-[44px] w-[44px] items-center justify-center rounded-full bg-white/5 p-2">
+                              <Image
+                                src={provider.logoUrl}
+                                alt={`${provider.name} logo`}
+                                width={44}
+                                height={44}
+                                unoptimized
+                                className="h-full w-full object-contain"
+                                referrerPolicy="no-referrer"
+                                style={{
+                                  transform: `scale(${provider.logoScale ?? 1})`,
+                                }}
+                              />
+                            </div>
                           </div>
-                          <p className="mt-3 text-[1.1rem] leading-tight font-semibold text-white">
+                          <p className="mt-3 max-w-[10rem] text-[1rem] leading-tight font-semibold text-white">
                             {provider.name}
                           </p>
                         </div>
