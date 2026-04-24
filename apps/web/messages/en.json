@@ -173,23 +173,100 @@
         }
       },
       "testimonials": {
-        "eyebrow": "Testimonials",
-        "title": "Social proof from the people this is built for",
-        "body": "The product promise is simple: make complex AI production readable enough that teams can trust and repeat it.",
+        "eyebrow": "Creator Scenarios",
+        "title": "More than three compliments, this is a full wall of creator-fit scenarios",
+        "body": "Instead of showing only a few flattering lines, this section maps how directors, studios, agencies, ecommerce teams, educators, and game creators actually fit with Nano Banana Canvas, so visitors can understand the product's scope in one glance.",
+        "note": "The cards below are scenario-based showcase copy derived from common creator workflows. They are meant to explain product fit and usage patterns, not to represent named real-customer endorsements.",
+        "scenarioBadge": "Typical Workflow",
         "director": {
-          "quote": "The canvas makes the prompt chain visible. That alone changes how quickly a director and editor can agree on a direction.",
-          "name": "Maya Chen",
-          "role": "Independent film director"
+          "eyebrow": "Independent Director",
+          "title": "Put previs, prompt chains, and image-to-video experiments onto one visible canvas",
+          "quote": "For directors, the hard part is rarely generating the first image. It is keeping style, framing, character state, and motion direction aligned across iterations. A shared canvas makes references, Midjourney explorations, and Runway or Kling video passes visible in one chain, so directors and editors can align faster.",
+          "role": "Typical scenario: director previs and edit alignment",
+          "meta": "Keyword coverage: previs, image-to-video, director collaboration, shot language, style consistency",
+          "tagOne": "midjourney",
+          "tagTwo": "runway",
+          "tagThree": "previs"
         },
         "studio": {
-          "quote": "We stopped rebuilding the same image-to-video flow for every campaign. The workflow itself became the reusable asset.",
-          "name": "Jon Bell",
-          "role": "Creative studio lead"
+          "eyebrow": "Creative Studio",
+          "title": "Turn one working pipeline into a reusable team asset instead of rebuilding it every time",
+          "quote": "Studios lose time when every new project starts with rebuilding the same workflow shape. Nano Banana Canvas keeps model choices, node order, asset inputs, and output standards inside the workflow itself, so what gets preserved is not only the final deliverable, but the production method behind it.",
+          "role": "Typical scenario: studio SOP and workflow reuse",
+          "meta": "Keyword coverage: workflow reuse, team collaboration, SOP, model orchestration, project handoff",
+          "tagOne": "team workflow",
+          "tagTwo": "workflow reuse",
+          "tagThree": "model orchestration"
         },
         "operator": {
-          "quote": "The useful part is not just running models. It is seeing why one output happened and how to improve the next run.",
-          "name": "Ari Morgan",
-          "role": "AI production operator"
+          "eyebrow": "AI Operator",
+          "title": "Make every output traceable instead of ending up with only a final image",
+          "quote": "High-frequency model operators do not lack buttons. They lack traceability. Which prompt version, reference set, or node change caused a better result should be visible. A visual workflow makes it easier to understand why this round worked and exactly where the next optimization should begin.",
+          "role": "Typical scenario: version tracing and iterative optimization",
+          "meta": "Keyword coverage: prompt optimization, version control, visual nodes, result tracing, AI workspace",
+          "tagOne": "prompt chain",
+          "tagTwo": "version trace",
+          "tagThree": "visual nodes"
+        },
+        "agency": {
+          "eyebrow": "Agency Team",
+          "title": "Handle multiple brands, clients, and content versions without stitching context together in chat",
+          "quote": "Agencies serving many brands at once often lose consistency because creative intent, model choices, and output specs are scattered across documents and chats. Putting ad scripts, brand references, product visuals, generated videos, and proposal branches into one workflow increases both delivery speed and consistency.",
+          "role": "Typical scenario: campaigns and branded content production",
+          "meta": "Keyword coverage: advertising creative, branded content, video generation, delivery flow, multi-client collaboration",
+          "tagOne": "ad creative",
+          "tagTwo": "brand content",
+          "tagThree": "video generation"
+        },
+        "previz": {
+          "eyebrow": "Previs Team",
+          "title": "Make storyboards, scene motion, and character states discussable as one visual route",
+          "quote": "Previs work needs more than beautiful stills. Teams need to understand how shots connect, how characters enter scenes, and how atmosphere builds across sequences. Laying OpenAI, Gemini, image outputs, and video passes on one workflow path makes those discussions far more concrete.",
+          "role": "Typical scenario: film previs and storyboard progression",
+          "meta": "Keyword coverage: storyboard, film previs, shot progression, character state, AI storyboard workflow",
+          "tagOne": "storyboard",
+          "tagTwo": "gemini",
+          "tagThree": "film previs"
+        },
+        "ecommerce": {
+          "eyebrow": "Ecommerce Content",
+          "title": "Keep product stills, PDP shorts, and social assets on the same generation logic",
+          "quote": "Ecommerce teams do not just need a hero image. They need consistency across PDP visuals, short videos, ads, and social variants. A shared canvas can connect product shots, model imagery, scene variants, short-form motion, and campaign cutdowns into one repeatable system.",
+          "role": "Typical scenario: product visuals to short-form video",
+          "meta": "Keyword coverage: product images, ecommerce video, paid ads, social assets, content matrix",
+          "tagOne": "product images",
+          "tagTwo": "ecommerce video",
+          "tagThree": "content matrix"
+        },
+        "education": {
+          "eyebrow": "Education",
+          "title": "Turn the workflow itself into teaching material that can be shown, explained, and repeated",
+          "quote": "Training sessions fail when students only see the output and never see the reasoning. By preserving nodes, models, inputs, and branches on the canvas, educators can teach prompt design, style control, and multi-model coordination using a real production flow instead of abstract theory.",
+          "role": "Typical scenario: AI education and internal training",
+          "meta": "Keyword coverage: AI teaching, workflow demo, course examples, multi-model collaboration, creator training",
+          "tagOne": "ai education",
+          "tagTwo": "workflow demo",
+          "tagThree": "multi-model"
+        },
+        "game": {
+          "eyebrow": "Game Concept",
+          "title": "Keep character design, worldbuilding, and promo assets from splitting across disconnected tools",
+          "quote": "Game concept work often requires repeated comparison across worldbuilding, costume language, mood lighting, and motion feeling. When concept art, character sheets, environment images, and motion snippets live on one canvas, teams can keep evolving a shared visual language instead of fragmenting it.",
+          "role": "Typical scenario: character design and worldbuilding",
+          "meta": "Keyword coverage: character design, concept art, worldbuilding, game promotion, visual language",
+          "tagOne": "character design",
+          "tagTwo": "concept art",
+          "tagThree": "worldbuilding"
+        },
+        "producer": {
+          "eyebrow": "Content Producer",
+          "title": "Turn every delivery decision from inspiration into a manageable production chain",
+          "quote": "Producers do not care about model novelty alone. They care about schedule, budget, version control, and whether delivery stays manageable. A visible workflow shows how assets move from input to output, which steps consume time, which branches can be reused, and where teams can work in parallel.",
+          "role": "Typical scenario: production oversight and delivery management",
+          "meta": "Keyword coverage: content production, delivery management, parallel collaboration, asset path, output planning",
+          "tagOne": "delivery flow",
+          "tagTwo": "parallel work",
+          "tagThree": "production planning"
         }
       },
       "faq": {
