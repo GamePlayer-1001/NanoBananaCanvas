@@ -414,11 +414,13 @@ function SectionHeader({
       }`}
     >
       <div>
-        <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-          {eyebrow}
-        </p>
+        {eyebrow ? (
+          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
+            {eyebrow}
+          </p>
+        ) : null}
         <h2
-          className={`mt-4 font-semibold text-white ${
+          className={`${eyebrow ? 'mt-4' : ''} font-semibold text-white ${
             isFeatured
               ? 'max-w-[13ch] text-[2.75rem] leading-[0.95] tracking-tight md:text-[4.6rem] lg:text-[5.3rem]'
               : 'text-3xl md:text-5xl'
@@ -877,7 +879,7 @@ export function FeaturesSection() {
     <section id="features" className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1240px]">
         <SectionHeader
-          eyebrow={featuresT('eyebrow')}
+          eyebrow=""
           title={featuresT('title')}
           body={featuresT('body')}
         />
@@ -1168,7 +1170,7 @@ export function TestimonialsSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.07),transparent_20%),radial-gradient(circle_at_82%_74%,rgba(110,124,255,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
       <div className="relative mx-auto w-full max-w-[1240px]">
         <SectionHeader
-          eyebrow={testimonialsT('eyebrow')}
+          eyebrow=""
           title={testimonialsT('title')}
           body={testimonialsT('body')}
         />
