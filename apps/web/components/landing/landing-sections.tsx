@@ -286,39 +286,42 @@ const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
 
 const LANDING_BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
 const LANDING_CREDIT_PACKS = ['500', '1200', '3500', '8000'] as const
-const LANDING_PRICING_GROUPS = [
+const LANDING_PRICING_MODES = [
   {
     key: 'monthly',
     icon: BadgeDollarSign,
     titleKey: 'toggleMonthly',
+    panelTitleKey: 'toggleMonthly',
     className:
-      'border-[#6b5cff]/45 bg-[linear-gradient(180deg,rgba(19,18,29,0.98),rgba(13,13,21,0.98))] shadow-[0_22px_70px_rgba(88,76,214,0.14)]',
+      'border-[#6b5cff]/40 bg-[linear-gradient(180deg,rgba(19,18,29,0.98),rgba(13,13,21,0.98))] shadow-[0_24px_72px_rgba(88,76,214,0.16)]',
     badgeClassName:
       'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d0c9ff]',
-    buttonClassName:
-      'bg-[#7b65ff] text-white hover:bg-[#8a76ff]',
+    chipClassName:
+      'border-[#6b5cff]/22 bg-[#6b5cff]/10 text-[#ddd7ff]',
   },
   {
     key: 'oneTime',
     icon: ShieldCheck,
     titleKey: 'toggleOneTime',
+    panelTitleKey: 'toggleOneTime',
     className:
-      'border-white/8 bg-[linear-gradient(180deg,rgba(23,23,28,0.98),rgba(16,16,20,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
+      'border-white/10 bg-[linear-gradient(180deg,rgba(23,23,28,0.98),rgba(16,16,20,0.98))] shadow-[0_18px_54px_rgba(0,0,0,0.18)]',
     badgeClassName:
       'border-white/10 bg-white/6 text-white/78',
-    buttonClassName:
-      'bg-[#5d55d6] text-white hover:bg-[#6a63e2]',
+    chipClassName:
+      'border-white/10 bg-white/6 text-white/82',
   },
   {
     key: 'credits',
     icon: Coins,
     titleKey: 'toggleCredits',
+    panelTitleKey: 'toggleCredits',
     className:
-      'border-white/8 bg-[linear-gradient(180deg,rgba(28,28,26,0.98),rgba(20,20,19,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
+      'border-[#7f7256]/20 bg-[linear-gradient(180deg,rgba(28,28,26,0.98),rgba(20,20,19,0.98))] shadow-[0_18px_54px_rgba(0,0,0,0.18)]',
     badgeClassName:
-      'border-white/10 bg-white/6 text-white/78',
-    buttonClassName:
-      'bg-[#4c4c50] text-white hover:bg-[#5a5a60]',
+      'border-[#8c7a54]/18 bg-[#8c7a54]/10 text-[#ece0c5]',
+    chipClassName:
+      'border-[#8c7a54]/14 bg-[#8c7a54]/8 text-[#f0e3c8]',
   },
 ] as const
 
@@ -900,168 +903,196 @@ export function FeaturesSection() {
 export function PricingSection() {
   const pricingT = useTranslations('landing.sections.pricing')
   const billingT = useTranslations('pricing')
+  const [selectedMode, setSelectedMode] = useState<
+    (typeof LANDING_PRICING_MODES)[number]['key']
+  >('monthly')
 
   const planDescriptions = {
     standard: billingT('standardDescription'),
     pro: billingT('proDescription'),
     ultimate: billingT('ultimateDescription'),
   } as const
+  const selectedModeConfig =
+    LANDING_PRICING_MODES.find((mode) => mode.key === selectedMode) ??
+    LANDING_PRICING_MODES[0]
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1240px]">
-        <SectionHeader
-          eyebrow={pricingT('eyebrow')}
-          title={pricingT('title')}
-          body={pricingT('body')}
-        />
+        <div className="mx-auto max-w-[980px] text-center">
+          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
+            {pricingT('eyebrow')}
+          </p>
+          <h2 className="mt-4 text-[2.8rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.4rem]">
+            {pricingT('title')}
+          </h2>
+          <p className="mx-auto mt-6 max-w-[48rem] text-base leading-8 text-white/62 md:text-[1.12rem]">
+            {pricingT('body')}
+          </p>
 
-        <p className="mt-6 max-w-[52rem] text-sm leading-7 text-white/48 md:text-base">
-          {pricingT('summaryNote')}
-        </p>
-
-        <div className="mt-14 grid gap-6 xl:grid-cols-[1.05fr_1.05fr_0.9fr]">
-          {LANDING_PRICING_GROUPS.map((group) => {
-            const Icon = group.icon
-
-            return (
-              <article
-                key={group.key}
-                className={`relative overflow-hidden rounded-[30px] border p-6 md:p-7 ${group.className}`}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            {LANDING_PRICING_MODES.map((mode) => (
+              <button
+                key={mode.key}
+                type="button"
+                onClick={() => setSelectedMode(mode.key)}
+                className={`inline-flex min-w-[120px] items-center justify-center rounded-full border px-5 py-3 text-sm font-semibold transition ${
+                  selectedMode === mode.key
+                    ? 'border-white bg-white text-black'
+                    : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-white/20 hover:text-white'
+                }`}
               >
-                <div className="relative flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] uppercase ${group.badgeClassName}`}
-                      >
-                        {pricingT(`groups.${group.key}.badge`)}
-                      </span>
-                      <div className="mt-5 flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-white/80">
-                          <Icon className="h-5.5 w-5.5" />
-                        </div>
+                {billingT(mode.titleKey)}
+              </button>
+            ))}
+          </div>
+
+          <p className="mx-auto mt-5 max-w-[46rem] text-sm leading-7 text-white/48 md:text-base">
+            {pricingT(`groups.${selectedMode}.body`)}
+          </p>
+        </div>
+
+        <div
+          className={`mt-14 rounded-[32px] border p-6 md:p-8 ${selectedModeConfig.className}`}
+        >
+          <div className="flex flex-col gap-4 border-b border-white/8 pb-6 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-white/82">
+                <selectedModeConfig.icon className="h-5.5 w-5.5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] uppercase ${selectedModeConfig.badgeClassName}`}
+                  >
+                    {pricingT(`groups.${selectedMode}.badge`)}
+                  </span>
+                  {selectedMode === 'monthly' ? (
+                    <span className="rounded-full border border-[#6b5cff]/30 bg-[#6b5cff]/12 px-3 py-1 text-xs font-medium text-[#d3ccff]">
+                      {pricingT('popular')}
+                    </span>
+                  ) : null}
+                </div>
+                <h3 className="mt-4 text-[1.9rem] font-semibold tracking-tight text-white md:text-[2.3rem]">
+                  {billingT(selectedModeConfig.panelTitleKey)}
+                </h3>
+                <p className="mt-2 max-w-[42rem] text-sm leading-7 text-white/58 md:text-base">
+                  {pricingT('summaryNote')}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/pricing"
+              className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90 md:min-w-[148px]"
+            >
+              {pricingT('cta')}
+            </Link>
+          </div>
+
+          <div
+            className={`mt-8 grid gap-4 ${
+              selectedMode === 'credits' ? 'xl:grid-cols-4 md:grid-cols-2' : 'xl:grid-cols-3'
+            }`}
+          >
+            {selectedMode === 'credits'
+              ? LANDING_CREDIT_PACKS.map((packageId) => {
+                  const pack = BILLING_CREDIT_PACK_SNAPSHOTS[packageId]
+                  return (
+                    <article
+                      key={packageId}
+                      className={`rounded-[26px] border p-5 ${
+                        packageId === '3500'
+                          ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
+                          : 'border-white/8 bg-white/[0.03]'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h3 className="text-[1.65rem] font-semibold tracking-tight text-white">
-                            {billingT(group.titleKey)}
-                          </h3>
-                          <p className="mt-1 text-sm leading-6 text-white/60">
-                            {pricingT(`groups.${group.key}.body`)}
+                          <p className="text-[1.8rem] font-semibold tracking-tight text-white">
+                            {billingT('creditsValue', {
+                              value: pack.totalCredits.toLocaleString(),
+                            })}
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-white/55">
+                            {pack.bonusCredits > 0
+                              ? billingT('creditsBonus', {
+                                  base: pack.credits.toLocaleString(),
+                                  bonus: pack.bonusCredits.toLocaleString(),
+                                })
+                              : billingT('creditsBaseOnly', {
+                                  base: pack.credits.toLocaleString(),
+                                })}
                           </p>
                         </div>
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${selectedModeConfig.chipClassName}`}
+                        >
+                          {billingT('toggleCredits')}
+                        </span>
                       </div>
-                    </div>
-                    {group.key === 'monthly' ? (
-                      <span className="rounded-full border border-[#6b5cff]/35 bg-[#6b5cff]/12 px-3 py-1 text-xs font-medium text-[#d3ccff]">
-                        {pricingT('popular')}
-                      </span>
-                    ) : null}
-                  </div>
+                    </article>
+                  )
+                })
+              : LANDING_BILLING_PLANS.map((planKey) => {
+                  const snapshot = BILLING_PLAN_SNAPSHOTS[planKey]
+                  const creditsLabel =
+                    selectedMode === 'monthly'
+                      ? billingT('monthlyCredits')
+                      : billingT('permanentCredits')
 
-                  <div className="mt-8 space-y-3">
-                    {group.key === 'credits'
-                      ? LANDING_CREDIT_PACKS.map((packageId) => {
-                          const pack = BILLING_CREDIT_PACK_SNAPSHOTS[packageId]
-                          return (
-                            <div
-                              key={packageId}
-                              className={`rounded-[24px] border p-4 ${
-                                packageId === '3500'
-                                  ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
-                                  : 'border-white/8 bg-white/[0.03]'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div>
-                                  <p className="text-xl font-semibold text-white">
-                                    {billingT('creditsValue', {
-                                      value: pack.totalCredits.toLocaleString(),
-                                    })}
-                                  </p>
-                                  <p className="mt-2 text-sm text-white/58">
-                                    {pack.bonusCredits > 0
-                                      ? billingT('creditsBonus', {
-                                          base: pack.credits.toLocaleString(),
-                                          bonus: pack.bonusCredits.toLocaleString(),
-                                        })
-                                      : billingT('creditsBaseOnly', {
-                                          base: pack.credits.toLocaleString(),
-                                        })}
-                                  </p>
-                                </div>
-                                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-white/72">
-                                  {billingT('toggleCredits')}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        })
-                      : LANDING_BILLING_PLANS.map((planKey) => {
-                          const snapshot = BILLING_PLAN_SNAPSHOTS[planKey]
-                          const creditsLabel =
-                            group.key === 'monthly'
-                              ? billingT('monthlyCredits')
-                              : billingT('permanentCredits')
+                  return (
+                    <article
+                      key={`${selectedMode}-${planKey}`}
+                      className={`rounded-[26px] border p-5 ${
+                        planKey === 'pro'
+                          ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
+                          : 'border-white/8 bg-white/[0.03]'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-[1.8rem] font-semibold tracking-tight text-white">
+                              {billingT(`${planKey}Name`)}
+                            </p>
+                            {planKey === 'pro' ? (
+                              <span className="rounded-full border border-[#6b5cff]/30 bg-[#6b5cff]/12 px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.14em] text-[#d3ccff] uppercase">
+                                {pricingT('popular')}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-white/55">
+                            {planDescriptions[planKey]}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${selectedModeConfig.chipClassName}`}
+                        >
+                          {selectedMode === 'monthly'
+                            ? pricingT(`plans.${planKey}.period`)
+                            : billingT('billedOneTime')}
+                        </span>
+                      </div>
 
-                          return (
-                            <div
-                              key={`${group.key}-${planKey}`}
-                              className={`rounded-[24px] border p-4 ${
-                                planKey === 'pro'
-                                  ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
-                                  : 'border-white/8 bg-white/[0.03]'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-xl font-semibold text-white">
-                                      {billingT(`${planKey}Name`)}
-                                    </p>
-                                    {planKey === 'pro' ? (
-                                      <span className="rounded-full border border-[#6b5cff]/30 bg-[#6b5cff]/12 px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.14em] text-[#d3ccff] uppercase">
-                                        {pricingT('popular')}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <p className="mt-2 text-sm leading-6 text-white/58">
-                                    {planDescriptions[planKey]}
-                                  </p>
-                                </div>
-                                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-white/80">
-                                  {group.key === 'monthly'
-                                    ? pricingT(`plans.${planKey}.period`)
-                                    : billingT('billedOneTime')}
-                                </span>
-                              </div>
-
-                              <div className="mt-4 flex flex-wrap gap-2">
-                                <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-white/88">
-                                  {creditsLabel} ·{' '}
-                                  {snapshot.monthlyCredits.toLocaleString()}
-                                </span>
-                                <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-white/88">
-                                  {billingT('storageIncluded')} ·{' '}
-                                  {billingT('storageValue', {
-                                    value: snapshot.storageGB,
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                  </div>
-
-                  <Link
-                    href="/pricing"
-                    className={`mt-6 inline-flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition ${group.buttonClassName}`}
-                  >
-                    {pricingT('cta')}
-                  </Link>
-                </div>
-              </article>
-            )
-          })}
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <span
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${selectedModeConfig.chipClassName}`}
+                        >
+                          {creditsLabel} · {snapshot.monthlyCredits.toLocaleString()}
+                        </span>
+                        <span
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${selectedModeConfig.chipClassName}`}
+                        >
+                          {billingT('storageIncluded')} ·{' '}
+                          {billingT('storageValue', {
+                            value: snapshot.storageGB,
+                          })}
+                        </span>
+                      </div>
+                    </article>
+                  )
+                })}
+          </div>
         </div>
       </div>
     </section>
