@@ -286,6 +286,24 @@ const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
 
 const LANDING_BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
 const LANDING_CREDIT_PACKS = ['500', '1200', '3500', '8000'] as const
+const LANDING_PLAN_PRICE_AMOUNTS = {
+  monthly: {
+    standard: 20,
+    pro: 50,
+    ultimate: 150,
+  },
+  oneTime: {
+    standard: 24,
+    pro: 59,
+    ultimate: 179,
+  },
+} as const
+const LANDING_CREDIT_PACK_PRICE_AMOUNTS = {
+  '500': 5,
+  '1200': 10,
+  '3500': 25,
+  '8000': 50,
+} as const
 const LANDING_PRICING_MODES = [
   {
     key: 'monthly',
@@ -368,6 +386,10 @@ const FAQ_KEYS = [
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
+}
+
+function formatLandingUsd(amount: number) {
+  return `US$${amount}`
 }
 
 function SectionHeader({
@@ -920,10 +942,7 @@ export function PricingSection() {
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1240px]">
         <div className="mx-auto max-w-[980px] text-center">
-          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-            {pricingT('eyebrow')}
-          </p>
-          <h2 className="mt-4 text-[2.8rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.4rem]">
+          <h2 className="text-[2.8rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.4rem]">
             {pricingT('title')}
           </h2>
           <p className="mx-auto mt-6 max-w-[48rem] text-base leading-8 text-white/62 md:text-[1.12rem]">
@@ -955,7 +974,7 @@ export function PricingSection() {
         <div
           className={`mt-14 rounded-[32px] border p-6 md:p-8 ${selectedModeConfig.className}`}
         >
-          <div className="flex flex-col gap-4 border-b border-white/8 pb-6 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col gap-4 border-b border-white/8 pb-6">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-white/82">
                 <selectedModeConfig.icon className="h-5.5 w-5.5" />
@@ -981,12 +1000,6 @@ export function PricingSection() {
                 </p>
               </div>
             </div>
-            <Link
-              href="/pricing"
-              className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90 md:min-w-[148px]"
-            >
-              {pricingT('cta')}
-            </Link>
           </div>
 
           <div
@@ -1000,7 +1013,7 @@ export function PricingSection() {
                   return (
                     <article
                       key={packageId}
-                      className={`rounded-[26px] border p-5 ${
+                      className={`flex h-full flex-col rounded-[26px] border p-5 ${
                         packageId === '3500'
                           ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
                           : 'border-white/8 bg-white/[0.03]'
@@ -1030,6 +1043,29 @@ export function PricingSection() {
                           {billingT('toggleCredits')}
                         </span>
                       </div>
+
+                      <div className="mt-5 border-t border-white/8 pt-5">
+                        <p className="text-[2.35rem] leading-none font-semibold tracking-tight text-white">
+                          {formatLandingUsd(LANDING_CREDIT_PACK_PRICE_AMOUNTS[packageId])}
+                        </p>
+                        <p className="mt-2 text-sm text-white/45">{billingT('billedOneTime')}</p>
+                      </div>
+
+                      <div className="mt-5 space-y-2 text-sm leading-6 text-white/62">
+                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                          {billingT('creditsIncluded')} · {pack.credits.toLocaleString()}
+                        </div>
+                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                          {billingT('creditsBonusLabel')} · +{pack.bonusCredits.toLocaleString()}
+                        </div>
+                      </div>
+
+                      <Link
+                        href="/pricing"
+                        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
+                      >
+                        {billingT('buyCredits')}
+                      </Link>
                     </article>
                   )
                 })
@@ -1039,11 +1075,19 @@ export function PricingSection() {
                     selectedMode === 'monthly'
                       ? billingT('monthlyCredits')
                       : billingT('permanentCredits')
+                  const planPrice =
+                    selectedMode === 'monthly'
+                      ? LANDING_PLAN_PRICE_AMOUNTS.monthly[planKey]
+                      : LANDING_PLAN_PRICE_AMOUNTS.oneTime[planKey]
+                  const ctaLabel =
+                    selectedMode === 'monthly'
+                      ? `${billingT('startSubscription')} ${billingT(`${planKey}Name`)}`
+                      : `${billingT('buyOneTime')} ${billingT(`${planKey}Name`)}`
 
                   return (
                     <article
                       key={`${selectedMode}-${planKey}`}
-                      className={`rounded-[26px] border p-5 ${
+                      className={`flex h-full flex-col rounded-[26px] border p-5 ${
                         planKey === 'pro'
                           ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
                           : 'border-white/8 bg-white/[0.03]'
@@ -1074,21 +1118,38 @@ export function PricingSection() {
                         </span>
                       </div>
 
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <span
-                          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${selectedModeConfig.chipClassName}`}
-                        >
+                      <div className="mt-5 border-t border-white/8 pt-5">
+                        <p className="text-[2.35rem] leading-none font-semibold tracking-tight text-white">
+                          {formatLandingUsd(planPrice)}
+                        </p>
+                        <p className="mt-2 text-sm text-white/45">
+                          {selectedMode === 'monthly'
+                            ? billingT('billedMonthly')
+                            : billingT('billedOneTime')}
+                        </p>
+                      </div>
+
+                      <div className="mt-5 space-y-2 text-sm leading-6 text-white/62">
+                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
                           {creditsLabel} · {snapshot.monthlyCredits.toLocaleString()}
-                        </span>
-                        <span
-                          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${selectedModeConfig.chipClassName}`}
-                        >
+                        </div>
+                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
                           {billingT('storageIncluded')} ·{' '}
                           {billingT('storageValue', {
                             value: snapshot.storageGB,
                           })}
-                        </span>
+                        </div>
+                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                          {pricingT(`plans.${planKey}.note`)}
+                        </div>
                       </div>
+
+                      <Link
+                        href="/pricing"
+                        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
+                      >
+                        {ctaLabel}
+                      </Link>
                     </article>
                   )
                 })}
