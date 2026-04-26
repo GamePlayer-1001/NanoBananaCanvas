@@ -6,7 +6,7 @@
 ## 成员清单
 
 ```
-upload/route.ts         — POST 上传文件到 R2 (类型/大小/配额校验)
+upload/route.ts         — POST 上传文件到 R2 (图片/视频/工作流类型 + 大小 + 配额校验)
 [...key]/route.ts       — GET 读取 R2 文件 (thumbnails 公开，uploads/outputs 按用户隔离)
 ```
 

@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/rate-limit 的 withRateLimit，
  *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/getStorageUsage，
- *          依赖 @/lib/validations/upload
- * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含配额检查)
+ *          依赖 @/lib/validations/upload 的 validateUpload
+ * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小/配额检查)
  * [POS]: api/files 的上传端点，被前端 useUpload hook 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -14,7 +14,7 @@ import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getR2 } from '@/lib/r2'
 import { generateUploadPath, getStorageUsage, invalidateStorageCache } from '@/lib/storage'
-import { UPLOAD_LIMITS } from '@/lib/validations/upload'
+import { validateUpload } from '@/lib/validations/upload'
 
 /* ─── POST /api/files/upload ────────────────────────── */
 
@@ -34,13 +34,9 @@ export async function POST(req: NextRequest) {
     }
 
     /* ── Validate type & size ────────────────────────── */
-    if (file.size > UPLOAD_LIMITS.maxSizeBytes) {
-      const maxMB = UPLOAD_LIMITS.maxSizeBytes / 1024 / 1024
-      return apiError('VALIDATION_FAILED', `File exceeds ${maxMB}MB limit`, 400)
-    }
-
-    if (!UPLOAD_LIMITS.allowedTypes.has(file.type)) {
-      return apiError('VALIDATION_FAILED', `Unsupported file type: ${file.type}`, 400)
+    const validation = validateUpload(file)
+    if (!validation.ok) {
+      return apiError('VALIDATION_FAILED', validation.reason, 400)
     }
 
     /* ── Check storage quota (R2-004) ────────────────── */
