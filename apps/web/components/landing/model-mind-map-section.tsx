@@ -23,6 +23,7 @@ type ProviderOrbit = 'inner' | 'middle' | 'outer'
 
 type ModelProvider = {
   name: string
+  vendor?: string
   iconUrl?: string
   fallback: string
   orbit: ProviderOrbit
@@ -88,6 +89,21 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     lane: 0,
     size: 'lg',
     tone: 'violet',
+    iconFilter:
+      'brightness(0) saturate(100%) invert(99%) sepia(6%) saturate(283%) hue-rotate(184deg) brightness(105%) contrast(100%)',
+  },
+  {
+    name: 'GPT Image',
+    vendor: 'OpenAI',
+    iconUrl: buildSimpleIconUrl('openai'),
+    fallback: 'GI',
+    orbit: 'inner',
+    angle: 304,
+    speed: 6.22,
+    lane: 0,
+    size: 'sm',
+    tone: 'violet',
+    iconScale: 0.88,
     iconFilter:
       'brightness(0) saturate(100%) invert(99%) sepia(6%) saturate(283%) hue-rotate(184deg) brightness(105%) contrast(100%)',
   },
@@ -504,7 +520,9 @@ export function ModelMindMapSection() {
   const revealProgress = prefersReducedMotion ? 1 : motion.reveal
   const drift = prefersReducedMotion ? 0 : motion.drift
   const visibleOrbitTime = prefersReducedMotion ? 0 : orbitTime
-  const vendorCount = MODEL_PROVIDERS.length
+  const vendorCount = new Set(
+    MODEL_PROVIDERS.map((provider) => provider.vendor ?? provider.name),
+  ).size
 
   return (
     <section
