@@ -67,7 +67,7 @@ const MODEL_CORE_POSITION = {
 } as const
 
 const MODEL_CORE_VISUAL_OFFSET = {
-  x: -158,
+  x: 158,
   y: 158,
 } as const
 
