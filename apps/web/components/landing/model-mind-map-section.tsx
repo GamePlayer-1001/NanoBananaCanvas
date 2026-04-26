@@ -456,50 +456,51 @@ export function ModelMindMapSection() {
     <section
       ref={sectionRef}
       id="models"
-      className="relative overflow-hidden bg-[#05070d] px-4 py-18 sm:px-6 lg:px-8 lg:py-20 xl:px-10"
+      className="relative overflow-hidden bg-[#05070d] px-4 py-18 sm:px-6 lg:px-8 lg:py-24 xl:px-10"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(102,92,255,0.16),transparent_20%),radial-gradient(circle_at_80%_24%,rgba(76,164,255,0.12),transparent_18%),radial-gradient(circle_at_50%_74%,rgba(166,90,255,0.16),transparent_24%),linear-gradient(180deg,#05070d_0%,#04060b_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(102,92,255,0.18),transparent_18%),radial-gradient(circle_at_83%_22%,rgba(76,164,255,0.12),transparent_18%),radial-gradient(circle_at_50%_72%,rgba(166,90,255,0.16),transparent_24%),linear-gradient(180deg,#05070d_0%,#04060b_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(136,118,255,0.22),transparent)]" />
 
       <div className="relative mx-auto w-full max-w-[1680px]">
-        <div className="relative overflow-hidden rounded-[36px] border border-white/8 bg-[linear-gradient(180deg,rgba(8,10,18,0.96),rgba(6,8,14,0.98))] px-5 py-8 shadow-[0_32px_120px_rgba(0,0,0,0.28)] sm:px-7 md:px-8 lg:px-10 lg:py-10">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(110,84,255,0.18),transparent_26%),radial-gradient(circle_at_50%_100%,rgba(20,34,84,0.18),transparent_32%)]" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(148,122,255,0.42),transparent)]" />
+        <div className="relative px-1 sm:px-2 lg:px-0">
+          <div className="pointer-events-none absolute inset-x-[9%] top-[4%] h-[34rem] rounded-full bg-[radial-gradient(circle,rgba(101,78,255,0.12),transparent_62%)] blur-3xl" />
+          <div className="pointer-events-none absolute right-[4%] bottom-[8%] h-[18rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(52,110,255,0.08),transparent_68%)] blur-3xl" />
 
           <div
-            className="relative z-20 max-w-[38rem] transition-[opacity,transform] duration-500 ease-out"
+            className="relative z-20 max-w-[38rem] transition-[opacity,transform] duration-500 ease-out xl:pl-7"
             style={{
               opacity: 0.18 + revealProgress * 0.82,
               transform: `translate3d(${-30 * (1 - revealProgress)}px, ${12 * (1 - revealProgress)}px, 0)`,
             }}
           >
-            <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
+            <p className="text-sm font-medium tracking-[0.24em] text-white/40 uppercase">
               {modelT('eyebrow')}
             </p>
-            <h2 className="mt-5 text-[2.9rem] leading-[0.92] font-semibold tracking-tight text-white md:text-[4.6rem]">
+            <h2 className="mt-5 text-[2.9rem] leading-[0.9] font-semibold tracking-[-0.05em] text-white md:text-[4.85rem]">
               <span className="block">{modelT('title')}</span>
-              <span className="mt-2 block bg-[linear-gradient(90deg,#ffffff_0%,#d9cfff_46%,#9a7dff_100%)] bg-clip-text text-transparent">
+              <span className="mt-2 block bg-[linear-gradient(90deg,#ffffff_0%,#e0d4ff_40%,#a586ff_100%)] bg-clip-text text-transparent">
                 {modelT('highlight')}
               </span>
             </h2>
-            <p className="mt-6 max-w-[34rem] text-base leading-8 text-white/62 md:text-[1.12rem] md:leading-9">
+            <p className="mt-6 max-w-[34rem] text-base leading-8 text-white/56 md:text-[1.08rem] md:leading-[2.05rem]">
               {modelT('body')}
             </p>
             <Link
               href="/models"
-              className="mt-8 inline-flex h-[3.25rem] items-center justify-center rounded-full border border-white/12 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90 md:px-7 md:text-[0.98rem]"
+              className="mt-8 inline-flex h-[3.15rem] items-center justify-center rounded-full border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/92 md:px-7 md:text-[0.97rem]"
             >
               {modelT('cta')}
             </Link>
           </div>
 
           <div
-            className="relative z-10 mt-10 transition-[opacity,transform] duration-500 ease-out lg:-mt-20"
+            className="relative z-10 mt-10 transition-[opacity,transform] duration-500 ease-out lg:-mt-24"
             style={{
               opacity: 0.24 + revealProgress * 0.76,
               transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 10}px, 0)`,
             }}
           >
-            <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1460px]">
+            <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1540px]">
               <svg
                 className="absolute inset-0 h-full w-full"
                 viewBox={`0 0 ${MODEL_STAGE.width} ${MODEL_STAGE.height}`}
@@ -507,7 +508,7 @@ export function ModelMindMapSection() {
                 aria-hidden="true"
                 style={{
                   transform: `scale(${0.96 + revealProgress * 0.04}) rotate(${drift * 1.8}deg)`,
-                  opacity: 0.32 + revealProgress * 0.68,
+                  opacity: 0.24 + revealProgress * 0.76,
                 }}
               >
                 <ellipse
@@ -515,51 +516,51 @@ export function ModelMindMapSection() {
                   cy="410"
                   rx="650"
                   ry="250"
-                  stroke="rgba(93, 104, 170, 0.46)"
-                  strokeWidth="1.1"
+                  stroke="rgba(98, 111, 180, 0.34)"
+                  strokeWidth="1"
                 />
                 <ellipse
                   cx="700"
                   cy="410"
                   rx="540"
                   ry="198"
-                  stroke="rgba(111, 89, 255, 0.34)"
-                  strokeWidth="1.05"
+                  stroke="rgba(111, 89, 255, 0.28)"
+                  strokeWidth="0.96"
                 />
                 <ellipse
                   cx="700"
                   cy="410"
                   rx="408"
                   ry="146"
-                  stroke="rgba(144, 109, 255, 0.28)"
-                  strokeWidth="1"
+                  stroke="rgba(144, 109, 255, 0.22)"
+                  strokeWidth="0.92"
                 />
                 <ellipse
                   cx="700"
                   cy="410"
                   rx="280"
                   ry="102"
-                  stroke="rgba(125, 108, 255, 0.22)"
-                  strokeWidth="0.95"
+                  stroke="rgba(125, 108, 255, 0.18)"
+                  strokeWidth="0.86"
                 />
 
                 <path
                   d="M220 306C412 226 571 214 700 248C845 285 974 285 1138 232"
-                  stroke="rgba(114,92,255,0.22)"
-                  strokeWidth="1.1"
-                  strokeDasharray="4 10"
+                  stroke="rgba(114,92,255,0.16)"
+                  strokeWidth="0.9"
+                  strokeDasharray="3 11"
                 />
                 <path
                   d="M244 618C418 572 550 560 700 588C862 619 1006 610 1172 518"
-                  stroke="rgba(108,154,255,0.18)"
-                  strokeWidth="1.05"
-                  strokeDasharray="4 10"
+                  stroke="rgba(108,154,255,0.14)"
+                  strokeWidth="0.88"
+                  strokeDasharray="3 11"
                 />
                 <path
                   d="M386 168C559 144 824 144 1008 192"
-                  stroke="rgba(166,115,255,0.2)"
-                  strokeWidth="1"
-                  strokeDasharray="4 10"
+                  stroke="rgba(166,115,255,0.14)"
+                  strokeWidth="0.86"
+                  strokeDasharray="3 11"
                 />
 
                 {MODEL_SPARKS.map((spark, index) => {
@@ -573,7 +574,7 @@ export function ModelMindMapSection() {
                       r={index % 3 === 0 ? 7 : 5.5}
                       fill={tone.ring}
                       style={{
-                        opacity: 0.28 + revealProgress * 0.72,
+                        opacity: 0.18 + revealProgress * 0.82,
                         animation: prefersReducedMotion
                           ? 'none'
                           : `sparkPulse ${3.2 + (index % 4) * 0.45}s ease-in-out infinite`,
@@ -585,7 +586,7 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute top-[49.5%] left-1/2 z-20 h-[42vw] max-h-[340px] w-[42vw] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/28 bg-[radial-gradient(circle_at_50%_24%,rgba(255,255,255,0.18),rgba(162,111,255,0.92)_38%,rgba(35,16,70,0.98)_74%,rgba(9,10,18,1)_100%)] shadow-[0_0_0_16px_rgba(126,88,255,0.05),0_0_140px_rgba(126,88,255,0.22)] md:h-[320px] md:w-[320px]"
+                className="absolute top-[49.5%] left-1/2 z-20 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/20 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.2),rgba(172,118,255,0.84)_34%,rgba(44,18,82,0.96)_68%,rgba(8,9,18,1)_100%)] md:h-[316px] md:w-[316px]"
                 style={{
                   opacity: 0.36 + revealProgress * 0.64,
                   transform: `translate(-50%, -50%) scale(${0.9 + revealProgress * 0.1})`,
@@ -594,16 +595,17 @@ export function ModelMindMapSection() {
                     : 'corePulse 6.2s ease-in-out infinite',
                 }}
               >
-                <div className="absolute inset-[16px] rounded-full border border-white/10" />
-                <div className="absolute inset-[-14px] rounded-full border border-[#7d65ff]/14" />
+                <div className="absolute inset-[18px] rounded-full border border-white/9" />
+                <div className="absolute inset-[-22px] rounded-full border border-[#7d65ff]/10" />
+                <div className="absolute inset-[-56px] rounded-full bg-[radial-gradient(circle,rgba(134,95,255,0.18),transparent_64%)] blur-2xl" />
                 <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
-                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white/94 backdrop-blur-sm">
-                    <Sparkles className="h-8 w-8" />
+                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/94 backdrop-blur-sm">
+                    <Sparkles className="h-7 w-7" />
                   </div>
-                  <p className="mt-6 text-[1.2rem] leading-none font-semibold tracking-tight text-white md:text-[1.45rem]">
+                  <p className="mt-6 text-[1.24rem] leading-none font-semibold tracking-tight text-white md:text-[1.52rem]">
                     {SITE_NAME}
                   </p>
-                  <p className="mt-3 max-w-[13rem] text-sm leading-6 text-white/72 md:text-[0.96rem] md:leading-7">
+                  <p className="mt-3 max-w-[13rem] text-sm leading-6 text-white/64 md:text-[0.96rem] md:leading-7">
                     {modelT('centerBody')}
                   </p>
                 </div>
@@ -655,17 +657,17 @@ export function ModelMindMapSection() {
                           width: `${dimension.orb}px`,
                           borderColor: tone.ring,
                           background: tone.fill,
-                          boxShadow: `0 0 0 7px ${tone.glow}, 0 18px 44px rgba(0,0,0,0.34)`,
+                          boxShadow: `0 0 0 5px ${tone.glow}, 0 14px 34px rgba(0,0,0,0.28)`,
                         }}
                       >
-                        <div className="absolute inset-[7px] rounded-full border border-white/10" />
+                        <div className="absolute inset-[7px] rounded-full border border-white/9" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <ProviderIcon provider={provider} />
                         </div>
                       </div>
 
-                      <div className="rounded-full border border-white/8 bg-[linear-gradient(180deg,rgba(18,21,31,0.94),rgba(9,11,17,0.98))] px-4 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] backdrop-blur-sm">
-                        <p className="text-[0.95rem] font-medium whitespace-nowrap text-white md:text-[1rem]">
+                      <div className="rounded-full border border-white/6 bg-[linear-gradient(180deg,rgba(16,19,29,0.78),rgba(9,11,17,0.88))] px-3.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.16)] backdrop-blur-md">
+                        <p className="text-[0.92rem] font-medium whitespace-nowrap text-white/92 md:text-[0.98rem]">
                           {provider.name}
                         </p>
                       </div>
@@ -677,41 +679,44 @@ export function ModelMindMapSection() {
           </div>
 
           <div
-            className="relative z-20 mt-3 grid gap-3 md:grid-cols-2 xl:mt-2 xl:grid-cols-4"
+            className="relative z-20 mt-2 xl:mt-0"
             style={{
               opacity: 0.18 + revealProgress * 0.82,
               transform: `translate3d(0, ${24 * (1 - revealProgress)}px, 0)`,
             }}
           >
-            {MODEL_STATS.map((item) => {
-              const Icon = item.icon
+            <div className="mx-auto flex w-full max-w-[1160px] flex-col gap-5 border-t border-white/8 pt-8 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-6 xl:flex-nowrap">
+              {MODEL_STATS.map((item, index) => {
+                const Icon = item.icon
 
-              return (
-                <div
-                  key={item.key}
-                  className="rounded-[24px] border border-white/8 bg-white/[0.035] px-4 py-4 shadow-[0_18px_52px_rgba(0,0,0,0.18)] backdrop-blur-sm md:px-5"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.045] text-white/82">
+                return (
+                  <div
+                    key={item.key}
+                    className="relative flex min-w-0 flex-1 items-start gap-4 md:max-w-[calc(50%-0.75rem)] xl:max-w-none"
+                  >
+                    {index > 0 ? (
+                      <div className="absolute -left-3 hidden h-14 w-px bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.12),transparent)] xl:block" />
+                    ) : null}
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/82">
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[1.65rem] leading-none font-semibold tracking-tight text-white md:text-[2rem]">
+                      <p className="text-[1.65rem] leading-none font-semibold tracking-tight text-white md:text-[1.95rem]">
                         {item.key === 'vendors'
                           ? modelT('stats.vendors.value', { count: vendorCount })
                           : modelT(`stats.${item.key}.value`)}
                       </p>
-                      <p className="mt-2 text-sm font-medium text-white/86">
+                      <p className="mt-2 text-sm font-medium text-white/88">
                         {modelT(`stats.${item.key}.label`)}
                       </p>
-                      <p className="mt-1 text-xs leading-6 text-white/52 md:text-sm">
+                      <p className="mt-1 max-w-[15rem] text-xs leading-6 text-white/46 md:text-sm">
                         {modelT(`stats.${item.key}.body`)}
                       </p>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         </div>
 
