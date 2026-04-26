@@ -23,14 +23,15 @@ import { useExplore } from '@/hooks/use-explore'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { Button } from '@/components/ui/button'
 import type { VideoCardData } from '@/components/shared/video-card'
+import type { ExploreQuery } from '@/lib/validations/explore'
 
 /* ─── Tab → API Sort Mapping ─────────────────────────── */
 
-const TAB_SORT: Record<ExploreTab, string> = {
+const TAB_SORT: Record<ExploreTab, ExploreQuery['sort']> = {
   hot: 'popular',
   latest: 'latest',
   myLiked: 'most-liked',
-  myVideos: 'mine',
+  myVideos: 'latest',
 }
 
 /* ─── D1 → VideoCardData 映射 ────────────────────────── */

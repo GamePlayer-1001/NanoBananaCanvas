@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import { X, User, Settings2, BookOpen, Bell } from 'lucide-react'
 
 import { useCurrentUser } from '@/hooks/use-user'
+import type { StorageUsage } from '@/lib/storage'
 import { ProfileTab } from './profile-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
 import { WorksTab } from './works-tab'
@@ -30,6 +31,13 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
+
+const EMPTY_STORAGE_USAGE: StorageUsage = {
+  usedBytes: 0,
+  limitBytes: 1024 * 1024 * 1024,
+  usedPercent: 0,
+  isOverQuota: false,
+}
 
 /* ─── Tab Content Map ────────────────────────────────── */
 
@@ -50,7 +58,13 @@ export function ProfileModal({
 
   const content = {
     profile: user ? <ProfileTab user={user} onManageSubscription={() => undefined} /> : null,
-    works: <WorksTab />,
+    works: (
+      <WorksTab
+        isAuthenticated={Boolean(user?.isAuthenticated)}
+        storageUsage={EMPTY_STORAGE_USAGE}
+        storageGB={1}
+      />
+    ),
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
   } satisfies Record<TabId, React.ReactNode>

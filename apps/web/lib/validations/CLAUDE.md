@@ -14,7 +14,7 @@ explore.ts  — exploreQuerySchema / exploreTypeSchema / searchQuerySchema 广�
 ai.ts       — aiExecuteSchema / apiKeySchema / modelsQuerySchema AI 执行验证
 billing.ts  — checkoutSchema / topupSchema Stripe 结账请求验证 (plan/packageId + currency)
 upload.ts   — SHARE_UPLOAD_ACCEPT / UPLOAD_LIMITS / detectUploadKind / validateUpload 文件上传校验 (图片/视频/工作流)
-task.ts     — submitTaskSchema / listTasksSchema 异步任务请求验证 (P2)
+task.ts     — submitTaskSchema / listTasksSchema / deleteTasksSchema 异步任务请求验证 (P2)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

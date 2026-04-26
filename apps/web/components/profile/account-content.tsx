@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 react 的 useState，
  *          依赖 ./profile-tab, ./account-dashboard-tab, ./subscription-tab,
  *          ./works-tab, ./notifications-tab, ./model-preferences-tab，
- *          依赖 @/lib/billing 与 @/hooks/use-user 的类型
+ *          依赖 @/lib/billing、@/lib/storage 与 @/hooks/use-user 的类型
  * [OUTPUT]: 对外提供 AccountContent 账户页主内容组件
  * [POS]: profile 的页面式账户中心，被 /account 路由消费，默认展示个人资料
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -17,6 +17,7 @@ import { Bell, BookOpen, CreditCard, LayoutDashboard, Settings2, User } from 'lu
 import type { CreditBalanceSummary, CreditTransactionsResult, CreditUsageResult } from '@/lib/billing/credits'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 import type { BillingSubscriptionSummary } from '@/lib/billing/subscription'
+import type { StorageUsage } from '@/lib/storage'
 import type { UserProfile } from '@/hooks/use-user'
 
 import { AccountDashboardTab } from './account-dashboard-tab'
@@ -44,6 +45,7 @@ export interface AccountContentProps {
   balance: CreditBalanceSummary
   transactions: CreditTransactionsResult
   usage: CreditUsageResult
+  storageUsage: StorageUsage
   isPricingReady: boolean
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
@@ -55,6 +57,7 @@ export function AccountContent({
   balance,
   transactions,
   usage,
+  storageUsage,
   isPricingReady,
   plans,
   creditPacks,
@@ -96,7 +99,13 @@ export function AccountContent({
         onModeChange={setSubscriptionMode}
       />
     ),
-    works: <WorksTab />,
+    works: (
+      <WorksTab
+        isAuthenticated={currentUser.isAuthenticated}
+        storageUsage={storageUsage}
+        storageGB={balance.storageGB}
+      />
+    ),
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
   } satisfies Record<TabId, ReactNode>

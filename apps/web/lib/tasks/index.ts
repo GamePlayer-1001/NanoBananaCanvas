@@ -11,12 +11,14 @@ export {
   checkTask,
   cancelTask,
   listTasks,
+  deleteTasks,
 } from './service'
 
 export type {
   SubmitTaskParams,
   TaskDetail,
   ListTasksResult,
+  DeleteTasksResult,
 } from './service'
 
 export { getProcessor } from './processors'

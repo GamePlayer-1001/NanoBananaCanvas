@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next/headers 的 headers，依赖 next-intl/server 的 setRequestLocale，
  *          依赖 @/components/profile/account-content，依赖 @/lib/api/auth，
- *          依赖 @/lib/billing/credits / subscription / pricing
+ *          依赖 @/lib/billing/credits / subscription / pricing，依赖 @/lib/storage
  * [OUTPUT]: 对外提供账户页面
  * [POS]: (app) 路由组的账户页，承载个人资料/仪表盘/订阅/作品/通知/API 接入配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -19,6 +19,7 @@ import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
 import { getBillingSubscription } from '@/lib/billing/subscription'
 import { NO_INDEX_METADATA } from '@/lib/seo'
+import { getStorageUsage } from '@/lib/storage'
 import type { UserProfile } from '@/hooks/use-user'
 
 export const metadata: Metadata = NO_INDEX_METADATA
@@ -74,7 +75,7 @@ export default async function AccountPage({
         createdAt: '',
       }
 
-  const [subscription, balance, transactions, usage, pricing] = await Promise.all([
+  const [subscription, balance, transactions, usage, pricing, storageUsage] = await Promise.all([
     authUser
       ? getBillingSubscription(authUser.userId)
       : Promise.resolve({
@@ -141,6 +142,14 @@ export default async function AccountPage({
       console.error('[account] Failed to load Stripe prices', error)
       return null
     }),
+    authUser
+      ? getStorageUsage(authUser.userId)
+      : Promise.resolve({
+          usedBytes: 0,
+          limitBytes: FREE_PLAN_SNAPSHOT.storageGB * 1024 * 1024 * 1024,
+          usedPercent: 0,
+          isOverQuota: false,
+        }),
   ])
 
   return (
@@ -150,6 +159,7 @@ export default async function AccountPage({
       balance={balance}
       transactions={transactions}
       usage={usage}
+      storageUsage={storageUsage}
       isPricingReady={Boolean(pricing)}
       plans={pricing?.plans ?? []}
       creditPacks={pricing?.creditPacks ?? []}

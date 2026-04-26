@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 zod 的 z
- * [OUTPUT]: 对外提供 submitTaskSchema, listTasksSchema
+ * [OUTPUT]: 对外提供 submitTaskSchema, listTasksSchema, deleteTasksSchema
  * [POS]: lib/validations 的异步任务请求验证，被 /api/tasks 端点消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -65,3 +65,11 @@ export const listTasksSchema = z.object({
 })
 
 export type ListTasksInput = z.infer<typeof listTasksSchema>
+
+/* ─── Delete Tasks ──────────────────────────────────── */
+
+export const deleteTasksSchema = z.object({
+  ids: z.array(z.string().trim().min(1)).min(1).max(100),
+})
+
+export type DeleteTasksInput = z.infer<typeof deleteTasksSchema>

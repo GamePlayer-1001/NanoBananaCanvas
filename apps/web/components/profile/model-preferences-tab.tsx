@@ -3,7 +3,7 @@
  *          依赖 sonner 的 toast，依赖 @/hooks/use-model-configs / use-user，
  *          依赖 @/i18n/navigation 的 Link，依赖 @/lib/model-config-catalog
  * [OUTPUT]: 对外提供 ModelPreferencesTab API 接入配置面板
- * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的多条 API 接入配置
+ * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的多条 API 接入配置，支持修改/测试/删除
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -208,6 +208,17 @@ export function ModelPreferencesTab() {
     }))
   }
 
+  const startEditing = (capability: CapabilityId, saved?: ModelConfigItem) => {
+    if (!saved?.configId) {
+      return
+    }
+
+    setDrafts((current) => ({
+      ...current,
+      [saved.configId]: createDraft(capability, saved),
+    }))
+  }
+
   const cards = useMemo(
     () =>
       CARD_ORDER.map((capability) => {
@@ -330,6 +341,7 @@ export function ModelPreferencesTab() {
               {items.map(({ itemId, saved, draft }) => {
                 const selectedProvider = getProviderOption(capability, draft.providerId)
                 const providerOptions = MODEL_PROVIDER_OPTIONS[capability]
+                const isEditing = Boolean(drafts[itemId])
                 const isSaving = saveMutation.isPending && saveMutation.variables?.tempId === itemId
                 const isTesting =
                   testMutation.isPending && testMutation.variables === saved?.configId
@@ -343,7 +355,7 @@ export function ModelPreferencesTab() {
                     key={itemId}
                     className="space-y-4 rounded-xl border border-border/80 bg-muted/10 p-3"
                   >
-                    {isConfigured ? (
+                    {isConfigured && !isEditing ? (
                       <div className="flex items-stretch justify-between gap-4">
                         <div className="min-w-0 flex-1 space-y-1">
                           <p className="truncate text-sm font-medium text-foreground">
@@ -374,6 +386,14 @@ export function ModelPreferencesTab() {
                           </span>
 
                           <div className="mt-auto flex flex-col items-end gap-2 pt-4">
+                            <button
+                              type="button"
+                              onClick={() => startEditing(capability, saved)}
+                              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+                            >
+                              {t('editApiConfig')}
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => {
@@ -411,17 +431,17 @@ export function ModelPreferencesTab() {
                         </div>
                       </div>
                     ) : null}
-                    {!isConfigured ? (
+                    {!isConfigured || isEditing ? (
                       <>
                         <div className="flex items-start justify-between gap-4">
                           <div className="space-y-1">
                             <p className="text-sm font-medium text-foreground">
-                              {draft.name || t('newConfig')}
+                              {draft.name || saved?.label || t('newConfig')}
                             </p>
                           </div>
 
                           <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                            {t('newConfig')}
+                            {isConfigured ? t('editingConfig') : t('newConfig')}
                           </span>
                         </div>
 
@@ -545,7 +565,7 @@ export function ModelPreferencesTab() {
                             className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted"
                           >
                             <Trash2 size={14} />
-                            {t('cancelDraft')}
+                            {isConfigured ? t('cancelEdit') : t('cancelDraft')}
                           </button>
                         </div>
                       </>
