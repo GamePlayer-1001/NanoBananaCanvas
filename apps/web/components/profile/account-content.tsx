@@ -1,6 +1,8 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 react 的 useState，
- *          依赖 ./profile-tab, ./works-tab, ./notifications-tab, ./model-preferences-tab
+ *          依赖 ./profile-tab, ./account-dashboard-tab, ./subscription-tab,
+ *          ./works-tab, ./notifications-tab, ./model-preferences-tab，
+ *          依赖 @/lib/billing 与 @/hooks/use-user 的类型
  * [OUTPUT]: 对外提供 AccountContent 账户页主内容组件
  * [POS]: profile 的页面式账户中心，被 /account 路由消费，默认展示个人资料
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,39 +10,100 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
-import { Bell, BookOpen, Settings2, User } from 'lucide-react'
+import { Bell, BookOpen, CreditCard, LayoutDashboard, Settings2, User } from 'lucide-react'
 
+import type { CreditBalanceSummary, CreditTransactionsResult, CreditUsageResult } from '@/lib/billing/credits'
+import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
+import type { BillingSubscriptionSummary } from '@/lib/billing/subscription'
+import type { UserProfile } from '@/hooks/use-user'
+
+import { AccountDashboardTab } from './account-dashboard-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
 import { NotificationsTab } from './notifications-tab'
 import { ProfileTab } from './profile-tab'
+import { SubscriptionTab } from './subscription-tab'
 import { WorksTab } from './works-tab'
 
 const TABS = [
   { id: 'profile', icon: User, labelKey: 'personalInfo' },
+  { id: 'dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { id: 'subscription', icon: CreditCard, labelKey: 'subscription' },
   { id: 'works', icon: BookOpen, labelKey: 'works' },
   { id: 'notifications', icon: Bell, labelKey: 'notifications' },
   { id: 'modelPreferences', icon: Settings2, labelKey: 'modelPreferences' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
+type PurchaseMode = 'plan_auto_monthly' | 'plan_one_time' | 'credit_pack'
 
-const TAB_CONTENT: Record<TabId, React.FC> = {
-  profile: ProfileTab,
-  works: WorksTab,
-  notifications: NotificationsTab,
-  modelPreferences: ModelPreferencesTab,
+export interface AccountContentProps {
+  currentUser: UserProfile
+  subscription: BillingSubscriptionSummary
+  balance: CreditBalanceSummary
+  transactions: CreditTransactionsResult
+  usage: CreditUsageResult
+  isPricingReady: boolean
+  plans: PublicBillingPlanPrice[]
+  creditPacks: PublicCreditPackPrice[]
 }
 
-export function AccountContent() {
+export function AccountContent({
+  currentUser,
+  subscription,
+  balance,
+  transactions,
+  usage,
+  isPricingReady,
+  plans,
+  creditPacks,
+}: AccountContentProps) {
   const t = useTranslations('profile')
   const [activeTab, setActiveTab] = useState<TabId>('profile')
-  const ActiveContent = TAB_CONTENT[activeTab]
+  const [subscriptionMode, setSubscriptionMode] = useState<PurchaseMode>('plan_auto_monthly')
+
+  const handleOpenSubscription = (mode: PurchaseMode) => {
+    setSubscriptionMode(mode)
+    setActiveTab('subscription')
+  }
+
+  const tabContent = {
+    profile: (
+      <ProfileTab
+        user={currentUser}
+        onManageSubscription={() => handleOpenSubscription('plan_auto_monthly')}
+      />
+    ),
+    dashboard: (
+      <AccountDashboardTab
+        subscription={subscription}
+        balance={balance}
+        transactions={transactions}
+        usage={usage}
+        onUpgrade={() => handleOpenSubscription('plan_auto_monthly')}
+        onTopUp={() => handleOpenSubscription('credit_pack')}
+      />
+    ),
+    subscription: (
+      <SubscriptionTab
+        isAuthenticated={currentUser.isAuthenticated}
+        subscription={subscription}
+        isPricingReady={isPricingReady}
+        plans={plans}
+        creditPacks={creditPacks}
+        initialMode={subscriptionMode}
+        onModeChange={setSubscriptionMode}
+      />
+    ),
+    works: <WorksTab />,
+    notifications: <NotificationsTab />,
+    modelPreferences: <ModelPreferencesTab />,
+  } satisfies Record<TabId, ReactNode>
 
   return (
     <div className="flex min-h-full items-start bg-background">
-      <div className="sticky top-0 h-screen w-full max-w-[260px] overflow-y-auto border-r border-border bg-muted/20 p-4">
+      <div className="sticky top-0 h-screen w-full max-w-[280px] overflow-y-auto border-r border-border bg-muted/20 p-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground">{t('account')}</h1>
           <p className="text-sm text-muted-foreground">{t('accountPageDesc')}</p>
@@ -66,7 +129,7 @@ export function AccountContent() {
       </div>
 
       <div className="min-w-0 flex-1 p-6 lg:p-8">
-        <ActiveContent />
+        {tabContent[activeTab]}
       </div>
     </div>
   )

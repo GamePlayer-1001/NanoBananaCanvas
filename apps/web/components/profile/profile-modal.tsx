@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/components/profile 的各 Tab 组件 (4 个)，
+ *          依赖 @/hooks/use-user，
  *          依赖 lucide-react 图标
  * [OUTPUT]: 对外提供 ProfileModal 个人中心弹窗 (含个人信息、作品、通知、模型偏好)
  * [POS]: profile 的入口容器，由 sidebar footer avatar 触发
@@ -13,6 +14,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { X, User, Settings2, BookOpen, Bell } from 'lucide-react'
 
+import { useCurrentUser } from '@/hooks/use-user'
 import { ProfileTab } from './profile-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
 import { WorksTab } from './works-tab'
@@ -31,13 +33,6 @@ type TabId = (typeof TABS)[number]['id']
 
 /* ─── Tab Content Map ────────────────────────────────── */
 
-const TAB_CONTENT: Record<TabId, React.FC> = {
-  profile: ProfileTab,
-  works: WorksTab,
-  notifications: NotificationsTab,
-  modelPreferences: ModelPreferencesTab,
-}
-
 /* ─── Component ──────────────────────────────────────── */
 
 export function ProfileModal({
@@ -48,11 +43,17 @@ export function ProfileModal({
   onClose: () => void
 }) {
   const t = useTranslations('profile')
+  const { data: user } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<TabId>('profile')
 
   if (!open) return null
 
-  const ActiveContent = TAB_CONTENT[activeTab]
+  const content = {
+    profile: user ? <ProfileTab user={user} onManageSubscription={() => undefined} /> : null,
+    works: <WorksTab />,
+    notifications: <NotificationsTab />,
+    modelPreferences: <ModelPreferencesTab />,
+  } satisfies Record<TabId, React.ReactNode>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -90,7 +91,7 @@ export function ProfileModal({
             <X size={18} />
           </button>
 
-          <ActiveContent />
+          {content[activeTab]}
         </div>
       </div>
     </div>
