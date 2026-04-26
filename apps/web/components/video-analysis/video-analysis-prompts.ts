@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无运行时外部依赖
- * [OUTPUT]: 对外提供 buildVideoAnalysisSystemPrompt / buildVideoAnalysisUserPrompt / VIDEO_ANALYSIS_OUTPUT_SCHEMA
+ * [OUTPUT]: 对外提供 VideoAnalysisResult 类型、normalizeVideoAnalysisResult 以及提示词模板构建器
  * [POS]: video-analysis 的提示词模板层，为未来视频理解后端与结构化分镜/剧本输出提供单一真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -14,6 +14,67 @@ export interface VideoAnalysisPromptOptions {
   screenplayStyle?: 'cinematic' | 'commercial' | 'documentary' | 'social'
   includeVoiceoverDraft?: boolean
   includeDialogueDraft?: boolean
+}
+
+export interface VideoAnalysisStoryboardShot {
+  shotNumber: number
+  startTime: string
+  endTime: string
+  durationSeconds: number
+  shotType: string
+  cameraMovement: string
+  subject: string
+  action: string
+  sceneDescription: string
+  emotion: string
+  dialogueOrOnScreenText: string
+  soundDesign: string
+  editingCue: string
+  storyFunction: string
+}
+
+export interface VideoAnalysisBeat {
+  beat: number
+  name: string
+  summary: string
+}
+
+export interface VideoAnalysisSceneDraft {
+  sceneNumber: number
+  timeRange: string
+  sceneHeading: string
+  action: string
+  dialogue: Array<{
+    speaker: string
+    line: string
+  }>
+  voiceover: string
+}
+
+export interface VideoAnalysisResult {
+  language: string
+  videoSummary: {
+    logline: string
+    narrativeArc: string
+    visualStyle: string
+    primaryCharacters: string[]
+    primaryLocations: string[]
+    keywords: string[]
+  }
+  storyboard: VideoAnalysisStoryboardShot[]
+  screenplay: {
+    title: string
+    format: string
+    tone: string
+    premise: string
+    beatSheet: VideoAnalysisBeat[]
+    sceneDraft: VideoAnalysisSceneDraft[]
+  }
+  confidenceNotes: {
+    overallConfidence: 'high' | 'medium' | 'low'
+    uncertainMoments: string[]
+    missingContext: string[]
+  }
 }
 
 /* ─── Output Contract ────────────────────────────────── */
@@ -80,6 +141,110 @@ export const VIDEO_ANALYSIS_OUTPUT_SCHEMA = String.raw`{
     "missingContext": ["若视频缺少完整上下文，这里指出限制"]
   }
 }`
+
+/* ─── Normalize ──────────────────────────────────────── */
+
+function ensureString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function ensureNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function ensureStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.map((item) => ensureString(item)).filter(Boolean)
+}
+
+export function normalizeVideoAnalysisResult(input: unknown): VideoAnalysisResult {
+  const source = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const summary = (source.videoSummary && typeof source.videoSummary === 'object'
+    ? source.videoSummary
+    : {}) as Record<string, unknown>
+  const screenplay = (source.screenplay && typeof source.screenplay === 'object'
+    ? source.screenplay
+    : {}) as Record<string, unknown>
+  const confidence = (source.confidenceNotes && typeof source.confidenceNotes === 'object'
+    ? source.confidenceNotes
+    : {}) as Record<string, unknown>
+
+  const storyboard = Array.isArray(source.storyboard) ? source.storyboard : []
+  const beatSheet = Array.isArray(screenplay.beatSheet) ? screenplay.beatSheet : []
+  const sceneDraft = Array.isArray(screenplay.sceneDraft) ? screenplay.sceneDraft : []
+
+  const overallConfidence = ensureString(confidence.overallConfidence, 'medium')
+  const normalizedConfidence: 'high' | 'medium' | 'low' =
+    overallConfidence === 'high' || overallConfidence === 'low' ? overallConfidence : 'medium'
+
+  return {
+    language: ensureString(source.language, 'zh-CN'),
+    videoSummary: {
+      logline: ensureString(summary.logline),
+      narrativeArc: ensureString(summary.narrativeArc),
+      visualStyle: ensureString(summary.visualStyle),
+      primaryCharacters: ensureStringArray(summary.primaryCharacters),
+      primaryLocations: ensureStringArray(summary.primaryLocations),
+      keywords: ensureStringArray(summary.keywords),
+    },
+    storyboard: storyboard.map((item, index) => {
+      const shot = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>
+      return {
+        shotNumber: ensureNumber(shot.shotNumber, index + 1),
+        startTime: ensureString(shot.startTime),
+        endTime: ensureString(shot.endTime),
+        durationSeconds: ensureNumber(shot.durationSeconds),
+        shotType: ensureString(shot.shotType),
+        cameraMovement: ensureString(shot.cameraMovement),
+        subject: ensureString(shot.subject),
+        action: ensureString(shot.action),
+        sceneDescription: ensureString(shot.sceneDescription),
+        emotion: ensureString(shot.emotion),
+        dialogueOrOnScreenText: ensureString(shot.dialogueOrOnScreenText),
+        soundDesign: ensureString(shot.soundDesign),
+        editingCue: ensureString(shot.editingCue),
+        storyFunction: ensureString(shot.storyFunction),
+      }
+    }),
+    screenplay: {
+      title: ensureString(screenplay.title),
+      format: ensureString(screenplay.format),
+      tone: ensureString(screenplay.tone),
+      premise: ensureString(screenplay.premise),
+      beatSheet: beatSheet.map((item, index) => {
+        const beat = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>
+        return {
+          beat: ensureNumber(beat.beat, index + 1),
+          name: ensureString(beat.name),
+          summary: ensureString(beat.summary),
+        }
+      }),
+      sceneDraft: sceneDraft.map((item, index) => {
+        const scene = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>
+        const dialogue = Array.isArray(scene.dialogue) ? scene.dialogue : []
+        return {
+          sceneNumber: ensureNumber(scene.sceneNumber, index + 1),
+          timeRange: ensureString(scene.timeRange),
+          sceneHeading: ensureString(scene.sceneHeading),
+          action: ensureString(scene.action),
+          dialogue: dialogue.map((line) => {
+            const row = (line && typeof line === 'object' ? line : {}) as Record<string, unknown>
+            return {
+              speaker: ensureString(row.speaker),
+              line: ensureString(row.line),
+            }
+          }),
+          voiceover: ensureString(scene.voiceover),
+        }
+      }),
+    },
+    confidenceNotes: {
+      overallConfidence: normalizedConfidence,
+      uncertainMoments: ensureStringArray(confidence.uncertainMoments),
+      missingContext: ensureStringArray(confidence.missingContext),
+    },
+  }
+}
 
 /* ─── Prompt Builders ────────────────────────────────── */
 

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 AnalysisHistory 分析历史折叠面板（支持本地任务状态展示）
+ * [OUTPUT]: 对外提供 AnalysisHistory 分析历史折叠面板（支持分析中/成功/失败状态展示）
  * [POS]: video-analysis 的历史记录区域，被 video-analysis-content.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -8,7 +8,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { History, CircleAlert } from 'lucide-react'
+import { History, CircleCheck, CircleX, LoaderCircle } from 'lucide-react'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -18,7 +18,8 @@ export interface VideoAnalysisHistoryItem {
   durationLabel: string
   modelLabel: string
   createdAtLabel: string
-  status: 'pending_backend'
+  status: 'processing' | 'completed' | 'failed'
+  errorMessage?: string
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -29,6 +30,33 @@ export function AnalysisHistory({
   items: VideoAnalysisHistoryItem[]
 }) {
   const t = useTranslations('videoAnalysis')
+
+  function renderStatus(item: VideoAnalysisHistoryItem) {
+    if (item.status === 'completed') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+          <CircleCheck size={12} />
+          {t('historyCompleted')}
+        </span>
+      )
+    }
+
+    if (item.status === 'failed') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-700">
+          <CircleX size={12} />
+          {t('historyFailed')}
+        </span>
+      )
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700">
+        <LoaderCircle size={12} className="animate-spin" />
+        {t('historyProcessing')}
+      </span>
+    )
+  }
 
   return (
     <div>
@@ -58,13 +86,14 @@ export function AnalysisHistory({
                     {item.durationLabel} · {item.modelLabel} · {item.createdAtLabel}
                   </p>
                 </div>
-                <span className="bg-amber-50 text-amber-700 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium">
-                  <CircleAlert size={12} />
-                  {t('historyPendingBackend')}
-                </span>
+                {renderStatus(item)}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {t('historyPendingBackendDescription')}
+                {item.status === 'completed'
+                  ? t('historyCompletedDescription')
+                  : item.status === 'failed'
+                    ? item.errorMessage || t('historyFailedDescription')
+                    : t('historyProcessingDescription')}
               </p>
             </div>
           ))}

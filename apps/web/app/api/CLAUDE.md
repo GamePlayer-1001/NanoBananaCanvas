@@ -41,6 +41,8 @@ explore/                — 社区广场 (2 端点)
 categories/route.ts     — GET  分类列表 (i18n 本地化)
 notifications/route.ts  — GET+PATCH 通知列表 + 标记已读
 users/me/route.ts       — GET  当前 actor 账户镜像
+video-analysis/         — 视频分析 (1 端点)
+  route.ts              — POST 平台 Gemini 视频分析 (上传文件 -> 分镜表/剧本 JSON)
 files/                  — 文件上传与读取 (见子 CLAUDE.md)
   upload/route.ts       — POST 文件上传 (R2 存储, 配额检查)
   [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开, uploads/outputs 按用户隔离)
