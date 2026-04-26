@@ -702,6 +702,13 @@ export function ModelMindMapSection() {
                 const depthScale = 0.84 + orbitDepth * 0.24
                 const nodeOpacity =
                   (0.24 + revealProgress * 0.76) * (0.72 + orbitDepth * 0.28)
+                const nodeZIndex =
+                  orbitDepth > 0.52
+                    ? 42 + Math.round((orbitDepth - 0.52) * 28)
+                    : 14 + Math.round(orbitDepth * 26)
+                const nodeDepthFilter = `brightness(${0.74 + orbitDepth * 0.26}) saturate(${
+                  0.86 + orbitDepth * 0.14
+                }) blur(${(1 - orbitDepth) * 0.45}px)`
                 const currentX =
                   MODEL_CORE_POSITION.x +
                   (Math.cos(orbitAngle) * orbitRadiusX * 100) / MODEL_STAGE.width
@@ -744,8 +751,9 @@ export function ModelMindMapSection() {
                     style={{
                       left: `${currentX}%`,
                       top: `${currentY}%`,
-                      zIndex: 12 + Math.round(orbitDepth * 18),
+                      zIndex: nodeZIndex,
                       opacity: nodeOpacity,
+                      filter: nodeDepthFilter,
                       transform: `translate(-50%, -50%) translate(${entryOffsetX * (1 - revealProgress)}px, ${
                         entryOffsetY * (1 - revealProgress)
                       }px) scale(${(0.74 + revealProgress * 0.26) * depthScale})`,
