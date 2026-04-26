@@ -131,24 +131,19 @@ export function AuthShell({
               </div>
             </div>
 
-            <div className="mb-8 space-y-3 text-center">
-              <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border border-black/8 bg-white shadow-[0_16px_40px_rgba(20,20,20,0.08)]">
+            <div className="mb-8 space-y-4 text-center">
+              <div className="mx-auto flex h-28 w-64 items-center justify-center">
                 <Image
                   src="/auth-login-right.png"
                   alt=""
-                  width={80}
-                  height={80}
+                  width={256}
+                  height={112}
                   priority
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                   aria-hidden="true"
                 />
               </div>
               <div className="space-y-2">
-                <div>
-                  <BrandMark withLogo className="text-xl text-black/58">
-                    {t.brandName}
-                  </BrandMark>
-                </div>
                 <h2 className="font-serif text-4xl tracking-tight text-[#111111]">
                   {title}
                 </h2>
