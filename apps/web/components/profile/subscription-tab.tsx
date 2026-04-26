@@ -188,7 +188,7 @@ export function SubscriptionTab({
             return (
               <article
                 key={creditPack.packageId}
-                className={`rounded-[26px] border p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${
+                className={`flex h-full flex-col rounded-[26px] border p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${
                   featured
                     ? 'border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)]'
                     : 'border-border/70 bg-white/95'
@@ -232,20 +232,22 @@ export function SubscriptionTab({
                   </p>
                 </div>
 
-                <div className="mt-6 space-y-3">
-                  <SubscriptionStat
-                    label={t('subscriptionCreditsIncluded')}
-                    value={creditPack.credits.toLocaleString(locale)}
-                  />
-                  <SubscriptionStat
-                    label={t('subscriptionCreditsBonusLabel')}
-                    value={`+${creditPack.bonusCredits.toLocaleString(locale)}`}
-                  />
+                <div className="mt-6 flex flex-1 flex-col">
+                  <div className="space-y-3">
+                    <SubscriptionStat
+                      label={t('subscriptionCreditsIncluded')}
+                      value={creditPack.credits.toLocaleString(locale)}
+                    />
+                    <SubscriptionStat
+                      label={t('subscriptionCreditsBonusLabel')}
+                      value={`+${creditPack.bonusCredits.toLocaleString(locale)}`}
+                    />
+                  </div>
                 </div>
 
                 <Button
                   type="button"
-                  className={`mt-6 h-12 w-full rounded-xl ${
+                  className={`mt-auto h-12 w-full rounded-xl ${
                     featured
                       ? 'bg-violet-600 text-white hover:bg-violet-700'
                       : 'bg-foreground text-background hover:bg-foreground/90'
@@ -267,7 +269,7 @@ export function SubscriptionTab({
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-4">
-          <article className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+          <article className="flex h-full flex-col rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
@@ -293,15 +295,20 @@ export function SubscriptionTab({
               </p>
             </div>
 
-            <div className="mt-6 space-y-3">
-              <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
-              <SubscriptionStat label={t('subscriptionStorageIncluded')} value={t('subscriptionStorageValue', { value: 1 })} />
+            <div className="mt-6 flex flex-1 flex-col">
+              <div className="space-y-3">
+                <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
+                <SubscriptionStat
+                  label={t('subscriptionStorageIncluded')}
+                  value={t('subscriptionStorageValue', { value: 1 })}
+                />
+              </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="mt-6 h-12 w-full rounded-xl"
+              className="mt-auto h-12 w-full rounded-xl"
               disabled={subscription.plan === 'free' && selectedMode === 'plan_auto_monthly'}
               onClick={() => router.push('/workspace')}
             >
@@ -320,7 +327,7 @@ export function SubscriptionTab({
             return (
               <article
                 key={`${plan.plan}:${plan.purchaseMode}`}
-                className={`rounded-[26px] border p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${
+                className={`flex h-full flex-col rounded-[26px] border p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${
                   featured
                     ? 'border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)]'
                     : 'border-border/70 bg-white/95'
@@ -363,24 +370,26 @@ export function SubscriptionTab({
                   </p>
                 </div>
 
-                <div className="mt-6 space-y-3">
-                  <SubscriptionStat
-                    label={
-                      selectedMode === 'plan_auto_monthly'
-                        ? t('subscriptionMonthlyCreditsLabel')
-                        : t('subscriptionPermanentCreditsLabel')
-                    }
-                    value={plan.monthlyCredits.toLocaleString(locale)}
-                  />
-                  <SubscriptionStat
-                    label={t('subscriptionStorageIncluded')}
-                    value={t('subscriptionStorageValue', { value: plan.storageGB })}
-                  />
+                <div className="mt-6 flex flex-1 flex-col">
+                  <div className="space-y-3">
+                    <SubscriptionStat
+                      label={
+                        selectedMode === 'plan_auto_monthly'
+                          ? t('subscriptionMonthlyCreditsLabel')
+                          : t('subscriptionPermanentCreditsLabel')
+                      }
+                      value={plan.monthlyCredits.toLocaleString(locale)}
+                    />
+                    <SubscriptionStat
+                      label={t('subscriptionStorageIncluded')}
+                      value={t('subscriptionStorageValue', { value: plan.storageGB })}
+                    />
+                  </div>
                 </div>
 
                 <Button
                   type="button"
-                  className={`mt-6 h-12 w-full rounded-xl ${
+                  className={`mt-auto h-12 w-full rounded-xl ${
                     featured
                       ? 'bg-violet-600 text-white hover:bg-violet-700'
                       : 'bg-foreground text-background hover:bg-foreground/90'
