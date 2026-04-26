@@ -8,6 +8,7 @@ App Router 路由树 · SSR/SSG 渲染
 
 ```
 layout.tsx                  — 根布局 (Geist 字体/metadata/suppressHydrationWarning)
+favicon.ico                 — 浏览器标签页与收藏夹图标，由 public/brand/logo-1024.png 生成
 not-found.tsx               — 全局 404 页面
 globals.css                 — Tailwind v4 + Lux 主题 + 品牌色 Indigo + landing-dark
 robots.ts                   — robots.txt 动态生成 (SEO)
