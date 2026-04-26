@@ -6,7 +6,7 @@
  *          依赖 @/components/shared/search-command 的 SearchCommand/useSearchShortcut，
  *          依赖 @/components/ui/button，
  *          依赖 @/components/shared/video-card 的 VideoCardData
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (含分页与探索搜索入口)
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (含分页、作品类型分流与探索搜索入口)
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -17,7 +17,7 @@ import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { ExploreTabs, type ExploreTab } from './explore-tabs'
+import { ExploreTabs, type ExploreContentTypeTab, type ExploreTab } from './explore-tabs'
 import { ExploreGrid } from './explore-grid'
 import { useExplore } from '@/hooks/use-explore'
 import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
@@ -47,6 +47,7 @@ interface ExploreApiItem {
   category_id?: string
   author_name: string
   author_avatar?: string
+  content_type?: 'video' | 'image' | 'workflow'
   node_types?: string
 }
 
@@ -60,6 +61,7 @@ function toVideoCard(item: ExploreApiItem): VideoCardData {
     id: item.id,
     title: item.name,
     thumbnailUrl: item.thumbnail,
+    contentType: item.content_type,
     author: {
       name: item.author_name,
       avatarUrl: item.author_avatar,
@@ -76,6 +78,7 @@ export function ExploreContent() {
   const t = useTranslations('explore')
   const ts = useTranslations('search')
   const [activeTab, setActiveTab] = useState<ExploreTab>('hot')
+  const [activeType, setActiveType] = useState<ExploreContentTypeTab>('all')
   const [page, setPage] = useState(1)
   const [searchOpen, setSearchOpen] = useState(false)
   const openSearch = useCallback(() => setSearchOpen(true), [])
@@ -83,12 +86,18 @@ export function ExploreContent() {
 
   const { data, isLoading } = useExplore({
     sort: TAB_SORT[activeTab],
+    type: activeType,
     page,
   })
 
   /* 切换 tab 时重置分页 */
   const handleTabChange = (tab: ExploreTab) => {
     setActiveTab(tab)
+    setPage(1)
+  }
+
+  const handleTypeChange = (tab: ExploreContentTypeTab) => {
+    setActiveType(tab)
     setPage(1)
   }
 
@@ -101,7 +110,9 @@ export function ExploreContent() {
       {/* 标签栏 */}
       <ExploreTabs
         active={activeTab}
+        activeType={activeType}
         onChange={handleTabChange}
+        onTypeChange={handleTypeChange}
         onSearchOpen={openSearch}
         searchLabel={ts('title')}
       />

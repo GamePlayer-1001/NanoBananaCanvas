@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 react 的 useRef，依赖 next-intl 的 useTranslations，依赖 sonner 的 toast，
  *          依赖 @/i18n/navigation 的 useRouter，依赖 @/hooks/use-user 的 useCurrentUser，
  *          依赖 @/hooks/use-upload 的 useUpload，依赖 @/lib/validations/upload
- * [OUTPUT]: 对外提供 ExploreTabs 标签栏组件 (热门/最新/我点赞的/我的视频 + 探索搜索入口 + 本地作品分享上传入口)
+ * [OUTPUT]: 对外提供 ExploreTabs 标签栏组件 (排序标签 + 作品类型标签 + 探索搜索入口 + 本地作品分享上传入口)
  * [POS]: explore 的顶部标签导航，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -21,8 +21,10 @@ import { SHARE_UPLOAD_ACCEPT, UPLOAD_LIMITS, detectUploadKind } from '@/lib/vali
 /* ─── Tab Config ─────────────────────────────────────── */
 
 const TABS = ['hot', 'latest', 'myLiked', 'myVideos'] as const
+const TYPE_TABS = ['all', 'video', 'image', 'workflow'] as const
 
 export type ExploreTab = (typeof TABS)[number]
+export type ExploreContentTypeTab = (typeof TYPE_TABS)[number]
 
 /* ─── Helpers ────────────────────────────────────────── */
 
@@ -50,12 +52,16 @@ function getVideoDuration(file: File) {
 
 export function ExploreTabs({
   active,
+  activeType,
   onChange,
+  onTypeChange,
   onSearchOpen,
   searchLabel,
 }: {
   active: ExploreTab
+  activeType: ExploreContentTypeTab
   onChange: (tab: ExploreTab) => void
+  onTypeChange: (tab: ExploreContentTypeTab) => void
   onSearchOpen: () => void
   searchLabel: string
 }) {
@@ -129,21 +135,43 @@ export function ExploreTabs({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      {/* 标签 */}
-      <div className="flex flex-wrap gap-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => onChange(tab)}
-            className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-              active === tab
-                ? 'bg-brand-500 font-medium text-white'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            }`}
-          >
-            {t(tab)}
-          </button>
-        ))}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {/* 排序标签 */}
+        <div className="flex flex-wrap gap-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => onChange(tab)}
+              className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+                active === tab
+                  ? 'bg-brand-500 font-medium text-white'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              {t(tab)}
+            </button>
+          ))}
+        </div>
+
+        {/* 作品类型标签 */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{t('typeLabel')}</span>
+          <div className="flex flex-wrap gap-1">
+            {TYPE_TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => onTypeChange(tab)}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  activeType === tab
+                    ? 'border-brand-500 bg-brand-500/10 text-brand-600'
+                    : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {t(`type_${tab}`)}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
