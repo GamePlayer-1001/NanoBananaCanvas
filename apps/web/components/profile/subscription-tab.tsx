@@ -245,24 +245,26 @@ export function SubscriptionTab({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  className={`mt-auto h-12 w-full rounded-xl ${
-                    featured
-                      ? 'bg-violet-600 text-white hover:bg-violet-700'
-                      : 'bg-foreground text-background hover:bg-foreground/90'
-                  }`}
-                  onClick={() => {
-                    void handleCreditPackCheckout(creditPack)
-                  }}
-                  disabled={isPending}
-                >
-                  {isPending
-                    ? t('subscriptionRedirecting')
-                    : isAuthenticated
-                      ? t('subscriptionBuyCredits')
-                      : t('subscriptionSignInFirst')}
-                </Button>
+                <div className="mt-auto pt-16">
+                  <Button
+                    type="button"
+                    className={`h-12 w-full rounded-xl ${
+                      featured
+                        ? 'bg-violet-600 text-white hover:bg-violet-700'
+                        : 'bg-foreground text-background hover:bg-foreground/90'
+                    }`}
+                    onClick={() => {
+                      void handleCreditPackCheckout(creditPack)
+                    }}
+                    disabled={isPending}
+                  >
+                    {isPending
+                      ? t('subscriptionRedirecting')
+                      : isAuthenticated
+                        ? t('subscriptionBuyCredits')
+                        : t('subscriptionSignInFirst')}
+                  </Button>
+                </div>
               </article>
             )
           })}
@@ -312,17 +314,19 @@ export function SubscriptionTab({
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-auto h-12 w-full rounded-xl"
-                disabled={subscription.plan === 'free'}
-                onClick={() => router.push('/workspace')}
-              >
-                {subscription.plan === 'free'
-                  ? t('subscriptionCurrentPlan')
-                  : t('subscriptionContinueFree')}
-              </Button>
+              <div className="mt-auto pt-16">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 w-full rounded-xl"
+                  disabled={subscription.plan === 'free'}
+                  onClick={() => router.push('/workspace')}
+                >
+                  {subscription.plan === 'free'
+                    ? t('subscriptionCurrentPlan')
+                    : t('subscriptionContinueFree')}
+                </Button>
+              </div>
             </article>
           ) : null}
 
@@ -395,28 +399,30 @@ export function SubscriptionTab({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  className={`mt-auto h-12 w-full rounded-xl ${
-                    featured
-                      ? 'bg-violet-600 text-white hover:bg-violet-700'
-                      : 'bg-foreground text-background hover:bg-foreground/90'
-                  }`}
-                  onClick={() => {
-                    void handlePlanCheckout(plan)
-                  }}
-                  disabled={isPending || isCurrentPlan}
-                >
-                  {isCurrentPlan
-                    ? t('subscriptionCurrentPlan')
-                    : isPending
-                      ? t('subscriptionRedirecting')
-                      : isAuthenticated
-                        ? selectedMode === 'plan_auto_monthly'
-                          ? t('subscriptionStartMonthly')
-                          : t('subscriptionBuyOneTime')
-                        : t('subscriptionSignInFirst')}
-                </Button>
+                <div className="mt-auto pt-16">
+                  <Button
+                    type="button"
+                    className={`h-12 w-full rounded-xl ${
+                      featured
+                        ? 'bg-violet-600 text-white hover:bg-violet-700'
+                        : 'bg-foreground text-background hover:bg-foreground/90'
+                    }`}
+                    onClick={() => {
+                      void handlePlanCheckout(plan)
+                    }}
+                    disabled={isPending || isCurrentPlan}
+                  >
+                    {isCurrentPlan
+                      ? t('subscriptionCurrentPlan')
+                      : isPending
+                        ? t('subscriptionRedirecting')
+                        : isAuthenticated
+                          ? selectedMode === 'plan_auto_monthly'
+                            ? t('subscriptionStartMonthly')
+                            : t('subscriptionBuyOneTime')
+                          : t('subscriptionSignInFirst')}
+                  </Button>
+                </div>
               </article>
             )
           })}
