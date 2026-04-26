@@ -1,5 +1,7 @@
 /**
- * [INPUT]: 依赖 react 的 ReactNode，依赖 public/auth-login-loop.mp4 的登录动态背景，
+ * [INPUT]: 依赖 react 的 ReactNode，
+ *          依赖 public/auth-login-loop.mp4 的登录动态背景，
+ *          依赖 public/auth-login-right.png 的登录表单区品牌图，
  *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
@@ -8,6 +10,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import Image from 'next/image'
 import type { ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 
@@ -129,11 +132,15 @@ export function AuthShell({
             </div>
 
             <div className="mb-8 space-y-3 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-black/8 bg-white shadow-[0_16px_40px_rgba(20,20,20,0.08)]">
-                <BrandMark
-                  withLogo
-                  showText={false}
-                  className="text-[1.85rem] text-black"
+              <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border border-black/8 bg-white shadow-[0_16px_40px_rgba(20,20,20,0.08)]">
+                <Image
+                  src="/auth-login-right.png"
+                  alt=""
+                  width={80}
+                  height={80}
+                  priority
+                  className="h-full w-full object-cover"
+                  aria-hidden="true"
                 />
               </div>
               <div className="space-y-2">
