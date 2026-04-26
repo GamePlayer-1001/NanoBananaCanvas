@@ -35,12 +35,14 @@ folders/                — 文件夹 CRUD (2+2 端点)
 workflows/              — 工作流 CRUD + 社交 (见子 CLAUDE.md, 支持 folder 筛选/移动)
 
 explore/                — 社区广场 (2 端点)
-  route.ts              — GET  公开列表 (分类/排序/分页/互动标记)
+  route.ts              — GET  公开列表 (分类/排序/分页/互动标记 + 视频/图片/工作流类型过滤)
   search/route.ts       — GET  模糊搜索 (标题/描述/标签)
 
 categories/route.ts     — GET  分类列表 (i18n 本地化)
 notifications/route.ts  — GET+PATCH 通知列表 + 标记已读
 users/me/route.ts       — GET  当前 actor 账户镜像
+video-analysis/         — 视频分析 (1 端点)
+  route.ts              — GET 账号历史 / POST 平台 Gemini 视频分析 (上传文件 -> 分镜表/剧本 JSON)
 files/                  — 文件上传与读取 (见子 CLAUDE.md)
   upload/route.ts       — POST 文件上传 (R2 存储, 配额检查)
   [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开, uploads/outputs 按用户隔离)
@@ -54,7 +56,7 @@ webhooks/               — 外部账户与计费事件同步 (2 端点)
   stripe/route.ts       — POST Stripe 账单 webhook (checkout/invoice/subscription)
 
 tasks/                  — P2 异步任务队列 (3 端点)
-  route.ts              — POST 提交任务 / GET 任务列表
+  route.ts              — POST 提交任务 / GET 任务列表 / DELETE 批量删除终态任务
   [id]/route.ts         — GET  任务状态查询 + 懒评估
   [id]/cancel/route.ts  — POST 取消任务
 

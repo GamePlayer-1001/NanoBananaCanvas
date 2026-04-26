@@ -6,7 +6,7 @@
 ## 成员清单
 
 ```
-route.ts        — GET (当前用户文件夹列表) / POST (创建文件夹)
+route.ts        — GET (当前用户文件夹列表，含项目数) / POST (创建文件夹)
 [id]/route.ts   — PUT (重命名) / DELETE (删除，子项目 folder_id 自动置 NULL)
 ```
 

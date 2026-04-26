@@ -30,7 +30,7 @@ export function PaymentHistoryTable({ transactions }: { transactions: CreditTran
         <CardDescription>
           {t('historyDescription', {
             total: transactions.total.toLocaleString(),
-            pageSize: transactions.pageSize.toLocaleString(),
+            shown: transactions.items.length.toLocaleString(),
           })}
         </CardDescription>
       </CardHeader>

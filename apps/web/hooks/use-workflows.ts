@@ -19,6 +19,10 @@ interface WorkflowListParams {
   folder?: string | null
 }
 
+interface WorkflowQueryOptions {
+  enabled?: boolean
+}
+
 interface CreateWorkflowInput {
   name: string
   description?: string
@@ -52,7 +56,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 /* ─── Hooks ──────────────────────────────────────────── */
 
-export function useWorkflows(params?: WorkflowListParams) {
+export function useWorkflows(params?: WorkflowListParams, options?: WorkflowQueryOptions) {
   const qs = new URLSearchParams()
   if (params?.page) qs.set('page', String(params.page))
   if (params?.limit) qs.set('limit', String(params.limit))
@@ -62,6 +66,7 @@ export function useWorkflows(params?: WorkflowListParams) {
   return useQuery({
     queryKey: queryKeys.workflows.list(params),
     queryFn: () => fetchJson(`/api/workflows${query ? `?${query}` : ''}`),
+    enabled: options?.enabled,
   })
 }
 

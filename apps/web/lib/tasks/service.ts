@@ -3,7 +3,7 @@
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks，并在平台模式下接回任务冻结/确认/退款
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -126,6 +126,10 @@ export interface ListTasksResult {
   total: number
   page: number
   limit: number
+}
+
+export interface DeleteTasksResult {
+  deletedIds: string[]
 }
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -956,6 +960,70 @@ export async function listTasks(
     page: filters.page,
     limit: filters.limit,
   }
+}
+
+export async function deleteTasks(
+  db: D1Database,
+  userId: string,
+  taskIds: string[],
+): Promise<DeleteTasksResult> {
+  const uniqueTaskIds = Array.from(new Set(taskIds.map((id) => id.trim()).filter(Boolean)))
+
+  if (!uniqueTaskIds.length) {
+    return { deletedIds: [] }
+  }
+
+  const placeholders = uniqueTaskIds.map(() => '?').join(', ')
+  const result = await db
+    .prepare(
+      `SELECT id, output_data
+       FROM async_tasks
+       WHERE user_id = ?
+         AND id IN (${placeholders})
+         AND status IN ('completed', 'failed', 'cancelled')`,
+    )
+    .bind(userId, ...uniqueTaskIds)
+    .all<{ id: string; output_data: string | null }>()
+
+  const rows = result.results ?? []
+  if (!rows.length) {
+    return { deletedIds: [] }
+  }
+
+  const r2 = await getR2()
+
+  for (const row of rows) {
+    try {
+      if (!row.output_data) {
+        continue
+      }
+
+      const output = JSON.parse(row.output_data) as { r2_key?: string; url?: string }
+      const r2Key =
+        output.r2_key ??
+        (typeof output.url === 'string' ? extractR2KeyFromFileUrl(output.url) : null)
+
+      if (r2Key?.startsWith(`outputs/${userId}/`)) {
+        await r2.delete(r2Key)
+      }
+    } catch (error) {
+      log.warn('Failed to cleanup task output during delete', {
+        taskId: row.id,
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  const deletedIds = rows.map((row) => row.id)
+  await db
+    .prepare(`DELETE FROM async_tasks WHERE user_id = ? AND id IN (${placeholders})`)
+    .bind(userId, ...deletedIds)
+    .run()
+
+  await invalidateStorageCache(userId)
+
+  return { deletedIds }
 }
 
 /* ─── Internal: Failure Handling (fail-fast, no auto-retry) ─ */

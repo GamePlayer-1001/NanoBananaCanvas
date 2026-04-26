@@ -80,7 +80,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **路由**: `[locale]/(landing|auth|app|editor)` 四路由组
 - **URL 语义**: 语言前缀在外部 URL 中隐藏，`[locale]` 仅作为内部文件树与消息加载边界
 - **Landing**: 首页承接品牌叙事，公开子页面树承接功能/模型/资源/法务/公司信息，导航与 Footer 全部落到真实路由
-- **Sidebar**: 200px 固定宽度，导航/工作区/底部链接/用户 Footer
+- **Sidebar**: 300px 固定宽度，导航/工作区/底部链接/用户账户卡片
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释

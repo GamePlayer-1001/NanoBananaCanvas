@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
  *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的定价与交互图标，
- *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link
+ *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
+ *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
  * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/定价/评价/FAQ 叙事区块
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -20,8 +21,9 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
+import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 import {
   BILLING_CREDIT_PACK_SNAPSHOTS,
   BILLING_PLAN_SNAPSHOTS,
@@ -48,26 +50,6 @@ const FEATURE_VISUALS = {
   },
 } as const
 
-const LANDING_BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
-const LANDING_CREDIT_PACKS = ['500', '1200', '3500', '8000'] as const
-const LANDING_PLAN_PRICE_AMOUNTS = {
-  monthly: {
-    standard: 20,
-    pro: 50,
-    ultimate: 150,
-  },
-  oneTime: {
-    standard: 24,
-    pro: 59,
-    ultimate: 179,
-  },
-} as const
-const LANDING_CREDIT_PACK_PRICE_AMOUNTS = {
-  '500': 5,
-  '1200': 10,
-  '3500': 25,
-  '8000': 50,
-} as const
 const LANDING_PRICING_MODES = [
   {
     key: 'monthly',
@@ -146,8 +128,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-function formatLandingUsd(amount: number) {
-  return `US$${amount}`
+function formatLandingMoney(locale: string, currency: string, amount: number) {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+    maximumFractionDigits: 2,
+  }).format(amount / 100)
 }
 
 function SectionHeader({
@@ -418,9 +404,16 @@ export function FeaturesSection() {
   )
 }
 
-export function PricingSection() {
+export function PricingSection({
+  plans,
+  creditPacks,
+}: {
+  plans: PublicBillingPlanPrice[]
+  creditPacks: PublicCreditPackPrice[]
+}) {
   const pricingT = useTranslations('landing.sections.pricing')
   const billingT = useTranslations('pricing')
+  const locale = useLocale()
   const [selectedMode, setSelectedMode] =
     useState<(typeof LANDING_PRICING_MODES)[number]['key']>('monthly')
 
@@ -432,6 +425,16 @@ export function PricingSection() {
   const selectedModeConfig =
     LANDING_PRICING_MODES.find((mode) => mode.key === selectedMode) ??
     LANDING_PRICING_MODES[0]
+  const visiblePlans = plans.filter((plan) =>
+    selectedMode === 'monthly'
+      ? plan.purchaseMode === 'plan_auto_monthly'
+      : selectedMode === 'oneTime'
+        ? plan.purchaseMode === 'plan_one_time'
+        : false,
+  )
+  const visibleCreditPacks = selectedMode === 'credits' ? creditPacks : []
+  const hasVisiblePricing =
+    selectedMode === 'credits' ? visibleCreditPacks.length > 0 : visiblePlans.length > 0
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
@@ -497,15 +500,21 @@ export function PricingSection() {
             </div>
           </div>
 
-          <div
-            className={`mt-8 grid gap-4 ${
-              selectedMode === 'credits'
-                ? 'md:grid-cols-2 xl:grid-cols-4'
-                : 'xl:grid-cols-3'
-            }`}
-          >
-            {selectedMode === 'credits'
-              ? LANDING_CREDIT_PACKS.map((packageId) => {
+          {!hasVisiblePricing ? (
+            <div className="mt-8 rounded-[26px] border border-white/8 bg-white/[0.03] px-6 py-10 text-center text-sm leading-7 text-white/58">
+              {billingT('pricingUnavailable')}
+            </div>
+          ) : (
+            <div
+              className={`mt-8 grid gap-4 ${
+                selectedMode === 'credits'
+                  ? 'md:grid-cols-2 xl:grid-cols-4'
+                  : 'xl:grid-cols-3'
+              }`}
+            >
+              {selectedMode === 'credits'
+              ? visibleCreditPacks.map((creditPack) => {
+                  const packageId = creditPack.packageId
                   const pack = BILLING_CREDIT_PACK_SNAPSHOTS[packageId]
                   return (
                     <article
@@ -543,7 +552,7 @@ export function PricingSection() {
 
                       <div className="mt-5 border-t border-white/8 pt-5">
                         <p className="text-[2.35rem] leading-none font-semibold tracking-tight text-white">
-                          {formatLandingUsd(LANDING_CREDIT_PACK_PRICE_AMOUNTS[packageId])}
+                          {formatLandingMoney(locale, creditPack.currency, creditPack.unitAmount)}
                         </p>
                         <p className="mt-2 text-sm text-white/45">
                           {billingT('billedOneTime')}
@@ -569,16 +578,13 @@ export function PricingSection() {
                     </article>
                   )
                 })
-              : LANDING_BILLING_PLANS.map((planKey) => {
+              : visiblePlans.map((plan) => {
+                  const planKey = plan.plan
                   const snapshot = BILLING_PLAN_SNAPSHOTS[planKey]
                   const creditsLabel =
                     selectedMode === 'monthly'
                       ? billingT('monthlyCredits')
                       : billingT('permanentCredits')
-                  const planPrice =
-                    selectedMode === 'monthly'
-                      ? LANDING_PLAN_PRICE_AMOUNTS.monthly[planKey]
-                      : LANDING_PLAN_PRICE_AMOUNTS.oneTime[planKey]
                   const ctaLabel =
                     selectedMode === 'monthly'
                       ? `${billingT('startSubscription')} ${billingT(`${planKey}Name`)}`
@@ -620,7 +626,7 @@ export function PricingSection() {
 
                       <div className="mt-5 border-t border-white/8 pt-5">
                         <p className="text-[2.35rem] leading-none font-semibold tracking-tight text-white">
-                          {formatLandingUsd(planPrice)}
+                          {formatLandingMoney(locale, plan.currency, plan.unitAmount)}
                         </p>
                         <p className="mt-2 text-sm text-white/45">
                           {selectedMode === 'monthly'
@@ -653,7 +659,8 @@ export function PricingSection() {
                     </article>
                   )
                 })}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

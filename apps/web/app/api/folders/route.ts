@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid, @/lib/validations/folder
- * [OUTPUT]: 对外提供 GET /api/folders (列表) + POST /api/folders (创建)
+ * [OUTPUT]: 对外提供 GET /api/folders (列表，含项目数) + POST /api/folders (创建)
  * [POS]: api/folders 的文件夹 CRUD 入口，用于工作区项目分组
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -20,9 +20,20 @@ export async function GET() {
 
     const folders = await db
       .prepare(
-        `SELECT id, name, sort_order, created_at, updated_at
-         FROM folders WHERE user_id = ?
-         ORDER BY sort_order ASC, created_at ASC`,
+        `SELECT
+           folders.id,
+           folders.name,
+           folders.sort_order,
+           folders.created_at,
+           folders.updated_at,
+           COUNT(workflows.id) AS project_count
+         FROM folders
+         LEFT JOIN workflows
+           ON workflows.folder_id = folders.id
+          AND workflows.user_id = folders.user_id
+         WHERE folders.user_id = ?
+         GROUP BY folders.id, folders.name, folders.sort_order, folders.created_at, folders.updated_at
+         ORDER BY folders.sort_order ASC, folders.created_at ASC`,
       )
       .bind(userId)
       .all()

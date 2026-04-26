@@ -1,31 +1,42 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 ModelSelector AI 模型选择组件
+ * [OUTPUT]: 对外提供 ModelSelector AI 模型选择组件（支持受控选择）
  * [POS]: video-analysis 的模型配置区，被 video-analysis-content.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronDown } from 'lucide-react'
 
 /* ─── Available Models ───────────────────────────────── */
 
 const MODELS = [
-  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash' },
+  { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview' },
 ] as const
+
+export type VideoAnalysisModelId = (typeof MODELS)[number]['id']
+
+export function getVideoAnalysisModelLabel(modelId: string) {
+  return MODELS.find((m) => m.id === modelId)?.label ?? modelId
+}
 
 /* ─── Component ──────────────────────────────────────── */
 
-export function ModelSelector() {
+export function ModelSelector({
+  value,
+  onChange,
+}: {
+  value: VideoAnalysisModelId
+  onChange: (value: VideoAnalysisModelId) => void
+}) {
   const t = useTranslations('videoAnalysis')
-  const [model, setModel] = useState<string>(MODELS[0].id)
   const [open, setOpen] = useState(false)
 
-  const selectedLabel = MODELS.find((m) => m.id === model)?.label ?? model
+  const selectedLabel = useMemo(() => getVideoAnalysisModelLabel(value), [value])
 
   return (
     <div>
@@ -45,11 +56,11 @@ export function ModelSelector() {
               <button
                 key={m.id}
                 onClick={() => {
-                  setModel(m.id)
+                  onChange(m.id)
                   setOpen(false)
                 }}
                 className={`flex w-full px-3 py-2 text-sm transition-colors hover:bg-muted ${
-                  model === m.id ? 'text-brand-600 font-medium' : 'text-foreground'
+                  value === m.id ? 'text-brand-600 font-medium' : 'text-foreground'
                 }`}
               >
                 {m.label}

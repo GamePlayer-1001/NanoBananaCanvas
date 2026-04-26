@@ -1,0 +1,9 @@
+# tasks/
+> L2 | 父级: apps/web/app/api/CLAUDE.md
+
+成员清单
+route.ts: POST 提交异步任务 / GET 任务列表 / DELETE 批量删除终态生成任务，供账户页“生成作品”管理使用
+[id]/route.ts: GET 单任务状态查询，触发懒评估并返回最新进度与输出
+[id]/cancel/route.ts: POST 取消任务，处理 Provider best-effort cancel 与平台模式退款
+
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 next/image (可选)，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用视频卡片组件 (含节点类型 Badge)
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
+ * [OUTPUT]: 对外提供 VideoCard 可复用视频卡片组件 (含节点类型 Badge + 作品类型徽标)
  * [POS]: shared 的通用视频卡，被 explore/workspace 页面消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -8,6 +8,8 @@
 'use client'
 
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
+
+import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
 
@@ -18,6 +20,7 @@ export interface VideoCardData {
   title: string
   thumbnailUrl?: string
   duration?: string
+  contentType?: 'video' | 'image' | 'workflow'
   author: {
     name: string
     avatarUrl?: string
@@ -38,6 +41,8 @@ function formatViews(n?: number): string {
 /* ─── Component ──────────────────────────────────────── */
 
 export function VideoCard({ data }: { data: VideoCardData }) {
+  const t = useTranslations('explore')
+
   return (
     <Link href={`/explore/${data.id}`} className="group block">
       {/* 缩略图 */}
@@ -58,6 +63,12 @@ export function VideoCard({ data }: { data: VideoCardData }) {
         {data.duration && (
           <span className="absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
             {data.duration}
+          </span>
+        )}
+
+        {data.contentType && (
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white/95 backdrop-blur-sm">
+            {t(`type_${data.contentType}`)}
           </span>
         )}
 

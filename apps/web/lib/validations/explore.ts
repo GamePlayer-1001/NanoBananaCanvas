@@ -9,11 +9,14 @@ import { z } from 'zod'
 
 /* ─── Explore ───────────────────────────────────────── */
 
+export const exploreTypeSchema = z.enum(['all', 'video', 'image', 'workflow'])
+
 export const exploreQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   category: z.string().optional(),
   sort: z.enum(['latest', 'popular', 'most-liked']).default('latest'),
+  type: exploreTypeSchema.default('all'),
 })
 
 export type ExploreQuery = z.infer<typeof exploreQuerySchema>

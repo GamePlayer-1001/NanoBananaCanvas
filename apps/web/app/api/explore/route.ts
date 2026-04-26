@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/validations/explore
- * [OUTPUT]: 对外提供 GET /api/explore (含 node_types 字段)
- * [POS]: api/explore 的广场列表端点，查询公开工作流并标记互动状态，提取节点类型
+ * [OUTPUT]: 对外提供 GET /api/explore (含 node_types/content_type 字段)
+ * [POS]: api/explore 的广场列表端点，查询公开工作流并标记互动状态，提取节点类型与作品类型
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,6 +20,20 @@ const SORT_MAP: Record<string, string> = {
   'most-liked': 'w.like_count DESC',
 }
 
+const CONTENT_TYPE_SQL = `CASE
+  WHEN EXISTS (
+    SELECT 1
+    FROM json_each(json_extract(w.data, '$.nodes')) node
+    WHERE json_extract(node.value, '$.type') = 'video-gen'
+  ) THEN 'video'
+  WHEN EXISTS (
+    SELECT 1
+    FROM json_each(json_extract(w.data, '$.nodes')) node
+    WHERE json_extract(node.value, '$.type') IN ('image-gen', 'image-input', 'image-merge')
+  ) THEN 'image'
+  ELSE 'workflow'
+END`
+
 /* ─── GET /api/explore ──────────────────────────────── */
 
 export async function GET(req: NextRequest) {
@@ -30,11 +44,12 @@ export async function GET(req: NextRequest) {
       limit: url.searchParams.get('limit'),
       category: url.searchParams.get('category') || undefined,
       sort: url.searchParams.get('sort'),
+      type: url.searchParams.get('type'),
     })
 
-    const { page, limit, category, sort } = parsed.success
+    const { page, limit, category, sort, type } = parsed.success
       ? parsed.data
-      : { page: 1, limit: 20, category: undefined, sort: 'latest' as const }
+      : { page: 1, limit: 20, category: undefined, sort: 'latest' as const, type: 'all' as const }
 
     const offset = (page - 1) * limit
     const orderBy = SORT_MAP[sort] ?? 'w.published_at DESC'
@@ -48,6 +63,11 @@ export async function GET(req: NextRequest) {
     if (category) {
       conditions.push('w.category_id = ?')
       binds.push(category)
+    }
+
+    if (type !== 'all') {
+      conditions.push(`${CONTENT_TYPE_SQL} = ?`)
+      binds.push(type)
     }
 
     const where = conditions.join(' AND ')
@@ -65,6 +85,7 @@ export async function GET(req: NextRequest) {
         `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
                 w.view_count, w.published_at, w.category_id,
                 u.name as author_name, u.avatar_url as author_avatar,
+                ${CONTENT_TYPE_SQL} as content_type,
                 (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
                  FROM json_each(json_extract(w.data, '$.nodes')) j) as node_types
          FROM workflows w

@@ -1,14 +1,15 @@
 /**
- * [INPUT]: 依赖 next-intl/server 的 setRequestLocale，
+ * [INPUT]: 依赖 next/headers 的 headers，依赖 next-intl/server 的 getTranslations/setRequestLocale，
  *          依赖 @/components/landing/hero-section，
  *          依赖 @/components/landing/landing-sections，
- *          依赖 @/components/layout/landing-footer
+ *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，SSG 渲染，按 Hero/模型/功能/定价/评价/FAQ/Footer 承载公开转化叙事
+ * [POS]: (landing) 路由组的首页，动态注入 Stripe 定价后按 Hero/模型/功能/定价/评价/FAQ/Footer 承载公开转化叙事
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HeroSection } from '@/components/landing/hero-section'
@@ -21,7 +22,10 @@ import {
 } from '@/components/landing/landing-sections'
 import { LandingFooter } from '@/components/layout/landing-footer'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
+import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { BASE_URL, SITE_NAME, buildAbsoluteUrl, buildPageMetadata } from '@/lib/seo'
+
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({
   params,
@@ -52,8 +56,15 @@ export default async function LandingPage({
 }) {
   const { locale } = await params
   setRequestLocale(locale)
+  const requestHeaders = await headers()
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
+  const pricing = await getPublicPricingPlans({
+    countryCode: requestHeaders.get('cf-ipcountry'),
+  }).catch((error: unknown) => {
+    console.error('[landing] Failed to load Stripe prices', error)
+    return null
+  })
 
   const faqItems = [
     'what',
@@ -140,7 +151,7 @@ export default async function LandingPage({
       <HeroSection />
       <ModelMindMapSection />
       <FeaturesSection />
-      <PricingSection />
+      <PricingSection plans={pricing?.plans ?? []} creditPacks={pricing?.creditPacks ?? []} />
       <TestimonialsSection />
       <FaqSection />
       <LandingFooter />

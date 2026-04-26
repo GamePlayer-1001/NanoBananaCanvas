@@ -10,12 +10,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
+import type { ExploreQuery } from '@/lib/validations/explore'
 
 /* ─── Types ──────────────────────────────────────────── */
 
 interface ExploreParams {
   category?: string
-  sort?: string
+  sort?: ExploreQuery['sort']
+  type?: ExploreQuery['type']
   page?: number
   limit?: number
 }
@@ -38,6 +40,7 @@ export function useExplore(params?: ExploreParams) {
   const qs = new URLSearchParams()
   if (params?.category) qs.set('category', params.category)
   if (params?.sort) qs.set('sort', params.sort)
+  if (params?.type && params.type !== 'all') qs.set('type', params.type)
   if (params?.page) qs.set('page', String(params.page))
   if (params?.limit) qs.set('limit', String(params.limit))
   const query = qs.toString()

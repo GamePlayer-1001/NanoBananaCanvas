@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 AnalysisHistory 分析历史折叠面板
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标，依赖上层传入历史选择事件
+ * [OUTPUT]: 对外提供 AnalysisHistory 分析历史面板（支持分析中/成功/失败状态展示与结果回看）
  * [POS]: video-analysis 的历史记录区域，被 video-analysis-content.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -8,12 +8,61 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { History } from 'lucide-react'
+import { History, CircleCheck, CircleX, LoaderCircle } from 'lucide-react'
+
+/* ─── Types ──────────────────────────────────────────── */
+
+export interface VideoAnalysisHistoryItem {
+  id: string
+  fileName: string
+  durationSeconds: number
+  durationLabel: string
+  model: string
+  modelLabel: string
+  createdAtLabel: string
+  status: 'processing' | 'completed' | 'failed'
+  errorMessage?: string
+}
 
 /* ─── Component ──────────────────────────────────────── */
 
-export function AnalysisHistory() {
+export function AnalysisHistory({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: VideoAnalysisHistoryItem[]
+  selectedId?: string | null
+  onSelect?: (item: VideoAnalysisHistoryItem) => void
+}) {
   const t = useTranslations('videoAnalysis')
+
+  function renderStatus(item: VideoAnalysisHistoryItem) {
+    if (item.status === 'completed') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+          <CircleCheck size={12} />
+          {t('historyCompleted')}
+        </span>
+      )
+    }
+
+    if (item.status === 'failed') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-700">
+          <CircleX size={12} />
+          {t('historyFailed')}
+        </span>
+      )
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700">
+        <LoaderCircle size={12} className="animate-spin" />
+        {t('historyProcessing')}
+      </span>
+    )
+  }
 
   return (
     <div>
@@ -22,11 +71,48 @@ export function AnalysisHistory() {
         {t('analysisHistory')}
       </h2>
 
-      {/* 空状态 — 后续接 API 填充 */}
-      <div className="mt-4 flex flex-col items-center rounded-xl border border-dashed border-border py-12">
-        <History size={32} className="text-muted-foreground/30" />
-        <p className="mt-3 text-sm text-muted-foreground">{t('noHistory')}</p>
-      </div>
+      {items.length === 0 ? (
+        <div className="mt-4 flex flex-col items-center rounded-xl border border-dashed border-border py-12">
+          <History size={32} className="text-muted-foreground/30" />
+          <p className="mt-3 text-sm text-muted-foreground">{t('noHistory')}</p>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSelect?.(item)}
+              className={[
+                'block w-full rounded-xl border bg-background px-4 py-3 text-left transition-colors',
+                selectedId === item.id
+                  ? 'border-brand-500 ring-1 ring-brand-500/30'
+                  : 'border-border',
+                onSelect ? 'hover:bg-muted/30' : '',
+              ].join(' ')}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {item.fileName}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {item.durationLabel} · {item.modelLabel} · {item.createdAtLabel}
+                  </p>
+                </div>
+                {renderStatus(item)}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {item.status === 'completed'
+                  ? t('historyCompletedDescription')
+                  : item.status === 'failed'
+                    ? item.errorMessage || t('historyFailedDescription')
+                    : t('historyProcessingDescription')}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
