@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
- *          依赖 @/components/landing/public-pages，
+ *          依赖 @/components/landing/public-pages，依赖 @/components/landing/marketing-site-tree，
  *          依赖 @/lib/seo 的 buildPageMetadata
  * [OUTPUT]: 对外提供 `/refund-policy` 公开退款政策页面
  * [POS]: (landing) 路由组的法务辅助页，为 Footer 法务链接提供真实承接
@@ -17,6 +17,7 @@ import {
   MarketingSection,
   MarketingShell,
 } from '@/components/landing/public-pages'
+import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
@@ -77,6 +78,8 @@ export default async function RefundPolicyPage({
           ))}
         </MarketingCardGrid>
       </MarketingSection>
+
+      <MarketingSiteTree activeHref="/refund-policy" />
     </MarketingShell>
   )
 }

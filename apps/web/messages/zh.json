@@ -838,6 +838,72 @@
     "privacy_contact_body": "如果您对本隐私政策或我们的数据实践有任何疑问，请通过 privacy@nanobanana.com 联系我们。我们将在 30 天内回复。"
   },
   "sitePages": {
+    "siteTree": {
+      "eyebrow": "公开子页面树",
+      "title": "按问题进入正确分支。",
+      "body": "每个公开页面都有明确职责：理解产品、进入资源、了解公司语境，或确认法务边界。这张地图让站点可以被快速扫描，而不是把所有问题都挤回首页。",
+      "groups": {
+        "product": {
+          "title": "产品"
+        },
+        "resources": {
+          "title": "资源"
+        },
+        "companyLegal": {
+          "title": "公司与法务"
+        }
+      },
+      "items": {
+        "features": {
+          "title": "功能详情",
+          "body": "工作流编排、多模态生产，以及适合团队协作的操作逻辑。"
+        },
+        "models": {
+          "title": "AI 模型目录",
+          "body": "图像、视频、语言、视觉和路由供应商汇入同一层可读模型结构。"
+        },
+        "pricing": {
+          "title": "定价",
+          "body": "Free 入口、订阅套餐、一次性选项、积分包与计费边界。"
+        },
+        "docs": {
+          "title": "文档",
+          "body": "用于理解产品路由、核心概念与初始决策的公开导览层。"
+        },
+        "community": {
+          "title": "社区",
+          "body": "说明公开工作流、案例、模板与分享入口如何彼此连接。"
+        },
+        "contact": {
+          "title": "联系我们",
+          "body": "支持渠道、社媒入口、产品问题与公开联系方式。"
+        },
+        "about": {
+          "title": "关于我们",
+          "body": "产品哲学、服务对象，以及为什么需要可视化工作流表面。"
+        },
+        "terms": {
+          "title": "服务条款",
+          "body": "服务使用、账户、内容边界、计费与终止规则。"
+        },
+        "privacy": {
+          "title": "隐私政策",
+          "body": "数据收集、账单数据处理、Cookie、用户权利与联系路径。"
+        },
+        "refundPolicy": {
+          "title": "退款政策",
+          "body": "订阅、一次性购买、积分包与例外情况的处理规则。"
+        },
+        "acceptableUse": {
+          "title": "合理使用",
+          "body": "允许用途、受限行为、安全分享与平台边界。"
+        },
+        "cookies": {
+          "title": "Cookie 设置",
+          "body": "必要 Cookie、分析、偏好设置与站点状态处理方式。"
+        }
+      }
+    },
     "features": {
       "metaTitle": "可视化 AI 工作流功能详情",
       "metaDescription": "查看 Nano Banana Canvas 的功能详情，了解可视化工作流编排、gpt image 2 提示词映射、多模态生产与团队协作流程。",

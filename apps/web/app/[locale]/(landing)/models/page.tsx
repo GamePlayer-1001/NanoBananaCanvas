@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
- *          依赖 @/components/landing/public-pages，
+ *          依赖 @/components/landing/public-pages，依赖 @/components/landing/marketing-site-tree，
  *          依赖 @/lib/seo 的 buildPageMetadata
  * [OUTPUT]: 对外提供 `/models` 公开模型罗列页
  * [POS]: (landing) 路由组的模型支持页，为导航、SEO 与模型云图区提供落地承接
@@ -18,6 +18,7 @@ import {
   MarketingSection,
   MarketingShell,
 } from '@/components/landing/public-pages'
+import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
@@ -128,6 +129,8 @@ export default async function ModelsPage({
           { label: t('footerCta.secondary'), href: '/community', variant: 'secondary' },
         ]}
       />
+
+      <MarketingSiteTree activeHref="/models" />
     </MarketingShell>
   )
 }

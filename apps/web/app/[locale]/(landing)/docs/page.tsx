@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
- *          依赖 @/components/landing/public-pages，
+ *          依赖 @/components/landing/public-pages，依赖 @/components/landing/marketing-site-tree，
  *          依赖 @/lib/seo 的 buildPageMetadata
  * [OUTPUT]: 对外提供 `/docs` 公开文档导航页
  * [POS]: (landing) 路由组的资源入口页，承接导航 Resources 中的文档入口
@@ -18,6 +18,7 @@ import {
   MarketingSection,
   MarketingShell,
 } from '@/components/landing/public-pages'
+import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
@@ -110,6 +111,8 @@ export default async function DocsPage({
           { label: t('footerCta.secondary'), href: '/community', variant: 'secondary' },
         ]}
       />
+
+      <MarketingSiteTree activeHref="/docs" />
     </MarketingShell>
   )
 }

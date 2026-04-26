@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 setRequestLocale/getTranslations，
- *          依赖 @/components/contact/contact-content
+ *          依赖 @/components/contact/contact-content，依赖 @/components/landing/marketing-site-tree
  * [OUTPUT]: 对外提供联系我们页面 + SEO metadata
  * [POS]: (landing) 路由组的联系页面，展示 Telegram/Discord/X/Instagram 四平台并承接公开站点资源入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,6 +10,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ContactContent } from '@/components/contact/contact-content'
+import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import { BASE_URL, SITE_NAME, buildAbsoluteUrl, buildPageMetadata } from '@/lib/seo'
 
@@ -64,6 +65,11 @@ export default async function ContactPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <ContactContent />
+      <div className="bg-[#09090d] px-4 pb-24 sm:px-6 lg:px-8 xl:px-10">
+        <div className="mx-auto w-full max-w-[1380px]">
+          <MarketingSiteTree activeHref="/contact" />
+        </div>
+      </div>
     </>
   )
 }

@@ -390,6 +390,72 @@
     "permanentCredits": "Permanent credits"
   },
   "sitePages": {
+    "siteTree": {
+      "eyebrow": "Public page tree",
+      "title": "Pick the right branch.",
+      "body": "Each public page has a specific job: product understanding, resource routing, company context, or legal clarity. This map keeps the site easy to scan instead of forcing every question through the homepage.",
+      "groups": {
+        "product": {
+          "title": "Product"
+        },
+        "resources": {
+          "title": "Resources"
+        },
+        "companyLegal": {
+          "title": "Company & legal"
+        }
+      },
+      "items": {
+        "features": {
+          "title": "Feature details",
+          "body": "Workflow orchestration, multimodal production, and team-ready operating logic."
+        },
+        "models": {
+          "title": "AI model directory",
+          "body": "Image, video, language, vision, and routing providers in one readable model layer."
+        },
+        "pricing": {
+          "title": "Pricing",
+          "body": "Free entry, recurring plans, one-time options, credit packs, and billing boundaries."
+        },
+        "docs": {
+          "title": "Docs",
+          "body": "A public orientation layer for product routes, concepts, and first decisions."
+        },
+        "community": {
+          "title": "Community",
+          "body": "How public workflows, examples, templates, and sharing routes fit together."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Support, social channels, product questions, and direct public entry points."
+        },
+        "about": {
+          "title": "About",
+          "body": "Product philosophy, audience, and why the workflow surface exists."
+        },
+        "terms": {
+          "title": "Terms",
+          "body": "Service usage, accounts, content boundaries, billing, and termination rules."
+        },
+        "privacy": {
+          "title": "Privacy",
+          "body": "Data collection, billing data handling, cookies, rights, and contact paths."
+        },
+        "refundPolicy": {
+          "title": "Refund policy",
+          "body": "Subscription, one-time purchase, credit-pack, and exception handling rules."
+        },
+        "acceptableUse": {
+          "title": "Acceptable use",
+          "body": "Allowed use, restricted behavior, safe sharing, and platform boundaries."
+        },
+        "cookies": {
+          "title": "Cookie settings",
+          "body": "Essential cookies, analytics, preferences, and how site state is handled."
+        }
+      }
+    },
     "features": {
       "metaTitle": "Feature Details for Visual AI Workflow Production",
       "metaDescription": "Explore Nano Banana Canvas feature details for visual workflow orchestration, GPT Image 2 prompt mapping, multimodal production, and team-ready operating flows.",

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
- *          依赖 @/components/landing/public-pages，
+ *          依赖 @/components/landing/public-pages，依赖 @/components/landing/marketing-site-tree，
  *          依赖 @/lib/seo 的 buildPageMetadata
  * [OUTPUT]: 对外提供 `/about` 公开关于我们页面
  * [POS]: (landing) 路由组的品牌与团队定位页，为 Footer 公司信息和 SEO 承接叙事
@@ -18,6 +18,7 @@ import {
   MarketingSection,
   MarketingShell,
 } from '@/components/landing/public-pages'
+import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { buildPageMetadata } from '@/lib/seo'
 
 export async function generateMetadata({
@@ -108,6 +109,8 @@ export default async function AboutPage({
           { label: t('footerCta.secondary'), href: '/sign-in', variant: 'secondary' },
         ]}
       />
+
+      <MarketingSiteTree activeHref="/about" />
     </MarketingShell>
   )
 }
