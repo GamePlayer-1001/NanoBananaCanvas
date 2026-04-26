@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 AnalysisHistory 分析历史折叠面板（支持分析中/成功/失败状态展示）
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 图标，依赖上层传入历史选择事件
+ * [OUTPUT]: 对外提供 AnalysisHistory 分析历史面板（支持分析中/成功/失败状态展示与结果回看）
  * [POS]: video-analysis 的历史记录区域，被 video-analysis-content.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -15,7 +15,9 @@ import { History, CircleCheck, CircleX, LoaderCircle } from 'lucide-react'
 export interface VideoAnalysisHistoryItem {
   id: string
   fileName: string
+  durationSeconds: number
   durationLabel: string
+  model: string
   modelLabel: string
   createdAtLabel: string
   status: 'processing' | 'completed' | 'failed'
@@ -26,8 +28,12 @@ export interface VideoAnalysisHistoryItem {
 
 export function AnalysisHistory({
   items,
+  selectedId,
+  onSelect,
 }: {
   items: VideoAnalysisHistoryItem[]
+  selectedId?: string | null
+  onSelect?: (item: VideoAnalysisHistoryItem) => void
 }) {
   const t = useTranslations('videoAnalysis')
 
@@ -73,9 +79,17 @@ export function AnalysisHistory({
       ) : (
         <div className="mt-4 space-y-3">
           {items.map((item) => (
-            <div
+            <button
               key={item.id}
-              className="rounded-xl border border-border bg-background px-4 py-3"
+              type="button"
+              onClick={() => onSelect?.(item)}
+              className={[
+                'block w-full rounded-xl border bg-background px-4 py-3 text-left transition-colors',
+                selectedId === item.id
+                  ? 'border-brand-500 ring-1 ring-brand-500/30'
+                  : 'border-border',
+                onSelect ? 'hover:bg-muted/30' : '',
+              ].join(' ')}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -95,7 +109,7 @@ export function AnalysisHistory({
                     ? item.errorMessage || t('historyFailedDescription')
                     : t('historyProcessingDescription')}
               </p>
-            </div>
+            </button>
           ))}
         </div>
       )}

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useState，
+ * [INPUT]: 依赖 react 的 useCallback/useEffect/useState，
  *          依赖 next-intl 的 useTranslations，
  *          依赖 sonner 的 toast，
  *          依赖 @/components/video-analysis/upload-area，
@@ -7,14 +7,14 @@
  *          依赖 @/components/video-analysis/analysis-history，
  *          依赖 @/components/video-analysis/analysis-result，
  *          依赖 ./video-analysis-prompts 的 VideoAnalysisResult
- * [OUTPUT]: 对外提供 VideoAnalysisContent 客户端交互容器（上传/校验/执行入口/结果展示/本地历史）
+ * [OUTPUT]: 对外提供 VideoAnalysisContent 客户端交互容器（上传/校验/执行入口/结果展示/账号历史）
  * [POS]: video-analysis 的客户端组合组件，被 page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -28,6 +28,25 @@ import { AnalysisHistory, type VideoAnalysisHistoryItem } from './analysis-histo
 import { AnalysisResult } from './analysis-result'
 import type { VideoAnalysisResult } from './video-analysis-prompts'
 
+interface VideoAnalysisHistoryApiItem {
+  id: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  durationSeconds: number
+  model: VideoAnalysisModelId
+  status: 'processing' | 'completed' | 'failed'
+  errorMessage?: string | null
+  result?: VideoAnalysisResult | null
+  createdAt: string
+  updatedAt: string
+  completedAt?: string | null
+}
+
+interface VideoAnalysisHistoryViewItem extends VideoAnalysisHistoryItem {
+  result?: VideoAnalysisResult | null
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function VideoAnalysisContent() {
@@ -36,12 +55,84 @@ export function VideoAnalysisContent() {
   const [model, setModel] = useState<VideoAnalysisModelId>('gemini-2.5-flash-image')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<VideoAnalysisResult | null>(null)
-  const [historyItems, setHistoryItems] = useState<VideoAnalysisHistoryItem[]>([])
+  const [historyItems, setHistoryItems] = useState<VideoAnalysisHistoryViewItem[]>([])
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true)
+
+  function formatHistoryItem(item: VideoAnalysisHistoryApiItem): VideoAnalysisHistoryViewItem {
+    const createdAtLabel = new Intl.DateTimeFormat(undefined, {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(item.createdAt))
+
+    const minutes = Math.floor(item.durationSeconds / 60)
+    const seconds = Math.round(item.durationSeconds % 60)
+    const durationLabel = `${minutes}:${String(seconds).padStart(2, '0')}`
+
+    return {
+      id: item.id,
+      fileName: item.fileName,
+      durationSeconds: item.durationSeconds,
+      durationLabel,
+      model: item.model,
+      modelLabel: getVideoAnalysisModelLabel(item.model),
+      createdAtLabel,
+      status: item.status,
+      errorMessage: item.errorMessage ?? undefined,
+      result: item.result ?? null,
+    }
+  }
+
+  const loadHistory = useCallback(
+    async (preferredHistoryId?: string | null, options?: { silent?: boolean }) => {
+      setIsHistoryLoading(true)
+
+      try {
+        const response = await fetch('/api/video-analysis', { method: 'GET' })
+        const payload = (await response.json().catch(() => ({}))) as {
+          ok?: boolean
+          data?: { items?: VideoAnalysisHistoryApiItem[] }
+          error?: { message?: string }
+        }
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error?.message || t('historyLoadFailed'))
+        }
+
+        const items = (payload.data?.items ?? []).map(formatHistoryItem)
+        setHistoryItems(items)
+
+        const nextSelectedId =
+          preferredHistoryId && items.some((item) => item.id === preferredHistoryId)
+            ? preferredHistoryId
+            : items.find((item) => item.status === 'completed')?.id ?? items[0]?.id ?? null
+
+        setSelectedHistoryId(nextSelectedId)
+
+        const selectedItem = items.find((item) => item.id === nextSelectedId)
+        setResult(selectedItem?.result ?? null)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t('historyLoadFailed')
+        if (!options?.silent) {
+          toast.error(message)
+        }
+      } finally {
+        setIsHistoryLoading(false)
+      }
+    },
+    [t],
+  )
+
+  useEffect(() => {
+    void loadHistory()
+  }, [loadHistory])
 
   const handleExecute = async () => {
     if (!selectedVideo) return
 
-    const historyId = crypto.randomUUID()
+    const historyId = `pending_${crypto.randomUUID()}`
     const createdAtLabel = new Intl.DateTimeFormat(undefined, {
       month: '2-digit',
       day: '2-digit',
@@ -53,13 +144,16 @@ export function VideoAnalysisContent() {
       {
         id: historyId,
         fileName: selectedVideo.name,
+        durationSeconds: selectedVideo.durationSeconds,
         durationLabel: selectedVideo.durationLabel,
+        model,
         modelLabel: getVideoAnalysisModelLabel(model),
         createdAtLabel,
         status: 'processing',
       },
       ...current,
     ])
+    setSelectedHistoryId(historyId)
 
     setIsSubmitting(true)
     setResult(null)
@@ -79,6 +173,7 @@ export function VideoAnalysisContent() {
         ok?: boolean
         data?: {
           result: VideoAnalysisResult
+          historyItem?: VideoAnalysisHistoryApiItem | null
         }
         error?: { message?: string }
       }
@@ -88,13 +183,7 @@ export function VideoAnalysisContent() {
       }
 
       setResult(payload.data.result)
-      setHistoryItems((current) =>
-        current.map((item) =>
-          item.id === historyId
-            ? { ...item, status: 'completed' as const }
-            : item,
-        ),
-      )
+      await loadHistory(payload.data.historyItem?.id ?? null)
       toast.success(t('analysisCompleted'))
     } catch (error) {
       const message = error instanceof Error ? error.message : t('analysisFailed')
@@ -105,10 +194,16 @@ export function VideoAnalysisContent() {
             : item,
         ),
       )
+      await loadHistory(undefined, { silent: true })
       toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  function handleHistorySelect(item: VideoAnalysisHistoryViewItem) {
+    setSelectedHistoryId(item.id)
+    setResult(item.result ?? null)
   }
 
   return (
@@ -160,7 +255,17 @@ export function VideoAnalysisContent() {
 
       {/* 分析历史 */}
       <div className="mt-10">
-        <AnalysisHistory items={historyItems} />
+        {isHistoryLoading ? (
+          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            {t('historyLoading')}
+          </div>
+        ) : (
+          <AnalysisHistory
+            items={historyItems}
+            selectedId={selectedHistoryId}
+            onSelect={handleHistorySelect}
+          />
+        )}
       </div>
     </div>
   )

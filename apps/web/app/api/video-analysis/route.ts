@@ -2,8 +2,8 @@
  * [INPUT]: 依赖 @/lib/api/auth、@/lib/api/rate-limit、@/lib/api/response、@/lib/db、@/lib/env、
  *          @/lib/errors、@/lib/billing/ledger、@/lib/billing/metering、@/lib/nanoid、
  *          @/components/video-analysis/video-analysis-prompts
- * [OUTPUT]: 对外提供 POST /api/video-analysis（平台内置 Gemini 视频分析 -> 分镜表/剧本 JSON）
- * [POS]: api/video-analysis 的服务端分析端点，承接视频上传、Gemini Files API 调用与平台积分结算
+ * [OUTPUT]: 对外提供 GET/POST /api/video-analysis（用户级历史读取 + 平台内置 Gemini 视频分析）
+ * [POS]: api/video-analysis 的服务端分析端点，承接历史持久化、视频上传、Gemini Files API 调用与平台积分结算
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -19,6 +19,7 @@ import { nanoid } from '@/lib/nanoid'
 import {
   buildVideoAnalysisSystemPrompt,
   buildVideoAnalysisUserPrompt,
+  type VideoAnalysisResult,
   normalizeVideoAnalysisResult,
 } from '@/components/video-analysis/video-analysis-prompts'
 
@@ -43,9 +44,51 @@ type GeminiFileUploadResponse = {
   }
 }
 
+type VideoAnalysisHistoryRow = {
+  id: string
+  file_name: string
+  file_size: number
+  mime_type: string
+  duration_seconds: number
+  model_id: string
+  status: 'processing' | 'completed' | 'failed'
+  error_message: string | null
+  result_json: string | null
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}
+
 function ensureSupportedModel(model: string) {
   if (!(model in VIDEO_ANALYSIS_PRICING_FALLBACK)) {
     throw new AIServiceError(ErrorCode.AI_MODEL_UNAVAILABLE, `Unsupported video analysis model: ${model}`)
+  }
+}
+
+function parseStoredResult(resultJson: string | null): VideoAnalysisResult | null {
+  if (!resultJson) return null
+
+  try {
+    return normalizeVideoAnalysisResult(JSON.parse(resultJson))
+  } catch {
+    return null
+  }
+}
+
+function serializeHistoryRow(row: VideoAnalysisHistoryRow) {
+  return {
+    id: row.id,
+    fileName: row.file_name,
+    fileSize: row.file_size,
+    mimeType: row.mime_type,
+    durationSeconds: row.duration_seconds,
+    model: row.model_id,
+    status: row.status,
+    errorMessage: row.error_message,
+    result: parseStoredResult(row.result_json),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    completedAt: row.completed_at,
   }
 }
 
@@ -219,6 +262,31 @@ async function generateAnalysisResult(input: {
   return normalizeVideoAnalysisResult(parsed)
 }
 
+export async function GET() {
+  try {
+    const { userId } = await requireAuth()
+    const db = await getDb()
+
+    const { results } = await db
+      .prepare(
+        `SELECT id, file_name, file_size, mime_type, duration_seconds, model_id, status,
+                error_message, result_json, created_at, updated_at, completed_at
+         FROM video_analysis_history
+         WHERE user_id = ?
+         ORDER BY created_at DESC
+         LIMIT 20`,
+      )
+      .bind(userId)
+      .all<VideoAnalysisHistoryRow>()
+
+    return apiOk({
+      items: results.map(serializeHistoryRow),
+    })
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
@@ -264,10 +332,28 @@ export async function POST(req: Request) {
       creditsPer1kUnits: pricing.creditsPer1kUnits,
     })
     const referenceId = `video_analysis_${nanoid()}`
+    const historyId = nanoid()
 
     let geminiFileName = ''
 
     try {
+      await db
+        .prepare(
+          `INSERT INTO video_analysis_history
+            (id, user_id, file_name, file_size, mime_type, duration_seconds, model_id, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'processing')`,
+        )
+        .bind(
+          historyId,
+          userId,
+          file.name,
+          file.size,
+          file.type || 'video/mp4',
+          durationSeconds,
+          model,
+        )
+        .run()
+
       if (reservedCredits > 0) {
         await freezeCredits({
           userId,
@@ -303,12 +389,36 @@ export async function POST(req: Request) {
         })
       }
 
+      await db
+        .prepare(
+          `UPDATE video_analysis_history
+           SET status = 'completed',
+               error_message = NULL,
+               result_json = ?,
+               updated_at = datetime('now'),
+               completed_at = datetime('now')
+           WHERE id = ? AND user_id = ?`,
+        )
+        .bind(JSON.stringify(result), historyId, userId)
+        .run()
+
+      const historyRow = await db
+        .prepare(
+          `SELECT id, file_name, file_size, mime_type, duration_seconds, model_id, status,
+                  error_message, result_json, created_at, updated_at, completed_at
+           FROM video_analysis_history
+           WHERE id = ? AND user_id = ?`,
+        )
+        .bind(historyId, userId)
+        .first<VideoAnalysisHistoryRow>()
+
       if (geminiFileName) {
         void deleteGeminiFile(apiKey, geminiFileName)
       }
 
       return apiOk({
         result,
+        historyItem: historyRow ? serializeHistoryRow(historyRow) : null,
         usage: {
           reservedCredits,
           billableUnits: usageEstimate.billableUnits,
@@ -324,6 +434,24 @@ export async function POST(req: Request) {
           description: `Refund failed video analysis ${model}`,
         }).catch(() => undefined)
       }
+
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Video analysis failed'
+
+      await db
+        .prepare(
+          `UPDATE video_analysis_history
+           SET status = 'failed',
+               error_message = ?,
+               updated_at = datetime('now'),
+               completed_at = datetime('now')
+           WHERE id = ? AND user_id = ?`,
+        )
+        .bind(message, historyId, userId)
+        .run()
+        .catch(() => undefined)
 
       if (geminiFileName) {
         const apiKey = await requireEnv('GEMINI_API_KEY').catch(() => '')
