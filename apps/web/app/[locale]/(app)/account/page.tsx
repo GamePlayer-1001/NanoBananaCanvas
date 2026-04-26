@@ -112,12 +112,12 @@ export default async function AccountPage({
           updatedAt: null,
         }),
     authUser
-      ? getCreditTransactions(authUser.userId, { page: 1, pageSize: 12 })
+      ? getCreditTransactions(authUser.userId, { fetchAll: true })
       : Promise.resolve({
           items: [],
           total: 0,
           page: 1,
-          pageSize: 12,
+          pageSize: 0,
           hasMore: false,
         }),
     authUser

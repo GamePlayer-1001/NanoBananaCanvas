@@ -766,7 +766,7 @@
     "lastUpdated": "最后更新时间：{value}",
     "notAvailable": "暂无",
     "historyTitle": "账本流水",
-    "historyDescription": "当前展示最近 {pageSize} 条记录，总计 {total} 条积分账本事件。",
+    "historyDescription": "当前展示 {shown} 条记录，总计 {total} 条积分账本事件。",
     "historyEmpty": "还没有积分流水记录。",
     "historyColumnEvent": "事件",
     "historyColumnPool": "积分池",

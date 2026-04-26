@@ -1483,7 +1483,7 @@
     "lastUpdated": "Last updated: {value}",
     "notAvailable": "Not available",
     "historyTitle": "Ledger history",
-    "historyDescription": "Showing the latest {pageSize} entries out of {total} credit ledger events.",
+    "historyDescription": "Showing {shown} entries out of {total} credit ledger events.",
     "historyEmpty": "No ledger events yet.",
     "historyColumnEvent": "Event",
     "historyColumnPool": "Pool",

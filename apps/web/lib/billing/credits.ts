@@ -341,11 +341,12 @@ function toCreditTransactionItem(row: CreditTransactionRow): CreditTransactionIt
 
 export async function getCreditTransactions(
   userId: string,
-  options?: { page?: number; pageSize?: number },
+  options?: { page?: number; pageSize?: number; fetchAll?: boolean },
 ): Promise<CreditTransactionsResult> {
   const page = normalizePositiveInt(options?.page, 1, 500)
-  const pageSize = normalizePositiveInt(options?.pageSize, 20, 100)
-  const offset = (page - 1) * pageSize
+  const fetchAll = Boolean(options?.fetchAll)
+  const pageSize = fetchAll ? 0 : normalizePositiveInt(options?.pageSize, 20, 100)
+  const offset = fetchAll ? 0 : (page - 1) * pageSize
   const schema = await getBillingSchemaInfo()
 
   if (!canReadCreditTransactions(schema)) {
@@ -369,35 +370,55 @@ export async function getCreditTransactions(
     .bind(userId)
     .first<{ total: number | null }>()
 
-  const listResult = await db
-    .prepare(
-      `SELECT
-         id,
-         type,
-         pool,
-         amount,
-         balance_after,
-         source,
-         reference_id,
-         description,
-         created_at
-       FROM credit_transactions
-       WHERE user_id = ?
-       ORDER BY created_at DESC
-       LIMIT ? OFFSET ?`,
-    )
-    .bind(userId, pageSize, offset)
-    .all<CreditTransactionRow>()
-
   const total = countRow?.total ?? 0
+  const resolvedPageSize = fetchAll ? total : pageSize
+
+  const listQuery = fetchAll
+    ? db
+        .prepare(
+          `SELECT
+             id,
+             type,
+             pool,
+             amount,
+             balance_after,
+             source,
+             reference_id,
+             description,
+             created_at
+           FROM credit_transactions
+           WHERE user_id = ?
+           ORDER BY created_at DESC`,
+        )
+        .bind(userId)
+    : db
+        .prepare(
+          `SELECT
+             id,
+             type,
+             pool,
+             amount,
+             balance_after,
+             source,
+             reference_id,
+             description,
+             created_at
+           FROM credit_transactions
+           WHERE user_id = ?
+           ORDER BY created_at DESC
+           LIMIT ? OFFSET ?`,
+        )
+        .bind(userId, resolvedPageSize, offset)
+
+  const listResult = await listQuery.all<CreditTransactionRow>()
   const items = (listResult.results ?? []).map(toCreditTransactionItem)
 
   return {
     items,
     total,
     page,
-    pageSize,
-    hasMore: offset + items.length < total,
+    pageSize: resolvedPageSize,
+    hasMore: fetchAll ? false : offset + items.length < total,
   }
 }
 
