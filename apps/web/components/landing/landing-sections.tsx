@@ -433,8 +433,6 @@ export function PricingSection({
         : false,
   )
   const visibleCreditPacks = selectedMode === 'credits' ? creditPacks : []
-  const hasVisiblePricing =
-    selectedMode === 'credits' ? visibleCreditPacks.length > 0 : visiblePlans.length > 0
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
@@ -500,19 +498,14 @@ export function PricingSection({
             </div>
           </div>
 
-          {!hasVisiblePricing ? (
-            <div className="mt-8 rounded-[26px] border border-white/8 bg-white/[0.03] px-6 py-10 text-center text-sm leading-7 text-white/58">
-              {billingT('pricingUnavailable')}
-            </div>
-          ) : (
-            <div
-              className={`mt-8 grid gap-4 ${
-                selectedMode === 'credits'
-                  ? 'md:grid-cols-2 xl:grid-cols-4'
-                  : 'xl:grid-cols-3'
-              }`}
-            >
-              {selectedMode === 'credits'
+          <div
+            className={`mt-8 grid gap-4 ${
+              selectedMode === 'credits'
+                ? 'md:grid-cols-2 xl:grid-cols-4'
+                : 'xl:grid-cols-3'
+            }`}
+          >
+            {selectedMode === 'credits'
               ? visibleCreditPacks.map((creditPack) => {
                   const packageId = creditPack.packageId
                   const pack = BILLING_CREDIT_PACK_SNAPSHOTS[packageId]
@@ -659,8 +652,7 @@ export function PricingSection({
                     </article>
                   )
                 })}
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </section>

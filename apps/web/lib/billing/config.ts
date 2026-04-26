@@ -1,14 +1,13 @@
 /**
- * [INPUT]: 依赖 stripe SDK，依赖 @/lib/env 的 getEnv/requireEnv，依赖 @/lib/errors 的 BillingError/ErrorCode
+ * [INPUT]: 依赖 stripe SDK，依赖 @/lib/env 的 getEnv/requireEnv，依赖 @/lib/errors 的 BillingError/ErrorCode，依赖 ./stripe-client 的 Worker 友好 Stripe 初始化
  * [OUTPUT]: 对外提供 StripeBillingConfig、币种白名单/国家推断、环境变量键生成器、lookup_key 生成器与 resolveStripePriceId()
  * [POS]: lib/billing 的配置真相源，兼容“单 Price 多币种”、“按币种拆 Price”与 lookup_key 动态回退三种 Stripe 建模方式
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import Stripe from 'stripe'
-
 import { getEnv, requireEnv } from '@/lib/env'
 import { BillingError, ErrorCode } from '@/lib/errors'
+import { createStripeClient } from './stripe-client'
 
 export const BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
 export const PLAN_PURCHASE_MODES = ['plan_auto_monthly', 'plan_one_time'] as const
@@ -251,9 +250,7 @@ async function resolveStripePriceIdByLookupKey(lookupKey: string): Promise<strin
     return undefined
   }
 
-  const stripe = new Stripe(secretKey, {
-    apiVersion: '2026-03-25.dahlia',
-  })
+  const stripe = createStripeClient(secretKey)
 
   const response = await stripe.prices.list({
     lookup_keys: [lookupKey],
