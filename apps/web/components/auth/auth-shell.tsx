@@ -132,14 +132,14 @@ export function AuthShell({
             </div>
 
             <div className="mb-8 space-y-4 text-center">
-              <div className="mx-auto flex h-28 w-64 items-center justify-center">
+              <div className="mx-auto w-[32rem] max-w-full">
                 <Image
                   src="/auth-login-right.png"
                   alt=""
-                  width={256}
-                  height={112}
+                  width={512}
+                  height={154}
                   priority
-                  className="h-full w-full object-contain"
+                  className="h-auto w-full object-contain"
                   aria-hidden="true"
                 />
               </div>
