@@ -287,19 +287,19 @@ const FEATURE_VISUALS = {
     icon: Workflow,
     imageSrc: '/landing/hero/hero-merge.png',
     accent:
-      'from-[#6b5cff]/28 via-[#2b2848]/55 to-transparent',
+      'from-[#8ea3ff]/34 via-[#4f46e5]/18 to-transparent',
   },
   models: {
     icon: Sparkles,
-    imageSrc: '/landing/hero/hero-scene.png',
+    imageSrc: '/landing/hero/hero-girl.png',
     accent:
-      'from-[#59d6b7]/22 via-[#142a29]/48 to-transparent',
+      'from-[#7be6ff]/34 via-[#14b8a6]/18 to-transparent',
   },
   outputs: {
     icon: Zap,
-    imageSrc: '/landing/hero/hero-landscape.png',
+    imageSrc: '/landing/hero/hero-scene.png',
     accent:
-      'from-[#ffb25c]/20 via-[#2a2117]/48 to-transparent',
+      'from-[#ffd36b]/32 via-[#f97316]/16 to-transparent',
   },
 } as const
 
@@ -893,6 +893,62 @@ export function ModelMindMapSection() {
 
 export function FeaturesSection() {
   const featuresT = useTranslations('landing.sections.features')
+  const featureItems = FEATURE_KEYS.map((key, index) => ({
+    key,
+    index,
+    title: featuresT(`items.${key}.title`),
+    body: featuresT(`items.${key}.body`),
+    imageSrc: FEATURE_VISUALS[key].imageSrc,
+    icon: FEATURE_VISUALS[key].icon,
+    accent: FEATURE_VISUALS[key].accent,
+  }))
+  const [activeFeature, setActiveFeature] = useState<(typeof FEATURE_KEYS)[number]>('canvas')
+  const triggerRefs = useRef<Array<HTMLDivElement | null>>([])
+  const activeFeatureItem =
+    featureItems.find((item) => item.key === activeFeature) ?? featureItems[0]
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const nodes = triggerRefs.current.filter(Boolean) as HTMLDivElement[]
+    if (!nodes.length) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+
+        if (!visible[0]) return
+
+        const key = visible[0].target.getAttribute('data-feature-key') as
+          | (typeof FEATURE_KEYS)[number]
+          | null
+
+        if (key) {
+          setActiveFeature(key)
+        }
+      },
+      {
+        threshold: [0.25, 0.45, 0.65],
+        rootMargin: '-12% 0px -32% 0px',
+      },
+    )
+
+    nodes.forEach((node) => observer.observe(node))
+
+    return () => observer.disconnect()
+  }, [featureItems.length])
+
+  function scrollToFeature(index: number) {
+    const target = triggerRefs.current[index]
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+
+    setActiveFeature(featureItems[index].key)
+  }
 
   return (
     <section
@@ -900,152 +956,197 @@ export function FeaturesSection() {
       className="relative overflow-hidden bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
-      <div className="mx-auto w-full max-w-[1240px]">
-        <div className="relative grid gap-6 xl:grid-cols-[0.84fr_1.16fr]">
-          <div className="rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(20,20,25,0.96),rgba(11,11,15,0.98))] p-7 shadow-[0_20px_70px_rgba(0,0,0,0.22)] md:p-8">
-            <SectionHeader
-              eyebrow=""
-              title={featuresT('title')}
-              body={featuresT('body')}
-            />
+      <div className="mx-auto w-full max-w-[1280px]">
+        <div className="hidden gap-10 xl:grid xl:grid-cols-[0.7fr_1.3fr]">
+          <div className="sticky top-28 self-start py-6">
+            <div className="flex items-start gap-6">
+              <span className="mt-4 h-20 w-px bg-white/72" />
+              <div>
+                <span className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                  Feature 0{activeFeatureItem.index + 1}
+                </span>
+                <h2 className="mt-5 max-w-[7ch] text-[4.35rem] leading-[0.9] font-semibold tracking-tight text-white">
+                  {activeFeatureItem.title}
+                </h2>
+              </div>
+            </div>
 
-            <div className="mt-10 space-y-3">
-              {FEATURE_KEYS.map((key, index) => {
-                const Icon = FEATURE_VISUALS[key].icon
+            <p className="mt-8 max-w-[27rem] text-lg leading-8 text-white/58">
+              {activeFeatureItem.body}
+            </p>
+
+            <div className="mt-12 space-y-5">
+              {featureItems.map((item) => {
+                const isActive = item.key === activeFeature
+                if (isActive) return null
 
                 return (
-                  <article
-                    key={`feature-rail-${key}`}
-                    className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-colors duration-200 hover:bg-white/[0.05]"
+                  <button
+                    key={`feature-nav-${item.key}`}
+                    type="button"
+                    onClick={() => scrollToFeature(item.index)}
+                    className={`block max-w-[8.6ch] text-left text-[3.2rem] leading-[0.94] font-semibold tracking-tight transition-all duration-300 ${
+                      isActive
+                        ? 'text-white/18'
+                        : 'text-white/18 hover:text-white/42'
+                    }`}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white text-black">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-medium tracking-[0.22em] text-white/34 uppercase">
-                            0{index + 1}
-                          </span>
-                          <h3 className="text-lg font-semibold text-white">
-                            {featuresT(`items.${key}.title`)}
-                          </h3>
-                        </div>
-                        <p className="mt-2 text-sm leading-7 text-white/58">
-                          {featuresT(`items.${key}.body`)}
-                        </p>
-                      </div>
-                    </div>
-                  </article>
+                    {item.title}
+                  </button>
                 )
               })}
             </div>
 
-            <Link
-              href="/features"
-              className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-            >
-              {featuresT('exploreCta')}
-            </Link>
+            <div className="mt-12 max-w-[26rem] space-y-6">
+              <p className="text-sm leading-7 text-white/42">{featuresT('body')}</p>
+              <Link
+                href="/features"
+                className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
+              >
+                {featuresT('exploreCta')}
+              </Link>
+            </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,rgba(15,15,21,0.98),rgba(8,8,12,0.98))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:p-6">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(107,92,255,0.14),transparent_18%),radial-gradient(circle_at_84%_78%,rgba(89,214,183,0.1),transparent_18%)]" />
-            <div className="relative">
-              <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-                <article className="rounded-[28px] border border-white/8 bg-white/[0.03] p-4">
-                  <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-[#09090d]">
-                    <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-3">
-                      <span className="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.18em] text-white/78 uppercase">
-                        {featuresT(`items.canvas.title`)}
-                      </span>
-                      <span className="rounded-full border border-[#6b5cff]/24 bg-[#6b5cff]/12 px-3 py-1 text-[0.68rem] font-medium text-[#d8d1ff]">
-                        01
-                      </span>
-                    </div>
-                    <Image
-                      src="/landing/hero/hero-merge.png"
-                      alt={featuresT('items.canvas.title')}
-                      width={940}
-                      height={720}
-                      className="h-[360px] w-full object-cover"
-                    />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#09090d] to-transparent" />
-                  </div>
-                  <p className="mt-4 text-sm leading-7 text-white/58">
-                    {featuresT(`items.canvas.body`)}
-                  </p>
-                </article>
+          <div className="relative">
+            <div className="sticky top-24 overflow-hidden rounded-[36px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,17,22,0.98),rgba(9,9,13,0.98))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(116,203,255,0.14),transparent_18%),radial-gradient(circle_at_84%_78%,rgba(255,211,107,0.1),transparent_20%)]" />
+              <div className="relative min-h-[700px]">
+                {featureItems.map((item) => {
+                  const isActive = item.key === activeFeature
+                  const ItemIcon = item.icon
 
-                <div className="grid gap-4">
-                  {FEATURE_KEYS.filter((key) => key !== 'canvas').map((key, index) => {
-                    const visual = FEATURE_VISUALS[key]
-                    const Icon = visual.icon
-
-                    return (
-                      <article
-                        key={`feature-media-${key}`}
-                        className={`relative overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4`}
-                      >
+                  return (
+                    <article
+                      key={`feature-preview-${item.key}`}
+                      className={`absolute inset-0 transition-all duration-500 ${
+                        isActive
+                          ? 'pointer-events-auto translate-y-0 opacity-100'
+                          : 'pointer-events-none translate-y-6 opacity-0'
+                      }`}
+                    >
+                      <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
                         <div
-                          className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${visual.accent}`}
+                          className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${item.accent}`}
                         />
-                        <div className="relative grid gap-4 md:grid-cols-[0.96fr_1.04fr]">
-                          <div className="overflow-hidden rounded-[22px] border border-white/8 bg-[#09090d]">
-                            <Image
-                              src={visual.imageSrc}
-                              alt={featuresT(`items.${key}.title`)}
-                              width={860}
-                              height={620}
-                              className="h-[220px] w-full object-cover"
-                            />
-                          </div>
-                          <div className="flex min-w-0 flex-col justify-between">
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white text-black">
-                                  <Icon className="h-4.5 w-4.5" />
-                                </div>
-                                <span className="text-xs font-medium tracking-[0.22em] text-white/34 uppercase">
-                                  0{index + 2}
-                                </span>
+                        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(4,6,12,0.02),rgba(4,6,12,0.18)_52%,rgba(4,6,12,0.8)_100%)]" />
+                        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
+                          <span className="rounded-full border border-white/12 bg-black/22 px-4 py-1.5 text-[0.7rem] font-semibold tracking-[0.2em] text-white/78 uppercase">
+                            Scroll Feature
+                          </span>
+                          <span className="rounded-full border border-white/12 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/84">
+                            0{item.index + 1}
+                          </span>
+                        </div>
+                        <Image
+                          src={item.imageSrc}
+                          alt={item.title}
+                          width={1280}
+                          height={980}
+                          className="h-[500px] w-full object-cover brightness-[1.14] contrast-[1.06] saturate-[1.18]"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 z-20 p-6">
+                          <div className="max-w-[420px] rounded-[24px] border border-white/12 bg-black/28 p-5 backdrop-blur-md">
+                            <div className="flex items-center gap-3 text-white/84">
+                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-black">
+                                <ItemIcon className="h-5 w-5" />
                               </div>
-                              <h3 className="mt-4 text-[1.5rem] font-semibold tracking-tight text-white">
-                                {featuresT(`items.${key}.title`)}
-                              </h3>
-                              <p className="mt-3 text-sm leading-7 text-white/58">
-                                {featuresT(`items.${key}.body`)}
-                              </p>
+                              <div>
+                                <p className="text-xs font-medium tracking-[0.2em] text-white/42 uppercase">
+                                  {item.title}
+                                </p>
+                                <p className="mt-1 text-sm text-white/64">{featuresT('title')}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </article>
-                    )
-                  })}
-                </div>
+                      </div>
+
+                      <div className="mt-5 grid gap-5 lg:grid-cols-[0.24fr_0.76fr]">
+                        <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-5">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black">
+                            <ItemIcon className="h-5 w-5" />
+                          </div>
+                          <p className="mt-5 text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                            Feature 0{item.index + 1}
+                          </p>
+                          <p className="mt-2 text-sm leading-7 text-white/54">
+                            左侧标题会跟随滚动切换，右侧同步展示对应的主视觉与解释文案。
+                          </p>
+                        </div>
+
+                        <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-7">
+                          <h3 className="text-[2rem] leading-[1.04] font-semibold tracking-tight text-white">
+                            {item.title}
+                          </h3>
+                          <p className="mt-4 max-w-[52rem] text-base leading-8 text-white/62">
+                            {item.body}
+                          </p>
+
+                          <div className="mt-8 flex flex-wrap gap-3">
+                            {featureItems.map((summaryItem) => (
+                              <button
+                                key={`feature-summary-${item.key}-${summaryItem.key}`}
+                                type="button"
+                                onClick={() => scrollToFeature(summaryItem.index)}
+                                className={`rounded-full border px-4 py-2 text-sm transition-colors duration-300 ${
+                                  summaryItem.key === item.key
+                                    ? 'border-white/14 bg-white/12 text-white'
+                                    : 'border-white/8 bg-white/[0.03] text-white/52 hover:text-white/82'
+                                }`}
+                              >
+                                {summaryItem.title}
+                              </button>
+                            ))}
+                          </div>
+
+                          <Link
+                            href="/features"
+                            className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
+                          >
+                            {featuresT('exploreCta')}
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
+            </div>
+
+            <div className="pointer-events-none relative z-10 mt-8">
+              {featureItems.map((item, index) => (
+                <div
+                  key={`feature-trigger-${item.key}`}
+                  ref={(node) => {
+                    triggerRefs.current[index] = node
+                  }}
+                  data-feature-key={item.key}
+                  className="h-[62vh]"
+                />
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-3">
-          {FEATURE_KEYS.map((key) => {
-            const visual = FEATURE_VISUALS[key]
-            const Icon = visual.icon
+        <div className="mt-12 grid gap-5 xl:hidden">
+          <SectionHeader eyebrow="" title={featuresT('title')} body={featuresT('body')} />
 
+          {featureItems.map((item) => {
+            const Icon = item.icon
             return (
               <article
-                key={`feature-card-${key}`}
+                key={`feature-mobile-${item.key}`}
                 className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.035] p-5 shadow-[0_18px_54px_rgba(0,0,0,0.14)]"
               >
                 <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-[#07080d]">
-                  <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${visual.accent}`} />
+                  <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent}`} />
                   <Image
-                    src={visual.imageSrc}
-                    alt={featuresT(`items.${key}.title`)}
+                    src={item.imageSrc}
+                    alt={item.title}
                     width={860}
                     height={620}
-                    className="h-52 w-full object-cover"
+                    className="h-52 w-full object-cover brightness-[1.12] contrast-[1.05] saturate-[1.16]"
                   />
                 </div>
 
@@ -1054,14 +1155,19 @@ export function FeaturesSection() {
                 </div>
 
                 <h3 className="mt-5 text-xl font-semibold text-white">
-                  {featuresT(`items.${key}.title`)}
+                  {item.title}
                 </h3>
-                <p className="mt-3 text-sm leading-7 text-white/62">
-                  {featuresT(`items.${key}.body`)}
-                </p>
+                <p className="mt-3 text-sm leading-7 text-white/62">{item.body}</p>
               </article>
             )
           })}
+
+          <Link
+            href="/features"
+            className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
+          >
+            {featuresT('exploreCta')}
+          </Link>
         </div>
       </div>
     </section>
