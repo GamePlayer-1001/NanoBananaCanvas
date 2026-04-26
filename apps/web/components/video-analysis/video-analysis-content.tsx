@@ -29,7 +29,7 @@ import { AnalysisHistory, type VideoAnalysisHistoryItem } from './analysis-histo
 export function VideoAnalysisContent() {
   const t = useTranslations('videoAnalysis')
   const [selectedVideo, setSelectedVideo] = useState<VideoUploadValue | null>(null)
-  const [model, setModel] = useState<VideoAnalysisModelId>('gemini-2.5-flash')
+  const [model, setModel] = useState<VideoAnalysisModelId>('gemini-2.5-flash-image')
   const [historyItems, setHistoryItems] = useState<VideoAnalysisHistoryItem[]>([])
 
   const handleExecute = () => {
