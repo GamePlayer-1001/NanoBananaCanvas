@@ -4,7 +4,7 @@
  *          依赖 @/components/ui/skeleton，
  *          依赖 @/components/shared/empty-state
  * [OUTPUT]: 对外提供 WorkspaceGrid 项目网格组件
- * [POS]: workspace 的内容网格区域，被 workspace-content.tsx 消费
+ * [POS]: workspace 的内容网格区域，被 workspace-content.tsx 消费，支持网格/列表与多选状态
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -36,15 +36,26 @@ function ProjectCardSkeleton() {
 export function WorkspaceGrid({
   projects,
   isLoading,
+  viewMode,
+  selectionMode,
+  selectedIds,
+  onToggleProjectSelection,
 }: {
   projects?: ProjectCardData[]
   isLoading: boolean
+  viewMode: 'grid' | 'list'
+  selectionMode: boolean
+  selectedIds: string[]
+  onToggleProjectSelection: (projectId: string) => void
 }) {
   const t = useTranslations('workspace')
+  const gridClassName = viewMode === 'grid'
+    ? 'grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
+    : 'flex flex-col gap-3'
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className={gridClassName}>
         {Array.from({ length: 8 }).map((_, i) => (
           <ProjectCardSkeleton key={i} />
         ))}
@@ -63,9 +74,16 @@ export function WorkspaceGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <div className={gridClassName}>
       {projects.map((project) => (
-        <ProjectCard key={project.id} data={project} />
+        <ProjectCard
+          key={project.id}
+          data={project}
+          viewMode={viewMode}
+          selectionMode={selectionMode}
+          selected={selectedIds.includes(project.id)}
+          onToggleSelection={onToggleProjectSelection}
+        />
       ))}
     </div>
   )
