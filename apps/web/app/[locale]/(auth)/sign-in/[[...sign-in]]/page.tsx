@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @clerk/nextjs 的 SignIn，依赖 next-intl/server 的 getTranslations / setRequestLocale，
  *          依赖 @/components/auth/auth-shell，依赖 @/lib/auth/redirect
  * [OUTPUT]: 对外提供登录页路由
- * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与 Martini 风格外层壳
+ * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与品牌认证壳层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -68,7 +68,6 @@ export default async function SignInPage({
       switchText={t('register')}
       t={{
         brandName: t('brandName'),
-        visualEyebrow: t('visualEyebrow'),
         visualHeadline: t('visualHeadline'),
         visualDescription: t('visualDescription'),
         visualPointOne: t('visualPointOne'),
@@ -78,7 +77,6 @@ export default async function SignInPage({
         termsLink: t('termsLink'),
         and: t('and'),
         privacyLink: t('privacyLink'),
-        previewHint: t('previewHint'),
       }}
     >
       <SignIn

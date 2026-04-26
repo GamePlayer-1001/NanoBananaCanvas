@@ -68,7 +68,6 @@ export default async function SignUpPage({
       switchText={t('login')}
       t={{
         brandName: t('brandName'),
-        visualEyebrow: t('visualEyebrow'),
         visualHeadline: t('visualHeadline'),
         visualDescription: t('visualDescription'),
         visualPointOne: t('visualPointOne'),
@@ -78,7 +77,6 @@ export default async function SignUpPage({
         termsLink: t('termsLink'),
         and: t('and'),
         privacyLink: t('privacyLink'),
-        previewHint: t('previewHint'),
       }}
     >
       <SignUp

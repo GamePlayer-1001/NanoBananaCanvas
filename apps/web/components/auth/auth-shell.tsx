@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode，依赖 next/image 的静态图片渲染，
- *          依赖 lucide-react 图标，
+ *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 AuthShell 认证双栏壳组件
@@ -10,7 +10,7 @@
 
 import Image from 'next/image'
 import type { ReactNode } from 'react'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { BrandMark } from '@/components/shared/brand-mark'
@@ -28,7 +28,6 @@ interface AuthShellProps {
   children: ReactNode
   t: {
     brandName: string
-    visualEyebrow: string
     visualHeadline: string
     visualDescription: string
     visualPointOne: string
@@ -38,7 +37,6 @@ interface AuthShellProps {
     termsLink: string
     and: string
     privacyLink: string
-    previewHint: string
   }
 }
 
@@ -86,30 +84,8 @@ export function AuthShell({
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/8 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/28 to-transparent" />
 
-          <div className="relative flex h-full flex-col justify-between px-10 py-10 text-white xl:px-14">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-                <BrandMark
-                  withLogo
-                  showText={false}
-                  className="text-[1.15rem] text-white"
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] tracking-[0.3em] text-white/58 uppercase">
-                  {t.visualEyebrow}
-                </p>
-                <BrandMark withLogo className="text-xl text-white">
-                  {t.brandName}
-                </BrandMark>
-              </div>
-            </div>
-
+          <div className="relative flex h-full flex-col justify-end px-10 py-12 text-white xl:px-14 xl:py-14">
             <div className="max-w-xl space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[11px] tracking-[0.28em] text-white/70 uppercase backdrop-blur-sm">
-                <Sparkles className="h-3.5 w-3.5" />
-                {isSignIn ? 'Sign In Gateway' : 'Create Account'}
-              </div>
               <h1 className="max-w-xl font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
                 {t.visualHeadline}
               </h1>
@@ -131,8 +107,6 @@ export function AuthShell({
                 ))}
               </div>
             </div>
-
-            <div className="text-sm text-white/54">{t.previewHint}</div>
           </div>
         </section>
 
