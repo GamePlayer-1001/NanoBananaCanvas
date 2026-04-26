@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @clerk/nextjs 的 SignIn，依赖 next-intl/server 的 getTranslations / setRequestLocale，
  *          依赖 @/components/auth/auth-shell，依赖 @/lib/auth/redirect
  * [OUTPUT]: 对外提供登录页路由
- * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与品牌认证壳层
+ * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与无说明标题区的品牌认证壳层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,7 +20,7 @@ const CLERK_CARD_APPEARANCE = {
   elements: {
     rootBox: 'w-full',
     cardBox: 'w-full shadow-none',
-    card: 'w-full rounded-[28px] border border-black/8 bg-white px-6 py-7 shadow-[0_18px_50px_rgba(17,17,17,0.08)]',
+    card: 'w-full rounded-[28px] border border-black/8 bg-white px-6 py-7 shadow-[0_34px_90px_rgba(17,17,17,0.14)]',
     header: 'hidden',
     footer: 'hidden',
     socialButtonsBlockButton:
@@ -62,7 +62,6 @@ export default async function SignInPage({
     <AuthShell
       mode="sign-in"
       title={t('loginTitle')}
-      subtitle={t('loginSubtitle')}
       switchLabel={t('noAccount')}
       switchHref="/sign-up"
       switchText={t('register')}

@@ -5,7 +5,7 @@
  *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 AuthShell 认证双栏壳组件
+ * [OUTPUT]: 对外提供 AuthShell 认证双栏壳组件，支持可选标题说明文案
  * [POS]: auth 模块的核心展示组件，被 sign-in/sign-up 页面复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -23,7 +23,7 @@ type AuthMode = 'sign-in' | 'sign-up'
 interface AuthShellProps {
   mode: AuthMode
   title: string
-  subtitle: string
+  subtitle?: string
   switchLabel: string
   switchHref: '/sign-in' | '/sign-up'
   switchText: string
@@ -147,9 +147,11 @@ export function AuthShell({
                 <h2 className="font-serif text-4xl tracking-tight text-[#111111]">
                   {title}
                 </h2>
-                <p className="mx-auto max-w-md text-sm leading-7 text-black/54">
-                  {subtitle}
-                </p>
+                {subtitle ? (
+                  <p className="mx-auto max-w-md text-sm leading-7 text-black/54">
+                    {subtitle}
+                  </p>
+                ) : null}
               </div>
             </div>
 
