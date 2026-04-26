@@ -268,55 +268,63 @@ export function SubscriptionTab({
           })}
         </div>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-4">
-          <article className="flex h-full flex-col rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                  {t('subscriptionFreeLabel')}
-                </p>
-                <h3 className="mt-3 text-2xl font-semibold text-foreground">Free</h3>
+        <div
+          className={`grid gap-5 ${
+            selectedMode === 'plan_auto_monthly' ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
+          }`}
+        >
+          {selectedMode === 'plan_auto_monthly' ? (
+            <article className="flex h-full flex-col rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+                    {t('subscriptionFreeLabel')}
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold text-foreground">Free</h3>
+                </div>
+                {subscription.plan === 'free' ? (
+                  <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                    {t('subscriptionCurrentPlan')}
+                  </span>
+                ) : null}
               </div>
-              {subscription.plan === 'free' && selectedMode === 'plan_auto_monthly' ? (
-                <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                  {t('subscriptionCurrentPlan')}
-                </span>
-              ) : null}
-            </div>
 
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {t('subscriptionFreeBody')}
-            </p>
-
-            <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
-              <p className="text-3xl font-semibold text-foreground">{t('subscriptionFreePrice')}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t('subscriptionFreePriceBody')}
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {t('subscriptionFreeBody')}
               </p>
-            </div>
 
-            <div className="mt-6 flex flex-1 flex-col">
-              <div className="space-y-3">
-                <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
-                <SubscriptionStat
-                  label={t('subscriptionStorageIncluded')}
-                  value={t('subscriptionStorageValue', { value: 1 })}
-                />
+              <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
+                <p className="text-3xl font-semibold text-foreground">
+                  {t('subscriptionFreePrice')}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t('subscriptionFreePriceBody')}
+                </p>
               </div>
-            </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-auto h-12 w-full rounded-xl"
-              disabled={subscription.plan === 'free' && selectedMode === 'plan_auto_monthly'}
-              onClick={() => router.push('/workspace')}
-            >
-              {subscription.plan === 'free' && selectedMode === 'plan_auto_monthly'
-                ? t('subscriptionCurrentPlan')
-                : t('subscriptionContinueFree')}
-            </Button>
-          </article>
+              <div className="mt-6 flex flex-1 flex-col">
+                <div className="space-y-3">
+                  <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
+                  <SubscriptionStat
+                    label={t('subscriptionStorageIncluded')}
+                    value={t('subscriptionStorageValue', { value: 1 })}
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-auto h-12 w-full rounded-xl"
+                disabled={subscription.plan === 'free'}
+                onClick={() => router.push('/workspace')}
+              >
+                {subscription.plan === 'free'
+                  ? t('subscriptionCurrentPlan')
+                  : t('subscriptionContinueFree')}
+              </Button>
+            </article>
+          ) : null}
 
           {visiblePlans.map((plan) => {
             const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`
