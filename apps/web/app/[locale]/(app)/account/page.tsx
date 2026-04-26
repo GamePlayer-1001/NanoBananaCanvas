@@ -113,10 +113,13 @@ async function loadOptionalAccountData<T>(
 
 export default async function AccountPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams?: Promise<{ tab?: string | string[] }>
 }) {
   const { locale } = await params
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
   setRequestLocale(locale)
 
   const requestHeaders = await headers()
@@ -137,6 +140,7 @@ export default async function AccountPage({
         name: authUser.name,
         email: authUser.email,
         avatarUrl: authUser.avatarUrl,
+        hasPassword: authUser.hasPassword,
         tier: authUser.plan,
         plan: authUser.plan,
         membershipStatus: authUser.membershipStatus,
@@ -155,6 +159,7 @@ export default async function AccountPage({
         name: 'Guest',
         email: '',
         avatarUrl: '',
+        hasPassword: false,
         tier: FREE_PLAN_SNAPSHOT.plan,
         plan: FREE_PLAN_SNAPSHOT.plan,
         membershipStatus: FREE_PLAN_SNAPSHOT.plan,
@@ -206,6 +211,11 @@ export default async function AccountPage({
       isPricingReady={Boolean(pricing)}
       plans={pricing?.plans ?? []}
       creditPacks={pricing?.creditPacks ?? []}
+      initialTab={
+        Array.isArray(resolvedSearchParams?.tab)
+          ? resolvedSearchParams.tab[0]
+          : resolvedSearchParams?.tab
+      }
     />
   )
 }

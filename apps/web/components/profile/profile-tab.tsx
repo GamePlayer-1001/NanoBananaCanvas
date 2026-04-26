@@ -4,7 +4,7 @@
  *          依赖 @/i18n/navigation 的 Link，依赖 @/components/auth/sign-out-action，
  *          依赖 sonner 的 toast，依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
  * [OUTPUT]: 对外提供 ProfileTab 个人资料面板，含账户基础信息与 Clerk 安全中心入口
- * [POS]: profile 的个人资料 Tab，被账户页消费，承载基础身份信息、退出登录与安全操作
+ * [POS]: profile 的个人资料 Tab，被账户页消费，承载基础身份信息、真实密码状态展示、退出登录与安全操作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -111,12 +111,11 @@ export function ProfileTab({ user, onManageSubscription }: ProfileTabProps) {
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <ProfileField label={t('profileAvatar')} value={user.avatarUrl ? t('profileAvatarConnected') : t('profileAvatarPlaceholder')} />
           <ProfileField label={t('profileNickname')} value={user.name ?? 'Guest'} />
           <ProfileField label={t('email')} value={user.email || t('profileEmptyValue')} />
           <ProfileField
             label={t('profilePassword')}
-            value={user.isAuthenticated ? '••••••••' : t('profileEmptyValue')}
+            value={user.hasPassword ? '••••••••' : t('profileEmptyValue')}
           />
         </div>
       </section>

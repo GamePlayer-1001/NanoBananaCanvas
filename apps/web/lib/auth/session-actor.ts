@@ -28,6 +28,7 @@ export type SessionActor =
       lastName: string
       name: string
       avatarUrl: string
+      hasPassword: boolean
       plan: string
       membershipStatus: string
       createdAt: string
@@ -45,6 +46,7 @@ export type SessionActor =
       lastName: string
       name: string
       avatarUrl: string
+      hasPassword: boolean
       plan: string
       membershipStatus: string
       createdAt: string
@@ -78,6 +80,7 @@ async function ensureAnonymousActor(identity: Extract<Awaited<ReturnType<typeof 
     lastName: user.last_name,
     name: user.name,
     avatarUrl: user.avatar_url || '',
+    hasPassword: false,
     plan: user.plan,
     membershipStatus: user.membership_status,
     createdAt: user.created_at,
@@ -126,6 +129,7 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
     lastName: user.last_name,
     name: user.name,
     avatarUrl: user.avatar_url || '',
+    hasPassword: identity.profile.hasPassword,
     plan: user.plan,
     membershipStatus: user.membership_status,
     createdAt: user.created_at,

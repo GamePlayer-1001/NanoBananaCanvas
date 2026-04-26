@@ -46,6 +46,7 @@ import { Progress } from '@/components/ui/progress'
 
 type WorksView = 'workflow' | 'generated' | 'published' | 'favorites'
 type GeneratedView = 'image' | 'video'
+const GENERATED_WORKS_LIMIT = 50
 
 interface WorkflowListItem {
   id: string
@@ -100,9 +101,9 @@ function useFavorites(enabled: boolean) {
 
 function useGeneratedWorks(enabled: boolean) {
   return useQuery({
-    queryKey: queryKeys.tasks.list({ status: 'completed', limit: 100 }),
+    queryKey: queryKeys.tasks.list({ status: 'completed', limit: GENERATED_WORKS_LIMIT }),
     queryFn: async () => {
-      const res = await fetch('/api/tasks?status=completed&limit=100')
+      const res = await fetch(`/api/tasks?status=completed&limit=${GENERATED_WORKS_LIMIT}`)
       if (!res.ok) throw new Error('Failed to fetch generated works')
       const json = await res.json()
       const data = json.data as { tasks: GeneratedTaskItem[] }
@@ -110,6 +111,14 @@ function useGeneratedWorks(enabled: boolean) {
     },
     enabled,
   })
+}
+
+function isAlreadyDeletedError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return /not found/i.test(error.message)
 }
 
 async function toggleFavorite(workflowId: string) {
@@ -365,7 +374,16 @@ export function WorksTab({
         return
       }
 
-      await Promise.all(ids.map((id) => deleteWorkflow.mutateAsync(id)))
+      const deleteResults = await Promise.allSettled(ids.map((id) => deleteWorkflow.mutateAsync(id)))
+      const firstFailure = deleteResults.find(
+        (result) =>
+          result.status === 'rejected' && !isAlreadyDeletedError(result.reason),
+      )
+
+      if (firstFailure && firstFailure.status === 'rejected') {
+        throw firstFailure.reason
+      }
+
       await invalidateWorks()
       setSelectedIds([])
       toast.success(

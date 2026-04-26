@@ -23,6 +23,7 @@ type IdentityProfile = {
   lastName: string
   name: string
   avatarUrl: string
+  hasPassword: boolean
 }
 
 export type ResolvedIdentity =
@@ -66,6 +67,15 @@ function pickDisplayName(user: Awaited<ReturnType<typeof currentUser>>) {
   return fullName || user.fullName || user.username || user.firstName || user.lastName || 'Member'
 }
 
+function pickPasswordEnabled(user: Awaited<ReturnType<typeof currentUser>>) {
+  if (!user || typeof user !== 'object') {
+    return false
+  }
+
+  const maybePasswordEnabled = (user as { passwordEnabled?: unknown }).passwordEnabled
+  return maybePasswordEnabled === true
+}
+
 async function resolveAnonymousIdentity(): Promise<ResolvedIdentity> {
   const cookieStore = await cookies()
   let anonymousId = cookieStore.get(ANON_COOKIE_NAME)?.value
@@ -92,6 +102,7 @@ async function resolveAnonymousIdentity(): Promise<ResolvedIdentity> {
       lastName: '',
       name: 'Guest',
       avatarUrl: '',
+      hasPassword: false,
     },
   }
 }
@@ -117,6 +128,7 @@ export async function resolveRequestIdentity(): Promise<ResolvedIdentity> {
       lastName: user?.lastName ?? '',
       name: pickDisplayName(user),
       avatarUrl: user?.imageUrl ?? '',
+      hasPassword: pickPasswordEnabled(user),
     },
   }
 }

@@ -161,7 +161,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       .run()
 
     if (!result.meta.changes) {
-      throw new NotFoundError('Workflow', id)
+      return apiOk({ id, deleted: false })
     }
 
     return apiOk({ id, deleted: true })

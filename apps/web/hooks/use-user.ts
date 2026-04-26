@@ -38,6 +38,7 @@ export interface UserProfile {
   name: string
   email: string
   avatarUrl?: string
+  hasPassword: boolean
   tier: string
   plan: string
   membershipStatus: string

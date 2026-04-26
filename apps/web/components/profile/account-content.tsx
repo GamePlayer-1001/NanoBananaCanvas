@@ -49,6 +49,17 @@ export interface AccountContentProps {
   isPricingReady: boolean
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
+  initialTab?: string
+}
+
+const TAB_IDS = new Set<TabId>(TABS.map((tab) => tab.id))
+
+function resolveInitialTab(tab?: string): TabId {
+  if (tab && TAB_IDS.has(tab as TabId)) {
+    return tab as TabId
+  }
+
+  return 'profile'
 }
 
 export function AccountContent({
@@ -61,9 +72,10 @@ export function AccountContent({
   isPricingReady,
   plans,
   creditPacks,
+  initialTab,
 }: AccountContentProps) {
   const t = useTranslations('profile')
-  const [activeTab, setActiveTab] = useState<TabId>('profile')
+  const [activeTab, setActiveTab] = useState<TabId>(() => resolveInitialTab(initialTab))
   const [subscriptionMode, setSubscriptionMode] = useState<PurchaseMode>('plan_auto_monthly')
 
   const handleOpenSubscription = (mode: PurchaseMode) => {

@@ -34,6 +34,7 @@ export async function GET() {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatar_url || '',
+      hasPassword: authUser.hasPassword,
       tier: user.plan,
       plan: user.plan,
       membershipStatus: user.membership_status || user.plan,

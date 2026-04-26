@@ -306,6 +306,8 @@ export function AppSidebar() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<SidebarFolder | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SidebarFolder | null>(null)
+  const activeAccountTab = searchParams.get('tab')
+  const isDashboardEntryActive = pathname === '/account' && activeAccountTab === 'dashboard'
 
   const handleCreateFolder = () => {
     setCreateDialogOpen(true)
@@ -483,9 +485,9 @@ export function AppSidebar() {
               <>
                 <div className="space-y-1.5">
                   <Link
-                    href="/billing"
+                    href="/account?tab=dashboard"
                     className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors ${
-                      pathname === '/billing'
+                      isDashboardEntryActive
                         ? 'border-brand-200 bg-brand-50 text-brand-700'
                         : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}

@@ -26,6 +26,7 @@ export interface AuthUser {
   lastName: string
   name: string
   avatarUrl: string
+  hasPassword: boolean
   plan: string
   membershipStatus: string
   createdAt: string
@@ -45,6 +46,7 @@ function toAuthUser(actor: SessionActor): AuthUser {
     lastName: actor.lastName,
     name: actor.name,
     avatarUrl: actor.avatarUrl,
+    hasPassword: actor.hasPassword,
     plan: actor.plan,
     membershipStatus: actor.membershipStatus,
     createdAt: actor.createdAt,
