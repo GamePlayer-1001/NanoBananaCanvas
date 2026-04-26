@@ -166,6 +166,20 @@ function hasCreditTransactionColumn(
   return schema.creditTransactionsColumns.has(column)
 }
 
+function hasAiUsageLogColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.aiUsageLogsColumns.has(column)
+}
+
+function hasModelPricingColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.modelPricingColumns.has(column)
+}
+
 function canReadCreditBalances(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
   return (
     schema.hasCreditBalances &&
@@ -195,6 +209,15 @@ function canReadCreditTransactions(schema: Awaited<ReturnType<typeof getBillingS
       'description',
       'created_at',
     ].every((column) => hasCreditTransactionColumn(schema, column))
+  )
+}
+
+function canReadCreditUsage(schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>): boolean {
+  return (
+    schema.hasAiUsageLogs &&
+    ['user_id', 'provider', 'model_id', 'created_at'].every((column) =>
+      hasAiUsageLogColumn(schema, column),
+    )
   )
 }
 
@@ -465,7 +488,7 @@ export async function getCreditUsage(
   const windowDays = normalizePositiveInt(options?.windowDays, 30, 365)
   const schema = await getBillingSchemaInfo()
 
-  if (!schema.hasAiUsageLogs) {
+  if (!canReadCreditUsage(schema)) {
     return {
       windowDays,
       summary: toUsageSummary(null),
@@ -474,29 +497,59 @@ export async function getCreditUsage(
     }
   }
 
-  const pricingJoin = schema.hasModelPricing
+  const hasStatus = hasAiUsageLogColumn(schema, 'status')
+  const hasInputTokens = hasAiUsageLogColumn(schema, 'input_tokens')
+  const hasOutputTokens = hasAiUsageLogColumn(schema, 'output_tokens')
+  const hasEstimatedCredits = hasAiUsageLogColumn(schema, 'estimated_credits')
+  const canJoinModelPricing =
+    schema.hasModelPricing &&
+    ['provider', 'model_id', 'credits_per_1k_units'].every((column) =>
+      hasModelPricingColumn(schema, column),
+    )
+
+  const pricingJoin = canJoinModelPricing
     ? `LEFT JOIN model_pricing mp
          ON mp.provider = u.provider
         AND mp.model_id = u.model_id`
     : ''
-  const estimatedCreditsSql = schema.hasModelPricing
-    ? `SUM(
+  const successCountSql = hasStatus
+    ? `SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END)`
+    : '0'
+  const failedCountSql = hasStatus
+    ? `SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END)`
+    : '0'
+  const totalInputTokensSql = hasInputTokens ? 'SUM(COALESCE(u.input_tokens, 0))' : '0'
+  const totalOutputTokensSql = hasOutputTokens ? 'SUM(COALESCE(u.output_tokens, 0))' : '0'
+  const tokenMeteringUnitsSql =
+    hasInputTokens || hasOutputTokens
+      ? `((COALESCE(${hasInputTokens ? 'u.input_tokens' : '0'}, 0) + COALESCE(${hasOutputTokens ? 'u.output_tokens' : '0'}, 0)) / 1000.0)`
+      : '0'
+
+  let estimatedCreditsSql = '0'
+  if (canJoinModelPricing) {
+    estimatedCreditsSql = hasEstimatedCredits
+      ? `SUM(
            COALESCE(
              u.estimated_credits,
-             CAST(ROUND(((COALESCE(u.input_tokens, 0) + COALESCE(u.output_tokens, 0)) / 1000.0) * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER)
+             CAST(ROUND(${tokenMeteringUnitsSql} * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER),
+             0
            )
          )`
-    : 'SUM(COALESCE(u.estimated_credits, 0))'
+      : `SUM(CAST(ROUND(${tokenMeteringUnitsSql} * COALESCE(mp.credits_per_1k_units, 0)) AS INTEGER))`
+  } else if (hasEstimatedCredits) {
+    estimatedCreditsSql = 'SUM(COALESCE(u.estimated_credits, 0))'
+  }
+
   const db = await getDb()
 
   const summaryRow = await db
     .prepare(
       `SELECT
          COUNT(*) AS total_requests,
-         SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END) AS success_count,
-         SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
-         SUM(COALESCE(u.input_tokens, 0)) AS total_input_tokens,
-         SUM(COALESCE(u.output_tokens, 0)) AS total_output_tokens,
+         ${successCountSql} AS success_count,
+         ${failedCountSql} AS failed_count,
+         ${totalInputTokensSql} AS total_input_tokens,
+         ${totalOutputTokensSql} AS total_output_tokens,
          ${estimatedCreditsSql} AS estimated_credits_spent
        FROM ai_usage_logs u
        ${pricingJoin}
@@ -512,10 +565,10 @@ export async function getCreditUsage(
          u.provider,
          u.model_id,
          COUNT(*) AS request_count,
-         SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END) AS success_count,
-         SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
-         SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
-         SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
+         ${successCountSql} AS success_count,
+         ${failedCountSql} AS failed_count,
+         ${totalInputTokensSql} AS input_tokens,
+         ${totalOutputTokensSql} AS output_tokens,
          ${estimatedCreditsSql} AS estimated_credits_spent
        FROM ai_usage_logs u
        ${pricingJoin}
@@ -532,10 +585,10 @@ export async function getCreditUsage(
       `SELECT
          date(u.created_at) AS day,
          COUNT(*) AS request_count,
-         SUM(CASE WHEN u.status = 'success' THEN 1 ELSE 0 END) AS success_count,
-         SUM(CASE WHEN u.status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
-         SUM(COALESCE(u.input_tokens, 0)) AS input_tokens,
-         SUM(COALESCE(u.output_tokens, 0)) AS output_tokens,
+         ${successCountSql} AS success_count,
+         ${failedCountSql} AS failed_count,
+         ${totalInputTokensSql} AS input_tokens,
+         ${totalOutputTokensSql} AS output_tokens,
          ${estimatedCreditsSql} AS estimated_credits_spent
        FROM ai_usage_logs u
        ${pricingJoin}

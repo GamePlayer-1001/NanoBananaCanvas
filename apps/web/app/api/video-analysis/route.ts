@@ -59,6 +59,10 @@ type VideoAnalysisHistoryRow = {
   completed_at: string | null
 }
 
+type TableExistsRow = {
+  name?: string
+}
+
 function ensureSupportedModel(model: string) {
   if (!(model in VIDEO_ANALYSIS_PRICING_FALLBACK)) {
     throw new AIServiceError(ErrorCode.AI_MODEL_UNAVAILABLE, `Unsupported video analysis model: ${model}`)
@@ -90,6 +94,14 @@ function serializeHistoryRow(row: VideoAnalysisHistoryRow) {
     updatedAt: row.updated_at,
     completedAt: row.completed_at,
   }
+}
+
+async function hasVideoAnalysisHistoryTable(db: D1Database): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'video_analysis_history'")
+    .first<TableExistsRow>()
+
+  return Boolean(row?.name)
 }
 
 async function startGeminiResumableUpload(apiKey: string, file: File) {
@@ -267,6 +279,10 @@ export async function GET() {
     const { userId } = await requireAuth()
     const db = await getDb()
 
+    if (!(await hasVideoAnalysisHistoryTable(db))) {
+      return apiOk({ items: [] })
+    }
+
     const { results } = await db
       .prepare(
         `SELECT id, file_name, file_size, mime_type, duration_seconds, model_id, status,
@@ -309,6 +325,7 @@ export async function POST(req: Request) {
     }
 
     const db = await getDb()
+    const hasHistoryTable = await hasVideoAnalysisHistoryTable(db)
     const pricing =
       (await getModelPricing(db, { provider: 'gemini', modelId: model, activeOnly: false })) ??
       {
@@ -337,22 +354,24 @@ export async function POST(req: Request) {
     let geminiFileName = ''
 
     try {
-      await db
-        .prepare(
-          `INSERT INTO video_analysis_history
-            (id, user_id, file_name, file_size, mime_type, duration_seconds, model_id, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'processing')`,
-        )
-        .bind(
-          historyId,
-          userId,
-          file.name,
-          file.size,
-          file.type || 'video/mp4',
-          durationSeconds,
-          model,
-        )
-        .run()
+      if (hasHistoryTable) {
+        await db
+          .prepare(
+            `INSERT INTO video_analysis_history
+              (id, user_id, file_name, file_size, mime_type, duration_seconds, model_id, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'processing')`,
+          )
+          .bind(
+            historyId,
+            userId,
+            file.name,
+            file.size,
+            file.type || 'video/mp4',
+            durationSeconds,
+            model,
+          )
+          .run()
+      }
 
       if (reservedCredits > 0) {
         await freezeCredits({
@@ -389,28 +408,32 @@ export async function POST(req: Request) {
         })
       }
 
-      await db
-        .prepare(
-          `UPDATE video_analysis_history
-           SET status = 'completed',
-               error_message = NULL,
-               result_json = ?,
-               updated_at = datetime('now'),
-               completed_at = datetime('now')
-           WHERE id = ? AND user_id = ?`,
-        )
-        .bind(JSON.stringify(result), historyId, userId)
-        .run()
+      if (hasHistoryTable) {
+        await db
+          .prepare(
+            `UPDATE video_analysis_history
+             SET status = 'completed',
+                 error_message = NULL,
+                 result_json = ?,
+                 updated_at = datetime('now'),
+                 completed_at = datetime('now')
+             WHERE id = ? AND user_id = ?`,
+          )
+          .bind(JSON.stringify(result), historyId, userId)
+          .run()
+      }
 
-      const historyRow = await db
-        .prepare(
-          `SELECT id, file_name, file_size, mime_type, duration_seconds, model_id, status,
-                  error_message, result_json, created_at, updated_at, completed_at
-           FROM video_analysis_history
-           WHERE id = ? AND user_id = ?`,
-        )
-        .bind(historyId, userId)
-        .first<VideoAnalysisHistoryRow>()
+      const historyRow = hasHistoryTable
+        ? await db
+            .prepare(
+              `SELECT id, file_name, file_size, mime_type, duration_seconds, model_id, status,
+                      error_message, result_json, created_at, updated_at, completed_at
+               FROM video_analysis_history
+               WHERE id = ? AND user_id = ?`,
+            )
+            .bind(historyId, userId)
+            .first<VideoAnalysisHistoryRow>()
+        : null
 
       if (geminiFileName) {
         void deleteGeminiFile(apiKey, geminiFileName)
@@ -440,18 +463,20 @@ export async function POST(req: Request) {
           ? error.message
           : 'Video analysis failed'
 
-      await db
-        .prepare(
-          `UPDATE video_analysis_history
-           SET status = 'failed',
-               error_message = ?,
-               updated_at = datetime('now'),
-               completed_at = datetime('now')
-           WHERE id = ? AND user_id = ?`,
-        )
-        .bind(message, historyId, userId)
-        .run()
-        .catch(() => undefined)
+      if (hasHistoryTable) {
+        await db
+          .prepare(
+            `UPDATE video_analysis_history
+             SET status = 'failed',
+                 error_message = ?,
+                 updated_at = datetime('now'),
+                 completed_at = datetime('now')
+             WHERE id = ? AND user_id = ?`,
+          )
+          .bind(message, historyId, userId)
+          .run()
+          .catch(() => undefined)
+      }
 
       if (geminiFileName) {
         const apiKey = await requireEnv('GEMINI_API_KEY').catch(() => '')
