@@ -50,9 +50,14 @@ const MODEL_STAGE = {
   height: 820,
 } as const
 
+const MODEL_STAGE_CENTER = {
+  x: 716,
+  y: 398,
+} as const
+
 const MODEL_CORE_POSITION = {
-  x: 50,
-  y: 50,
+  x: (MODEL_STAGE_CENTER.x / MODEL_STAGE.width) * 100,
+  y: (MODEL_STAGE_CENTER.y / MODEL_STAGE.height) * 100,
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
@@ -557,32 +562,32 @@ export function ModelMindMapSection() {
                 }}
               >
                 <ellipse
-                  cx="700"
-                  cy="410"
+                  cx={MODEL_STAGE_CENTER.x}
+                  cy={MODEL_STAGE_CENTER.y}
                   rx="650"
                   ry="250"
                   stroke="rgba(98, 111, 180, 0.34)"
                   strokeWidth="1"
                 />
                 <ellipse
-                  cx="700"
-                  cy="410"
+                  cx={MODEL_STAGE_CENTER.x}
+                  cy={MODEL_STAGE_CENTER.y}
                   rx="540"
                   ry="198"
                   stroke="rgba(111, 89, 255, 0.28)"
                   strokeWidth="0.96"
                 />
                 <ellipse
-                  cx="700"
-                  cy="410"
+                  cx={MODEL_STAGE_CENTER.x}
+                  cy={MODEL_STAGE_CENTER.y}
                   rx="408"
                   ry="146"
                   stroke="rgba(144, 109, 255, 0.22)"
                   strokeWidth="0.92"
                 />
                 <ellipse
-                  cx="700"
-                  cy="410"
+                  cx={MODEL_STAGE_CENTER.x}
+                  cy={MODEL_STAGE_CENTER.y}
                   rx="280"
                   ry="102"
                   stroke="rgba(125, 108, 255, 0.18)"

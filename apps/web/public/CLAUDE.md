@@ -8,6 +8,7 @@
 
 ```
 brand/logo-1024.png — 品牌图形 logo 主资源，供 BrandMark 与公开页品牌位复用
+auth-login-visual.png — 登录页左侧沉浸式背景图，供 AuthShell 的 sign-in 视觉栏直接复用
 landing/hero/hero-*.png — 首页首屏与旧版功能叙事复用的基础静态关键帧素材
 landing/hero/hero-motion.mp4 — 首页首屏动态演示视频
 landing/hero/feature-workflow-overview.png — 功能板块「纵览你的创作流程」亮色主视觉
