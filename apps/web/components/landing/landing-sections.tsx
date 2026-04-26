@@ -266,17 +266,8 @@ export function FeaturesSection() {
           className="hidden items-start gap-14 xl:grid xl:grid-cols-[0.42fr_0.58fr]"
           onWheel={handleFeatureWheel}
         >
-          <div className="sticky top-28 self-start py-8">
-            <div className="max-w-[29rem]">
-              <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
-                {featuresT('title')}
-              </p>
-              <p className="mt-5 text-base leading-8 text-white/54">
-                {featuresT('body')}
-              </p>
-            </div>
-
-            <div className="mt-16 space-y-6">
+          <div className="sticky top-24 self-start pt-4">
+            <div className="space-y-5">
               {featureItems.map((item) => {
                 const isActive = item.key === activeFeature
 
@@ -291,15 +282,15 @@ export function FeaturesSection() {
                   >
                     <div className="flex items-start gap-4">
                       <span
-                        className={`mt-3 h-14 w-px transition-colors duration-300 ${
+                        className={`mt-2 h-12 w-px transition-colors duration-300 ${
                           isActive ? 'bg-white/80' : 'bg-transparent'
                         }`}
                       />
                       <span
-                        className={`block max-w-[8.4ch] font-semibold tracking-tight transition-all duration-300 ${
+                        className={`block font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
                           isActive
-                            ? 'text-[4.25rem] leading-[0.9]'
-                            : 'text-[3.2rem] leading-[0.94]'
+                            ? 'text-[3.35rem] leading-[0.92] 2xl:text-[3.75rem]'
+                            : 'text-[2.35rem] leading-none 2xl:text-[2.7rem]'
                         }`}
                       >
                         {item.title}
@@ -310,10 +301,7 @@ export function FeaturesSection() {
               })}
             </div>
 
-            <div className="mt-14 max-w-[24rem]">
-              <p className="text-sm leading-7 text-white/42">
-                点击左侧标题，或在这个板块内滚动鼠标滑轮，逐个切换右侧对应的图片与文案。
-              </p>
+            <div className="mt-10">
               <div className="mt-6 flex gap-2">
                 {featureItems.map((item) => (
                   <button
@@ -388,8 +376,6 @@ export function FeaturesSection() {
         </div>
 
         <div className="mt-12 grid gap-5 xl:hidden">
-          <SectionHeader eyebrow="" title={featuresT('title')} body={featuresT('body')} />
-
           {featureItems.map((item) => {
             const Icon = item.icon
             return (
