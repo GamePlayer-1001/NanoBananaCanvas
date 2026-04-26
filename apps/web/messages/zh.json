@@ -488,6 +488,8 @@
   "videoAnalysis": {
     "title": "视频分析",
     "description": "使用 Gemini AI 从视频中自动生成分镜表和剧本。视频仅用于本次分析，不会被保存。",
+    "platformModeTitle": "平台内置分析能力",
+    "platformModeBody": "这个视频分析入口固定走 Nano Banana Canvas 内置 API 与积分链路，不使用用户自带 API key。画板工作流里的执行模式不受影响，仍然保留平台模式与自建 API key 模式。",
     "uploadVideo": "上传视频",
     "uploadHint": "上传视频（最长 600 秒，最大 2048MB）进行分析",
     "readingVideo": "读取视频中...",
@@ -500,6 +502,7 @@
     "analysisActionTitle": "开始分析",
     "analysisIdleDescription": "先上传一个 600 秒以内的视频，再选择模型并开始分析。",
     "analysisReadyDescription": "已就绪：{name}（{duration}）。点击后会创建一条分析记录。",
+    "analysisBillingHint": "分析完成后将按平台模型与套餐积分规则结算。",
     "runAnalysis": "开始分析",
     "analysisQueued": "分析任务已创建，等待后端分析链接入",
     "analysisHistory": "分析历史",

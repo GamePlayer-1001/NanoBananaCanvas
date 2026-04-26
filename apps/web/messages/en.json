@@ -1205,6 +1205,8 @@
   "videoAnalysis": {
     "title": "Video Analysis",
     "description": "Use Gemini AI to automatically generate storyboards and scripts from video. Videos are only used for this analysis and will not be saved.",
+    "platformModeTitle": "Platform-hosted analysis",
+    "platformModeBody": "This video analysis entry always runs through Nano Banana Canvas hosted API and credit billing. It does not use user-supplied API keys. The canvas workflow editor is unchanged and still keeps both platform mode and bring-your-own-key mode.",
     "uploadVideo": "Upload Video",
     "uploadHint": "Upload video (max 600 seconds, max 2048MB) for analysis",
     "readingVideo": "Reading video...",
@@ -1217,6 +1219,7 @@
     "analysisActionTitle": "Start Analysis",
     "analysisIdleDescription": "Upload a video within 600 seconds, choose a model, and then start the analysis.",
     "analysisReadyDescription": "Ready: {name} ({duration}). Clicking will create a local analysis record.",
+    "analysisBillingHint": "Completed analysis will be billed through the platform model and plan credit rules.",
     "runAnalysis": "Start Analysis",
     "analysisQueued": "Analysis record created. Waiting for the backend analysis chain to be connected",
     "analysisHistory": "Analysis History",
