@@ -7,7 +7,7 @@
  *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹创建/重命名/删除弹窗 + 账户入口/计费入口)
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹创建/重命名/删除弹窗 + 账户入口/仪表盘入口/订阅入口)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -308,6 +308,7 @@ export function AppSidebar() {
   const [deleteTarget, setDeleteTarget] = useState<SidebarFolder | null>(null)
   const activeAccountTab = searchParams.get('tab')
   const isDashboardEntryActive = pathname === '/account' && activeAccountTab === 'dashboard'
+  const isSubscriptionEntryActive = pathname === '/account' && activeAccountTab === 'subscription'
 
   const handleCreateFolder = () => {
     setCreateDialogOpen(true)
@@ -502,14 +503,18 @@ export function AppSidebar() {
                   </Link>
 
                   <Link
-                    href="/pricing"
-                    className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors"
+                    href="/account?tab=subscription"
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors ${
+                      isSubscriptionEntryActive
+                        ? 'border-brand-200 bg-brand-50 text-brand-700'
+                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
                   >
                     <span className="flex items-center gap-1.5">
                       <Sparkles size={12} />
                       {t('upgradeEntry')}
                     </span>
-                    <span className="text-brand-600 font-medium">
+                    <span className="font-medium text-brand-600">
                       {t('upgradeCta')}
                     </span>
                   </Link>
