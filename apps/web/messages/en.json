@@ -92,44 +92,34 @@
     },
     "sections": {
       "models": {
-        "eyebrow": "Model cloud",
-        "title": "Connect Models Visually.",
-        "highlight": "Like a Living Cloud.",
-        "body": "Drag any AI node — GPT Image 2 style image prompts, Black Forest image models, Runway, GPT-4o, ElevenLabs — onto the infinite canvas. Connect them visually. Run sequences, loop generations, build conditional paths. Your entire pre-production and production pipeline lives here.",
-        "cta": "Explore model support",
-        "banner": "A model cloud you arrange. A workflow that stays on the canvas.",
-        "centerTitle": "Visual orchestration, not tool-hopping",
-        "centerBody": "Sequence runs, loops, branches, and model handoffs stay readable in one living workspace.",
-        "summaryTitle": "One Canvas. Every Creative Model You Need.",
-        "capabilities": {
-          "image": {
-            "title": "Image generation",
-            "body": "Prompt to frame."
+        "eyebrow": "Model ecosystem",
+        "title": "Model Support",
+        "highlight": "Orbital Cloud Map",
+        "body": "Connect leading AI model providers inside one visual system and keep expanding over time. Image, video, text, audio, and routing layers can be switched, compared, and chained on the same canvas, so multi-model production feels orchestrated instead of scattered.",
+        "cta": "Explore model capabilities",
+        "centerBody": "Unified multi-model orchestration",
+        "stats": {
+          "vendors": {
+            "value": "{count}+",
+            "label": "Connected providers",
+            "body": "Coverage across image, video, text, audio, and routing layers."
           },
-          "video": {
-            "title": "Video generation",
-            "body": "Storyboard to motion."
+          "coverage": {
+            "value": "Multimodal",
+            "label": "Unified orchestration",
+            "body": "Different model families move through one visible workflow."
           },
-          "threed": {
-            "title": "3D generation",
-            "body": "Scene building."
+          "routing": {
+            "value": "Composable",
+            "label": "Cross-model handoff",
+            "body": "Switches, branches, loops, and comparisons stay readable."
           },
-          "text": {
-            "title": "Large language models",
-            "body": "Script, rewrite, reflect."
-          },
-          "audio": {
-            "title": "Speech & audio",
-            "body": "Dialogue, foley, atmosphere."
-          },
-          "vision": {
-            "title": "Image recognition",
-            "body": "Extract, reference, remix."
+          "team": {
+            "value": "Team-ready",
+            "label": "Continuous experience",
+            "body": "The public site and the signed-in workflow share one coherent story."
           }
-        },
-        "summaryCountLabel": "Connected providers",
-        "summaryCountValue": "{count}+",
-        "summaryStatus": "Expanding with the workflow"
+        }
       },
       "features": {
         "eyebrow": "Workflow-first",

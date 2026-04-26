@@ -92,44 +92,34 @@
     },
     "sections": {
       "models": {
-        "eyebrow": "模型云图",
-        "title": "像一朵活的云一样，",
-        "highlight": "可视化地连接模型。",
-        "body": "把任意 AI 节点拖拽到无限画布上，包括 gpt image 2 风格图像提示、Black Forest 图像模型、Runway、GPT-4o、ElevenLabs 等。像搭分镜一样连接它们，执行序列、循环生成、建立条件分支。你的前期与正式制作流程都在这里。",
-        "cta": "查看模型支持",
-        "banner": "一个由你编排的模型云，一个永远留在画布上的工作流。",
-        "centerTitle": "不再跳工具，而是编排流程",
-        "centerBody": "序列执行、循环生成、条件分支与模型接力，都在同一个活着的工作区里保持可读。",
-        "summaryTitle": "一张画布，囊括你需要的每一种创意模型。",
-        "capabilities": {
-          "image": {
-            "title": "图像生成",
-            "body": "从提示词到镜头。"
+        "eyebrow": "模型生态",
+        "title": "模型支持",
+        "highlight": "生态云图",
+        "body": "接入全球领先的 AI 模型服务商，并保持持续扩展。你可以在同一张画布里切换、对比、串联图像、视频、文本、音频与路由层，让多模型协作从堆 logo 变成真正可读的生产系统。",
+        "cta": "了解更多模型能力",
+        "centerBody": "多模型统一调度",
+        "stats": {
+          "vendors": {
+            "value": "{count}+",
+            "label": "接入供应商",
+            "body": "覆盖图像、视频、文本、音频与路由层。"
           },
-          "video": {
-            "title": "视频生成",
-            "body": "从分镜到动态画面。"
+          "coverage": {
+            "value": "多模态",
+            "label": "统一编排",
+            "body": "不同模型进入同一条工作流，而不是分散在多个工具里。"
           },
-          "threed": {
-            "title": "3D 生成",
-            "body": "构建场景。"
+          "routing": {
+            "value": "可组合",
+            "label": "跨模型接力",
+            "body": "切换、分支、回路与对比都能保持可见。"
           },
-          "text": {
-            "title": "大语言模型",
-            "body": "剧本、改写、沉淀。"
-          },
-          "audio": {
-            "title": "语音与音频",
-            "body": "对白、拟音、环境音。"
-          },
-          "vision": {
-            "title": "图像识别",
-            "body": "提取、参考、再创作。"
+          "team": {
+            "value": "团队级",
+            "label": "连续体验",
+            "body": "从公开站点承接到登录后执行，语义与流程保持连贯。"
           }
-        },
-        "summaryCountLabel": "已连接提供商",
-        "summaryCountValue": "{count}+",
-        "summaryStatus": "会继续随着工作流扩展"
+        }
       },
       "features": {
         "eyebrow": "真实工作流",

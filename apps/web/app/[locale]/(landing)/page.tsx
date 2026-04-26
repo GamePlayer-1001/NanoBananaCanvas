@@ -4,7 +4,7 @@
  *          依赖 @/components/landing/landing-sections，
  *          依赖 @/components/layout/landing-footer
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，SSG 渲染，按 Hero/模型/功能/定价/评价/FAQ/CTA/Footer 承载公开转化叙事
+ * [POS]: (landing) 路由组的首页，SSG 渲染，按 Hero/模型/功能/定价/评价/FAQ/Footer 承载公开转化叙事
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
