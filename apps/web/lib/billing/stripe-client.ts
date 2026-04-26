@@ -25,8 +25,108 @@ export interface BillingCustomerContext {
   name: string
 }
 
+type SubscriptionColumn =
+  | 'id'
+  | 'user_id'
+  | 'stripe_customer_id'
+  | 'plan'
+  | 'purchase_mode'
+  | 'billing_period'
+  | 'status'
+  | 'monthly_credits'
+  | 'storage_gb'
+  | 'created_at'
+  | 'updated_at'
+
 function normalizeOptional(value: string | null | undefined): string {
   return value?.trim() ?? ''
+}
+
+function hasSubscriptionColumn(columns: Set<string>, column: SubscriptionColumn) {
+  return columns.has(column)
+}
+
+function buildSubscriptionInsertStatement(input: {
+  userId: string
+  subscriptionRowId: string
+  customerId: string
+  columns: Set<string>
+}) {
+  const fieldNames: string[] = []
+  const placeholders: string[] = []
+  const values: unknown[] = []
+
+  const pushValue = (field: SubscriptionColumn, value: unknown) => {
+    if (!hasSubscriptionColumn(input.columns, field)) {
+      return
+    }
+
+    fieldNames.push(field)
+    placeholders.push('?')
+    values.push(value)
+  }
+
+  pushValue('id', input.subscriptionRowId)
+  pushValue('user_id', input.userId)
+  pushValue('stripe_customer_id', input.customerId)
+  pushValue('plan', 'free')
+  pushValue('purchase_mode', 'auto_monthly')
+  pushValue('billing_period', 'monthly')
+  pushValue('status', 'active')
+  pushValue('monthly_credits', FREE_PLAN_SNAPSHOT.monthlyCredits)
+  pushValue('storage_gb', FREE_PLAN_SNAPSHOT.storageGB)
+
+  if (!fieldNames.includes('id') || !fieldNames.includes('user_id')) {
+    throw new BillingError(
+      ErrorCode.BILLING_CONFIG_INVALID,
+      'Billing subscriptions table is missing required identity columns',
+      {
+        requiredColumns: ['id', 'user_id'],
+        availableColumns: [...input.columns],
+      },
+    )
+  }
+
+  return {
+    sql: `INSERT INTO subscriptions (${fieldNames.join(', ')}) VALUES (${placeholders.join(', ')})`,
+    values,
+  }
+}
+
+function buildSubscriptionCustomerUpdateStatement(input: {
+  subscriptionRowId: string
+  customerId: string
+  columns: Set<string>
+}) {
+  const sets: string[] = []
+  const values: unknown[] = []
+
+  if (hasSubscriptionColumn(input.columns, 'stripe_customer_id')) {
+    sets.push('stripe_customer_id = ?')
+    values.push(input.customerId)
+  }
+
+  if (hasSubscriptionColumn(input.columns, 'updated_at')) {
+    sets.push("updated_at = datetime('now')")
+  }
+
+  if (sets.length === 0) {
+    throw new BillingError(
+      ErrorCode.BILLING_CONFIG_INVALID,
+      'Billing subscriptions table is missing writable customer columns',
+      {
+        requiredColumns: ['stripe_customer_id', 'updated_at'],
+        availableColumns: [...input.columns],
+      },
+    )
+  }
+
+  values.push(input.subscriptionRowId)
+
+  return {
+    sql: `UPDATE subscriptions SET ${sets.join(', ')} WHERE id = ?`,
+    values,
+  }
 }
 
 export function createStripeClient(secretKey: string): Stripe {
@@ -123,36 +223,27 @@ export async function getOrCreateStripeCustomer(userId: string): Promise<Billing
   const subscriptionRowId = existing?.id ?? nanoid()
 
   if (existing) {
+    const statement = buildSubscriptionCustomerUpdateStatement({
+      subscriptionRowId,
+      customerId: customer.id,
+      columns: schema.subscriptionsColumns,
+    })
+
     await db
-      .prepare(
-        `UPDATE subscriptions
-         SET stripe_customer_id = ?, updated_at = datetime('now')
-         WHERE id = ?`,
-      )
-      .bind(customer.id, subscriptionRowId)
+      .prepare(statement.sql)
+      .bind(...statement.values)
       .run()
   } else {
+    const statement = buildSubscriptionInsertStatement({
+      userId,
+      subscriptionRowId,
+      customerId: customer.id,
+      columns: schema.subscriptionsColumns,
+    })
+
     await db
-      .prepare(
-        `INSERT INTO subscriptions (
-           id,
-           user_id,
-           stripe_customer_id,
-           plan,
-           purchase_mode,
-           billing_period,
-           status,
-           monthly_credits,
-           storage_gb
-         ) VALUES (?, ?, ?, 'free', 'auto_monthly', 'monthly', 'active', ?, ?)`,
-      )
-      .bind(
-        subscriptionRowId,
-        userId,
-        customer.id,
-        FREE_PLAN_SNAPSHOT.monthlyCredits,
-        FREE_PLAN_SNAPSHOT.storageGB,
-      )
+      .prepare(statement.sql)
+      .bind(...statement.values)
       .run()
   }
 
