@@ -51,8 +51,8 @@ const MODEL_STAGE = {
 } as const
 
 const MODEL_STAGE_CENTER = {
-  x: 716,
-  y: 398,
+  x: 744,
+  y: 412,
 } as const
 
 const MODEL_CORE_POSITION = {
@@ -61,9 +61,9 @@ const MODEL_CORE_POSITION = {
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
-  inner: { x: 278, y: 100 },
-  middle: { x: 408, y: 148 },
-  outer: { x: 546, y: 208 },
+  inner: { x: 262, y: 96 },
+  middle: { x: 398, y: 146 },
+  outer: { x: 560, y: 212 },
 }
 
 const MODEL_PROVIDERS: ModelProvider[] = [
@@ -72,8 +72,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('google'),
     fallback: 'G',
     orbit: 'outer',
-    angle: 224,
-    speed: 3.92,
+    angle: 228,
+    speed: 3.72,
     lane: -1,
     size: 'md',
     tone: 'amber',
@@ -84,7 +84,7 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     fallback: 'O',
     orbit: 'outer',
     angle: 270,
-    speed: 3.84,
+    speed: 3.98,
     lane: 0,
     size: 'lg',
     tone: 'violet',
@@ -96,9 +96,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('blackforestlabs'),
     fallback: 'BF',
     orbit: 'outer',
-    angle: 309,
-    speed: 3.98,
-    lane: -1,
+    angle: 322,
+    speed: 4.24,
+    lane: 1,
     size: 'md',
     tone: 'azure',
     iconScale: 0.86,
@@ -109,9 +109,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'OpenRouter',
     iconUrl: buildSimpleIconUrl('openrouter'),
     fallback: 'OR',
-    orbit: 'outer',
-    angle: 340,
-    speed: 4.06,
+    orbit: 'middle',
+    angle: 18,
+    speed: 5.34,
     lane: 1,
     size: 'md',
     tone: 'violet',
@@ -124,8 +124,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('bytedance'),
     fallback: 'BD',
     orbit: 'middle',
-    angle: 12,
-    speed: 5.28,
+    angle: 354,
+    speed: 5.34,
     lane: 1,
     size: 'md',
     tone: 'azure',
@@ -136,7 +136,7 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     fallback: 'AI',
     orbit: 'outer',
     angle: 34,
-    speed: 3.88,
+    speed: 3.72,
     lane: -1,
     size: 'md',
     tone: 'amber',
@@ -149,7 +149,7 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     fallback: '✦',
     orbit: 'outer',
     angle: 66,
-    speed: 4.02,
+    speed: 4.24,
     lane: 1,
     size: 'sm',
     tone: 'azure',
@@ -160,7 +160,7 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     fallback: 'AW',
     orbit: 'outer',
     angle: 92,
-    speed: 3.9,
+    speed: 3.98,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -171,8 +171,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('kling'),
     fallback: 'KL',
     orbit: 'outer',
-    angle: 124,
-    speed: 4.04,
+    angle: 132,
+    speed: 4.24,
     lane: 1,
     size: 'sm',
     tone: 'teal',
@@ -181,9 +181,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Runway',
     iconUrl: buildSimpleIconUrl('runway'),
     fallback: 'RW',
-    orbit: 'outer',
-    angle: 150,
-    speed: 3.94,
+    orbit: 'middle',
+    angle: 154,
+    speed: 4.86,
     lane: -1,
     size: 'sm',
     tone: 'violet',
@@ -193,8 +193,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('luma'),
     fallback: 'LU',
     orbit: 'outer',
-    angle: 176,
-    speed: 3.86,
+    angle: 182,
+    speed: 4.24,
     lane: 1,
     size: 'sm',
     tone: 'azure',
@@ -203,8 +203,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Vidu',
     fallback: 'V',
     orbit: 'outer',
-    angle: 204,
-    speed: 4.08,
+    angle: 206,
+    speed: 3.98,
     lane: 0,
     size: 'sm',
     tone: 'azure',
@@ -214,8 +214,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('minimax'),
     fallback: 'MM',
     orbit: 'middle',
-    angle: 224,
-    speed: 5.12,
+    angle: 232,
+    speed: 4.86,
     lane: -1,
     size: 'sm',
     tone: 'rose',
@@ -225,8 +225,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('groq'),
     fallback: 'GQ',
     orbit: 'inner',
-    angle: 184,
-    speed: 6.48,
+    angle: 50,
+    speed: 6.1,
     lane: -1,
     size: 'sm',
     tone: 'violet',
@@ -238,8 +238,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('xai'),
     fallback: 'xI',
     orbit: 'inner',
-    angle: 210,
-    speed: 6.72,
+    angle: 176,
+    speed: 6.36,
     lane: 1,
     size: 'md',
     tone: 'violet',
@@ -251,8 +251,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('qwen'),
     fallback: 'Q',
     orbit: 'middle',
-    angle: 84,
-    speed: 5.36,
+    angle: 78,
+    speed: 5.1,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -264,8 +264,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('midjourney'),
     fallback: 'MJ',
     orbit: 'outer',
-    angle: 356,
-    speed: 3.96,
+    angle: 6,
+    speed: 3.98,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -276,9 +276,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
 ]
 
 const MODEL_NODE_DIMENSIONS = {
-  sm: { orb: 82, icon: 24 },
-  md: { orb: 98, icon: 30 },
-  lg: { orb: 116, icon: 36 },
+  sm: { orb: 76, icon: 22 },
+  md: { orb: 92, icon: 28 },
+  lg: { orb: 110, icon: 34 },
 } as const
 
 const MODEL_TONE_STYLES: Record<
@@ -676,7 +676,6 @@ export function ModelMindMapSection() {
                 const depthScale = 0.84 + orbitDepth * 0.24
                 const nodeOpacity =
                   (0.24 + revealProgress * 0.76) * (0.72 + orbitDepth * 0.28)
-                const nodeLift = (1 - orbitDepth) * -6
                 const currentX =
                   MODEL_CORE_POSITION.x +
                   (Math.cos(orbitAngle) * orbitRadiusX * 100) / MODEL_STAGE.width
@@ -685,34 +684,32 @@ export function ModelMindMapSection() {
                   (Math.sin(orbitAngle) * orbitRadiusY * 100) / MODEL_STAGE.height
                 const deltaX = currentX - MODEL_CORE_POSITION.x
                 const deltaY = currentY - MODEL_CORE_POSITION.y
-                const outwardX =
-                  deltaX * 0.12 + drift * (provider.size === 'lg' ? 4 : 2.5)
-                const outwardY =
-                  deltaY * 0.1 - drift * (provider.size === 'lg' ? 3 : 1.5) + nodeLift
+                const entryOffsetX = deltaX * 0.12
+                const entryOffsetY = 18 + deltaY * 0.08
                 const labelWidth =
                   provider.size === 'lg'
-                    ? '4.8rem'
+                    ? '4.6rem'
                     : provider.size === 'md'
-                      ? '4.5rem'
-                      : '4.1rem'
+                      ? '4.2rem'
+                      : '3.85rem'
                 const nameSize =
                   provider.size === 'lg'
-                    ? '0.68rem'
+                    ? '0.66rem'
                     : provider.size === 'md'
-                      ? '0.64rem'
-                      : '0.58rem'
+                      ? '0.61rem'
+                      : '0.56rem'
                 const contentGap =
                   provider.size === 'lg'
-                    ? '0.42rem'
+                    ? '0.38rem'
                     : provider.size === 'md'
-                      ? '0.34rem'
-                      : '0.26rem'
+                      ? '0.3rem'
+                      : '0.22rem'
                 const orbPaddingTop =
                   provider.size === 'lg'
-                    ? '1.12rem'
+                    ? '1rem'
                     : provider.size === 'md'
-                      ? '0.95rem'
-                      : '0.82rem'
+                      ? '0.84rem'
+                      : '0.72rem'
 
                 return (
                   <div
@@ -723,8 +720,8 @@ export function ModelMindMapSection() {
                       top: `${currentY}%`,
                       zIndex: 12 + Math.round(orbitDepth * 18),
                       opacity: nodeOpacity,
-                      transform: `translate(-50%, -50%) translate(${outwardX * (1 - revealProgress)}px, ${
-                        18 * (1 - revealProgress) + outwardY
+                      transform: `translate(-50%, -50%) translate(${entryOffsetX * (1 - revealProgress)}px, ${
+                        entryOffsetY * (1 - revealProgress)
                       }px) scale(${(0.74 + revealProgress * 0.26) * depthScale})`,
                       transitionDelay: prefersReducedMotion
                         ? '0ms'
