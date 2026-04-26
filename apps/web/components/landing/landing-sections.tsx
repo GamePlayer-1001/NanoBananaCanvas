@@ -285,19 +285,19 @@ const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
 const FEATURE_VISUALS = {
   canvas: {
     icon: Workflow,
-    imageSrc: '/landing/hero/hero-merge.png',
+    imageSrc: '/landing/hero/feature-workflow-overview.png',
     accent:
       'from-[#8ea3ff]/34 via-[#4f46e5]/18 to-transparent',
   },
   models: {
     icon: Sparkles,
-    imageSrc: '/landing/hero/hero-girl.png',
+    imageSrc: '/landing/hero/feature-any-model-image.png',
     accent:
       'from-[#7be6ff]/34 via-[#14b8a6]/18 to-transparent',
   },
   outputs: {
     icon: Zap,
-    imageSrc: '/landing/hero/hero-scene.png',
+    imageSrc: '/landing/hero/feature-video-everything.png',
     accent:
       'from-[#ffd36b]/32 via-[#f97316]/16 to-transparent',
   },
@@ -903,14 +903,14 @@ export function FeaturesSection() {
     accent: FEATURE_VISUALS[key].accent,
   }))
   const [activeFeature, setActiveFeature] = useState<(typeof FEATURE_KEYS)[number]>('canvas')
-  const triggerRefs = useRef<Array<HTMLDivElement | null>>([])
+  const slideRefs = useRef<Array<HTMLElement | null>>([])
   const activeFeatureItem =
     featureItems.find((item) => item.key === activeFeature) ?? featureItems[0]
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
 
-    const nodes = triggerRefs.current.filter(Boolean) as HTMLDivElement[]
+    const nodes = slideRefs.current.filter(Boolean) as HTMLElement[]
     if (!nodes.length) return undefined
 
     const observer = new IntersectionObserver(
@@ -930,8 +930,8 @@ export function FeaturesSection() {
         }
       },
       {
-        threshold: [0.25, 0.45, 0.65],
-        rootMargin: '-12% 0px -32% 0px',
+        threshold: [0.3, 0.5, 0.7],
+        rootMargin: '-18% 0px -18% 0px',
       },
     )
 
@@ -941,9 +941,9 @@ export function FeaturesSection() {
   }, [featureItems.length])
 
   function scrollToFeature(index: number) {
-    const target = triggerRefs.current[index]
+    const target = slideRefs.current[index]
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
       return
     }
 
@@ -957,48 +957,72 @@ export function FeaturesSection() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1280px]">
-        <div className="hidden gap-10 xl:grid xl:grid-cols-[0.7fr_1.3fr]">
+        <div className="hidden gap-12 xl:grid xl:grid-cols-[0.44fr_0.56fr]">
           <div className="sticky top-28 self-start py-6">
             <div className="flex items-start gap-6">
               <span className="mt-4 h-20 w-px bg-white/72" />
               <div>
-                <span className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
-                  Feature 0{activeFeatureItem.index + 1}
-                </span>
-                <h2 className="mt-5 max-w-[7ch] text-[4.35rem] leading-[0.9] font-semibold tracking-tight text-white">
-                  {activeFeatureItem.title}
-                </h2>
+                <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                  {featuresT('title')}
+                </p>
+                <p className="mt-5 max-w-[28rem] text-base leading-8 text-white/56">
+                  {featuresT('body')}
+                </p>
               </div>
             </div>
 
-            <p className="mt-8 max-w-[27rem] text-lg leading-8 text-white/58">
-              {activeFeatureItem.body}
-            </p>
-
-            <div className="mt-12 space-y-5">
+            <div className="mt-16 space-y-5">
               {featureItems.map((item) => {
                 const isActive = item.key === activeFeature
-                if (isActive) return null
 
                 return (
                   <button
                     key={`feature-nav-${item.key}`}
                     type="button"
                     onClick={() => scrollToFeature(item.index)}
-                    className={`block max-w-[8.6ch] text-left text-[3.2rem] leading-[0.94] font-semibold tracking-tight transition-all duration-300 ${
+                    className={`block text-left transition-all duration-300 ${
                       isActive
-                        ? 'text-white/18'
-                        : 'text-white/18 hover:text-white/42'
+                        ? 'text-white'
+                        : 'text-white/18 hover:text-white/38'
                     }`}
                   >
-                    {item.title}
+                    <span
+                      className={`block max-w-[8.6ch] font-semibold tracking-tight ${
+                        isActive
+                          ? 'text-[4.25rem] leading-[0.9]'
+                          : 'text-[3.2rem] leading-[0.94]'
+                      }`}
+                    >
+                      {item.title}
+                    </span>
                   </button>
                 )
               })}
             </div>
 
-            <div className="mt-12 max-w-[26rem] space-y-6">
-              <p className="text-sm leading-7 text-white/42">{featuresT('body')}</p>
+            <div className="mt-12 max-w-[28rem] rounded-[28px] border border-white/8 bg-white/[0.04] p-6">
+              <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                Feature 0{activeFeatureItem.index + 1}
+              </p>
+              <p className="mt-4 text-base leading-8 text-white/62">
+                {activeFeatureItem.body}
+              </p>
+              <div className="mt-6 flex gap-2">
+                {featureItems.map((item) => (
+                  <button
+                    key={`feature-dot-${item.key}`}
+                    type="button"
+                    onClick={() => scrollToFeature(item.index)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                      item.key === activeFeature ? 'w-10 bg-white' : 'w-2.5 bg-white/18 hover:bg-white/34'
+                    }`}
+                    aria-label={item.title}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-8 max-w-[26rem] space-y-6">
               <Link
                 href="/features"
                 className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
@@ -1008,124 +1032,95 @@ export function FeaturesSection() {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="sticky top-24 overflow-hidden rounded-[36px] border border-white/8 bg-[linear-gradient(180deg,rgba(17,17,22,0.98),rgba(9,9,13,0.98))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(116,203,255,0.14),transparent_18%),radial-gradient(circle_at_84%_78%,rgba(255,211,107,0.1),transparent_20%)]" />
-              <div className="relative min-h-[700px]">
-                {featureItems.map((item) => {
-                  const isActive = item.key === activeFeature
-                  const ItemIcon = item.icon
+          <div className="space-y-8">
+            {featureItems.map((item, index) => {
+              const ItemIcon = item.icon
+              const isActive = item.key === activeFeature
 
-                  return (
-                    <article
-                      key={`feature-preview-${item.key}`}
-                      className={`absolute inset-0 transition-all duration-500 ${
-                        isActive
-                          ? 'pointer-events-auto translate-y-0 opacity-100'
-                          : 'pointer-events-none translate-y-6 opacity-0'
-                      }`}
-                    >
-                      <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
-                        <div
-                          className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${item.accent}`}
-                        />
-                        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(4,6,12,0.02),rgba(4,6,12,0.18)_52%,rgba(4,6,12,0.8)_100%)]" />
-                        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
-                          <span className="rounded-full border border-white/12 bg-black/22 px-4 py-1.5 text-[0.7rem] font-semibold tracking-[0.2em] text-white/78 uppercase">
-                            Scroll Feature
-                          </span>
-                          <span className="rounded-full border border-white/12 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/84">
-                            0{item.index + 1}
-                          </span>
-                        </div>
-                        <Image
-                          src={item.imageSrc}
-                          alt={item.title}
-                          width={1280}
-                          height={980}
-                          className="h-[500px] w-full object-cover brightness-[1.14] contrast-[1.06] saturate-[1.18]"
-                        />
-                        <div className="absolute inset-x-0 bottom-0 z-20 p-6">
-                          <div className="max-w-[420px] rounded-[24px] border border-white/12 bg-black/28 p-5 backdrop-blur-md">
-                            <div className="flex items-center gap-3 text-white/84">
-                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-black">
-                                <ItemIcon className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium tracking-[0.2em] text-white/42 uppercase">
-                                  {item.title}
-                                </p>
-                                <p className="mt-1 text-sm text-white/64">{featuresT('title')}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 grid gap-5 lg:grid-cols-[0.24fr_0.76fr]">
-                        <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-5">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black">
-                            <ItemIcon className="h-5 w-5" />
-                          </div>
-                          <p className="mt-5 text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
-                            Feature 0{item.index + 1}
-                          </p>
-                          <p className="mt-2 text-sm leading-7 text-white/54">
-                            左侧标题会跟随滚动切换，右侧同步展示对应的主视觉与解释文案。
-                          </p>
-                        </div>
-
-                        <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-7">
-                          <h3 className="text-[2rem] leading-[1.04] font-semibold tracking-tight text-white">
-                            {item.title}
-                          </h3>
-                          <p className="mt-4 max-w-[52rem] text-base leading-8 text-white/62">
-                            {item.body}
-                          </p>
-
-                          <div className="mt-8 flex flex-wrap gap-3">
-                            {featureItems.map((summaryItem) => (
-                              <button
-                                key={`feature-summary-${item.key}-${summaryItem.key}`}
-                                type="button"
-                                onClick={() => scrollToFeature(summaryItem.index)}
-                                className={`rounded-full border px-4 py-2 text-sm transition-colors duration-300 ${
-                                  summaryItem.key === item.key
-                                    ? 'border-white/14 bg-white/12 text-white'
-                                    : 'border-white/8 bg-white/[0.03] text-white/52 hover:text-white/82'
-                                }`}
-                              >
-                                {summaryItem.title}
-                              </button>
-                            ))}
-                          </div>
-
-                          <Link
-                            href="/features"
-                            className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-                          >
-                            {featuresT('exploreCta')}
-                          </Link>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="pointer-events-none relative z-10 mt-8">
-              {featureItems.map((item, index) => (
-                <div
-                  key={`feature-trigger-${item.key}`}
+              return (
+                <article
+                  key={`feature-slide-${item.key}`}
                   ref={(node) => {
-                    triggerRefs.current[index] = node
+                    slideRefs.current[index] = node
                   }}
                   data-feature-key={item.key}
-                  className="h-[62vh]"
-                />
-              ))}
-            </div>
+                  className={`scroll-mt-28 overflow-hidden rounded-[38px] border bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 transition-all duration-300 ${
+                    isActive
+                      ? 'border-white/12 shadow-[0_28px_90px_rgba(0,0,0,0.28)]'
+                      : 'border-white/8'
+                  }`}
+                >
+                  <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
+                    <div
+                      className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${item.accent}`}
+                    />
+                    <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(4,6,12,0.02),rgba(4,6,12,0.14)_50%,rgba(4,6,12,0.78)_100%)]" />
+                    <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
+                      <span className="rounded-full border border-white/12 bg-black/22 px-4 py-1.5 text-[0.7rem] font-semibold tracking-[0.2em] text-white/78 uppercase">
+                        Feature 0{item.index + 1}
+                      </span>
+                      <span className="rounded-full border border-white/12 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/84">
+                        {item.title}
+                      </span>
+                    </div>
+                    <Image
+                      src={item.imageSrc}
+                      alt={item.title}
+                      width={1280}
+                      height={980}
+                      className="h-[540px] w-full object-cover object-center brightness-[1.1] contrast-[1.04] saturate-[1.08]"
+                    />
+                  </div>
+
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[0.22fr_0.78fr]">
+                    <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-5">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black">
+                        <ItemIcon className="h-5 w-5" />
+                      </div>
+                      <p className="mt-5 text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                        Scroll Switch
+                      </p>
+                      <p className="mt-2 text-sm leading-7 text-white/54">
+                        随着页面向下滚动，左侧标题高亮与当前图文会同步切换。
+                      </p>
+                    </div>
+
+                    <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-7">
+                      <h3 className="text-[2rem] leading-[1.04] font-semibold tracking-tight text-white">
+                        {item.title}
+                      </h3>
+                      <p className="mt-4 max-w-[52rem] text-base leading-8 text-white/62">
+                        {item.body}
+                      </p>
+
+                      <div className="mt-8 flex flex-wrap gap-3">
+                        {featureItems.map((summaryItem) => (
+                          <button
+                            key={`feature-summary-${item.key}-${summaryItem.key}`}
+                            type="button"
+                            onClick={() => scrollToFeature(summaryItem.index)}
+                            className={`rounded-full border px-4 py-2 text-sm transition-colors duration-300 ${
+                              summaryItem.key === item.key
+                                ? 'border-white/14 bg-white/12 text-white'
+                                : 'border-white/8 bg-white/[0.03] text-white/52 hover:text-white/82'
+                            }`}
+                          >
+                            {summaryItem.title}
+                          </button>
+                        ))}
+                      </div>
+
+                      <Link
+                        href="/features"
+                        className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
+                      >
+                        {featuresT('exploreCta')}
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </div>
 
