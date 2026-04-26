@@ -92,9 +92,9 @@
     },
     "sections": {
       "models": {
-        "eyebrow": "Model ecosystem",
-        "title": "Model Support",
-        "highlight": "Orbital Cloud Map",
+        "eyebrow": "",
+        "title": "Model Support Orbital Cloud Map",
+        "highlight": "",
         "body": "Connect leading AI model providers inside one visual system and keep expanding over time. Image, video, text, audio, and routing layers can be switched, compared, and chained on the same canvas, so multi-model production feels orchestrated instead of scattered.",
         "cta": "Explore model capabilities",
         "centerBody": "Unified multi-model orchestration",

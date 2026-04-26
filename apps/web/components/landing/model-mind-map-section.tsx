@@ -473,13 +473,9 @@ export function ModelMindMapSection() {
               transform: `translate3d(${-30 * (1 - revealProgress)}px, ${12 * (1 - revealProgress)}px, 0)`,
             }}
           >
-            <p className="text-sm font-medium tracking-[0.24em] text-white/40 uppercase">
-              {modelT('eyebrow')}
-            </p>
-            <h2 className="mt-5 text-[2.9rem] leading-[0.9] font-semibold tracking-[-0.05em] text-white md:text-[4.85rem]">
-              <span className="block">{modelT('title')}</span>
-              <span className="mt-2 block bg-[linear-gradient(90deg,#ffffff_0%,#e0d4ff_40%,#a586ff_100%)] bg-clip-text text-transparent">
-                {modelT('highlight')}
+            <h2 className="text-[2.55rem] leading-[0.94] font-semibold tracking-[-0.05em] text-white md:text-[4.3rem]">
+              <span className="bg-[linear-gradient(90deg,#ffffff_0%,#e0d4ff_40%,#a586ff_100%)] bg-clip-text whitespace-nowrap text-transparent">
+                {modelT('title')}
               </span>
             </h2>
             <p className="mt-6 max-w-[34rem] text-base leading-8 text-white/56 md:text-[1.08rem] md:leading-[2.05rem]">
@@ -494,13 +490,13 @@ export function ModelMindMapSection() {
           </div>
 
           <div
-            className="relative z-10 mt-10 transition-[opacity,transform] duration-500 ease-out lg:-mt-24"
+            className="relative z-10 mt-10 transition-[opacity,transform] duration-500 ease-out lg:-mt-14"
             style={{
               opacity: 0.24 + revealProgress * 0.76,
               transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 10}px, 0)`,
             }}
           >
-            <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1540px]">
+            <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1420px]">
               <svg
                 className="absolute inset-0 h-full w-full"
                 viewBox={`0 0 ${MODEL_STAGE.width} ${MODEL_STAGE.height}`}
