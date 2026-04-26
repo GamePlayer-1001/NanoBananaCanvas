@@ -1,0 +1,21 @@
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload when ./apps/web/components/landing/landing-sections.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⨯ Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at ignore-listed frames {
+  digest: '2976038545'
+}
+⨯ Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at ignore-listed frames {
+  digest: '2976038545'
+}
+⨯ Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at ignore-listed frames {
+  digest: '2976038545'
+}
+⨯ Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at ignore-listed frames {
+  digest: '2976038545'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+^C

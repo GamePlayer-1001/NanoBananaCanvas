@@ -1,0 +1,154 @@
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:739:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  737 |                     <div>
+  738 |                       <p className="text-[0.98rem] font-semibold text-white">
+> 739 |                         {modelT(`capabilities.${key}.title`)}
+      |                          ^
+  740 |                       </p>
+  741 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+  742 |                         {modelT(`capabilities.${key}.body`)} {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.'
+}
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:742:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  740 |                       </p>
+  741 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+> 742 |                         {modelT(`capabilities.${key}.body`)}
+      |                          ^
+  743 |                       </p>
+  744 |                     </div>
+  745 |                   </div> {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.'
+}
+⨯ ReferenceError: TESTIMONIAL_AVATAR_BASE is not defined
+    at <unknown> (components\landing\landing-sections.tsx:952:27)
+    at Array.map (<anonymous>)
+    at TestimonialsSection (components\landing\landing-sections.tsx:939:30)
+  950 |               <div className="flex items-center gap-3.5">
+  951 |                 <Image
+> 952 |                   src={`${TESTIMONIAL_AVATAR_BASE}?seed=${key}`}
+      |                           ^
+  953 |                   alt={`${testimonialsT(`${key}.handle`)} avatar`}
+  954 |                   width={48}
+  955 |                   height={48} {
+  digest: '1184347237'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:741:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  739 |                     <div>
+  740 |                       <p className="text-[0.98rem] font-semibold text-white">
+> 741 |                         {modelT(`capabilities.${key}.title`)}
+      |                          ^
+  742 |                       </p>
+  743 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+  744 |                         {modelT(`capabilities.${key}.body`)} {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.'
+}
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:744:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  742 |                       </p>
+  743 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+> 744 |                         {modelT(`capabilities.${key}.body`)}
+      |                          ^
+  745 |                       </p>
+  746 |                     </div>
+  747 |                   </div> {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.'
+}
+⨯ ReferenceError: TESTIMONIAL_AVATAR_BASE is not defined
+    at <unknown> (components\landing\landing-sections.tsx:954:27)
+    at Array.map (<anonymous>)
+    at TestimonialsSection (components\landing\landing-sections.tsx:941:30)
+  952 |               <div className="flex items-center gap-3.5">
+  953 |                 <Image
+> 954 |                   src={`${TESTIMONIAL_AVATAR_BASE}?seed=${key}`}
+      |                           ^
+  955 |                   alt={`${testimonialsT(`${key}.handle`)} avatar`}
+  956 |                   width={48}
+  957 |                   height={48} {
+  digest: '3501963876'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:741:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  739 |                     <div>
+  740 |                       <p className="text-[0.98rem] font-semibold text-white">
+> 741 |                         {modelT(`capabilities.${key}.title`)}
+      |                          ^
+  742 |                       </p>
+  743 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+  744 |                         {modelT(`capabilities.${key}.body`)} {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.'
+}
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:744:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  742 |                       </p>
+  743 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+> 744 |                         {modelT(`capabilities.${key}.body`)}
+      |                          ^
+  745 |                       </p>
+  746 |                     </div>
+  747 |                   </div> {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.'
+}
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:741:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  739 |                     <div>
+  740 |                       <p className="text-[0.98rem] font-semibold text-white">
+> 741 |                         {modelT(`capabilities.${key}.title`)}
+      |                          ^
+  742 |                       </p>
+  743 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+  744 |                         {modelT(`capabilities.${key}.body`)} {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.title` in messages for locale `zh`.'
+}
+Error: MISSING_MESSAGE: Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.
+    at <unknown> (components\landing\landing-sections.tsx:744:26)
+    at Array.map (<anonymous>)
+    at ModelMindMapSection (components\landing\landing-sections.tsx:717:35)
+  742 |                       </p>
+  743 |                       <p className="mt-1 text-[0.9rem] leading-6 text-[#9db0c6]">
+> 744 |                         {modelT(`capabilities.${key}.body`)}
+      |                          ^
+  745 |                       </p>
+  746 |                     </div>
+  747 |                   </div> {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `landing.sections.models.capabilities.vision.body` in messages for locale `zh`.'
+}
+
+thread 'tokio-runtime-worker' (6112) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for get_source_map_rope (TaskId 230158))
+
+Caused by:
+    0: Looking up data for TaskId 230158 from database failed
+    1: Unable to open static sorted file referenced from 00000163.meta
+    2: Unable to open static sorted file 00000160.sst
+    3: 系统找不到指定的路径。 (os error 3)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
