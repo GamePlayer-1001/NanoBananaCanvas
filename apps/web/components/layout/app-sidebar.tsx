@@ -7,14 +7,14 @@
  *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹管理/账户入口/计费入口)
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹创建/重命名/删除弹窗 + 账户入口/计费入口)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -28,13 +28,25 @@ import {
   Coins,
   Sparkles,
   ChevronRight,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 
-import { Link, usePathname } from '@/i18n/navigation'
+import { Link, usePathname, useRouter } from '@/i18n/navigation'
 import { SignOutAction } from '@/components/auth/sign-out-action'
 import { BrandMark } from '@/components/shared/brand-mark'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   useFolders,
   useCreateFolder,
@@ -52,6 +64,12 @@ interface NavItem {
   icon: React.ElementType
   labelKey: string
   badge?: string
+}
+
+interface SidebarFolder {
+  id: string
+  name: string
+  project_count?: number
 }
 
 /* ─── Nav Config ─────────────────────────────────────── */
@@ -105,67 +123,24 @@ function SidebarNavItem({
 function FolderItem({
   folder,
   active,
+  renameLabel,
   deleteLabel,
+  onRename,
+  onDelete,
 }: {
-  folder: { id: string; name: string }
+  folder: SidebarFolder
   active: boolean
+  renameLabel: string
   deleteLabel: string
+  onRename: (folder: SidebarFolder) => void
+  onDelete: (folder: SidebarFolder) => void
 }) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editName, setEditName] = useState(folder.name)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const updateFolder = useUpdateFolder()
-  const deleteFolder = useDeleteFolder()
-
-  useEffect(() => {
-    if (isEditing) inputRef.current?.select()
-  }, [isEditing])
-
-  /* 提交重命名 */
-  const commitRename = () => {
-    const trimmed = editName.trim()
-    if (trimmed && trimmed !== folder.name) {
-      updateFolder.mutate({ id: folder.id, name: trimmed })
-    } else {
-      setEditName(folder.name)
-    }
-    setIsEditing(false)
-  }
-
-  /* 编辑态 */
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
-        <Folder size={16} className="text-muted-foreground shrink-0" />
-        <input
-          ref={inputRef}
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitRename()
-            if (e.key === 'Escape') {
-              setEditName(folder.name)
-              setIsEditing(false)
-            }
-          }}
-          className="border-brand-400 flex-1 border-b bg-transparent text-sm outline-none"
-          autoFocus
-        />
-      </div>
-    )
-  }
-
-  /* 正常态: 右键菜单 + 双击重命名 */
+  /* 正常态: 右键菜单 */
   return (
     <ContextMenuPrimitive.Root>
       <ContextMenuPrimitive.Trigger asChild>
         <Link
           href={`/workspace?folder=${folder.id}`}
-          onDoubleClick={(e) => {
-            e.preventDefault()
-            setIsEditing(true)
-          }}
           className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
             active
               ? 'bg-brand-50 text-brand-600 font-medium'
@@ -179,14 +154,136 @@ function FolderItem({
       <ContextMenuPrimitive.Portal>
         <ContextMenuPrimitive.Content className="border-border bg-popover z-50 min-w-[120px] rounded-md border p-1 shadow-md">
           <ContextMenuPrimitive.Item
-            className="text-destructive hover:bg-destructive/10 flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none"
-            onSelect={() => deleteFolder.mutate(folder.id)}
+            className="hover:bg-muted flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none"
+            onSelect={() => onRename(folder)}
           >
+            <Pencil size={14} className="mr-2" />
+            {renameLabel}
+          </ContextMenuPrimitive.Item>
+          <ContextMenuPrimitive.Item
+            className="text-destructive hover:bg-destructive/10 flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none"
+            onSelect={() => onDelete(folder)}
+          >
+            <Trash2 size={14} className="mr-2" />
             {deleteLabel}
           </ContextMenuPrimitive.Item>
         </ContextMenuPrimitive.Content>
       </ContextMenuPrimitive.Portal>
     </ContextMenuPrimitive.Root>
+  )
+}
+
+function FolderNameDialog({
+  open,
+  title,
+  description,
+  initialName,
+  confirmLabel,
+  pending,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean
+  title: string
+  description: string
+  initialName: string
+  confirmLabel: string
+  pending: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: (name: string) => void
+}) {
+  const tc = useTranslations('common')
+  const [name, setName] = useState(initialName)
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setName(initialName)
+    }
+    onOpenChange(nextOpen)
+  }
+
+  const handleConfirm = () => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    onConfirm(trimmed)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">{title}</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={50}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleConfirm()
+              }
+            }}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            {tc('cancel')}
+          </Button>
+          <Button onClick={handleConfirm} disabled={!name.trim() || pending}>
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DeleteFolderDialog({
+  folder,
+  open,
+  pending,
+  onOpenChange,
+  onConfirm,
+}: {
+  folder: SidebarFolder | null
+  open: boolean
+  pending: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+}) {
+  const t = useTranslations('sidebar')
+  const tc = useTranslations('common')
+  const projectCount = folder?.project_count ?? 0
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>{t('deleteFolderTitle')}</DialogTitle>
+          <DialogDescription>
+            {projectCount > 0
+              ? t('deleteFolderWithProjectsDescription', {
+                  name: folder?.name ?? '',
+                  count: projectCount,
+                })
+              : t('deleteFolderDescription', { name: folder?.name ?? '' })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {tc('cancel')}
+          </Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={pending}>
+            {tc('delete')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -196,21 +293,65 @@ export function AppSidebar() {
   const t = useTranslations('sidebar')
   const locale = useLocale()
   const pathname = usePathname()
+  const router = useRouter()
   const { data: user } = useCurrentUser()
   const { data: balance } = useCreditBalance(Boolean(user?.isAuthenticated))
   const searchParams = useSearchParams()
   const activeFolderId = searchParams.get('folder')
   const { data: folders } = useFolders()
   const createFolder = useCreateFolder()
+  const updateFolder = useUpdateFolder()
+  const deleteFolder = useDeleteFolder()
   const signOutRedirect = getDefaultSignOutRedirect(locale)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [renameTarget, setRenameTarget] = useState<SidebarFolder | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SidebarFolder | null>(null)
 
   const handleCreateFolder = () => {
+    setCreateDialogOpen(true)
+  }
+
+  const handleCreateFolderConfirm = (name: string) => {
     createFolder.mutate(
-      { name: t('newFolder') },
+      { name },
       {
+        onSuccess: () => {
+          toast.success(t('folderCreated'))
+          setCreateDialogOpen(false)
+        },
         onError: (err) => toast.error(err.message),
       },
     )
+  }
+
+  const handleRenameFolderConfirm = (name: string) => {
+    if (!renameTarget) return
+
+    updateFolder.mutate(
+      { id: renameTarget.id, name },
+      {
+        onSuccess: () => {
+          toast.success(t('folderRenamed'))
+          setRenameTarget(null)
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    )
+  }
+
+  const handleDeleteFolderConfirm = () => {
+    if (!deleteTarget) return
+
+    deleteFolder.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        if (activeFolderId === deleteTarget.id) {
+          router.replace('/workspace')
+        }
+        toast.success(t('folderDeleted'))
+        setDeleteTarget(null)
+      },
+      onError: (err) => toast.error(err.message),
+    })
   }
 
   return (
@@ -268,12 +409,15 @@ export function AppSidebar() {
               ))}
 
               {/* 文件夹列表 */}
-              {(folders as { id: string; name: string }[] | undefined)?.map((folder) => (
+              {(folders as SidebarFolder[] | undefined)?.map((folder) => (
                 <FolderItem
                   key={folder.id}
                   folder={folder}
                   active={pathname === '/workspace' && activeFolderId === folder.id}
+                  renameLabel={t('renameFolder')}
                   deleteLabel={t('deleteFolder')}
+                  onRename={setRenameTarget}
+                  onDelete={setDeleteTarget}
                 />
               ))}
             </div>
@@ -388,6 +532,41 @@ export function AppSidebar() {
           </div>
         </div>
       </aside>
+
+      <FolderNameDialog
+        open={createDialogOpen}
+        title={t('createFolderTitle')}
+        description={t('createFolderDescription')}
+        initialName={t('newFolder')}
+        confirmLabel={t('createFolderConfirm')}
+        pending={createFolder.isPending}
+        onOpenChange={setCreateDialogOpen}
+        onConfirm={handleCreateFolderConfirm}
+      />
+
+      <FolderNameDialog
+        key={renameTarget?.id ?? 'rename-folder'}
+        open={!!renameTarget}
+        title={t('renameFolderTitle')}
+        description={t('renameFolderDescription')}
+        initialName={renameTarget?.name ?? ''}
+        confirmLabel={t('renameFolderConfirm')}
+        pending={updateFolder.isPending}
+        onOpenChange={(open) => {
+          if (!open) setRenameTarget(null)
+        }}
+        onConfirm={handleRenameFolderConfirm}
+      />
+
+      <DeleteFolderDialog
+        folder={deleteTarget}
+        open={!!deleteTarget}
+        pending={deleteFolder.isPending}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+        onConfirm={handleDeleteFolderConfirm}
+      />
     </>
   )
 }
