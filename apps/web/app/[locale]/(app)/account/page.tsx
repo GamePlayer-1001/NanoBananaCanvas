@@ -25,6 +25,92 @@ import type { UserProfile } from '@/hooks/use-user'
 export const metadata: Metadata = NO_INDEX_METADATA
 export const dynamic = 'force-dynamic'
 
+function createGuestSubscription() {
+  return {
+    userId: 'guest',
+    plan: FREE_PLAN_SNAPSHOT.plan,
+    membershipStatus: FREE_PLAN_SNAPSHOT.plan,
+    purchaseMode: 'free' as const,
+    billingPeriod: 'monthly' as const,
+    status: 'active',
+    monthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
+    storageGB: FREE_PLAN_SNAPSHOT.storageGB,
+    currentPeriodStart: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
+    portalEligible: false,
+    cancelEligible: false,
+  }
+}
+
+function createGuestBalance() {
+  return {
+    userId: 'guest',
+    plan: FREE_PLAN_SNAPSHOT.plan,
+    membershipStatus: FREE_PLAN_SNAPSHOT.plan,
+    monthlyBalance: 0,
+    permanentBalance: 0,
+    frozenCredits: 0,
+    availableCredits: 0,
+    totalCredits: 0,
+    totalEarned: 0,
+    totalSpent: 0,
+    currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
+    storageGB: FREE_PLAN_SNAPSHOT.storageGB,
+    updatedAt: null,
+  }
+}
+
+function createGuestTransactions() {
+  return {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 0,
+    hasMore: false,
+  }
+}
+
+function createGuestUsage() {
+  return {
+    windowDays: 30,
+    summary: {
+      totalRequests: 0,
+      successCount: 0,
+      failedCount: 0,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      estimatedCreditsSpent: 0,
+    },
+    byModel: [],
+    daily: [],
+  }
+}
+
+function createGuestStorageUsage() {
+  return {
+    usedBytes: 0,
+    limitBytes: FREE_PLAN_SNAPSHOT.storageGB * 1024 * 1024 * 1024,
+    usedPercent: 0,
+    isOverQuota: false,
+  }
+}
+
+async function loadOptionalAccountData<T>(
+  label: string,
+  loader: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await loader()
+  } catch (error: unknown) {
+    console.error(`[account] Failed to load ${label}`, error)
+    return fallback
+  }
+}
+
 export default async function AccountPage({
   params,
 }: {
@@ -75,67 +161,29 @@ export default async function AccountPage({
         createdAt: '',
       }
 
+  const guestSubscription = createGuestSubscription()
+  const guestBalance = createGuestBalance()
+  const guestTransactions = createGuestTransactions()
+  const guestUsage = createGuestUsage()
+  const guestStorageUsage = createGuestStorageUsage()
+
   const [subscription, balance, transactions, usage, pricing, storageUsage] = await Promise.all([
     authUser
-      ? getBillingSubscription(authUser.userId)
-      : Promise.resolve({
-          userId: 'guest',
-          plan: FREE_PLAN_SNAPSHOT.plan,
-          membershipStatus: FREE_PLAN_SNAPSHOT.plan,
-          purchaseMode: 'free' as const,
-          billingPeriod: 'monthly' as const,
-          status: 'active',
-          monthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
-          storageGB: FREE_PLAN_SNAPSHOT.storageGB,
-          currentPeriodStart: null,
-          currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          portalEligible: false,
-          cancelEligible: false,
-        }),
+      ? loadOptionalAccountData('billing subscription', () => getBillingSubscription(authUser.userId), guestSubscription)
+      : Promise.resolve(guestSubscription),
     authUser
-      ? getCreditBalanceSummary(authUser.userId)
-      : Promise.resolve({
-          userId: 'guest',
-          plan: FREE_PLAN_SNAPSHOT.plan,
-          membershipStatus: FREE_PLAN_SNAPSHOT.plan,
-          monthlyBalance: 0,
-          permanentBalance: 0,
-          frozenCredits: 0,
-          availableCredits: 0,
-          totalCredits: 0,
-          totalEarned: 0,
-          totalSpent: 0,
-          currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
-          storageGB: FREE_PLAN_SNAPSHOT.storageGB,
-          updatedAt: null,
-        }),
+      ? loadOptionalAccountData('credit balance', () => getCreditBalanceSummary(authUser.userId), guestBalance)
+      : Promise.resolve(guestBalance),
     authUser
-      ? getCreditTransactions(authUser.userId, { fetchAll: true })
-      : Promise.resolve({
-          items: [],
-          total: 0,
-          page: 1,
-          pageSize: 0,
-          hasMore: false,
-        }),
+      ? loadOptionalAccountData(
+          'credit transactions',
+          () => getCreditTransactions(authUser.userId, { fetchAll: true }),
+          guestTransactions,
+        )
+      : Promise.resolve(guestTransactions),
     authUser
-      ? getCreditUsage(authUser.userId, { windowDays: 30 })
-      : Promise.resolve({
-          windowDays: 30,
-          summary: {
-            totalRequests: 0,
-            successCount: 0,
-            failedCount: 0,
-            totalInputTokens: 0,
-            totalOutputTokens: 0,
-            estimatedCreditsSpent: 0,
-          },
-          byModel: [],
-          daily: [],
-        }),
+      ? loadOptionalAccountData('credit usage', () => getCreditUsage(authUser.userId, { windowDays: 30 }), guestUsage)
+      : Promise.resolve(guestUsage),
     getPublicPricingPlans({
       countryCode: requestHeaders.get('cf-ipcountry'),
     }).catch((error: unknown) => {
@@ -143,13 +191,8 @@ export default async function AccountPage({
       return null
     }),
     authUser
-      ? getStorageUsage(authUser.userId)
-      : Promise.resolve({
-          usedBytes: 0,
-          limitBytes: FREE_PLAN_SNAPSHOT.storageGB * 1024 * 1024 * 1024,
-          usedPercent: 0,
-          isOverQuota: false,
-        }),
+      ? loadOptionalAccountData('storage usage', () => getStorageUsage(authUser.userId), guestStorageUsage)
+      : Promise.resolve(guestStorageUsage),
   ])
 
   return (
