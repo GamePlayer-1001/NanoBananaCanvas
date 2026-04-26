@@ -241,11 +241,6 @@ export function SubscriptionTab({
                     label={t('subscriptionCreditsBonusLabel')}
                     value={`+${creditPack.bonusCredits.toLocaleString(locale)}`}
                   />
-                  <SubscriptionMeta
-                    value={t('subscriptionCurrencyResolved', {
-                      currency: creditPack.currency.toUpperCase(),
-                    })}
-                  />
                 </div>
 
                 <Button
@@ -301,7 +296,6 @@ export function SubscriptionTab({
             <div className="mt-6 space-y-3">
               <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
               <SubscriptionStat label={t('subscriptionStorageIncluded')} value={t('subscriptionStorageValue', { value: 1 })} />
-              <SubscriptionMeta value={t('subscriptionFreeMeta')} />
             </div>
 
             <Button
@@ -382,11 +376,6 @@ export function SubscriptionTab({
                     label={t('subscriptionStorageIncluded')}
                     value={t('subscriptionStorageValue', { value: plan.storageGB })}
                   />
-                  <SubscriptionMeta
-                    value={t('subscriptionCurrencyResolved', {
-                      currency: plan.currency.toUpperCase(),
-                    })}
-                  />
                 </div>
 
                 <Button
@@ -425,14 +414,6 @@ function SubscriptionStat({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-semibold text-foreground">{value}</span>
-    </div>
-  )
-}
-
-function SubscriptionMeta({ value }: { value: string }) {
-  return (
-    <div className="rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm leading-6 text-muted-foreground">
-      {value}
     </div>
   )
 }
