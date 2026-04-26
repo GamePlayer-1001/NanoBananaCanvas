@@ -11,7 +11,34 @@ vi.mock('@/lib/db', () => ({
   getDb: vi.fn(),
 }))
 
+vi.mock('@/lib/env', () => ({
+  getEnv: vi.fn(),
+}))
+
+vi.mock('@/lib/nanoid', () => ({
+  nanoid: vi.fn(() => 'sub_new'),
+}))
+
+const createStripeCustomerMock = vi.fn()
+
+vi.mock('stripe', () => {
+  class StripeMock {
+    customers = {
+      create: createStripeCustomerMock,
+    }
+
+    static createFetchHttpClient() {
+      return {}
+    }
+  }
+
+  return {
+    default: StripeMock,
+  }
+})
+
 import { getDb } from '@/lib/db'
+import { getEnv } from '@/lib/env'
 import { BillingError, ErrorCode } from '@/lib/errors'
 
 import { resetBillingSchemaCache } from './schema'
@@ -22,6 +49,8 @@ function createDbMock(options: {
   userColumns?: string[]
   tableColumns?: Record<string, string[]>
   userRow?: Record<string, unknown> | null
+  subscriptionRow?: Record<string, unknown> | null
+  captureSql?: string[]
 }): D1Database {
   const existingTables = new Set(options.existingTables ?? ['users', 'subscriptions'])
   const userColumns =
@@ -85,6 +114,23 @@ function createDbMock(options: {
         }
       }
 
+      if (sql.includes('SELECT id, stripe_customer_id')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            first: vi.fn().mockResolvedValue(options.subscriptionRow ?? null),
+          }),
+        }
+      }
+
+      if (sql.includes('INSERT INTO subscriptions') || sql.includes('UPDATE subscriptions')) {
+        options.captureSql?.push(sql)
+        return {
+          bind: vi.fn().mockReturnValue({
+            run: vi.fn().mockResolvedValue({ success: true }),
+          }),
+        }
+      }
+
       throw new Error(`Unexpected SQL in test: ${sql}`)
     }),
   } as unknown as D1Database
@@ -94,6 +140,8 @@ describe('getOrCreateStripeCustomer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetBillingSchemaCache()
+    vi.mocked(getEnv).mockResolvedValue('sk_test_123')
+    createStripeCustomerMock.mockResolvedValue({ id: 'cus_test_123' })
   })
 
   it('fails with a controlled billing config error when subscriptions table is missing', async () => {
@@ -114,5 +162,52 @@ describe('getOrCreateStripeCustomer', () => {
       message: 'Billing subscriptions table is not available',
       meta: { userId: 'user-1', table: 'subscriptions' },
     } satisfies Partial<BillingError>)
+  })
+
+  it('creates a stripe customer with a legacy subscriptions schema without new billing columns', async () => {
+    const capturedSql: string[] = []
+
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        userRow: {
+          id: 'user-1',
+          email: 'user@example.com',
+          name: 'User One',
+        },
+        subscriptionRow: null,
+        tableColumns: {
+          subscriptions: [
+            'id',
+            'user_id',
+            'stripe_customer_id',
+            'plan',
+            'status',
+            'monthly_credits',
+            'created_at',
+            'updated_at',
+          ],
+        },
+        captureSql: capturedSql,
+      }),
+    )
+
+    const result = await getOrCreateStripeCustomer('user-1')
+
+    expect(result).toMatchObject({
+      customerId: 'cus_test_123',
+      subscriptionRowId: 'sub_new',
+      email: 'user@example.com',
+      name: 'User One',
+    })
+    expect(createStripeCustomerMock).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      name: 'User One',
+      metadata: { userId: 'user-1' },
+    })
+    expect(capturedSql).toHaveLength(1)
+    expect(capturedSql[0]).toContain('INSERT INTO subscriptions')
+    expect(capturedSql[0]).not.toContain('purchase_mode')
+    expect(capturedSql[0]).not.toContain('billing_period')
+    expect(capturedSql[0]).not.toContain('storage_gb')
   })
 })
