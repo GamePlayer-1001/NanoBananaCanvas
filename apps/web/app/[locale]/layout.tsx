@@ -2,7 +2,6 @@
  * [INPUT]: 依赖 @clerk/nextjs 的 ClerkProvider，依赖 @clerk/localizations 的 zhCN，
  *          依赖 next-intl 的 NextIntlClientProvider / hasLocale，
  *          依赖 next-intl/server 的 getMessages / setRequestLocale，
- *          依赖 next/headers 的 headers，
  *          依赖 @/i18n/routing 的 routing 配置，依赖 @/i18n/config 的 locale 元数据，
  *          依赖 next/font/google 的 Geist / Geist_Mono / Kaushan_Script 字体，
  *          依赖 @/components/ui/sonner 的 Toaster，
@@ -16,7 +15,6 @@
 import { zhCN } from '@clerk/localizations'
 import { ClerkProvider } from '@clerk/nextjs'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
-import { headers } from 'next/headers'
 import Script from 'next/script'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
@@ -61,11 +59,6 @@ const CLERK_SIGN_IN_FALLBACK_REDIRECT_URL =
 const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
   process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/workspace'
 const CLERK_PROXY_URL = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
-const CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
-
-function isLocalPreviewHost(host: string) {
-  return /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(host)
-}
 
 /* ─── Layout ────────────────────────────────────────────── */
 
@@ -85,11 +78,6 @@ export default async function LocaleLayout({
   const localeDefinition = getLocaleDefinition(locale)
   setRequestLocale(locale)
   const messages = await getMessages()
-  const requestHeaders = await headers()
-  const requestHost =
-    requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? ''
-  const shouldBypassClerkForLocalPreview =
-    CLERK_PUBLISHABLE_KEY.startsWith('pk_live_') && isLocalPreviewHost(requestHost)
 
   const appTree = (
     <TooltipProvider>
@@ -169,23 +157,19 @@ export default async function LocaleLayout({
             })();
           `}
         </Script>
-        {shouldBypassClerkForLocalPreview ? (
-          appTree
-        ) : (
-          <ClerkProvider
-            localization={
-              localeDefinition.clerkLocalizationKey === 'zhCN' ? zhCN : undefined
-            }
-            signInUrl={CLERK_SIGN_IN_URL}
-            signUpUrl={CLERK_SIGN_UP_URL}
-            signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
-            signUpFallbackRedirectUrl={CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
-            proxyUrl={CLERK_PROXY_URL}
-            appearance={{ cssLayerName: 'clerk' }}
-          >
-            {appTree}
-          </ClerkProvider>
-        )}
+        <ClerkProvider
+          localization={
+            localeDefinition.clerkLocalizationKey === 'zhCN' ? zhCN : undefined
+          }
+          signInUrl={CLERK_SIGN_IN_URL}
+          signUpUrl={CLERK_SIGN_UP_URL}
+          signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
+          signUpFallbackRedirectUrl={CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
+          proxyUrl={CLERK_PROXY_URL}
+          appearance={{ cssLayerName: 'clerk' }}
+        >
+          {appTree}
+        </ClerkProvider>
         <Toaster position="bottom-right" richColors />
       </body>
     </html>
