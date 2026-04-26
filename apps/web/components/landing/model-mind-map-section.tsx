@@ -51,14 +51,24 @@ const MODEL_STAGE = {
   height: 820,
 } as const
 
+const MODEL_CORE_EMBED_OFFSET = {
+  x: 112,
+  y: 108,
+} as const
+
 const MODEL_STAGE_CENTER = {
-  x: 786,
-  y: 414,
+  x: 786 + MODEL_CORE_EMBED_OFFSET.x,
+  y: 414 + MODEL_CORE_EMBED_OFFSET.y,
 } as const
 
 const MODEL_CORE_POSITION = {
   x: (MODEL_STAGE_CENTER.x / MODEL_STAGE.width) * 100,
   y: (MODEL_STAGE_CENTER.y / MODEL_STAGE.height) * 100,
+} as const
+
+const MODEL_CORE_VISUAL_OFFSET = {
+  x: -158,
+  y: 158,
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
@@ -546,9 +556,7 @@ export function ModelMindMapSection() {
             }}
           >
             <h2 className="text-[2.55rem] leading-[0.94] font-semibold tracking-[-0.05em] text-white md:text-[4.3rem]">
-              <span className="bg-[linear-gradient(90deg,#ffffff_0%,#e0d4ff_40%,#a586ff_100%)] bg-clip-text whitespace-nowrap text-transparent">
-                {modelT('title')}
-              </span>
+              <span className="whitespace-nowrap text-white">{modelT('title')}</span>
             </h2>
             <p className="mt-6 max-w-[34rem] text-base leading-8 text-white/56 md:text-[1.08rem] md:leading-[2.05rem]">
               {modelT('body')}
@@ -653,12 +661,13 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute z-40 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,rgba(255,245,255,0.34),rgba(211,136,255,0.98)_30%,rgba(145,74,255,0.99)_56%,rgba(78,24,182,0.98)_78%,rgba(14,8,36,1)_100%)] md:h-[316px] md:w-[316px]"
+                className="absolute z-40 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,#fff5ff,#d388ff_30%,#914aff_56%,#4e18b6_78%,#0e0824_100%)] md:h-[316px] md:w-[316px]"
                 style={{
                   left: `${MODEL_CORE_POSITION.x}%`,
                   top: `${MODEL_CORE_POSITION.y}%`,
-                  opacity: 0.82 + revealProgress * 0.18,
-                  transform: `translate(-50%, -50%) scale(${0.9 + revealProgress * 0.1})`,
+                  transform: `translate(calc(-50% + ${MODEL_CORE_VISUAL_OFFSET.x}px), calc(-50% + ${MODEL_CORE_VISUAL_OFFSET.y}px)) scale(${
+                    0.9 + revealProgress * 0.1
+                  })`,
                   animation: prefersReducedMotion
                     ? 'none'
                     : 'corePulse 6.2s ease-in-out infinite',
@@ -668,7 +677,7 @@ export function ModelMindMapSection() {
                 <div className="absolute inset-[-22px] rounded-full border border-[#9567ff]/14" />
                 <div className="absolute inset-[-56px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
                 <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
-                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_28%,rgba(255,255,255,0.26),rgba(194,132,255,0.34)_44%,rgba(90,42,188,0.86)_100%)] text-white shadow-[0_10px_34px_rgba(126,88,255,0.28)] backdrop-blur-sm">
+                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_28%,#ffffff,#c284ff_44%,#5a2abc_100%)] text-white shadow-[0_10px_34px_rgba(126,88,255,0.28)]">
                     <Sparkles className="h-7 w-7" />
                   </div>
                   <p className="mt-6 text-[1.24rem] leading-none font-semibold tracking-tight text-white md:text-[1.52rem]">
