@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 ReactNode，依赖 next/image 的静态图片渲染，
+ * [INPUT]: 依赖 react 的 ReactNode，依赖 public/auth-login-loop.mp4 的登录动态背景，
  *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
@@ -8,7 +8,6 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import Image from 'next/image'
 import type { ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 
@@ -58,14 +57,17 @@ export function AuthShell({
         <section className="relative hidden overflow-hidden bg-[#1a120f] lg:block">
           {isSignIn ? (
             <>
-              <Image
-                src="/auth-login-visual.png"
-                alt=""
-                fill
-                priority
-                sizes="50vw"
-                className="object-cover object-center"
-              />
+              <video
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                aria-hidden="true"
+              >
+                <source src="/auth-login-loop.mp4" type="video/mp4" />
+              </video>
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,18,0.1),rgba(6,8,18,0.48)),radial-gradient(circle_at_20%_16%,rgba(255,232,192,0.24),transparent_24%),radial-gradient(circle_at_76%_28%,rgba(111,120,255,0.22),transparent_28%),radial-gradient(circle_at_50%_82%,rgba(255,128,192,0.14),transparent_30%)]" />
               <div className="absolute inset-0 backdrop-blur-[1px]" />
             </>
