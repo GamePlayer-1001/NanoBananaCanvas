@@ -3,19 +3,18 @@
  *          依赖 @/i18n/navigation 的 Link / usePathname，
  *          依赖 lucide-react 图标，
  *          依赖 @/components/ui/avatar，
- *          依赖 @/components/shared/search-command，
  *          依赖 @/components/shared/brand-mark，
  *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
  *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (按需挂载 ProfileModal/SearchCommand + 文件夹管理)
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹管理/账户入口/计费入口)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -25,17 +24,16 @@ import {
   Video,
   Plus,
   MessageCircle,
-  Search,
   LogOut,
   Coins,
   Sparkles,
+  ChevronRight,
 } from 'lucide-react'
 
 import { Link, usePathname } from '@/i18n/navigation'
 import { SignOutAction } from '@/components/auth/sign-out-action'
 import { BrandMark } from '@/components/shared/brand-mark'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
 import {
   useFolders,
@@ -200,9 +198,6 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { data: user } = useCurrentUser()
   const { data: balance } = useCreditBalance(Boolean(user?.isAuthenticated))
-  const [searchOpen, setSearchOpen] = useState(false)
-  const openSearch = useCallback(() => setSearchOpen(true), [])
-  useSearchShortcut(openSearch)
   const searchParams = useSearchParams()
   const activeFolderId = searchParams.get('folder')
   const { data: folders } = useFolders()
@@ -220,7 +215,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <aside className="border-border bg-background flex h-screen w-[200px] flex-col border-r">
+      <aside className="border-border bg-background flex h-screen w-[300px] flex-col border-r">
         {/* ── Header ────────────────────────────────────── */}
         <div className="px-4 pt-5 pb-2">
           <Link href="/explore" className="block">
@@ -229,20 +224,6 @@ export function AppSidebar() {
             </h1>
           </Link>
           <p className="text-muted-foreground mt-0.5 text-[8px]">{t('personal')}</p>
-        </div>
-
-        {/* ── Search ─────────────────────────────────────── */}
-        <div className="px-3 pt-1 pb-1">
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="border-border text-muted-foreground hover:bg-muted flex w-full items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors"
-          >
-            <Search size={13} />
-            <span className="flex-1 text-left">{t('search')}</span>
-            <kbd className="border-border bg-muted rounded border px-1 py-0.5 text-[10px]">
-              ⌘K
-            </kbd>
-          </button>
         </div>
 
         {/* ── Main Nav ──────────────────────────────────── */}
@@ -325,87 +306,88 @@ export function AppSidebar() {
         {/* ── Footer ────────────────────────────────────── */}
         <div className="border-border space-y-2 border-t px-3 py-3">
           {/* 用户信息 */}
-          <div className="flex items-start gap-2 px-1">
-            <span className="bg-muted text-muted-foreground mt-0.5 rounded px-2 py-0.5 text-[10px] font-medium">
-              {user?.plan ? t('planBadge', { plan: user.plan }) : t('freePlan')}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <Link href="/account" className="ml-auto">
-                  <Avatar size="sm">
-                    {user?.avatarUrl && (
-                      <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
-                    )}
-                    <AvatarFallback>{user?.name?.charAt(0) ?? 'G'}</AvatarFallback>
-                  </Avatar>
-                </Link>
-              </div>
+          <div className="space-y-2 px-1">
+            <Link
+              href="/account"
+              className="border-border hover:bg-muted/60 flex items-center gap-3 rounded-xl border px-3 py-3 transition-colors"
+            >
+              <Avatar size="sm" className="shrink-0">
+                {user?.avatarUrl && (
+                  <AvatarImage src={user.avatarUrl} alt={user.name ?? 'Guest'} />
+                )}
+                <AvatarFallback>{user?.name?.charAt(0) ?? 'G'}</AvatarFallback>
+              </Avatar>
 
-              <div className="mt-1 min-w-0">
-                <p className="text-foreground truncate text-xs font-medium">
-                  {user?.name ?? 'Guest'}
-                </p>
-                <p className="text-muted-foreground truncate text-[11px]">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-foreground truncate text-sm font-medium">
+                    {user?.name ?? 'Guest'}
+                  </p>
+                  <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium">
+                    {user?.plan ? t('planBadge', { plan: user.plan }) : t('freePlan')}
+                  </span>
+                </div>
+                <p className="text-muted-foreground mt-1 truncate text-[11px]">
                   {user?.isAuthenticated ? user.email || t('signedIn') : t('guestMode')}
                 </p>
               </div>
 
-              {user?.isAuthenticated ? (
-                <>
-                  <div className="mt-3 space-y-1.5">
-                    <Link
-                      href="/billing"
-                      className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-[11px] transition-colors ${
-                        pathname === '/billing'
-                          ? 'border-brand-200 bg-brand-50 text-brand-700'
-                          : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Coins size={12} />
-                        {t('creditsEntry')}
-                      </span>
-                      <span className="text-foreground font-medium">
-                        {balance?.availableCredits?.toLocaleString() ?? '...'}
-                      </span>
-                    </Link>
+              <ChevronRight size={14} className="text-muted-foreground shrink-0" />
+            </Link>
 
-                    <Link
-                      href="/pricing"
-                      className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between rounded-lg border px-2.5 py-2 text-[11px] transition-colors"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles size={12} />
-                        {t('upgradeEntry')}
-                      </span>
-                      <span className="text-brand-600 font-medium">
-                        {t('upgradeCta')}
-                      </span>
-                    </Link>
-                  </div>
-
-                  <SignOutAction
-                    redirectUrl={signOutRedirect}
-                    className="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+            {user?.isAuthenticated ? (
+              <>
+                <div className="space-y-1.5">
+                  <Link
+                    href="/billing"
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors ${
+                      pathname === '/billing'
+                        ? 'border-brand-200 bg-brand-50 text-brand-700'
+                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
                   >
-                    <LogOut size={12} />
-                    {t('signOut')}
-                  </SignOutAction>
-                </>
-              ) : (
-                <Link
-                  href="/sign-in?redirect_url=/workspace"
-                  className="text-brand-600 hover:text-brand-700 mt-2 inline-flex text-[11px] font-medium transition"
+                    <span className="flex items-center gap-1.5">
+                      <Coins size={12} />
+                      {t('creditsEntry')}
+                    </span>
+                    <span className="text-foreground font-medium">
+                      {balance?.availableCredits?.toLocaleString() ?? '...'}
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/pricing"
+                    className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles size={12} />
+                      {t('upgradeEntry')}
+                    </span>
+                    <span className="text-brand-600 font-medium">
+                      {t('upgradeCta')}
+                    </span>
+                  </Link>
+                </div>
+
+                <SignOutAction
+                  redirectUrl={signOutRedirect}
+                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 px-1 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {t('signIn')}
-                </Link>
-              )}
-            </div>
+                  <LogOut size={12} />
+                  {t('signOut')}
+                </SignOutAction>
+              </>
+            ) : (
+              <Link
+                href="/sign-in?redirect_url=/workspace"
+                className="text-brand-600 hover:text-brand-700 inline-flex px-1 text-[11px] font-medium transition"
+              >
+                {t('signIn')}
+              </Link>
+            )}
           </div>
         </div>
       </aside>
-
-      {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
     </>
   )
 }

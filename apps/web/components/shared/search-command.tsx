@@ -4,7 +4,7 @@
  *          依赖 @/components/ui/dialog, @/components/ui/input, @/components/ui/skeleton,
  *          依赖 lucide-react 图标
  * [OUTPUT]: 对外提供 SearchCommand 全局搜索弹窗 + useSearchShortcut hook
- * [POS]: shared 的全局搜索组件，被 app-sidebar.tsx 消费
+ * [POS]: shared 的探索搜索组件，被 explore-content.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

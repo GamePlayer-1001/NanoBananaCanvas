@@ -3,22 +3,24 @@
  *          依赖 @/components/explore/explore-tabs，
  *          依赖 @/components/explore/explore-grid，
  *          依赖 @/hooks/use-explore 的 useExplore，
+ *          依赖 @/components/shared/search-command 的 SearchCommand/useSearchShortcut，
  *          依赖 @/components/ui/button，
  *          依赖 @/components/shared/video-card 的 VideoCardData
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (含分页)
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (含分页与探索搜索入口)
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { ExploreTabs, type ExploreTab } from './explore-tabs'
 import { ExploreGrid } from './explore-grid'
 import { useExplore } from '@/hooks/use-explore'
+import { SearchCommand, useSearchShortcut } from '@/components/shared/search-command'
 import { Button } from '@/components/ui/button'
 import type { VideoCardData } from '@/components/shared/video-card'
 
@@ -72,8 +74,12 @@ function toVideoCard(item: ExploreApiItem): VideoCardData {
 
 export function ExploreContent() {
   const t = useTranslations('explore')
+  const ts = useTranslations('search')
   const [activeTab, setActiveTab] = useState<ExploreTab>('hot')
   const [page, setPage] = useState(1)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const openSearch = useCallback(() => setSearchOpen(true), [])
+  useSearchShortcut(openSearch)
 
   const { data, isLoading } = useExplore({
     sort: TAB_SORT[activeTab],
@@ -93,7 +99,12 @@ export function ExploreContent() {
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-5">
       {/* 标签栏 */}
-      <ExploreTabs active={activeTab} onChange={handleTabChange} />
+      <ExploreTabs
+        active={activeTab}
+        onChange={handleTabChange}
+        onSearchOpen={openSearch}
+        searchLabel={ts('title')}
+      />
 
       {/* 视频网格 */}
       <div className="mt-4">
@@ -128,6 +139,8 @@ export function ExploreContent() {
           </Button>
         </div>
       )}
+
+      {searchOpen && <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />}
     </div>
   )
 }
