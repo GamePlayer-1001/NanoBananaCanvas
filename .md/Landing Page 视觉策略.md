@@ -2,7 +2,7 @@
 
 > 文档版本：v1.1
 > 创建日期：2026-03-04
-> 最后更新：2026-04-24
+> 最后更新：2026-04-26
 > 关联文档：项目框架结构.md、项目执行规范.md、archive/差距分析报告.md
 
 ---
@@ -168,6 +168,7 @@ Framer Motion 的领地：
 │    • 中心是 Nano Banana Canvas 紫色主星体                          │
 │    • 多层椭圆轨道承载 OpenAI / Google / Anthropic / Gemini 等节点 │
 │    • 节点采用“发光圆形 logo + 球体内部小号名称”样式                 │
+│    • 节点需沿各自椭圆轨道缓慢公转，形成围绕核心恒星的秩序感         │
 │    • 轨道、星点、节点在滚动进入时整体渐显并伴随轻微漂移             │
 │    • 整个 section 直接融入 landing 背景，不再包裹独立大卡片         │
 │    • 核心主星体必须处于云图几何中心，节点围绕核心均衡展开           │
@@ -181,14 +182,14 @@ Framer Motion 的领地：
 
 **动效清单**：
 
-| 元素          | 引擎                    | 动画                                       | 时机         |
-| ------------- | ----------------------- | ------------------------------------------ | ------------ |
-| 顶部文案列    | anime.js ScrollObserver | opacity 0→1 + X:-40→0                      | 进入视口 20% |
-| 轨道主画布    | anime.js                | 整体 opacity/scale 渐入 + 轻微 rotate 漂移 | Section 可见 |
-| 中心核心球    | anime.js                | 呼吸式 scale + glow 脉冲                   | 持续循环     |
-| 轨道/星点     | anime.js                | 透明度渐显 + 星点 pulse                    | Section 可见 |
-| Provider 节点 | Framer Motion 风格过渡  | 逐个错峰 reveal + 上下轻微 bobbing         | 滚动触发后   |
-| 底部指标带    | anime.js ScrollObserver | opacity 0→1 + Y:+24→0                      | 进入视口 20% |
+| 元素          | 引擎                          | 动画                                       | 时机         |
+| ------------- | ----------------------------- | ------------------------------------------ | ------------ |
+| 顶部文案列    | anime.js ScrollObserver       | opacity 0→1 + X:-40→0                      | 进入视口 20% |
+| 轨道主画布    | anime.js                      | 整体 opacity/scale 渐入 + 轻微 rotate 漂移 | Section 可见 |
+| 中心核心球    | anime.js                      | 呼吸式 scale + glow 脉冲                   | 持续循环     |
+| 轨道/星点     | anime.js                      | 透明度渐显 + 星点 pulse                    | Section 可见 |
+| Provider 节点 | React + requestAnimationFrame | 逐个错峰 reveal + 沿椭圆轨道缓慢公转       | 滚动触发后   |
+| 底部指标带    | anime.js ScrollObserver       | opacity 0→1 + Y:+24→0                      | 进入视口 20% |
 
 ### 3.3 Feature Showcase Section
 

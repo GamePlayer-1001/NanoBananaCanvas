@@ -19,13 +19,15 @@ import { SITE_NAME } from '@/lib/seo'
 
 type ProviderTone = 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
 type ProviderSize = 'sm' | 'md' | 'lg'
+type ProviderOrbit = 'inner' | 'middle' | 'outer'
 
 type ModelProvider = {
   name: string
   iconUrl?: string
   fallback: string
-  x: number
-  y: number
+  orbit: ProviderOrbit
+  angle: number
+  speed: number
   size: ProviderSize
   tone: ProviderTone
   iconScale?: number
@@ -47,13 +49,20 @@ const MODEL_STAGE = {
   height: 820,
 } as const
 
+const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
+  inner: { x: 278, y: 100 },
+  middle: { x: 408, y: 148 },
+  outer: { x: 546, y: 208 },
+}
+
 const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'Google',
     iconUrl: buildSimpleIconUrl('google'),
     fallback: 'G',
-    x: 34,
-    y: 24,
+    orbit: 'outer',
+    angle: 226,
+    speed: 4.6,
     size: 'md',
     tone: 'amber',
   },
@@ -61,8 +70,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'OpenAI',
     iconUrl: buildSimpleIconUrl('openai'),
     fallback: 'O',
-    x: 50,
-    y: 17,
+    orbit: 'outer',
+    angle: 270,
+    speed: 4.2,
     size: 'lg',
     tone: 'violet',
     iconFilter:
@@ -72,8 +82,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Black Forest',
     iconUrl: buildSimpleIconUrl('blackforestlabs'),
     fallback: 'BF',
-    x: 67,
-    y: 24,
+    orbit: 'outer',
+    angle: 314,
+    speed: 4.4,
     size: 'md',
     tone: 'azure',
     iconScale: 0.86,
@@ -84,8 +95,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'OpenRouter',
     iconUrl: buildSimpleIconUrl('openrouter'),
     fallback: 'OR',
-    x: 79,
-    y: 38,
+    orbit: 'outer',
+    angle: 346,
+    speed: 4.9,
     size: 'md',
     tone: 'violet',
     iconScale: 0.84,
@@ -96,8 +108,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'ByteDance',
     iconUrl: buildSimpleIconUrl('bytedance'),
     fallback: 'BD',
-    x: 73,
-    y: 52,
+    orbit: 'middle',
+    angle: 8,
+    speed: 6.4,
     size: 'md',
     tone: 'azure',
   },
@@ -105,8 +118,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Anthropic',
     iconUrl: buildSimpleIconUrl('anthropic'),
     fallback: 'AI',
-    x: 75.5,
-    y: 72,
+    orbit: 'outer',
+    angle: 40,
+    speed: 4.1,
     size: 'md',
     tone: 'amber',
     iconFilter:
@@ -116,8 +130,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Gemini',
     iconUrl: buildSimpleIconUrl('googlegemini'),
     fallback: '✦',
-    x: 63,
-    y: 82,
+    orbit: 'outer',
+    angle: 72,
+    speed: 4.7,
     size: 'sm',
     tone: 'azure',
   },
@@ -125,8 +140,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Alibaba Wan',
     iconUrl: buildSimpleIconUrl('alibabacloud'),
     fallback: 'AW',
-    x: 50,
-    y: 89,
+    orbit: 'outer',
+    angle: 90,
+    speed: 4.3,
     size: 'sm',
     tone: 'violet',
     iconScale: 0.8,
@@ -135,8 +151,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Kling',
     iconUrl: buildSimpleIconUrl('kling'),
     fallback: 'KL',
-    x: 28,
-    y: 83,
+    orbit: 'outer',
+    angle: 118,
+    speed: 4.8,
     size: 'sm',
     tone: 'teal',
   },
@@ -144,8 +161,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Runway',
     iconUrl: buildSimpleIconUrl('runway'),
     fallback: 'RW',
-    x: 21.5,
-    y: 69,
+    orbit: 'outer',
+    angle: 145,
+    speed: 4.5,
     size: 'sm',
     tone: 'violet',
   },
@@ -153,16 +171,18 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Luma',
     iconUrl: buildSimpleIconUrl('luma'),
     fallback: 'LU',
-    x: 15,
-    y: 54,
+    orbit: 'outer',
+    angle: 176,
+    speed: 4.4,
     size: 'sm',
     tone: 'azure',
   },
   {
     name: 'Vidu',
     fallback: 'V',
-    x: 16,
-    y: 40,
+    orbit: 'outer',
+    angle: 198,
+    speed: 4.6,
     size: 'sm',
     tone: 'azure',
   },
@@ -170,8 +190,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'MiniMax',
     iconUrl: buildSimpleIconUrl('minimax'),
     fallback: 'MM',
-    x: 22,
-    y: 31,
+    orbit: 'middle',
+    angle: 220,
+    speed: 6.1,
     size: 'sm',
     tone: 'rose',
   },
@@ -179,8 +200,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Groq',
     iconUrl: buildSimpleIconUrl('groq'),
     fallback: 'GQ',
-    x: 41,
-    y: 50,
+    orbit: 'inner',
+    angle: 178,
+    speed: 8.8,
     size: 'sm',
     tone: 'violet',
     iconFilter:
@@ -190,8 +212,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'xAI',
     iconUrl: buildSimpleIconUrl('xai'),
     fallback: 'xI',
-    x: 36,
-    y: 40,
+    orbit: 'inner',
+    angle: 196,
+    speed: 8.2,
     size: 'md',
     tone: 'violet',
     iconFilter:
@@ -201,8 +224,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Qwen',
     iconUrl: buildSimpleIconUrl('qwen'),
     fallback: 'Q',
-    x: 42.5,
-    y: 83,
+    orbit: 'middle',
+    angle: 86,
+    speed: 6.6,
     size: 'sm',
     tone: 'violet',
     iconFilter:
@@ -212,8 +236,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Midjourney',
     iconUrl: buildSimpleIconUrl('midjourney'),
     fallback: 'MJ',
-    x: 86,
-    y: 50,
+    orbit: 'outer',
+    angle: 10,
+    speed: 4.2,
     size: 'sm',
     tone: 'violet',
     iconScale: 0.9,
@@ -358,6 +383,7 @@ export function ModelMindMapSection() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const [motion, setMotion] = useState(INITIAL_MODEL_MOTION)
+  const [orbitTime, setOrbitTime] = useState(0)
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
@@ -429,8 +455,27 @@ export function ModelMindMapSection() {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || prefersReducedMotion) return undefined
+
+    let frame = 0
+    const startedAt = window.performance.now()
+
+    const tick = (now: number) => {
+      setOrbitTime((now - startedAt) / 1000)
+      frame = window.requestAnimationFrame(tick)
+    }
+
+    frame = window.requestAnimationFrame(tick)
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+    }
+  }, [prefersReducedMotion])
+
   const revealProgress = prefersReducedMotion ? 1 : motion.reveal
   const drift = prefersReducedMotion ? 0 : motion.drift
+  const visibleOrbitTime = prefersReducedMotion ? 0 : orbitTime
   const vendorCount = MODEL_PROVIDERS.length
 
   return (
@@ -591,8 +636,15 @@ export function ModelMindMapSection() {
               {MODEL_PROVIDERS.map((provider, index) => {
                 const tone = MODEL_TONE_STYLES[provider.tone]
                 const dimension = MODEL_NODE_DIMENSIONS[provider.size]
-                const deltaX = provider.x - 50
-                const deltaY = provider.y - 50
+                const orbitRadii = MODEL_ORBIT_RADII[provider.orbit]
+                const orbitAngle =
+                  ((provider.angle + visibleOrbitTime * provider.speed) * Math.PI) / 180
+                const currentX =
+                  50 + (Math.cos(orbitAngle) * orbitRadii.x * 100) / MODEL_STAGE.width
+                const currentY =
+                  50 + (Math.sin(orbitAngle) * orbitRadii.y * 100) / MODEL_STAGE.height
+                const deltaX = currentX - 50
+                const deltaY = currentY - 50
                 const outwardX = deltaX * 0.14 + drift * (provider.size === 'lg' ? 5 : 3)
                 const outwardY = deltaY * 0.12 - drift * (provider.size === 'lg' ? 4 : 2)
                 const labelWidth =
@@ -625,8 +677,8 @@ export function ModelMindMapSection() {
                     key={provider.name}
                     className="absolute z-30 transition-[opacity,transform] duration-500 ease-out"
                     style={{
-                      left: `${provider.x}%`,
-                      top: `${provider.y}%`,
+                      left: `${currentX}%`,
+                      top: `${currentY}%`,
                       opacity: 0.14 + revealProgress * 0.86,
                       transform: `translate(-50%, -50%) translate(${outwardX * (1 - revealProgress)}px, ${
                         18 * (1 - revealProgress) + outwardY
@@ -636,15 +688,7 @@ export function ModelMindMapSection() {
                         : `${90 + index * 24}ms`,
                     }}
                   >
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        animation: prefersReducedMotion
-                          ? 'none'
-                          : `providerFloat ${5.8 + (index % 5) * 0.42}s ease-in-out infinite`,
-                        animationDelay: `${index * 0.22}s`,
-                      }}
-                    >
+                    <div className="flex items-center justify-center">
                       <div
                         className="relative shrink-0 rounded-full border"
                         style={{
@@ -727,16 +771,6 @@ export function ModelMindMapSection() {
         </div>
 
         <style jsx>{`
-          @keyframes providerFloat {
-            0%,
-            100% {
-              transform: translateY(0px);
-            }
-            50% {
-              transform: translateY(-8px);
-            }
-          }
-
           @keyframes sparkPulse {
             0%,
             100% {
