@@ -564,7 +564,6 @@ export function ModelMindMapSection() {
           <div
             className="relative z-10 mt-10 transition-[opacity,transform] duration-500 ease-out lg:-mt-14"
             style={{
-              opacity: 0.24 + revealProgress * 0.76,
               transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 10}px, 0)`,
             }}
           >
@@ -658,7 +657,7 @@ export function ModelMindMapSection() {
                 style={{
                   left: `${MODEL_CORE_POSITION.x}%`,
                   top: `${MODEL_CORE_POSITION.y}%`,
-                  opacity: 0.36 + revealProgress * 0.64,
+                  opacity: 0.82 + revealProgress * 0.18,
                   transform: `translate(-50%, -50%) scale(${0.9 + revealProgress * 0.1})`,
                   animation: prefersReducedMotion
                     ? 'none'
