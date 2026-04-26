@@ -1,13 +1,21 @@
 /**
  * [INPUT]: 依赖 @opennextjs/cloudflare 的 getCloudflareContext
  * [OUTPUT]: 对外提供 getEnv() 统一环境变量获取入口
- * [POS]: lib 的环境变量单点入口，消除 process.env vs getCloudflareContext 混用
+ * [POS]: lib 的环境变量单点入口，消除 process.env vs getCloudflareContext 混用，并统一净化 BOM 污染的字符串值
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 /* ─── Unified Env Access ─────────────────────────────── */
+
+function normalizeEnvValue(value: string | undefined): string | undefined {
+  if (value == null) {
+    return undefined
+  }
+
+  return value.replace(/^\uFEFF+/, '')
+}
 
 /**
  * 统一的环境变量获取入口
@@ -21,13 +29,13 @@ export async function getEnv(key: string): Promise<string | undefined> {
     const { env } = await getCloudflareContext()
     const runtimeValue = (env as unknown as Record<string, string | undefined>)[key]
     if (runtimeValue != null) {
-      return runtimeValue
+      return normalizeEnvValue(runtimeValue)
     }
   } catch {
     // 本地 next dev / vitest 无 Cloudflare context 时继续回退
   }
 
-  return process.env[key]
+  return normalizeEnvValue(process.env[key])
 }
 
 /**
