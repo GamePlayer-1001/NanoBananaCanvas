@@ -3,7 +3,7 @@
 
 ## 成员清单
 
-video-analysis-content.tsx: VideoAnalysisContent 客户端容器，组合上传/模型/平台模式提示/执行入口/本地历史
+video-analysis-content.tsx: VideoAnalysisContent 客户端容器，组合上传/模型/执行入口/本地历史
 upload-area.tsx: UploadArea 拖拽上传区组件，支持视频预览、文件大小与 600 秒时长校验
 model-selector.tsx: ModelSelector AI 模型下拉选择，默认 Gemini 2.5 Flash Image，支持切换到 Gemini 3 Pro Preview
 analysis-history.tsx: AnalysisHistory 分析历史折叠面板，展示本地发起记录与待后端接通状态

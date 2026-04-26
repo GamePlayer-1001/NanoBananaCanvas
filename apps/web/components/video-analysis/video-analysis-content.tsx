@@ -5,7 +5,7 @@
  *          依赖 @/components/video-analysis/upload-area，
  *          依赖 @/components/video-analysis/model-selector，
  *          依赖 @/components/video-analysis/analysis-history
- * [OUTPUT]: 对外提供 VideoAnalysisContent 客户端交互容器（上传/校验/平台分析入口/本地历史）
+ * [OUTPUT]: 对外提供 VideoAnalysisContent 客户端交互容器（上传/校验/执行入口/本地历史）
  * [POS]: video-analysis 的客户端组合组件，被 page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -73,13 +73,6 @@ export function VideoAnalysisContent() {
         <ModelSelector value={model} onChange={setModel} />
       </div>
 
-      <div className="mt-4 rounded-xl border border-brand-200/60 bg-brand-50/50 px-4 py-3">
-        <p className="text-sm font-medium text-foreground">{t('platformModeTitle')}</p>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {t('platformModeBody')}
-        </p>
-      </div>
-
       {/* 执行入口 */}
       <div className="mt-6 rounded-xl border border-border bg-muted/20 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -93,7 +86,6 @@ export function VideoAnalysisContent() {
                   })
                 : t('analysisIdleDescription')}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground/80">{t('analysisBillingHint')}</p>
           </div>
 
           <button
