@@ -19,7 +19,6 @@ import { SITE_NAME } from '@/lib/seo'
 
 type ProviderTone = 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
 type ProviderSize = 'sm' | 'md' | 'lg'
-type ProviderLabelSide = 'left' | 'right' | 'bottom'
 
 type ModelProvider = {
   name: string
@@ -29,7 +28,6 @@ type ModelProvider = {
   y: number
   size: ProviderSize
   tone: ProviderTone
-  labelSide: ProviderLabelSide
   iconScale?: number
   iconFilter?: string
 }
@@ -54,21 +52,19 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Google',
     iconUrl: buildSimpleIconUrl('google'),
     fallback: 'G',
-    x: 31,
-    y: 18,
+    x: 34,
+    y: 24,
     size: 'md',
     tone: 'amber',
-    labelSide: 'right',
   },
   {
     name: 'OpenAI',
     iconUrl: buildSimpleIconUrl('openai'),
     fallback: 'O',
-    x: 49.5,
-    y: 15.5,
+    x: 50,
+    y: 17,
     size: 'lg',
     tone: 'violet',
-    labelSide: 'bottom',
     iconFilter:
       'brightness(0) saturate(100%) invert(99%) sepia(6%) saturate(283%) hue-rotate(184deg) brightness(105%) contrast(100%)',
   },
@@ -76,11 +72,10 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Black Forest',
     iconUrl: buildSimpleIconUrl('blackforestlabs'),
     fallback: 'BF',
-    x: 63.5,
-    y: 18.5,
+    x: 67,
+    y: 24,
     size: 'md',
     tone: 'azure',
-    labelSide: 'bottom',
     iconScale: 0.86,
     iconFilter:
       'brightness(0) saturate(100%) invert(96%) sepia(5%) saturate(624%) hue-rotate(180deg) brightness(106%) contrast(98%)',
@@ -90,10 +85,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('openrouter'),
     fallback: 'OR',
     x: 79,
-    y: 29,
+    y: 38,
     size: 'md',
     tone: 'violet',
-    labelSide: 'right',
     iconScale: 0.84,
     iconFilter:
       'brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(312%) hue-rotate(181deg) brightness(107%) contrast(102%)',
@@ -102,21 +96,19 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'ByteDance',
     iconUrl: buildSimpleIconUrl('bytedance'),
     fallback: 'BD',
-    x: 73.5,
-    y: 43.5,
+    x: 73,
+    y: 52,
     size: 'md',
     tone: 'azure',
-    labelSide: 'right',
   },
   {
     name: 'Anthropic',
     iconUrl: buildSimpleIconUrl('anthropic'),
     fallback: 'AI',
-    x: 84.5,
-    y: 64.5,
+    x: 75.5,
+    y: 72,
     size: 'md',
     tone: 'amber',
-    labelSide: 'right',
     iconFilter:
       'brightness(0) saturate(100%) invert(97%) sepia(4%) saturate(295%) hue-rotate(190deg) brightness(102%) contrast(99%)',
   },
@@ -124,81 +116,73 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Gemini',
     iconUrl: buildSimpleIconUrl('googlegemini'),
     fallback: '✦',
-    x: 67,
-    y: 77,
+    x: 63,
+    y: 82,
     size: 'sm',
     tone: 'azure',
-    labelSide: 'right',
   },
   {
     name: 'Alibaba Wan',
     iconUrl: buildSimpleIconUrl('alibabacloud'),
     fallback: 'AW',
     x: 50,
-    y: 90.5,
+    y: 89,
     size: 'sm',
     tone: 'violet',
-    labelSide: 'bottom',
     iconScale: 0.8,
   },
   {
     name: 'Kling',
     iconUrl: buildSimpleIconUrl('kling'),
     fallback: 'KL',
-    x: 31,
-    y: 81,
+    x: 28,
+    y: 83,
     size: 'sm',
     tone: 'teal',
-    labelSide: 'right',
   },
   {
     name: 'Runway',
     iconUrl: buildSimpleIconUrl('runway'),
     fallback: 'RW',
-    x: 23,
-    y: 66,
+    x: 21.5,
+    y: 69,
     size: 'sm',
     tone: 'violet',
-    labelSide: 'right',
   },
   {
     name: 'Luma',
     iconUrl: buildSimpleIconUrl('luma'),
     fallback: 'LU',
-    x: 12.5,
-    y: 52.5,
+    x: 15,
+    y: 54,
     size: 'sm',
     tone: 'azure',
-    labelSide: 'right',
   },
   {
     name: 'Vidu',
     fallback: 'V',
-    x: 8.5,
-    y: 38.5,
+    x: 16,
+    y: 40,
     size: 'sm',
     tone: 'azure',
-    labelSide: 'right',
   },
   {
     name: 'MiniMax',
     iconUrl: buildSimpleIconUrl('minimax'),
     fallback: 'MM',
-    x: 19,
-    y: 29,
+    x: 22,
+    y: 31,
     size: 'sm',
     tone: 'rose',
-    labelSide: 'right',
   },
   {
     name: 'Groq',
     iconUrl: buildSimpleIconUrl('groq'),
     fallback: 'GQ',
-    x: 32.5,
-    y: 43,
+    x: 41,
+    y: 50,
     size: 'sm',
     tone: 'violet',
-    labelSide: 'right',
     iconFilter:
       'brightness(0) saturate(100%) invert(98%) sepia(6%) saturate(283%) hue-rotate(181deg) brightness(108%) contrast(99%)',
   },
@@ -206,11 +190,10 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'xAI',
     iconUrl: buildSimpleIconUrl('xai'),
     fallback: 'xI',
-    x: 28,
-    y: 45.5,
+    x: 36,
+    y: 40,
     size: 'md',
     tone: 'violet',
-    labelSide: 'right',
     iconFilter:
       'brightness(0) saturate(100%) invert(99%) sepia(3%) saturate(237%) hue-rotate(178deg) brightness(108%) contrast(98%)',
   },
@@ -218,11 +201,10 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Qwen',
     iconUrl: buildSimpleIconUrl('qwen'),
     fallback: 'Q',
-    x: 40.5,
-    y: 81.5,
+    x: 42.5,
+    y: 83,
     size: 'sm',
     tone: 'violet',
-    labelSide: 'bottom',
     iconFilter:
       'brightness(0) saturate(100%) invert(99%) sepia(7%) saturate(155%) hue-rotate(194deg) brightness(103%) contrast(99%)',
   },
@@ -230,11 +212,10 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Midjourney',
     iconUrl: buildSimpleIconUrl('midjourney'),
     fallback: 'MJ',
-    x: 87,
-    y: 40.5,
+    x: 86,
+    y: 50,
     size: 'sm',
     tone: 'violet',
-    labelSide: 'right',
     iconScale: 0.9,
     iconFilter:
       'brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(419%) hue-rotate(183deg) brightness(107%) contrast(99%)',
@@ -242,9 +223,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
 ]
 
 const MODEL_NODE_DIMENSIONS = {
-  sm: { orb: 76, icon: 28 },
-  md: { orb: 92, icon: 34 },
-  lg: { orb: 108, icon: 42 },
+  sm: { orb: 82, icon: 24 },
+  md: { orb: 98, icon: 30 },
+  lg: { orb: 116, icon: 36 },
 } as const
 
 const MODEL_TONE_STYLES: Record<
@@ -582,7 +563,7 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute top-[49.5%] left-1/2 z-20 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/20 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.2),rgba(172,118,255,0.84)_34%,rgba(44,18,82,0.96)_68%,rgba(8,9,18,1)_100%)] md:h-[316px] md:w-[316px]"
+                className="absolute top-1/2 left-1/2 z-20 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/20 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.2),rgba(172,118,255,0.84)_34%,rgba(44,18,82,0.96)_68%,rgba(8,9,18,1)_100%)] md:h-[316px] md:w-[316px]"
                 style={{
                   opacity: 0.36 + revealProgress * 0.64,
                   transform: `translate(-50%, -50%) scale(${0.9 + revealProgress * 0.1})`,
@@ -614,12 +595,30 @@ export function ModelMindMapSection() {
                 const deltaY = provider.y - 50
                 const outwardX = deltaX * 0.14 + drift * (provider.size === 'lg' ? 5 : 3)
                 const outwardY = deltaY * 0.12 - drift * (provider.size === 'lg' ? 4 : 2)
-                const directionClass =
-                  provider.labelSide === 'left'
-                    ? 'flex-row-reverse text-right'
-                    : provider.labelSide === 'bottom'
-                      ? 'flex-col text-center'
-                      : 'flex-row text-left'
+                const labelWidth =
+                  provider.size === 'lg'
+                    ? '4.8rem'
+                    : provider.size === 'md'
+                      ? '4.5rem'
+                      : '4.1rem'
+                const iconTop =
+                  provider.size === 'lg'
+                    ? '1.15rem'
+                    : provider.size === 'md'
+                      ? '1rem'
+                      : '0.9rem'
+                const nameTop =
+                  provider.size === 'lg'
+                    ? '3.85rem'
+                    : provider.size === 'md'
+                      ? '3.45rem'
+                      : '3.1rem'
+                const nameSize =
+                  provider.size === 'lg'
+                    ? '0.68rem'
+                    : provider.size === 'md'
+                      ? '0.64rem'
+                      : '0.58rem'
 
                 return (
                   <div
@@ -638,7 +637,7 @@ export function ModelMindMapSection() {
                     }}
                   >
                     <div
-                      className={`flex items-center gap-3 ${directionClass}`}
+                      className="flex items-center justify-center"
                       style={{
                         animation: prefersReducedMotion
                           ? 'none'
@@ -657,15 +656,26 @@ export function ModelMindMapSection() {
                         }}
                       >
                         <div className="absolute inset-[7px] rounded-full border border-white/9" />
-                        <div className="absolute inset-0 flex items-center justify-center">
+                        <div
+                          className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center"
+                          style={{ top: iconTop }}
+                        >
                           <ProviderIcon provider={provider} />
                         </div>
-                      </div>
-
-                      <div className="rounded-full border border-white/6 bg-[linear-gradient(180deg,rgba(16,19,29,0.78),rgba(9,11,17,0.88))] px-3.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.16)] backdrop-blur-md">
-                        <p className="text-[0.92rem] font-medium whitespace-nowrap text-white/92 md:text-[0.98rem]">
-                          {provider.name}
-                        </p>
+                        <div
+                          className="absolute left-1/2 -translate-x-1/2 text-center"
+                          style={{
+                            top: nameTop,
+                            width: labelWidth,
+                          }}
+                        >
+                          <p
+                            className="line-clamp-2 leading-tight font-medium text-white/88"
+                            style={{ fontSize: nameSize }}
+                          >
+                            {provider.name}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
