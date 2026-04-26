@@ -28,6 +28,7 @@ type ModelProvider = {
   orbit: ProviderOrbit
   angle: number
   speed: number
+  lane?: -1 | 0 | 1
   size: ProviderSize
   tone: ProviderTone
   iconScale?: number
@@ -49,6 +50,11 @@ const MODEL_STAGE = {
   height: 820,
 } as const
 
+const MODEL_CORE_POSITION = {
+  x: 50,
+  y: 50,
+} as const
+
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
   inner: { x: 278, y: 100 },
   middle: { x: 408, y: 148 },
@@ -61,8 +67,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('google'),
     fallback: 'G',
     orbit: 'outer',
-    angle: 226,
-    speed: 4.6,
+    angle: 224,
+    speed: 3.92,
+    lane: -1,
     size: 'md',
     tone: 'amber',
   },
@@ -72,7 +79,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     fallback: 'O',
     orbit: 'outer',
     angle: 270,
-    speed: 4.2,
+    speed: 3.84,
+    lane: 0,
     size: 'lg',
     tone: 'violet',
     iconFilter:
@@ -83,8 +91,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('blackforestlabs'),
     fallback: 'BF',
     orbit: 'outer',
-    angle: 314,
-    speed: 4.4,
+    angle: 309,
+    speed: 3.98,
+    lane: -1,
     size: 'md',
     tone: 'azure',
     iconScale: 0.86,
@@ -96,8 +105,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('openrouter'),
     fallback: 'OR',
     orbit: 'outer',
-    angle: 346,
-    speed: 4.9,
+    angle: 340,
+    speed: 4.06,
+    lane: 1,
     size: 'md',
     tone: 'violet',
     iconScale: 0.84,
@@ -109,8 +119,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('bytedance'),
     fallback: 'BD',
     orbit: 'middle',
-    angle: 8,
-    speed: 6.4,
+    angle: 12,
+    speed: 5.28,
+    lane: 1,
     size: 'md',
     tone: 'azure',
   },
@@ -119,8 +130,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('anthropic'),
     fallback: 'AI',
     orbit: 'outer',
-    angle: 40,
-    speed: 4.1,
+    angle: 34,
+    speed: 3.88,
+    lane: -1,
     size: 'md',
     tone: 'amber',
     iconFilter:
@@ -131,8 +143,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('googlegemini'),
     fallback: '✦',
     orbit: 'outer',
-    angle: 72,
-    speed: 4.7,
+    angle: 66,
+    speed: 4.02,
+    lane: 1,
     size: 'sm',
     tone: 'azure',
   },
@@ -141,8 +154,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('alibabacloud'),
     fallback: 'AW',
     orbit: 'outer',
-    angle: 90,
-    speed: 4.3,
+    angle: 92,
+    speed: 3.9,
+    lane: 0,
     size: 'sm',
     tone: 'violet',
     iconScale: 0.8,
@@ -152,8 +166,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('kling'),
     fallback: 'KL',
     orbit: 'outer',
-    angle: 118,
-    speed: 4.8,
+    angle: 124,
+    speed: 4.04,
+    lane: 1,
     size: 'sm',
     tone: 'teal',
   },
@@ -162,8 +177,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('runway'),
     fallback: 'RW',
     orbit: 'outer',
-    angle: 145,
-    speed: 4.5,
+    angle: 150,
+    speed: 3.94,
+    lane: -1,
     size: 'sm',
     tone: 'violet',
   },
@@ -173,7 +189,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     fallback: 'LU',
     orbit: 'outer',
     angle: 176,
-    speed: 4.4,
+    speed: 3.86,
+    lane: 1,
     size: 'sm',
     tone: 'azure',
   },
@@ -181,8 +198,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Vidu',
     fallback: 'V',
     orbit: 'outer',
-    angle: 198,
-    speed: 4.6,
+    angle: 204,
+    speed: 4.08,
+    lane: 0,
     size: 'sm',
     tone: 'azure',
   },
@@ -191,8 +209,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('minimax'),
     fallback: 'MM',
     orbit: 'middle',
-    angle: 220,
-    speed: 6.1,
+    angle: 224,
+    speed: 5.12,
+    lane: -1,
     size: 'sm',
     tone: 'rose',
   },
@@ -201,8 +220,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('groq'),
     fallback: 'GQ',
     orbit: 'inner',
-    angle: 178,
-    speed: 8.8,
+    angle: 184,
+    speed: 6.48,
+    lane: -1,
     size: 'sm',
     tone: 'violet',
     iconFilter:
@@ -213,8 +233,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('xai'),
     fallback: 'xI',
     orbit: 'inner',
-    angle: 196,
-    speed: 8.2,
+    angle: 210,
+    speed: 6.72,
+    lane: 1,
     size: 'md',
     tone: 'violet',
     iconFilter:
@@ -225,8 +246,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('qwen'),
     fallback: 'Q',
     orbit: 'middle',
-    angle: 86,
-    speed: 6.6,
+    angle: 84,
+    speed: 5.36,
+    lane: 0,
     size: 'sm',
     tone: 'violet',
     iconFilter:
@@ -237,8 +259,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('midjourney'),
     fallback: 'MJ',
     orbit: 'outer',
-    angle: 10,
-    speed: 4.2,
+    angle: 356,
+    speed: 3.96,
+    lane: 0,
     size: 'sm',
     tone: 'violet',
     iconScale: 0.9,
@@ -608,8 +631,10 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute top-1/2 left-1/2 z-20 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/20 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.2),rgba(172,118,255,0.84)_34%,rgba(44,18,82,0.96)_68%,rgba(8,9,18,1)_100%)] md:h-[316px] md:w-[316px]"
+                className="absolute z-40 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/20 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.2),rgba(172,118,255,0.84)_34%,rgba(44,18,82,0.96)_68%,rgba(8,9,18,1)_100%)] md:h-[316px] md:w-[316px]"
                 style={{
+                  left: `${MODEL_CORE_POSITION.x}%`,
+                  top: `${MODEL_CORE_POSITION.y}%`,
                   opacity: 0.36 + revealProgress * 0.64,
                   transform: `translate(-50%, -50%) scale(${0.9 + revealProgress * 0.1})`,
                   animation: prefersReducedMotion
@@ -637,52 +662,65 @@ export function ModelMindMapSection() {
                 const tone = MODEL_TONE_STYLES[provider.tone]
                 const dimension = MODEL_NODE_DIMENSIONS[provider.size]
                 const orbitRadii = MODEL_ORBIT_RADII[provider.orbit]
+                const laneOffset = provider.lane ?? 0
+                const orbitRadiusX = orbitRadii.x + laneOffset * 26
+                const orbitRadiusY = orbitRadii.y + laneOffset * 11
                 const orbitAngle =
                   ((provider.angle + visibleOrbitTime * provider.speed) * Math.PI) / 180
+                const orbitDepth = (Math.sin(orbitAngle) + 1) / 2
+                const depthScale = 0.84 + orbitDepth * 0.24
+                const nodeOpacity =
+                  (0.24 + revealProgress * 0.76) * (0.72 + orbitDepth * 0.28)
+                const nodeLift = (1 - orbitDepth) * -6
                 const currentX =
-                  50 + (Math.cos(orbitAngle) * orbitRadii.x * 100) / MODEL_STAGE.width
+                  MODEL_CORE_POSITION.x +
+                  (Math.cos(orbitAngle) * orbitRadiusX * 100) / MODEL_STAGE.width
                 const currentY =
-                  50 + (Math.sin(orbitAngle) * orbitRadii.y * 100) / MODEL_STAGE.height
-                const deltaX = currentX - 50
-                const deltaY = currentY - 50
-                const outwardX = deltaX * 0.14 + drift * (provider.size === 'lg' ? 5 : 3)
-                const outwardY = deltaY * 0.12 - drift * (provider.size === 'lg' ? 4 : 2)
+                  MODEL_CORE_POSITION.y +
+                  (Math.sin(orbitAngle) * orbitRadiusY * 100) / MODEL_STAGE.height
+                const deltaX = currentX - MODEL_CORE_POSITION.x
+                const deltaY = currentY - MODEL_CORE_POSITION.y
+                const outwardX =
+                  deltaX * 0.12 + drift * (provider.size === 'lg' ? 4 : 2.5)
+                const outwardY =
+                  deltaY * 0.1 - drift * (provider.size === 'lg' ? 3 : 1.5) + nodeLift
                 const labelWidth =
                   provider.size === 'lg'
                     ? '4.8rem'
                     : provider.size === 'md'
                       ? '4.5rem'
                       : '4.1rem'
-                const iconTop =
-                  provider.size === 'lg'
-                    ? '1.15rem'
-                    : provider.size === 'md'
-                      ? '1rem'
-                      : '0.9rem'
-                const nameTop =
-                  provider.size === 'lg'
-                    ? '3.85rem'
-                    : provider.size === 'md'
-                      ? '3.45rem'
-                      : '3.1rem'
                 const nameSize =
                   provider.size === 'lg'
                     ? '0.68rem'
                     : provider.size === 'md'
                       ? '0.64rem'
                       : '0.58rem'
+                const contentGap =
+                  provider.size === 'lg'
+                    ? '0.42rem'
+                    : provider.size === 'md'
+                      ? '0.34rem'
+                      : '0.26rem'
+                const orbPaddingTop =
+                  provider.size === 'lg'
+                    ? '1.12rem'
+                    : provider.size === 'md'
+                      ? '0.95rem'
+                      : '0.82rem'
 
                 return (
                   <div
                     key={provider.name}
-                    className="absolute z-30 transition-[opacity,transform] duration-500 ease-out"
+                    className="absolute transition-[opacity,transform] duration-500 ease-out"
                     style={{
                       left: `${currentX}%`,
                       top: `${currentY}%`,
-                      opacity: 0.14 + revealProgress * 0.86,
+                      zIndex: 12 + Math.round(orbitDepth * 18),
+                      opacity: nodeOpacity,
                       transform: `translate(-50%, -50%) translate(${outwardX * (1 - revealProgress)}px, ${
                         18 * (1 - revealProgress) + outwardY
-                      }px) scale(${0.72 + revealProgress * 0.28})`,
+                      }px) scale(${(0.74 + revealProgress * 0.26) * depthScale})`,
                       transitionDelay: prefersReducedMotion
                         ? '0ms'
                         : `${90 + index * 24}ms`,
@@ -701,24 +739,18 @@ export function ModelMindMapSection() {
                       >
                         <div className="absolute inset-[7px] rounded-full border border-white/9" />
                         <div
-                          className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center"
-                          style={{ top: iconTop }}
+                          className="flex h-full flex-col items-center text-center"
+                          style={{ gap: contentGap, paddingTop: orbPaddingTop }}
                         >
                           <ProviderIcon provider={provider} />
-                        </div>
-                        <div
-                          className="absolute left-1/2 -translate-x-1/2 text-center"
-                          style={{
-                            top: nameTop,
-                            width: labelWidth,
-                          }}
-                        >
-                          <p
-                            className="line-clamp-2 leading-tight font-medium text-white/88"
-                            style={{ fontSize: nameSize }}
-                          >
-                            {provider.name}
-                          </p>
+                          <div style={{ width: labelWidth }}>
+                            <p
+                              className="line-clamp-2 leading-tight font-medium text-white/88"
+                              style={{ fontSize: nameSize }}
+                            >
+                              {provider.name}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
