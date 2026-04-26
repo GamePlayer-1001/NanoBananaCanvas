@@ -23,7 +23,6 @@ import {
   Play,
   ShieldCheck,
   Sparkles,
-  Star,
   Video,
   Workflow,
   Zap,
@@ -283,6 +282,26 @@ const MODEL_SUMMARY_KEYS = [
 const INITIAL_MODEL_MOTION: ModelMotionState = { progress: 0, reveal: 0, drift: -1 }
 
 const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
+const FEATURE_VISUALS = {
+  canvas: {
+    icon: Workflow,
+    imageSrc: '/landing/hero/hero-merge.png',
+    accent:
+      'from-[#6b5cff]/28 via-[#2b2848]/55 to-transparent',
+  },
+  models: {
+    icon: Sparkles,
+    imageSrc: '/landing/hero/hero-scene.png',
+    accent:
+      'from-[#59d6b7]/22 via-[#142a29]/48 to-transparent',
+  },
+  outputs: {
+    icon: Zap,
+    imageSrc: '/landing/hero/hero-landscape.png',
+    accent:
+      'from-[#ffb25c]/20 via-[#2a2117]/48 to-transparent',
+  },
+} as const
 
 const LANDING_BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
 const LANDING_CREDIT_PACKS = ['500', '1200', '3500', '8000'] as const
@@ -876,48 +895,173 @@ export function FeaturesSection() {
   const featuresT = useTranslations('landing.sections.features')
 
   return (
-    <section id="features" className="bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
+    <section
+      id="features"
+      className="relative overflow-hidden bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1240px]">
-        <SectionHeader
-          eyebrow=""
-          title={featuresT('title')}
-          body={featuresT('body')}
-        />
+        <div className="relative grid gap-6 xl:grid-cols-[0.84fr_1.16fr]">
+          <div className="rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(20,20,25,0.96),rgba(11,11,15,0.98))] p-7 shadow-[0_20px_70px_rgba(0,0,0,0.22)] md:p-8">
+            <SectionHeader
+              eyebrow=""
+              title={featuresT('title')}
+              body={featuresT('body')}
+            />
 
-        <div className="mt-14 grid gap-5 lg:grid-cols-3">
-          {FEATURE_KEYS.map((key, index) => (
-            <article
-              key={key}
-              className="min-h-[300px] rounded-[28px] border border-white/8 bg-white/[0.035] p-6"
+            <div className="mt-10 space-y-3">
+              {FEATURE_KEYS.map((key, index) => {
+                const Icon = FEATURE_VISUALS[key].icon
+
+                return (
+                  <article
+                    key={`feature-rail-${key}`}
+                    className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-colors duration-200 hover:bg-white/[0.05]"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white text-black">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium tracking-[0.22em] text-white/34 uppercase">
+                            0{index + 1}
+                          </span>
+                          <h3 className="text-lg font-semibold text-white">
+                            {featuresT(`items.${key}.title`)}
+                          </h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-7 text-white/58">
+                          {featuresT(`items.${key}.body`)}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+
+            <Link
+              href="/features"
+              className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-black">
-                {index === 0 ? <Workflow className="h-5 w-5" /> : null}
-                {index === 1 ? <Sparkles className="h-5 w-5" /> : null}
-                {index === 2 ? <Zap className="h-5 w-5" /> : null}
-                {index === 3 ? <Star className="h-5 w-5" /> : null}
-              </div>
-              <h3 className="mt-7 text-xl font-semibold text-white">
-                {featuresT(`items.${key}.title`)}
-              </h3>
-              <p className="mt-4 text-sm leading-7 text-white/62">
-                {featuresT(`items.${key}.body`)}
-              </p>
-              <div className="mt-7 rounded-[22px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.02))] p-3">
-                <div className="grid h-34 grid-cols-3 gap-2 overflow-hidden rounded-[18px] bg-[#07080d] p-2">
-                  <div className="rounded-[14px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.2),rgba(87,99,255,0.18),rgba(7,8,13,0.95))]" />
-                  <div className="rounded-[14px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),rgba(91,214,183,0.14),rgba(7,8,13,0.95))]" />
-                  <div className="rounded-[14px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),rgba(255,164,77,0.16),rgba(7,8,13,0.95))]" />
+              {featuresT('exploreCta')}
+            </Link>
+          </div>
+
+          <div className="relative overflow-hidden rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,rgba(15,15,21,0.98),rgba(8,8,12,0.98))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:p-6">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(107,92,255,0.14),transparent_18%),radial-gradient(circle_at_84%_78%,rgba(89,214,183,0.1),transparent_18%)]" />
+            <div className="relative">
+              <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+                <article className="rounded-[28px] border border-white/8 bg-white/[0.03] p-4">
+                  <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-[#09090d]">
+                    <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-3">
+                      <span className="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.18em] text-white/78 uppercase">
+                        {featuresT(`items.canvas.title`)}
+                      </span>
+                      <span className="rounded-full border border-[#6b5cff]/24 bg-[#6b5cff]/12 px-3 py-1 text-[0.68rem] font-medium text-[#d8d1ff]">
+                        01
+                      </span>
+                    </div>
+                    <Image
+                      src="/landing/hero/hero-merge.png"
+                      alt={featuresT('items.canvas.title')}
+                      width={940}
+                      height={720}
+                      className="h-[360px] w-full object-cover"
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#09090d] to-transparent" />
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-white/58">
+                    {featuresT(`items.canvas.body`)}
+                  </p>
+                </article>
+
+                <div className="grid gap-4">
+                  {FEATURE_KEYS.filter((key) => key !== 'canvas').map((key, index) => {
+                    const visual = FEATURE_VISUALS[key]
+                    const Icon = visual.icon
+
+                    return (
+                      <article
+                        key={`feature-media-${key}`}
+                        className={`relative overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4`}
+                      >
+                        <div
+                          className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${visual.accent}`}
+                        />
+                        <div className="relative grid gap-4 md:grid-cols-[0.96fr_1.04fr]">
+                          <div className="overflow-hidden rounded-[22px] border border-white/8 bg-[#09090d]">
+                            <Image
+                              src={visual.imageSrc}
+                              alt={featuresT(`items.${key}.title`)}
+                              width={860}
+                              height={620}
+                              className="h-[220px] w-full object-cover"
+                            />
+                          </div>
+                          <div className="flex min-w-0 flex-col justify-between">
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white text-black">
+                                  <Icon className="h-4.5 w-4.5" />
+                                </div>
+                                <span className="text-xs font-medium tracking-[0.22em] text-white/34 uppercase">
+                                  0{index + 2}
+                                </span>
+                              </div>
+                              <h3 className="mt-4 text-[1.5rem] font-semibold tracking-tight text-white">
+                                {featuresT(`items.${key}.title`)}
+                              </h3>
+                              <p className="mt-3 text-sm leading-7 text-white/58">
+                                {featuresT(`items.${key}.body`)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  })}
                 </div>
               </div>
-              <Link
-                href="/features"
-                className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-white/82 transition hover:text-white"
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-3">
+          {FEATURE_KEYS.map((key) => {
+            const visual = FEATURE_VISUALS[key]
+            const Icon = visual.icon
+
+            return (
+              <article
+                key={`feature-card-${key}`}
+                className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.035] p-5 shadow-[0_18px_54px_rgba(0,0,0,0.14)]"
               >
-                {featuresT('exploreCta')}
-                <ChevronDown className="-rotate-90 h-4 w-4" />
-              </Link>
-            </article>
-          ))}
+                <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-[#07080d]">
+                  <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${visual.accent}`} />
+                  <Image
+                    src={visual.imageSrc}
+                    alt={featuresT(`items.${key}.title`)}
+                    width={860}
+                    height={620}
+                    className="h-52 w-full object-cover"
+                  />
+                </div>
+
+                <div className="mt-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-black">
+                  <Icon className="h-5 w-5" />
+                </div>
+
+                <h3 className="mt-5 text-xl font-semibold text-white">
+                  {featuresT(`items.${key}.title`)}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-white/62">
+                  {featuresT(`items.${key}.body`)}
+                </p>
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>
