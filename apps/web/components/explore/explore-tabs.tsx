@@ -1,6 +1,7 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 的 Search/Upload 图标
- * [OUTPUT]: 对外提供 ExploreTabs 标签栏组件 (热门/最新/我点赞的/我的视频 + 探索搜索入口)
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 useRouter，
+ *          依赖 lucide-react 的 Search/Upload 图标
+ * [OUTPUT]: 对外提供 ExploreTabs 标签栏组件 (热门/最新/我点赞的/我的视频 + 探索搜索入口 + 视频分析跳转)
  * [POS]: explore 的顶部标签导航，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -8,6 +9,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useRouter } from '@/i18n/navigation'
 import { Search, Upload } from 'lucide-react'
 
 /* ─── Tab Config ─────────────────────────────────────── */
@@ -30,6 +32,7 @@ export function ExploreTabs({
   searchLabel: string
 }) {
   const t = useTranslations('explore')
+  const router = useRouter()
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -63,7 +66,10 @@ export function ExploreTabs({
         </button>
 
         {/* 上传按钮 */}
-        <button className="flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-600">
+        <button
+          onClick={() => router.push('/video-analysis')}
+          className="flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+        >
           <Upload size={14} />
           {t('uploadVideo')}
         </button>
