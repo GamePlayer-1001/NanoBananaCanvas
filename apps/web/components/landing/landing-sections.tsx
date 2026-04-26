@@ -903,51 +903,46 @@ export function FeaturesSection() {
     accent: FEATURE_VISUALS[key].accent,
   }))
   const [activeFeature, setActiveFeature] = useState<(typeof FEATURE_KEYS)[number]>('canvas')
-  const slideRefs = useRef<Array<HTMLElement | null>>([])
-  const activeFeatureItem =
-    featureItems.find((item) => item.key === activeFeature) ?? featureItems[0]
+  const wheelCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeFeatureIndex = Math.max(
+    featureItems.findIndex((item) => item.key === activeFeature),
+    0,
+  )
+  const activeFeatureItem = featureItems[activeFeatureIndex]
+  const ActiveIcon = activeFeatureItem.icon
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined
+    return () => {
+      if (wheelCooldownRef.current) {
+        clearTimeout(wheelCooldownRef.current)
+      }
+    }
+  }, [])
 
-    const nodes = slideRefs.current.filter(Boolean) as HTMLElement[]
-    if (!nodes.length) return undefined
+  function activateFeature(index: number) {
+    const nextIndex = clamp(index, 0, featureItems.length - 1)
+    setActiveFeature(featureItems[nextIndex].key)
+  }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
-
-        if (!visible[0]) return
-
-        const key = visible[0].target.getAttribute('data-feature-key') as
-          | (typeof FEATURE_KEYS)[number]
-          | null
-
-        if (key) {
-          setActiveFeature(key)
-        }
-      },
-      {
-        threshold: [0.3, 0.5, 0.7],
-        rootMargin: '-18% 0px -18% 0px',
-      },
-    )
-
-    nodes.forEach((node) => observer.observe(node))
-
-    return () => observer.disconnect()
-  }, [featureItems.length])
-
-  function scrollToFeature(index: number) {
-    const target = slideRefs.current[index]
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  function handleFeatureWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (Math.abs(event.deltaY) < 18) return
+    if (wheelCooldownRef.current) {
+      event.preventDefault()
       return
     }
 
-    setActiveFeature(featureItems[index].key)
+    const direction = event.deltaY > 0 ? 1 : -1
+    const nextIndex = clamp(activeFeatureIndex + direction, 0, featureItems.length - 1)
+
+    if (nextIndex === activeFeatureIndex) {
+      return
+    }
+
+    event.preventDefault()
+    activateFeature(nextIndex)
+    wheelCooldownRef.current = setTimeout(() => {
+      wheelCooldownRef.current = null
+    }, 420)
   }
 
   return (
@@ -957,21 +952,21 @@ export function FeaturesSection() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1280px]">
-        <div className="hidden gap-12 xl:grid xl:grid-cols-[0.44fr_0.56fr]">
-          <div className="sticky top-28 self-start py-6">
-            <div className="flex items-start gap-6">
-              <span className="mt-4 h-20 w-px bg-white/72" />
-              <div>
-                <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
-                  {featuresT('title')}
-                </p>
-                <p className="mt-5 max-w-[28rem] text-base leading-8 text-white/56">
-                  {featuresT('body')}
-                </p>
-              </div>
+        <div
+          className="hidden items-start gap-14 xl:grid xl:grid-cols-[0.42fr_0.58fr]"
+          onWheel={handleFeatureWheel}
+        >
+          <div className="sticky top-28 self-start py-8">
+            <div className="max-w-[29rem]">
+              <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                {featuresT('title')}
+              </p>
+              <p className="mt-5 text-base leading-8 text-white/54">
+                {featuresT('body')}
+              </p>
             </div>
 
-            <div className="mt-16 space-y-5">
+            <div className="mt-16 space-y-6">
               {featureItems.map((item) => {
                 const isActive = item.key === activeFeature
 
@@ -979,40 +974,44 @@ export function FeaturesSection() {
                   <button
                     key={`feature-nav-${item.key}`}
                     type="button"
-                    onClick={() => scrollToFeature(item.index)}
+                    onClick={() => activateFeature(item.index)}
                     className={`block text-left transition-all duration-300 ${
                       isActive
                         ? 'text-white'
                         : 'text-white/18 hover:text-white/38'
                     }`}
                   >
-                    <span
-                      className={`block max-w-[8.6ch] font-semibold tracking-tight ${
-                        isActive
-                          ? 'text-[4.25rem] leading-[0.9]'
-                          : 'text-[3.2rem] leading-[0.94]'
-                      }`}
-                    >
-                      {item.title}
-                    </span>
+                    <div className="flex items-start gap-4">
+                      <span
+                        className={`mt-3 h-14 w-px transition-colors duration-300 ${
+                          isActive ? 'bg-white/80' : 'bg-transparent'
+                        }`}
+                      />
+                      <span
+                        className={`block max-w-[8.4ch] font-semibold tracking-tight transition-all duration-300 ${
+                          isActive
+                            ? 'text-[4.25rem] leading-[0.9]'
+                            : 'text-[3.2rem] leading-[0.94]'
+                        }`}
+                      >
+                        {item.title}
+                      </span>
+                    </div>
                   </button>
                 )
               })}
             </div>
 
-            <div className="mt-12 max-w-[28rem] rounded-[28px] border border-white/8 bg-white/[0.04] p-6">
-              <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
-                Feature 0{activeFeatureItem.index + 1}
-              </p>
-              <p className="mt-4 text-base leading-8 text-white/62">
-                {activeFeatureItem.body}
+            <div className="mt-14 max-w-[24rem]">
+              <p className="text-sm leading-7 text-white/42">
+                点击左侧标题，或在这个板块内滚动鼠标滑轮，逐个切换右侧对应的图片与文案。
               </p>
               <div className="mt-6 flex gap-2">
                 {featureItems.map((item) => (
                   <button
                     key={`feature-dot-${item.key}`}
                     type="button"
-                    onClick={() => scrollToFeature(item.index)}
+                    onClick={() => activateFeature(item.index)}
                     className={`h-2.5 rounded-full transition-all duration-300 ${
                       item.key === activeFeature ? 'w-10 bg-white' : 'w-2.5 bg-white/18 hover:bg-white/34'
                     }`}
@@ -1020,107 +1019,61 @@ export function FeaturesSection() {
                   />
                 ))}
               </div>
-            </div>
-
-            <div className="mt-8 max-w-[26rem] space-y-6">
               <Link
                 href="/features"
-                className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
+                className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
               >
                 {featuresT('exploreCta')}
               </Link>
             </div>
           </div>
 
-          <div className="space-y-8">
-            {featureItems.map((item, index) => {
-              const ItemIcon = item.icon
-              const isActive = item.key === activeFeature
+          <div className="sticky top-24 self-start">
+            <article
+              key={`feature-panel-${activeFeatureItem.key}`}
+              className="overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
+            >
+              <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
+                <div
+                  className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${activeFeatureItem.accent}`}
+                />
+                <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(4,6,12,0.02),rgba(4,6,12,0.18)_52%,rgba(4,6,12,0.78)_100%)]" />
+                <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
+                  <span className="rounded-full border border-white/12 bg-black/22 px-4 py-1.5 text-[0.7rem] font-semibold tracking-[0.2em] text-white/78 uppercase">
+                    Feature 0{activeFeatureItem.index + 1}
+                  </span>
+                  <span className="rounded-full border border-white/12 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/84">
+                    {activeFeatureItem.title}
+                  </span>
+                </div>
+                <Image
+                  src={activeFeatureItem.imageSrc}
+                  alt={activeFeatureItem.title}
+                  width={1280}
+                  height={980}
+                  className="h-[520px] w-full object-cover object-center brightness-[1.08] contrast-[1.03] saturate-[1.06]"
+                />
+              </div>
 
-              return (
-                <article
-                  key={`feature-slide-${item.key}`}
-                  ref={(node) => {
-                    slideRefs.current[index] = node
-                  }}
-                  data-feature-key={item.key}
-                  className={`scroll-mt-28 overflow-hidden rounded-[38px] border bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 transition-all duration-300 ${
-                    isActive
-                      ? 'border-white/12 shadow-[0_28px_90px_rgba(0,0,0,0.28)]'
-                      : 'border-white/8'
-                  }`}
-                >
-                  <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
-                    <div
-                      className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${item.accent}`}
-                    />
-                    <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(4,6,12,0.02),rgba(4,6,12,0.14)_50%,rgba(4,6,12,0.78)_100%)]" />
-                    <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
-                      <span className="rounded-full border border-white/12 bg-black/22 px-4 py-1.5 text-[0.7rem] font-semibold tracking-[0.2em] text-white/78 uppercase">
-                        Feature 0{item.index + 1}
-                      </span>
-                      <span className="rounded-full border border-white/12 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/84">
-                        {item.title}
-                      </span>
-                    </div>
-                    <Image
-                      src={item.imageSrc}
-                      alt={item.title}
-                      width={1280}
-                      height={980}
-                      className="h-[540px] w-full object-cover object-center brightness-[1.1] contrast-[1.04] saturate-[1.08]"
-                    />
+              <div className="mt-5 rounded-[28px] border border-white/8 bg-white/[0.045] p-7">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black">
+                    <ActiveIcon className="h-5 w-5" />
                   </div>
-
-                  <div className="mt-5 grid gap-5 lg:grid-cols-[0.22fr_0.78fr]">
-                    <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black">
-                        <ItemIcon className="h-5 w-5" />
-                      </div>
-                      <p className="mt-5 text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
-                        Scroll Switch
-                      </p>
-                      <p className="mt-2 text-sm leading-7 text-white/54">
-                        随着页面向下滚动，左侧标题高亮与当前图文会同步切换。
-                      </p>
-                    </div>
-
-                    <div className="rounded-[26px] border border-white/8 bg-white/[0.045] p-7">
-                      <h3 className="text-[2rem] leading-[1.04] font-semibold tracking-tight text-white">
-                        {item.title}
-                      </h3>
-                      <p className="mt-4 max-w-[52rem] text-base leading-8 text-white/62">
-                        {item.body}
-                      </p>
-
-                      <div className="mt-8 flex flex-wrap gap-3">
-                        {featureItems.map((summaryItem) => (
-                          <button
-                            key={`feature-summary-${item.key}-${summaryItem.key}`}
-                            type="button"
-                            onClick={() => scrollToFeature(summaryItem.index)}
-                            className={`rounded-full border px-4 py-2 text-sm transition-colors duration-300 ${
-                              summaryItem.key === item.key
-                                ? 'border-white/14 bg-white/12 text-white'
-                                : 'border-white/8 bg-white/[0.03] text-white/52 hover:text-white/82'
-                            }`}
-                          >
-                            {summaryItem.title}
-                          </button>
-                        ))}
-                      </div>
-
-                      <Link
-                        href="/features"
-                        className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-                      >
-                        {featuresT('exploreCta')}
-                      </Link>
-                    </div>
+                  <div>
+                    <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
+                      Feature Detail
+                    </p>
+                    <h3 className="mt-2 text-[2rem] leading-[1.02] font-semibold tracking-tight text-white">
+                      {activeFeatureItem.title}
+                    </h3>
                   </div>
-                </article>
-              )
-            })}
+                </div>
+                <p className="mt-5 max-w-[48rem] text-base leading-8 text-white/62">
+                  {activeFeatureItem.body}
+                </p>
+              </div>
+            </article>
           </div>
         </div>
 
