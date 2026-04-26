@@ -1,9 +1,11 @@
 /**
- * [INPUT]: 依赖 @/lib/env 的 getEnv/requireEnv，依赖 @/lib/errors 的 BillingError/ErrorCode
- * [OUTPUT]: 对外提供 StripeBillingConfig、币种白名单/国家推断、环境变量键生成器与 resolveStripePriceId()
- * [POS]: lib/billing 的配置真相源，兼容“单 Price 多币种”和“按币种拆 Price”两种 Stripe 建模方式
+ * [INPUT]: 依赖 stripe SDK，依赖 @/lib/env 的 getEnv/requireEnv，依赖 @/lib/errors 的 BillingError/ErrorCode
+ * [OUTPUT]: 对外提供 StripeBillingConfig、币种白名单/国家推断、环境变量键生成器、lookup_key 生成器与 resolveStripePriceId()
+ * [POS]: lib/billing 的配置真相源，兼容“单 Price 多币种”、“按币种拆 Price”与 lookup_key 动态回退三种 Stripe 建模方式
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
+
+import Stripe from 'stripe'
 
 import { getEnv, requireEnv } from '@/lib/env'
 import { BillingError, ErrorCode } from '@/lib/errors'
@@ -52,6 +54,12 @@ export interface ResolveStripePriceIdInput {
   packageId?: CreditPackId
   currency: BillingCurrency
 }
+
+interface ResolveStripePriceIdOptions {
+  lookupPriceId?: (lookupKey: string) => Promise<string | undefined>
+}
+
+const stripeLookupCache = new Map<string, string>()
 
 function isBillingPlan(value: string): value is BillingPlan {
   return (BILLING_PLANS as readonly string[]).includes(value)
@@ -147,6 +155,19 @@ export function getCreditPackPriceCurrencyEnvKey(
   return `${getCreditPackPriceEnvKey(packageId)}_${currency.toUpperCase()}`
 }
 
+export function getPlanPriceLookupKey(
+  plan: BillingPlan,
+  purchaseMode: PlanPurchaseMode,
+): string {
+  return `${plan}.${purchaseMode}`
+}
+
+export function getCreditPackPriceLookupKey(
+  packageId: CreditPackId,
+): string {
+  return `credit_pack.${packageId}`
+}
+
 async function getOptionalEnv(key: string): Promise<string | undefined> {
   return normalizeEnvValue(await getEnv(key))
 }
@@ -219,6 +240,35 @@ export async function getStripeBillingConfig(): Promise<StripeBillingConfig> {
   }
 }
 
+async function resolveStripePriceIdByLookupKey(lookupKey: string): Promise<string | undefined> {
+  const cached = stripeLookupCache.get(lookupKey)
+  if (cached) {
+    return cached
+  }
+
+  const secretKey = await getEnv('STRIPE_SECRET_KEY')
+  if (!secretKey?.trim()) {
+    return undefined
+  }
+
+  const stripe = new Stripe(secretKey, {
+    apiVersion: '2026-03-25.dahlia',
+  })
+
+  const response = await stripe.prices.list({
+    lookup_keys: [lookupKey],
+    active: true,
+    limit: 1,
+  })
+
+  const matchedPriceId = response.data[0]?.id
+  if (matchedPriceId) {
+    stripeLookupCache.set(lookupKey, matchedPriceId)
+  }
+
+  return matchedPriceId
+}
+
 function assertPlanPurchaseMode(purchaseMode: BillingPurchaseMode): PlanPurchaseMode {
   if (!isPlanPurchaseMode(purchaseMode)) {
     throw new BillingError(
@@ -258,8 +308,10 @@ function assertCreditPackId(packageId: CreditPackId | undefined): CreditPackId {
 export async function resolveStripePriceId(
   input: ResolveStripePriceIdInput,
   config?: StripeBillingConfig,
+  options?: ResolveStripePriceIdOptions,
 ): Promise<string> {
   const resolvedConfig = config ?? (await getStripeBillingConfig())
+  const resolveLookupPriceId = options?.lookupPriceId ?? resolveStripePriceIdByLookupKey
 
   if (!isBillingCurrency(input.currency)) {
     throw new BillingError(
@@ -274,15 +326,28 @@ export async function resolveStripePriceId(
     const bucket = resolvedConfig.creditPackPrices[packageId]
     const priceId = bucket?.byCurrency[input.currency] ?? bucket?.defaultPriceId
 
-    if (!priceId) {
-      throw new BillingError(
-        ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
-        'Stripe price is not configured for the requested credit pack',
-        { purchaseMode: input.purchaseMode, packageId, currency: input.currency },
-      )
+    if (priceId) {
+      return priceId
     }
 
-    return priceId
+    const lookupPriceId = await resolveLookupPriceId(
+      getCreditPackPriceLookupKey(packageId),
+    )
+
+    if (lookupPriceId) {
+      return lookupPriceId
+    }
+
+    throw new BillingError(
+      ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
+      'Stripe price is not configured for the requested credit pack',
+      {
+        purchaseMode: input.purchaseMode,
+        packageId,
+        currency: input.currency,
+        lookupKey: getCreditPackPriceLookupKey(packageId),
+      },
+    )
   }
 
   const plan = assertBillingPlan(input.plan)
@@ -290,13 +355,20 @@ export async function resolveStripePriceId(
   const bucket = resolvedConfig.planPrices[plan]?.[purchaseMode]
   const priceId = bucket?.byCurrency[input.currency] ?? bucket?.defaultPriceId
 
-  if (!priceId) {
-    throw new BillingError(
-      ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
-      'Stripe price is not configured for the requested plan/mode',
-      { plan, purchaseMode, currency: input.currency },
-    )
+  if (priceId) {
+    return priceId
   }
 
-  return priceId
+  const lookupKey = getPlanPriceLookupKey(plan, purchaseMode)
+  const lookupPriceId = await resolveLookupPriceId(lookupKey)
+
+  if (lookupPriceId) {
+    return lookupPriceId
+  }
+
+  throw new BillingError(
+    ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
+    'Stripe price is not configured for the requested plan/mode',
+    { plan, purchaseMode, currency: input.currency, lookupKey },
+  )
 }

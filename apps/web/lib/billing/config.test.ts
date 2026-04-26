@@ -15,6 +15,8 @@ import {
   getPlanPriceCurrencyEnvKey,
   getCreditPackPriceEnvKey,
   getCreditPackPriceCurrencyEnvKey,
+  getPlanPriceLookupKey,
+  getCreditPackPriceLookupKey,
   inferCurrencyFromCountry,
   resolveBillingCurrency,
   resolveStripePriceId,
@@ -82,6 +84,16 @@ describe('billing config', () => {
     expect(getCreditPackPriceEnvKey('1200')).toBe(
       'STRIPE_PRICE_CREDIT_PACK_1200',
     )
+  })
+
+  it('should build plan lookup keys with canonical naming', () => {
+    expect(getPlanPriceLookupKey('standard', 'plan_auto_monthly')).toBe(
+      'standard.plan_auto_monthly',
+    )
+  })
+
+  it('should build credit pack lookup keys with canonical naming', () => {
+    expect(getCreditPackPriceLookupKey('1200')).toBe('credit_pack.1200')
   })
 
   it('should build currency credit pack env keys with canonical naming', () => {
@@ -166,10 +178,47 @@ describe('billing config', () => {
           currency: 'cny',
         },
         createConfig(),
+        {
+          lookupPriceId: async () => undefined,
+        },
       ),
     ).rejects.toMatchObject({
       code: ErrorCode.BILLING_PRICE_NOT_CONFIGURED,
     })
+  })
+
+  it('should fall back to lookup_key for plan prices when env-backed ids are missing', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          plan: 'standard',
+          purchaseMode: 'plan_one_time',
+          currency: 'cny',
+        },
+        createConfig(),
+        {
+          lookupPriceId: async (lookupKey) =>
+            lookupKey === 'standard.plan_one_time' ? 'price_std_one_lookup' : undefined,
+        },
+      ),
+    ).resolves.toBe('price_std_one_lookup')
+  })
+
+  it('should fall back to lookup_key for credit pack prices when env-backed ids are missing', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          purchaseMode: 'credit_pack',
+          packageId: '500',
+          currency: 'cny',
+        },
+        createConfig(),
+        {
+          lookupPriceId: async (lookupKey) =>
+            lookupKey === 'credit_pack.500' ? 'price_pack_500_lookup' : undefined,
+        },
+      ),
+    ).resolves.toBe('price_pack_500_lookup')
   })
 
   it('should reject invalid plan purchase modes before reading plan prices', async () => {

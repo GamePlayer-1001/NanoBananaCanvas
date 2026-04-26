@@ -2,8 +2,8 @@
 > L2 | 父级: apps/web/lib/CLAUDE.md
 
 成员清单
-config.ts: Stripe 计费配置真相源，兼容“单 Price 多币种”和“按币种拆 Price”，提供币种白名单、国家推断与 `resolveStripePriceId()`
-config.test.ts: 计费配置单元测试，覆盖币种推断、共享 Price 回退、Price 解析、缺失元数据与统一错误码
+config.ts: Stripe 计费配置真相源，兼容“单 Price 多币种”“按币种拆 Price”与 `lookup_key` 动态回退，提供币种白名单、国家推断与 `resolveStripePriceId()`
+config.test.ts: 计费配置单元测试，覆盖币种推断、共享 Price 回退、`lookup_key` 回退、Price 解析与统一错误码
 credits.ts: 积分余额读取层，统一汇总双池余额、冻结积分与当前套餐额度镜像，并在用户镜像/生产表缺失时安全降级为 Free
 credits.test.ts: 积分读取测试，覆盖余额摘要、历史列漂移、交易流水与 usage 聚合查询口径
 schema.ts: 计费 schema 探测层，统一探测 users 与 billing 相关表/列信息，吸收历史库结构漂移
