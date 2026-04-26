@@ -52,8 +52,8 @@ const MODEL_STAGE = {
 } as const
 
 const MODEL_STAGE_CENTER = {
-  x: 744,
-  y: 412,
+  x: 786,
+  y: 414,
 } as const
 
 const MODEL_CORE_POSITION = {
@@ -62,9 +62,9 @@ const MODEL_CORE_POSITION = {
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
-  inner: { x: 262, y: 96 },
-  middle: { x: 398, y: 146 },
-  outer: { x: 560, y: 212 },
+  inner: { x: 312, y: 120 },
+  middle: { x: 448, y: 170 },
+  outer: { x: 606, y: 236 },
 }
 
 const MODEL_PROVIDERS: ModelProvider[] = [
@@ -73,8 +73,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('google'),
     fallback: 'G',
     orbit: 'outer',
-    angle: 228,
-    speed: 3.72,
+    angle: 236,
+    speed: 3.68,
     lane: -1,
     size: 'md',
     tone: 'amber',
@@ -84,8 +84,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('openai'),
     fallback: 'O',
     orbit: 'outer',
-    angle: 270,
-    speed: 3.98,
+    angle: 272,
+    speed: 3.92,
     lane: 0,
     size: 'lg',
     tone: 'violet',
@@ -98,8 +98,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('openai'),
     fallback: 'GI',
     orbit: 'inner',
-    angle: 304,
-    speed: 6.22,
+    angle: 306,
+    speed: 6.16,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -112,8 +112,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('blackforestlabs'),
     fallback: 'BF',
     orbit: 'outer',
-    angle: 322,
-    speed: 4.24,
+    angle: 334,
+    speed: 4.16,
     lane: 1,
     size: 'md',
     tone: 'azure',
@@ -126,8 +126,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('openrouter'),
     fallback: 'OR',
     orbit: 'middle',
-    angle: 18,
-    speed: 5.34,
+    angle: 22,
+    speed: 5.28,
     lane: 1,
     size: 'md',
     tone: 'violet',
@@ -140,8 +140,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('bytedance'),
     fallback: 'BD',
     orbit: 'middle',
-    angle: 354,
-    speed: 5.34,
+    angle: 344,
+    speed: 5.28,
     lane: 1,
     size: 'md',
     tone: 'azure',
@@ -151,8 +151,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('anthropic'),
     fallback: 'AI',
     orbit: 'outer',
-    angle: 34,
-    speed: 3.72,
+    angle: 32,
+    speed: 3.68,
     lane: -1,
     size: 'md',
     tone: 'amber',
@@ -164,8 +164,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('googlegemini'),
     fallback: '✦',
     orbit: 'outer',
-    angle: 66,
-    speed: 4.24,
+    angle: 124,
+    speed: 4.16,
     lane: 1,
     size: 'sm',
     tone: 'azure',
@@ -175,8 +175,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('alibabacloud'),
     fallback: 'AW',
     orbit: 'outer',
-    angle: 92,
-    speed: 3.98,
+    angle: 98,
+    speed: 3.92,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -187,8 +187,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('kling'),
     fallback: 'KL',
     orbit: 'outer',
-    angle: 132,
-    speed: 4.24,
+    angle: 160,
+    speed: 4.16,
     lane: 1,
     size: 'sm',
     tone: 'teal',
@@ -198,8 +198,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('runway'),
     fallback: 'RW',
     orbit: 'middle',
-    angle: 154,
-    speed: 4.86,
+    angle: 150,
+    speed: 4.72,
     lane: -1,
     size: 'sm',
     tone: 'violet',
@@ -209,8 +209,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('luma'),
     fallback: 'LU',
     orbit: 'outer',
-    angle: 182,
-    speed: 4.24,
+    angle: 206,
+    speed: 4.16,
     lane: 1,
     size: 'sm',
     tone: 'azure',
@@ -219,8 +219,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     name: 'Vidu',
     fallback: 'V',
     orbit: 'outer',
-    angle: 206,
-    speed: 3.98,
+    angle: 190,
+    speed: 3.92,
     lane: 0,
     size: 'sm',
     tone: 'azure',
@@ -230,8 +230,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('minimax'),
     fallback: 'MM',
     orbit: 'middle',
-    angle: 232,
-    speed: 4.86,
+    angle: 228,
+    speed: 4.72,
     lane: -1,
     size: 'sm',
     tone: 'rose',
@@ -241,8 +241,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('groq'),
     fallback: 'GQ',
     orbit: 'inner',
-    angle: 50,
-    speed: 6.1,
+    angle: 26,
+    speed: 5.92,
     lane: -1,
     size: 'sm',
     tone: 'violet',
@@ -254,8 +254,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('xai'),
     fallback: 'xI',
     orbit: 'inner',
-    angle: 176,
-    speed: 6.36,
+    angle: 164,
+    speed: 6.4,
     lane: 1,
     size: 'md',
     tone: 'violet',
@@ -267,8 +267,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('qwen'),
     fallback: 'Q',
     orbit: 'middle',
-    angle: 78,
-    speed: 5.1,
+    angle: 88,
+    speed: 5,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -280,8 +280,8 @@ const MODEL_PROVIDERS: ModelProvider[] = [
     iconUrl: buildSimpleIconUrl('midjourney'),
     fallback: 'MJ',
     orbit: 'outer',
-    angle: 6,
-    speed: 3.98,
+    angle: 8,
+    speed: 3.92,
     lane: 0,
     size: 'sm',
     tone: 'violet',
@@ -582,50 +582,50 @@ export function ModelMindMapSection() {
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
-                  rx="650"
-                  ry="250"
+                  rx={MODEL_ORBIT_RADII.outer.x + 34}
+                  ry={MODEL_ORBIT_RADII.outer.y + 14}
                   stroke="rgba(98, 111, 180, 0.34)"
                   strokeWidth="1"
                 />
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
-                  rx="540"
-                  ry="198"
+                  rx={MODEL_ORBIT_RADII.outer.x}
+                  ry={MODEL_ORBIT_RADII.outer.y}
                   stroke="rgba(111, 89, 255, 0.28)"
                   strokeWidth="0.96"
                 />
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
-                  rx="408"
-                  ry="146"
+                  rx={MODEL_ORBIT_RADII.middle.x}
+                  ry={MODEL_ORBIT_RADII.middle.y}
                   stroke="rgba(144, 109, 255, 0.22)"
                   strokeWidth="0.92"
                 />
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
-                  rx="280"
-                  ry="102"
+                  rx={MODEL_ORBIT_RADII.inner.x}
+                  ry={MODEL_ORBIT_RADII.inner.y}
                   stroke="rgba(125, 108, 255, 0.18)"
                   strokeWidth="0.86"
                 />
 
                 <path
-                  d="M220 306C412 226 571 214 700 248C845 285 974 285 1138 232"
+                  d="M286 312C498 236 660 226 788 264C944 308 1082 306 1248 246"
                   stroke="rgba(114,92,255,0.16)"
                   strokeWidth="0.9"
                   strokeDasharray="3 11"
                 />
                 <path
-                  d="M244 618C418 572 550 560 700 588C862 619 1006 610 1172 518"
+                  d="M316 632C500 588 646 578 788 604C956 634 1112 624 1280 526"
                   stroke="rgba(108,154,255,0.14)"
                   strokeWidth="0.88"
                   strokeDasharray="3 11"
                 />
                 <path
-                  d="M386 168C559 144 824 144 1008 192"
+                  d="M452 176C628 152 904 152 1088 202"
                   stroke="rgba(166,115,255,0.14)"
                   strokeWidth="0.86"
                   strokeDasharray="3 11"
@@ -654,7 +654,7 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute z-40 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b99aff]/20 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.2),rgba(172,118,255,0.84)_34%,rgba(44,18,82,0.96)_68%,rgba(8,9,18,1)_100%)] md:h-[316px] md:w-[316px]"
+                className="absolute z-40 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,rgba(255,245,255,0.34),rgba(211,136,255,0.98)_30%,rgba(145,74,255,0.99)_56%,rgba(78,24,182,0.98)_78%,rgba(14,8,36,1)_100%)] md:h-[316px] md:w-[316px]"
                 style={{
                   left: `${MODEL_CORE_POSITION.x}%`,
                   top: `${MODEL_CORE_POSITION.y}%`,
@@ -665,11 +665,11 @@ export function ModelMindMapSection() {
                     : 'corePulse 6.2s ease-in-out infinite',
                 }}
               >
-                <div className="absolute inset-[18px] rounded-full border border-white/9" />
-                <div className="absolute inset-[-22px] rounded-full border border-[#7d65ff]/10" />
-                <div className="absolute inset-[-56px] rounded-full bg-[radial-gradient(circle,rgba(134,95,255,0.18),transparent_64%)] blur-2xl" />
+                <div className="absolute inset-[18px] rounded-full border border-white/12" />
+                <div className="absolute inset-[-22px] rounded-full border border-[#9567ff]/14" />
+                <div className="absolute inset-[-56px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
                 <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
-                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/94 backdrop-blur-sm">
+                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_28%,rgba(255,255,255,0.26),rgba(194,132,255,0.34)_44%,rgba(90,42,188,0.86)_100%)] text-white shadow-[0_10px_34px_rgba(126,88,255,0.28)] backdrop-blur-sm">
                     <Sparkles className="h-7 w-7" />
                   </div>
                   <p className="mt-6 text-[1.24rem] leading-none font-semibold tracking-tight text-white md:text-[1.52rem]">
@@ -686,8 +686,8 @@ export function ModelMindMapSection() {
                 const dimension = MODEL_NODE_DIMENSIONS[provider.size]
                 const orbitRadii = MODEL_ORBIT_RADII[provider.orbit]
                 const laneOffset = provider.lane ?? 0
-                const orbitRadiusX = orbitRadii.x + laneOffset * 26
-                const orbitRadiusY = orbitRadii.y + laneOffset * 11
+                const orbitRadiusX = orbitRadii.x + laneOffset * 44
+                const orbitRadiusY = orbitRadii.y + laneOffset * 18
                 const orbitAngle =
                   ((provider.angle + visibleOrbitTime * provider.speed) * Math.PI) / 180
                 const orbitDepth = (Math.sin(orbitAngle) + 1) / 2
