@@ -255,12 +255,12 @@ export function FeaturesSection() {
       className="relative overflow-hidden bg-[#0b0b0f] px-4 py-24 sm:px-6 lg:px-8 xl:px-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
-      <div className="mx-auto w-full max-w-[1280px]">
+      <div className="mx-auto w-full max-w-[1440px]">
         <div
-          className="hidden items-start gap-14 xl:grid xl:grid-cols-[0.42fr_0.58fr]"
+          className="hidden items-start gap-14 xl:grid xl:grid-cols-[minmax(0,0.39fr)_minmax(0,0.61fr)]"
           onWheel={handleFeatureWheel}
         >
-          <div className="sticky top-24 self-start pt-4">
+          <div className="sticky top-24 min-w-0 self-start pt-4">
             <div className="space-y-5">
               {featureItems.map((item) => {
                 const isActive = item.key === activeFeature
@@ -320,10 +320,10 @@ export function FeaturesSection() {
             </div>
           </div>
 
-          <div className="sticky top-24 self-start w-full">
+          <div className="sticky top-24 min-w-0 self-start w-full">
             <article
               key={`feature-panel-${activeFeatureItem.key}`}
-              className="mx-auto w-full max-w-[820px] overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
+              className="w-full overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
             >
               <div
                 className="relative w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]"
