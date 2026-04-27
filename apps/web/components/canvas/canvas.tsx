@@ -57,6 +57,9 @@ const SNAP_GRID: [number, number] = [20, 20]
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 2
 const DUPLICATE_OFFSET = 50
+const SHORTCUT_HINT_STORAGE_KEY = 'nano-banana.canvas-shortcut-hint-views'
+const SHORTCUT_HINT_MARKER_KEY = 'nano-banana.canvas-shortcut-hint-last-open'
+const MAX_SHORTCUT_HINT_VIEWS = 3
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -101,10 +104,54 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     vertical?: number
   }>({})
   const [isSpacePanning, setIsSpacePanning] = useState(false)
+  const [showShortcutHint, setShowShortcutHint] = useState(false)
 
   useEffect(() => {
     if (saveStatus === 'saved') capture()
   }, [saveStatus, capture])
+
+  useEffect(() => {
+    let frameId = 0
+
+    try {
+      const rawCount = window.localStorage.getItem(SHORTCUT_HINT_STORAGE_KEY)
+      const currentCount = Number.parseInt(rawCount ?? '0', 10)
+      const safeCount = Number.isNaN(currentCount) ? 0 : currentCount
+      const shouldShow = safeCount < MAX_SHORTCUT_HINT_VIEWS
+
+      frameId = window.requestAnimationFrame(() => {
+        setShowShortcutHint(shouldShow)
+      })
+
+      if (!shouldShow) {
+        return () => {
+          window.cancelAnimationFrame(frameId)
+        }
+      }
+
+      const now = Date.now()
+      const rawLastOpen = window.sessionStorage.getItem(SHORTCUT_HINT_MARKER_KEY)
+      const lastOpen = Number.parseInt(rawLastOpen ?? '0', 10)
+      const shouldCountOpen = Number.isNaN(lastOpen) || now - lastOpen > 1500
+
+      window.sessionStorage.setItem(SHORTCUT_HINT_MARKER_KEY, String(now))
+
+      if (shouldCountOpen) {
+        window.localStorage.setItem(
+          SHORTCUT_HINT_STORAGE_KEY,
+          String(safeCount + 1),
+        )
+      }
+    } catch {
+      frameId = window.requestAnimationFrame(() => {
+        setShowShortcutHint(true)
+      })
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -342,19 +389,23 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
 
   return (
     <div className="relative h-full w-full">
-      <div className="pointer-events-none absolute bottom-5 left-5 z-0 max-w-[20rem] rounded-2xl border border-white/5 bg-black/12 px-4 py-3 text-[11px] leading-5 text-white/22 backdrop-blur-[1px]">
-        <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-white/18">
-          {t('title')}
-        </p>
-        <ul className="mt-2 space-y-1.5">
-          {shortcutItems.map((item) => (
-            <li key={item.key} className="flex items-center gap-2">
-              <span className="min-w-[6.75rem] font-mono text-white/28">{item.key}</span>
-              <span>{item.action}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {showShortcutHint ? (
+        <div className="pointer-events-none absolute bottom-5 left-5 z-0 max-w-[22rem] text-[13px] leading-6 text-black/36">
+          <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-black/24">
+            {t('title')}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {shortcutItems.map((item) => (
+              <li key={item.key} className="flex items-start gap-3">
+                <span className="min-w-[8.4rem] font-mono text-[12px] text-black/42">
+                  {item.key}
+                </span>
+                <span>{item.action}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <ReactFlow
         className={isHandTool ? 'relative z-10 [&_svg]:cursor-grab [&_.react-flow__pane]:cursor-grab [&_.react-flow__node]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing active:[&_.react-flow__node]:cursor-grabbing' : 'relative z-10 [&_.react-flow__pane]:cursor-default'}
         nodes={nodes}
