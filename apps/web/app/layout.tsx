@@ -11,11 +11,43 @@ import { BASE_URL, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo'
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   applicationName: SITE_NAME,
+  manifest: '/manifest.webmanifest',
   title: {
     default: SITE_NAME,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
+  category: 'technology',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: '/icon', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/favicon.ico'],
+  },
+  openGraph: {
+    siteName: SITE_NAME,
+    type: 'website',
+    url: BASE_URL,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  appleWebApp: {
+    title: SITE_NAME,
+    capable: true,
+    statusBarStyle: 'black-translucent',
+  },
 }
 
 export default function RootLayout({
