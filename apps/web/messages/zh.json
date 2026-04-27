@@ -1644,7 +1644,8 @@
     "addDisplay": "显示",
     "addConditional": "条件判断",
     "addLoop": "循环",
-    "addGroup": "分组"
+    "addGroup": "分组",
+    "noCompatibleNodes": "当前端口没有可直接连线的节点"
   },
   "nodes": {
     "enterText": "输入文本...",

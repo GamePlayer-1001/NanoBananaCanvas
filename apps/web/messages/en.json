@@ -1644,7 +1644,8 @@
     "addDisplay": "Display",
     "addConditional": "Conditional",
     "addLoop": "Loop",
-    "addGroup": "Group"
+    "addGroup": "Group",
+    "noCompatibleNodes": "No nodes can connect directly from this port"
   },
   "nodes": {
     "enterText": "Enter text...",

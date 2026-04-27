@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，依赖 lucide-react 的 ChevronRight，依赖 ./node-entry-config，依赖 @/lib/utils 的 cn()
  * [OUTPUT]: 对外提供 CanvasContextMenu 画布空白区域右键菜单
- * [POS]: components/canvas 的画布右键菜单，被 Canvas 组件内嵌渲染，支持分类子菜单避免入口过长
+ * [POS]: components/canvas 的画布右键菜单，被 Canvas 组件内嵌渲染，支持按当前拖线端口筛选有效节点并展示分类子菜单
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -11,13 +11,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CANVAS_CONTEXT_MENU_GROUPS, type NodeEntryGroup } from './node-entry-config'
+import type { NodeEntryGroup } from './node-entry-config'
 
 /* ─── Types ──────────────────────────────────────────── */
 
 interface CanvasContextMenuProps {
   x: number
   y: number
+  groups: NodeEntryGroup[]
   onAddNode: (type: string) => void
   onClose: () => void
 }
@@ -28,10 +29,10 @@ const ITEM_HEIGHT = 36
 
 /* ─── Component ──────────────────────────────────────── */
 
-export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMenuProps) {
+export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasContextMenuProps) {
   const t = useTranslations('contextMenu')
   const ref = useRef<HTMLDivElement>(null)
-  const [activeGroupId, setActiveGroupId] = useState(CANVAS_CONTEXT_MENU_GROUPS[0]?.id ?? '')
+  const [activeGroupId, setActiveGroupId] = useState(groups[0]?.id ?? '')
   const [submenuPosition, setSubmenuPosition] = useState<{ left: number; top: number } | null>(null)
 
   /* ── 点击外部关闭 ──────────────────────────────────── */
@@ -46,13 +47,13 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
   }, [onClose])
 
   /* ── 视口边界修正 ──────────────────────────────────── */
-  const menuHeight = CANVAS_CONTEXT_MENU_GROUPS.length * ITEM_HEIGHT + 16
+  const menuHeight = Math.max(groups.length, 1) * ITEM_HEIGHT + 16
   const adjustedX = x + ROOT_MENU_WIDTH > window.innerWidth ? x - ROOT_MENU_WIDTH : x
   const adjustedY = y + menuHeight > window.innerHeight ? y - menuHeight : y
 
-  const activeGroup =
-    CANVAS_CONTEXT_MENU_GROUPS.find((group) => group.id === activeGroupId) ??
-    CANVAS_CONTEXT_MENU_GROUPS[0]
+  const resolvedActiveGroupId =
+    groups.find((group) => group.id === activeGroupId)?.id ?? groups[0]?.id ?? ''
+  const activeGroup = groups.find((group) => group.id === resolvedActiveGroupId) ?? groups[0]
 
   const openGroup = (group: NodeEntryGroup, anchor: HTMLElement) => {
     const rect = anchor.getBoundingClientRect()
@@ -79,25 +80,29 @@ export function CanvasContextMenu({ x, y, onAddNode, onClose }: CanvasContextMen
         )}
         style={{ left: adjustedX, top: adjustedY }}
       >
-        {CANVAS_CONTEXT_MENU_GROUPS.map((group) => (
-          <button
-            key={group.id}
-            className={cn(
-              'flex w-full items-center gap-3 px-3 py-2 text-sm',
-              'hover:bg-accent hover:text-accent-foreground',
-              'cursor-pointer transition-colors',
-              activeGroupId === group.id && 'bg-accent text-accent-foreground',
-            )}
-            onMouseEnter={(e) => openGroup(group, e.currentTarget)}
-            onClick={(e) => openGroup(group, e.currentTarget)}
-          >
-            <span>{t(group.labelKey)}</span>
-            <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
-          </button>
-        ))}
+        {groups.length > 0 ? (
+          groups.map((group) => (
+            <button
+              key={group.id}
+              className={cn(
+                'flex w-full items-center gap-3 px-3 py-2 text-sm',
+                'hover:bg-accent hover:text-accent-foreground',
+                'cursor-pointer transition-colors',
+                resolvedActiveGroupId === group.id && 'bg-accent text-accent-foreground',
+              )}
+              onMouseEnter={(e) => openGroup(group, e.currentTarget)}
+              onClick={(e) => openGroup(group, e.currentTarget)}
+            >
+              <span>{t(group.labelKey)}</span>
+              <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
+            </button>
+          ))
+        ) : (
+          <div className="text-muted-foreground px-3 py-2 text-sm">{t('noCompatibleNodes')}</div>
+        )}
       </div>
 
-      {activeGroup && submenuPosition ? (
+      {activeGroup && submenuPosition && groups.length > 0 ? (
         <div
           className={cn(
             'bg-popover text-popover-foreground fixed z-[60] min-w-[220px]',
