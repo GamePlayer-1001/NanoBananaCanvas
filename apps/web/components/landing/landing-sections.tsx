@@ -36,16 +36,22 @@ const FEATURE_VISUALS = {
   canvas: {
     icon: Workflow,
     imageSrc: '/landing/hero/feature-workflow-overview.png',
+    imageWidth: 1586,
+    imageHeight: 992,
     accent: 'from-[#8ea3ff]/34 via-[#4f46e5]/18 to-transparent',
   },
   models: {
     icon: Sparkles,
     imageSrc: '/landing/hero/feature-any-model-image.png',
+    imageWidth: 1586,
+    imageHeight: 992,
     accent: 'from-[#7be6ff]/34 via-[#14b8a6]/18 to-transparent',
   },
   outputs: {
     icon: Zap,
     imageSrc: '/landing/hero/feature-video-everything.png',
+    imageWidth: 1535,
+    imageHeight: 1025,
     accent: 'from-[#ffd36b]/32 via-[#f97316]/16 to-transparent',
   },
 } as const
@@ -194,6 +200,8 @@ export function FeaturesSection() {
     title: featuresT(`items.${key}.title`),
     body: featuresT(`items.${key}.body`),
     imageSrc: FEATURE_VISUALS[key].imageSrc,
+    imageWidth: FEATURE_VISUALS[key].imageWidth,
+    imageHeight: FEATURE_VISUALS[key].imageHeight,
     icon: FEATURE_VISUALS[key].icon,
     accent: FEATURE_VISUALS[key].accent,
   }))
@@ -315,9 +323,14 @@ export function FeaturesSection() {
           <div className="sticky top-24 self-start w-full">
             <article
               key={`feature-panel-${activeFeatureItem.key}`}
-              className="w-full overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
+              className="mx-auto w-full max-w-[820px] overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
             >
-              <div className="relative h-[520px] w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
+              <div
+                className="relative w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]"
+                style={{
+                  aspectRatio: `${activeFeatureItem.imageWidth} / ${activeFeatureItem.imageHeight}`,
+                }}
+              >
                 <div
                   className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${activeFeatureItem.accent}`}
                 />
@@ -333,8 +346,8 @@ export function FeaturesSection() {
                 <Image
                   src={activeFeatureItem.imageSrc}
                   alt={activeFeatureItem.title}
-                  width={1280}
-                  height={980}
+                  width={activeFeatureItem.imageWidth}
+                  height={activeFeatureItem.imageHeight}
                   className="absolute inset-0 h-full w-full object-contain object-center brightness-[1.08] contrast-[1.03] saturate-[1.06]"
                 />
               </div>
