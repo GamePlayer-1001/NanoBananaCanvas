@@ -12,6 +12,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Background,
   BackgroundVariant,
@@ -57,6 +58,16 @@ const MIN_ZOOM = 0.1
 const MAX_ZOOM = 2
 const DUPLICATE_OFFSET = 50
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return (
+    target.isContentEditable ||
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT'
+  )
+}
+
 /* ─── Types ──────────────────────────────────────────── */
 
 interface CanvasProps {
@@ -69,6 +80,7 @@ interface CanvasProps {
 function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const rfInstance = useRef<FlowInstance | null>(null)
   const connectingFrom = useRef<{ nodeId: string; handleId: string | null } | null>(null)
+  const t = useTranslations('canvas.shortcutsHint')
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setViewport, addNode, removeNode } =
     useFlowStore()
   const activeTool = useCanvasToolStore((s) => s.activeTool)
@@ -84,16 +96,42 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   /* ── 云保存成功后自动生成缩略图 ──────────────────── */
   const { capture } = useThumbnailCapture(workflowId)
   const saveStatus = useCloudSaveStatus((s) => s.status)
+  const [helperLines, setHelperLines] = useState<{
+    horizontal?: number
+    vertical?: number
+  }>({})
+  const [isSpacePanning, setIsSpacePanning] = useState(false)
 
   useEffect(() => {
     if (saveStatus === 'saved') capture()
   }, [saveStatus, capture])
 
-  /* ── Helper Lines State ────────────────────────────── */
-  const [helperLines, setHelperLines] = useState<{
-    horizontal?: number
-    vertical?: number
-  }>({})
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' || isEditableTarget(event.target)) return
+      event.preventDefault()
+      setIsSpacePanning(true)
+    }
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== 'Space') return
+      setIsSpacePanning(false)
+    }
+
+    const onWindowBlur = () => {
+      setIsSpacePanning(false)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onWindowBlur)
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onWindowBlur)
+    }
+  }, [])
 
   const onInit = useCallback((instance: FlowInstance) => {
     rfInstance.current = instance
@@ -288,13 +326,37 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     [menu.x, menu.y, screenToFlowPosition, addNode],
   )
 
-  const isHandTool = activeTool === 'hand'
-  const isSelectTool = activeTool === 'select'
+  const effectiveTool = isSpacePanning ? 'hand' : activeTool
+  const isHandTool = effectiveTool === 'hand'
+  const isSelectTool = effectiveTool === 'select'
+  const shortcutItems = [
+    { key: 'Space', action: t('pan') },
+    { key: 'Del / Backspace', action: t('delete') },
+    { key: 'Ctrl+Z', action: t('undo') },
+    { key: 'Ctrl+Shift+Z', action: t('redo') },
+    { key: 'Ctrl+Enter', action: t('run') },
+    { key: 'Esc', action: t('stop') },
+    { key: 'Ctrl+S', action: t('export') },
+    { key: 'Ctrl+O', action: t('import') },
+  ]
 
   return (
-    <div className="h-full w-full">
+    <div className="relative h-full w-full">
+      <div className="pointer-events-none absolute bottom-5 left-5 z-0 max-w-[20rem] rounded-2xl border border-white/5 bg-black/12 px-4 py-3 text-[11px] leading-5 text-white/22 backdrop-blur-[1px]">
+        <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-white/18">
+          {t('title')}
+        </p>
+        <ul className="mt-2 space-y-1.5">
+          {shortcutItems.map((item) => (
+            <li key={item.key} className="flex items-center gap-2">
+              <span className="min-w-[6.75rem] font-mono text-white/28">{item.key}</span>
+              <span>{item.action}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       <ReactFlow
-        className={isHandTool ? '[&_svg]:cursor-grab [&_.react-flow__pane]:cursor-grab [&_.react-flow__node]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing active:[&_.react-flow__node]:cursor-grabbing' : '[&_.react-flow__pane]:cursor-default'}
+        className={isHandTool ? 'relative z-10 [&_svg]:cursor-grab [&_.react-flow__pane]:cursor-grab [&_.react-flow__node]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing active:[&_.react-flow__node]:cursor-grabbing' : 'relative z-10 [&_.react-flow__pane]:cursor-default'}
         nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}

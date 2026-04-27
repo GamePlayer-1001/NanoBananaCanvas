@@ -1591,7 +1591,18 @@
     "noHistory": "暂无执行记录",
     "nodes": "个节点",
     "desktopOnly": "仅支持桌面端",
-    "desktopOnlyDesc": "画布编辑器需要较大屏幕，请使用电脑或笔记本访问。"
+    "desktopOnlyDesc": "画布编辑器需要较大屏幕，请使用电脑或笔记本访问。",
+    "shortcutsHint": {
+      "title": "快捷键",
+      "pan": "按住后拖动画布",
+      "delete": "删除所选节点",
+      "run": "运行工作流",
+      "stop": "停止执行或关闭菜单",
+      "export": "导出工作流",
+      "import": "导入工作流",
+      "undo": "撤销",
+      "redo": "重做"
+    }
   },
   "toolbar": {
     "select": "选择",

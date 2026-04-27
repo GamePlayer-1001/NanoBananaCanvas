@@ -1591,7 +1591,18 @@
     "noHistory": "No executions yet",
     "nodes": "nodes",
     "desktopOnly": "Desktop Only",
-    "desktopOnlyDesc": "The canvas editor requires a larger screen. Please use a desktop or laptop computer."
+    "desktopOnlyDesc": "The canvas editor requires a larger screen. Please use a desktop or laptop computer.",
+    "shortcutsHint": {
+      "title": "Shortcuts",
+      "pan": "Hold to pan canvas",
+      "delete": "Delete selected node",
+      "run": "Run workflow",
+      "stop": "Stop or close menu",
+      "export": "Export workflow",
+      "import": "Import workflow",
+      "undo": "Undo",
+      "redo": "Redo"
+    }
   },
   "toolbar": {
     "select": "Select",
