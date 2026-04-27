@@ -317,7 +317,7 @@ export function FeaturesSection() {
               key={`feature-panel-${activeFeatureItem.key}`}
               className="overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
             >
-              <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
                 <div
                   className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${activeFeatureItem.accent}`}
                 />
@@ -335,7 +335,7 @@ export function FeaturesSection() {
                   alt={activeFeatureItem.title}
                   width={1280}
                   height={980}
-                  className="h-[520px] w-full object-contain object-center brightness-[1.08] contrast-[1.03] saturate-[1.06]"
+                  className="h-full w-full object-contain object-center brightness-[1.08] contrast-[1.03] saturate-[1.06]"
                 />
               </div>
 
@@ -369,7 +369,7 @@ export function FeaturesSection() {
                 key={`feature-mobile-${item.key}`}
                 className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.035] p-5 shadow-[0_18px_54px_rgba(0,0,0,0.14)]"
               >
-                <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-[#07080d]">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-[22px] border border-white/8 bg-[#07080d]">
                   <div
                     className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent}`}
                   />
@@ -378,7 +378,7 @@ export function FeaturesSection() {
                     alt={item.title}
                     width={860}
                     height={620}
-                    className="h-52 w-full object-contain object-center brightness-[1.12] contrast-[1.05] saturate-[1.16]"
+                    className="h-full w-full object-contain object-center brightness-[1.12] contrast-[1.05] saturate-[1.16]"
                   />
                 </div>
 
