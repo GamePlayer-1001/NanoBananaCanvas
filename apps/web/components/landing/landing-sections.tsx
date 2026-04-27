@@ -335,7 +335,7 @@ export function FeaturesSection() {
                   alt={activeFeatureItem.title}
                   width={1280}
                   height={980}
-                  className="h-[520px] w-full object-cover object-center brightness-[1.08] contrast-[1.03] saturate-[1.06]"
+                  className="h-[520px] w-full object-contain object-center brightness-[1.08] contrast-[1.03] saturate-[1.06]"
                 />
               </div>
 
@@ -378,7 +378,7 @@ export function FeaturesSection() {
                     alt={item.title}
                     width={860}
                     height={620}
-                    className="h-52 w-full object-cover brightness-[1.12] contrast-[1.05] saturate-[1.16]"
+                    className="h-52 w-full object-contain object-center brightness-[1.12] contrast-[1.05] saturate-[1.16]"
                   />
                 </div>
 
