@@ -633,7 +633,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 - [x] 为 `/pricing` 添加 `Product / Offer` JSON-LD
 - [x] 为 `/explore/[id]` 添加 `CreativeWork` 或更合适的结构化数据
-- [ ] 为 `/explore/[id]` 补更贴合实体的 OG 表达
+- [x] 为 `/explore/[id]` 补更贴合实体的 OG 表达
 - [x] 为公开关键页建立 `BreadcrumbList` 方案
 - [x] 明确哪些公开页应该 `index`，哪些公开页虽然可访问但不值得进入搜索结果
 - [x] 输出“页面 - 主关键词 - 次关键词 - 支撑词”映射表

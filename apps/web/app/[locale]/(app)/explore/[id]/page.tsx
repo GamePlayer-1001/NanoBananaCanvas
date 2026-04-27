@@ -32,6 +32,30 @@ interface PublicWorkflowSeoRecord {
   clone_count: number | null
 }
 
+function buildWorkflowDescription(record: Pick<PublicWorkflowSeoRecord, 'description'>) {
+  return record.description?.trim()
+    ? `${record.description.trim()} Reusable GPT Image and multimodal workflow template on ${SITE_NAME}.`
+    : `Reusable GPT Image and multimodal AI workflow template for creators and teams on ${SITE_NAME}.`
+}
+
+function buildWorkflowOgSubtitle(
+  record: Pick<
+    PublicWorkflowSeoRecord,
+    'author_name' | 'like_count' | 'clone_count' | 'view_count'
+  >,
+) {
+  const author = record.author_name
+    ? `By ${record.author_name}`
+    : 'Public workflow template'
+  const signals = [
+    `${record.view_count ?? 0} views`,
+    `${record.like_count ?? 0} likes`,
+    `${record.clone_count ?? 0} clones`,
+  ].join(' · ')
+
+  return `${author} · GPT Image workflow template · ${signals}`
+}
+
 async function getPublicWorkflowSeoRecord(id: string) {
   const db = await getDb()
 
@@ -58,9 +82,7 @@ export async function generateMetadata({
     const row = await getPublicWorkflowSeoRecord(id)
     if (!row) return { title: 'Workflow Not Found' }
     const title = `${row.name} | GPT Image workflow template`
-    const description = row.description?.trim()
-      ? `${row.description.trim()} Reusable GPT Image and multimodal workflow template on ${SITE_NAME}.`
-      : `Reusable GPT Image and multimodal AI workflow template for creators and teams on ${SITE_NAME}.`
+    const description = buildWorkflowDescription(row)
     const keywords = mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
       row.name,
       'AI workflow template',
@@ -75,6 +97,7 @@ export async function generateMetadata({
       locale,
       type: 'article',
       ogTitle: `${title} | ${SITE_NAME}`,
+      ogSubtitle: buildWorkflowOgSubtitle(row),
       keywords,
     })
   } catch {
@@ -103,9 +126,7 @@ export default async function ExploreDetailPage({
       ])
     : GPT_IMAGE_PRIORITY_KEYWORDS
   const description = workflow
-    ? workflow.description?.trim()
-      ? `${workflow.description.trim()} Reusable GPT Image and multimodal workflow template on ${SITE_NAME}.`
-      : `Reusable GPT Image and multimodal AI workflow template for creators and teams on ${SITE_NAME}.`
+    ? buildWorkflowDescription(workflow)
     : `Reusable GPT Image and multimodal AI workflow templates on ${SITE_NAME}.`
   const jsonLd = workflow
     ? [
