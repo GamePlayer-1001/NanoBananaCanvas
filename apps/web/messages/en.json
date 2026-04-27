@@ -55,6 +55,7 @@
   },
   "landing": {
     "nav": {
+      "backHome": "Back to home",
       "models": "Models",
       "features": "Features",
       "pricing": "Pricing",
@@ -1430,8 +1431,12 @@
     "providerTypeLabel": "Provider Type",
     "apiKeyLabel": "API Key",
     "apiKeyPlaceholder": "Enter API key",
+    "editMaskedKeyHint": "Currently saved key: {key}",
+    "keepExistingKeyHint": "Leave this empty to keep the saved API key. Only a new value will replace it.",
     "secretKeyLabel": "Secret Key",
     "secretKeyPlaceholder": "Enter secret key",
+    "secretKeyMaskedPlaceholder": "******",
+    "keepExistingSecretKeyHint": "Leave this empty to keep the saved secret key. Only a new value will replace it.",
     "baseUrlLabel": "Base URL",
     "modelIdLabel": "Model ID",
     "saveHint": "After saving, matching nodes can use this config in API Key mode.",
@@ -1590,7 +1595,18 @@
     "noHistory": "No executions yet",
     "nodes": "nodes",
     "desktopOnly": "Desktop Only",
-    "desktopOnlyDesc": "The canvas editor requires a larger screen. Please use a desktop or laptop computer."
+    "desktopOnlyDesc": "The canvas editor requires a larger screen. Please use a desktop or laptop computer.",
+    "shortcutsHint": {
+      "title": "Shortcuts",
+      "pan": "Hold to pan canvas",
+      "delete": "Delete selected node",
+      "run": "Run workflow",
+      "stop": "Stop or close menu",
+      "export": "Export workflow",
+      "import": "Import workflow",
+      "undo": "Undo",
+      "redo": "Redo"
+    }
   },
   "toolbar": {
     "select": "Select",
@@ -1632,7 +1648,8 @@
     "addDisplay": "Display",
     "addConditional": "Conditional",
     "addLoop": "Loop",
-    "addGroup": "Group"
+    "addGroup": "Group",
+    "noCompatibleNodes": "No nodes can connect directly from this port"
   },
   "nodes": {
     "enterText": "Enter text...",
@@ -1656,9 +1673,16 @@
     "userKeyMode": "API Key",
     "accountConfigLabel": "Account Config",
     "noApiConfigs": "No configs available",
+    "userKeyOnboardingTitle": "Set up your own API key first",
+    "userKeyOnboardingDescription": "You are switching this {capability} node to API Key mode, but your account does not have a usable personal config yet. Save the current workflow and open \"{settings}\" now?",
+    "userKeyOnboardingConfirm": "Go to settings",
+    "userKeyOnboardingSaving": "Saving and opening...",
+    "userKeyOnboardingSaveFailed": "Failed to save the current workflow. Please try again.",
     "provider": "Provider",
     "imageSize": "Size",
     "imageAspect": "Aspect Ratio",
+    "preview": "Preview",
+    "previewDescription": "Turning this off still sends output to downstream nodes",
     "videoDuration": "Duration",
     "videoAspect": "Aspect Ratio",
     "videoMode": "Quality",

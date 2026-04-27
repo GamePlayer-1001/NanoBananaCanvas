@@ -51,6 +51,7 @@ export default async function ModelsPage({
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale, namespace: 'sitePages.models' })
+  const navT = await getTranslations({ locale, namespace: 'landing.nav' })
 
   const heroFacts = [1, 2, 3].map((index) => ({
     title: t(`heroFacts.${index}.title`),
@@ -77,7 +78,7 @@ export default async function ModelsPage({
   }))
 
   return (
-    <MarketingShell>
+    <MarketingShell backHomeLabel={navT('backHome')}>
       <MarketingHero
         eyebrow={t('heroEyebrow')}
         title={t('heroTitle')}

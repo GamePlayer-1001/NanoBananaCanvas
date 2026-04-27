@@ -87,8 +87,8 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   /* ── Render ────────────────────────────────────── */
   if (value) {
     return (
-      <div className={`relative overflow-hidden rounded-lg border border-border ${className ?? ''}`}>
-        <img src={value} alt="" className="h-full w-full object-cover" />
+      <div className={`bg-muted relative overflow-hidden rounded-lg border border-border ${className ?? ''}`}>
+        <img src={value} alt="" className="h-full w-full object-contain" />
         <button
           type="button"
           onClick={onRemove}

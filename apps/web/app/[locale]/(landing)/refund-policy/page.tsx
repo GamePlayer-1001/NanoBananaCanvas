@@ -45,6 +45,7 @@ export default async function RefundPolicyPage({
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale, namespace: 'sitePages.refundPolicy' })
+  const navT = await getTranslations({ locale, namespace: 'landing.nav' })
 
   const heroFacts = [1, 2, 3].map((index) => ({
     title: t(`heroFacts.${index}.title`),
@@ -59,7 +60,7 @@ export default async function RefundPolicyPage({
   }))
 
   return (
-    <MarketingShell>
+    <MarketingShell backHomeLabel={navT('backHome')}>
       <MarketingHero
         eyebrow={t('heroEyebrow')}
         title={t('heroTitle')}

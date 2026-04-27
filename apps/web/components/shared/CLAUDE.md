@@ -13,7 +13,7 @@ video-card.tsx     — VideoCard 视频卡片 (缩略图 + 时长 + 作品类型
 workflow-card.tsx   — WorkflowCard 工作流卡片 (缩略图 + 分类 + 作者 + 点赞/使用数)
 category-badge.tsx  — CategoryBadge 分类标签 + CategoryBar 水平滚动栏
 search-command.tsx  — SearchCommand 探索搜索弹窗 (Cmd+K) + useSearchShortcut hook
-image-upload.tsx    — ImageUpload 拖拽上传组件 (R2 上传 + 预览 + 删除)
+image-upload.tsx    — ImageUpload 拖拽上传组件 (R2 上传 + contain 预览 + 删除)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

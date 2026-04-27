@@ -4,7 +4,8 @@
  *          依赖 @/services/storage/serializer 的序列化能力，
  *          依赖 zustand 的 create (保存状态原子)
  * [OUTPUT]: 对外提供 useAutoSave hook (防抖自动保存: localStorage + 云端)，
- *           对外提供 useCloudSaveStatus 状态原子
+ *           对外提供 useCloudSaveStatus 状态原子，
+ *           对外提供 triggerCloudSave 显式云保存方法
  * [POS]: hooks 的持久化桥梁，在画布页面挂载时激活
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  *
@@ -39,22 +40,33 @@ const DEBOUNCE_CLOUD_MS = 2000
 
 /* ─── Cloud Save ──────────────────────────────────────── */
 
-async function saveToCloud(workflowId: string): Promise<void> {
+function getSerializedWorkflowSnapshot() {
   const { nodes, edges, viewport } = useFlowStore.getState()
+  return {
+    nodes,
+    edges,
+    viewport,
+    serialized: serializeWorkflow(nodes, edges, viewport),
+  }
+}
+
+export async function triggerCloudSave(workflowId: string): Promise<void> {
+  const snapshot = getSerializedWorkflowSnapshot()
+  saveToLocal(snapshot.nodes, snapshot.edges, snapshot.viewport)
   useCloudSaveStatus.setState({ status: 'saving' })
 
   try {
-    const serialized = serializeWorkflow(nodes, edges, viewport)
     const res = await fetch(`/api/workflows/${workflowId}`, {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: JSON.stringify(serialized) }),
+      body: JSON.stringify({ data: JSON.stringify(snapshot.serialized) }),
     })
     if (!res.ok) throw new Error(`Save failed: ${res.status}`)
     useCloudSaveStatus.setState({ status: 'saved' })
-  } catch {
+  } catch (error) {
     useCloudSaveStatus.setState({ status: 'error' })
+    throw error
   }
 }
 
@@ -101,7 +113,7 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
       if (workflowId && enableCloud) {
         if (cloudTimer) clearTimeout(cloudTimer)
         cloudTimer = setTimeout(() => {
-          saveToCloud(workflowId)
+          void triggerCloudSave(workflowId)
         }, DEBOUNCE_CLOUD_MS)
       }
     })

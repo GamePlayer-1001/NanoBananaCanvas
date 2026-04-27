@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/components/nodes/plugin-registry 的 getNodePorts，依赖 @/types 的 PortDefinition
- * [OUTPUT]: 对外提供 resolveAutoConnectTargetHandle() 自动推断拖线创建节点时的目标输入端口
+ * [OUTPUT]: 对外提供 resolveAutoConnectTargetHandle() / resolveAutoConnectSourceHandle() 自动推断拖线创建节点时的默认连线端口
  * [POS]: lib/utils 的自动连线推断工具，被 Canvas 在“拖线到空白处创建节点”场景消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -20,13 +20,13 @@ function normalizeSemanticName(handleId: string): string {
 }
 
 function scoreCandidate(
-  sourceHandleId: string,
+  referenceHandleId: string,
   candidate: PortDefinition,
   compatibleCount: number,
 ): number {
   let score = 0
 
-  if (normalizeSemanticName(candidate.id) === normalizeSemanticName(sourceHandleId)) {
+  if (normalizeSemanticName(candidate.id) === normalizeSemanticName(referenceHandleId)) {
     score += 4
   }
 
@@ -66,6 +66,35 @@ export function resolveAutoConnectTargetHandle(
     return (
       scoreCandidate(sourceHandleId, right, compatibleInputs.length) -
       scoreCandidate(sourceHandleId, left, compatibleInputs.length)
+    )
+  })
+
+  return ranked[0]?.id ?? null
+}
+
+export function resolveAutoConnectSourceHandle(
+  targetNodeType: string,
+  targetHandleId: string | null | undefined,
+  sourceNodeType: string,
+): string | null {
+  if (!targetHandleId) return null
+
+  const targetPorts = getNodePorts(targetNodeType)
+  const targetPort = targetPorts.inputs.find((port) => port.id === targetHandleId)
+  if (!targetPort) return null
+
+  const sourcePorts = getNodePorts(sourceNodeType)
+  const compatibleOutputs = sourcePorts.outputs.filter((port) =>
+    areTypesCompatible(port.type, targetPort.type),
+  )
+
+  if (compatibleOutputs.length === 0) return null
+  if (compatibleOutputs.length === 1) return compatibleOutputs[0]?.id ?? null
+
+  const ranked = [...compatibleOutputs].sort((left, right) => {
+    return (
+      scoreCandidate(targetHandleId, right, compatibleOutputs.length) -
+      scoreCandidate(targetHandleId, left, compatibleOutputs.length)
     )
   })
 

@@ -1,11 +1,11 @@
 /**
- * [INPUT]: 依赖 lucide-react 的 ArrowRight，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 MarketingShell、MarketingHero、MarketingSection、MarketingCardGrid、MarketingCard、MarketingActionStrip
+ * [INPUT]: 依赖 lucide-react 的 ArrowLeft/ArrowRight，依赖 @/i18n/navigation 的 Link
+ * [OUTPUT]: 对外提供 MarketingShell、MarketingBackLink、MarketingHero、MarketingSection、MarketingCardGrid、MarketingCard、MarketingActionStrip
  * [POS]: components/landing 的公开子页面构件层，被 features/models/about/docs/community/policy 等 SEO 页面复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 
@@ -29,12 +29,35 @@ type MarketingCardProps = {
   actionLabel?: string
 }
 
-export function MarketingShell({ children }: { children: React.ReactNode }) {
+export function MarketingShell({
+  children,
+  backHomeLabel,
+}: {
+  children: React.ReactNode
+  backHomeLabel?: string
+}) {
   return (
     <main className="relative overflow-hidden bg-[#09090d] px-4 pb-24 pt-28 sm:px-6 lg:px-8 xl:px-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_16%_22%,rgba(120,92,255,0.12),transparent_24%),radial-gradient(circle_at_82%_12%,rgba(54,163,255,0.09),transparent_18%),linear-gradient(180deg,#09090d_0%,#06070b_100%)]" />
-      <div className="relative mx-auto w-full max-w-[1380px]">{children}</div>
+      <div className="relative mx-auto w-full max-w-[1380px]">
+        {backHomeLabel ? <MarketingBackLink label={backHomeLabel} /> : null}
+        {children}
+      </div>
     </main>
+  )
+}
+
+export function MarketingBackLink({ label }: { label: string }) {
+  return (
+    <div className="mb-10 flex items-start">
+      <Link
+        href="/"
+        className="inline-flex h-11 items-center gap-2 rounded-full border border-white/12 bg-white/[0.035] px-4 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>{label}</span>
+      </Link>
+    </div>
   )
 }
 
