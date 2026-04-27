@@ -154,7 +154,7 @@
 
 ### 4.2 结构化数据覆盖现状
 
-#### 已实现
+#### 本轮已实现
 
 1. 首页 `/`
    - `Organization`
@@ -672,7 +672,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ## Phase 4：增长型 SEO（2-6 周）
 
-- [ ] 建立首页、features、models、pricing、explore detail 的关键词地图
+- [x] 建立首页、features、models、pricing、explore detail 的关键词地图
 - [ ] 为模板详情页设计可承接长尾的正文结构
 - [ ] 规划 blog/docs/help 类内容入口，承接问题型搜索
 - [ ] 接入 Search Console、Bing Webmaster、PageSpeed Insights 周期复盘
@@ -797,11 +797,11 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ### 7.1 代码侧验证
 
-- [ ] 确认所有公开页都有独立 metadata
-- [ ] 确认 `robots.txt`、`sitemap.xml` 可正常生成
-- [ ] 确认结构化数据 JSON-LD 语法正确
-- [ ] 确认 canonical 指向真实公开 URL
-- [ ] 确认不应索引的编辑器/账户/工作区页都已明确 `noindex`
+- [x] 确认所有公开关键页都有独立 metadata
+- [x] 确认 `robots.txt`、`sitemap.xml` 可正常生成
+- [x] 确认结构化数据 JSON-LD 语法正确
+- [x] 确认 canonical 指向真实公开 URL
+- [x] 确认不应索引的编辑器/账户/工作区页都已明确 `noindex`
 
 ### 7.2 工具侧验证
 
