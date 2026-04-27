@@ -338,8 +338,8 @@
     }
   },
   "pricing": {
-    "metaTitle": "AI Workflow Pricing Plans",
-    "metaDescription": "View Nano Banana Canvas subscription pricing with live Stripe-backed prices and region-aware currencies.",
+    "metaTitle": "GPT Image Workflow Pricing Plans",
+    "metaDescription": "View Nano Banana Canvas GPT Image workflow pricing, AI credit packs, and live Stripe-backed subscription plans with region-aware currencies.",
     "eyebrow": "Live Stripe pricing",
     "title": "Choose the plan that matches your production volume",
     "description": "Plan prices are loaded from Stripe at request time so the UI stays aligned with the real billing configuration instead of drifting behind hard-coded numbers.",

@@ -192,8 +192,12 @@ export const MESSAGE_USAGE_INDEX = {
     "metadata.landingTitle"
   ],
   "app/[locale]/(landing)/pricing/page.tsx": [
+    "pricing.freeDescription",
     "pricing.metaDescription",
-    "pricing.metaTitle"
+    "pricing.metaTitle",
+    "pricing.toggleCredits",
+    "pricing.toggleMonthly",
+    "pricing.toggleOneTime"
   ],
   "app/[locale]/(landing)/privacy/page.tsx": [
     "metadata.privacyDescription",

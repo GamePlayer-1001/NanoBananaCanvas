@@ -19,7 +19,7 @@ import {
   MarketingShell,
 } from '@/components/landing/public-pages'
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
-import { buildPageMetadata } from '@/lib/seo'
+import { GPT_IMAGE_PRIORITY_KEYWORDS, buildPageMetadata, mergeKeywords } from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -34,7 +34,11 @@ export async function generateMetadata({
     description: t('metaDescription'),
     path: '/features',
     locale,
-    keywords: ['visual AI workflow', 'gpt image 2', 'image workflow builder', 'AI canvas'],
+    keywords: mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+      'visual AI workflow',
+      'image workflow builder',
+      'AI canvas',
+    ]),
   })
 }
 
@@ -63,7 +67,9 @@ export default async function FeaturesPage({
     eyebrow: t(`sections.production.cards.${key}.eyebrow`),
     title: t(`sections.production.cards.${key}.title`),
     body: t(`sections.production.cards.${key}.body`),
-    bullets: [1, 2, 3].map((index) => t(`sections.production.cards.${key}.bullets.${index}`)),
+    bullets: [1, 2, 3].map((index) =>
+      t(`sections.production.cards.${key}.bullets.${index}`),
+    ),
   }))
 
   const teamCards = ['roles', 'ops', 'handover'].map((key) => ({

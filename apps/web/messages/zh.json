@@ -338,8 +338,8 @@
     }
   },
   "pricing": {
-    "metaTitle": "AI 工作流套餐价格",
-    "metaDescription": "查看 Nano Banana Canvas 的动态订阅价格，价格由 Stripe 实时返回，并根据地区解析展示币种。",
+    "metaTitle": "GPT Image 工作流套餐价格",
+    "metaDescription": "查看 Nano Banana Canvas 的 GPT Image 工作流定价、AI 积分包与动态订阅价格，价格由 Stripe 实时返回，并根据地区解析展示币种。",
     "eyebrow": "Stripe 实时价格",
     "title": "选择适合你生产规模的套餐",
     "description": "页面价格在请求时直接从 Stripe 读取，不再把金额硬编码在 UI 里，这样后台改价后前端展示会自动跟上。",

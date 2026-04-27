@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next 的 Metadata 类型
- * [OUTPUT]: 对外提供 SEO 常量、绝对 URL 构造器与页面级 metadata 工厂
- * [POS]: lib 的 SEO 语义层，被 sitemap/robots/页面 metadata 复用，统一公开 URL 与搜索展示信号
+ * [OUTPUT]: 对外提供 SEO 常量、绝对 URL 构造器、关键词策略与页面级 metadata 工厂
+ * [POS]: lib 的 SEO 语义层，被 sitemap/robots/页面 metadata 复用，统一公开 URL、关键词优先级与搜索展示信号
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -12,6 +12,12 @@ export const BASE_URL = 'https://nanobananacanvas.com'
 export const SITE_NAME = 'Nano Banana Canvas'
 export const SITE_DESCRIPTION =
   'Visual AI workflow builder for creators and teams. Build, share, and run multimodal workflows from prompt to storyboard.'
+export const GPT_IMAGE_PRIORITY_KEYWORDS = [
+  'gpt image',
+  'gpt image workflow',
+  'gpt image prompt workflow',
+  'gpt image 2',
+]
 
 export const NO_INDEX_METADATA: Metadata = {
   robots: {
@@ -37,6 +43,30 @@ export function buildOgImageUrl(title: string, subtitle?: string) {
   }
 
   return url.toString()
+}
+
+export function mergeKeywords(
+  ...groups: Array<Array<string | null | undefined | false>>
+): string[] {
+  const seen = new Set<string>()
+  const merged: string[] = []
+
+  for (const group of groups) {
+    for (const keyword of group) {
+      if (!keyword) continue
+
+      const normalized = keyword.trim()
+      if (!normalized) continue
+
+      const dedupeKey = normalized.toLowerCase()
+      if (seen.has(dedupeKey)) continue
+
+      seen.add(dedupeKey)
+      merged.push(normalized)
+    }
+  }
+
+  return merged
 }
 
 export function buildPageMetadata({
