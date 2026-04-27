@@ -9,6 +9,7 @@
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { MarketingBackLink } from '@/components/landing/public-pages'
 import { ContactContent } from '@/components/contact/contact-content'
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
@@ -48,6 +49,7 @@ export default async function ContactPage({
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'contact' })
+  const navT = await getTranslations({ locale, namespace: 'landing.nav' })
 
   const jsonLd = [
     {
@@ -96,6 +98,11 @@ export default async function ContactPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <div className="bg-[#09090d] px-4 pt-28 sm:px-6 lg:px-8 xl:px-10">
+        <div className="mx-auto w-full max-w-[1380px]">
+          <MarketingBackLink label={navT('backHome')} />
+        </div>
+      </div>
       <ContactContent />
       <div className="bg-[#09090d] px-4 pb-24 sm:px-6 lg:px-8 xl:px-10">
         <div className="mx-auto w-full max-w-[1380px]">

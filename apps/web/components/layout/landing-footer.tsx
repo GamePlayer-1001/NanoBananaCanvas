@@ -23,7 +23,7 @@ function FooterColumn({
   links: { label: string; href: string }[]
 }) {
   return (
-    <div className="min-w-[150px]">
+    <div className="min-w-[150px] text-left md:text-right">
       <h3 className="mb-4 text-sm font-medium text-white/80">{title}</h3>
       <ul className="space-y-3">
         {links.map((link) => (
@@ -86,11 +86,11 @@ export function LandingFooter() {
 
   return (
     <footer className="border-t border-white/5 px-4 py-12 sm:px-6 lg:px-8 xl:px-10">
-      <div className="w-full">
+      <div className="mx-auto w-full max-w-[1380px]">
         {/* ── Top Section ────────────────────────── */}
-        <div className="flex flex-col gap-12 md:flex-row md:gap-24">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] lg:items-start lg:gap-20">
           {/* Brand Column */}
-          <div className="min-w-[200px]">
+          <div className="max-w-[24rem]">
             <div className="mb-3">
               <BrandMark withLogo className="text-xl text-white" />
             </div>
@@ -112,7 +112,7 @@ export function LandingFooter() {
           </div>
 
           {/* Link Columns */}
-          <div className="flex flex-1 flex-wrap gap-12 md:gap-16">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:justify-items-end lg:text-right">
             {columns.map((col) => (
               <FooterColumn key={col.title} title={col.title} links={col.links} />
             ))}

@@ -55,6 +55,7 @@
   },
   "landing": {
     "nav": {
+      "backHome": "返回首页",
       "models": "模型",
       "features": "功能",
       "pricing": "定价",

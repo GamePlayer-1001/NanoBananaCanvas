@@ -56,6 +56,7 @@ export default async function AboutPage({
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale, namespace: 'sitePages.about' })
+  const navT = await getTranslations({ locale, namespace: 'landing.nav' })
 
   const heroFacts = [1, 2, 3].map((index) => ({
     title: t(`heroFacts.${index}.title`),
@@ -112,7 +113,7 @@ export default async function AboutPage({
   ]
 
   return (
-    <MarketingShell>
+    <MarketingShell backHomeLabel={navT('backHome')}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

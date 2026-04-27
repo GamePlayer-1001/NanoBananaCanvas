@@ -12,6 +12,7 @@ import { auth } from '@clerk/nextjs/server'
 import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { MarketingBackLink } from '@/components/landing/public-pages'
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { PricingContent } from '@/components/pricing/pricing-content'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
@@ -59,6 +60,7 @@ export default async function PricingPage({
   const requestHeaders = await headers()
   const { userId } = await auth()
   const t = await getTranslations({ locale, namespace: 'pricing' })
+  const navT = await getTranslations({ locale, namespace: 'landing.nav' })
   const pricing = await getPublicPricingPlans({
     countryCode: requestHeaders.get('cf-ipcountry'),
   }).catch((error: unknown) => {
@@ -156,6 +158,11 @@ export default async function PricingPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <div className="bg-[#09090d] px-4 pt-28 sm:px-6 lg:px-8 xl:px-10">
+        <div className="mx-auto w-full max-w-[1380px]">
+          <MarketingBackLink label={navT('backHome')} />
+        </div>
+      </div>
       <PricingContent
         isAuthenticated={Boolean(userId)}
         isPricingReady={Boolean(pricing)}

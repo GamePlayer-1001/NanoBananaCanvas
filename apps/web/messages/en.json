@@ -55,6 +55,7 @@
   },
   "landing": {
     "nav": {
+      "backHome": "Back to home",
       "models": "Models",
       "features": "Features",
       "pricing": "Pricing",
