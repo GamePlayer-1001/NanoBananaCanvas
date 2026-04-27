@@ -6,7 +6,7 @@
  * [OUTPUT]: 对外提供 useAutoSave hook (防抖自动保存: localStorage + 云端)，
  *           对外提供 useCloudSaveStatus 状态原子，
  *           对外提供 triggerCloudSave 显式云保存方法
- * [POS]: hooks 的持久化桥梁，在画布页面挂载时激活
+ * [POS]: hooks 的持久化桥梁，在画布页面挂载时激活，负责短防抖保存与离场冲刷
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  *
  * [CONFLICT STRATEGY]: Last-Write-Wins (LWW)
@@ -35,8 +35,8 @@ export const useCloudSaveStatus = create<{ status: SaveStatus }>(() => ({
 
 /* ─── Constants ───────────────────────────────────────── */
 
-const DEBOUNCE_LOCAL_MS = 1000
-const DEBOUNCE_CLOUD_MS = 2000
+const DEBOUNCE_LOCAL_MS = 400
+const DEBOUNCE_CLOUD_MS = 1200
 
 /* ─── Cloud Save ──────────────────────────────────────── */
 
@@ -50,7 +50,10 @@ function getSerializedWorkflowSnapshot() {
   }
 }
 
-export async function triggerCloudSave(workflowId: string): Promise<void> {
+export async function triggerCloudSave(
+  workflowId: string,
+  options?: { keepalive?: boolean },
+): Promise<void> {
   const snapshot = getSerializedWorkflowSnapshot()
   saveToLocal(snapshot.nodes, snapshot.edges, snapshot.viewport)
   useCloudSaveStatus.setState({ status: 'saving' })
@@ -58,6 +61,7 @@ export async function triggerCloudSave(workflowId: string): Promise<void> {
   try {
     const res = await fetch(`/api/workflows/${workflowId}`, {
       method: 'PUT',
+      keepalive: options?.keepalive,
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: JSON.stringify(snapshot.serialized) }),
@@ -74,6 +78,7 @@ export async function triggerCloudSave(workflowId: string): Promise<void> {
 
 export function useAutoSave(workflowId?: string, enableCloud = true) {
   const hasLoaded = useRef(false)
+  const lastChangeAtRef = useRef(0)
 
   /* ── 页面加载时恢复 (仅无 workflowId 时从 localStorage) ── */
   useEffect(() => {
@@ -105,6 +110,7 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
 
       /* localStorage 保存 (1s 防抖，始终执行) */
       if (localTimer) clearTimeout(localTimer)
+      lastChangeAtRef.current = Date.now()
       localTimer = setTimeout(() => {
         saveToLocal(state.nodes, state.edges, state.viewport)
       }, DEBOUNCE_LOCAL_MS)
@@ -118,10 +124,43 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
       }
     })
 
+    const flushPendingSave = () => {
+      if (!workflowId || !enableCloud) return
+      if (!lastChangeAtRef.current) return
+
+      const recentlyChanged =
+        Date.now() - lastChangeAtRef.current < Math.max(DEBOUNCE_LOCAL_MS, DEBOUNCE_CLOUD_MS)
+
+      if (!recentlyChanged) return
+
+      if (localTimer) {
+        clearTimeout(localTimer)
+        localTimer = null
+      }
+      if (cloudTimer) {
+        clearTimeout(cloudTimer)
+        cloudTimer = null
+      }
+
+      void triggerCloudSave(workflowId, { keepalive: true })
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushPendingSave()
+      }
+    }
+
+    window.addEventListener('pagehide', flushPendingSave)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
+      flushPendingSave()
       unsubscribe()
       if (localTimer) clearTimeout(localTimer)
       if (cloudTimer) clearTimeout(cloudTimer)
+      window.removeEventListener('pagehide', flushPendingSave)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [workflowId, enableCloud])
 }
