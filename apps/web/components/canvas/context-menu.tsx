@@ -26,15 +26,13 @@ interface CanvasContextMenuProps {
 const ROOT_MENU_WIDTH = 180
 const SUB_MENU_WIDTH = 220
 const ITEM_HEIGHT = 36
-const SUBMENU_OVERLAP = 6
-const SUBMENU_CLOSE_DELAY_MS = 120
+const SUBMENU_GAP = 6
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasContextMenuProps) {
   const t = useTranslations('contextMenu')
   const ref = useRef<HTMLDivElement>(null)
-  const closeTimerRef = useRef<number | null>(null)
   const [activeGroupId, setActiveGroupId] = useState(groups[0]?.id ?? '')
   const [submenuPosition, setSubmenuPosition] = useState<{ left: number; top: number } | null>(null)
 
@@ -48,15 +46,6 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
     window.addEventListener('mousedown', onClickOutside)
     return () => window.removeEventListener('mousedown', onClickOutside)
   }, [onClose])
-
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current != null) {
-        window.clearTimeout(closeTimerRef.current)
-      }
-    }
-  }, [])
-
   /* ── 视口边界修正 ──────────────────────────────────── */
   const menuHeight = Math.max(groups.length, 1) * ITEM_HEIGHT + 16
   const adjustedX = x + ROOT_MENU_WIDTH > window.innerWidth ? x - ROOT_MENU_WIDTH : x
@@ -70,9 +59,7 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
     const rect = anchor.getBoundingClientRect()
     const submenuHeight = group.items.length * ITEM_HEIGHT + 16
     const openLeft = rect.right + SUB_MENU_WIDTH > window.innerWidth
-    const left = openLeft
-      ? rect.left - SUB_MENU_WIDTH + SUBMENU_OVERLAP
-      : rect.right - SUBMENU_OVERLAP
+    const left = openLeft ? rect.left - SUB_MENU_WIDTH - SUBMENU_GAP : rect.right + SUBMENU_GAP
     const top = Math.min(rect.top, window.innerHeight - submenuHeight - 8)
 
     setActiveGroupId(group.id)
@@ -82,23 +69,21 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
     })
   }
 
-  const cancelScheduledClose = () => {
-    if (closeTimerRef.current != null) {
-      window.clearTimeout(closeTimerRef.current)
-      closeTimerRef.current = null
-    }
-  }
-
-  const scheduleSubmenuClose = () => {
-    cancelScheduledClose()
-    closeTimerRef.current = window.setTimeout(() => {
-      setSubmenuPosition(null)
-      closeTimerRef.current = null
-    }, SUBMENU_CLOSE_DELAY_MS)
-  }
+  const submenuHeight = activeGroup ? activeGroup.items.length * ITEM_HEIGHT + 16 : 0
+  const bridgeStyle =
+    activeGroup && submenuPosition
+      ? buildBridgeStyle({
+          menuLeft: adjustedX,
+          menuTop: adjustedY,
+          menuHeight,
+          submenuLeft: submenuPosition.left,
+          submenuTop: submenuPosition.top,
+          submenuHeight,
+        })
+      : null
 
   return (
-    <div ref={ref}>
+    <div ref={ref} onMouseLeave={() => setSubmenuPosition(null)}>
       <div
         className={cn(
           'bg-popover text-popover-foreground fixed z-50 min-w-[180px]',
@@ -107,8 +92,6 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
           'py-1',
         )}
         style={{ left: adjustedX, top: adjustedY }}
-        onMouseEnter={cancelScheduledClose}
-        onMouseLeave={scheduleSubmenuClose}
       >
         {groups.length > 0 ? (
           groups.map((group) => (
@@ -132,6 +115,8 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
         )}
       </div>
 
+      {bridgeStyle ? <div className="fixed z-[55]" style={bridgeStyle} /> : null}
+
       {activeGroup && submenuPosition && groups.length > 0 ? (
         <div
           className={cn(
@@ -141,8 +126,6 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
             'py-1',
           )}
           style={submenuPosition}
-          onMouseEnter={cancelScheduledClose}
-          onMouseLeave={scheduleSubmenuClose}
         >
           {activeGroup.items.map(({ type, labelKey, icon: Icon }) => (
             <button
@@ -165,4 +148,34 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
       ) : null}
     </div>
   )
+}
+
+function buildBridgeStyle({
+  menuLeft,
+  menuTop,
+  menuHeight,
+  submenuLeft,
+  submenuTop,
+  submenuHeight,
+}: {
+  menuLeft: number
+  menuTop: number
+  menuHeight: number
+  submenuLeft: number
+  submenuTop: number
+  submenuHeight: number
+}) {
+  const menuRight = menuLeft + ROOT_MENU_WIDTH
+  const submenuRight = submenuLeft + SUB_MENU_WIDTH
+  const opensRight = submenuLeft >= menuLeft
+  const left = opensRight ? menuRight : submenuRight
+  const width = opensRight ? submenuLeft - menuRight : menuLeft - submenuRight
+  const top = Math.min(menuTop, submenuTop)
+  const height = Math.max(menuTop + menuHeight, submenuTop + submenuHeight) - top
+
+  if (width <= 0 || height <= 0) {
+    return null
+  }
+
+  return { left, top, width, height }
 }
