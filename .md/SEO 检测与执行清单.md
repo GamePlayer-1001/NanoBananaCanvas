@@ -93,9 +93,9 @@
 | `robots.txt`        | 已实现           | 基础可用，但仍需和 sitemap/索引策略联动复核                     |
 | `sitemap.xml`       | 已实现           | 基础可用，但精度不足                                            |
 | Canonical           | 已实现           | 统一走 `buildPageMetadata()`，方向正确                          |
-| 页面级 metadata     | 部分完成         | 公开页大多已覆盖，但 `privacy/terms` 缺口明确                   |
-| `noindex` 私有页    | 已部分完成       | 登录页、账户页、工作区已处理，但编辑器路由仍需再确认边界        |
-| 结构化数据          | 部分完成         | 只有首页与联系页做了，关键详情页和 pricing 还没补齐             |
+| 页面级 metadata     | 已基本完成       | 公开关键页已覆盖，法务页和列表/详情页 metadata 已补齐           |
+| `noindex` 私有页    | 已完成第一轮     | 登录页、账户页、工作区、编辑器页已处理，工具页边界已开始收紧    |
+| 结构化数据          | 已完成第一轮     | 首页、联系页、pricing、explore 列表/详情、workflows 已补关键层  |
 | 多语言 SEO          | 未完成           | 界面双语 ≠ 搜索双语                                             |
 | Search Console      | 未发现已接入证据 | 需要补                                                          |
 | GA4                 | 未发现已接入证据 | 需要补                                                          |
@@ -136,12 +136,16 @@
 4. `/account`
 5. `/billing`
 
-#### 当前缺失或不够明确的页面
+#### 已在本轮补齐的页面
 
 1. `/privacy`
 2. `/terms`
-3. `/workspace/[id]` 当前是重定向页，本身未显式表达搜索边界
-4. `/canvas/[id]` 当前是编辑器 CSR 页，未显式声明 `noindex`
+3. `/workspace/[id]` 已明确 `noindex`
+4. `/canvas/[id]` 已通过路由 `layout.tsx` 明确 `noindex`
+
+#### 当前仍需继续观察边界的页面
+
+1. `/video-analysis` 已转为 `noindex` 工具页
 
 说明：
 
@@ -159,14 +163,25 @@
 2. 联系页 `/contact`
    - `Organization`
 
-#### 未实现但应优先考虑
+#### 已实现
 
 1. `/pricing`
    - `Product / Offer`
-2. `/explore/[id]`
-   - `CreativeWork` 或与模板页语义更贴近的结构化数据
-3. 面包屑类页面
-   - 当前有 UI breadcrumb 组件，但未形成 `BreadcrumbList` schema 闭环
+   - `BreadcrumbList`
+2. `/explore`
+   - `CollectionPage`
+   - `BreadcrumbList`
+3. `/explore/[id]`
+   - `CreativeWork`
+   - `BreadcrumbList`
+4. `/workflows`
+   - `CollectionPage`
+   - `BreadcrumbList`
+
+#### 未实现但应继续考虑
+
+1. 更细粒度的实体专属 OG 表达
+2. 后续如有 blog/docs 内容页，可继续扩展 `BreadcrumbList` 与内容 schema
 
 ### 4.3 公共资源与品牌入口
 
@@ -241,6 +256,8 @@ DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
 
 ### P0-2 法务高信任页 metadata 不完整
 
+状态：已修复
+
 #### 现象层
 
 `/privacy` 与 `/terms` 页面当前没有独立 `generateMetadata()`，会退回根布局默认 metadata。
@@ -277,6 +294,8 @@ DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
 ---
 
 ### P0-3 公开详情页缺少结构化数据闭环
+
+状态：已完成第一轮
 
 #### 现象层
 
@@ -320,6 +339,8 @@ DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
 
 ### P1-1 Pricing 页缺少 Product / Offer 结构化数据
 
+状态：已修复
+
 #### 现象层
 
 `/pricing` 页面有完整 metadata，但当前没有 `Product / Offer` JSON-LD。
@@ -349,6 +370,8 @@ DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
 
 ### P1-2 sitemap 的 `lastModified` 质量不高
 
+状态：已修复
+
 #### 现象层
 
 静态页面 sitemap 当前统一使用 `new Date()`。
@@ -375,6 +398,8 @@ DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
 
 ### P1-3 sitemap 公开页边界还不够克制
 
+状态：已完成第一轮收口
+
 #### 现象层
 
 当前 sitemap 主动提交了：
@@ -388,7 +413,7 @@ DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
 
 1. `/explore` 与 `/workflows` 适合作为公开聚合页
 2. `/explore/[id]` 适合作为公开内容页
-3. `/video-analysis` 更像工具页，是否应索引，需要重新定义
+3. `/video-analysis` 更像工具页，当前已转为 `noindex`，并从 sitemap 移除
 
 #### 本质层
 
@@ -412,6 +437,8 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 ---
 
 ### P1-4 法务与品牌页关键词承接还偏弱
+
+状态：已完成第一轮强化
 
 #### 现象层
 
@@ -587,12 +614,12 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 ## Phase 0：立即修复（本周内）
 
 - [ ] 把多语言 SEO 方向定下来：继续“隐藏 locale，只做单语索引”，还是切换为“显式语言 URL”
-- [ ] 给 `/privacy` 增加 `generateMetadata()`
-- [ ] 给 `/terms` 增加 `generateMetadata()`
-- [ ] 重新评估 `/video-analysis` 是否应该进入 sitemap
-- [ ] 给 `/canvas/[id]` 明确 `noindex`
-- [ ] 给 `/workspace/[id]` 兼容重定向页明确搜索边界
-- [ ] 为 sitemap 静态页改成真实 `lastModified`，不要每次都用当前时间
+- [x] 给 `/privacy` 增加 `generateMetadata()`
+- [x] 给 `/terms` 增加 `generateMetadata()`
+- [x] 重新评估 `/video-analysis` 是否应该进入 sitemap
+- [x] 给 `/canvas/[id]` 明确 `noindex`
+- [x] 给 `/workspace/[id]` 兼容重定向页明确搜索边界
+- [x] 为 sitemap 静态页改成真实 `lastModified`，不要每次都用当前时间
 
 ### 推荐落点
 
@@ -604,12 +631,12 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ## Phase 1：结构性优化（1 周）
 
-- [ ] 为 `/pricing` 添加 `Product / Offer` JSON-LD
-- [ ] 为 `/explore/[id]` 添加 `CreativeWork` 或更合适的结构化数据
+- [x] 为 `/pricing` 添加 `Product / Offer` JSON-LD
+- [x] 为 `/explore/[id]` 添加 `CreativeWork` 或更合适的结构化数据
 - [ ] 为 `/explore/[id]` 补更贴合实体的 OG 表达
-- [ ] 为公开关键页建立 `BreadcrumbList` 方案
-- [ ] 明确哪些公开页应该 `index`，哪些公开页虽然可访问但不值得进入搜索结果
-- [ ] 输出“页面 - 主关键词 - 次关键词 - 支撑词”映射表
+- [x] 为公开关键页建立 `BreadcrumbList` 方案
+- [x] 明确哪些公开页应该 `index`，哪些公开页虽然可访问但不值得进入搜索结果
+- [x] 输出“页面 - 主关键词 - 次关键词 - 支撑词”映射表
 
 ### 推荐落点
 
@@ -725,6 +752,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 ### `/pricing`
 
 - 主关键词：
+  - gpt image pricing
   - Nano Banana Canvas pricing
   - AI workflow pricing
 - 次关键词：
@@ -735,11 +763,30 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 - 主关键词：
   - workflow title 本身
+  - gpt image workflow template
   - AI workflow template
 - 次关键词：
   - reusable workflow
   - creator workflow
   - image/video prompt chain
+
+### `/explore`
+
+- 主关键词：
+  - gpt image templates
+  - AI workflow templates
+- 次关键词：
+  - creator workflow library
+  - image generation workflows
+
+### `/workflows`
+
+- 主关键词：
+  - gpt image workflow library
+  - AI workflow library
+- 次关键词：
+  - reusable workflow templates
+  - creator workflow systems
 
 说明：  
 这只是首版方向，不是最终词表。真正上线前最好结合 Search Console 与关键词工具再二次校准。
