@@ -18,9 +18,9 @@
     "workflowsDescription": "浏览可复用的 AI 工作流模板，覆盖提示工程、图片生成、视频制作和多模态自动化。",
     "videoAnalysisTitle": "AI 视频分析",
     "videoAnalysisDescription": "上传视频并使用 AI 提取分镜、脚本、镜头备注和生产洞察。",
-    "privacyTitle": "隐私政策",
+    "privacyTitle": "AI 工作流账户与计费隐私政策",
     "privacyDescription": "了解 Nano Banana Canvas 如何处理账户数据、账单记录、Cookie、分析信息与用户隐私权利。",
-    "termsTitle": "服务条款",
+    "termsTitle": "AI 工作流使用与计费服务条款",
     "termsDescription": "查看 Nano Banana Canvas 关于账户使用、计费规则、退款边界、服务可用性与责任限制的条款。"
   },
   "landingSeo": {
@@ -1703,6 +1703,8 @@
   "contact": {
     "title": "联系我们",
     "subtitle": "通过 Telegram、Discord、X 和 Instagram 与 Nano Banana Canvas 团队及社区取得联系。",
+    "metaTitle": "联系 Nano Banana Canvas 获取 AI 工作流支持",
+    "metaDescription": "通过 Telegram、Discord、X 和 Instagram 联系 Nano Banana Canvas，获取 AI 工作流支持、产品咨询、合作沟通与创作者社区入口。",
     "telegram": "Telegram",
     "telegramDesc": "加入 Telegram 频道，获取产品更新和社区讨论。",
     "discord": "Discord",

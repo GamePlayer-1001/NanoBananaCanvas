@@ -18,9 +18,9 @@
     "workflowsDescription": "Browse reusable AI workflow templates for prompt engineering, image generation, video production, and multimodal automation.",
     "videoAnalysisTitle": "AI Video Analysis",
     "videoAnalysisDescription": "Upload videos and use AI to extract storyboards, scripts, shot notes, and production insights.",
-    "privacyTitle": "Privacy Policy",
+    "privacyTitle": "Privacy Policy for AI Workflow Accounts and Billing",
     "privacyDescription": "Read how Nano Banana Canvas handles account data, billing records, cookies, analytics, and user privacy rights.",
-    "termsTitle": "Terms of Service",
+    "termsTitle": "Terms of Service for AI Workflow Use and Billing",
     "termsDescription": "Review the Nano Banana Canvas terms covering account usage, billing rules, refunds, service availability, and liability."
   },
   "landingSeo": {
@@ -1703,6 +1703,8 @@
   "contact": {
     "title": "Contact Us",
     "subtitle": "Talk with the Nano Banana Canvas team and community across Telegram, Discord, X, and Instagram.",
+    "metaTitle": "Contact Nano Banana Canvas for AI Workflow Support",
+    "metaDescription": "Reach Nano Banana Canvas for AI workflow support, product questions, partnership requests, and creator community contact across Telegram, Discord, X, and Instagram.",
     "telegram": "Telegram",
     "telegramDesc": "Join the Telegram channel for product updates and community discussion.",
     "discord": "Discord",

@@ -1,10 +1,10 @@
 # Nano Banana Canvas - SEO 检测与执行清单
 
-> 文档版本：v1.0
+> 文档版本：v1.1
 > 创建日期：2026-04-27
 > 适用范围：当前 `apps/web` 公开站点的静态代码 SEO 审计
-> 检测方式：代码审计 + 路由结构审计 + metadata/robots/sitemap/结构化数据检查
-> 说明：本次未接入 Google Search Console、Bing Webmaster、真实日志、线上 Lighthouse，因此结论聚焦“站内可见事实”，不伪造线上收录与流量结果
+> 检测方式：代码审计 + 路由结构审计 + metadata/robots/sitemap/结构化数据检查 + 线上 HTML 抽查 + Search Console / Bing Webmaster 首轮接管状态复核
+> 说明：Google Search Console 与 Bing Webmaster 已完成首轮接管和 sitemap 提交；GA4 与真实 CWV 监控仍未接入，因此流量与性能判断仍不伪造
 
 ---
 
@@ -23,12 +23,12 @@
 
 1. **多语言 SEO 已建立基础生产态，但还缺少更深的内容本地化与站外验证**
 2. **部分增长型 SEO 资产仍未建设，例如深内容页与专属 OG 资源矩阵**
-3. **站外接管与监控闭环仍未建立**
+3. **站外已完成首轮接管，但监控与告警消化闭环还未完全稳定**
 
 ### 1.2 风险等级
 
-- **高风险**：Search Console / Bing / GA4 尚未接管，导致收录、覆盖、点击与排名没有正式反馈回路
-- **中风险**：增长型内容 SEO 资产尚未建设，长尾搜索承接能力仍不足
+- **高风险**：GA4 / PageSpeed / 日志级监控尚未接入，导致性能与行为反馈链仍然偏弱
+- **中风险**：Bing 首轮告警仍在消化中，且增长型内容 SEO 资产尚未建设，长尾搜索承接能力仍不足
 - **低风险**：专属 OG 资源矩阵、法务正文深度本地化、性能图片压缩仍可继续打磨
 
 ### 1.3 当前评分
@@ -87,21 +87,21 @@
 
 ## 三、站内外检测矩阵
 
-| 维度                | 当前状态         | 结论                                                                 |
-| ------------------- | ---------------- | -------------------------------------------------------------------- |
-| `robots.txt`        | 已完成第二轮     | 已同时声明根 sitemap 与中文独立 sitemap，并继续收紧私有路径抓取边界 |
-| `sitemap.xml`       | 已完成第二轮     | 根 sitemap 已聚焦默认语言，中文已拆出独立 sitemap 入口               |
-| Canonical           | 已实现           | 统一走 `buildPageMetadata()`，方向正确                               |
-| 页面级 metadata     | 已基本完成       | 公开关键页已覆盖，法务页和列表/详情页 metadata 已补齐                |
-| `noindex` 私有页    | 已完成第一轮     | 登录页、账户页、工作区、编辑器页已处理，工具页边界已开始收紧         |
-| 结构化数据          | 已完成第二轮     | 首页、about、docs、community、contact、pricing、explore 列表/详情、workflows、法务页已补关键层 |
-| 多语言 SEO          | 已完成第二轮     | 默认英文无前缀、中文显式前缀、独立语言 sitemap、locale 感知关键词已落地 |
-| Search Console      | 未发现已接入证据 | 需要补                                                               |
-| GA4                 | 未发现已接入证据 | 需要补                                                               |
-| Bing Webmaster      | 未发现已接入证据 | 需要补                                                               |
-| 站点验证 Meta / DNS | 未发现已接入证据 | 需要补                                                               |
-| 404 搜索信号        | 已完成第一轮     | 全局与 locale 404 已补 noindex，后续仍可继续加强跳转引导             |
-| 公共资源与品牌图标  | 基础存在         | `favicon.ico` 和 logo 存在，但未形成完整 web app / 分享资源体系      |
+| 维度                | 当前状态        | 结论                                                                                           |
+| ------------------- | --------------- | ---------------------------------------------------------------------------------------------- |
+| `robots.txt`        | 已完成第二轮    | 已同时声明根 sitemap 与中文独立 sitemap，并继续收紧私有路径抓取边界                            |
+| `sitemap.xml`       | 已完成第二轮    | 根 sitemap 已聚焦默认语言，中文已拆出独立 sitemap 入口                                         |
+| Canonical           | 已实现          | 统一走 `buildPageMetadata()`，方向正确                                                         |
+| 页面级 metadata     | 已基本完成      | 公开关键页已覆盖，法务页和列表/详情页 metadata 已补齐                                          |
+| `noindex` 私有页    | 已完成第一轮    | 登录页、账户页、工作区、编辑器页已处理，工具页边界已开始收紧                                   |
+| 结构化数据          | 已完成第二轮    | 首页、about、docs、community、contact、pricing、explore 列表/详情、workflows、法务页已补关键层 |
+| 多语言 SEO          | 已完成第二轮    | 默认英文无前缀、中文显式前缀、独立语言 sitemap、locale 感知关键词已落地                        |
+| Search Console      | 已完成首轮接入  | 域名验证已通过，根 sitemap 与中文 sitemap 已提交                                               |
+| GA4                 | 未接入          | 仍需补                                                                                         |
+| Bing Webmaster      | 已完成首轮接入  | 已通过 GSC 导入站点，但首轮扫描告警仍需继续观察                                                |
+| 站点验证 Meta / DNS | 已完成 DNS 验证 | 当前所有权验证主要走 DNS，而不是页面 meta                                                      |
+| 404 搜索信号        | 已完成第一轮    | 全局与 locale 404 已补 noindex，后续仍可继续加强跳转引导                                       |
+| 公共资源与品牌图标  | 基础存在        | `favicon.ico` 和 logo 存在，但未形成完整 web app / 分享资源体系                                |
 
 ---
 
@@ -215,15 +215,38 @@
 
 ### 4.4 监控与验证接入现状
 
-代码中未发现：
+当前已确认：
 
-1. `google-site-verification`
-2. `bing-site-verification`
-3. `gtag`
-4. `googletagmanager`
-5. GA4 Measurement ID
+1. Google Search Console 域名验证已通过
+2. Bing Webmaster 已通过 GSC 导入站点
+3. 根 sitemap：`https://nanobananacanvas.com/sitemap.xml` 已提交
+4. 中文 sitemap：`https://nanobananacanvas.com/zh/sitemap.xml` 已提交
+5. `robots.txt`、根 sitemap、中文 sitemap 线上均可正常抓取
 
-DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
+当前代码中仍未发现：
+
+1. `gtag`
+2. `googletagmanager`
+3. GA4 Measurement ID
+
+因此当前“站点所有权接管”已完成，但“分析与性能监控接管”仍未完成。
+
+### 4.5 Bing 当前警告复核（2026-04-27）
+
+根据当前 Bing Webmaster 首轮扫描结果，已知告警类型包括：
+
+1. `Too many pages with identical titles`：4 页
+2. `Too many pages with identical meta descriptions`：4 页
+3. `Meta descriptions on many pages are too short`：3 页
+4. `Many of your page titles are too short`：1 页
+5. `The <h1> tag is missing.`：1 页，当前指向首页 `/`
+6. `The description is missing in the head section of the page.`：1 页，当前指向首页 `/`
+
+当前复核结论：
+
+1. 首页线上真实 HTML 已能抓到 `<title>`、`<meta name="description">` 与 `<h1>`，因此后两条更像是 Bing 旧扫描缓存或首轮渲染误判，不应再按“代码缺失”处理
+2. 真正值得继续优化的是“标题过短 / 描述过短 / 相似度偏高”这三类页面级文案问题
+3. 本轮已继续强化 `contact`、`privacy`、`terms` 的 metadata 语义，用于压低下一轮站长工具警告概率
 
 ---
 
@@ -510,26 +533,30 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-### P1-5 站外平台没有建立正式接管关系
+### P1-5 站外平台已建立正式接管，但首轮告警仍需继续消化
 
 #### 现象层
 
-当前代码与 DNS 检查都没有显示这些信号：
+当前已确认这些站外信号：
 
-1. Google Search Console 验证
-2. Bing Webmaster 验证
-3. GA4
-4. 站点所有权验证 Meta
-5. `google-site-verification` DNS TXT
+1. Google Search Console 域名验证已通过
+2. Bing Webmaster 已导入并开始扫描
+3. 根 sitemap 与中文 sitemap 已提交
+
+当前仍未接入：
+
+1. GA4
+2. PageSpeed / CWV 周期化复盘
+3. 日志级抓取监控
 
 #### 本质层
 
 这意味着：
 
 1. 站内 SEO 文件已经存在
-2. 但 Google 侧并没有被明确告知“这个站由你管理”
-3. sitemap 就算站内可访问，也未必被主动提交
-4. 收录、覆盖、点击、排名都无法系统监控
+2. Google / Bing 侧已经被明确告知“这个站由你管理”
+3. 但平台首轮告警与真实线上 HTML 之间仍存在时间差
+4. 收录、覆盖、点击、排名虽然开始有反馈入口，但分析与性能监控仍未闭环
 
 #### 官方依据
 
@@ -539,8 +566,8 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 #### 判断
 
-这是典型的“站内做了一半，站外没接上”。  
-如果不补 Search Console，这个 SEO 系统就缺少最关键的反馈回路。
+当前已经跨过“站内做了一半，站外没接上”这道坎。  
+下一步不再是“先去验证”，而是“继续消化 Bing / GSC 首轮数据，并补齐 GA4 与周期复盘”。
 
 ---
 
@@ -665,10 +692,11 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ## Phase 2：站外接入与反馈闭环（1 周）
 
-- [ ] 在 Google Search Console 添加 `nanobananacanvas.com`
-- [ ] 用 DNS TXT 或 HTML Meta 完成站点所有权验证
-- [ ] 提交 `https://nanobananacanvas.com/sitemap.xml`
-- [ ] 在 Bing Webmaster Tools 添加并验证站点
+- [x] 在 Google Search Console 添加 `nanobananacanvas.com`
+- [x] 用 DNS TXT 或 HTML Meta 完成站点所有权验证
+- [x] 提交 `https://nanobananacanvas.com/sitemap.xml`
+- [x] 提交 `https://nanobananacanvas.com/zh/sitemap.xml`
+- [x] 在 Bing Webmaster Tools 添加并验证站点
 - [ ] 决定是否接 GA4；如果接，补文案与实现同步
 - [ ] 建立 Search Console / Bing / PageSpeed 的月度复盘动作
 
@@ -680,7 +708,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 - [x] 让 canonical 与语言 URL 一一对应
 - [x] 为不同语言版本做独立 sitemap
 - [ ] 把中英文 metadata、schema 文本、法务文本继续做深度本地化校对
-  当前状态：首页、about、docs、community、contact、pricing、explore、workflows、explore detail、privacy、terms 等关键公开页已完成关键词与 schema 文本第二轮本地化，法务正文仍可继续深挖
+      当前状态：首页、about、docs、community、contact、pricing、explore、workflows、explore detail、privacy、terms 等关键公开页已完成关键词与 schema 文本第二轮本地化，法务正文仍可继续深挖
 
 ### 推荐落点
 
@@ -703,9 +731,10 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ### 8.1 Google Search Console
 
-- [ ] 添加 `nanobananacanvas.com` 作为 Domain Property
-- [ ] 优先使用 DNS TXT 验证
-- [ ] 验证成功后提交 `/sitemap.xml`
+- [x] 添加 `nanobananacanvas.com` 作为 Domain Property
+- [x] 优先使用 DNS TXT 验证
+- [x] 验证成功后提交 `/sitemap.xml`
+- [x] 提交 `/zh/sitemap.xml`
 - [ ] 抽查以下 URL：
   - `/`
   - `/features`
@@ -715,9 +744,11 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ### 8.2 Bing Webmaster Tools
 
-- [ ] 添加站点
-- [ ] 完成所有权验证
-- [ ] 提交 sitemap
+- [x] 添加站点
+- [x] 完成所有权验证
+- [x] 提交 sitemap
+- [ ] 对首页 `/` 发起重新抓取 / 重新编入索引，消化首轮 `<h1>` 与 `description` 误报
+- [ ] 点开 4 条重复标题、4 条重复描述、3 条描述过短、1 条标题过短的具体 URL 清单，继续逐页收口
 
 ### 8.3 GA4
 
