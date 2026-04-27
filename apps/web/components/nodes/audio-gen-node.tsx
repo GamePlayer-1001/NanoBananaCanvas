@@ -13,6 +13,7 @@ import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, KeyRound, Loader2, Music } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import { useUserKeyOnboarding } from '@/hooks/use-user-key-onboarding'
 import {
   getNodeConfigMigrationPatch,
   resolveAvailableUserConfigId,
@@ -81,6 +82,7 @@ export function AudioGenNode(props: NodeProps) {
     ) ?? ''
   const savedAudioConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('audio')
+  const { dialog, handleUserKeyIntent } = useUserKeyOnboarding()
   const userKeyProviderLabel = getProviderLabel('audio', savedAudioConfig?.providerId)
   const userKeyModelLabel =
     savedAudioConfig?.modelId?.trim() ||
@@ -158,12 +160,15 @@ export function AudioGenNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() =>
-                updateConfig({
-                  executionMode: 'user_key',
-                  userKeyConfigId: selectedUserConfigId,
-                })
-              }
+              onClick={() => {
+                if (executionMode === 'user_key') return
+                handleUserKeyIntent('audio', () =>
+                  updateConfig({
+                    executionMode: 'user_key',
+                    userKeyConfigId: selectedUserConfigId,
+                  }),
+                )
+              }}
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -273,6 +278,7 @@ export function AudioGenNode(props: NodeProps) {
           </div>
         )}
       </div>
+      {dialog}
     </BaseNode>
   )
 }

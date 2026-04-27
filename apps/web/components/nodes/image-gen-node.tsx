@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import { useUserKeyOnboarding } from '@/hooks/use-user-key-onboarding'
 import {
   getNodeConfigMigrationPatch,
   resolveAvailableUserConfigId,
@@ -104,6 +105,7 @@ export function ImageGenNode(props: NodeProps) {
     ) ?? ''
   const savedImageConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('image')
+  const { dialog, handleUserKeyIntent } = useUserKeyOnboarding()
   const userKeyProviderLabel = getProviderLabel('image', savedImageConfig?.providerId)
   const userKeyModelLabel =
     savedImageConfig?.modelId?.trim() ||
@@ -172,12 +174,15 @@ export function ImageGenNode(props: NodeProps) {
             />
             <ModeButton
               active={executionMode === 'user_key'}
-              onClick={() =>
-                updateConfig({
-                  executionMode: 'user_key',
-                  userKeyConfigId: selectedUserConfigId,
-                })
-              }
+              onClick={() => {
+                if (executionMode === 'user_key') return
+                handleUserKeyIntent('image', () =>
+                  updateConfig({
+                    executionMode: 'user_key',
+                    userKeyConfigId: selectedUserConfigId,
+                  }),
+                )
+              }}
               icon={<KeyRound size={12} />}
               label={t('userKeyMode')}
             />
@@ -275,6 +280,7 @@ export function ImageGenNode(props: NodeProps) {
           </div>
         ) : null}
       </div>
+      {dialog}
     </BaseNode>
   )
 }
