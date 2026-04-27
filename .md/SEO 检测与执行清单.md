@@ -68,10 +68,134 @@
    - `apps/web/i18n/config.ts`
    - `apps/web/i18n/routing.ts`
    - 公开营销页、公开社区页、认证页、404 页、OG 图片接口
+4. 公开页面覆盖矩阵：
+   - `[locale]/(landing)/*`
+   - `[locale]/(app)/explore/*`
+   - `[locale]/(app)/workflows/page.tsx`
+   - `[locale]/(app)/video-analysis/page.tsx`
+   - `[locale]/(auth)/*`
+5. 站外接入痕迹：
+   - Google Search Console 验证位
+   - DNS TXT 验证记录
+   - GA4 / `gtag`
+   - Bing / 其他站长工具验证位
+6. 公共静态资源与品牌入口：
+   - `favicon.ico`
+   - `public/brand/*`
+   - `public/landing/hero/*`
 
 ---
 
-## 三、核心问题与根因
+## 三、站内外检测矩阵
+
+| 维度                | 当前状态         | 结论                                                            |
+| ------------------- | ---------------- | --------------------------------------------------------------- |
+| `robots.txt`        | 已实现           | 基础可用，但仍需和 sitemap/索引策略联动复核                     |
+| `sitemap.xml`       | 已实现           | 基础可用，但精度不足                                            |
+| Canonical           | 已实现           | 统一走 `buildPageMetadata()`，方向正确                          |
+| 页面级 metadata     | 部分完成         | 公开页大多已覆盖，但 `privacy/terms` 缺口明确                   |
+| `noindex` 私有页    | 已部分完成       | 登录页、账户页、工作区已处理，但编辑器路由仍需再确认边界        |
+| 结构化数据          | 部分完成         | 只有首页与联系页做了，关键详情页和 pricing 还没补齐             |
+| 多语言 SEO          | 未完成           | 界面双语 ≠ 搜索双语                                             |
+| Search Console      | 未发现已接入证据 | 需要补                                                          |
+| GA4                 | 未发现已接入证据 | 需要补                                                          |
+| Bing Webmaster      | 未发现已接入证据 | 需要补                                                          |
+| 站点验证 Meta / DNS | 未发现已接入证据 | 需要补                                                          |
+| 404 搜索信号        | 基础存在         | 有页面，但未做更精细 noindex/引导                               |
+| 公共资源与品牌图标  | 基础存在         | `favicon.ico` 和 logo 存在，但未形成完整 web app / 分享资源体系 |
+
+---
+
+## 四、页面覆盖审计
+
+### 4.1 页面级 metadata 覆盖现状
+
+#### 已有独立 metadata / generateMetadata 的公开页
+
+1. `/`
+2. `/features`
+3. `/models`
+4. `/docs`
+5. `/community`
+6. `/about`
+7. `/contact`
+8. `/pricing`
+9. `/refund-policy`
+10. `/acceptable-use`
+11. `/cookies`
+12. `/explore`
+13. `/explore/[id]`
+14. `/workflows`
+15. `/video-analysis`
+
+#### 已明确 `noindex` 的私有页
+
+1. `/sign-in`
+2. `/sign-up`
+3. `/workspace`
+4. `/account`
+5. `/billing`
+
+#### 当前缺失或不够明确的页面
+
+1. `/privacy`
+2. `/terms`
+3. `/workspace/[id]` 当前是重定向页，本身未显式表达搜索边界
+4. `/canvas/[id]` 当前是编辑器 CSR 页，未显式声明 `noindex`
+
+说明：
+
+1. `workspace/[id]` 作为旧路由兼容重定向，理论上不应被索引
+2. `canvas/[id]` 作为编辑器页，按当前产品语义也不应进入搜索结果
+
+### 4.2 结构化数据覆盖现状
+
+#### 已实现
+
+1. 首页 `/`
+   - `Organization`
+   - `SoftwareApplication`
+   - `FAQPage`
+2. 联系页 `/contact`
+   - `Organization`
+
+#### 未实现但应优先考虑
+
+1. `/pricing`
+   - `Product / Offer`
+2. `/explore/[id]`
+   - `CreativeWork` 或与模板页语义更贴近的结构化数据
+3. 面包屑类页面
+   - 当前有 UI breadcrumb 组件，但未形成 `BreadcrumbList` schema 闭环
+
+### 4.3 公共资源与品牌入口
+
+当前已存在：
+
+1. `apps/web/app/favicon.ico`
+2. `apps/web/public/brand/logo-1024.png`
+
+当前未看到明确实现：
+
+1. `site.webmanifest`
+2. `apple-touch-icon`
+3. 静态 OG 资源目录（当前主要依赖动态 OG 接口）
+
+### 4.4 监控与验证接入现状
+
+代码中未发现：
+
+1. `google-site-verification`
+2. `bing-site-verification`
+3. `gtag`
+4. `googletagmanager`
+5. GA4 Measurement ID
+
+DNS 中也未查到明确的 `google-site-verification=...` TXT 记录。
+
+---
+
+## 五、核心问题与根因
 
 ### P0-1 多语言 SEO 没有真正建立
 
@@ -342,7 +466,66 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-## 四、当前已做得对的地方
+### P1-5 站外平台没有建立正式接管关系
+
+#### 现象层
+
+当前代码与 DNS 检查都没有显示这些信号：
+
+1. Google Search Console 验证
+2. Bing Webmaster 验证
+3. GA4
+4. 站点所有权验证 Meta
+5. `google-site-verification` DNS TXT
+
+#### 本质层
+
+这意味着：
+
+1. 站内 SEO 文件已经存在
+2. 但 Google 侧并没有被明确告知“这个站由你管理”
+3. sitemap 就算站内可访问，也未必被主动提交
+4. 收录、覆盖、点击、排名都无法系统监控
+
+#### 官方依据
+
+1. `references/03-ranking-appearance/establish-business-details.md`
+2. `references/05-monitoring-debugging/google-analytics-search-console.md`
+3. `references/06-specialty/implementation-playbook.md`
+
+#### 判断
+
+这是典型的“站内做了一半，站外没接上”。  
+如果不补 Search Console，这个 SEO 系统就缺少最关键的反馈回路。
+
+---
+
+### P1-6 法务与 Cookie 文案领先于真实接入状态
+
+#### 现象层
+
+文案里已经出现了：
+
+1. analytics
+2. cookies for analytics
+3. payment / billing continuity
+
+但代码里没有看到真实 GA4 或其他分析脚本接入。
+
+#### 本质层
+
+这不是 SEO 直接扣分项，但会带来两个问题：
+
+1. 法务文案与真实运行状态不完全一致
+2. 后续如果真要接 GA4，文案和实现之间缺少明确变更节点
+
+#### 判断
+
+建议把它记成“合规与 SEO 周边一致性项”，和 Search Console / GA4 接入一起处理。
+
+---
+
+## 六、当前已做得对的地方
 
 这部分很重要，因为不是要把现状说成一片废墟。
 
@@ -399,7 +582,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-## 五、分阶段执行清单
+## 七、分阶段执行清单
 
 ## Phase 0：立即修复（本周内）
 
@@ -407,6 +590,8 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 - [ ] 给 `/privacy` 增加 `generateMetadata()`
 - [ ] 给 `/terms` 增加 `generateMetadata()`
 - [ ] 重新评估 `/video-analysis` 是否应该进入 sitemap
+- [ ] 给 `/canvas/[id]` 明确 `noindex`
+- [ ] 给 `/workspace/[id]` 兼容重定向页明确搜索边界
 - [ ] 为 sitemap 静态页改成真实 `lastModified`，不要每次都用当前时间
 
 ### 推荐落点
@@ -414,12 +599,15 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 1. `apps/web/app/[locale]/(landing)/privacy/page.tsx`
 2. `apps/web/app/[locale]/(landing)/terms/page.tsx`
 3. `apps/web/app/sitemap.ts`
+4. `apps/web/app/[locale]/(editor)/canvas/[id]/page.tsx`
+5. `apps/web/app/[locale]/(app)/workspace/[id]/page.tsx`
 
 ## Phase 1：结构性优化（1 周）
 
 - [ ] 为 `/pricing` 添加 `Product / Offer` JSON-LD
 - [ ] 为 `/explore/[id]` 添加 `CreativeWork` 或更合适的结构化数据
 - [ ] 为 `/explore/[id]` 补更贴合实体的 OG 表达
+- [ ] 为公开关键页建立 `BreadcrumbList` 方案
 - [ ] 明确哪些公开页应该 `index`，哪些公开页虽然可访问但不值得进入搜索结果
 - [ ] 输出“页面 - 主关键词 - 次关键词 - 支撑词”映射表
 
@@ -430,7 +618,16 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 3. `apps/web/lib/seo.ts`
 4. 新增关键词映射文档，可并入本文件后续版本
 
-## Phase 2：真正建立多语言 SEO（如果要做国际化搜索）
+## Phase 2：站外接入与反馈闭环（1 周）
+
+- [ ] 在 Google Search Console 添加 `nanobananacanvas.com`
+- [ ] 用 DNS TXT 或 HTML Meta 完成站点所有权验证
+- [ ] 提交 `https://nanobananacanvas.com/sitemap.xml`
+- [ ] 在 Bing Webmaster Tools 添加并验证站点
+- [ ] 决定是否接 GA4；如果接，补文案与实现同步
+- [ ] 建立 Search Console / Bing / PageSpeed 的月度复盘动作
+
+## Phase 3：真正建立多语言 SEO（如果要做国际化搜索）
 
 - [ ] 把 `localePrefix: 'never'` 改成可索引语言路径策略
 - [ ] 为 `en` / `zh` 建立真实独立 URL
@@ -446,7 +643,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 3. `apps/web/lib/seo.ts`
 4. 各公开页 `generateMetadata()`
 
-## Phase 3：增长型 SEO（2-6 周）
+## Phase 4：增长型 SEO（2-6 周）
 
 - [ ] 建立首页、features、models、pricing、explore detail 的关键词地图
 - [ ] 为模板详情页设计可承接长尾的正文结构
@@ -456,7 +653,42 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-## 六、推荐页面关键词映射（首版）
+## 八、站外平台执行清单
+
+### 8.1 Google Search Console
+
+- [ ] 添加 `nanobananacanvas.com` 作为 Domain Property
+- [ ] 优先使用 DNS TXT 验证
+- [ ] 验证成功后提交 `/sitemap.xml`
+- [ ] 抽查以下 URL：
+  - `/`
+  - `/features`
+  - `/models`
+  - `/pricing`
+  - `/explore`
+
+### 8.2 Bing Webmaster Tools
+
+- [ ] 添加站点
+- [ ] 完成所有权验证
+- [ ] 提交 sitemap
+
+### 8.3 GA4
+
+- [ ] 决定是否接入
+- [ ] 如果接入，增加 `gtag`
+- [ ] 同步更新 cookie / privacy 文案，确保与真实实现一致
+
+### 8.4 验证方式
+
+- [ ] DNS 中可查询到验证记录
+- [ ] 或页面源码中存在验证 Meta
+- [ ] Search Console 可看到 sitemap 状态
+- [ ] URL Inspection 可拉到核心页结果
+
+---
+
+## 九、推荐页面关键词映射（首版）
 
 ### 首页 `/`
 
@@ -514,7 +746,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-## 七、验证方式
+## 十、验证方式
 
 ### 7.1 代码侧验证
 
@@ -522,6 +754,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 - [ ] 确认 `robots.txt`、`sitemap.xml` 可正常生成
 - [ ] 确认结构化数据 JSON-LD 语法正确
 - [ ] 确认 canonical 指向真实公开 URL
+- [ ] 确认不应索引的编辑器/账户/工作区页都已明确 `noindex`
 
 ### 7.2 工具侧验证
 
@@ -530,6 +763,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 - [ ] Google Search Console URL Inspection
 - [ ] PageSpeed Insights
 - [ ] Screaming Frog
+- [ ] Bing Webmaster
 
 ### 7.3 预期结果
 
@@ -548,7 +782,32 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-## 八、结案判断
+## 十一、补充发现
+
+### 11.1 当前没有 analytics 实装，但文案已预留
+
+这意味着后续如果不接 GA4，也应该把文案口径收紧；  
+如果要接，就要把 SEO 与合规一起补齐。
+
+### 11.2 当前缺少 webmanifest 类外围资产
+
+这不属于搜索排序核心项，但属于品牌与平台完整度项。  
+建议放到低优先级，不和核心 SEO 修复抢顺序。
+
+### 11.3 当前 public 里的首屏营销图片体积较大
+
+从静态文件尺寸看，多个 landing 图都在 2MB 左右。  
+这更偏性能 SEO，不是收录问题，但会影响：
+
+1. LCP
+2. 首屏加载体验
+3. 移动端 PageSpeed
+
+建议在后续性能轮里统一压缩或改成更适合 web 的资源规格。
+
+---
+
+## 十二、结案判断
 
 ### 当前最应该先做什么
 
@@ -566,7 +825,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 
 ---
 
-## 九、参考依据
+## 十三、参考依据
 
 ### Google SEO Skill
 
