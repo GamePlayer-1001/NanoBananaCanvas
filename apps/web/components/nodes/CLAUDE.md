@@ -9,7 +9,7 @@
 ```
 plugin-registry.ts       — NodePluginMeta 节点元数据注册中心 (ports/defaults/category/icon，单一真相源)
 registry.ts              — NODE_TYPES 节点类型→组件映射 (ReactFlow 消费)
-base-node.tsx       — BaseNode 节点基础框架 (从 plugin-registry 读取端口，渲染状态指示/Handle/端口标签/选中样式，并统一提供边缘缩放)
+base-node.tsx       — BaseNode 节点基础框架 (从 plugin-registry 读取端口，渲染状态指示/Handle/端口标签/选中样式，并统一提供稳定默认尺寸与边缘缩放)
 text-input-node.tsx — TextInputNode 文本输入节点
 image-input-node.tsx — ImageInputNode 图片输入节点 (R2 上传 + 图片预览 + image-out 输出)
 llm-node.tsx        — LLMNode 大语言模型节点 (platformProvider/platformModel 与 userKeyConfigId 分离，平台执行 + 文本 API 配置卡片/温度/MaxTokens/SystemPrompt/流式输出)

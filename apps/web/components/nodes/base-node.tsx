@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 Handle/Position/NodeProps，依赖 @/types 的 WorkflowNodeData/PortDefinition，
  *          依赖 ./plugin-registry 的 getNodePorts
- * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件 (含 headerRight 插槽与端口标签)
- * [POS]: components/nodes 的基础模板，所有具体节点类型继承此框架
+ * [OUTPUT]: 对外提供 BaseNode 节点基础框架组件 (含 headerRight 插槽、端口标签与稳定默认尺寸)
+ * [POS]: components/nodes 的基础模板，所有具体节点类型继承此框架，默认锁定自动尺寸并允许用户手动缩放
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -97,6 +97,8 @@ function PortHandle({
 export function BaseNode({
   data,
   type,
+  width,
+  height,
   selected,
   icon,
   inputs,
@@ -135,12 +137,15 @@ export function BaseNode({
     setShowResizer(false)
   }, [])
 
+  const resolvedWidth = typeof width === 'number' ? '100%' : minWidth
+  const resolvedHeight = typeof height === 'number' ? '100%' : minHeight
+
   return (
     <div
       ref={containerRef}
       onMouseMove={updateResizeHover}
       onMouseLeave={hideResizer}
-      style={{ minWidth, minHeight }}
+      style={{ width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }}
       className={cn(
         'bg-card relative flex h-full w-full flex-col rounded-lg border shadow-sm',
         'transition-shadow duration-150',
