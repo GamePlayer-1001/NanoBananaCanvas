@@ -492,10 +492,17 @@ export function ModelPreferencesTab() {
                             type="password"
                             value={draft.apiKey}
                             onChange={(e) => updateDraft(itemId, { apiKey: e.target.value })}
-                            placeholder={t('apiKeyPlaceholder')}
+                            placeholder={saved?.maskedKey || t('apiKeyPlaceholder')}
                             className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                           />
-                          <p className="text-xs text-muted-foreground">{t('saveHint')}</p>
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            {saved?.maskedKey ? (
+                              <p>{t('editMaskedKeyHint', { key: saved.maskedKey })}</p>
+                            ) : null}
+                            <p>
+                              {saved?.maskedKey ? t('keepExistingKeyHint') : t('saveHint')}
+                            </p>
+                          </div>
                         </div>
 
                         {selectedProvider?.requiresSecretKey ? (
@@ -507,9 +514,18 @@ export function ModelPreferencesTab() {
                               type="password"
                               value={draft.secretKey}
                               onChange={(e) => updateDraft(itemId, { secretKey: e.target.value })}
-                              placeholder={t('secretKeyPlaceholder')}
+                              placeholder={
+                                saved?.hasSecretKey
+                                  ? t('secretKeyMaskedPlaceholder')
+                                  : t('secretKeyPlaceholder')
+                              }
                               className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                             />
+                            {saved?.hasSecretKey ? (
+                              <p className="text-xs text-muted-foreground">
+                                {t('keepExistingSecretKeyHint')}
+                              </p>
+                            ) : null}
                           </div>
                         ) : null}
 
