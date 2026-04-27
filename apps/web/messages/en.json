@@ -1677,6 +1677,8 @@
     "provider": "Provider",
     "imageSize": "Size",
     "imageAspect": "Aspect Ratio",
+    "preview": "Preview",
+    "previewDescription": "Turning this off still sends output to downstream nodes",
     "videoDuration": "Duration",
     "videoAspect": "Aspect Ratio",
     "videoMode": "Quality",

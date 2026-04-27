@@ -28,6 +28,7 @@ import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
 import { BaseNode } from './base-node'
+import { Switch } from '@/components/ui/switch'
 
 const DEFAULT_SIZE = '1k'
 const DEFAULT_ASPECT_RATIO = '1:1'
@@ -90,6 +91,7 @@ export function ImageGenNode(props: NodeProps) {
     : DEFAULT_ASPECT_RATIO
   const executionMode = (config.executionMode as string) ?? 'platform'
   const resultUrl = (config.resultUrl as string) ?? ''
+  const showPreview = config.showPreview === true
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -253,7 +255,20 @@ export function ImageGenNode(props: NodeProps) {
           </select>
         </ConfigField>
 
-        {status === 'running' || resultUrl ? (
+        <ConfigField label={t('preview')}>
+          <div className="flex items-center justify-between gap-3 rounded-md border px-2 py-1.5">
+            <span className="text-muted-foreground text-xs">
+              {t('previewDescription')}
+            </span>
+            <Switch
+              checked={showPreview}
+              onCheckedChange={(checked) => updateConfig({ showPreview: checked })}
+              size="sm"
+            />
+          </div>
+        </ConfigField>
+
+        {showPreview && (status === 'running' || resultUrl) ? (
           <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">

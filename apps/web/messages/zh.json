@@ -1677,6 +1677,8 @@
     "provider": "提供商",
     "imageSize": "尺寸",
     "imageAspect": "比例",
+    "preview": "预览",
+    "previewDescription": "关闭后仍会正常输出到下游节点",
     "videoDuration": "时长",
     "videoAspect": "画面比例",
     "videoMode": "画质",

@@ -144,6 +144,7 @@ register({
     platformModel: 'openai/dall-e-3',
     size: '1k',
     aspectRatio: '1:1',
+    showPreview: false,
     tokenBillingDraft: null,
   },
   toolbar: { labelKey: 'imageGen' },
@@ -167,6 +168,7 @@ register({
     duration: '5',
     aspectRatio: '16:9',
     mode: 'std',
+    showPreview: false,
   },
   toolbar: { labelKey: 'videoGen' },
 })
@@ -185,6 +187,7 @@ register({
     platformModel: 'tts-1',
     voice: 'alloy',
     speed: 1.0,
+    showPreview: false,
   },
   toolbar: { labelKey: 'audioGen' },
 })

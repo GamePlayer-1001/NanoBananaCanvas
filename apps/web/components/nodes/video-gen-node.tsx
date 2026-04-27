@@ -25,6 +25,7 @@ import { getProviderLabel } from '@/lib/model-config-catalog'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
+import { Switch } from '@/components/ui/switch'
 
 /* ─── Defaults ───────────────────────────────────────── */
 
@@ -85,6 +86,7 @@ export function VideoGenNode(props: NodeProps) {
   const executionMode = (config.executionMode as string) ?? 'platform'
   const resultUrl = (config.resultUrl as string) ?? ''
   const progress = (config.progress as number) ?? 0
+  const showPreview = config.showPreview === true
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -296,8 +298,21 @@ export function VideoGenNode(props: NodeProps) {
           </ConfigField>
         )}
 
+        <ConfigField label={t('preview')}>
+          <div className="flex items-center justify-between gap-3 rounded-md border px-2 py-1.5">
+            <span className="text-muted-foreground text-xs">
+              {t('previewDescription')}
+            </span>
+            <Switch
+              checked={showPreview}
+              onCheckedChange={(checked) => updateConfig({ showPreview: checked })}
+              size="sm"
+            />
+          </div>
+        </ConfigField>
+
         {/* ── Result area ─────────────────────────── */}
-        {(status === 'running' || resultUrl) && (
+        {showPreview && (status === 'running' || resultUrl) && (
           <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
