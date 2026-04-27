@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/r2,
  *          依赖 @/lib/storage 的 generateThumbnailPath, 依赖 @/lib/errors
  * [OUTPUT]: 对外提供 PUT /api/workflows/:id/thumbnail (画布截图上传)
- * [POS]: api/workflows/[id]/thumbnail 的缩略图端点，由画布编辑器自动调用
+ * [POS]: api/workflows/[id]/thumbnail 的缩略图端点，由画布编辑器自动调用，并写入带版本戳的缩略图 URL
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     })
 
     /* 更新 DB */
-    const thumbnailUrl = `/api/files/${r2Key}`
+    const thumbnailUrl = `/api/files/${r2Key}?v=${Date.now()}`
     await db
       .prepare(
         `UPDATE workflows SET thumbnail = ?, updated_at = datetime('now')
