@@ -66,7 +66,7 @@ export default async function SignUpPage({
       title={t('registerTitle')}
       subtitle={t('registerSubtitle')}
       switchLabel={t('alreadyHaveAccount')}
-      switchHref={signInPath}
+      switchHref="/sign-in"
       switchText={t('login')}
       t={{
         brandName: t('brandName'),

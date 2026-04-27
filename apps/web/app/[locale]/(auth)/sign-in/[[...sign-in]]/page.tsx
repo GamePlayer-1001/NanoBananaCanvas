@@ -65,7 +65,7 @@ export default async function SignInPage({
       mode="sign-in"
       title={t('loginTitle')}
       switchLabel={t('noAccount')}
-      switchHref={signUpPath}
+      switchHref="/sign-up"
       switchText={t('register')}
       t={{
         brandName: t('brandName'),
