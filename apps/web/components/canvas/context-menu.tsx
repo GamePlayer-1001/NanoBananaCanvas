@@ -26,12 +26,15 @@ interface CanvasContextMenuProps {
 const ROOT_MENU_WIDTH = 180
 const SUB_MENU_WIDTH = 220
 const ITEM_HEIGHT = 36
+const SUBMENU_OVERLAP = 6
+const SUBMENU_CLOSE_DELAY_MS = 120
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasContextMenuProps) {
   const t = useTranslations('contextMenu')
   const ref = useRef<HTMLDivElement>(null)
+  const closeTimerRef = useRef<number | null>(null)
   const [activeGroupId, setActiveGroupId] = useState(groups[0]?.id ?? '')
   const [submenuPosition, setSubmenuPosition] = useState<{ left: number; top: number } | null>(null)
 
@@ -46,6 +49,14 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
     return () => window.removeEventListener('mousedown', onClickOutside)
   }, [onClose])
 
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current != null) {
+        window.clearTimeout(closeTimerRef.current)
+      }
+    }
+  }, [])
+
   /* ── 视口边界修正 ──────────────────────────────────── */
   const menuHeight = Math.max(groups.length, 1) * ITEM_HEIGHT + 16
   const adjustedX = x + ROOT_MENU_WIDTH > window.innerWidth ? x - ROOT_MENU_WIDTH : x
@@ -59,7 +70,9 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
     const rect = anchor.getBoundingClientRect()
     const submenuHeight = group.items.length * ITEM_HEIGHT + 16
     const openLeft = rect.right + SUB_MENU_WIDTH > window.innerWidth
-    const left = openLeft ? rect.left - SUB_MENU_WIDTH - 6 : rect.right + 6
+    const left = openLeft
+      ? rect.left - SUB_MENU_WIDTH + SUBMENU_OVERLAP
+      : rect.right - SUBMENU_OVERLAP
     const top = Math.min(rect.top, window.innerHeight - submenuHeight - 8)
 
     setActiveGroupId(group.id)
@@ -69,8 +82,23 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
     })
   }
 
+  const cancelScheduledClose = () => {
+    if (closeTimerRef.current != null) {
+      window.clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+  }
+
+  const scheduleSubmenuClose = () => {
+    cancelScheduledClose()
+    closeTimerRef.current = window.setTimeout(() => {
+      setSubmenuPosition(null)
+      closeTimerRef.current = null
+    }, SUBMENU_CLOSE_DELAY_MS)
+  }
+
   return (
-    <div ref={ref} onMouseLeave={() => setSubmenuPosition(null)}>
+    <div ref={ref}>
       <div
         className={cn(
           'bg-popover text-popover-foreground fixed z-50 min-w-[180px]',
@@ -79,6 +107,8 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
           'py-1',
         )}
         style={{ left: adjustedX, top: adjustedY }}
+        onMouseEnter={cancelScheduledClose}
+        onMouseLeave={scheduleSubmenuClose}
       >
         {groups.length > 0 ? (
           groups.map((group) => (
@@ -111,6 +141,8 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
             'py-1',
           )}
           style={submenuPosition}
+          onMouseEnter={cancelScheduledClose}
+          onMouseLeave={scheduleSubmenuClose}
         >
           {activeGroup.items.map(({ type, labelKey, icon: Icon }) => (
             <button
