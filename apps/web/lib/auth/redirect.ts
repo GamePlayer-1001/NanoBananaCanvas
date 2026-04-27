@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/i18n/routing 的 routing 配置
+ * [INPUT]: 依赖 @/i18n/routing 的 routing 配置，依赖 @/lib/seo 的本地化路径构造器
  * [OUTPUT]: 对外提供 resolveSafeAuthRedirect() / getDefaultWorkspaceRedirect() / getDefaultSignOutRedirect()
  * [POS]: lib/auth 的安全回跳策略层，统一约束登录成功后的站内白名单跳转与登出后的安全落点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { routing } from '@/i18n/routing'
+import { buildLocalizedPath } from '@/lib/seo'
 
 const REDIRECT_ALLOWLIST = [
   /^\/account$/,
@@ -31,7 +32,7 @@ function stripLocalePrefix(pathname: string) {
 }
 
 function localizePath(locale: string, path: string) {
-  return `/${locale}${path === '/' ? '' : path}`
+  return buildLocalizedPath(path, locale)
 }
 
 function parseRelativeUrl(candidate: string) {

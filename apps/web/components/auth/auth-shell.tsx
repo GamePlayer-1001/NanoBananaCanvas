@@ -25,7 +25,7 @@ interface AuthShellProps {
   title: string
   subtitle?: string
   switchLabel: string
-  switchHref: '/sign-in' | '/sign-up'
+  switchHref: string
   switchText: string
   children: ReactNode
   t: {

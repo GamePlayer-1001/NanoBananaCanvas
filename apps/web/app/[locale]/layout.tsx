@@ -24,6 +24,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { QueryProvider } from '@/lib/query/provider'
 import { getLocaleDefinition } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
+import { buildLocalizedPath } from '@/lib/seo'
 import '@/app/globals.css'
 
 /* ─── Fonts ─────────────────────────────────────────────── */
@@ -52,8 +53,6 @@ export function generateStaticParams() {
 
 /* ─── Clerk Redirects ─────────────────────────────────── */
 
-const CLERK_SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? '/sign-in'
-const CLERK_SIGN_UP_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? '/sign-up'
 const CLERK_SIGN_IN_FALLBACK_REDIRECT_URL =
   process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ?? '/workspace'
 const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
@@ -78,6 +77,22 @@ export default async function LocaleLayout({
   const localeDefinition = getLocaleDefinition(locale)
   setRequestLocale(locale)
   const messages = await getMessages()
+  const signInUrl = buildLocalizedPath(
+    process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? '/sign-in',
+    locale,
+  )
+  const signUpUrl = buildLocalizedPath(
+    process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? '/sign-up',
+    locale,
+  )
+  const signInFallbackRedirectUrl = buildLocalizedPath(
+    CLERK_SIGN_IN_FALLBACK_REDIRECT_URL,
+    locale,
+  )
+  const signUpFallbackRedirectUrl = buildLocalizedPath(
+    CLERK_SIGN_UP_FALLBACK_REDIRECT_URL,
+    locale,
+  )
 
   const appTree = (
     <TooltipProvider>
@@ -161,10 +176,10 @@ export default async function LocaleLayout({
           localization={
             localeDefinition.clerkLocalizationKey === 'zhCN' ? zhCN : undefined
           }
-          signInUrl={CLERK_SIGN_IN_URL}
-          signUpUrl={CLERK_SIGN_UP_URL}
-          signInFallbackRedirectUrl={CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
-          signUpFallbackRedirectUrl={CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
+          signInUrl={signInUrl}
+          signUpUrl={signUpUrl}
+          signInFallbackRedirectUrl={signInFallbackRedirectUrl}
+          signUpFallbackRedirectUrl={signUpFallbackRedirectUrl}
           proxyUrl={CLERK_PROXY_URL}
           appearance={{ cssLayerName: 'clerk' }}
         >

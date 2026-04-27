@@ -12,7 +12,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { AuthShell } from '@/components/auth/auth-shell'
 import { resolveSafeAuthRedirect } from '@/lib/auth/redirect'
-import { NO_INDEX_METADATA } from '@/lib/seo'
+import { NO_INDEX_METADATA, buildLocalizedPath } from '@/lib/seo'
 
 export const metadata: Metadata = NO_INDEX_METADATA
 
@@ -54,6 +54,8 @@ export default async function SignUpPage({
   const { locale } = await params
   const resolvedSearchParams = searchParams ? await searchParams : undefined
   const redirectUrl = resolveSafeAuthRedirect(locale, resolvedSearchParams?.redirect_url)
+  const signInPath = buildLocalizedPath('/sign-in', locale)
+  const signUpPath = buildLocalizedPath('/sign-up', locale)
   setRequestLocale(locale)
 
   const t = await getTranslations('auth')
@@ -64,7 +66,7 @@ export default async function SignUpPage({
       title={t('registerTitle')}
       subtitle={t('registerSubtitle')}
       switchLabel={t('alreadyHaveAccount')}
-      switchHref="/sign-in"
+      switchHref={signInPath}
       switchText={t('login')}
       t={{
         brandName: t('brandName'),
@@ -81,8 +83,8 @@ export default async function SignUpPage({
     >
       <SignUp
         routing="path"
-        path="/sign-up"
-        signInUrl="/sign-in"
+        path={signUpPath}
+        signInUrl={signInPath}
         fallbackRedirectUrl={redirectUrl}
         forceRedirectUrl={redirectUrl}
         appearance={CLERK_CARD_APPEARANCE}
