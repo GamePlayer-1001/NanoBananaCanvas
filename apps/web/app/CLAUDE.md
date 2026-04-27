@@ -15,7 +15,7 @@ robots.ts                   — robots.txt 动态生成 (SEO)
 sitemap.ts                  — sitemap.xml 动态生成 (SEO)
 api/                        — RESTful API 路由层 (见 api/CLAUDE.md，32 端点: pricing/billing/ai/files/tasks/workflows/explore/settings/webhooks...)
 
-[locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传，认证组件始终处在 ClerkProvider 内)
+[locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传，认证组件始终处在 ClerkProvider 内；公开页支持默认语言无前缀、中文显式前缀索引)
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (Hero + 模型动态脑图 + Features + Pricing 四档 + Testimonials + FAQ + Footer，CTA 召回区已移除)

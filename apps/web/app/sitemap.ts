@@ -1,14 +1,15 @@
 /**
- * [INPUT]: 依赖 lib/db 的 getDb (D1 查询公开工作流)
- * [OUTPUT]: 对外提供动态 Sitemap (静态路由 + 数据库驱动的动态路由)
- * [POS]: App Router 的 Sitemap 生成器，被搜索引擎爬虫消费
+ * [INPUT]: 依赖 lib/db 的 getDb (D1 查询公开工作流)，依赖 i18n/config 与 lib/seo 的多语言 URL 工具
+ * [OUTPUT]: 对外提供动态 Sitemap (静态路由 + 数据库驱动的动态路由 + 多语言 alternates)
+ * [POS]: App Router 的 Sitemap 生成器，被搜索引擎爬虫消费，统一输出默认语言与中文索引入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { MetadataRoute } from 'next'
 
 import { getDb } from '@/lib/db'
-import { buildAbsoluteUrl } from '@/lib/seo'
+import { ACTIVE_LOCALES } from '@/i18n/config'
+import { buildLanguageAlternates, buildLocalizedUrl } from '@/lib/seo'
 
 // ─── 常量 ───────────────────────────────────────────────
 const STATIC_LAST_MODIFIED_AT = '2026-04-27T00:00:00.000Z'
@@ -31,12 +32,17 @@ const STATIC_ROUTES = [
 
 // ─── Sitemap 生成 ───────────────────────────────────────
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
-    url: buildAbsoluteUrl(route.path),
-    lastModified: new Date(STATIC_LAST_MODIFIED_AT),
-    changeFrequency: route.changeFrequency,
-    priority: route.priority,
-  }))
+  const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.flatMap((route) =>
+    ACTIVE_LOCALES.map((locale) => ({
+      url: buildLocalizedUrl(route.path, locale),
+      lastModified: new Date(STATIC_LAST_MODIFIED_AT),
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+      alternates: {
+        languages: buildLanguageAlternates(route.path),
+      },
+    })),
+  )
 
   let dynamicEntries: MetadataRoute.Sitemap = []
   try {
@@ -50,12 +56,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       )
       .all<{ id: string; updated_at: string }>()
 
-    dynamicEntries = (results ?? []).map((row) => ({
-      url: buildAbsoluteUrl(`/explore/${row.id}`),
-      lastModified: new Date(row.updated_at),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    }))
+    dynamicEntries = (results ?? []).flatMap((row) =>
+      ACTIVE_LOCALES.map((locale) => ({
+        url: buildLocalizedUrl(`/explore/${row.id}`, locale),
+        lastModified: new Date(row.updated_at),
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+        alternates: {
+          languages: buildLanguageAlternates(`/explore/${row.id}`),
+        },
+      })),
+    )
   } catch {
     // D1 不可用时静默降级，仍返回静态路由
   }

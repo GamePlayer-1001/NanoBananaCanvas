@@ -1,12 +1,17 @@
 /**
- * [INPUT]: 依赖 next 的 Metadata 类型
- * [OUTPUT]: 对外提供 SEO 常量、绝对 URL 构造器、关键词策略与页面级 metadata 工厂
- * [POS]: lib 的 SEO 语义层，被 sitemap/robots/页面 metadata 复用，统一公开 URL、关键词优先级与搜索展示信号
+ * [INPUT]: 依赖 next 的 Metadata 类型，依赖 i18n/config 的 locale 真相源
+ * [OUTPUT]: 对外提供 SEO 常量、绝对 URL 构造器、多语言 URL/hreflang、关键词策略与页面级 metadata 工厂
+ * [POS]: lib 的 SEO 语义层，被 sitemap/robots/页面 metadata 复用，统一公开 URL、语言映射、关键词优先级与搜索展示信号
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
-import { getLocaleDefinition } from '@/i18n/config'
+import {
+  ACTIVE_LOCALES,
+  DEFAULT_LOCALE,
+  getLocaleDefinition,
+  resolveLocale,
+} from '@/i18n/config'
 
 export const BASE_URL = 'https://nanobananacanvas.com'
 export const SITE_NAME = 'Nano Banana Canvas'
@@ -32,6 +37,48 @@ export const NO_INDEX_METADATA: Metadata = {
 
 export function buildAbsoluteUrl(path = '/') {
   return new URL(path, BASE_URL).toString()
+}
+
+function stripLocalePrefix(path: string) {
+  for (const locale of ACTIVE_LOCALES) {
+    if (path === `/${locale}`) {
+      return '/'
+    }
+
+    if (path.startsWith(`/${locale}/`)) {
+      return path.slice(locale.length + 1)
+    }
+  }
+
+  return path
+}
+
+export function buildLocalizedPath(path = '/', locale?: string | null) {
+  const resolvedLocale = resolveLocale(locale)
+  const normalizedPath = stripLocalePrefix(path.startsWith('/') ? path : `/${path}`)
+
+  if (normalizedPath === '/') {
+    return resolvedLocale === DEFAULT_LOCALE ? '/' : `/${resolvedLocale}`
+  }
+
+  return resolvedLocale === DEFAULT_LOCALE
+    ? normalizedPath
+    : `/${resolvedLocale}${normalizedPath}`
+}
+
+export function buildLocalizedUrl(path = '/', locale?: string | null) {
+  return buildAbsoluteUrl(buildLocalizedPath(path, locale))
+}
+
+export function buildLanguageAlternates(path = '/') {
+  const languages = ACTIVE_LOCALES.reduce<Record<string, string>>((acc, locale) => {
+    acc[locale] = buildLocalizedUrl(path, locale)
+    return acc
+  }, {})
+
+  languages['x-default'] = buildLocalizedUrl(path, DEFAULT_LOCALE)
+
+  return languages
 }
 
 export function buildOgImageUrl(title: string, subtitle?: string) {
@@ -88,7 +135,8 @@ export function buildPageMetadata({
   ogSubtitle?: string
   keywords?: string[]
 }): Metadata {
-  const canonical = buildAbsoluteUrl(path)
+  const resolvedLocale = resolveLocale(locale)
+  const canonical = buildLocalizedUrl(path, resolvedLocale)
   const imageTitle = ogTitle ?? title
   const imageSubtitle = ogSubtitle ?? description
   const image = buildOgImageUrl(imageTitle, imageSubtitle)
@@ -99,6 +147,7 @@ export function buildPageMetadata({
     keywords,
     alternates: {
       canonical,
+      languages: buildLanguageAlternates(path),
     },
     robots: {
       index: true,
@@ -116,7 +165,7 @@ export function buildPageMetadata({
       description,
       url: canonical,
       siteName: SITE_NAME,
-      locale: getLocaleDefinition(locale).ogLocale,
+      locale: getLocaleDefinition(resolvedLocale).ogLocale,
       type,
       images: [
         {
