@@ -1,18 +1,21 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 BaseEdge/getBezierPath/EdgeProps/useStore，依赖 @/types 的 WorkflowNodeData
- * [OUTPUT]: 对外提供 CustomEdge 自定义连线组件 (含执行动画)
+ * [INPUT]: 依赖 @xyflow/react 的 BaseEdge/EdgeLabelRenderer/getBezierPath/EdgeProps/useStore，依赖 @/stores/use-flow-store 的删边能力，依赖 @/types 的 WorkflowNodeData
+ * [OUTPUT]: 对外提供 CustomEdge 自定义连线组件 (含执行动画与选中态删除按钮)
  * [POS]: components/edges 的默认连线渲染器，被 Canvas 通过 edgeTypes 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { BaseEdge, getBezierPath, type EdgeProps, useStore } from '@xyflow/react'
+import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps, useStore } from '@xyflow/react'
+import { X } from 'lucide-react'
+import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
 /* ─── Component ───────────────────────────────────────── */
 
 export function CustomEdge({
+  id,
   source,
   sourceX,
   sourceY,
@@ -23,7 +26,8 @@ export function CustomEdge({
   selected,
   markerEnd,
 }: EdgeProps) {
-  const [edgePath] = getBezierPath({
+  const removeEdge = useFlowStore((state) => state.removeEdge)
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     targetX,
@@ -61,6 +65,26 @@ export function CustomEdge({
         <circle r={3} fill="var(--brand-500)">
           <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} />
         </circle>
+      )}
+
+      {selected && (
+        <EdgeLabelRenderer>
+          <button
+            type="button"
+            className="bg-background border-border text-muted-foreground hover:border-destructive hover:text-destructive absolute flex h-6 w-6 items-center justify-center rounded-full border shadow-sm transition-colors"
+            style={{
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: 'all',
+            }}
+            onClick={(event) => {
+              event.stopPropagation()
+              removeEdge(id)
+            }}
+            aria-label="Delete connection"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </EdgeLabelRenderer>
       )}
     </g>
   )
