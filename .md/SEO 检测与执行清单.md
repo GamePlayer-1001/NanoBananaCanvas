@@ -192,7 +192,7 @@
 
 当前未看到明确实现：
 
-1. `site.webmanifest`
+1. `site.webmanifest` 已补
 2. `apple-touch-icon`
 3. 静态 OG 资源目录（当前主要依赖动态 OG 接口）
 

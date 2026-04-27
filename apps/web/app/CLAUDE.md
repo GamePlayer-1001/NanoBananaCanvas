@@ -13,6 +13,7 @@ not-found.tsx               — 全局 404 页面
 globals.css                 — Tailwind v4 + Lux 主题 + 品牌色 Indigo + landing-dark
 robots.ts                   — robots.txt 动态生成 (SEO)
 sitemap.ts                  — 根 sitemap.xml 动态生成器 (默认英文入口 + 共享公开 sitemap 构造逻辑)
+manifest.ts                 — site.webmanifest 动态生成器 (品牌名/图标/主题色/安装入口)
 api/                        — RESTful API 路由层 (见 api/CLAUDE.md，32 端点: pricing/billing/ai/files/tasks/workflows/explore/settings/webhooks...)
 zh/CLAUDE.md               — 中文 sitemap 分区说明，记录 `/zh/*` 搜索入口职责
 zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 可索引入口
