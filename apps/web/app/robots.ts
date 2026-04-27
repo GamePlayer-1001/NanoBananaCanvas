@@ -24,7 +24,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    host: BASE_URL,
+    host: 'nanobananacanvas.com',
     sitemap: [`${BASE_URL}/sitemap.xml`, `${BASE_URL}/zh/sitemap.xml`],
   }
 }
