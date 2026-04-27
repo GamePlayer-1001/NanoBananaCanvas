@@ -12,9 +12,12 @@ favicon.ico                 — 浏览器标签页与收藏夹图标，由 publi
 not-found.tsx               — 全局 404 页面
 globals.css                 — Tailwind v4 + Lux 主题 + 品牌色 Indigo + landing-dark
 robots.ts                   — robots.txt 动态生成 (SEO)
-sitemap.ts                  — sitemap.xml 动态生成 (SEO)
+sitemap.ts                  — 根 sitemap.xml 动态生成器 (默认英文入口 + 共享公开 sitemap 构造逻辑)
 api/                        — RESTful API 路由层 (见 api/CLAUDE.md，32 端点: pricing/billing/ai/files/tasks/workflows/explore/settings/webhooks...)
+zh/CLAUDE.md               — 中文 sitemap 分区说明，记录 `/zh/*` 搜索入口职责
+zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 可索引入口
 
+[locale]/CLAUDE.md                         — locale 外壳层说明 (Provider、404、路由分组职责与边界)
 [locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传，认证组件始终处在 ClerkProvider 内；公开页支持默认语言无前缀、中文显式前缀索引)
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
