@@ -312,12 +312,12 @@ export function FeaturesSection() {
             </div>
           </div>
 
-          <div className="sticky top-24 self-start">
+          <div className="sticky top-24 self-start w-full">
             <article
               key={`feature-panel-${activeFeatureItem.key}`}
-              className="overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
+              className="w-full overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
             >
-              <div className="relative h-[520px] overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
+              <div className="relative h-[520px] w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#0b0c12]">
                 <div
                   className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-br ${activeFeatureItem.accent}`}
                 />
