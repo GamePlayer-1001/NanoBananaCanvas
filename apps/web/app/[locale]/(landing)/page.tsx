@@ -25,11 +25,10 @@ import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import {
   BASE_URL,
-  GPT_IMAGE_PRIORITY_KEYWORDS,
   SITE_NAME,
   buildAbsoluteUrl,
+  buildPriorityKeywords,
   buildPageMetadata,
-  mergeKeywords,
 } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -46,7 +45,7 @@ export async function generateMetadata({
     description: t('landingDescription'),
     path: '/',
     locale,
-    keywords: mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    keywords: buildPriorityKeywords(locale, [
       'AI workflow builder',
       'image generation workflow',
       'visual AI canvas',

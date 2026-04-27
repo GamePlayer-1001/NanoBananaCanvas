@@ -12,11 +12,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { WorkflowsContent } from '@/components/workflows/workflows-content'
 import {
-  GPT_IMAGE_PRIORITY_KEYWORDS,
   SITE_NAME,
   buildAbsoluteUrl,
+  buildPriorityKeywords,
   buildPageMetadata,
-  mergeKeywords,
 } from '@/lib/seo'
 
 export async function generateMetadata({
@@ -31,7 +30,7 @@ export async function generateMetadata({
     description: t('workflowsDescription'),
     path: '/workflows',
     locale,
-    keywords: mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    keywords: buildPriorityKeywords(locale, [
       'AI workflow library',
       'gpt image workflow library',
       'reusable workflow templates',
@@ -50,7 +49,7 @@ export default async function WorkflowsPage({
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'metadata' })
-  const keywords = mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+  const keywords = buildPriorityKeywords(locale, [
     'AI workflow library',
     'gpt image workflow library',
     'reusable workflow templates',

@@ -7,17 +7,17 @@
  */
 
 import type { Metadata } from 'next'
-import { setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ExploreDetailContent } from '@/components/explore/detail/explore-detail-content'
+import { resolveLocale } from '@/i18n/config'
 import { getDb } from '@/lib/db'
 import {
-  GPT_IMAGE_PRIORITY_KEYWORDS,
   SITE_NAME,
   buildAbsoluteUrl,
   buildOgImageUrl,
+  buildPriorityKeywords,
   buildPageMetadata,
-  mergeKeywords,
 } from '@/lib/seo'
 
 interface PublicWorkflowSeoRecord {
@@ -32,7 +32,18 @@ interface PublicWorkflowSeoRecord {
   clone_count: number | null
 }
 
-function buildWorkflowDescription(record: Pick<PublicWorkflowSeoRecord, 'description'>) {
+function buildWorkflowDescription(
+  record: Pick<PublicWorkflowSeoRecord, 'description'>,
+  locale: string,
+) {
+  const resolvedLocale = resolveLocale(locale)
+
+  if (resolvedLocale === 'zh') {
+    return record.description?.trim()
+      ? `${record.description.trim()} 这是 ${SITE_NAME} 上可复用的 GPT Image 与多模态 AI 工作流模板。`
+      : `${SITE_NAME} 面向创作者与团队提供可复用的 GPT Image 与多模态 AI 工作流模板。`
+  }
+
   return record.description?.trim()
     ? `${record.description.trim()} Reusable GPT Image and multimodal workflow template on ${SITE_NAME}.`
     : `Reusable GPT Image and multimodal AI workflow template for creators and teams on ${SITE_NAME}.`
@@ -43,7 +54,21 @@ function buildWorkflowOgSubtitle(
     PublicWorkflowSeoRecord,
     'author_name' | 'like_count' | 'clone_count' | 'view_count'
   >,
+  locale: string,
 ) {
+  const resolvedLocale = resolveLocale(locale)
+
+  if (resolvedLocale === 'zh') {
+    const author = record.author_name ? `作者 ${record.author_name}` : '公开工作流模板'
+    const signals = [
+      `${record.view_count ?? 0} 次浏览`,
+      `${record.like_count ?? 0} 次点赞`,
+      `${record.clone_count ?? 0} 次克隆`,
+    ].join(' · ')
+
+    return `${author} · GPT Image 工作流模板 · ${signals}`
+  }
+
   const author = record.author_name
     ? `By ${record.author_name}`
     : 'Public workflow template'
@@ -80,10 +105,18 @@ export async function generateMetadata({
   const { locale, id } = await params
   try {
     const row = await getPublicWorkflowSeoRecord(id)
-    if (!row) return { title: 'Workflow Not Found' }
-    const title = `${row.name} | GPT Image workflow template`
-    const description = buildWorkflowDescription(row)
-    const keywords = mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    const resolvedLocale = resolveLocale(locale)
+
+    if (!row) {
+      return { title: resolvedLocale === 'zh' ? '工作流未找到' : 'Workflow Not Found' }
+    }
+
+    const title =
+      resolvedLocale === 'zh'
+        ? `${row.name} | GPT Image 工作流模板`
+        : `${row.name} | GPT Image workflow template`
+    const description = buildWorkflowDescription(row, locale)
+    const keywords = buildPriorityKeywords(locale, [
       row.name,
       'AI workflow template',
       'image generation workflow',
@@ -97,7 +130,7 @@ export async function generateMetadata({
       locale,
       type: 'article',
       ogTitle: `${title} | ${SITE_NAME}`,
-      ogSubtitle: buildWorkflowOgSubtitle(row),
+      ogSubtitle: buildWorkflowOgSubtitle(row, locale),
       keywords,
     })
   } catch {
@@ -115,19 +148,23 @@ export default async function ExploreDetailPage({
   const { locale, id } = await params
   setRequestLocale(locale)
 
+  const resolvedLocale = resolveLocale(locale)
+  const t = await getTranslations({ locale, namespace: 'metadata' })
   const workflow = await getPublicWorkflowSeoRecord(id).catch(() => null)
 
   const keywords = workflow
-    ? mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    ? buildPriorityKeywords(locale, [
         workflow.name,
         'AI workflow template',
         'image generation workflow',
         'multimodal workflow',
       ])
-    : GPT_IMAGE_PRIORITY_KEYWORDS
+    : buildPriorityKeywords(locale, [])
   const description = workflow
-    ? buildWorkflowDescription(workflow)
-    : `Reusable GPT Image and multimodal AI workflow templates on ${SITE_NAME}.`
+    ? buildWorkflowDescription(workflow, locale)
+    : resolvedLocale === 'zh'
+      ? `${SITE_NAME} 上可复用的 GPT Image 与多模态 AI 工作流模板。`
+      : `Reusable GPT Image and multimodal AI workflow templates on ${SITE_NAME}.`
   const jsonLd = workflow
     ? [
         {
@@ -141,7 +178,7 @@ export default async function ExploreDetailPage({
           dateModified: workflow.updated_at ?? undefined,
           isAccessibleForFree: true,
           keywords: keywords.join(', '),
-          genre: 'AI workflow template',
+          genre: resolvedLocale === 'zh' ? 'AI 工作流模板' : 'AI workflow template',
           author: workflow.author_name
             ? {
                 '@type': 'Person',
@@ -154,8 +191,14 @@ export default async function ExploreDetailPage({
           },
           about: [
             { '@type': 'Thing', name: 'gpt image' },
-            { '@type': 'Thing', name: 'gpt image workflow' },
-            { '@type': 'Thing', name: 'AI workflow template' },
+            {
+              '@type': 'Thing',
+              name: resolvedLocale === 'zh' ? 'gpt image 工作流' : 'gpt image workflow',
+            },
+            {
+              '@type': 'Thing',
+              name: resolvedLocale === 'zh' ? 'AI 工作流模板' : 'AI workflow template',
+            },
           ],
           interactionStatistic: [
             {
@@ -188,7 +231,7 @@ export default async function ExploreDetailPage({
             {
               '@type': 'ListItem',
               position: 2,
-              name: 'Explore',
+              name: t('exploreTitle'),
               item: buildAbsoluteUrl('/explore'),
             },
             {

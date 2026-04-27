@@ -12,11 +12,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ExploreContent } from '@/components/explore/explore-content'
 import {
-  GPT_IMAGE_PRIORITY_KEYWORDS,
   SITE_NAME,
   buildAbsoluteUrl,
+  buildPriorityKeywords,
   buildPageMetadata,
-  mergeKeywords,
 } from '@/lib/seo'
 
 export async function generateMetadata({
@@ -31,7 +30,7 @@ export async function generateMetadata({
     description: t('exploreDescription'),
     path: '/explore',
     locale,
-    keywords: mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    keywords: buildPriorityKeywords(locale, [
       'AI workflow templates',
       'gpt image templates',
       'image generation workflows',
@@ -50,7 +49,7 @@ export default async function ExplorePage({
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'metadata' })
-  const keywords = mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+  const keywords = buildPriorityKeywords(locale, [
     'AI workflow templates',
     'gpt image templates',
     'image generation workflows',

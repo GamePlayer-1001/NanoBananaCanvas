@@ -96,7 +96,7 @@
 | 页面级 metadata     | 已基本完成       | 公开关键页已覆盖，法务页和列表/详情页 metadata 已补齐                |
 | `noindex` 私有页    | 已完成第一轮     | 登录页、账户页、工作区、编辑器页已处理，工具页边界已开始收紧         |
 | 结构化数据          | 已完成第一轮     | 首页、联系页、pricing、explore 列表/详情、workflows 已补关键层       |
-| 多语言 SEO          | 已完成第一轮     | 默认英文无前缀、中文显式前缀已落地，`hreflang`/语言 canonical 已补齐 |
+| 多语言 SEO          | 已完成第二轮     | 默认英文无前缀、中文显式前缀、独立语言 sitemap、locale 感知关键词已落地 |
 | Search Console      | 未发现已接入证据 | 需要补                                                               |
 | GA4                 | 未发现已接入证据 | 需要补                                                               |
 | Bing Webmaster      | 未发现已接入证据 | 需要补                                                               |
@@ -637,6 +637,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 - [x] 为公开关键页建立 `BreadcrumbList` 方案
 - [x] 明确哪些公开页应该 `index`，哪些公开页虽然可访问但不值得进入搜索结果
 - [x] 输出“页面 - 主关键词 - 次关键词 - 支撑词”映射表
+- [x] 为关键公开页把关键词策略升级为 locale 感知，并保持 `gpt image` 为最高优先级词
 
 ### 推荐落点
 
@@ -662,6 +663,7 @@ Google 更偏好“明确、有价值、希望被索引”的 URL 集合。
 - [x] 让 canonical 与语言 URL 一一对应
 - [x] 为不同语言版本做独立 sitemap
 - [ ] 把中英文 metadata、schema 文本、法务文本继续做深度本地化校对
+  当前状态：首页、pricing、explore、workflows、explore detail 等关键公开页已完成第一轮关键词与 schema 文本本地化，法务正文仍可继续深挖
 
 ### 推荐落点
 

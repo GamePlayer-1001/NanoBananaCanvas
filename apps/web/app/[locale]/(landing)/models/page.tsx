@@ -19,7 +19,7 @@ import {
   MarketingShell,
 } from '@/components/landing/public-pages'
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
-import { GPT_IMAGE_PRIORITY_KEYWORDS, buildPageMetadata, mergeKeywords } from '@/lib/seo'
+import { buildPageMetadata, buildPriorityKeywords } from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -34,7 +34,7 @@ export async function generateMetadata({
     description: t('metaDescription'),
     path: '/models',
     locale,
-    keywords: mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    keywords: buildPriorityKeywords(locale, [
       'AI model directory',
       'OpenAI image workflow',
       'multimodal AI',

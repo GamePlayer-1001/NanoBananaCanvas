@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next 的 Metadata 类型，依赖 i18n/config 的 locale 真相源
- * [OUTPUT]: 对外提供 SEO 常量、绝对 URL 构造器、多语言 URL/hreflang、关键词策略与页面级 metadata 工厂
- * [POS]: lib 的 SEO 语义层，被 sitemap/robots/页面 metadata 复用，统一公开 URL、语言映射、关键词优先级与搜索展示信号
+ * [OUTPUT]: 对外提供 SEO 常量、绝对 URL 构造器、多语言 URL/hreflang、locale 感知关键词策略与页面级 metadata 工厂
+ * [POS]: lib 的 SEO 语义层，被 sitemap/robots/页面 metadata 复用，统一公开 URL、语言映射、关键词优先级与多语言搜索展示信号
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -23,6 +23,17 @@ export const GPT_IMAGE_PRIORITY_KEYWORDS = [
   'gpt image prompt workflow',
   'gpt image 2',
 ]
+const LOCALE_SUPPORT_KEYWORDS: Record<(typeof ACTIVE_LOCALES)[number], string[]> = {
+  en: [],
+  zh: [
+    'gpt图片',
+    'gpt图片工作流',
+    'AI工作流',
+    '图像生成工作流',
+    '多模态工作流',
+    '提示词工作流',
+  ],
+}
 
 export const NO_INDEX_METADATA: Metadata = {
   robots: {
@@ -114,6 +125,19 @@ export function mergeKeywords(
   }
 
   return merged
+}
+
+export function buildPriorityKeywords(
+  locale: string | null | undefined,
+  ...groups: Array<Array<string | null | undefined | false>>
+) {
+  const resolvedLocale = resolveLocale(locale)
+
+  return mergeKeywords(
+    GPT_IMAGE_PRIORITY_KEYWORDS,
+    ...groups,
+    LOCALE_SUPPORT_KEYWORDS[resolvedLocale],
+  )
 }
 
 export function buildPageMetadata({

@@ -18,11 +18,10 @@ import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
 import {
   BASE_URL,
-  GPT_IMAGE_PRIORITY_KEYWORDS,
   SITE_NAME,
   buildAbsoluteUrl,
+  buildPriorityKeywords,
   buildPageMetadata,
-  mergeKeywords,
 } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -40,7 +39,7 @@ export async function generateMetadata({
     description: t('metaDescription'),
     path: '/pricing',
     locale,
-    keywords: mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+    keywords: buildPriorityKeywords(locale, [
       'AI workflow pricing',
       'image generation pricing',
       'multimodal workflow pricing',
@@ -67,7 +66,7 @@ export default async function PricingPage({
     return null
   })
 
-  const pricingKeywords = mergeKeywords(GPT_IMAGE_PRIORITY_KEYWORDS, [
+  const pricingKeywords = buildPriorityKeywords(locale, [
     'AI workflow pricing',
     'image generation pricing',
     'multimodal workflow pricing',
