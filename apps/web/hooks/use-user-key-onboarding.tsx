@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 react 的状态与回调能力，依赖 next-intl 的 useTranslations，
  *          依赖 @/hooks/use-model-configs 的账号配置读取，依赖 @/hooks/use-auto-save 的显式保存，
- *          依赖 @/i18n/navigation 的 useRouter，依赖 @/components/ui/dialog 与 sonner
+ *          依赖 @/i18n/navigation 的 useRouter，依赖 @/components/ui/dialog 与 sonner，
+ *          依赖 @/hooks/use-user-preferences 的本地偏好
  * [OUTPUT]: 对外提供 useUserKeyOnboarding 节点级自有 API Key 引导 hook
  * [POS]: hooks 的节点引导层，被生成类节点消费，负责前三次缺少自有配置时的提示、保存与跳转
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -25,10 +26,10 @@ import {
 } from '@/components/ui/dialog'
 import { triggerCloudSave } from '@/hooks/use-auto-save'
 import { useModelConfigs } from '@/hooks/use-model-configs'
+import { readUserPreferencesSnapshot, USER_KEY_ONBOARDING_STORAGE_KEY } from '@/hooks/use-user-preferences'
 import { useRouter } from '@/i18n/navigation'
 import type { CapabilityId } from '@/lib/model-config-catalog'
 
-const USER_KEY_ONBOARDING_STORAGE_KEY = 'nano-banana.user-key-onboarding.clicks'
 const MAX_USER_KEY_ONBOARDING_CLICKS = 3
 
 type SupportedCapability = Extract<CapabilityId, 'text' | 'image' | 'video' | 'audio'>
@@ -77,6 +78,11 @@ export function useUserKeyOnboarding(workflowId?: string) {
     (capability: SupportedCapability, onEnable: () => void) => {
       const savedConfigs = getConfigsByCapability(capability)
       if (savedConfigs.length > 0) {
+        onEnable()
+        return
+      }
+
+      if (!readUserPreferencesSnapshot().showOnboardingTips) {
         onEnable()
         return
       }

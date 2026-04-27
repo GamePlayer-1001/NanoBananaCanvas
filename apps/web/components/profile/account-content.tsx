@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 react 的 useState，
  *          依赖 ./profile-tab, ./account-dashboard-tab, ./subscription-tab,
- *          ./works-tab, ./notifications-tab, ./model-preferences-tab，
+ *          ./works-tab, ./notifications-tab, ./model-preferences-tab, ./settings-tab，
  *          依赖 @/lib/billing、@/lib/storage 与 @/hooks/use-user 的类型
  * [OUTPUT]: 对外提供 AccountContent 账户页主内容组件
  * [POS]: profile 的页面式账户中心，被 /account 路由消费，默认展示个人资料
@@ -12,7 +12,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
-import { Bell, BookOpen, CreditCard, LayoutDashboard, Settings2, User } from 'lucide-react'
+import { Bell, BookOpen, CreditCard, LayoutDashboard, Settings2, SlidersHorizontal, User } from 'lucide-react'
 
 import type { CreditBalanceSummary, CreditTransactionsResult, CreditUsageResult } from '@/lib/billing/credits'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
@@ -24,6 +24,7 @@ import { AccountDashboardTab } from './account-dashboard-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
 import { NotificationsTab } from './notifications-tab'
 import { ProfileTab } from './profile-tab'
+import { SettingsTab } from './settings-tab'
 import { SubscriptionTab } from './subscription-tab'
 import { WorksTab } from './works-tab'
 
@@ -34,6 +35,7 @@ const TABS = [
   { id: 'works', icon: BookOpen, labelKey: 'works' },
   { id: 'notifications', icon: Bell, labelKey: 'notifications' },
   { id: 'modelPreferences', icon: Settings2, labelKey: 'modelPreferences' },
+  { id: 'settings', icon: SlidersHorizontal, labelKey: 'settings' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -120,6 +122,7 @@ export function AccountContent({
     ),
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
+    settings: <SettingsTab />,
   } satisfies Record<TabId, ReactNode>
 
   return (

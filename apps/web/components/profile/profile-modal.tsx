@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，
- *          依赖 @/components/profile 的各 Tab 组件 (4 个)，
+ *          依赖 @/components/profile 的各 Tab 组件 (5 个)，
  *          依赖 @/hooks/use-user，
  *          依赖 lucide-react 图标
  * [OUTPUT]: 对外提供 ProfileModal 个人中心弹窗 (含个人信息、作品、通知、模型偏好)
@@ -12,7 +12,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { X, User, Settings2, BookOpen, Bell } from 'lucide-react'
+import { X, User, Settings2, BookOpen, Bell, SlidersHorizontal } from 'lucide-react'
 
 import { useCurrentUser } from '@/hooks/use-user'
 import type { StorageUsage } from '@/lib/storage'
@@ -20,6 +20,7 @@ import { ProfileTab } from './profile-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
 import { WorksTab } from './works-tab'
 import { NotificationsTab } from './notifications-tab'
+import { SettingsTab } from './settings-tab'
 
 /* ─── Tab Config ─────────────────────────────────────── */
 
@@ -28,6 +29,7 @@ const TABS = [
   { id: 'works', icon: BookOpen, labelKey: 'works' },
   { id: 'notifications', icon: Bell, labelKey: 'notifications' },
   { id: 'modelPreferences', icon: Settings2, labelKey: 'modelPreferences' },
+  { id: 'settings', icon: SlidersHorizontal, labelKey: 'settings' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -67,6 +69,7 @@ export function ProfileModal({
     ),
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
+    settings: <SettingsTab />,
   } satisfies Record<TabId, React.ReactNode>
 
   return (

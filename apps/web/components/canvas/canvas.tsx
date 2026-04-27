@@ -42,6 +42,7 @@ import { isValidConnection } from '@/lib/utils/validate-connection'
 import { useAutoSave, useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
 import { useThumbnailCapture } from '@/hooks/use-thumbnail-capture'
+import { useUserPreferences, CANVAS_SHORTCUT_HINT_MARKER_KEY, CANVAS_SHORTCUT_HINT_STORAGE_KEY } from '@/hooks/use-user-preferences'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { CanvasControls } from './canvas-controls'
 import { CANVAS_CONTEXT_MENU_GROUPS } from './node-entry-config'
@@ -70,8 +71,6 @@ const SNAP_GRID: [number, number] = [20, 20]
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 2
 const DUPLICATE_OFFSET = 50
-const SHORTCUT_HINT_STORAGE_KEY = 'nano-banana.canvas-shortcut-hint-views'
-const SHORTCUT_HINT_MARKER_KEY = 'nano-banana.canvas-shortcut-hint-last-open'
 const MAX_SHORTCUT_HINT_VIEWS = 3
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -112,6 +111,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   /* ── 云保存成功后自动生成缩略图 ──────────────────── */
   const { capture } = useThumbnailCapture(workflowId)
   const saveStatus = useCloudSaveStatus((s) => s.status)
+  const { preferences, hasLoaded: hasLoadedPreferences } = useUserPreferences()
   const [helperLines, setHelperLines] = useState<{
     horizontal?: number
     vertical?: number
@@ -125,10 +125,23 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   }, [saveStatus, capture])
 
   useEffect(() => {
+    if (!hasLoadedPreferences) {
+      return
+    }
+
+    if (!preferences.showOnboardingTips) {
+      const frameId = window.requestAnimationFrame(() => {
+        setShowShortcutHint(false)
+      })
+      return () => {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
+
     let frameId = 0
 
     try {
-      const rawCount = window.localStorage.getItem(SHORTCUT_HINT_STORAGE_KEY)
+      const rawCount = window.localStorage.getItem(CANVAS_SHORTCUT_HINT_STORAGE_KEY)
       const currentCount = Number.parseInt(rawCount ?? '0', 10)
       const safeCount = Number.isNaN(currentCount) ? 0 : currentCount
       const shouldShow = safeCount < MAX_SHORTCUT_HINT_VIEWS
@@ -144,15 +157,15 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
       }
 
       const now = Date.now()
-      const rawLastOpen = window.sessionStorage.getItem(SHORTCUT_HINT_MARKER_KEY)
+      const rawLastOpen = window.sessionStorage.getItem(CANVAS_SHORTCUT_HINT_MARKER_KEY)
       const lastOpen = Number.parseInt(rawLastOpen ?? '0', 10)
       const shouldCountOpen = Number.isNaN(lastOpen) || now - lastOpen > 1500
 
-      window.sessionStorage.setItem(SHORTCUT_HINT_MARKER_KEY, String(now))
+      window.sessionStorage.setItem(CANVAS_SHORTCUT_HINT_MARKER_KEY, String(now))
 
       if (shouldCountOpen) {
         window.localStorage.setItem(
-          SHORTCUT_HINT_STORAGE_KEY,
+          CANVAS_SHORTCUT_HINT_STORAGE_KEY,
           String(safeCount + 1),
         )
       }
@@ -165,7 +178,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     return () => {
       window.cancelAnimationFrame(frameId)
     }
-  }, [])
+  }, [hasLoadedPreferences, preferences.showOnboardingTips])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
