@@ -1,4 +1,5 @@
 # (editor)/
+
 > L2 | 父级: app/[locale]/CLAUDE.md
 
 ## 职责
@@ -8,6 +9,7 @@
 ## 成员清单
 
 layout.tsx: 极简全屏容器 `h-screen w-screen`，不包含 AppSidebar
+canvas/[id]/layout.tsx: 画布详情 SEO 布局，对编辑器路由输出 `noindex`
 canvas/[id]/page.tsx: 画布编辑器页面，CSR，从 D1 加载工作流数据注入 FlowStore + ReactFlow
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

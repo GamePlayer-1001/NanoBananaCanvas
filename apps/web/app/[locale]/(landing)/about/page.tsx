@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
  *          依赖 @/components/landing/public-pages，依赖 @/components/landing/marketing-site-tree，
  *          依赖 @/lib/seo 的 buildPageMetadata
- * [OUTPUT]: 对外提供 `/about` 公开关于我们页面
+ * [OUTPUT]: 对外提供 `/about` 公开关于我们页面 + SEO metadata + AboutPage/BreadcrumbList 结构化数据
  * [POS]: (landing) 路由组的品牌与团队定位页，为 Footer 公司信息和 SEO 承接叙事
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -19,7 +19,12 @@ import {
   MarketingShell,
 } from '@/components/landing/public-pages'
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
-import { buildPageMetadata } from '@/lib/seo'
+import {
+  SITE_NAME,
+  buildAbsoluteUrl,
+  buildPageMetadata,
+  buildPriorityKeywords,
+} from '@/lib/seo'
 
 export async function generateMetadata({
   params,
@@ -34,6 +39,11 @@ export async function generateMetadata({
     description: t('metaDescription'),
     path: '/about',
     locale,
+    keywords: buildPriorityKeywords(locale, [
+      'about Nano Banana Canvas',
+      'AI workflow company',
+      'visual AI workflow platform',
+    ]),
   })
 }
 
@@ -64,8 +74,49 @@ export default async function AboutPage({
     body: t(`sections.build.cards.${key}.body`),
   }))
 
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      name: t('metaTitle'),
+      description: t('metaDescription'),
+      url: buildAbsoluteUrl('/about'),
+      isPartOf: {
+        '@type': 'WebSite',
+        name: SITE_NAME,
+        url: buildAbsoluteUrl('/'),
+      },
+      about: [
+        { '@type': 'Thing', name: 'gpt image' },
+        { '@type': 'Thing', name: 'AI workflow platform' },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: SITE_NAME,
+          item: buildAbsoluteUrl('/'),
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: t('metaTitle'),
+          item: buildAbsoluteUrl('/about'),
+        },
+      ],
+    },
+  ]
+
   return (
     <MarketingShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <MarketingHero
         eyebrow={t('heroEyebrow')}
         title={t('heroTitle')}

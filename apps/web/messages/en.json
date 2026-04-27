@@ -17,7 +17,11 @@
     "workflowsTitle": "AI Workflow Library",
     "workflowsDescription": "Browse reusable AI workflow templates for prompt engineering, image generation, video production, and multimodal automation.",
     "videoAnalysisTitle": "AI Video Analysis",
-    "videoAnalysisDescription": "Upload videos and use AI to extract storyboards, scripts, shot notes, and production insights."
+    "videoAnalysisDescription": "Upload videos and use AI to extract storyboards, scripts, shot notes, and production insights.",
+    "privacyTitle": "Privacy Policy",
+    "privacyDescription": "Read how Nano Banana Canvas handles account data, billing records, cookies, analytics, and user privacy rights.",
+    "termsTitle": "Terms of Service",
+    "termsDescription": "Review the Nano Banana Canvas terms covering account usage, billing rules, refunds, service availability, and liability."
   },
   "landingSeo": {
     "eyebrow": "Search-ready AI workflow platform",
@@ -334,8 +338,8 @@
     }
   },
   "pricing": {
-    "metaTitle": "AI Workflow Pricing Plans",
-    "metaDescription": "View Nano Banana Canvas subscription pricing with live Stripe-backed prices and region-aware currencies.",
+    "metaTitle": "GPT Image Workflow Pricing Plans",
+    "metaDescription": "View Nano Banana Canvas GPT Image workflow pricing, AI credit packs, and live Stripe-backed subscription plans with region-aware currencies.",
     "eyebrow": "Live Stripe pricing",
     "title": "Choose the plan that matches your production volume",
     "description": "Plan prices are loaded from Stripe at request time so the UI stays aligned with the real billing configuration instead of drifting behind hard-coded numbers.",
@@ -1222,11 +1226,11 @@
     "analysisQueued": "Analysis job created",
     "analysisCompleted": "Video analysis completed",
     "analysisFailed": "Video analysis failed. Please try again later",
-      "analysisHistory": "Analysis History",
-      "noHistory": "No analysis history yet",
-      "historyLoading": "Loading analysis history from your account...",
-      "historyLoadFailed": "Failed to load analysis history. Please try again later",
-      "historyProcessing": "Processing",
+    "analysisHistory": "Analysis History",
+    "noHistory": "No analysis history yet",
+    "historyLoading": "Loading analysis history from your account...",
+    "historyLoadFailed": "Failed to load analysis history. Please try again later",
+    "historyProcessing": "Processing",
     "historyProcessingDescription": "The platform is parsing the video and generating storyboard plus script output.",
     "historyCompleted": "Completed",
     "historyCompletedDescription": "The analysis result is ready. Review the structured output above.",

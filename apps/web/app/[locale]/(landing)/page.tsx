@@ -23,7 +23,13 @@ import {
 import { LandingFooter } from '@/components/layout/landing-footer'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
-import { BASE_URL, SITE_NAME, buildAbsoluteUrl, buildPageMetadata } from '@/lib/seo'
+import {
+  BASE_URL,
+  SITE_NAME,
+  buildAbsoluteUrl,
+  buildPriorityKeywords,
+  buildPageMetadata,
+} from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,13 +45,12 @@ export async function generateMetadata({
     description: t('landingDescription'),
     path: '/',
     locale,
-    keywords: [
+    keywords: buildPriorityKeywords(locale, [
       'AI workflow builder',
-      'gpt image 2',
       'image generation workflow',
       'visual AI canvas',
       'multimodal production',
-    ],
+    ]),
   })
 }
 
@@ -151,7 +156,10 @@ export default async function LandingPage({
       <HeroSection />
       <ModelMindMapSection />
       <FeaturesSection />
-      <PricingSection plans={pricing?.plans ?? []} creditPacks={pricing?.creditPacks ?? []} />
+      <PricingSection
+        plans={pricing?.plans ?? []}
+        creditPacks={pricing?.creditPacks ?? []}
+      />
       <TestimonialsSection />
       <FaqSection />
       <LandingFooter />
