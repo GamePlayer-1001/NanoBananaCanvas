@@ -11,6 +11,7 @@ import { getDb } from '@/lib/db'
 import { buildAbsoluteUrl } from '@/lib/seo'
 
 // ─── 常量 ───────────────────────────────────────────────
+const STATIC_LAST_MODIFIED_AT = '2026-04-27T00:00:00.000Z'
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
   { path: '/features', changeFrequency: 'weekly' as const, priority: 0.88 },
@@ -33,7 +34,7 @@ const STATIC_ROUTES = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
     url: buildAbsoluteUrl(route.path),
-    lastModified: new Date(),
+    lastModified: new Date(STATIC_LAST_MODIFIED_AT),
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }))
@@ -46,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         `SELECT id, updated_at FROM workflows
          WHERE is_public = 1
          ORDER BY updated_at DESC
-         LIMIT 5000`
+         LIMIT 5000`,
       )
       .all<{ id: string; updated_at: string }>()
 

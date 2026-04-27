@@ -1,15 +1,33 @@
 /**
- * [INPUT]: 依赖 next-intl/server 的 setRequestLocale，依赖 @/components/legal/privacy-content，
- *          依赖 @/components/landing/marketing-site-tree
- * [OUTPUT]: 对外提供 PrivacyPage 隐私政策页 (SSG)
- * [POS]: (landing) 路由组的法律页面
+ * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，依赖 @/components/legal/privacy-content，
+ *          依赖 @/components/landing/marketing-site-tree，依赖 @/lib/seo 的 buildPageMetadata
+ * [OUTPUT]: 对外提供 PrivacyPage 隐私政策页 (SSG) + SEO metadata
+ * [POS]: (landing) 路由组的法律页面，承接公开隐私与数据处理说明
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { setRequestLocale } from 'next-intl/server'
+import type { Metadata } from 'next'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { PrivacyContent } from '@/components/legal/privacy-content'
+import { buildPageMetadata } from '@/lib/seo'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'metadata' })
+
+  return buildPageMetadata({
+    title: t('privacyTitle'),
+    description: t('privacyDescription'),
+    path: '/privacy',
+    locale,
+  })
+}
 
 export default async function PrivacyPage({
   params,

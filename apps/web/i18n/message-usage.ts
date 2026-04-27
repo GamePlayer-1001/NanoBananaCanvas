@@ -195,6 +195,10 @@ export const MESSAGE_USAGE_INDEX = {
     "pricing.metaDescription",
     "pricing.metaTitle"
   ],
+  "app/[locale]/(landing)/privacy/page.tsx": [
+    "metadata.privacyDescription",
+    "metadata.privacyTitle"
+  ],
   "app/[locale]/(landing)/refund-policy/page.tsx": [
     "sitePages.refundPolicy.heroBody",
     "sitePages.refundPolicy.heroEyebrow",
@@ -204,6 +208,10 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.refundPolicy.sections.rules.body",
     "sitePages.refundPolicy.sections.rules.eyebrow",
     "sitePages.refundPolicy.sections.rules.title"
+  ],
+  "app/[locale]/(landing)/terms/page.tsx": [
+    "metadata.termsDescription",
+    "metadata.termsTitle"
   ],
   "app/[locale]/not-found.tsx": [
     "notFound.description",
@@ -380,7 +388,6 @@ export const MESSAGE_USAGE_INDEX = {
     "pricing.creditsValue",
     "pricing.monthlyCredits",
     "pricing.permanentCredits",
-    "pricing.pricingUnavailable",
     "pricing.proDescription",
     "pricing.standardDescription",
     "pricing.startSubscription",
@@ -624,7 +631,6 @@ export const MESSAGE_USAGE_INDEX = {
     "pricing.monthlyCredits",
     "pricing.permanentCredits",
     "pricing.popularBadge",
-    "pricing.pricingUnavailable",
     "pricing.proDescription",
     "pricing.proName",
     "pricing.redirecting",
@@ -728,9 +734,6 @@ export const MESSAGE_USAGE_INDEX = {
     "profile.guestStatus",
     "profile.guestStatusBody",
     "profile.personalInfo",
-    "profile.profileAvatar",
-    "profile.profileAvatarConnected",
-    "profile.profileAvatarPlaceholder",
     "profile.profileChangePassword",
     "profile.profileDeleteAccount",
     "profile.profileEmptyValue",
@@ -1335,6 +1338,10 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "metadata.exploreTitle",
   "metadata.landingDescription",
   "metadata.landingTitle",
+  "metadata.privacyDescription",
+  "metadata.privacyTitle",
+  "metadata.termsDescription",
+  "metadata.termsTitle",
   "metadata.videoAnalysisDescription",
   "metadata.videoAnalysisTitle",
   "metadata.workflowsDescription",
@@ -1416,7 +1423,6 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "pricing.monthlyCredits",
   "pricing.permanentCredits",
   "pricing.popularBadge",
-  "pricing.pricingUnavailable",
   "pricing.proDescription",
   "pricing.proName",
   "pricing.redirecting",
@@ -1498,9 +1504,6 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "profile.openingBilling",
   "profile.personalInfo",
   "profile.portalFailed",
-  "profile.profileAvatar",
-  "profile.profileAvatarConnected",
-  "profile.profileAvatarPlaceholder",
   "profile.profileChangePassword",
   "profile.profileDeleteAccount",
   "profile.profileEmptyValue",
