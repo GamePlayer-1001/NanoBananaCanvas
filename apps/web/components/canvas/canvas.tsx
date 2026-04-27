@@ -71,6 +71,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const connectingFrom = useRef<{ nodeId: string; handleId: string | null } | null>(null)
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setViewport, addNode, removeNode } =
     useFlowStore()
+  const activeTool = useCanvasToolStore((s) => s.activeTool)
   const resetTool = useCanvasToolStore((s) => s.resetTool)
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
   const { screenToFlowPosition } = useReactFlow()
@@ -287,9 +288,13 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     [menu.x, menu.y, screenToFlowPosition, addNode],
   )
 
+  const isHandTool = activeTool === 'hand'
+  const isSelectTool = activeTool === 'select'
+
   return (
     <div className="h-full w-full">
       <ReactFlow
+        className={isHandTool ? '[&_svg]:cursor-grab [&_.react-flow__pane]:cursor-grab [&_.react-flow__node]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing active:[&_.react-flow__node]:cursor-grabbing' : '[&_.react-flow__pane]:cursor-default'}
         nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}
@@ -313,8 +318,10 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         /* ── 交互行为 ──────────────────────────────── */
         selectionMode={SelectionMode.Partial}
         panOnScroll={false}
-        panOnDrag={[1, 2]}
-        selectionOnDrag
+        panOnDrag={isHandTool ? [0, 1, 2] : [1, 2]}
+        selectionOnDrag={isSelectTool}
+        nodesDraggable={!isHandTool}
+        elementsSelectable={!isHandTool}
         snapToGrid
         snapGrid={SNAP_GRID}
         minZoom={MIN_ZOOM}
