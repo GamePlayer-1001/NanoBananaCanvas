@@ -65,7 +65,7 @@ const MODEL_CORE_POSITION = {
 } as const
 
 const MODEL_CORE_VISUAL_OFFSET = {
-  x: 64,
+  x: 100,
   y: 64,
 } as const
 
@@ -675,10 +675,10 @@ export function ModelMindMapSection() {
                 <div className="absolute inset-[-16px] rounded-full border border-[#9567ff]/14" />
                 <div className="absolute inset-[-42px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
                 <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
-                  <p className="text-[0.9rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.08rem]">
+                  <p className="text-[1.125rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.35rem]">
                     Nano Banana
                   </p>
-                  <p className="mt-1 text-[0.9rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.08rem]">
+                  <p className="mt-1 text-[1.125rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.35rem]">
                     Canvas
                   </p>
                 </div>
