@@ -98,9 +98,9 @@
     "sections": {
       "models": {
         "eyebrow": "",
-        "title": "让模型协作，从切工具变成走流程。",
+        "title": "Works with the models you already love",
         "highlight": "",
-        "body": "Nano Banana Canvas 接入图像、视频、文本、音频与路由层模型。你可以在同一张画布里切换、比较和串联不同模型，让 GPT Image 2、图像生成和视频流程真正成为一条可读工作流，而不是一堆分散调用。",
+        "body": "Switch between top models inside one workflow.",
         "cta": "了解更多模型能力",
         "centerBody": "多模型统一调度",
         "stats": {

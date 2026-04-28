@@ -98,9 +98,9 @@
     "sections": {
       "models": {
         "eyebrow": "",
-        "title": "Turn model switching into workflow building.",
+        "title": "Works with the models you already love",
         "highlight": "",
-        "body": "Nano Banana Canvas connects image, video, text, audio, and routing-layer models inside one visual system. You can switch, compare, and chain different providers on the same canvas so GPT Image 2, image generation, and video production become one readable workflow instead of scattered calls.",
+        "body": "Switch between top models inside one workflow.",
         "cta": "Explore model capabilities",
         "centerBody": "Unified multi-model orchestration",
         "stats": {

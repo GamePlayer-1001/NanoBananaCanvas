@@ -24,7 +24,7 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传，认证组件始终处在 ClerkProvider 内；公开页支持默认语言无前缀、中文显式前缀索引)
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
-[locale]/(landing)/page.tsx                 — Landing 首页 (Hero + 模型动态脑图 + Features + Pricing 四档 + Testimonials + FAQ + Footer，CTA 召回区已移除)
+[locale]/(landing)/page.tsx                 — Landing 首页 (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer，CTA 召回区已移除)
 [locale]/(landing)/features/page.tsx       — 功能详情页 (公开 SEO 承接页，说明工作流编排/多模态生产/团队协作，并强化 `gpt image` 关键词)
 [locale]/(landing)/models/page.tsx         — 模型目录页 (图像/视频/语言/视觉/路由模型说明，承接 `gpt image` / GPT Image 2 等搜索意图)
 [locale]/(landing)/docs/page.tsx           — 公开文档导航页 (快速开始 + 产品地图 + 资源入口)

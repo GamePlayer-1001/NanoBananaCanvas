@@ -49,7 +49,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 ## 前端页面路由
 
 ```
-[locale]/(landing)/           — Landing Page (Hero + 模型动态脑图 + Features + Pricing 四档 + Testimonials + FAQ + Footer，CTA 召回区已移除)
+[locale]/(landing)/           — Landing Page (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer，CTA 召回区已移除)
 [locale]/(landing)/features   — 功能详情页 (可视化工作流 / 多模态生产 / 团队协作说明)
 [locale]/(landing)/models     — AI 模型罗列页 (GPT Image 2 / OpenAI / Kling / Runway / Wan / Qwen 等)
 [locale]/(landing)/docs       — 公开文档导航页 (快速开始 + 产品地图 + 导航承接)

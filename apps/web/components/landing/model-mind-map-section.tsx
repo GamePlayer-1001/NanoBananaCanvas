@@ -1,7 +1,6 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，
- *          依赖 lucide-react 的 Sparkles/ShieldCheck/Workflow/Zap，依赖 @/i18n/navigation 的 Link，
- *          依赖 @/lib/seo 的 SITE_NAME
+ *          依赖 lucide-react 的 Sparkles/ShieldCheck/Workflow/Zap，依赖 @/i18n/navigation 的 Link
  * [OUTPUT]: 对外提供 ModelMindMapSection 模型生态云图展示区
  * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -15,7 +14,6 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 
 import { Link } from '@/i18n/navigation'
-import { SITE_NAME } from '@/lib/seo'
 
 type ProviderTone = 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
 type ProviderSize = 'sm' | 'md' | 'lg'
@@ -538,44 +536,44 @@ export function ModelMindMapSection() {
     <section
       ref={sectionRef}
       id="models"
-      className="relative overflow-hidden bg-[#05070d] px-4 py-18 sm:px-6 lg:px-8 lg:py-24 xl:px-10"
+      className="relative overflow-hidden bg-[#05070d] px-4 py-14 sm:px-6 lg:px-8 lg:py-16 xl:px-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(102,92,255,0.18),transparent_18%),radial-gradient(circle_at_83%_22%,rgba(76,164,255,0.12),transparent_18%),radial-gradient(circle_at_50%_72%,rgba(166,90,255,0.16),transparent_24%),linear-gradient(180deg,#05070d_0%,#04060b_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(136,118,255,0.22),transparent)]" />
 
-      <div className="relative mx-auto w-full max-w-[1680px]">
+      <div className="relative mx-auto w-full max-w-[1440px]">
         <div className="relative px-1 sm:px-2 lg:px-0">
-          <div className="pointer-events-none absolute inset-x-[9%] top-[4%] h-[34rem] rounded-full bg-[radial-gradient(circle,rgba(101,78,255,0.12),transparent_62%)] blur-3xl" />
-          <div className="pointer-events-none absolute right-[4%] bottom-[8%] h-[18rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(52,110,255,0.08),transparent_68%)] blur-3xl" />
+          <div className="pointer-events-none absolute inset-x-[11%] top-[6%] h-[26rem] rounded-full bg-[radial-gradient(circle,rgba(101,78,255,0.12),transparent_62%)] blur-3xl" />
+          <div className="pointer-events-none absolute right-[7%] bottom-[10%] h-[14rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgba(52,110,255,0.08),transparent_68%)] blur-3xl" />
 
           <div
-            className="relative z-20 max-w-[38rem] transition-[opacity,transform] duration-500 ease-out xl:pl-7"
+            className="relative z-20 max-w-[31rem] transition-[opacity,transform] duration-500 ease-out xl:pl-6"
             style={{
               opacity: 0.18 + revealProgress * 0.82,
               transform: `translate3d(${-30 * (1 - revealProgress)}px, ${12 * (1 - revealProgress)}px, 0)`,
             }}
           >
-            <h2 className="text-[2.55rem] leading-[0.94] font-semibold tracking-[-0.05em] text-white md:text-[4.3rem]">
+            <h2 className="text-[2.15rem] leading-[0.95] font-semibold tracking-[-0.05em] text-white md:text-[3.35rem]">
               <span className="whitespace-nowrap text-white">{modelT('title')}</span>
             </h2>
-            <p className="mt-6 max-w-[34rem] text-base leading-8 text-white/56 md:text-[1.08rem] md:leading-[2.05rem]">
+            <p className="mt-4 max-w-[27rem] text-[0.98rem] leading-7 text-white/56 md:text-[1.02rem] md:leading-8">
               {modelT('body')}
             </p>
             <Link
               href="/models"
-              className="mt-8 inline-flex h-[3.15rem] items-center justify-center rounded-full border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/92 md:px-7 md:text-[0.97rem]"
+              className="mt-6 inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white px-5 text-sm font-semibold text-black transition hover:bg-white/92 md:px-6"
             >
               {modelT('cta')}
             </Link>
           </div>
 
           <div
-            className="relative z-10 mt-10 transition-[opacity,transform] duration-500 ease-out lg:-mt-14"
+            className="relative z-10 mt-8 transition-[opacity,transform] duration-500 ease-out lg:-mt-10"
             style={{
               transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 10}px, 0)`,
             }}
           >
-            <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1420px]">
+            <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1100px]">
               <svg
                 className="absolute inset-0 h-full w-full"
                 viewBox={`0 0 ${MODEL_STAGE.width} ${MODEL_STAGE.height}`}
@@ -680,11 +678,11 @@ export function ModelMindMapSection() {
                   <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_28%,#ffffff,#c284ff_44%,#5a2abc_100%)] text-white shadow-[0_10px_34px_rgba(126,88,255,0.28)]">
                     <Sparkles className="h-7 w-7" />
                   </div>
-                  <p className="mt-6 text-[1.24rem] leading-none font-semibold tracking-tight text-white md:text-[1.52rem]">
-                    {SITE_NAME}
+                  <p className="mt-6 text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.34rem]">
+                    Nano Banana
                   </p>
-                  <p className="mt-3 max-w-[13rem] text-sm leading-6 text-white/64 md:text-[0.96rem] md:leading-7">
-                    {modelT('centerBody')}
+                  <p className="mt-1 text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.34rem]">
+                    Canvas
                   </p>
                 </div>
               </div>
@@ -797,37 +795,37 @@ export function ModelMindMapSection() {
           </div>
 
           <div
-            className="relative z-20 mt-2 xl:mt-0"
+            className="relative z-20 mt-1 xl:mt-0"
             style={{
               opacity: 0.18 + revealProgress * 0.82,
               transform: `translate3d(0, ${24 * (1 - revealProgress)}px, 0)`,
             }}
           >
-            <div className="mx-auto flex w-full max-w-[1160px] flex-col gap-5 border-t border-white/8 pt-8 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-6 xl:flex-nowrap">
+            <div className="mx-auto flex w-full max-w-[980px] flex-col gap-4 border-t border-white/8 pt-6 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-5 xl:flex-nowrap">
               {MODEL_STATS.map((item, index) => {
                 const Icon = item.icon
 
                 return (
                   <div
                     key={item.key}
-                    className="relative flex min-w-0 flex-1 items-start gap-4 md:max-w-[calc(50%-0.75rem)] xl:max-w-none"
+                    className="relative flex min-w-0 flex-1 items-start gap-3 md:max-w-[calc(50%-0.75rem)] xl:max-w-none"
                   >
                     {index > 0 ? (
-                      <div className="absolute -left-3 hidden h-14 w-px bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.12),transparent)] xl:block" />
+                      <div className="absolute -left-2.5 hidden h-12 w-px bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.12),transparent)] xl:block" />
                     ) : null}
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/82">
-                      <Icon className="h-5 w-5" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/82">
+                      <Icon className="h-4.5 w-4.5" />
                     </div>
                     <div>
-                      <p className="text-[1.65rem] leading-none font-semibold tracking-tight text-white md:text-[1.95rem]">
+                      <p className="text-[1.4rem] leading-none font-semibold tracking-tight text-white md:text-[1.62rem]">
                         {item.key === 'vendors'
                           ? modelT('stats.vendors.value', { count: vendorCount })
                           : modelT(`stats.${item.key}.value`)}
                       </p>
-                      <p className="mt-2 text-sm font-medium text-white/88">
+                      <p className="mt-1.5 text-sm font-medium text-white/88">
                         {modelT(`stats.${item.key}.label`)}
                       </p>
-                      <p className="mt-1 max-w-[15rem] text-xs leading-6 text-white/46 md:text-sm">
+                      <p className="mt-1 max-w-[13rem] text-xs leading-5 text-white/46 md:text-[0.9rem] md:leading-6">
                         {modelT(`stats.${item.key}.body`)}
                       </p>
                     </div>
