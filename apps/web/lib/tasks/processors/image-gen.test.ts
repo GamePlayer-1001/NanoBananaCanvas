@@ -92,9 +92,10 @@ describe('ImageGenProcessor', () => {
 
   it('resolves preset size and aspect ratio into concrete dimensions', () => {
     expect(resolveImageGenerationSize('720p', '16:9')).toBe('1280x720')
-    expect(resolveImageGenerationSize('1k', '9:16')).toBe('576x1024')
-    expect(resolveImageGenerationSize('2k', '3:2')).toBe('2048x1366')
-    expect(resolveImageGenerationSize('4k', '2:3')).toBe('2732x4096')
+    expect(resolveImageGenerationSize('1k', '9:16')).toBe('1080x1920')
+    expect(resolveImageGenerationSize('2k', '3:2')).toBe('2560x1708')
+    expect(resolveImageGenerationSize('4k', '2:3')).toBe('2560x3840')
+    expect(resolveImageGenerationSize('8k', '16:9')).toBe('7680x4320')
     expect(resolveImageGenerationSize('1024x1792', '1:1')).toBe('1024x1792')
   })
 

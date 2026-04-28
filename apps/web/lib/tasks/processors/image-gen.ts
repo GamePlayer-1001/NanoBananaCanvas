@@ -23,10 +23,10 @@ interface OpenAICompatibleImageResponse {
 
 const IMAGE_SIZE_PRESET_LONG_EDGE: Record<string, number> = {
   '720p': 1280,
-  '1k': 1024,
-  '2k': 2048,
-  '4k': 4096,
-  '8k': 8192,
+  '1k': 1920,
+  '2k': 2560,
+  '4k': 3840,
+  '8k': 7680,
 }
 
 const IMAGE_ASPECT_RATIO_MAP: Record<string, [number, number]> = {
