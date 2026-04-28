@@ -53,11 +53,11 @@ interface HeroMediaSpec {
 
 const DESIGN_STAGE_WIDTH = 1800
 const DESIGN_STAGE_HEIGHT = 620
-const HERO_NODE_SCALE_MULTIPLIER = 0.75
+const HERO_NODE_SCALE_MULTIPLIER = 0.9
 const HERO_NODE_VERTICAL_OFFSET = -64
 const HERO_COPY_VERTICAL_OFFSET = 64
-const HERO_NODE_CLUSTER_X_COMPACTNESS = 0.88
-const HERO_NODE_CLUSTER_Y_COMPACTNESS = 0.9
+const HERO_NODE_CLUSTER_X_COMPACTNESS = 0.82
+const HERO_NODE_CLUSTER_Y_COMPACTNESS = 0.84
 
 function compactNodePosition(node: { x: number; y: number; w: number; h: number }) {
   const centerX = (DESIGN_STAGE_WIDTH - node.w) / 2
