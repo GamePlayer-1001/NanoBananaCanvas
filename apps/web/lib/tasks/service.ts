@@ -11,7 +11,7 @@
 import { TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
 
-import { decryptApiKey } from '@/lib/api-key-crypto'
+import { decryptApiKey, encryptApiKey } from '@/lib/api-key-crypto'
 import {
   confirmFrozenCredits,
   freezeCredits,
@@ -25,6 +25,13 @@ import {
 } from '@/lib/billing/metering'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
+import {
+  finalizeLearnedImageCapabilities,
+  getStaticImageModelCapabilities,
+  learnImageCapabilitiesFromError,
+  mergeImageModelCapabilities,
+  type ImageModelCapabilities,
+} from '@/lib/image-model-capabilities'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import { getR2 } from '@/lib/r2'
@@ -36,7 +43,9 @@ import {
 } from '@/lib/storage'
 import {
   deserializeUserModelConfig,
+  serializeUserModelConfig,
   toRuntimeUserModelConfig,
+  type UserModelConfigPayload,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
 import type { NodeCapability } from '@/lib/ai-node-config'
@@ -464,6 +473,8 @@ export async function submitTask(
   let resolvedModelId = modelId ?? ''
   let resolvedInput = input
   let reservedPlatformCredits = 0
+  let runtimeConfig: UserModelRuntimeConfig | null = null
+  let imageCapabilities: ImageModelCapabilities | undefined
   const taskId = nanoid()
 
   /* 并发检查 */
@@ -476,6 +487,12 @@ export async function submitTask(
   try {
     if (executionMode === 'platform') {
       apiKey = await getTaskPlatformKey(provider as string)
+      imageCapabilities =
+        taskType === 'image_gen'
+          ? mergeImageModelCapabilities(
+              getStaticImageModelCapabilities(resolvedProvider, resolvedModelId),
+            )
+          : undefined
       const billingDraft = await estimateTaskBillingDraft(db, {
         provider: resolvedProvider,
         modelId: resolvedModelId,
@@ -485,6 +502,7 @@ export async function submitTask(
       resolvedInput = {
         ...input,
         billingDraft,
+        ...(imageCapabilities ? { imageCapabilities } : {}),
       }
       reservedPlatformCredits = getReservedTaskCredits(resolvedInput)
 
@@ -498,7 +516,7 @@ export async function submitTask(
         })
       }
     } else {
-      const runtimeConfig = await getUserTaskRuntimeConfig(
+      runtimeConfig = await getUserTaskRuntimeConfig(
         db,
         userId,
         capability as NodeCapability,
@@ -510,9 +528,20 @@ export async function submitTask(
           : runtimeConfig.apiKey
       resolvedProvider = runtimeConfig.providerId
       resolvedModelId = runtimeConfig.modelId
+      imageCapabilities =
+        taskType === 'image_gen'
+          ? mergeImageModelCapabilities(
+              getStaticImageModelCapabilities(
+                runtimeConfig.providerId,
+                runtimeConfig.modelId,
+              ),
+              runtimeConfig.imageCapabilities,
+            )
+          : undefined
       resolvedInput = {
         ...input,
         ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
+        ...(imageCapabilities ? { imageCapabilities } : {}),
       }
     }
 
@@ -522,6 +551,16 @@ export async function submitTask(
       apiKey,
     )
   } catch (error) {
+    if (executionMode === 'user_key' && taskType === 'image_gen' && runtimeConfig) {
+      await learnUserImageCapabilitiesFromTaskError(
+        db,
+        userId,
+        runtimeConfig,
+        input,
+        error,
+      )
+    }
+
     if (executionMode === 'platform' && reservedPlatformCredits > 0) {
       await refundTaskCredits({
         userId,
@@ -634,6 +673,72 @@ async function getUserTaskRuntimeConfig(
   } catch (error) {
     throw toTaskProviderError(error, { userId, capability, configId })
   }
+}
+
+async function learnUserImageCapabilitiesFromTaskError(
+  db: D1Database,
+  userId: string,
+  runtimeConfig: UserModelRuntimeConfig,
+  input: Record<string, unknown>,
+  error: unknown,
+) {
+  const message = error instanceof Error ? error.message : String(error)
+  const learned = learnImageCapabilitiesFromError(message)
+
+  if (!learned) {
+    return
+  }
+
+  const finalized = finalizeLearnedImageCapabilities(
+    learned,
+    typeof input.size === 'string' ? input.size : '1k',
+    typeof input.aspectRatio === 'string' ? input.aspectRatio : '1:1',
+    message,
+  )
+
+  await updateStoredUserImageCapabilities(db, userId, runtimeConfig.configId, finalized)
+}
+
+async function updateStoredUserImageCapabilities(
+  db: D1Database,
+  userId: string,
+  configId: string,
+  learned: ImageModelCapabilities,
+) {
+  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const row = await db
+    .prepare(
+      `SELECT encrypted_key
+       FROM user_api_keys
+       WHERE user_id = ? AND provider = ? AND is_active = 1`,
+    )
+    .bind(userId, configId)
+    .first<{ encrypted_key: string }>()
+
+  if (!row) {
+    return
+  }
+
+  const decrypted = await decryptApiKey(row.encrypted_key, encryptionKey)
+  const payload = deserializeUserModelConfig(configId, decrypted)
+  const nextPayload: UserModelConfigPayload = {
+    ...payload,
+    version: 4,
+    imageCapabilities: mergeImageModelCapabilities(payload.imageCapabilities, learned),
+  }
+  const encrypted = await encryptApiKey(
+    serializeUserModelConfig(nextPayload),
+    encryptionKey,
+  )
+
+  await db
+    .prepare(
+      `UPDATE user_api_keys
+       SET encrypted_key = ?, updated_at = datetime('now')
+       WHERE user_id = ? AND provider = ?`,
+    )
+    .bind(encrypted, userId, configId)
+    .run()
 }
 
 async function findUserConfigRow(

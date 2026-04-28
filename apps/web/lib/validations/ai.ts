@@ -10,6 +10,18 @@ import { z } from 'zod'
 /* ─── AI 执行请求 ────────────────────────────────────── */
 
 const capabilitySchema = z.enum(['text', 'image', 'video', 'audio'])
+const imageSizePresetSchema = z.enum(['720p', '1k', '2k', '4k', '8k'])
+const imageAspectRatioSchema = z.enum(['1:1', '2:3', '3:2', '9:16', '16:9'])
+
+const imageCapabilitiesSchema = z
+  .object({
+    minPixels: z.coerce.number().int().positive().optional(),
+    maxPixels: z.coerce.number().int().positive().optional(),
+    maxLongEdge: z.coerce.number().int().positive().optional(),
+    allowedSizes: z.array(imageSizePresetSchema).optional(),
+    allowedAspectRatios: z.array(imageAspectRatioSchema).optional(),
+  })
+  .optional()
 
 const contentPartSchema = z.union([
   z.object({
@@ -91,6 +103,7 @@ export const apiKeySchema = z.object({
   ]),
   providerId: z.string().min(1, 'Provider ID is required'),
   label: z.string().max(100).optional(),
+  imageCapabilities: imageCapabilitiesSchema,
 })
 
 /* ─── 模型列表查询 ───────────────────────────────────── */

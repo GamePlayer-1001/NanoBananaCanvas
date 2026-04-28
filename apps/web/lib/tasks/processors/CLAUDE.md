@@ -8,7 +8,7 @@ Provider 处理器层 — TaskProcessor 接口的具体实现
 - `types.ts`: TaskProcessor 接口 + SubmitInput/SubmitResult/CheckResult/TaskOutput 类型定义
 - `registry.ts`: getProcessor(taskType, provider) 工厂函数，路由到对应 Processor 实例
 - `video-gen.ts`: VideoGenProcessor (可灵完整实现 + 即梦骨架)
-- `image-gen.ts`: ImageGenProcessor (平台 OpenRouter/OpenAI 兼容图片接口 + Google Imagen 实现，并把尺寸档位/比例映射为真实分辨率)
+- `image-gen.ts`: ImageGenProcessor (平台 OpenRouter/OpenAI 兼容图片接口 + Google Imagen 实现，复用图片能力真相源做尺寸解析与后端护栏)
 - `image-gen.test.ts`: ImageGenProcessor 回归测试 (OpenAI 兼容 url/base64 双返回体 + 尺寸档位解析)
 - `audio-gen.ts`: AudioGenProcessor (OpenAI TTS 同步生成 + data URL 输出)
 - `index.ts`: 桶文件，导出 getProcessor + 所有类型

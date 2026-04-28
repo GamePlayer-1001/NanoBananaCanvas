@@ -27,6 +27,13 @@ import { useModelConfigs, type ModelConfigItem } from '@/hooks/use-model-configs
 import { useCurrentUser } from '@/hooks/use-user'
 import { Link } from '@/i18n/navigation'
 import {
+  IMAGE_ASPECT_RATIO_OPTIONS,
+  IMAGE_SIZE_OPTIONS,
+  type ImageAspectRatio,
+  type ImageSizePreset,
+  type ImageModelCapabilities,
+} from '@/lib/image-model-capabilities'
+import {
   MODEL_PROVIDER_OPTIONS,
   getProviderOption,
   type CapabilityId,
@@ -49,6 +56,7 @@ interface DraftState {
   secretKey: string
   baseUrl: string
   modelId: string
+  imageCapabilities?: ImageModelCapabilities
 }
 
 const CARD_ORDER: CapabilityId[] = ['text', 'image', 'video', 'audio']
@@ -104,7 +112,21 @@ function createDraft(capability: CapabilityId, saved?: ModelConfigItem): DraftSt
     secretKey: '',
     baseUrl: saved?.baseUrl ?? '',
     modelId: saved?.modelId ?? '',
+    imageCapabilities: saved?.imageCapabilities,
   }
+}
+
+function toggleStringSelection<T extends string>(
+  current: readonly T[] | undefined,
+  value: T,
+): T[] {
+  if (!current?.length) {
+    return [value]
+  }
+
+  return current.includes(value)
+    ? current.filter((item) => item !== value)
+    : [...current, value]
 }
 
 export function ModelPreferencesTab() {
@@ -349,6 +371,7 @@ export function ModelPreferencesTab() {
                   deleteMutation.isPending && deleteMutation.variables === saved?.configId
                 const configId = saved?.configId ?? null
                 const isConfigured = Boolean(saved?.configId)
+                const imageCapabilities = draft.imageCapabilities
 
                 return (
                   <div
@@ -376,6 +399,13 @@ export function ModelPreferencesTab() {
                             <p className="truncate">
                               {t('currentBaseUrl', { baseUrl: saved?.baseUrl ?? '-' })}
                             </p>
+                            {capability === 'image' && saved?.imageCapabilities?.maxLongEdge ? (
+                              <p className="truncate">
+                                {t('imageMaxLongEdgeSummary', {
+                                  value: saved.imageCapabilities.maxLongEdge,
+                                })}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
 
@@ -556,6 +586,142 @@ export function ModelPreferencesTab() {
                             className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
                           />
                         </div>
+
+                        {capability === 'image' ? (
+                          <div className="space-y-4 rounded-lg border border-border/70 bg-muted/20 p-3">
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-foreground">
+                                {t('imageAdvancedRulesTitle')}
+                              </p>
+                              <p className="text-xs leading-5 text-muted-foreground">
+                                {t('imageAdvancedRulesBody')}
+                              </p>
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">
+                                  {t('imageMinPixelsLabel')}
+                                </label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={imageCapabilities?.minPixels ?? ''}
+                                  onChange={(e) =>
+                                    updateDraft(itemId, {
+                                      imageCapabilities: {
+                                        ...imageCapabilities,
+                                        minPixels: e.target.value
+                                          ? Number(e.target.value)
+                                          : undefined,
+                                      },
+                                    })
+                                  }
+                                  placeholder="900000"
+                                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">
+                                  {t('imageMaxLongEdgeLabel')}
+                                </label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={imageCapabilities?.maxLongEdge ?? ''}
+                                  onChange={(e) =>
+                                    updateDraft(itemId, {
+                                      imageCapabilities: {
+                                        ...imageCapabilities,
+                                        maxLongEdge: e.target.value
+                                          ? Number(e.target.value)
+                                          : undefined,
+                                      },
+                                    })
+                                  }
+                                  placeholder="3840"
+                                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-foreground">
+                                {t('imageAllowedSizesLabel')}
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {IMAGE_SIZE_OPTIONS.map((option) => {
+                                  const active = imageCapabilities?.allowedSizes?.includes(
+                                    option.value as ImageSizePreset,
+                                  )
+                                  return (
+                                    <button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() =>
+                                        updateDraft(itemId, {
+                                          imageCapabilities: {
+                                            ...imageCapabilities,
+                                            allowedSizes: toggleStringSelection(
+                                              imageCapabilities?.allowedSizes,
+                                              option.value as ImageSizePreset,
+                                            ),
+                                          },
+                                        })
+                                      }
+                                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                                        active
+                                          ? 'border-brand-500 bg-brand-500/10 text-brand-600'
+                                          : 'border-border text-muted-foreground hover:bg-muted'
+                                      }`}
+                                    >
+                                      {option.label}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-foreground">
+                                {t('imageAllowedAspectRatiosLabel')}
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {IMAGE_ASPECT_RATIO_OPTIONS.map((option) => {
+                                  const active =
+                                    imageCapabilities?.allowedAspectRatios?.includes(
+                                      option.value as ImageAspectRatio,
+                                    )
+                                  return (
+                                    <button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() =>
+                                        updateDraft(itemId, {
+                                          imageCapabilities: {
+                                            ...imageCapabilities,
+                                            allowedAspectRatios: toggleStringSelection(
+                                              imageCapabilities?.allowedAspectRatios,
+                                              option.value as ImageAspectRatio,
+                                            ),
+                                          },
+                                        })
+                                      }
+                                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                                        active
+                                          ? 'border-brand-500 bg-brand-500/10 text-brand-600'
+                                          : 'border-border text-muted-foreground hover:bg-muted'
+                                      }`}
+                                    >
+                                      {option.label}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
 
                         <div className="flex flex-wrap items-center gap-2">
                           <button

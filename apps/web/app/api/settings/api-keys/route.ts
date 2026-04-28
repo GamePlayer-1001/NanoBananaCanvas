@@ -120,7 +120,7 @@ export async function PUT(req: Request) {
         : undefined
 
     const nextConfig: UserModelConfigPayload = {
-      version: 3,
+      version: 4,
       capability,
       providerKind: parsed.providerKind,
       providerId: parsed.providerId,
@@ -128,6 +128,10 @@ export async function PUT(req: Request) {
       secretKey: parsed.secretKey || existingConfig?.secretKey,
       modelId: parsed.modelId,
       baseUrl: normalizedBaseUrl,
+      imageCapabilities:
+        capability === 'image'
+          ? parsed.imageCapabilities ?? existingConfig?.imageCapabilities
+          : undefined,
     }
 
     if (!nextConfig.apiKey) {
@@ -171,6 +175,7 @@ export async function PUT(req: Request) {
       modelId: parsed.modelId,
       baseUrl: nextConfig.baseUrl ?? null,
       hasSecretKey: !!nextConfig.secretKey,
+      imageCapabilities: nextConfig.imageCapabilities ?? null,
       saved: true,
     })
   } catch (error) {

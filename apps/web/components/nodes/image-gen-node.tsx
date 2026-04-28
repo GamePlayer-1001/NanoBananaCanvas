@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 next-intl 的 useTranslations
+ *          依赖 next-intl 的 useTranslations，依赖平台模型目录与图片能力真相源
  * [OUTPUT]: 对外提供 ImageGenNode 图片生成节点组件
- * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责只读展示模型并收集尺寸/比例参数
+ * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置与前端能力护栏
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -15,49 +15,58 @@ import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 
+import { useAIModels } from '@/hooks/use-ai-models'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useUserKeyOnboarding } from '@/hooks/use-user-key-onboarding'
 import {
   getNodeConfigMigrationPatch,
   resolveAvailableUserConfigId,
   resolvePlatformModel,
+  resolvePlatformProvider,
   resolveUserConfigId,
 } from '@/lib/ai-node-config'
+import {
+  IMAGE_ASPECT_RATIO_OPTIONS,
+  IMAGE_SIZE_OPTIONS,
+  getStaticImageModelCapabilities,
+  mergeImageModelCapabilities,
+  prettifyModelName,
+  type ImageAspectRatio,
+  type ImageModelCapabilities,
+  type ImageSizePreset,
+  validateImageSelection,
+} from '@/lib/image-model-capabilities'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
-import { BaseNode } from './base-node'
 import { Switch } from '@/components/ui/switch'
 
-const DEFAULT_SIZE = '1k'
-const DEFAULT_ASPECT_RATIO = '1:1'
+import { BaseNode } from './base-node'
 
-const SIZE_OPTIONS = [
-  { value: '720p', label: '720P' },
-  { value: '1k', label: '1K' },
-  { value: '2k', label: '2K' },
-  { value: '4k', label: '4K' },
-  { value: '8k', label: '8K' },
-]
-
-const ASPECT_RATIO_OPTIONS = [
-  { value: '1:1', label: '1:1' },
-  { value: '2:3', label: '2:3' },
-  { value: '3:2', label: '3:2' },
-  { value: '9:16', label: '9:16' },
-  { value: '16:9', label: '16:9' },
-] as const
-
-const PLATFORM_IMAGE_MODELS = [
-  { value: 'openai/dall-e-3', label: 'DALL-E 3', provider: 'openrouter' },
-  { value: 'imagen-3.0-generate-002', label: 'Imagen 3', provider: 'gemini' },
-] as const
+const DEFAULT_SIZE: ImageSizePreset = '1k'
+const DEFAULT_ASPECT_RATIO: ImageAspectRatio = '1:1'
 
 const SELECT_CLASS =
   'nodrag nowheel border-input bg-background w-full rounded-md border px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none'
 
-function migrateLegacySize(size: string): { size: string; aspectRatio: string } {
+const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
+  openrouter: 'OpenRouter',
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+}
+
+interface PlatformImageModelOption {
+  id: string
+  value: string
+  label: string
+  provider: string
+}
+
+function migrateLegacySize(size: string): {
+  size: ImageSizePreset
+  aspectRatio: ImageAspectRatio
+} {
   switch (size) {
     case '1024x1792':
       return { size: DEFAULT_SIZE, aspectRatio: '9:16' }
@@ -69,30 +78,63 @@ function migrateLegacySize(size: string): { size: string; aspectRatio: string } 
   }
 }
 
+function findFirstValidSelection(capabilities?: ImageModelCapabilities) {
+  for (const aspect of IMAGE_ASPECT_RATIO_OPTIONS) {
+    for (const size of IMAGE_SIZE_OPTIONS) {
+      if (!validateImageSelection(size.value, aspect.value, capabilities)) {
+        return { size: size.value, aspectRatio: aspect.value }
+      }
+    }
+  }
+
+  return null
+}
+
 export function ImageGenNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
   const config = data.config
 
-  const model = resolvePlatformModel('image-gen', config)
+  const { data: platformImageModels = [], isLoading: isPlatformModelsLoading } =
+    useAIModels('image')
+  const platformModelId = resolvePlatformModel('image-gen', config)
+  const platformProviderId = resolvePlatformProvider('image-gen', config)
+  const platformImageModelOptions = useMemo<PlatformImageModelOption[]>(
+    () =>
+      platformImageModels.map((item) => ({
+        id: `${item.provider}:${item.modelId}`,
+        value: item.modelId,
+        label: item.modelName?.trim() || prettifyModelName(item.modelId),
+        provider: item.provider,
+      })),
+    [platformImageModels],
+  )
   const selectedPlatformModel =
-    PLATFORM_IMAGE_MODELS.find((item) => item.value === model) ??
-    PLATFORM_IMAGE_MODELS[0]
+    platformImageModelOptions.find(
+      (item) =>
+        item.value === platformModelId && item.provider === platformProviderId,
+    ) ?? platformImageModelOptions[0]
+
   const sizeValue = typeof config.size === 'string' ? config.size : DEFAULT_SIZE
   const migratedLegacySize = useMemo(() => migrateLegacySize(sizeValue), [sizeValue])
-  const size = SIZE_OPTIONS.some((item) => item.value === sizeValue)
-    ? sizeValue
+  const size = IMAGE_SIZE_OPTIONS.some((item) => item.value === sizeValue)
+    ? (sizeValue as ImageSizePreset)
     : migratedLegacySize.size
   const aspectRatioValue =
-    typeof config.aspectRatio === 'string' ? config.aspectRatio : migratedLegacySize.aspectRatio
-  const aspectRatio = ASPECT_RATIO_OPTIONS.some((item) => item.value === aspectRatioValue)
-    ? aspectRatioValue
+    typeof config.aspectRatio === 'string'
+      ? config.aspectRatio
+      : migratedLegacySize.aspectRatio
+  const aspectRatio = IMAGE_ASPECT_RATIO_OPTIONS.some(
+    (item) => item.value === aspectRatioValue,
+  )
+    ? (aspectRatioValue as ImageAspectRatio)
     : DEFAULT_ASPECT_RATIO
   const executionMode = (config.executionMode as string) ?? 'platform'
   const resultUrl = (config.resultUrl as string) ?? ''
   const showPreview = config.showPreview === true
   const status = data.status ?? 'idle'
+
   const {
     getConfigByCapability,
     getConfigById,
@@ -113,21 +155,41 @@ export function ImageGenNode(props: NodeProps) {
     savedImageConfig?.modelId?.trim() ||
     (isModelConfigLoading ? 'Loading API config...' : 'Use account API config')
   const displayModelLabel =
-    executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel.label
+    executionMode === 'user_key'
+      ? userKeyModelLabel
+      : selectedPlatformModel?.label ?? platformModelId
+  const currentImageCapabilities =
+    executionMode === 'user_key'
+      ? savedImageConfig?.imageCapabilities
+      : selectedPlatformModel
+        ? mergeImageModelCapabilities(
+            getStaticImageModelCapabilities(
+              selectedPlatformModel.provider,
+              selectedPlatformModel.value,
+            ),
+          )
+        : undefined
+  const currentSelectionViolation = validateImageSelection(
+    size,
+    aspectRatio,
+    currentImageCapabilities,
+  )
 
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
       updateNodeData(props.id, { config: { ...config, ...patch } })
     },
-    [props.id, config, updateNodeData],
+    [config, props.id, updateNodeData],
   )
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('image-gen', config)
+
     if (sizeValue !== size || config.aspectRatio !== aspectRatio) {
       patch.size = size
       patch.aspectRatio = aspectRatio
     }
+
     if (
       selectedUserConfigId &&
       executionMode === 'user_key' &&
@@ -136,10 +198,44 @@ export function ImageGenNode(props: NodeProps) {
       patch.userKeyConfigId = selectedUserConfigId
     }
 
+    if (
+      selectedPlatformModel &&
+      executionMode === 'platform' &&
+      (config.platformProvider !== selectedPlatformModel.provider ||
+        config.platformModel !== selectedPlatformModel.value)
+    ) {
+      patch.platformProvider = selectedPlatformModel.provider
+      patch.platformModel = selectedPlatformModel.value
+    }
+
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [aspectRatio, config, executionMode, selectedUserConfigId, size, sizeValue, updateConfig])
+  }, [
+    aspectRatio,
+    config,
+    executionMode,
+    selectedPlatformModel,
+    selectedUserConfigId,
+    size,
+    sizeValue,
+    updateConfig,
+  ])
+
+  useEffect(() => {
+    if (!currentSelectionViolation) {
+      return
+    }
+
+    const nextSelection = findFirstValidSelection(currentImageCapabilities)
+    if (!nextSelection) {
+      return
+    }
+
+    if (nextSelection.size !== size || nextSelection.aspectRatio !== aspectRatio) {
+      updateConfig(nextSelection)
+    }
+  }, [aspectRatio, currentImageCapabilities, currentSelectionViolation, size, updateConfig])
 
   const onSizeChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ size: e.target.value }),
@@ -147,8 +243,26 @@ export function ImageGenNode(props: NodeProps) {
   )
 
   const onAspectRatioChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ aspectRatio: e.target.value }),
+    (e: ChangeEvent<HTMLSelectElement>) =>
+      updateConfig({ aspectRatio: e.target.value }),
     [updateConfig],
+  )
+
+  const onPlatformModelChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      const nextModel = platformImageModelOptions.find(
+        (item) => item.id === e.target.value,
+      )
+      if (!nextModel) {
+        return
+      }
+
+      updateConfig({
+        platformProvider: nextModel.provider,
+        platformModel: nextModel.value,
+      })
+    },
+    [platformImageModelOptions, updateConfig],
   )
 
   return (
@@ -167,8 +281,9 @@ export function ImageGenNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  platformProvider: selectedPlatformModel.provider,
-                  platformModel: selectedPlatformModel.value,
+                  platformProvider:
+                    selectedPlatformModel?.provider ?? platformProviderId,
+                  platformModel: selectedPlatformModel?.value ?? platformModelId,
                 })
               }
               icon={<Coins size={12} />}
@@ -220,21 +335,58 @@ export function ImageGenNode(props: NodeProps) {
         ) : (
           <ConfigField label={t('provider')}>
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
-              {t('platformMode')}
+              {PLATFORM_PROVIDER_LABELS[
+                selectedPlatformModel?.provider ?? platformProviderId
+              ] ?? t('platformMode')}
             </div>
           </ConfigField>
         )}
 
         <ConfigField label={t('model')}>
-          <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
-            {displayModelLabel}
-          </div>
+          {executionMode === 'platform' ? (
+            <select
+              value={
+                selectedPlatformModel
+                  ? selectedPlatformModel.id
+                  : `${platformProviderId}:${platformModelId}`
+              }
+              onChange={onPlatformModelChange}
+              className={SELECT_CLASS}
+              disabled={isPlatformModelsLoading || platformImageModelOptions.length === 0}
+            >
+              {platformImageModelOptions.length === 0 ? (
+                <option value={`${platformProviderId}:${platformModelId}`}>
+                  {displayModelLabel}
+                </option>
+              ) : (
+                platformImageModelOptions.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))
+              )}
+            </select>
+          ) : (
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              {displayModelLabel}
+            </div>
+          )}
         </ConfigField>
 
         <ConfigField label={t('imageSize')}>
           <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
-            {SIZE_OPTIONS.map((item) => (
-              <option key={item.value} value={item.value}>
+            {IMAGE_SIZE_OPTIONS.map((item) => (
+              <option
+                key={item.value}
+                value={item.value}
+                disabled={Boolean(
+                  validateImageSelection(
+                    item.value,
+                    aspectRatio,
+                    currentImageCapabilities,
+                  ),
+                )}
+              >
                 {item.label}
               </option>
             ))}
@@ -247,8 +399,18 @@ export function ImageGenNode(props: NodeProps) {
             onChange={onAspectRatioChange}
             className={SELECT_CLASS}
           >
-            {ASPECT_RATIO_OPTIONS.map((item) => (
-              <option key={item.value} value={item.value}>
+            {IMAGE_ASPECT_RATIO_OPTIONS.map((item) => (
+              <option
+                key={item.value}
+                value={item.value}
+                disabled={Boolean(
+                  validateImageSelection(
+                    size,
+                    item.value,
+                    currentImageCapabilities,
+                  ),
+                )}
+              >
                 {item.label}
               </option>
             ))}
