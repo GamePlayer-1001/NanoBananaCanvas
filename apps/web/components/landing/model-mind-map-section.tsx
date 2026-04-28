@@ -65,8 +65,8 @@ const MODEL_CORE_POSITION = {
 } as const
 
 const MODEL_CORE_VISUAL_OFFSET = {
-  x: 0,
-  y: 0,
+  x: 64,
+  y: 64,
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
@@ -659,7 +659,7 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute z-40 h-[42vw] max-h-[334px] w-[42vw] max-w-[334px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,#fff5ff,#d388ff_30%,#914aff_56%,#4e18b6_78%,#0e0824_100%)] md:h-[316px] md:w-[316px]"
+                className="absolute z-40 h-[31.5vw] max-h-[251px] w-[31.5vw] max-w-[251px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,#fff5ff,#d388ff_30%,#914aff_56%,#4e18b6_78%,#0e0824_100%)] md:h-[237px] md:w-[237px]"
                 style={{
                   left: `${MODEL_CORE_POSITION.x}%`,
                   top: `${MODEL_CORE_POSITION.y}%`,
@@ -671,14 +671,14 @@ export function ModelMindMapSection() {
                     : 'corePulse 6.2s ease-in-out infinite',
                 }}
               >
-                <div className="absolute inset-[18px] rounded-full border border-white/12" />
-                <div className="absolute inset-[-22px] rounded-full border border-[#9567ff]/14" />
-                <div className="absolute inset-[-56px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
-                <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
-                  <p className="text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.34rem]">
+                <div className="absolute inset-[14px] rounded-full border border-white/12" />
+                <div className="absolute inset-[-16px] rounded-full border border-[#9567ff]/14" />
+                <div className="absolute inset-[-42px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
+                <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
+                  <p className="text-[0.9rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.08rem]">
                     Nano Banana
                   </p>
-                  <p className="mt-1 text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.34rem]">
+                  <p className="mt-1 text-[0.9rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.08rem]">
                     Canvas
                   </p>
                 </div>
