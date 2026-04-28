@@ -1,11 +1,12 @@
 /**
  * [INPUT]: 依赖 /api/ai/* 与 /api/tasks/* 服务端执行链路，
- *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger，依赖 @/components/nodes/plugin-registry 的 getNodePorts
+ *          依赖 @nano-banana/shared 的 TASK_CONFIG，依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger，依赖 @/components/nodes/plugin-registry 的 getNodePorts
  * [OUTPUT]: 对外提供 executeNode 函数 (按节点类型分发执行)
  * [POS]: lib/executor 的节点执行单元，被 WorkflowExecutor 在遍历中逐节点调用，统一衔接画布节点与服务端 AI/任务能力
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { TASK_CONFIG } from '@nano-banana/shared'
 import { ErrorCode, WorkflowError } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { getNodePorts } from '@/components/nodes/plugin-registry'
@@ -675,6 +676,13 @@ interface ExecuteTaskOutputApiParams {
   signal: AbortSignal
 }
 
+function getTaskPollingPlan(taskType: ExecuteTaskOutputApiParams['taskType']) {
+  const config = TASK_CONFIG[taskType]
+  const intervalMs = Math.max(1_000, config.pollIntervalMs)
+  const maxAttempts = Math.max(1, Math.ceil(config.timeoutMs / intervalMs))
+  return { intervalMs, maxAttempts, timeoutMs: config.timeoutMs }
+}
+
 async function executeTaskOutputViaApi(
   params: ExecuteTaskOutputApiParams,
 ): Promise<string> {
@@ -709,8 +717,10 @@ async function executeTaskOutputViaApi(
     )
   }
 
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    await delay(1000, params.signal)
+  const polling = getTaskPollingPlan(params.taskType)
+
+  for (let attempt = 0; attempt < polling.maxAttempts; attempt += 1) {
+    await delay(polling.intervalMs, params.signal)
 
     const taskResponse = await fetch(`/api/tasks/${taskId}`, {
       cache: 'no-store',
@@ -745,7 +755,7 @@ async function executeTaskOutputViaApi(
 
   throw new WorkflowError(
     ErrorCode.WORKFLOW_NODE_ERROR,
-    `${params.outputType} task polling timed out`,
+    `${params.outputType} task polling timed out after ${Math.round(polling.timeoutMs / 1000)}s`,
   )
 }
 

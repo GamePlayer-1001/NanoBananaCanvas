@@ -23,7 +23,7 @@ pricing/                — 公开定价目录 (1 端点)
   plans/route.ts        — GET 动态套餐目录 (Stripe 拉价 + IP/currency 解析)
 
 ai/                     — AI 模型集成 (3 端点)
-  models/route.ts       — GET  统一免费模型目录
+  models/route.ts       — GET  统一免费模型目录（对无筛选查询与结果映射做空值保护，并补充服务端错误日志，降低生产 500 脆弱性）
   execute/route.ts      — POST 双模式 AI 执行 (平台模式已接回预冻结/确认/失败退款，user_key 继续只记 usage)
   execute/route.test.ts — 非流式执行计费编排回归测试
   stream/route.ts       — POST SSE 流式 AI 执行 (平台模式已接回预冻结/确认/失败退款，user_key 继续只记 usage)
