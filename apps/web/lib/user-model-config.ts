@@ -6,6 +6,10 @@
  */
 
 import type { CapabilityId } from '@/lib/model-config-catalog'
+import {
+  isImageAspectRatio,
+  isImageSizePreset,
+} from '@/lib/image-model-capabilities'
 import type {
   ImageModelCapabilities,
 } from '@/lib/image-model-capabilities'

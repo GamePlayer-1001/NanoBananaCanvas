@@ -5,6 +5,9 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+export type ImageSizePreset = '720p' | '1k' | '2k' | '4k' | '8k'
+export type ImageAspectRatio = '1:1' | '2:3' | '3:2' | '9:16' | '16:9'
+
 export const IMAGE_SIZE_PRESET_LONG_EDGE: Record<ImageSizePreset, number> = {
   '720p': 1280,
   '1k': 1920,
@@ -36,9 +39,6 @@ export const IMAGE_ASPECT_RATIO_OPTIONS = [
   { value: '9:16', label: '9:16' },
   { value: '16:9', label: '16:9' },
 ] as const
-
-export type ImageSizePreset = keyof typeof IMAGE_SIZE_PRESET_LONG_EDGE
-export type ImageAspectRatio = keyof typeof IMAGE_ASPECT_RATIO_MAP
 
 export interface ImageModelCapabilities {
   minPixels?: number
@@ -337,4 +337,3 @@ export function finalizeLearnedImageCapabilities(
 
   return finalized
 }
-
