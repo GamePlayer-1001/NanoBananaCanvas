@@ -489,7 +489,7 @@ export function HeroSection() {
               </BrandMark>
             </h2>
 
-            <h1 className="from-brand-300 mx-auto mb-4 max-w-none bg-gradient-to-r to-white bg-clip-text text-[2.1rem] leading-[1.14] font-bold tracking-[-0.045em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[2.7rem] md:mb-6 md:text-[3.4rem] lg:text-[4rem]">
+            <h1 className="from-brand-300 mx-auto mb-4 max-w-none whitespace-pre-line bg-gradient-to-r to-white bg-clip-text text-[2.1rem] leading-[1.14] font-bold tracking-[-0.045em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[2.7rem] md:mb-6 md:text-[3.4rem] lg:text-[4rem]">
               {t('tagline')}
             </h1>
 
