@@ -479,31 +479,31 @@ export function HeroSection() {
         </div>
 
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
-          <div className="pointer-events-none mx-auto max-w-[860px] text-center">
+          <div className="pointer-events-none mx-auto max-w-[760px] text-center">
             <h2 className="mb-2 md:mb-3">
               <BrandMark
                 withLogo
-                className="text-4xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-5xl lg:text-6xl"
+                className="text-3xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-4xl lg:text-5xl"
               >
                 {t('heading')}
               </BrandMark>
             </h2>
 
-            <h1 className="from-brand-300 mb-5 bg-gradient-to-r to-white bg-clip-text text-5xl leading-[0.92] font-bold tracking-tight text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-6xl md:mb-6 md:text-7xl lg:text-[84px]">
+            <h1 className="from-brand-300 mb-4 bg-gradient-to-r to-white bg-clip-text text-[2.9rem] leading-[0.96] font-bold tracking-[-0.04em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[3.5rem] md:mb-5 md:text-[4.25rem] lg:text-[4.75rem]">
               {t('tagline')}
             </h1>
 
-            <p className="mx-auto mb-5 max-w-[720px] px-4 text-lg leading-relaxed text-white/72 md:text-[1.35rem]">
+            <p className="mx-auto mb-4 max-w-[600px] px-4 text-base leading-relaxed text-white/72 md:text-[1.05rem]">
               {t('models')}
             </p>
 
-            <p className="mx-auto mb-8 max-w-[760px] px-4 text-base leading-relaxed whitespace-pre-line text-white/56 md:mb-9 md:text-lg">
+            <p className="mx-auto mb-7 max-w-[660px] px-4 text-sm leading-[1.75] whitespace-pre-line text-white/56 md:mb-8 md:text-base">
               {t('description')}
             </p>
 
             <Link
               href="/sign-in"
-              className="pointer-events-auto inline-flex h-14 items-center rounded-2xl bg-white px-9 text-base font-semibold text-black shadow-[0_22px_70px_rgba(255,255,255,0.18)] transition-all hover:bg-white/88 md:h-16 md:px-11 md:text-lg"
+              className="pointer-events-auto inline-flex h-12 items-center rounded-2xl bg-white px-8 text-sm font-semibold text-black shadow-[0_22px_70px_rgba(255,255,255,0.18)] transition-all hover:bg-white/88 md:h-14 md:px-10 md:text-base"
             >
               {t('cta')}
             </Link>
