@@ -53,6 +53,21 @@ interface HeroMediaSpec {
 
 const DESIGN_STAGE_WIDTH = 1800
 const DESIGN_STAGE_HEIGHT = 620
+const HERO_NODE_SCALE_MULTIPLIER = 0.75
+const HERO_NODE_VERTICAL_OFFSET = -64
+const HERO_COPY_VERTICAL_OFFSET = 64
+const HERO_NODE_CLUSTER_X_COMPACTNESS = 0.88
+const HERO_NODE_CLUSTER_Y_COMPACTNESS = 0.9
+
+function compactNodePosition(node: { x: number; y: number; w: number; h: number }) {
+  const centerX = (DESIGN_STAGE_WIDTH - node.w) / 2
+  const centerY = (DESIGN_STAGE_HEIGHT - node.h) / 2
+
+  return {
+    x: centerX + (node.x - centerX) * HERO_NODE_CLUSTER_X_COMPACTNESS,
+    y: centerY + (node.y - centerY) * HERO_NODE_CLUSTER_Y_COMPACTNESS,
+  }
+}
 
 function toResponsiveNode(node: {
   id: string
@@ -64,10 +79,12 @@ function toResponsiveNode(node: {
   w: number
   h: number
 }): DemoNode {
+  const compacted = compactNodePosition(node)
+
   return {
     ...node,
-    x: node.x / (DESIGN_STAGE_WIDTH - node.w),
-    y: node.y / (DESIGN_STAGE_HEIGHT - node.h),
+    x: compacted.x / (DESIGN_STAGE_WIDTH - node.w),
+    y: compacted.y / (DESIGN_STAGE_HEIGHT - node.h),
   }
 }
 
@@ -193,7 +210,7 @@ function getNodeScale(stage: StageSize) {
 }
 
 function resolveNodeRect(node: DemoNode, stage: StageSize) {
-  const scale = getNodeScale(stage)
+  const scale = getNodeScale(stage) * HERO_NODE_SCALE_MULTIPLIER
   const w = node.w * scale
   const h = node.h * scale
   const maxX = Math.max(stage.width - w, 0)
@@ -201,7 +218,7 @@ function resolveNodeRect(node: DemoNode, stage: StageSize) {
 
   return {
     x: node.x * maxX,
-    y: node.y * maxY,
+    y: node.y * maxY + HERO_NODE_VERTICAL_OFFSET,
     w,
     h,
   }
@@ -416,7 +433,13 @@ export function HeroSection() {
           return {
             ...node,
             x: maxX === 0 ? 0 : Math.min(Math.max(rawX, 0), maxX) / maxX,
-            y: maxY === 0 ? 0 : Math.min(Math.max(rawY, 0), maxY) / maxY,
+            y:
+              maxY === 0
+                ? 0
+                : Math.min(
+                    Math.max(rawY - HERO_NODE_VERTICAL_OFFSET, 0),
+                    maxY,
+                  ) / maxY,
           }
         }),
       )
@@ -478,7 +501,10 @@ export function HeroSection() {
           ))}
         </div>
 
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
+        <div
+          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6"
+          style={{ transform: `translateY(${HERO_COPY_VERTICAL_OFFSET}px)` }}
+        >
           <div className="pointer-events-none mx-auto flex flex-col items-center text-center">
             <h2 className="mb-3 md:mb-4">
               <BrandMark
