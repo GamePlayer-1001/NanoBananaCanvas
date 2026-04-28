@@ -5,9 +5,13 @@
     "lib": ["ES2022"],
     "types": ["@cloudflare/workers-types"],
     "outDir": "dist",
-    "rootDir": "src",
-    "jsxImportSource": "hono/jsx"
+    "rootDir": "..",
+    "jsxImportSource": "hono/jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../web/*"]
+    }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "../web/worker-configuration.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

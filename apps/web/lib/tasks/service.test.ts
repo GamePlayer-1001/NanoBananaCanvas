@@ -30,10 +30,16 @@ vi.mock('@/lib/billing/ledger', () => ({
   refundFrozenCredits: vi.fn(),
 }))
 
+const { r2Mock } = vi.hoisted(() => ({
+  r2Mock: {
+    put: vi.fn(),
+    get: vi.fn(),
+    delete: vi.fn(),
+  },
+}))
+
 vi.mock('@/lib/r2', () => ({
-  getR2: vi.fn().mockResolvedValue({
-    put: vi.fn().mockResolvedValue(undefined),
-  }),
+  getR2: vi.fn().mockResolvedValue(r2Mock),
 }))
 
 vi.mock('@/lib/storage', () => ({
@@ -50,14 +56,17 @@ vi.mock('./processors', () => ({
 import { getPlatformKey } from '@/services/ai'
 import { getProcessor } from './processors'
 
-import { processDeferredTask, submitTask } from './service'
+import { processDeferredTask, processQueuedTask, submitTask } from './service'
 
 interface PreparedCall {
   sql: string
   args: unknown[]
 }
 
-function createDbMock(activeCount = 0): D1Database & { __calls: PreparedCall[] } {
+function createDbMock(
+  activeCount = 0,
+  taskRow: Record<string, unknown> | null = null,
+): D1Database & { __calls: PreparedCall[] } {
   const calls: PreparedCall[] = []
 
   return {
@@ -78,6 +87,12 @@ function createDbMock(activeCount = 0): D1Database & { __calls: PreparedCall[] }
           }
         }
 
+        if (sql.includes('SELECT * FROM async_tasks WHERE id = ? AND user_id = ?')) {
+          return {
+            first: vi.fn().mockResolvedValue(taskRow),
+          }
+        }
+
         if (sql.includes('UPDATE async_tasks')) {
           return {
             run: vi.fn().mockResolvedValue(undefined),
@@ -93,6 +108,9 @@ function createDbMock(activeCount = 0): D1Database & { __calls: PreparedCall[] }
 describe('submitTask', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    r2Mock.put.mockResolvedValue(undefined)
+    r2Mock.get.mockResolvedValue(null)
+    r2Mock.delete.mockResolvedValue(undefined)
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -221,5 +239,79 @@ describe('submitTask', () => {
 
     expect(completionUpdate).toBeDefined()
     expect(String(completionUpdate?.args[1])).toContain('/api/files/outputs/user-1/task-1.png')
+  })
+
+  it('rebuilds queued image tasks from persisted payload snapshots', async () => {
+    vi.mocked(getPlatformKey).mockResolvedValue('platform-key')
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      submit: vi.fn().mockResolvedValue({
+        externalTaskId: null,
+        initialStatus: 'completed',
+        result: {
+          type: 'url',
+          url: 'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
+          contentType: 'image/png',
+        },
+      }),
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const submitDb = createDbMock()
+    const task = await submitTask(submitDb, {
+      userId: 'user-1',
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      modelId: 'openai/dall-e-3',
+      executionMode: 'platform',
+      input: { prompt: 'test prompt' },
+    })
+
+    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    expect(insertCall).toBeDefined()
+
+    const deferredPayload = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
+    r2Mock.get.mockResolvedValue({
+      json: async () => JSON.parse(deferredPayload),
+    })
+
+    const queuedDb = createDbMock(0, {
+      id: task.id,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: String(insertCall?.args[7]),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+
+    await processQueuedTask(queuedDb, {
+      taskId: task.id,
+      userId: 'user-1',
+    })
+
+    const completionUpdate = queuedDb.__calls.find(
+      (call) =>
+        call.sql.includes("SET status = 'completed'") &&
+        call.sql.includes('output_data = ?'),
+    )
+
+    expect(completionUpdate).toBeDefined()
+    expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
   })
 })

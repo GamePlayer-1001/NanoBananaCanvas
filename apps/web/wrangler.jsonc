@@ -35,6 +35,13 @@
     { "binding": "UPLOADS", "bucket_name": "nano-banana-uploads" }
   ],
 
+  // Queue 绑定 — 图片生成后台任务
+  "queues": {
+    "producers": [
+      { "binding": "TASK_QUEUE", "queue": "nano-banana-tasks" }
+    ]
+  },
+
   // 非敏感运行时变量 — 生产部署默认值
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://nanobananacanvas.com"

@@ -56,7 +56,7 @@ webhooks/               — 外部账户与计费事件同步 (2 端点)
   stripe/route.ts       — POST Stripe 账单 webhook (checkout/invoice/subscription)
 
 tasks/                  — P2 异步任务队列 (3 端点)
-  route.ts              — POST 提交任务 / GET 任务列表 / DELETE 批量删除终态任务（图片提交后会用 Cloudflare `waitUntil` 后台继续执行，避免同步卡在网关前）
+  route.ts              — POST 提交任务 / GET 任务列表 / DELETE 批量删除终态任务（图片提交先落 D1 再投递 Cloudflare Queue，由独立 Worker 真后台执行，彻底规避前台 524）
   [id]/route.ts         — GET  任务状态查询 + 懒评估
   [id]/cancel/route.ts  — POST 取消任务
 
@@ -73,6 +73,6 @@ settings/               — 用户设置 (2 端点)
 - 限流: `checkRateLimit` / `withRateLimit` from `lib/api/rate-limit.ts`
 - 体积: `withBodyLimit` (1MB) 守护所有 POST/PUT/PATCH 端点
 - 验证: Zod schema from `lib/validations/`
-- 商业化: Stripe Checkout、Topup、Portal、订阅摘要/取消、余额摘要、Webhook、公开价格目录与积分包目录已接回最小闭环；`ai/execute` 与 `ai/stream` 已接回平台模式 credits 预冻结/确认/失败退款，`tasks/worker` 仍待继续收口
+- 商业化: Stripe Checkout、Topup、Portal、订阅摘要/取消、余额摘要、Webhook、公开价格目录与积分包目录已接回最小闭环；`ai/execute` 与 `ai/stream` 已接回平台模式 credits 预冻结/确认/失败退款，图片 `tasks` 已切到 Queue + Worker 消费者真后台执行
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

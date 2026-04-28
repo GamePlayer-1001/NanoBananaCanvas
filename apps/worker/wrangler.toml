@@ -19,15 +19,11 @@ database_id = "8a9c60d1-9797-4ea4-8fa6-2d55a1176b0a"
 binding = "UPLOADS"
 bucket_name = "nano-banana-uploads"
 
-# ─── Queue 异步任务 (P2 阶段启用消费者) ──────────────────────
-# [[queues.producers]]
-# binding = "TASK_QUEUE"
-# queue = "nano-banana-tasks"
-#
-# [[queues.consumers]]
-# queue = "nano-banana-tasks"
-# max_batch_size = 10
-# max_batch_timeout = 30
+# ─── Queue 异步任务 (图片后台执行消费者) ───────────────────
+[[queues.consumers]]
+queue = "nano-banana-tasks"
+max_batch_size = 10
+max_batch_timeout = 30
 
 # ─── KV 命名空间 (与 apps/web/wrangler.jsonc 同步) ─────────
 [[kv_namespaces]]

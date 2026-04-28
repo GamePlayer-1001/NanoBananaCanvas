@@ -3,13 +3,18 @@
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processDeferredTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processDeferredTask / processQueuedTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { TASK_CONFIG } from '@nano-banana/shared'
-import type { AsyncTaskStatus, AsyncTaskType, ExecutionMode } from '@nano-banana/shared'
+import type {
+  AsyncTaskStatus,
+  AsyncTaskType,
+  ExecutionMode,
+  TaskQueueMessage,
+} from '@nano-banana/shared'
 
 import { decryptApiKey, encryptApiKey } from '@/lib/api-key-crypto'
 import {
@@ -118,6 +123,21 @@ interface PersistedDataUrlDescriptor {
   length: number
 }
 
+interface PersistedTaskRuntimeMeta {
+  userConfigId?: string
+}
+
+interface DeferredTaskPayload {
+  taskType: AsyncTaskType
+  requestProvider: string
+  resolvedProvider: string
+  resolvedModelId: string
+  executionMode: ExecutionMode
+  resolvedInput: Record<string, unknown>
+  originalInput: Record<string, unknown>
+  runtimeMeta?: PersistedTaskRuntimeMeta
+}
+
 export interface TaskDetail {
   id: string
   taskType: AsyncTaskType
@@ -166,9 +186,24 @@ export interface SubmitTaskResult extends TaskDetail {
   deferredExecution?: DeferredTaskExecution
 }
 
+export interface TaskServiceRuntime {
+  requireEnv: (key: string) => Promise<string>
+  getR2: () => Promise<R2Bucket>
+  invalidateStorageCache: (userId: string) => Promise<void>
+  getPlatformKey: (provider: string) => Promise<string>
+}
+
+const defaultTaskRuntime: TaskServiceRuntime = {
+  requireEnv,
+  getR2,
+  invalidateStorageCache,
+  getPlatformKey,
+}
+
 /* ─── Helpers ───────────────────────────────────────── */
 
 function rowToDetail(row: TaskRow): TaskDetail {
+  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
   return {
     id: row.id,
     taskType: row.task_type,
@@ -177,7 +212,7 @@ function rowToDetail(row: TaskRow): TaskDetail {
     executionMode: row.execution_mode,
     status: row.status,
     progress: row.progress,
-    input: JSON.parse(row.input_data || '{}'),
+    input: stripPersistedTaskRuntimeMeta(persistedInput),
     output: row.output_data ? JSON.parse(row.output_data) : null,
     retryCount: row.retry_count,
     workflowId: row.workflow_id,
@@ -226,6 +261,40 @@ function sanitizeTaskInputForPersistence(input: Record<string, unknown>): Record
   return sanitizeValueForPersistence(input) as Record<string, unknown>
 }
 
+function withPersistedTaskRuntimeMeta(
+  input: Record<string, unknown>,
+  meta?: PersistedTaskRuntimeMeta,
+): Record<string, unknown> {
+  if (!meta || !Object.values(meta).some(Boolean)) {
+    return input
+  }
+
+  return {
+    ...input,
+    __taskRuntime: meta,
+  }
+}
+
+function stripPersistedTaskRuntimeMeta(input: Record<string, unknown>): Record<string, unknown> {
+  if (!('__taskRuntime' in input)) {
+    return input
+  }
+
+  const rest = { ...input }
+  delete rest.__taskRuntime
+  return rest
+}
+
+function readPersistedTaskRuntimeMeta(input: Record<string, unknown>): PersistedTaskRuntimeMeta | null {
+  const raw = input.__taskRuntime
+  if (!raw || typeof raw !== 'object') {
+    return null
+  }
+
+  const meta = raw as PersistedTaskRuntimeMeta
+  return meta.userConfigId ? { userConfigId: meta.userConfigId } : null
+}
+
 function isTerminal(status: AsyncTaskStatus): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
@@ -243,6 +312,10 @@ function getReservedTaskCredits(input: Record<string, unknown>): number {
   }
 
   return Math.round(estimatedCredits)
+}
+
+function buildDeferredTaskPayloadKey(userId: string, taskId: string): string {
+  return `task-inputs/${userId}/${taskId}.json`
 }
 
 async function refundTaskCredits(input: {
@@ -434,6 +507,7 @@ async function persistTaskOutput(
   taskId: string,
   userId: string,
   output: TaskOutput,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<TaskOutput> {
   if (!isUrlOutput(output)) {
     return output
@@ -454,7 +528,7 @@ async function persistTaskOutput(
     'bin'
   const r2Key = generateOutputPath(userId, taskId, ext)
   const fileName = output.fileName ?? `${taskId}.${ext}`
-  const r2 = await getR2()
+  const r2 = await runtime.getR2()
 
   await r2.put(r2Key, body, {
     httpMetadata: {
@@ -463,7 +537,7 @@ async function persistTaskOutput(
     },
   })
 
-  await invalidateStorageCache(userId)
+  await runtime.invalidateStorageCache(userId)
 
   return {
     ...output,
@@ -504,6 +578,7 @@ export async function checkConcurrency(
 export async function submitTask(
   db: D1Database,
   params: SubmitTaskParams,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<SubmitTaskResult> {
   const {
     userId,
@@ -542,6 +617,7 @@ export async function submitTask(
   let reservedPlatformCredits = 0
   let runtimeConfig: UserModelRuntimeConfig | null = null
   let imageCapabilities: ImageModelCapabilities | undefined
+  let persistedRuntimeMeta: PersistedTaskRuntimeMeta | undefined
   const taskId = nanoid()
 
   /* 并发检查 */
@@ -553,7 +629,7 @@ export async function submitTask(
 
   try {
     if (executionMode === 'platform') {
-      apiKey = await getTaskPlatformKey(provider as string)
+      apiKey = await getTaskPlatformKey(provider as string, runtime)
       imageCapabilities =
         taskType === 'image_gen'
           ? mergeImageModelCapabilities(
@@ -588,6 +664,7 @@ export async function submitTask(
         userId,
         capability as NodeCapability,
         configId,
+        runtime,
       )
       apiKey =
         runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
@@ -610,6 +687,7 @@ export async function submitTask(
         ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
         ...(imageCapabilities ? { imageCapabilities } : {}),
       }
+      persistedRuntimeMeta = { userConfigId: runtimeConfig.configId }
     }
 
     if (!shouldDeferTaskExecution(taskType)) {
@@ -623,10 +701,25 @@ export async function submitTask(
           throw new Error('Synchronous task provider completed without output')
         }
 
-        persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result)
+        persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
       }
     } else {
       getProcessor(taskType, resolvedProvider)
+      await persistDeferredTaskPayload(
+        taskId,
+        userId,
+        {
+          taskType,
+          requestProvider: requestProvider as string,
+          resolvedProvider,
+          resolvedModelId,
+          executionMode,
+          resolvedInput,
+          originalInput: input,
+          runtimeMeta: persistedRuntimeMeta,
+        },
+        runtime,
+      )
     }
   } catch (error) {
     if (executionMode === 'user_key' && taskType === 'image_gen' && runtimeConfig) {
@@ -636,6 +729,7 @@ export async function submitTask(
         runtimeConfig,
         input,
         error,
+        runtime,
       )
     }
 
@@ -667,7 +761,9 @@ export async function submitTask(
   /* 持久化到 D1 */
   const now = new Date().toISOString()
   const initialStatus = submitResult?.initialStatus ?? 'pending'
-  const persistedInput = sanitizeTaskInputForPersistence(resolvedInput)
+  const persistedInput = sanitizeTaskInputForPersistence(
+    withPersistedTaskRuntimeMeta(resolvedInput, persistedRuntimeMeta),
+  )
   const initialProgress = initialStatus === 'completed' ? 100 : 0
   const startedAt = initialStatus === 'running' || initialStatus === 'completed' ? now : null
   const completedAt = initialStatus === 'completed' ? now : null
@@ -708,6 +804,10 @@ export async function submitTask(
         source: 'task_submit_platform_insert_refund',
         description: `Refund async task credits after persistence failure ${taskType} ${resolvedProvider}/${resolvedModelId}`,
       })
+    }
+
+    if (shouldDeferTaskExecution(taskType)) {
+      await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
     }
 
     throw error
@@ -758,9 +858,130 @@ export async function submitTask(
   }
 }
 
+async function persistDeferredTaskPayload(
+  taskId: string,
+  userId: string,
+  payload: DeferredTaskPayload,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
+): Promise<void> {
+  const r2 = await runtime.getR2()
+  await r2.put(
+    buildDeferredTaskPayloadKey(userId, taskId),
+    JSON.stringify(payload),
+    {
+      httpMetadata: {
+        contentType: 'application/json',
+      },
+    },
+  )
+}
+
+async function readDeferredTaskPayload(
+  taskId: string,
+  userId: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
+): Promise<DeferredTaskPayload> {
+  const r2 = await runtime.getR2()
+  const obj = await r2.get(buildDeferredTaskPayloadKey(userId, taskId))
+
+  if (!obj) {
+    throw new Error(`Deferred task payload not found for task: ${taskId}`)
+  }
+
+  return obj.json<DeferredTaskPayload>()
+}
+
+async function deleteDeferredTaskPayload(
+  taskId: string,
+  userId: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
+): Promise<void> {
+  const r2 = await runtime.getR2()
+  await r2.delete(buildDeferredTaskPayloadKey(userId, taskId))
+}
+
 export async function processDeferredTask(
   db: D1Database,
   deferred: DeferredTaskExecution,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
+): Promise<void> {
+  await runDeferredTask(db, deferred, runtime)
+}
+
+export async function processQueuedTask(
+  db: D1Database,
+  message: TaskQueueMessage,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
+): Promise<void> {
+  const row = await db
+    .prepare('SELECT * FROM async_tasks WHERE id = ? AND user_id = ?')
+    .bind(message.taskId, message.userId)
+    .first<TaskRow>()
+
+  if (!row) {
+    log.warn('Queued task missing from database', {
+      taskId: message.taskId,
+      userId: message.userId,
+    })
+    return
+  }
+
+  if (isTerminal(row.status)) {
+    log.info('Queued task already terminal, skip execution', {
+      taskId: row.id,
+      status: row.status,
+    })
+    await deleteDeferredTaskPayload(row.id, row.user_id, runtime).catch(() => undefined)
+    return
+  }
+
+  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
+  const deferredPayload = await readDeferredTaskPayload(row.id, row.user_id, runtime)
+
+  let runtimeConfig: UserModelRuntimeConfig | null = null
+  let apiKey = ''
+
+  if (row.execution_mode === 'platform') {
+    apiKey = await getTaskPlatformKey(deferredPayload.resolvedProvider, runtime)
+  } else {
+    runtimeConfig = await getUserTaskRuntimeConfig(
+      db,
+      row.user_id,
+      row.provider as NodeCapability,
+      runtimeMeta?.userConfigId ?? deferredPayload.runtimeMeta?.userConfigId,
+      runtime,
+    )
+    apiKey =
+      runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
+        ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
+        : runtimeConfig.apiKey
+  }
+
+  await runDeferredTask(
+    db,
+    {
+      taskId: row.id,
+      userId: row.user_id,
+      taskType: row.task_type,
+      requestProvider: deferredPayload.requestProvider,
+      resolvedProvider: deferredPayload.resolvedProvider,
+      resolvedModelId: deferredPayload.resolvedModelId,
+      executionMode: row.execution_mode,
+      resolvedInput: deferredPayload.resolvedInput,
+      originalInput: deferredPayload.originalInput,
+      apiKey,
+      reservedPlatformCredits: getReservedTaskCredits(persistedInput),
+      runtimeConfig,
+    },
+    runtime,
+  )
+}
+
+async function runDeferredTask(
+  db: D1Database,
+  deferred: DeferredTaskExecution,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
   const {
     taskId,
@@ -800,7 +1021,7 @@ export async function processDeferredTask(
         throw new Error('Deferred task provider completed without output')
       }
 
-      const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result)
+      const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
       const completedAt = new Date().toISOString()
 
       if (executionMode === 'platform' && reservedPlatformCredits > 0) {
@@ -831,6 +1052,7 @@ export async function processDeferredTask(
         )
         .run()
 
+      await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
       log.info('Deferred task completed', { taskId, taskType, provider: requestProvider })
       return
     }
@@ -853,6 +1075,7 @@ export async function processDeferredTask(
       )
       .run()
 
+    await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
     log.info('Deferred task handed off to provider', {
       taskId,
       taskType,
@@ -867,6 +1090,7 @@ export async function processDeferredTask(
         runtimeConfig,
         originalInput,
         error,
+        runtime,
       )
     }
 
@@ -896,6 +1120,7 @@ export async function processDeferredTask(
       )
       .run()
 
+    await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
     log.error('Deferred task failed', error, {
       taskId,
       taskType,
@@ -912,9 +1137,10 @@ async function getUserTaskRuntimeConfig(
   userId: string,
   capability: NodeCapability,
   configId?: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<UserModelRuntimeConfig> {
   try {
-    const keyRow = await findUserConfigRow(db, userId, capability, configId)
+    const keyRow = await findUserConfigRow(db, userId, capability, configId, runtime)
 
     if (!keyRow) {
       throw new TaskError(
@@ -924,7 +1150,7 @@ async function getUserTaskRuntimeConfig(
       )
     }
 
-    const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+    const encryptionKey = await runtime.requireEnv('ENCRYPTION_KEY')
     const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
     const payload = deserializeUserModelConfig(keyRow.configId, decrypted)
     return toRuntimeUserModelConfig(keyRow.configId, payload)
@@ -939,6 +1165,7 @@ async function learnUserImageCapabilitiesFromTaskError(
   runtimeConfig: UserModelRuntimeConfig,
   input: Record<string, unknown>,
   error: unknown,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ) {
   const message = error instanceof Error ? error.message : String(error)
   const learned = learnImageCapabilitiesFromError(message)
@@ -954,7 +1181,7 @@ async function learnUserImageCapabilitiesFromTaskError(
     message,
   )
 
-  await updateStoredUserImageCapabilities(db, userId, runtimeConfig.configId, finalized)
+  await updateStoredUserImageCapabilities(db, userId, runtimeConfig.configId, finalized, runtime)
 }
 
 async function updateStoredUserImageCapabilities(
@@ -962,8 +1189,9 @@ async function updateStoredUserImageCapabilities(
   userId: string,
   configId: string,
   learned: ImageModelCapabilities,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ) {
-  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const encryptionKey = await runtime.requireEnv('ENCRYPTION_KEY')
   const row = await db
     .prepare(
       `SELECT encrypted_key
@@ -1004,6 +1232,7 @@ async function findUserConfigRow(
   userId: string,
   capability: string,
   configId?: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<{ encrypted_key: string; configId: string } | null> {
   if (configId) {
     const row = await db
@@ -1020,7 +1249,7 @@ async function findUserConfigRow(
     return null
   }
 
-  const encryptionKey = await requireEnv('ENCRYPTION_KEY')
+  const encryptionKey = await runtime.requireEnv('ENCRYPTION_KEY')
   const rows = await db
     .prepare(
       `SELECT provider, encrypted_key FROM user_api_keys
@@ -1041,18 +1270,21 @@ async function findUserConfigRow(
   return null
 }
 
-async function getTaskPlatformKey(provider: string): Promise<string> {
+async function getTaskPlatformKey(
+  provider: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
+): Promise<string> {
   try {
     switch (provider) {
       case 'openrouter':
       case 'deepseek':
       case 'gemini':
-        return await getPlatformKey(provider)
+        return await runtime.getPlatformKey(provider)
       case 'openai':
-        return await requireEnv('OPENAI_API_KEY')
+        return await runtime.requireEnv('OPENAI_API_KEY')
       case 'kling': {
-        const accessKey = await requireEnv('KLING_ACCESS_KEY')
-        const secretKey = await requireEnv('KLING_SECRET_KEY')
+        const accessKey = await runtime.requireEnv('KLING_ACCESS_KEY')
+        const secretKey = await runtime.requireEnv('KLING_SECRET_KEY')
         return `${accessKey}:${secretKey}`
       }
       default:
@@ -1073,6 +1305,7 @@ export async function checkTask(
   db: D1Database,
   taskId: string,
   userId: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<TaskDetail> {
   /* 读取 D1 当前状态 */
   const row = await db
@@ -1112,11 +1345,15 @@ export async function checkTask(
   /* 懒评估: 向 Provider 查询最新状态 */
   let apiKey = ''
   let processorProvider = row.provider
+  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
   if (row.execution_mode === 'user_key' && row.external_task_id) {
     const runtimeConfig = await getUserTaskRuntimeConfig(
       db,
       userId,
       row.provider as NodeCapability,
+      runtimeMeta?.userConfigId,
+      runtime,
     )
     apiKey =
       runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
@@ -1124,7 +1361,7 @@ export async function checkTask(
         : runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
   } else if (row.execution_mode === 'platform' && row.external_task_id) {
-    apiKey = await getTaskPlatformKey(row.provider)
+    apiKey = await getTaskPlatformKey(row.provider, runtime)
   }
 
   if (!row.external_task_id) {
@@ -1138,7 +1375,7 @@ export async function checkTask(
 
     /* 根据 Provider 返回状态更新 D1 */
     if (check.status === 'completed' && check.result) {
-      const persistedOutput = await persistTaskOutput(taskId, userId, check.result)
+      const persistedOutput = await persistTaskOutput(taskId, userId, check.result, runtime)
 
       if (row.execution_mode === 'platform') {
         const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
@@ -1212,6 +1449,7 @@ export async function cancelTask(
   db: D1Database,
   taskId: string,
   userId: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<TaskDetail> {
   const row = await db
     .prepare('SELECT * FROM async_tasks WHERE id = ? AND user_id = ?')
@@ -1235,16 +1473,20 @@ export async function cancelTask(
     try {
       let apiKey = ''
       let processorProvider = row.provider
+      const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+      const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
       if (row.execution_mode === 'user_key') {
         const runtimeConfig = await getUserTaskRuntimeConfig(
           db,
           userId,
           row.provider as NodeCapability,
+          runtimeMeta?.userConfigId,
+          runtime,
         )
         apiKey = runtimeConfig.apiKey
         processorProvider = runtimeConfig.providerId
       } else if (row.execution_mode === 'platform') {
-        apiKey = await getTaskPlatformKey(row.provider)
+        apiKey = await getTaskPlatformKey(row.provider, runtime)
       }
       const processor = getProcessor(row.task_type, processorProvider)
       await processor.cancel(row.external_task_id, apiKey)
@@ -1275,6 +1517,8 @@ export async function cancelTask(
     )
     .bind(nowIso, nowIso, taskId)
     .run()
+
+  await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
 
   log.info('Task cancelled', { taskId })
   return { ...rowToDetail(row), status: 'cancelled', completedAt: nowIso }
@@ -1329,6 +1573,7 @@ export async function deleteTasks(
   db: D1Database,
   userId: string,
   taskIds: string[],
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<DeleteTasksResult> {
   const uniqueTaskIds = Array.from(new Set(taskIds.map((id) => id.trim()).filter(Boolean)))
 
@@ -1353,7 +1598,7 @@ export async function deleteTasks(
     return { deletedIds: [] }
   }
 
-  const r2 = await getR2()
+  const r2 = await runtime.getR2()
 
   for (const row of rows) {
     try {
@@ -1384,7 +1629,7 @@ export async function deleteTasks(
     .bind(userId, ...deletedIds)
     .run()
 
-  await invalidateStorageCache(userId)
+  await runtime.invalidateStorageCache(userId)
 
   return { deletedIds }
 }

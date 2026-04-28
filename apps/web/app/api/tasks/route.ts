@@ -6,13 +6,14 @@
  */
 
 import { getCloudflareContext } from '@opennextjs/cloudflare'
+import type { TaskQueueMessage } from '@nano-banana/shared'
 
 import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { isAppError } from '@/lib/errors'
-import { deleteTasks, listTasks, processDeferredTask, submitTask } from '@/lib/tasks'
+import { deleteTasks, listTasks, submitTask } from '@/lib/tasks'
 import { deleteTasksSchema, listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 import { ZodError } from 'zod'
 
@@ -44,8 +45,12 @@ export async function POST(req: Request) {
     })
 
     if (task.deferredExecution) {
-      const { ctx } = await getCloudflareContext()
-      ctx.waitUntil(processDeferredTask(db, task.deferredExecution))
+      const { env } = await getCloudflareContext()
+      const message: TaskQueueMessage = {
+        taskId: task.id,
+        userId,
+      }
+      await env.TASK_QUEUE.send(message)
     }
 
     const responseTask = { ...task }

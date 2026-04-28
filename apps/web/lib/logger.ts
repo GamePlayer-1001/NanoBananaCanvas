@@ -33,7 +33,7 @@ interface Logger {
 // so this becomes a literal boolean in Cloudflare Workers runtime — safe to use.
 const IS_DEV =
   typeof process !== 'undefined' && process.env?.NODE_ENV === 'development'
-const IS_SERVER = typeof window === 'undefined'
+const IS_SERVER = !('window' in globalThis)
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 0,
