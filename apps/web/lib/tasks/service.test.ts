@@ -56,7 +56,7 @@ vi.mock('./processors', () => ({
 import { getPlatformKey } from '@/services/ai'
 import { getProcessor } from './processors'
 
-import { processDeferredTask, processQueuedTask, submitTask } from './service'
+import { checkTask, processDeferredTask, processQueuedTask, submitTask } from './service'
 
 interface PreparedCall {
   sql: string
@@ -94,8 +94,40 @@ function createDbMock(
         }
 
         if (sql.includes('UPDATE async_tasks')) {
+          if (
+            taskRow &&
+            sql.includes("SET status = 'running', progress = 5")
+          ) {
+            return {
+              run: vi.fn().mockImplementation(async () => {
+                if (taskRow.status === 'pending' && taskRow.external_task_id == null) {
+                  taskRow.status = 'running'
+                  taskRow.progress = 5
+                  taskRow.started_at = String(args[0])
+                  taskRow.updated_at = String(args[1])
+                  return { meta: { changes: 1 } }
+                }
+
+                return { meta: { changes: 0 } }
+              }),
+            }
+          }
+
+          if (taskRow && sql.includes("SET status = 'completed'")) {
+            return {
+              run: vi.fn().mockImplementation(async () => {
+                taskRow.status = 'completed'
+                taskRow.progress = 100
+                taskRow.output_data = String(args[1] ?? args[0] ?? null)
+                taskRow.completed_at = String(args[2] ?? args[1] ?? new Date().toISOString())
+                taskRow.updated_at = String(args[4] ?? args[2] ?? new Date().toISOString())
+                return { meta: { changes: 1 } }
+              }),
+            }
+          }
+
           return {
-            run: vi.fn().mockResolvedValue(undefined),
+            run: vi.fn().mockResolvedValue({ meta: { changes: 1 } }),
           }
         }
 
@@ -312,6 +344,75 @@ describe('submitTask', () => {
     )
 
     expect(completionUpdate).toBeDefined()
+    expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
+  })
+
+  it('self-heals stalled queued image tasks from polling when queue execution is missing', async () => {
+    vi.mocked(getPlatformKey).mockResolvedValue('platform-key')
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      submit: vi.fn().mockResolvedValue({
+        externalTaskId: null,
+        initialStatus: 'completed',
+        result: {
+          type: 'url',
+          url: 'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
+          contentType: 'image/png',
+        },
+      }),
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const submitDb = createDbMock()
+    const task = await submitTask(submitDb, {
+      userId: 'user-1',
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      modelId: 'openai/dall-e-3',
+      executionMode: 'platform',
+      input: { prompt: 'test prompt' },
+    })
+
+    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    expect(insertCall).toBeDefined()
+
+    const deferredPayload = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
+    r2Mock.get.mockResolvedValue({
+      json: async () => JSON.parse(deferredPayload),
+    })
+
+    const queuedRow = {
+      id: task.id,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: String(insertCall?.args[7]),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const pollingDb = createDbMock(0, queuedRow)
+    const detail = await checkTask(pollingDb, task.id, 'user-1')
+
+    expect(detail.status).toBe('completed')
+    expect(String((detail.output as { url?: string } | null)?.url ?? '')).toContain(
+      '/api/files/outputs/user-1/task-1.png',
+    )
     expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
   })
 })

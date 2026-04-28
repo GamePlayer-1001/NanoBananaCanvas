@@ -299,6 +299,17 @@ function isTerminal(status: AsyncTaskStatus): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
 
+async function loadTaskRow(
+  db: D1Database,
+  taskId: string,
+  userId: string,
+): Promise<TaskRow | null> {
+  return db
+    .prepare('SELECT * FROM async_tasks WHERE id = ? AND user_id = ?')
+    .bind(taskId, userId)
+    .first<TaskRow>()
+}
+
 function shouldDeferTaskExecution(taskType: AsyncTaskType): boolean {
   return taskType === 'image_gen'
 }
@@ -913,10 +924,7 @@ export async function processQueuedTask(
   message: TaskQueueMessage,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
-  const row = await db
-    .prepare('SELECT * FROM async_tasks WHERE id = ? AND user_id = ?')
-    .bind(message.taskId, message.userId)
-    .first<TaskRow>()
+  const row = await loadTaskRow(db, message.taskId, message.userId)
 
   if (!row) {
     log.warn('Queued task missing from database', {
@@ -999,15 +1007,20 @@ async function runDeferredTask(
   } = deferred
 
   const startedAt = new Date().toISOString()
-  await db
+  const claimResult = await db
     .prepare(
       `UPDATE async_tasks
        SET status = 'running', progress = 5,
            started_at = COALESCE(started_at, ?), updated_at = ?
-       WHERE id = ? AND user_id = ? AND status = 'pending'`,
+       WHERE id = ? AND user_id = ? AND status = 'pending' AND external_task_id IS NULL`,
     )
     .bind(startedAt, startedAt, taskId, userId)
     .run()
+
+  if (!(claimResult.meta.changes ?? 0)) {
+    log.info('Deferred task claim skipped', { taskId, userId, taskType })
+    return
+  }
 
   try {
     const processor = getProcessor(taskType, resolvedProvider)
@@ -1308,13 +1321,35 @@ export async function checkTask(
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<TaskDetail> {
   /* 读取 D1 当前状态 */
-  const row = await db
-    .prepare('SELECT * FROM async_tasks WHERE id = ? AND user_id = ?')
-    .bind(taskId, userId)
-    .first<TaskRow>()
+  const row = await loadTaskRow(db, taskId, userId)
 
   if (!row) {
     throw new TaskError(ErrorCode.TASK_NOT_FOUND, `Task not found: ${taskId}`, { taskId })
+  }
+
+  /* 自愈: 图片任务若仍停留 pending 且尚未拿到 external_task_id，则由状态轮询补触发一次后台执行 */
+  if (row.task_type === 'image_gen' && row.status === 'pending' && !row.external_task_id) {
+    try {
+      await processQueuedTask(
+        db,
+        {
+          taskId: row.id,
+          userId: row.user_id,
+        },
+        runtime,
+      )
+
+      const refreshedRow = await loadTaskRow(db, row.id, row.user_id)
+      if (refreshedRow) {
+        return rowToDetail(refreshedRow)
+      }
+    } catch (error) {
+      log.warn('Deferred image task kickoff from poll failed', {
+        taskId: row.id,
+        userId: row.user_id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   /* 终态直接返回 */
