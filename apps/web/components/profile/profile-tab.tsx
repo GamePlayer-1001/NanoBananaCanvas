@@ -4,7 +4,7 @@
  *          依赖 @/i18n/navigation 的 Link，依赖 @/components/auth/sign-out-action，
  *          依赖 sonner 的 toast，依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
  * [OUTPUT]: 对外提供 ProfileTab 个人资料面板，含账户基础信息与 Clerk 安全中心入口
- * [POS]: profile 的个人资料 Tab，被账户页消费，承载基础身份信息、真实密码状态展示、退出登录与安全操作
+ * [POS]: profile 的个人资料 Tab，被账户页消费，承载基础身份信息、真实密码状态展示与直接安全操作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -16,7 +16,7 @@ import { useState } from 'react'
 import { useClerk } from '@clerk/nextjs'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { AlertTriangle, ChevronRight, KeyRound, ShieldAlert } from 'lucide-react'
+import { ChevronRight, KeyRound, ShieldAlert } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 import { SignOutAction } from '@/components/auth/sign-out-action'
@@ -165,20 +165,6 @@ export function ProfileTab({ user, onManageSubscription }: ProfileTabProps) {
               >
                 {t('signOut')}
               </SignOutAction>
-            </div>
-
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle size={18} className="mt-0.5 text-amber-600" />
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-amber-950">
-                    {t('profileSecurityHintTitle')}
-                  </p>
-                  <p className="text-sm leading-6 text-amber-800">
-                    {t('profileSecurityHintBody')}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         ) : (
