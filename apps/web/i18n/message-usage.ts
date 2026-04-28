@@ -12,6 +12,9 @@ export const MESSAGE_USAGE_INDEX = {
     "metadata.exploreDescription",
     "metadata.exploreTitle"
   ],
+  "app/[locale]/(app)/explore/[id]/page.tsx": [
+    "metadata.exploreTitle"
+  ],
   "app/[locale]/(app)/video-analysis/page.tsx": [
     "metadata.videoAnalysisDescription",
     "metadata.videoAnalysisTitle"
@@ -56,6 +59,7 @@ export const MESSAGE_USAGE_INDEX = {
     "canvas.desktopOnlyDesc"
   ],
   "app/[locale]/(landing)/about/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.about.footerCta.body",
     "sitePages.about.footerCta.primary",
     "sitePages.about.footerCta.secondary",
@@ -75,6 +79,7 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.about.sections.principles.title"
   ],
   "app/[locale]/(landing)/acceptable-use/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.acceptableUse.heroBody",
     "sitePages.acceptableUse.heroEyebrow",
     "sitePages.acceptableUse.heroTitle",
@@ -85,6 +90,7 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.acceptableUse.sections.rules.title"
   ],
   "app/[locale]/(landing)/community/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.community.footerCta.body",
     "sitePages.community.footerCta.primary",
     "sitePages.community.footerCta.secondary",
@@ -104,10 +110,13 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.community.sections.share.title"
   ],
   "app/[locale]/(landing)/contact/page.tsx": [
-    "contact.subtitle",
-    "contact.title"
+    "contact.metaDescription",
+    "contact.metaTitle",
+    "contact.title",
+    "landing.nav.backHome"
   ],
   "app/[locale]/(landing)/cookies/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.cookies.heroBody",
     "sitePages.cookies.heroEyebrow",
     "sitePages.cookies.heroTitle",
@@ -118,6 +127,7 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.cookies.sections.categories.title"
   ],
   "app/[locale]/(landing)/docs/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.docs.footerCta.body",
     "sitePages.docs.footerCta.primary",
     "sitePages.docs.footerCta.secondary",
@@ -137,6 +147,7 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.docs.sections.quickStart.title"
   ],
   "app/[locale]/(landing)/features/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.features.footerCta.body",
     "sitePages.features.footerCta.primary",
     "sitePages.features.footerCta.secondary",
@@ -159,6 +170,7 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.features.sections.team.title"
   ],
   "app/[locale]/(landing)/models/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.models.footerCta.body",
     "sitePages.models.footerCta.primary",
     "sitePages.models.footerCta.secondary",
@@ -192,6 +204,7 @@ export const MESSAGE_USAGE_INDEX = {
     "metadata.landingTitle"
   ],
   "app/[locale]/(landing)/pricing/page.tsx": [
+    "landing.nav.backHome",
     "pricing.freeDescription",
     "pricing.metaDescription",
     "pricing.metaTitle",
@@ -200,10 +213,12 @@ export const MESSAGE_USAGE_INDEX = {
     "pricing.toggleOneTime"
   ],
   "app/[locale]/(landing)/privacy/page.tsx": [
+    "landing.nav.backHome",
     "metadata.privacyDescription",
     "metadata.privacyTitle"
   ],
   "app/[locale]/(landing)/refund-policy/page.tsx": [
+    "landing.nav.backHome",
     "sitePages.refundPolicy.heroBody",
     "sitePages.refundPolicy.heroEyebrow",
     "sitePages.refundPolicy.heroTitle",
@@ -214,6 +229,7 @@ export const MESSAGE_USAGE_INDEX = {
     "sitePages.refundPolicy.sections.rules.title"
   ],
   "app/[locale]/(landing)/terms/page.tsx": [
+    "landing.nav.backHome",
     "metadata.termsDescription",
     "metadata.termsTitle"
   ],
@@ -299,6 +315,20 @@ export const MESSAGE_USAGE_INDEX = {
     "canvas.stopTooltip",
     "canvas.undo",
     "canvas.workflowExported"
+  ],
+  "components/canvas/canvas.tsx": [
+    "canvas.shortcutsHint.delete",
+    "canvas.shortcutsHint.export",
+    "canvas.shortcutsHint.import",
+    "canvas.shortcutsHint.pan",
+    "canvas.shortcutsHint.redo",
+    "canvas.shortcutsHint.run",
+    "canvas.shortcutsHint.stop",
+    "canvas.shortcutsHint.title",
+    "canvas.shortcutsHint.undo"
+  ],
+  "components/canvas/context-menu.tsx": [
+    "contextMenu.noCompatibleNodes"
   ],
   "components/canvas/node-context-menu.tsx": [
     "contextMenu.delete",
@@ -527,6 +557,8 @@ export const MESSAGE_USAGE_INDEX = {
     "nodes.noApiConfigs",
     "nodes.output",
     "nodes.platformMode",
+    "nodes.preview",
+    "nodes.previewDescription",
     "nodes.provider",
     "nodes.userKeyMode"
   ],
@@ -550,6 +582,8 @@ export const MESSAGE_USAGE_INDEX = {
     "nodes.noApiConfigs",
     "nodes.output",
     "nodes.platformMode",
+    "nodes.preview",
+    "nodes.previewDescription",
     "nodes.provider",
     "nodes.userKeyMode"
   ],
@@ -595,6 +629,8 @@ export const MESSAGE_USAGE_INDEX = {
     "nodes.noApiConfigs",
     "nodes.output",
     "nodes.platformMode",
+    "nodes.preview",
+    "nodes.previewDescription",
     "nodes.provider",
     "nodes.userKeyMode",
     "nodes.videoAspect",
@@ -710,7 +746,17 @@ export const MESSAGE_USAGE_INDEX = {
     "profile.currentProvider",
     "profile.deleteApiConfig",
     "profile.editApiConfig",
+    "profile.editMaskedKeyHint",
     "profile.editingConfig",
+    "profile.imageAdvancedRulesBody",
+    "profile.imageAdvancedRulesTitle",
+    "profile.imageAllowedAspectRatiosLabel",
+    "profile.imageAllowedSizesLabel",
+    "profile.imageMaxLongEdgeLabel",
+    "profile.imageMaxLongEdgeSummary",
+    "profile.imageMinPixelsLabel",
+    "profile.keepExistingKeyHint",
+    "profile.keepExistingSecretKeyHint",
     "profile.loadedMaskedKey",
     "profile.modelIdLabel",
     "profile.modelPreferences",
@@ -721,6 +767,7 @@ export const MESSAGE_USAGE_INDEX = {
     "profile.saveApiConfig",
     "profile.saveHint",
     "profile.secretKeyLabel",
+    "profile.secretKeyMaskedPlaceholder",
     "profile.secretKeyPlaceholder",
     "profile.testApiConfig"
   ],
@@ -746,12 +793,24 @@ export const MESSAGE_USAGE_INDEX = {
     "profile.profileOpeningSecurity",
     "profile.profilePassword",
     "profile.profileSecurityBody",
-    "profile.profileSecurityHintBody",
-    "profile.profileSecurityHintTitle",
     "profile.profileSecurityTitle",
     "profile.profileSignedInDesc",
     "profile.securityCenterFailed",
     "profile.signOut"
+  ],
+  "components/profile/settings-tab.tsx": [
+    "profile.languageSettingsBody",
+    "profile.languageSettingsTitle",
+    "profile.onboardingSettingsBody",
+    "profile.onboardingSettingsTitle",
+    "profile.resetOnboardingAction",
+    "profile.resetOnboardingBody",
+    "profile.resetOnboardingTitle",
+    "profile.settings",
+    "profile.settingsDesc",
+    "profile.settingsResetSuccess",
+    "profile.showOnboardingTipsBody",
+    "profile.showOnboardingTipsTitle"
   ],
   "components/profile/subscription-tab.tsx": [
     "profile.subscriptionBuyCredits",
@@ -989,6 +1048,19 @@ export const MESSAGE_USAGE_INDEX = {
     "canvas.nothingToExport",
     "canvas.workflowExported"
   ],
+  "hooks/use-user-key-onboarding.tsx": [
+    "common.cancel",
+    "nodes.userKeyOnboardingConfirm",
+    "nodes.userKeyOnboardingDescription",
+    "nodes.userKeyOnboardingSaveFailed",
+    "nodes.userKeyOnboardingSaving",
+    "nodes.userKeyOnboardingTitle",
+    "profile.capability_audio",
+    "profile.capability_image",
+    "profile.capability_text",
+    "profile.capability_video",
+    "profile.modelPreferences"
+  ],
   "hooks/use-workflow-executor.ts": [
     "canvas.workflowCompleted"
   ]
@@ -1172,6 +1244,15 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "canvas.saveFailed",
   "canvas.saved",
   "canvas.saving",
+  "canvas.shortcutsHint.delete",
+  "canvas.shortcutsHint.export",
+  "canvas.shortcutsHint.import",
+  "canvas.shortcutsHint.pan",
+  "canvas.shortcutsHint.redo",
+  "canvas.shortcutsHint.run",
+  "canvas.shortcutsHint.stop",
+  "canvas.shortcutsHint.title",
+  "canvas.shortcutsHint.undo",
   "canvas.stop",
   "canvas.stopTooltip",
   "canvas.undo",
@@ -1185,6 +1266,8 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "common.retry",
   "common.save",
   "common.unexpectedError",
+  "contact.metaDescription",
+  "contact.metaTitle",
   "contact.subtitle",
   "contact.title",
   "contextMenu.addAudioGen",
@@ -1210,6 +1293,7 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "contextMenu.groupText",
   "contextMenu.groupTools",
   "contextMenu.groupVideo",
+  "contextMenu.noCompatibleNodes",
   "explore.next",
   "explore.prev",
   "explore.shareDurationTooLong",
@@ -1274,6 +1358,7 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "landing.hero.heading",
   "landing.hero.models",
   "landing.hero.tagline",
+  "landing.nav.backHome",
   "landing.nav.features",
   "landing.nav.models",
   "landing.nav.pricing",
@@ -1376,6 +1461,8 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "nodes.output",
   "nodes.platformMode",
   "nodes.precise",
+  "nodes.preview",
+  "nodes.previewDescription",
   "nodes.provider",
   "nodes.systemPrompt",
   "nodes.systemPromptPlaceholder",
@@ -1383,6 +1470,11 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "nodes.textMergeHint",
   "nodes.tokens",
   "nodes.userKeyMode",
+  "nodes.userKeyOnboardingConfirm",
+  "nodes.userKeyOnboardingDescription",
+  "nodes.userKeyOnboardingSaveFailed",
+  "nodes.userKeyOnboardingSaving",
+  "nodes.userKeyOnboardingTitle",
   "nodes.videoAspect",
   "nodes.videoDuration",
   "nodes.videoMode",
@@ -1466,6 +1558,10 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "profile.baseUrlLabel",
   "profile.cancelDraft",
   "profile.cancelEdit",
+  "profile.capability_audio",
+  "profile.capability_image",
+  "profile.capability_text",
+  "profile.capability_video",
   "profile.configNameLabel",
   "profile.configNamePlaceholder",
   "profile.configured",
@@ -1494,17 +1590,31 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "profile.dashboardUsageProgressTitle",
   "profile.deleteApiConfig",
   "profile.editApiConfig",
+  "profile.editMaskedKeyHint",
   "profile.editingConfig",
   "profile.email",
   "profile.goToSignIn",
   "profile.guestStatus",
   "profile.guestStatusBody",
+  "profile.imageAdvancedRulesBody",
+  "profile.imageAdvancedRulesTitle",
+  "profile.imageAllowedAspectRatiosLabel",
+  "profile.imageAllowedSizesLabel",
+  "profile.imageMaxLongEdgeLabel",
+  "profile.imageMaxLongEdgeSummary",
+  "profile.imageMinPixelsLabel",
+  "profile.keepExistingKeyHint",
+  "profile.keepExistingSecretKeyHint",
+  "profile.languageSettingsBody",
+  "profile.languageSettingsTitle",
   "profile.loadedMaskedKey",
   "profile.modelIdLabel",
   "profile.modelPreferences",
   "profile.newConfig",
   "profile.noApiConfigs",
   "profile.notConfigured",
+  "profile.onboardingSettingsBody",
+  "profile.onboardingSettingsTitle",
   "profile.openingBilling",
   "profile.personalInfo",
   "profile.portalFailed",
@@ -1516,16 +1626,23 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "profile.profileOpeningSecurity",
   "profile.profilePassword",
   "profile.profileSecurityBody",
-  "profile.profileSecurityHintBody",
-  "profile.profileSecurityHintTitle",
   "profile.profileSecurityTitle",
   "profile.profileSignedInDesc",
   "profile.providerTypeLabel",
+  "profile.resetOnboardingAction",
+  "profile.resetOnboardingBody",
+  "profile.resetOnboardingTitle",
   "profile.saveApiConfig",
   "profile.saveHint",
   "profile.secretKeyLabel",
+  "profile.secretKeyMaskedPlaceholder",
   "profile.secretKeyPlaceholder",
   "profile.securityCenterFailed",
+  "profile.settings",
+  "profile.settingsDesc",
+  "profile.settingsResetSuccess",
+  "profile.showOnboardingTipsBody",
+  "profile.showOnboardingTipsTitle",
   "profile.signOut",
   "profile.subscriptionBuyCredits",
   "profile.subscriptionBuyOneTime",
