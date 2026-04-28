@@ -67,8 +67,8 @@ const MODEL_CORE_POSITION = {
 } as const
 
 const MODEL_CORE_VISUAL_OFFSET = {
-  x: 158,
-  y: 53,
+  x: 0,
+  y: 0,
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
