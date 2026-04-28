@@ -679,8 +679,7 @@ interface ExecuteTaskOutputApiParams {
 function getTaskPollingPlan(taskType: ExecuteTaskOutputApiParams['taskType']) {
   const config = TASK_CONFIG[taskType]
   const intervalMs = Math.max(1_000, config.pollIntervalMs)
-  const maxAttempts = Math.max(1, Math.ceil(config.timeoutMs / intervalMs))
-  return { intervalMs, maxAttempts, timeoutMs: config.timeoutMs }
+  return { intervalMs }
 }
 
 async function executeTaskOutputViaApi(
@@ -719,7 +718,7 @@ async function executeTaskOutputViaApi(
 
   const polling = getTaskPollingPlan(params.taskType)
 
-  for (let attempt = 0; attempt < polling.maxAttempts; attempt += 1) {
+  for (;;) {
     await delay(polling.intervalMs, params.signal)
 
     const taskResponse = await fetch(`/api/tasks/${taskId}`, {
@@ -753,10 +752,6 @@ async function executeTaskOutputViaApi(
     }
   }
 
-  throw new WorkflowError(
-    ErrorCode.WORKFLOW_NODE_ERROR,
-    `${params.outputType} task polling timed out after ${Math.round(polling.timeoutMs / 1000)}s`,
-  )
 }
 
 async function delay(ms: number, signal: AbortSignal): Promise<void> {
