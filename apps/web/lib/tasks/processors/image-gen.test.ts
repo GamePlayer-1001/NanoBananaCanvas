@@ -42,8 +42,13 @@ describe('ImageGenProcessor', () => {
       'test-key',
     )
 
-    expect(result.externalTaskId).toBe('https://example.com/generated.png')
-    expect(result.initialStatus).toBe('running')
+    expect(result.externalTaskId).toBeNull()
+    expect(result.initialStatus).toBe('completed')
+    expect(result.result).toEqual({
+      type: 'url',
+      url: 'https://example.com/generated.png',
+      contentType: 'image/png',
+    })
   })
 
   it('maps platform openrouter image models to the hosted base url', async () => {
@@ -127,9 +132,13 @@ describe('ImageGenProcessor', () => {
       'test-key',
     )
 
-    expect(result.externalTaskId).toBe(
-      'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
-    )
+    expect(result.externalTaskId).toBeNull()
+    expect(result.initialStatus).toBe('completed')
+    expect(result.result).toEqual({
+      type: 'url',
+      url: 'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
+      contentType: 'image/png',
+    })
   })
 
   it('surfaces html responses as baseUrl configuration errors', async () => {

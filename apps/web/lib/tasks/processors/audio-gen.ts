@@ -34,10 +34,14 @@ export class AudioGenProcessor implements TaskProcessor {
 
     const result = await openaiTTSSubmit(input, apiKey, this.provider)
 
-    // TTS 是同步调用: submit 即完成，URL = base64 data URI
     return {
-      externalTaskId: result.dataUrl,
-      initialStatus: 'running',
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: result.dataUrl,
+        contentType: 'audio/mpeg',
+      },
     }
   }
 

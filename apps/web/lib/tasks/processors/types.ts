@@ -17,10 +17,12 @@ export interface SubmitInput {
 }
 
 export interface SubmitResult {
-  /** Provider 返回的外部任务 ID */
-  externalTaskId: string
-  /** 初始状态 — 有些 Provider 直接开始执行 */
-  initialStatus: 'pending' | 'running'
+  /** Provider 返回的外部任务 ID；同步 provider 允许为空 */
+  externalTaskId: string | null
+  /** 初始状态 — 有些 Provider 直接完成并返回结果 */
+  initialStatus: 'pending' | 'running' | 'completed'
+  /** 同步 provider 在 submit 阶段直接返回的结果 */
+  result?: TaskOutput
 }
 
 /* ─── Check ─────────────────────────────────────────── */

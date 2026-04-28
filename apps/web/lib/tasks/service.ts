@@ -112,6 +112,12 @@ interface TaskBillingInput extends Record<string, unknown> {
   billingDraft?: ReservedTaskBillingDraft
 }
 
+interface PersistedDataUrlDescriptor {
+  __type: 'omitted-data-url'
+  mediaType: string
+  length: number
+}
+
 export interface TaskDetail {
   id: string
   taskType: AsyncTaskType
@@ -161,6 +167,44 @@ function rowToDetail(row: TaskRow): TaskDetail {
     startedAt: row.started_at,
     completedAt: row.completed_at,
   }
+}
+
+function isDataUrl(value: string): boolean {
+  return /^data:[^;,]+;base64,/i.test(value)
+}
+
+function describeOmittedDataUrl(value: string): PersistedDataUrlDescriptor {
+  const mediaType = /^data:([^;,]+)/i.exec(value)?.[1] ?? 'application/octet-stream'
+  return {
+    __type: 'omitted-data-url',
+    mediaType,
+    length: value.length,
+  }
+}
+
+function sanitizeValueForPersistence(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return isDataUrl(value) ? describeOmittedDataUrl(value) : value
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeValueForPersistence(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
+        key,
+        sanitizeValueForPersistence(nested),
+      ]),
+    )
+  }
+
+  return value
+}
+
+function sanitizeTaskInputForPersistence(input: Record<string, unknown>): Record<string, unknown> {
+  return sanitizeValueForPersistence(input) as Record<string, unknown>
 }
 
 function isTerminal(status: AsyncTaskStatus): boolean {
@@ -483,6 +527,7 @@ export async function submitTask(
   let apiKey = ''
   let processor: ReturnType<typeof getProcessor>
   let submitResult: Awaited<ReturnType<TaskProcessor['submit']>>
+  let persistedOutput: TaskOutput | null = null
 
   try {
     if (executionMode === 'platform') {
@@ -550,6 +595,14 @@ export async function submitTask(
       { model: resolvedModelId, params: resolvedInput },
       apiKey,
     )
+
+    if (submitResult.initialStatus === 'completed') {
+      if (!submitResult.result) {
+        throw new Error('Synchronous task provider completed without output')
+      }
+
+      persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result)
+    }
   } catch (error) {
     if (executionMode === 'user_key' && taskType === 'image_gen' && runtimeConfig) {
       await learnUserImageCapabilitiesFromTaskError(
@@ -589,6 +642,10 @@ export async function submitTask(
   /* 持久化到 D1 */
   const now = new Date().toISOString()
   const initialStatus = submitResult.initialStatus
+  const persistedInput = sanitizeTaskInputForPersistence(resolvedInput)
+  const initialProgress = initialStatus === 'completed' ? 100 : 0
+  const startedAt = initialStatus === 'running' || initialStatus === 'completed' ? now : null
+  const completedAt = initialStatus === 'completed' ? now : null
 
   try {
     await db
@@ -597,17 +654,27 @@ export async function submitTask(
           id, user_id, task_type, provider, model_id,
           external_task_id, execution_mode, input_data,
           status, progress, retry_count, max_retries, workflow_id, node_id,
-          created_at, started_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)`,
+          created_at, started_at, completed_at, output_data, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         taskId, userId, taskType, requestProvider, resolvedModelId,
-        submitResult.externalTaskId, executionMode, JSON.stringify(resolvedInput),
-        initialStatus,
+        submitResult.externalTaskId, executionMode, JSON.stringify(persistedInput),
+        initialStatus, initialProgress,
         config.maxRetries, workflowId ?? null, nodeId ?? null,
-        now, initialStatus === 'running' ? now : null, now,
+        now, startedAt, completedAt, persistedOutput ? JSON.stringify(persistedOutput) : null, now,
       )
       .run()
+
+    if (executionMode === 'platform' && reservedPlatformCredits > 0 && initialStatus === 'completed') {
+      await confirmFrozenCredits({
+        userId,
+        referenceId: taskId,
+        requestedCredits: reservedPlatformCredits,
+        source: 'task_platform_confirm',
+        description: `Confirm async task billing ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+      })
+    }
   } catch (error) {
     if (executionMode === 'platform' && reservedPlatformCredits > 0) {
       await refundTaskCredits({
@@ -637,15 +704,15 @@ export async function submitTask(
     modelId: resolvedModelId,
     executionMode,
     status: initialStatus,
-    progress: 0,
+    progress: initialProgress,
     input,
-    output: null,
+    output: persistedOutput,
     retryCount: 0,
     workflowId: workflowId ?? null,
     nodeId: nodeId ?? null,
     createdAt: now,
-    startedAt: initialStatus === 'running' ? now : null,
-    completedAt: null,
+    startedAt,
+    completedAt,
   }
 }
 

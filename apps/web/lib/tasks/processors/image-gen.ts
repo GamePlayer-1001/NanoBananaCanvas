@@ -223,8 +223,13 @@ export class ImageGenProcessor implements TaskProcessor {
     }
 
     return {
-      externalTaskId: result.url,
-      initialStatus: 'running',
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: result.url,
+        contentType: inferImageContentType(result.url),
+      },
     }
   }
 
@@ -247,6 +252,18 @@ export class ImageGenProcessor implements TaskProcessor {
     void _apiKey
     log.info('Image gen cancel (noop)', { provider: this.provider })
   }
+}
+
+function inferImageContentType(url: string): string {
+  if (url.startsWith('data:image/')) {
+    const match = /^data:([^;,]+)/i.exec(url)
+    return match?.[1] ?? 'image/png'
+  }
+
+  if (/\.jpe?g($|\?)/i.test(url)) return 'image/jpeg'
+  if (/\.webp($|\?)/i.test(url)) return 'image/webp'
+  if (/\.gif($|\?)/i.test(url)) return 'image/gif'
+  return 'image/png'
 }
 
 export { resolveImageGenerationSize } from '@/lib/image-model-capabilities'
