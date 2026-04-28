@@ -55,19 +55,7 @@ const DESIGN_STAGE_WIDTH = 1800
 const DESIGN_STAGE_HEIGHT = 620
 const HERO_NODE_SCALE_MULTIPLIER = 0.9
 const HERO_NODE_VERTICAL_OFFSET = -64
-const HERO_COPY_VERTICAL_OFFSET = 64
-const HERO_NODE_CLUSTER_X_COMPACTNESS = 0.82
-const HERO_NODE_CLUSTER_Y_COMPACTNESS = 0.84
-
-function compactNodePosition(node: { x: number; y: number; w: number; h: number }) {
-  const centerX = (DESIGN_STAGE_WIDTH - node.w) / 2
-  const centerY = (DESIGN_STAGE_HEIGHT - node.h) / 2
-
-  return {
-    x: centerX + (node.x - centerX) * HERO_NODE_CLUSTER_X_COMPACTNESS,
-    y: centerY + (node.y - centerY) * HERO_NODE_CLUSTER_Y_COMPACTNESS,
-  }
-}
+const HERO_COPY_VERTICAL_OFFSET = 128
 
 function toResponsiveNode(node: {
   id: string
@@ -79,12 +67,10 @@ function toResponsiveNode(node: {
   w: number
   h: number
 }): DemoNode {
-  const compacted = compactNodePosition(node)
-
   return {
     ...node,
-    x: compacted.x / (DESIGN_STAGE_WIDTH - node.w),
-    y: compacted.y / (DESIGN_STAGE_HEIGHT - node.h),
+    x: node.x / (DESIGN_STAGE_WIDTH - node.w),
+    y: node.y / (DESIGN_STAGE_HEIGHT - node.h),
   }
 }
 
@@ -103,8 +89,8 @@ const INITIAL_NODE_BLUEPRINTS: Array<{
     labelKey: 'feature',
     model: 'FLUX Pro',
     artwork: 'feature',
-    x: 416,
-    y: 28,
+    x: 250,
+    y: 52,
     w: 248,
     h: 220,
   },
@@ -113,8 +99,8 @@ const INITIAL_NODE_BLUEPRINTS: Array<{
     labelKey: 'portrait',
     model: 'Midjourney',
     artwork: 'portrait',
-    x: 76,
-    y: 150,
+    x: 36,
+    y: 328,
     w: 244,
     h: 320,
   },
@@ -123,8 +109,8 @@ const INITIAL_NODE_BLUEPRINTS: Array<{
     labelKey: 'merge',
     model: 'Nano Banana',
     artwork: 'merge',
-    x: 820,
-    y: 104,
+    x: 760,
+    y: 36,
     w: 252,
     h: 320,
   },
@@ -133,8 +119,8 @@ const INITIAL_NODE_BLUEPRINTS: Array<{
     labelKey: 'landscape',
     model: 'Runway',
     artwork: 'landscape',
-    x: 500,
-    y: 404,
+    x: 470,
+    y: 442,
     w: 292,
     h: 170,
   },
@@ -143,8 +129,8 @@ const INITIAL_NODE_BLUEPRINTS: Array<{
     labelKey: 'scene',
     model: 'Kling 1.6',
     artwork: 'scene',
-    x: 1184,
-    y: 210,
+    x: 1190,
+    y: 246,
     w: 252,
     h: 220,
   },
@@ -153,8 +139,8 @@ const INITIAL_NODE_BLUEPRINTS: Array<{
     labelKey: 'motion',
     model: 'Vidu Motion',
     artwork: 'motion',
-    x: 1482,
-    y: 180,
+    x: 1524,
+    y: 152,
     w: 304,
     h: 212,
   },
