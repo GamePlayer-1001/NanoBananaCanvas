@@ -675,10 +675,7 @@ export function ModelMindMapSection() {
                 <div className="absolute inset-[-22px] rounded-full border border-[#9567ff]/14" />
                 <div className="absolute inset-[-56px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
                 <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
-                  <div className="flex h-18 w-18 items-center justify-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_36%_28%,#ffffff,#c284ff_44%,#5a2abc_100%)] text-white shadow-[0_10px_34px_rgba(126,88,255,0.28)]">
-                    <Sparkles className="h-7 w-7" />
-                  </div>
-                  <p className="mt-6 text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.34rem]">
+                  <p className="text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.34rem]">
                     Nano Banana
                   </p>
                   <p className="mt-1 text-[1.1rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.34rem]">
