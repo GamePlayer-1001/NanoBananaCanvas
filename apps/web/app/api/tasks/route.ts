@@ -5,6 +5,9 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { getCloudflareContext } from '@opennextjs/cloudflare'
+import type { TaskQueueMessage } from '@nano-banana/shared'
+
 import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
@@ -41,7 +44,18 @@ export async function POST(req: Request) {
       nodeId: params.nodeId,
     })
 
-    return apiOk(task, 201)
+    if (task.deferredExecution) {
+      const { env } = await getCloudflareContext()
+      const message: TaskQueueMessage = {
+        taskId: task.id,
+        userId,
+      }
+      await env.TASK_QUEUE.send(message)
+    }
+
+    const responseTask = { ...task }
+    delete responseTask.deferredExecution
+    return apiOk(responseTask, 201)
   } catch (error) {
     if (
       error instanceof Error &&

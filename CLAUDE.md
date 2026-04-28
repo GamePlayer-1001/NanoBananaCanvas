@@ -23,7 +23,7 @@ e2e/                 — Playwright E2E 测试
 | 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
 | 表单   | React Hook Form + Zod v4                          |
 | API    | Next.js Route Handlers (38 端点, 全部在 apps/web) |
-| 异步任务 | D1-as-Queue + 客户端驱动轮询 (Method C, P2)     |
+| 异步任务 | D1 状态机 + Cloudflare Queue + Worker 消费者 + 客户端轮询 |
 | 定时任务 | Cloudflare Worker Cron (*/10 * * * *)            |
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
 | 缓存   | Cloudflare KV (限流/存储配额)                     |
@@ -84,7 +84,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
-- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (Web + Worker)
+- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (Web + Worker，Queue 消费者与生产者绑定随 wrangler 配置一并发布)
 - **域名**: nanobananacanvas.com → Cloudflare Workers (wrangler routes)
 - **监控**: Cloudflare Analytics (零成本, Workers 内置)
 

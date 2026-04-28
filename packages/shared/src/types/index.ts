@@ -21,3 +21,9 @@ export type AsyncTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | '
 
 /** AI 执行模式 */
 export type ExecutionMode = 'platform' | 'user_key'
+
+/** Queue 中传递的最小任务消息 */
+export interface TaskQueueMessage {
+  taskId: string
+  userId: string
+}

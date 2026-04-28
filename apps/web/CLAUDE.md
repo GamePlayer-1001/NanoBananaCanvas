@@ -36,7 +36,7 @@ vitest.setup.ts     — Vitest setup (@testing-library/jest-dom)
 components.json     — shadcn/ui 组件注册 (New York 风格)
 open-next.config.ts — @opennextjs/cloudflare 适配 (声明 middleware 与独立 edge 路由函数的运行边界)
 scripts/cloudflare-deploy.mjs — Cloudflare 生产构建/部署包装器 (修复 Windows 下 OpenNext edge config 丢失)
-wrangler.jsonc      — Cloudflare Pages 部署描述 (routes/bindings + 生产运行时 vars)
+wrangler.jsonc      — Cloudflare Pages 部署描述 (routes/bindings + Queue producer + 生产运行时 vars)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

@@ -18,11 +18,16 @@ export class OpenRouterClient extends BaseOpenAICompatible {
   protected readonly validateEndpoint = 'https://openrouter.ai/api/v1/models'
 
   protected override buildHeaders(apiKey: string): Record<string, string> {
+    const browserWindow = 'window' in globalThis
+      ? (globalThis as typeof globalThis & {
+          window?: { location?: { origin?: string } }
+        }).window
+      : undefined
+
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
-      'HTTP-Referer':
-        typeof globalThis.window !== 'undefined' ? globalThis.window.location.origin : '',
+      'HTTP-Referer': browserWindow?.location?.origin ?? '',
       'X-Title': 'Nano Banana Canvas',
     }
   }

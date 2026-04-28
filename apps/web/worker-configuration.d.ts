@@ -111,6 +111,10 @@ interface R2HTTPMetadata {
   cacheExpiry?: Date
 }
 
+interface Queue<Message = unknown> {
+  send(message: Message, options?: { contentType?: 'json' | 'text' | 'bytes' }): Promise<void>
+}
+
 /* ─── CloudflareEnv ──────────────────────────────────────── */
 
 interface CloudflareEnv {
@@ -118,6 +122,7 @@ interface CloudflareEnv {
   KV: KVNamespace
   UPLOADS: R2Bucket
   ASSETS: Fetcher
+  TASK_QUEUE: Queue
 
   // API Key 加密
   ENCRYPTION_KEY: string

@@ -8,6 +8,8 @@
 export {
   checkConcurrency,
   submitTask,
+  processDeferredTask,
+  processQueuedTask,
   checkTask,
   cancelTask,
   listTasks,
@@ -16,9 +18,11 @@ export {
 
 export type {
   SubmitTaskParams,
+  SubmitTaskResult,
   TaskDetail,
   ListTasksResult,
   DeleteTasksResult,
+  TaskServiceRuntime,
 } from './service'
 
 export { getProcessor } from './processors'

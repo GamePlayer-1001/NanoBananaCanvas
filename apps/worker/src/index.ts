@@ -1,16 +1,18 @@
 /**
- * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的两个定时任务
- * [OUTPUT]: 对外提供 Cloudflare Worker API 入口 (HTTP + Cron Scheduled)
- * [POS]: apps/worker 的主入口，HTTP 路由 + 每 10 分钟 Cron 调度
+ * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的两个定时任务，依赖 queue/process-task 的队列消费者
+ * [OUTPUT]: 对外提供 Cloudflare Worker API 入口 (HTTP + Queue + Cron Scheduled)
+ * [POS]: apps/worker 的主入口，HTTP 路由 + Queue 消费 + 每 10 分钟 Cron 调度
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import type { TaskQueueMessage } from '@nano-banana/shared'
 
 import { cleanupExpiredOutputs } from './cron/cleanup'
 import { markTimedOutTasks } from './cron/timeout'
+import { handleTaskQueueMessage } from './queue/process-task'
 
 /* ─── Bindings 类型 ──────────────────────────────────── */
 
@@ -19,6 +21,13 @@ type Bindings = {
   DB: D1Database
   UPLOADS: R2Bucket
   KV: KVNamespace
+  OPENROUTER_API_KEY?: string
+  DEEPSEEK_API_KEY?: string
+  GEMINI_API_KEY?: string
+  OPENAI_API_KEY?: string
+  KLING_ACCESS_KEY?: string
+  KLING_SECRET_KEY?: string
+  ENCRYPTION_KEY?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -54,6 +63,18 @@ app.get('/', (c) => {
 
 export default {
   fetch: app.fetch,
+
+  async queue(batch: MessageBatch<unknown>, env: Bindings) {
+    for (const message of batch.messages) {
+      try {
+        await handleTaskQueueMessage(env, message.body as TaskQueueMessage)
+        message.ack()
+      } catch (error) {
+        console.error('[queue] task processing failed:', error)
+        message.retry()
+      }
+    }
+  },
 
   async scheduled(
     _event: ScheduledEvent,

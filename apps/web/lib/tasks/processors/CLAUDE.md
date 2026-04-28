@@ -23,7 +23,7 @@ cancel(externalTaskId, apiKey) → void
 
 ## 契约补充
 
-- **同步 Provider**: image/audio 可在 `submit()` 阶段直接返回 `initialStatus: 'completed'` 与 `result`，service 层负责立即落 R2 与 completed 入库
+- **同步 Provider**: image/audio 仍可在 `submit()` 阶段直接返回 `initialStatus: 'completed'` 与 `result`，但 image 现由 service 层先落 pending，再在后台执行 `submit()` 并回写 D1/R2，避免提交请求长时间阻塞
 - **异步 Provider**: video 仍通过 `externalTaskId` + `checkStatus()` 懒评估推进
 
 ## Provider 实现状态
