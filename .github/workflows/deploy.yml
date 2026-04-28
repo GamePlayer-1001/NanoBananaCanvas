@@ -110,7 +110,25 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
-      # ── 3. 部署前端 → Cloudflare Workers ──────
+      # ── 3. 先确保 Queue 存在，再发布引用它的 Worker ──
+      - name: Ensure task queue exists
+        run: |
+          set +e
+          output=$(pnpm dlx wrangler@4 queues create nano-banana-tasks 2>&1)
+          status=$?
+          set -e
+          echo "$output"
+
+          if [ $status -eq 0 ]; then
+            exit 0
+          fi
+
+          echo "$output" | grep -qi "already exists"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # ── 4. 部署前端 → Cloudflare Workers ──────
       - name: Deploy Web
         working-directory: apps/web
         run: pnpm dlx wrangler@4 deploy
@@ -118,7 +136,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # ── 4. 部署 API Worker → Cloudflare Workers ──
+      # ── 5. 部署 API Worker → Cloudflare Workers ──
       - name: Deploy API Worker
         working-directory: apps/worker
         run: pnpm exec wrangler deploy
