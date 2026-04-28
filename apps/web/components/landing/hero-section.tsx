@@ -479,31 +479,27 @@ export function HeroSection() {
         </div>
 
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
-          <div className="pointer-events-none mx-auto max-w-[620px] text-center">
-            <h2 className="mb-2 md:mb-3">
+          <div className="pointer-events-none mx-auto max-w-[460px] text-center">
+            <h2 className="mb-3 md:mb-4">
               <BrandMark
                 withLogo
-                className="text-2xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-3xl lg:text-4xl"
+                className="text-lg text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-xl lg:text-2xl"
               >
                 {t('heading')}
               </BrandMark>
             </h2>
 
-            <h1 className="from-brand-300 mb-4 bg-gradient-to-r to-white bg-clip-text text-[2rem] leading-[1.02] font-bold tracking-[-0.04em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[2.35rem] md:mb-5 md:text-[2.75rem] lg:text-[3rem]">
+            <h1 className="from-brand-300 mb-3 bg-gradient-to-r to-white bg-clip-text text-[1.05rem] leading-[1.08] font-bold tracking-[-0.04em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[1.2rem] md:mb-4 md:text-[1.35rem] lg:text-[1.5rem]">
               {t('tagline')}
             </h1>
 
-            <p className="mx-auto mb-3 max-w-[520px] px-4 text-[0.92rem] leading-relaxed text-white/72 md:text-base">
+            <p className="mx-auto mb-8 max-w-[360px] px-4 text-[0.72rem] leading-[1.7] text-white/72 md:mb-10 md:text-[0.82rem]">
               {t('models')}
-            </p>
-
-            <p className="mx-auto mb-6 max-w-[560px] px-4 text-[0.82rem] leading-[1.75] whitespace-pre-line text-white/56 md:mb-7 md:text-[0.95rem]">
-              {t('description')}
             </p>
 
             <Link
               href="/sign-in"
-              className="pointer-events-auto inline-flex h-11 items-center rounded-2xl bg-white px-6 text-sm font-semibold text-black shadow-[0_22px_70px_rgba(255,255,255,0.18)] transition-all hover:bg-white/88 md:h-12 md:px-8"
+              className="pointer-events-auto inline-flex h-10 items-center rounded-2xl bg-white px-5 text-[0.72rem] font-semibold text-black shadow-[0_22px_70px_rgba(255,255,255,0.18)] transition-all hover:bg-white/88 md:h-11 md:px-6 md:text-xs"
             >
               {t('cta')}
             </Link>

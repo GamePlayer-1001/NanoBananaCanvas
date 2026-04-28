@@ -78,10 +78,10 @@
     },
     "hero": {
       "heading": "Nano Banana Canvas",
-      "tagline": "Make your AI production workflow visible.",
+      "tagline": "From idea to image, without breaking flow.",
       "description": "Use Nano Banana Canvas to organize prompts, reference images, GPT Image 2 experiments, image generation, video generation, and delivery steps on one infinite canvas. You are not just getting outputs. You are keeping the whole workflow reusable, collaborative, and ready for the next iteration.",
-      "cta": "Start your workflow",
-      "models": "A visual AI workflow platform for creators, teams, and studios.",
+      "cta": "Start Creating Free",
+      "models": "Generate, edit and refine visuals in one creative canvas.",
       "nodes": {
         "feature": "Eye feature",
         "portrait": "Base portrait",
