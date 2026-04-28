@@ -78,10 +78,10 @@
     },
     "hero": {
       "heading": "Nano Banana Canvas",
-      "tagline": "把 AI 生产流程，真正画出来。",
+      "tagline": "从想法到成图，\n不打断创作流。",
       "description": "用 Nano Banana Canvas 在一张无限画布里组织提示词、参考图、GPT Image 2 实验、图像生成、视频生成与交付节点。你不仅能产出结果，还能把整条流程保留下来，方便复用、协作和继续迭代。",
-      "cta": "立即开始工作流",
-      "models": "面向创作者、团队与工作室的可视化 AI 工作流平台。",
+      "cta": "免费开始创作",
+      "models": "在同一张创意画布里完成生成、编辑与细化。",
       "nodes": {
         "feature": "眼部特征",
         "portrait": "人物底稿",

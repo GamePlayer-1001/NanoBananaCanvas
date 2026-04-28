@@ -397,7 +397,6 @@ export const MESSAGE_USAGE_INDEX = {
   ],
   "components/landing/hero-section.tsx": [
     "landing.hero.cta",
-    "landing.hero.description",
     "landing.hero.heading",
     "landing.hero.models",
     "landing.hero.tagline"
@@ -1354,7 +1353,6 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "landing.footer.tagline",
   "landing.footer.terms",
   "landing.hero.cta",
-  "landing.hero.description",
   "landing.hero.heading",
   "landing.hero.models",
   "landing.hero.tagline",
