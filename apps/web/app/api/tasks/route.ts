@@ -5,12 +5,14 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { getCloudflareContext } from '@opennextjs/cloudflare'
+
 import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { isAppError } from '@/lib/errors'
-import { deleteTasks, listTasks, submitTask } from '@/lib/tasks'
+import { deleteTasks, listTasks, processDeferredTask, submitTask } from '@/lib/tasks'
 import { deleteTasksSchema, listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 import { ZodError } from 'zod'
 
@@ -41,7 +43,14 @@ export async function POST(req: Request) {
       nodeId: params.nodeId,
     })
 
-    return apiOk(task, 201)
+    if (task.deferredExecution) {
+      const { ctx } = await getCloudflareContext()
+      ctx.waitUntil(processDeferredTask(db, task.deferredExecution))
+    }
+
+    const responseTask = { ...task }
+    delete responseTask.deferredExecution
+    return apiOk(responseTask, 201)
   } catch (error) {
     if (
       error instanceof Error &&

@@ -3,7 +3,7 @@
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processDeferredTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -147,6 +147,25 @@ export interface DeleteTasksResult {
   deletedIds: string[]
 }
 
+interface DeferredTaskExecution {
+  taskId: string
+  userId: string
+  taskType: AsyncTaskType
+  requestProvider: string
+  resolvedProvider: string
+  resolvedModelId: string
+  executionMode: ExecutionMode
+  resolvedInput: Record<string, unknown>
+  originalInput: Record<string, unknown>
+  apiKey: string
+  reservedPlatformCredits: number
+  runtimeConfig: UserModelRuntimeConfig | null
+}
+
+export interface SubmitTaskResult extends TaskDetail {
+  deferredExecution?: DeferredTaskExecution
+}
+
 /* ─── Helpers ───────────────────────────────────────── */
 
 function rowToDetail(row: TaskRow): TaskDetail {
@@ -209,6 +228,10 @@ function sanitizeTaskInputForPersistence(input: Record<string, unknown>): Record
 
 function isTerminal(status: AsyncTaskStatus): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
+}
+
+function shouldDeferTaskExecution(taskType: AsyncTaskType): boolean {
+  return taskType === 'image_gen'
 }
 
 function getReservedTaskCredits(input: Record<string, unknown>): number {
@@ -481,7 +504,7 @@ export async function checkConcurrency(
 export async function submitTask(
   db: D1Database,
   params: SubmitTaskParams,
-): Promise<TaskDetail> {
+): Promise<SubmitTaskResult> {
   const {
     userId,
     taskType,
@@ -525,8 +548,7 @@ export async function submitTask(
   await checkConcurrency(db, userId)
 
   let apiKey = ''
-  let processor: ReturnType<typeof getProcessor>
-  let submitResult: Awaited<ReturnType<TaskProcessor['submit']>>
+  let submitResult: Awaited<ReturnType<TaskProcessor['submit']>> | null = null
   let persistedOutput: TaskOutput | null = null
 
   try {
@@ -590,18 +612,21 @@ export async function submitTask(
       }
     }
 
-    processor = getProcessor(taskType, resolvedProvider)
-    submitResult = await processor.submit(
-      { model: resolvedModelId, params: resolvedInput },
-      apiKey,
-    )
+    if (!shouldDeferTaskExecution(taskType)) {
+      submitResult = await getProcessor(taskType, resolvedProvider).submit(
+        { model: resolvedModelId, params: resolvedInput },
+        apiKey,
+      )
 
-    if (submitResult.initialStatus === 'completed') {
-      if (!submitResult.result) {
-        throw new Error('Synchronous task provider completed without output')
+      if (submitResult.initialStatus === 'completed') {
+        if (!submitResult.result) {
+          throw new Error('Synchronous task provider completed without output')
+        }
+
+        persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result)
       }
-
-      persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result)
+    } else {
+      getProcessor(taskType, resolvedProvider)
     }
   } catch (error) {
     if (executionMode === 'user_key' && taskType === 'image_gen' && runtimeConfig) {
@@ -641,7 +666,7 @@ export async function submitTask(
 
   /* 持久化到 D1 */
   const now = new Date().toISOString()
-  const initialStatus = submitResult.initialStatus
+  const initialStatus = submitResult?.initialStatus ?? 'pending'
   const persistedInput = sanitizeTaskInputForPersistence(resolvedInput)
   const initialProgress = initialStatus === 'completed' ? 100 : 0
   const startedAt = initialStatus === 'running' || initialStatus === 'completed' ? now : null
@@ -659,7 +684,7 @@ export async function submitTask(
       )
       .bind(
         taskId, userId, taskType, requestProvider, resolvedModelId,
-        submitResult.externalTaskId, executionMode, JSON.stringify(persistedInput),
+        submitResult?.externalTaskId ?? null, executionMode, JSON.stringify(persistedInput),
         initialStatus, initialProgress,
         config.maxRetries, workflowId ?? null, nodeId ?? null,
         now, startedAt, completedAt, persistedOutput ? JSON.stringify(persistedOutput) : null, now,
@@ -713,6 +738,172 @@ export async function submitTask(
     createdAt: now,
     startedAt,
     completedAt,
+    deferredExecution:
+      shouldDeferTaskExecution(taskType)
+        ? {
+            taskId,
+            userId,
+            taskType,
+            requestProvider: requestProvider as string,
+            resolvedProvider,
+            resolvedModelId,
+            executionMode,
+            resolvedInput,
+            originalInput: input,
+            apiKey,
+            reservedPlatformCredits,
+            runtimeConfig,
+          }
+        : undefined,
+  }
+}
+
+export async function processDeferredTask(
+  db: D1Database,
+  deferred: DeferredTaskExecution,
+): Promise<void> {
+  const {
+    taskId,
+    userId,
+    taskType,
+    requestProvider,
+    resolvedProvider,
+    resolvedModelId,
+    executionMode,
+    resolvedInput,
+    originalInput,
+    apiKey,
+    reservedPlatformCredits,
+    runtimeConfig,
+  } = deferred
+
+  const startedAt = new Date().toISOString()
+  await db
+    .prepare(
+      `UPDATE async_tasks
+       SET status = 'running', progress = 5,
+           started_at = COALESCE(started_at, ?), updated_at = ?
+       WHERE id = ? AND user_id = ? AND status = 'pending'`,
+    )
+    .bind(startedAt, startedAt, taskId, userId)
+    .run()
+
+  try {
+    const processor = getProcessor(taskType, resolvedProvider)
+    const submitResult = await processor.submit(
+      { model: resolvedModelId, params: resolvedInput },
+      apiKey,
+    )
+
+    if (submitResult.initialStatus === 'completed') {
+      if (!submitResult.result) {
+        throw new Error('Deferred task provider completed without output')
+      }
+
+      const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result)
+      const completedAt = new Date().toISOString()
+
+      if (executionMode === 'platform' && reservedPlatformCredits > 0) {
+        await confirmFrozenCredits({
+          userId,
+          referenceId: taskId,
+          requestedCredits: reservedPlatformCredits,
+          source: 'task_platform_confirm',
+          description: `Confirm async task billing ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        })
+      }
+
+      await db
+        .prepare(
+          `UPDATE async_tasks
+           SET status = 'completed', progress = 100, external_task_id = ?,
+               output_data = ?, completed_at = ?, last_checked_at = ?, updated_at = ?
+           WHERE id = ? AND user_id = ?`,
+        )
+        .bind(
+          submitResult.externalTaskId,
+          JSON.stringify(persistedOutput),
+          completedAt,
+          completedAt,
+          completedAt,
+          taskId,
+          userId,
+        )
+        .run()
+
+      log.info('Deferred task completed', { taskId, taskType, provider: requestProvider })
+      return
+    }
+
+    const runningAt = new Date().toISOString()
+    await db
+      .prepare(
+        `UPDATE async_tasks
+         SET status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?
+         WHERE id = ? AND user_id = ?`,
+      )
+      .bind(
+        submitResult.initialStatus,
+        submitResult.initialStatus === 'running' ? 10 : 0,
+        submitResult.externalTaskId,
+        runningAt,
+        runningAt,
+        taskId,
+        userId,
+      )
+      .run()
+
+    log.info('Deferred task handed off to provider', {
+      taskId,
+      taskType,
+      provider: requestProvider,
+      status: submitResult.initialStatus,
+    })
+  } catch (error) {
+    if (executionMode === 'user_key' && taskType === 'image_gen' && runtimeConfig) {
+      await learnUserImageCapabilitiesFromTaskError(
+        db,
+        userId,
+        runtimeConfig,
+        originalInput,
+        error,
+      )
+    }
+
+    if (executionMode === 'platform' && reservedPlatformCredits > 0) {
+      await refundTaskCredits({
+        userId,
+        referenceId: taskId,
+        source: 'task_submit_platform_failure_refund',
+        description: `Refund failed async task submission ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+      })
+    }
+
+    const failedAt = new Date().toISOString()
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    await db
+      .prepare(
+        `UPDATE async_tasks
+         SET status = 'failed', output_data = ?, completed_at = ?, updated_at = ?
+         WHERE id = ? AND user_id = ?`,
+      )
+      .bind(
+        JSON.stringify({ error: errorMessage }),
+        failedAt,
+        failedAt,
+        taskId,
+        userId,
+      )
+      .run()
+
+    log.error('Deferred task failed', error, {
+      taskId,
+      taskType,
+      provider: requestProvider,
+      resolvedProvider,
+      modelId: resolvedModelId,
+      executionMode,
+    })
   }
 }
 
