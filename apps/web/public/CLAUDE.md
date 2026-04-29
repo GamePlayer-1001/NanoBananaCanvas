@@ -10,7 +10,7 @@
 brand/logo-1024.png — 品牌图形 logo 主资源，供 BrandMark 与公开页品牌位复用
 auth-login-visual.webp — 登录页左侧静态底图与视频 poster，供 AuthShell 的 sign-in 视觉栏复用
 auth-login-loop.webm — 登录页左侧循环动态背景视频，供 AuthShell 的 sign-in 视觉栏直接复用
-auth-login-right.png — 登录页右侧欢迎区品牌图，替代默认圆形 BrandMark 图标
+auth-login-right-v2.png — 登录页右侧欢迎区品牌图，供 AuthShell 渲染当前无字标版本并主动绕过旧缓存
 landing/hero/hero-*.webp — 首页首屏交互式节点使用的静态关键帧素材
 landing/hero/hero-motion.webm — 首页首屏动态演示视频
 landing/hero/feature-workflow-overview.webp — 功能板块「纵览你的创作流程」亮色主视觉

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode，
  *          依赖 public/auth-login-loop.webm 与 auth-login-visual.webp 的登录视觉媒体，
- *          依赖 public/auth-login-right.png 的登录表单区品牌图，
+ *          依赖 public/auth-login-right-v2.png 的登录表单区品牌图，
  *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
@@ -142,7 +142,7 @@ export function AuthShell({
             <div className="mb-8 space-y-4 text-center">
               <div className="mx-auto w-[32rem] max-w-full">
                 <Image
-                  src="/auth-login-right.png"
+                  src="/auth-login-right-v2.png"
                   alt=""
                   width={512}
                   height={154}
