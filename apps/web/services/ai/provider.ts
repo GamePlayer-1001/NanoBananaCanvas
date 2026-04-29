@@ -1,13 +1,13 @@
 /**
  * [INPUT]: 依赖 ./types 的 AIProvider 接口，依赖 @/lib/env 的 requireEnv
- * [OUTPUT]: 对外提供 registerProvider / getProvider / getPlatformKey / getAllModelGroups
+ * [OUTPUT]: 对外提供 registerProvider / getProvider / getPlatformKey / getAllProviders
  * [POS]: services/ai 的注册中心，统一路由 provider-id → AIProvider 实例
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireEnv } from '@/lib/env'
 
-import type { AIProvider, ModelGroup } from './types'
+import type { AIProvider } from './types'
 
 /* ─── Registry ───────────────────────────────────────── */
 
@@ -45,15 +45,3 @@ export async function getPlatformKey(providerId: string): Promise<string> {
   return requireEnv(envKey)
 }
 
-/* ─── Model Groups (前端展示用) ──────────────────────── */
-
-/** 各 Provider 静态声明的模型列表 — 用于 LLMNode 下拉选择 */
-const modelGroups: ModelGroup[] = []
-
-export function registerModelGroup(group: ModelGroup): void {
-  modelGroups.push(group)
-}
-
-export function getAllModelGroups(): ModelGroup[] {
-  return modelGroups
-}

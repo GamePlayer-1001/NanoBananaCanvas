@@ -407,12 +407,20 @@ describe('submitTask', () => {
     }
 
     const pollingDb = createDbMock(0, queuedRow)
-    const detail = await checkTask(pollingDb, task.id, 'user-1')
+    const enqueueTask = vi.fn().mockResolvedValue(undefined)
+    const detail = await checkTask(pollingDb, task.id, 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      enqueueTask,
+    })
 
-    expect(detail.status).toBe('completed')
-    expect(String((detail.output as { url?: string } | null)?.url ?? '')).toContain(
-      '/api/files/outputs/user-1/task-1.png',
-    )
-    expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
+    expect(detail.status).toBe('pending')
+    expect(detail.output).toBeNull()
+    expect(enqueueTask).toHaveBeenCalledWith({
+      taskId: task.id,
+      userId: 'user-1',
+    })
   })
 })

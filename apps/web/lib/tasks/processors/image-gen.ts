@@ -62,6 +62,17 @@ function readImageCapabilities(params: Record<string, unknown>): ImageModelCapab
     : undefined
 }
 
+function resolveOpenAICompatibleRequestSize(
+  sizePreset: string,
+  aspectRatio: string,
+): string {
+  if (sizePreset === 'auto') {
+    return 'auto'
+  }
+
+  return resolveImageGenerationSize(sizePreset, aspectRatio)
+}
+
 /* ─── OpenAI-compatible Image API ────────────────────── */
 
 async function openAICompatibleSubmit(
@@ -80,7 +91,7 @@ async function openAICompatibleSubmit(
     throw new Error(violation.message)
   }
 
-  const size = resolveImageGenerationSize(sizePreset, aspectRatio)
+  const size = resolveOpenAICompatibleRequestSize(sizePreset, aspectRatio)
   const baseUrl = resolveOpenAICompatibleBaseUrl(provider, params)
 
   if (!baseUrl) {
@@ -266,4 +277,4 @@ function inferImageContentType(url: string): string {
   return 'image/png'
 }
 
-export { resolveImageGenerationSize } from '@/lib/image-model-capabilities'
+export { resolveImageGenerationSize, resolveOpenAICompatibleRequestSize }

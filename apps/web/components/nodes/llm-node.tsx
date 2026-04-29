@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 @/services/ai 的 getAllModelGroups，依赖 next-intl 的 useTranslations
+ *          依赖 @/hooks/use-ai-models，依赖 @/lib/platform-models，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 LLMNode 大语言模型节点组件
- * [POS]: components/nodes 的核心 AI 节点，被 registry 注册并在画布中渲染
+ * [POS]: components/nodes 的核心 AI 节点，被 registry 注册并在画布中渲染，统一消费 /api/ai/models 作为平台模型目录
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,6 +20,7 @@ import {
   Loader2,
 } from 'lucide-react'
 
+import { useAIModels } from '@/hooks/use-ai-models'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import {
   getNodeConfigMigrationPatch,
@@ -29,7 +30,10 @@ import {
   resolveUserConfigId,
 } from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
-import { getAllModelGroups } from '@/services/ai'
+import {
+  groupPlatformModelsByProvider,
+  resolvePlatformModelSelection,
+} from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
@@ -59,6 +63,7 @@ export function LLMNode(props: NodeProps) {
   const output = (config.output as string) ?? ''
   const tokenCount = (config.tokenCount as number) ?? 0
   const status = data.status ?? 'idle'
+  const { data: platformTextModels = [] } = useAIModels('text')
   const {
     getConfigByCapability,
     getConfigById,
@@ -66,10 +71,24 @@ export function LLMNode(props: NodeProps) {
     isLoading: isModelConfigLoading,
   } = useModelConfigs()
 
-  const modelGroups = useMemo(() => getAllModelGroups(), [])
-  const currentGroups = useMemo(
-    () => modelGroups.filter((g) => g.provider === platformProvider),
-    [modelGroups, platformProvider],
+  const modelGroups = useMemo(
+    () => groupPlatformModelsByProvider(platformTextModels),
+    [platformTextModels],
+  )
+  const resolvedPlatformSelection = useMemo(
+    () =>
+      resolvePlatformModelSelection(modelGroups, platformProvider, platformModel),
+    [modelGroups, platformModel, platformProvider],
+  )
+  const selectedPlatformProvider =
+    resolvedPlatformSelection?.provider ?? platformProvider
+  const selectedPlatformModel =
+    resolvedPlatformSelection?.modelId ?? platformModel
+  const currentGroup = useMemo(
+    () =>
+      modelGroups.find((group) => group.provider === selectedPlatformProvider) ??
+      modelGroups[0],
+    [modelGroups, selectedPlatformProvider],
   )
 
   const [showSystemPrompt, setShowSystemPrompt] = useState(!!systemPrompt)
@@ -102,6 +121,12 @@ export function LLMNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('llm', config)
+    if (selectedPlatformProvider !== platformProvider) {
+      patch.platformProvider = selectedPlatformProvider
+    }
+    if (selectedPlatformModel !== platformModel) {
+      patch.platformModel = selectedPlatformModel
+    }
     if (
       selectedUserConfigId &&
       executionMode === 'user_key' &&
@@ -113,13 +138,22 @@ export function LLMNode(props: NodeProps) {
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
-  }, [config, executionMode, selectedUserConfigId, updateConfig])
+  }, [
+    config,
+    executionMode,
+    platformModel,
+    platformProvider,
+    selectedPlatformModel,
+    selectedPlatformProvider,
+    selectedUserConfigId,
+    updateConfig,
+  ])
 
   const onProviderChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const newProvider = e.target.value
-      const groups = modelGroups.filter((g) => g.provider === newProvider)
-      const firstModel = groups[0]?.models[0]?.value ?? ''
+      const nextGroup = modelGroups.find((group) => group.provider === newProvider)
+      const firstModel = nextGroup?.models[0]?.modelId ?? ''
       updateConfig({ platformProvider: newProvider, platformModel: firstModel })
     },
     [modelGroups, updateConfig],
@@ -152,17 +186,10 @@ export function LLMNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const providerOptions =
-    (() => {
-      const seen = new Set<string>()
-      return modelGroups
-        .filter((g) => {
-          if (seen.has(g.provider)) return false
-          seen.add(g.provider)
-          return true
-        })
-        .map((g) => ({ value: g.provider, label: g.providerName }))
-    })()
+  const providerOptions = modelGroups.map((group) => ({
+    value: group.provider,
+    label: group.providerLabel,
+  }))
 
   return (
     <BaseNode
@@ -180,7 +207,7 @@ export function LLMNode(props: NodeProps) {
             </div>
           ) : (
             <select
-              value={platformProvider}
+              value={selectedPlatformProvider}
               onChange={onProviderChange}
               className={SELECT_CLASS}
             >
@@ -215,7 +242,7 @@ export function LLMNode(props: NodeProps) {
 
         <ConfigField label={t('model')}>
           <select
-            value={executionMode === 'user_key' ? userKeyModelLabel : platformModel}
+            value={executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel}
             onChange={onModelChange}
             className={SELECT_CLASS}
             disabled={executionMode === 'user_key'}
@@ -223,14 +250,10 @@ export function LLMNode(props: NodeProps) {
             {executionMode === 'user_key' ? (
               <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
             ) : (
-              currentGroups.map((group) => (
-                <optgroup key={group.providerName} label={group.providerName}>
-                  {group.models.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </optgroup>
+              currentGroup?.models.map((item) => (
+                <option key={item.id} value={item.modelId}>
+                  {item.modelName}
+                </option>
               ))
             )}
           </select>
@@ -243,8 +266,8 @@ export function LLMNode(props: NodeProps) {
               onClick={() =>
                 updateConfig({
                   executionMode: 'platform',
-                  platformProvider,
-                  platformModel,
+                  platformProvider: selectedPlatformProvider,
+                  platformModel: selectedPlatformModel,
                 })
               }
               icon={<Coins size={12} />}

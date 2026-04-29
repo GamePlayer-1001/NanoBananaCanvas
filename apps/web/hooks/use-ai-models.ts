@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
+ * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys，依赖 @/lib/platform-models 的统一目录类型
  * [OUTPUT]: 对外提供 useAIModels
- * [POS]: hooks 的 AI 模型目录数据层，被 video-analysis/canvas 消费
+ * [POS]: hooks 的 AI 模型目录数据层，被 video-analysis/canvas 平台模型选择器消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -9,19 +9,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 
+import type { PlatformModelCatalogItem } from '@/lib/platform-models'
 import { queryKeys } from '@/lib/query/keys'
-
-/* ─── Types ──────────────────────────────────────────── */
-
-export interface AIModel {
-  id: string
-  modelId: string
-  modelName: string
-  provider: string
-  category: string
-  tier: string
-  accessible: boolean
-}
 
 /* ─── Fetcher ────────────────────────────────────────── */
 
@@ -39,7 +28,7 @@ export function useAIModels(category?: string) {
     queryKey: queryKeys.ai.models(category),
     queryFn: () => {
       const qs = category ? `?category=${category}` : ''
-      return fetchJson<AIModel[]>(`/api/ai/models${qs}`)
+      return fetchJson<PlatformModelCatalogItem[]>(`/api/ai/models${qs}`)
     },
     staleTime: 10 * 60 * 1000,
   })
