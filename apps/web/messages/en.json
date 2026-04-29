@@ -201,64 +201,64 @@
         "title": "People remember the clarity, not just the model list.",
         "body": "These notes point to the real value of Nano Banana Canvas: not another generation entry point, but a visible, reusable, collaborative operating layer for AI production.",
         "pixel": {
-          "handle": "@PixelPioneer",
-          "role": "Design Systems Creator",
-          "quote": "My prompts, references, and outputs used to live in different places. Now they finally behave like one reusable workflow."
+          "handle": "@StoryboardSurfer",
+          "role": "Storyboard Animator",
+          "quote": "I used 6 disconnected tabs for references, notes, Midjourney, Runway, and timeline work. Now I drag those nodes onto Nano Banana Canvas, connect image outputs to video models, and loop the sequence. My storyboard-to-animatic time dropped from 8 hours to 90 minutes with no copy-paste mistakes."
         },
         "lena": {
-          "handle": "@Lena_Dir",
-          "role": "Independent Content Creator",
-          "quote": "My favorite part is not any single model. It is the fact that I can keep ideas, references, and generation steps moving forward in one place."
+          "handle": "@NoBudgetNeo",
+          "role": "Indie Trailer Director",
+          "quote": "I could not afford a VFX team and my trailer looked like a PowerPoint. Now GPT-4o writes shot prompts on the canvas, then Pika and Kling feed directly into a DaVinci Resolve export path. I cut a 90-second cinematic teaser for 0 dollars in model credits and got shortlisted by three film festivals."
         },
         "prompt": {
-          "handle": "@PromptWizard",
-          "role": "Creative Technologist",
-          "quote": "No more tab switching. I can see which prompt fed which model and what output came out of that step without rebuilding the context in my head."
+          "handle": "@FeedbackFramer",
+          "role": "Client Collaboration Lead",
+          "quote": "Clients used to say 'make it more cinematic' and I would spend days regenerating alone. Now we share one infinite canvas, they drop references beside my video nodes, and the sequence reruns with their style prompts. Approval cycles fell from 2 weeks to 2 days."
         },
         "frame": {
-          "handle": "@FrameSmith",
-          "role": "AI Pipeline Lead",
-          "quote": "Its strongest feature is that it makes complicated workflows explainable. Anyone on the team can open the board and understand what happened in the last run."
+          "handle": "@MeshMonk",
+          "role": "3D Asset Prototyper",
+          "quote": "I used to generate textures in Stable Diffusion, export them, import them into Blender, and lose momentum every round. Now SDXL connects straight into a scene-building node and then into a turntable video model. One click refreshes the whole asset pipeline and I prototype 5x faster."
         },
         "neo": {
-          "handle": "@NeoStory",
-          "role": "Visual Narrative Designer",
-          "quote": "I started with experiments, but the real value was realizing that every working structure can stay and be reused instead of being rebuilt from zero."
+          "handle": "@CommercialCrafter",
+          "role": "Ad Creative Producer",
+          "quote": "A 15-second ad used to mean three separate runs for copy, visuals, and voice, then a manual redo when copy changed. On Nano Banana Canvas I branch one text output into edgy, warm, and abstract chains with their own image and video paths. I now deliver three spots in the time I used to make one."
         },
         "moodboard": {
-          "handle": "@MoodboardMaven",
-          "role": "Creative Director",
-          "quote": "My ideas used to die inside scattered notes. Now the thinking, assets, and model route stay visible as one operating surface the whole team can read."
+          "handle": "@MVisionary",
+          "role": "Music Video Director",
+          "quote": "I used to match lyrics to imagery by hand, line by line, prompt by prompt. Now an LLM node splits lyrics into timestamped visual prompts and auto-runs them through a video model on the infinite canvas. The first draft of a 3-minute music video now takes 45 minutes instead of 3 days."
         },
         "indie": {
-          "handle": "@IndieAuteur",
-          "role": "Independent Creator",
-          "quote": "It does not force my process into a fake linear path. I can keep real branches, retries, and loops visible, which matters a lot."
+          "handle": "@EdutainEd",
+          "role": "Explainer Video Educator",
+          "quote": "My explainer videos used to be screen recordings with robotic voiceover. On the canvas I chain Whisper to GPT, then Midjourney, ElevenLabs, and Pika in one flow. Watch time tripled, and one teacher said it feels like National Geographic for AI."
         },
         "workflow": {
-          "handle": "@WorkflowNinja",
-          "role": "Workflow Operations Lead",
-          "quote": "The handoff cost dropped immediately. We used to rely on screenshots and verbal context. Now we send the board and the next person can keep working."
+          "handle": "@ConceptCruncher",
+          "role": "Character Development Artist",
+          "quote": "I used to generate 50 character variations and still guess which one to develop. Now one image input branches into four style LLMs, each feeding a video model for 2-second turnaround loops. Comparing those loops side by side cut about 70% of my early guesswork."
         },
         "cyber": {
-          "handle": "@CyberDancer",
-          "role": "Visual Artist",
-          "quote": "If you constantly bounce between reference boards, prompts, image tools, and video tools, this platform makes the whole way of working feel smoother right away."
+          "handle": "@PodcastViz",
+          "role": "Podcast Promo Producer",
+          "quote": "I had strong interview audio but no visual clips for social, and outsourcing cost 200 dollars per episode. Now transcripts flow through quote extraction, image generation, waveform video, and merge nodes on one canvas. I get three promo videos in 10 minutes with zero external cost."
         },
         "canvas": {
-          "handle": "@CanvasCat",
-          "role": "Motion Designer",
-          "quote": "This is the first time AI production has felt like one continuous system I can organize, revisit, and reuse instead of a pile of disconnected tools."
+          "handle": "@GameCutsceneGuy",
+          "role": "Cutscene Director",
+          "quote": "Our concept art and animation pipelines came from different models, so style drift never stopped. I locked one global style prompt on the canvas and made every image and video node inherit it. We kept a consistent cinematic look across 12 cutscenes with no manual retouching."
         },
         "vfx": {
-          "handle": "@VFXonABudget",
-          "role": "Independent Visual Creator",
-          "quote": "As a solo creator, I do not need a flashier entry point. I need one place to sketch, prompt, generate, and refine without losing the chain."
+          "handle": "@VFXAssistant",
+          "role": "Junior VFX Artist",
+          "quote": "My senior artist kept asking for 'flame version 3, but more orange' and I reran the whole pipeline over and over. Now the canvas loops the image back when color temperature misses the target and adds 15% more orange automatically. I got those 2 hours back to learn Houdini."
         },
         "dream": {
-          "handle": "@DreamChaser",
-          "role": "Visual Artist",
-          "quote": "This is not another AI wrapper. Its real value is that it pulls the creative process out of hiding and turns it into something visible, explainable, and still workable later."
+          "handle": "@CopyToCanvas",
+          "role": "Script-to-Visual Lead",
+          "quote": "I used to hand scripts to the visual team and hear 'that is not what I meant' every time. Now I write prompts directly inside the canvas, connect them to image and video nodes, and render rough cuts before handoff. Visual clarity jumped from 40% to 95%."
         }
       },
       "faq": {

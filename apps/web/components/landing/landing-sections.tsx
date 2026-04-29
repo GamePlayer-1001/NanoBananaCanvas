@@ -91,17 +91,17 @@ const LANDING_PRICING_MODES = [
 
 const TESTIMONIAL_ITEMS = [
   'pixel',
-  'lena',
-  'prompt',
-  'frame',
   'neo',
+  'cyber',
+  'frame',
+  'prompt',
+  'canvas',
   'moodboard',
   'indie',
-  'workflow',
-  'cyber',
-  'canvas',
   'vfx',
   'dream',
+  'lena',
+  'workflow',
 ] as const
 const TESTIMONIAL_AVATARS: Record<(typeof TESTIMONIAL_ITEMS)[number], string> = {
   pixel: 'https://randomuser.me/api/portraits/women/68.jpg',
