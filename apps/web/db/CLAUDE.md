@@ -16,7 +16,7 @@ migration-011-billing-rebuild.sql — Stripe 商业化重建迁移 (credit_balan
 migration-012-billing-metering.sql — usage 计量补列迁移 (ai_usage_logs.billable_units / estimated_credits)
 migration-013-video-analysis-history.sql — 视频分析历史迁移 (user 级分析记录 + 状态 + 结果 JSON)
 seed.sql                 — 分类种子数据 (8 个 AI 工作流分类，name_i18n JSON 真相源 + 历史兼容列)
-seed-models.sql          — 模型目录种子 (18 模型: 9 text + 4 image + 2 video + 2 audio，统一免费目录)
+seed-models.sql          — 模型目录种子 (23 模型: 13 text + 6 image + 2 video + 2 audio，覆盖 openrouter/deepseek/gemini/openai/kling 的平台目录)
 seed-pricing.sql         — 商业化种子数据 (4 个积分包 + token 计费版 model_pricing)
 ```
 

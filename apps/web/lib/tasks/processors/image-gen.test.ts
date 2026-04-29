@@ -7,7 +7,11 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ImageGenProcessor, resolveImageGenerationSize } from './image-gen'
+import {
+  ImageGenProcessor,
+  resolveImageGenerationSize,
+  resolveOpenAICompatibleRequestSize,
+} from './image-gen'
 
 describe('ImageGenProcessor', () => {
   afterEach(() => {
@@ -103,6 +107,11 @@ describe('ImageGenProcessor', () => {
     expect(resolveImageGenerationSize('4k', '2:3')).toBe('2560x3840')
     expect(resolveImageGenerationSize('8k', '16:9')).toBe('7680x4320')
     expect(resolveImageGenerationSize('1024x1792', '1:1')).toBe('1024x1792')
+  })
+
+  it('preserves auto size for OpenAI-compatible image requests', () => {
+    expect(resolveOpenAICompatibleRequestSize('auto', '16:9')).toBe('auto')
+    expect(resolveOpenAICompatibleRequestSize('1k', '16:9')).toBe('1920x1080')
   })
 
   it('converts OpenAI-compatible b64_json responses into data URLs', async () => {

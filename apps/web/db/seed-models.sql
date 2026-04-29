@@ -14,7 +14,11 @@ INSERT OR IGNORE INTO ai_models (id, provider, model_id, model_name, category, t
   ('mp-006', 'openrouter', 'anthropic/claude-sonnet-4',    'Claude Sonnet 4',   'text', 'premium'),
   ('mp-007', 'openrouter', 'google/gemini-2.5-pro',        'Gemini 2.5 Pro',    'text', 'premium'),
   ('mp-008', 'openrouter', 'openai/o1',                    'OpenAI o1',         'text', 'flagship'),
-  ('mp-009', 'openrouter', 'anthropic/claude-opus-4',      'Claude Opus 4',     'text', 'flagship');
+  ('mp-009', 'openrouter', 'anthropic/claude-opus-4',      'Claude Opus 4',     'text', 'flagship'),
+  ('mp-ds-1', 'deepseek',  'deepseek-chat',                'DeepSeek Chat',     'text', 'basic'),
+  ('mp-ds-2', 'deepseek',  'deepseek-reasoner',            'DeepSeek Reasoner', 'text', 'standard'),
+  ('mp-gm-1', 'gemini',    'gemini-2.0-flash',             'Gemini 2.0 Flash',  'text', 'standard'),
+  ('mp-gm-2', 'gemini',    'gemini-2.5-pro-preview-06-05', 'Gemini 2.5 Pro',    'text', 'premium');
 
 -- ── 图片生成模型 ─────────────────────────────
 
@@ -22,7 +26,9 @@ INSERT OR IGNORE INTO ai_models (id, provider, model_id, model_name, category, t
   ('mp-101', 'openrouter', 'stabilityai/sd-3.5',            'Stable Diffusion 3.5', 'image', 'standard'),
   ('mp-102', 'openrouter', 'black-forest-labs/flux-schnell','FLUX.1 Schnell',       'image', 'standard'),
   ('mp-103', 'openrouter', 'openai/dall-e-3',               'DALL-E 3',             'image', 'premium'),
-  ('mp-104', 'openrouter', 'black-forest-labs/flux-pro',    'FLUX.1 Pro',           'image', 'flagship');
+  ('mp-104', 'openrouter', 'black-forest-labs/flux-pro',    'FLUX.1 Pro',           'image', 'flagship'),
+  ('mp-img-2', 'gemini',   'imagen-3.0-generate-002',       'Imagen 3',             'image', 'standard'),
+  ('mp-105', 'openai',     'dall-e-3',                      'DALL-E 3',             'image', 'premium');
 
 -- ── 视频生成模型 ─────────────────────────────
 

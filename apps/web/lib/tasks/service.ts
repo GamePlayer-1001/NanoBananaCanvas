@@ -191,6 +191,7 @@ export interface TaskServiceRuntime {
   getR2: () => Promise<R2Bucket>
   invalidateStorageCache: (userId: string) => Promise<void>
   getPlatformKey: (provider: string) => Promise<string>
+  enqueueTask?: (message: TaskQueueMessage) => Promise<void>
 }
 
 const defaultTaskRuntime: TaskServiceRuntime = {
@@ -1327,28 +1328,40 @@ export async function checkTask(
     throw new TaskError(ErrorCode.TASK_NOT_FOUND, `Task not found: ${taskId}`, { taskId })
   }
 
-  /* 自愈: 图片任务若仍停留 pending 且尚未拿到 external_task_id，则由状态轮询补触发一次后台执行 */
+  /* 自愈: 图片任务若仍停留 pending 且尚未拿到 external_task_id，则补投递队列，避免轮询请求同步执行 */
   if (row.task_type === 'image_gen' && row.status === 'pending' && !row.external_task_id) {
-    try {
-      await processQueuedTask(
-        db,
-        {
+    const config = TASK_CONFIG[row.task_type]
+    const now = Date.now()
+    const lastChecked = row.last_checked_at ? new Date(row.last_checked_at).getTime() : 0
+
+    if (runtime.enqueueTask && now - lastChecked >= config.providerCheckThrottleMs) {
+      const nowIso = new Date(now).toISOString()
+
+      try {
+        await runtime.enqueueTask({
           taskId: row.id,
           userId: row.user_id,
-        },
-        runtime,
-      )
+        })
+        await db
+          .prepare(
+            `UPDATE async_tasks
+             SET last_checked_at = ?, updated_at = ?
+             WHERE id = ? AND user_id = ?`,
+          )
+          .bind(nowIso, nowIso, row.id, row.user_id)
+          .run()
 
-      const refreshedRow = await loadTaskRow(db, row.id, row.user_id)
-      if (refreshedRow) {
-        return rowToDetail(refreshedRow)
+        const refreshedRow = await loadTaskRow(db, row.id, row.user_id)
+        if (refreshedRow) {
+          return rowToDetail(refreshedRow)
+        }
+      } catch (error) {
+        log.warn('Deferred image task re-enqueue from poll failed', {
+          taskId: row.id,
+          userId: row.user_id,
+          error: error instanceof Error ? error.message : String(error),
+        })
       }
-    } catch (error) {
-      log.warn('Deferred image task kickoff from poll failed', {
-        taskId: row.id,
-        userId: row.user_id,
-        error: error instanceof Error ? error.message : String(error),
-      })
     }
   }
 

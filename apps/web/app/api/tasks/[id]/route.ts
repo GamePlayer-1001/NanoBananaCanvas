@@ -5,6 +5,8 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import { getCloudflareContext } from '@opennextjs/cloudflare'
+
 import { requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
@@ -20,8 +22,29 @@ export async function GET(
     const { userId } = await requireAuth()
     const db = await getDb()
     const { id } = await params
+    const { env } = await getCloudflareContext()
 
-    const task = await checkTask(db, id, userId)
+    const task = await checkTask(db, id, userId, {
+      enqueueTask: async (message) => {
+        await env.TASK_QUEUE.send(message)
+      },
+      getPlatformKey: async (provider) => {
+        const { getPlatformKey } = await import('@/services/ai')
+        return getPlatformKey(provider)
+      },
+      getR2: async () => {
+        const { getR2 } = await import('@/lib/r2')
+        return getR2()
+      },
+      invalidateStorageCache: async (targetUserId) => {
+        const { invalidateStorageCache } = await import('@/lib/storage')
+        await invalidateStorageCache(targetUserId)
+      },
+      requireEnv: async (key) => {
+        const { requireEnv } = await import('@/lib/env')
+        return requireEnv(key)
+      },
+    })
     return apiOk(task)
   } catch (error) {
     return handleApiError(error)
