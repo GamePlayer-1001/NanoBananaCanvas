@@ -152,8 +152,10 @@ describe('ImageGenProcessor', () => {
   })
 
   it('preserves auto size for OpenAI-compatible image requests', () => {
-    expect(resolveOpenAICompatibleRequestSize('auto', '16:9')).toBe('auto')
-    expect(resolveOpenAICompatibleRequestSize('1k', '16:9')).toBe('1920x1080')
+    expect(resolveOpenAICompatibleRequestSize('openrouter', 'auto', '16:9')).toBe('auto')
+    expect(resolveOpenAICompatibleRequestSize('openai', 'auto', '16:9')).toBe('auto')
+    expect(resolveOpenAICompatibleRequestSize('openai-compatible', 'auto', '16:9')).toBe('1920x1080')
+    expect(resolveOpenAICompatibleRequestSize('openai-compatible', '1k', '16:9')).toBe('1920x1080')
   })
 
   it('converts OpenAI-compatible b64_json responses into data URLs', async () => {

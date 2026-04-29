@@ -124,10 +124,11 @@ export function assertOpenAICompatiblePromptSafety(prompt: string, baseUrl: stri
 }
 
 function resolveOpenAICompatibleRequestSize(
+  provider: string,
   sizePreset: string,
   aspectRatio: string,
 ): string {
-  if (sizePreset === 'auto') {
+  if (sizePreset === 'auto' && provider !== 'openai-compatible') {
     return 'auto'
   }
 
@@ -152,7 +153,7 @@ async function openAICompatibleSubmit(
     throw new Error(violation.message)
   }
 
-  const size = resolveOpenAICompatibleRequestSize(sizePreset, aspectRatio)
+  const size = resolveOpenAICompatibleRequestSize(provider, sizePreset, aspectRatio)
   const baseUrl = resolveOpenAICompatibleBaseUrl(provider, params)
 
   if (!baseUrl) {
