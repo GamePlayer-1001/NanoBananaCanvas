@@ -1189,7 +1189,7 @@ async function learnUserImageCapabilitiesFromTaskError(
 
   const finalized = finalizeLearnedImageCapabilities(
     learned,
-    typeof input.size === 'string' ? input.size : '1k',
+    typeof input.size === 'string' ? input.size : 'auto',
     typeof input.aspectRatio === 'string' ? input.aspectRatio : '1:1',
     message,
   )

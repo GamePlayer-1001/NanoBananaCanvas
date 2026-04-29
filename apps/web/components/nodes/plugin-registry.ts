@@ -142,7 +142,7 @@ register({
   defaults: {
     platformProvider: 'openrouter',
     platformModel: 'openai/dall-e-3',
-    size: '1k',
+    size: 'auto',
     aspectRatio: '1:1',
     showPreview: false,
     tokenBillingDraft: null,

@@ -26,6 +26,7 @@ import {
   resolveUserConfigId,
 } from '@/lib/ai-node-config'
 import {
+  DEFAULT_IMAGE_SIZE_PRESET,
   IMAGE_ASPECT_RATIO_OPTIONS,
   IMAGE_SIZE_OPTIONS,
   getStaticImageModelCapabilities,
@@ -33,7 +34,7 @@ import {
   prettifyModelName,
   type ImageAspectRatio,
   type ImageModelCapabilities,
-  type ImageSizePreset,
+  type ImageSizeOptionValue,
   validateImageSelection,
 } from '@/lib/image-model-capabilities'
 import { getProviderLabel } from '@/lib/model-config-catalog'
@@ -44,7 +45,7 @@ import { Switch } from '@/components/ui/switch'
 
 import { BaseNode } from './base-node'
 
-const DEFAULT_SIZE: ImageSizePreset = '1k'
+const DEFAULT_SIZE: ImageSizeOptionValue = 'auto'
 const DEFAULT_ASPECT_RATIO: ImageAspectRatio = '1:1'
 
 const SELECT_CLASS =
@@ -64,17 +65,19 @@ interface PlatformImageModelOption {
 }
 
 function migrateLegacySize(size: string): {
-  size: ImageSizePreset
+  size: ImageSizeOptionValue
   aspectRatio: ImageAspectRatio
 } {
   switch (size) {
     case '1024x1792':
-      return { size: DEFAULT_SIZE, aspectRatio: '9:16' }
+      return { size: DEFAULT_IMAGE_SIZE_PRESET, aspectRatio: '9:16' }
     case '1792x1024':
-      return { size: DEFAULT_SIZE, aspectRatio: '16:9' }
+      return { size: DEFAULT_IMAGE_SIZE_PRESET, aspectRatio: '16:9' }
+    case 'auto':
+      return { size: DEFAULT_SIZE, aspectRatio: DEFAULT_ASPECT_RATIO }
     case '1024x1024':
     default:
-      return { size: DEFAULT_SIZE, aspectRatio: DEFAULT_ASPECT_RATIO }
+      return { size: DEFAULT_IMAGE_SIZE_PRESET, aspectRatio: DEFAULT_ASPECT_RATIO }
   }
 }
 
@@ -119,7 +122,7 @@ export function ImageGenNode(props: NodeProps) {
   const sizeValue = typeof config.size === 'string' ? config.size : DEFAULT_SIZE
   const migratedLegacySize = useMemo(() => migrateLegacySize(sizeValue), [sizeValue])
   const size = IMAGE_SIZE_OPTIONS.some((item) => item.value === sizeValue)
-    ? (sizeValue as ImageSizePreset)
+    ? (sizeValue as ImageSizeOptionValue)
     : migratedLegacySize.size
   const aspectRatioValue =
     typeof config.aspectRatio === 'string'

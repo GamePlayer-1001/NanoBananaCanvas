@@ -6,7 +6,10 @@
  */
 
 export type ImageSizePreset = '720p' | '1k' | '2k' | '4k' | '8k'
+export type ImageSizeOptionValue = 'auto' | ImageSizePreset
 export type ImageAspectRatio = '1:1' | '2:3' | '3:2' | '9:16' | '16:9'
+
+export const DEFAULT_IMAGE_SIZE_PRESET: ImageSizePreset = '1k'
 
 export const IMAGE_SIZE_PRESET_LONG_EDGE: Record<ImageSizePreset, number> = {
   '720p': 1280,
@@ -25,12 +28,13 @@ export const IMAGE_ASPECT_RATIO_MAP: Record<ImageAspectRatio, [number, number]> 
 }
 
 export const IMAGE_SIZE_OPTIONS = [
+  { value: 'auto', label: 'Auto' },
   { value: '720p', label: '720P' },
   { value: '1k', label: '1K' },
   { value: '2k', label: '2K' },
   { value: '4k', label: '4K' },
   { value: '8k', label: '8K' },
-] as const
+] as const satisfies ReadonlyArray<{ value: ImageSizeOptionValue; label: string }>
 
 export const IMAGE_ASPECT_RATIO_OPTIONS = [
   { value: '1:1', label: '1:1' },
@@ -113,7 +117,9 @@ export function resolveImageSize(
   }
 
   const longEdge =
-    IMAGE_SIZE_PRESET_LONG_EDGE[isImageSizePreset(sizePreset) ? sizePreset : '1k']
+    IMAGE_SIZE_PRESET_LONG_EDGE[
+      isImageSizePreset(sizePreset) ? sizePreset : DEFAULT_IMAGE_SIZE_PRESET
+    ]
   const ratio =
     IMAGE_ASPECT_RATIO_MAP[isImageAspectRatio(aspectRatio) ? aspectRatio : '1:1']
   const [rawWidthRatio, rawHeightRatio] = ratio

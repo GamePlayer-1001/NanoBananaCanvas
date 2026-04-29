@@ -23,6 +23,7 @@ describe('image-model-capabilities', () => {
   })
 
   it('resolves display-resolution presets into concrete sizes', () => {
+    expect(resolveImageGenerationSize('auto', '16:9')).toBe('1920x1080')
     expect(resolveImageGenerationSize('1k', '16:9')).toBe('1920x1080')
     expect(resolveImageGenerationSize('2k', '16:9')).toBe('2560x1440')
     expect(resolveImageGenerationSize('4k', '16:9')).toBe('3840x2160')
