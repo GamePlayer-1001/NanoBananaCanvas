@@ -147,7 +147,7 @@ export function AuthShell({
                   width={512}
                   height={154}
                   priority
-                  className="h-auto w-full scale-75 object-contain"
+                  className="h-auto w-full scale-50 object-contain"
                   aria-hidden="true"
                 />
               </div>
