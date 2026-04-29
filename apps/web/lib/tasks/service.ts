@@ -138,6 +138,8 @@ interface DeferredTaskPayload {
   executionMode: ExecutionMode
   resolvedInput: Record<string, unknown>
   originalInput: Record<string, unknown>
+  apiKey?: string
+  runtimeConfig?: UserModelRuntimeConfig | null
   runtimeMeta?: PersistedTaskRuntimeMeta
 }
 
@@ -834,6 +836,8 @@ export async function submitTask(
           executionMode,
           resolvedInput,
           originalInput: input,
+          apiKey,
+          runtimeConfig,
           runtimeMeta: persistedRuntimeMeta,
         },
         runtime,
@@ -1055,23 +1059,25 @@ export async function processQueuedTask(
   const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
   const deferredPayload = await readDeferredTaskPayload(row.id, row.user_id, runtime)
 
-  let runtimeConfig: UserModelRuntimeConfig | null = null
-  let apiKey = ''
+  let runtimeConfig: UserModelRuntimeConfig | null = deferredPayload.runtimeConfig ?? null
+  let apiKey = deferredPayload.apiKey ?? ''
 
-  if (row.execution_mode === 'platform') {
-    apiKey = await getTaskPlatformKey(deferredPayload.resolvedProvider, runtime)
-  } else {
-    runtimeConfig = await getUserTaskRuntimeConfig(
-      db,
-      row.user_id,
-      row.provider as NodeCapability,
-      runtimeMeta?.userConfigId ?? deferredPayload.runtimeMeta?.userConfigId,
-      runtime,
-    )
-    apiKey =
-      runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
-        ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
-        : runtimeConfig.apiKey
+  if (!apiKey) {
+    if (row.execution_mode === 'platform') {
+      apiKey = await getTaskPlatformKey(deferredPayload.resolvedProvider, runtime)
+    } else {
+      runtimeConfig = await getUserTaskRuntimeConfig(
+        db,
+        row.user_id,
+        row.provider as NodeCapability,
+        runtimeMeta?.userConfigId ?? deferredPayload.runtimeMeta?.userConfigId,
+        runtime,
+      )
+      apiKey =
+        runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
+          ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
+          : runtimeConfig.apiKey
+    }
   }
 
   await runDeferredTask(

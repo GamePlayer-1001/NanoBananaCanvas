@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./service，依赖 @/services/ai 的 getPlatformKey mock
- * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、延后执行图片任务的落库/大 payload 清洗与 orchestrator 分流
+ * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、延后执行图片任务的落库/大 payload 清洗、orchestrator 分流与 user_key 后台凭据回放
  * [POS]: lib/tasks 的服务层回归测试，防止平台密钥缺失重新退化成 UNKNOWN 500，并保护图片任务从前台同步阻塞切回后台执行
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -346,6 +346,103 @@ describe('submitTask', () => {
 
     expect(completionUpdate).toBeDefined()
     expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
+  })
+
+  it('replays user_key runtime credentials from deferred payload without requiring ENCRYPTION_KEY in worker', async () => {
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'openai-compatible',
+      submit: vi.fn().mockResolvedValue({
+        externalTaskId: null,
+        initialStatus: 'completed',
+        result: {
+          type: 'url',
+          url: 'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
+          contentType: 'image/png',
+        },
+      }),
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const taskId = 'task-user-key-replay'
+    r2Mock.get.mockResolvedValue({
+      json: async () => ({
+        taskType: 'image_gen',
+        requestProvider: 'image',
+        resolvedProvider: 'openai-compatible',
+        resolvedModelId: 'gpt-image-2',
+        executionMode: 'user_key',
+        resolvedInput: {
+          prompt: 'test prompt',
+          baseUrl: 'https://api.openai.com/v1',
+        },
+        originalInput: {
+          prompt: 'test prompt',
+        },
+        apiKey: 'user-api-key',
+        runtimeConfig: {
+          configId: 'image-config',
+          providerId: 'openai-compatible',
+          capability: 'image',
+          modelId: 'gpt-image-2',
+          apiKey: 'user-api-key',
+          baseUrl: 'https://api.openai.com/v1',
+        },
+        runtimeMeta: {
+          userConfigId: 'image-config',
+          orchestrator: 'workflow',
+        },
+      }),
+    })
+
+    const queuedDb = createDbMock(0, {
+      id: taskId,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'user_key',
+      input_data: JSON.stringify({
+        prompt: 'test prompt',
+        __taskRuntime: {
+          userConfigId: 'image-config',
+          orchestrator: 'workflow',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+
+    await processQueuedTask(queuedDb, {
+      taskId,
+      userId: 'user-1',
+    }, {
+      requireEnv: vi.fn().mockRejectedValue(new Error('should not require env')),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockRejectedValue(new Error('should not require platform key')),
+    })
+
+    const completionUpdate = queuedDb.__calls.find(
+      (call) =>
+        call.sql.includes("SET status = 'completed'") &&
+        call.sql.includes('output_data = ?'),
+    )
+
+    expect(completionUpdate).toBeDefined()
+    expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${taskId}.json`)
   })
 
   it('self-heals stalled queued image tasks from polling when queue execution is missing', async () => {

@@ -36,5 +36,6 @@ Browser → API Route → service.ts → D1 (状态持久化)
 - **同步直落盘**: 后台执行完成后的同步图片/TTS provider 不再把 data URL 塞进 `external_task_id`，而是转存 R2，只把短 URL / 元数据落进 D1
 - **持久化瘦身**: 写入 `input_data` 前递归剔除超大 data URL，保留类型/长度描述，保证任务历史可读但不污染数据库；真正执行所需的完整 payload 单独进 R2 私有快照
 - **配置精确回放**: user_key 模式把选中的 `configId` 以内部 runtime meta 形式一并持久化，后续 Queue/check/cancel 都能还原到用户提交当时选中的账号级配置
+- **后台凭据回放**: deferred payload 现在会把本次后台执行所需的运行时凭据写入私有 R2 快照，Worker 优先直接回放，避免 user_key 图片任务在后台再次强依赖 `ENCRYPTION_KEY`
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
