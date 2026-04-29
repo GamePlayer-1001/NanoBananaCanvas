@@ -35,21 +35,21 @@ const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
 const FEATURE_VISUALS = {
   canvas: {
     icon: Workflow,
-    imageSrc: '/landing/hero/feature-workflow-overview.png',
+    imageSrc: '/landing/hero/feature-workflow-overview.webp',
     imageWidth: 1586,
     imageHeight: 992,
     accent: 'from-[#8ea3ff]/34 via-[#4f46e5]/18 to-transparent',
   },
   models: {
     icon: Sparkles,
-    imageSrc: '/landing/hero/feature-any-model-image.png',
+    imageSrc: '/landing/hero/feature-any-model-image.webp',
     imageWidth: 1586,
     imageHeight: 992,
     accent: 'from-[#7be6ff]/34 via-[#14b8a6]/18 to-transparent',
   },
   outputs: {
     icon: Zap,
-    imageSrc: '/landing/hero/feature-video-everything.png',
+    imageSrc: '/landing/hero/feature-video-everything.webp',
     imageWidth: 1535,
     imageHeight: 1025,
     accent: 'from-[#ffd36b]/32 via-[#f97316]/16 to-transparent',

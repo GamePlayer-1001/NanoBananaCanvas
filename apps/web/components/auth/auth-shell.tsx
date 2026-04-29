@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode，
- *          依赖 public/auth-login-loop.mp4 的登录动态背景，
+ *          依赖 public/auth-login-loop.webm 与 auth-login-visual.webp 的登录视觉媒体，
  *          依赖 public/auth-login-right.png 的登录表单区品牌图，
  *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
@@ -70,9 +70,10 @@ export function AuthShell({
                 muted
                 playsInline
                 preload="metadata"
+                poster="/auth-login-visual.webp"
                 aria-hidden="true"
               >
-                <source src="/auth-login-loop.mp4" type="video/mp4" />
+                <source src="/auth-login-loop.webm" type="video/webm" />
               </video>
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,18,0.1),rgba(6,8,18,0.48)),radial-gradient(circle_at_20%_16%,rgba(255,232,192,0.24),transparent_24%),radial-gradient(circle_at_76%_28%,rgba(111,120,255,0.22),transparent_28%),radial-gradient(circle_at_50%_82%,rgba(255,128,192,0.14),transparent_30%)]" />
               <div className="absolute inset-0 backdrop-blur-[1px]" />

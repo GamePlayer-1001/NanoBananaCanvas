@@ -8,14 +8,14 @@
 
 ```
 brand/logo-1024.png — 品牌图形 logo 主资源，供 BrandMark 与公开页品牌位复用
-auth-login-visual.png — 登录页左侧沉浸式背景图，供 AuthShell 的 sign-in 视觉栏直接复用
-auth-login-loop.mp4 — 登录页左侧循环动态背景视频，供 AuthShell 的 sign-in 视觉栏直接复用
+auth-login-visual.webp — 登录页左侧静态底图与视频 poster，供 AuthShell 的 sign-in 视觉栏复用
+auth-login-loop.webm — 登录页左侧循环动态背景视频，供 AuthShell 的 sign-in 视觉栏直接复用
 auth-login-right.png — 登录页右侧欢迎区品牌图，替代默认圆形 BrandMark 图标
-landing/hero/hero-*.png — 首页首屏与旧版功能叙事复用的基础静态关键帧素材
-landing/hero/hero-motion.mp4 — 首页首屏动态演示视频
-landing/hero/feature-workflow-overview.png — 功能板块「纵览你的创作流程」亮色主视觉
-landing/hero/feature-any-model-image.png — 功能板块「用任何模型生成图像」亮色主视觉
-landing/hero/feature-video-everything.png — 功能板块「万物皆可生成视频」亮色主视觉
+landing/hero/hero-*.webp — 首页首屏交互式节点使用的静态关键帧素材
+landing/hero/hero-motion.webm — 首页首屏动态演示视频
+landing/hero/feature-workflow-overview.webp — 功能板块「纵览你的创作流程」亮色主视觉
+landing/hero/feature-any-model-image.webp — 功能板块「用任何模型生成图像」亮色主视觉
+landing/hero/feature-video-everything.webp — 功能板块「万物皆可生成视频」亮色主视觉
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
