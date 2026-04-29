@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode，
- *          依赖 public/auth-login-loop.mp4 的登录动态背景，
- *          依赖 public/auth-login-right.png 的登录表单区品牌图，
+ *          依赖 public/auth-login-loop.webm 与 auth-login-visual.webp 的登录视觉媒体，
+ *          依赖 public/auth-login-right-v2.png 的登录表单区品牌图，
  *          依赖 lucide-react 的 ArrowRight 图标，
  *          依赖 @/components/locale-switcher，依赖 @/components/shared/brand-mark，
  *          依赖 @/i18n/navigation 的 Link
@@ -31,10 +31,10 @@ interface AuthShellProps {
   t: {
     brandName: string
     visualHeadline: string
-    visualDescription: string
-    visualPointOne: string
-    visualPointTwo: string
-    visualPointThree: string
+    visualDescription?: string
+    visualPointOne?: string
+    visualPointTwo?: string
+    visualPointThree?: string
     termsPrefix: string
     termsLink: string
     and: string
@@ -53,6 +53,9 @@ export function AuthShell({
   t,
 }: AuthShellProps) {
   const isSignIn = mode === 'sign-in'
+  const visualPoints = [t.visualPointOne, t.visualPointTwo, t.visualPointThree].filter(
+    (point): point is string => Boolean(point),
+  )
 
   return (
     <div className="min-h-screen bg-[#f6f3ef]">
@@ -67,9 +70,10 @@ export function AuthShell({
                 muted
                 playsInline
                 preload="metadata"
+                poster="/auth-login-visual.webp"
                 aria-hidden="true"
               >
-                <source src="/auth-login-loop.mp4" type="video/mp4" />
+                <source src="/auth-login-loop.webm" type="video/webm" />
               </video>
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,18,0.1),rgba(6,8,18,0.48)),radial-gradient(circle_at_20%_16%,rgba(255,232,192,0.24),transparent_24%),radial-gradient(circle_at_76%_28%,rgba(111,120,255,0.22),transparent_28%),radial-gradient(circle_at_50%_82%,rgba(255,128,192,0.14),transparent_30%)]" />
               <div className="absolute inset-0 backdrop-blur-[1px]" />
@@ -94,23 +98,27 @@ export function AuthShell({
               <h1 className="max-w-xl font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
                 {t.visualHeadline}
               </h1>
-              <p className="max-w-lg text-lg leading-8 text-white/72">
-                {t.visualDescription}
-              </p>
+              {t.visualDescription ? (
+                <p className="max-w-lg text-lg leading-8 text-white/72">
+                  {t.visualDescription}
+                </p>
+              ) : null}
 
-              <div className="grid gap-4 md:grid-cols-3">
-                {[t.visualPointOne, t.visualPointTwo, t.visualPointThree].map((point) => (
-                  <div
-                    key={point}
-                    className="rounded-[28px] border border-white/12 bg-black/16 px-5 py-5 backdrop-blur-md"
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
-                      <ArrowRight className="h-4 w-4" />
+              {visualPoints.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {visualPoints.map((point) => (
+                    <div
+                      key={point}
+                      className="rounded-[28px] border border-white/12 bg-black/16 px-5 py-5 backdrop-blur-md"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-white/72">{point}</p>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-white/72">{point}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
@@ -132,14 +140,14 @@ export function AuthShell({
             </div>
 
             <div className="mb-8 space-y-4 text-center">
-              <div className="mx-auto w-[32rem] max-w-full">
+              <div className="mx-auto flex w-[32rem] max-w-full justify-center">
                 <Image
-                  src="/auth-login-right.png"
+                  src="/auth-login-right-v2.png"
                   alt=""
                   width={512}
                   height={154}
                   priority
-                  className="h-auto w-full object-contain"
+                  className="h-auto w-full scale-50 object-contain"
                   aria-hidden="true"
                 />
               </div>

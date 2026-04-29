@@ -2,7 +2,8 @@
  * [INPUT]: 依赖 react 的 useState/useCallback/useRef/useEffect，
  *          依赖 next/image 的 Image，
  *          依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
- *          依赖 @/components/shared/brand-mark
+ *          依赖 @/components/shared/brand-mark，
+ *          依赖 public/landing/hero/*.webp 与 hero-motion.webm 的首页媒体资源
  * [OUTPUT]: 对外提供 HeroSection 交互式画板组件
  * [POS]: landing 的主视觉区域，被 (landing)/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -160,33 +161,33 @@ const HERO_MIN_STAGE_HEIGHT = 700
 const HERO_MEDIA: Record<HeroArtwork, HeroMediaSpec> = {
   feature: {
     kind: 'image',
-    src: '/landing/hero/hero-eye.png',
+    src: '/landing/hero/hero-eye.webp',
     objectPosition: 'center center',
   },
   portrait: {
     kind: 'image',
-    src: '/landing/hero/hero-girl.png',
+    src: '/landing/hero/hero-girl.webp',
     objectPosition: 'center 24%',
   },
   merge: {
     kind: 'image',
-    src: '/landing/hero/hero-merge.png',
+    src: '/landing/hero/hero-merge.webp',
     objectPosition: 'center 20%',
   },
   landscape: {
     kind: 'image',
-    src: '/landing/hero/hero-landscape.png',
+    src: '/landing/hero/hero-landscape.webp',
     objectPosition: 'center center',
   },
   scene: {
     kind: 'image',
-    src: '/landing/hero/hero-scene.png',
+    src: '/landing/hero/hero-scene.webp',
     objectPosition: 'center center',
   },
   motion: {
     kind: 'video',
-    src: '/landing/hero/hero-motion.mp4',
-    poster: '/landing/hero/hero-scene.png',
+    src: '/landing/hero/hero-motion.webm',
+    poster: '/landing/hero/hero-scene.webp',
     objectPosition: 'center center',
   },
 }
@@ -277,7 +278,7 @@ function HeroMedia({ artwork, label }: { artwork: HeroArtwork; label: string }) 
         onDragStart={(e) => e.preventDefault()}
         style={{ objectPosition: media.objectPosition }}
       >
-        <source src={media.src} type="video/mp4" />
+        <source src={media.src} type="video/webm" />
       </video>
     )
   }
