@@ -3,7 +3,7 @@
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processDeferredTask / processQueuedTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款与 orchestrator 持久化
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processTaskDispatch / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款与 orchestrator 持久化
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Queue/Workflow 双轨 + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -130,7 +130,7 @@ interface PersistedTaskRuntimeMeta {
   orchestrator?: TaskOrchestrator
 }
 
-interface DeferredTaskPayload {
+interface TaskExecutionSnapshot {
   taskType: AsyncTaskType
   requestProvider: string
   resolvedProvider: string
@@ -172,7 +172,7 @@ export interface DeleteTasksResult {
   deletedIds: string[]
 }
 
-interface DeferredTaskExecution {
+interface TaskExecutionRequest {
   taskId: string
   userId: string
   taskType: AsyncTaskType
@@ -207,7 +207,13 @@ interface WorkflowRuntimeStatus {
 }
 
 export interface SubmitTaskResult extends TaskDetail {
-  deferredExecution?: DeferredTaskExecution
+  dispatch?: TaskExecutionDispatch
+}
+
+export interface TaskExecutionDispatch {
+  taskId: string
+  userId: string
+  orchestrator: TaskOrchestrator
 }
 
 export interface TaskServiceRuntime {
@@ -215,7 +221,7 @@ export interface TaskServiceRuntime {
   getR2: () => Promise<R2Bucket>
   invalidateStorageCache: (userId: string) => Promise<void>
   getPlatformKey: (provider: string) => Promise<string>
-  enqueueTask?: (message: TaskQueueMessage) => Promise<void>
+  dispatchTask?: (message: TaskQueueMessage) => Promise<void>
   getWorkflowStatus?: (instanceId: string) => Promise<WorkflowRuntimeStatus | null>
 }
 
@@ -425,8 +431,16 @@ function getReservedTaskCredits(input: Record<string, unknown>): number {
   return Math.round(estimatedCredits)
 }
 
-function buildDeferredTaskPayloadKey(userId: string, taskId: string): string {
+function buildTaskExecutionSnapshotKey(userId: string, taskId: string): string {
   return `task-inputs/${userId}/${taskId}.json`
+}
+
+function buildTaskDispatch(
+  taskId: string,
+  userId: string,
+  orchestrator: TaskOrchestrator,
+): TaskExecutionDispatch {
+  return { taskId, userId, orchestrator }
 }
 
 async function refundTaskCredits(input: {
@@ -825,7 +839,7 @@ export async function submitTask(
         orchestrator: taskOrchestrator,
       }
       getProcessor(taskType, resolvedProvider)
-      await persistDeferredTaskPayload(
+      await persistTaskExecutionSnapshot(
         taskId,
         userId,
         {
@@ -929,7 +943,7 @@ export async function submitTask(
     }
 
     if (shouldDeferTaskExecution(taskType)) {
-      await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
+      await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
     }
 
     throw error
@@ -960,36 +974,22 @@ export async function submitTask(
     createdAt: now,
     startedAt,
     completedAt,
-    deferredExecution:
+    dispatch:
       shouldDeferTaskExecution(taskType)
-        ? {
-            taskId,
-            userId,
-            taskType,
-            requestProvider: requestProvider as string,
-            resolvedProvider,
-            resolvedModelId,
-            executionMode,
-            resolvedInput,
-            originalInput: input,
-            apiKey,
-            reservedPlatformCredits,
-            runtimeConfig,
-            orchestrator: taskOrchestrator,
-          }
+        ? buildTaskDispatch(taskId, userId, taskOrchestrator)
         : undefined,
   }
 }
 
-async function persistDeferredTaskPayload(
+async function persistTaskExecutionSnapshot(
   taskId: string,
   userId: string,
-  payload: DeferredTaskPayload,
+  payload: TaskExecutionSnapshot,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
   const r2 = await runtime.getR2()
   await r2.put(
-    buildDeferredTaskPayloadKey(userId, taskId),
+    buildTaskExecutionSnapshotKey(userId, taskId),
     JSON.stringify(payload),
     {
       httpMetadata: {
@@ -999,39 +999,31 @@ async function persistDeferredTaskPayload(
   )
 }
 
-async function readDeferredTaskPayload(
+async function readTaskExecutionSnapshot(
   taskId: string,
   userId: string,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
-): Promise<DeferredTaskPayload> {
+): Promise<TaskExecutionSnapshot> {
   const r2 = await runtime.getR2()
-  const obj = await r2.get(buildDeferredTaskPayloadKey(userId, taskId))
+  const obj = await r2.get(buildTaskExecutionSnapshotKey(userId, taskId))
 
   if (!obj) {
-    throw new Error(`Deferred task payload not found for task: ${taskId}`)
+    throw new Error(`Task execution snapshot not found for task: ${taskId}`)
   }
 
-  return obj.json<DeferredTaskPayload>()
+  return obj.json<TaskExecutionSnapshot>()
 }
 
-async function deleteDeferredTaskPayload(
+async function deleteTaskExecutionSnapshot(
   taskId: string,
   userId: string,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
   const r2 = await runtime.getR2()
-  await r2.delete(buildDeferredTaskPayloadKey(userId, taskId))
+  await r2.delete(buildTaskExecutionSnapshotKey(userId, taskId))
 }
 
-export async function processDeferredTask(
-  db: D1Database,
-  deferred: DeferredTaskExecution,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-): Promise<void> {
-  await runDeferredTask(db, deferred, runtime)
-}
-
-export async function processQueuedTask(
+export async function processTaskDispatch(
   db: D1Database,
   message: TaskQueueMessage,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
@@ -1039,7 +1031,7 @@ export async function processQueuedTask(
   const row = await loadTaskRow(db, message.taskId, message.userId)
 
   if (!row) {
-    log.warn('Queued task missing from database', {
+    log.warn('Dispatched task missing from database', {
       taskId: message.taskId,
       userId: message.userId,
     })
@@ -1047,30 +1039,30 @@ export async function processQueuedTask(
   }
 
   if (isTerminal(row.status)) {
-    log.info('Queued task already terminal, skip execution', {
+    log.info('Dispatched task already terminal, skip execution', {
       taskId: row.id,
       status: row.status,
     })
-    await deleteDeferredTaskPayload(row.id, row.user_id, runtime).catch(() => undefined)
+    await deleteTaskExecutionSnapshot(row.id, row.user_id, runtime).catch(() => undefined)
     return
   }
 
   const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
   const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
-  const deferredPayload = await readDeferredTaskPayload(row.id, row.user_id, runtime)
+  const executionSnapshot = await readTaskExecutionSnapshot(row.id, row.user_id, runtime)
 
-  let runtimeConfig: UserModelRuntimeConfig | null = deferredPayload.runtimeConfig ?? null
-  let apiKey = deferredPayload.apiKey ?? ''
+  let runtimeConfig: UserModelRuntimeConfig | null = executionSnapshot.runtimeConfig ?? null
+  let apiKey = executionSnapshot.apiKey ?? ''
 
   if (!apiKey) {
     if (row.execution_mode === 'platform') {
-      apiKey = await getTaskPlatformKey(deferredPayload.resolvedProvider, runtime)
+      apiKey = await getTaskPlatformKey(executionSnapshot.resolvedProvider, runtime)
     } else {
       runtimeConfig = await getUserTaskRuntimeConfig(
         db,
         row.user_id,
         row.provider as NodeCapability,
-        runtimeMeta?.userConfigId ?? deferredPayload.runtimeMeta?.userConfigId,
+        runtimeMeta?.userConfigId ?? executionSnapshot.runtimeMeta?.userConfigId,
         runtime,
       )
       apiKey =
@@ -1080,33 +1072,33 @@ export async function processQueuedTask(
     }
   }
 
-  await runDeferredTask(
+  await executeTaskRequest(
     db,
     {
       taskId: row.id,
       userId: row.user_id,
       taskType: row.task_type,
-      requestProvider: deferredPayload.requestProvider,
-      resolvedProvider: deferredPayload.resolvedProvider,
-      resolvedModelId: deferredPayload.resolvedModelId,
+      requestProvider: executionSnapshot.requestProvider,
+      resolvedProvider: executionSnapshot.resolvedProvider,
+      resolvedModelId: executionSnapshot.resolvedModelId,
       executionMode: row.execution_mode,
-      resolvedInput: deferredPayload.resolvedInput,
-      originalInput: deferredPayload.originalInput,
+      resolvedInput: executionSnapshot.resolvedInput,
+      originalInput: executionSnapshot.originalInput,
       apiKey,
       reservedPlatformCredits: getReservedTaskCredits(persistedInput),
       runtimeConfig,
       orchestrator:
         runtimeMeta?.orchestrator ??
-        deferredPayload.runtimeMeta?.orchestrator ??
+        executionSnapshot.runtimeMeta?.orchestrator ??
         'legacy_queue',
     },
     runtime,
   )
 }
 
-async function runDeferredTask(
+async function executeTaskRequest(
   db: D1Database,
-  deferred: DeferredTaskExecution,
+  deferred: TaskExecutionRequest,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
   const {
@@ -1136,7 +1128,7 @@ async function runDeferredTask(
     .run()
 
   if (!(claimResult.meta.changes ?? 0)) {
-    log.info('Deferred task claim skipped', { taskId, userId, taskType })
+    log.info('Task execution claim skipped', { taskId, userId, taskType })
     return
   }
 
@@ -1149,7 +1141,7 @@ async function runDeferredTask(
 
     if (submitResult.initialStatus === 'completed') {
       if (!submitResult.result) {
-        throw new Error('Deferred task provider completed without output')
+        throw new Error('Task execution provider completed without output')
       }
 
       const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
@@ -1183,8 +1175,8 @@ async function runDeferredTask(
         )
         .run()
 
-      await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
-      log.info('Deferred task completed', { taskId, taskType, provider: requestProvider })
+      await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
+      log.info('Task execution completed', { taskId, taskType, provider: requestProvider })
       return
     }
 
@@ -1206,8 +1198,8 @@ async function runDeferredTask(
       )
       .run()
 
-    await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
-    log.info('Deferred task handed off to provider', {
+    await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
+    log.info('Task execution handed off to provider', {
       taskId,
       taskType,
       provider: requestProvider,
@@ -1251,8 +1243,8 @@ async function runDeferredTask(
       )
       .run()
 
-    await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
-    log.error('Deferred task failed', error, {
+    await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
+    log.error('Task execution failed', error, {
       taskId,
       taskType,
       provider: requestProvider,
@@ -1460,11 +1452,11 @@ export async function checkTask(
     const now = Date.now()
     const lastChecked = row.last_checked_at ? new Date(row.last_checked_at).getTime() : 0
 
-    if (runtime.enqueueTask && now - lastChecked >= config.providerCheckThrottleMs) {
+    if (runtime.dispatchTask && now - lastChecked >= config.providerCheckThrottleMs) {
       const nowIso = new Date(now).toISOString()
 
       try {
-        await runtime.enqueueTask({
+        await runtime.dispatchTask({
           taskId: row.id,
           userId: row.user_id,
         })
@@ -1699,7 +1691,7 @@ export async function cancelTask(
     .bind(nowIso, nowIso, taskId)
     .run()
 
-  await deleteDeferredTaskPayload(taskId, userId, runtime).catch(() => undefined)
+  await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
 
   log.info('Task cancelled', { taskId })
   return { ...rowToDetail(row), status: 'cancelled', completedAt: nowIso }

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/tasks, @/lib/validations/task，依赖 Cloudflare Queue/Workflow 绑定
- * [OUTPUT]: 对外提供 POST /api/tasks (提交任务并按 orchestrator 分发) + GET /api/tasks (列表) + DELETE /api/tasks (批量删除终态任务)
- * [POS]: api/tasks 的入口端点，编排 auth → validate → service → queue/workflow dispatch → response，兼顾账户页生成作品管理
+ * [OUTPUT]: 对外提供 POST /api/tasks (提交任务并消费 dispatch 指令) + GET /api/tasks (列表) + DELETE /api/tasks (批量删除终态任务)
+ * [POS]: api/tasks 的入口端点，编排 auth → validate → service → dispatch → response，兼顾账户页生成作品管理
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,12 +13,39 @@ import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { isAppError } from '@/lib/errors'
-import { deleteTasks, listTasks, submitTask } from '@/lib/tasks'
+import {
+  deleteTasks,
+  listTasks,
+  submitTask,
+  type TaskExecutionDispatch,
+} from '@/lib/tasks'
 import { deleteTasksSchema, listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 import { ZodError } from 'zod'
 
 function resolveImageTaskOrchestrator(env: CloudflareEnv): TaskOrchestrator {
   return env.TASK_IMAGE_ORCHESTRATOR === 'workflow' ? 'workflow' : 'legacy_queue'
+}
+
+async function dispatchSubmittedTask(
+  env: CloudflareEnv,
+  dispatch: TaskExecutionDispatch,
+): Promise<void> {
+  if (dispatch.orchestrator === 'workflow') {
+    await env.IMAGE_TASK_WORKFLOW.create({
+      id: dispatch.taskId,
+      params: {
+        taskId: dispatch.taskId,
+        userId: dispatch.userId,
+      },
+    })
+    return
+  }
+
+  const message: TaskQueueMessage = {
+    taskId: dispatch.taskId,
+    userId: dispatch.userId,
+  }
+  await env.TASK_QUEUE.send(message)
 }
 
 /* ─── POST /api/tasks — 提交任务 ────────────────────── */
@@ -51,26 +78,12 @@ export async function POST(req: Request) {
       orchestrator,
     })
 
-    if (task.deferredExecution) {
-      if (task.deferredExecution.orchestrator === 'workflow') {
-        await env.IMAGE_TASK_WORKFLOW.create({
-          id: task.id,
-          params: {
-            taskId: task.id,
-            userId,
-          },
-        })
-      } else {
-        const message: TaskQueueMessage = {
-          taskId: task.id,
-          userId,
-        }
-        await env.TASK_QUEUE.send(message)
-      }
+    if (task.dispatch) {
+      await dispatchSubmittedTask(env, task.dispatch)
     }
 
     const responseTask = { ...task }
-    delete responseTask.deferredExecution
+    delete responseTask.dispatch
     return apiOk(responseTask, 201)
   } catch (error) {
     if (

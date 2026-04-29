@@ -25,7 +25,7 @@ export async function GET(
     const { env } = await getCloudflareContext()
 
     const task = await checkTask(db, id, userId, {
-      enqueueTask: async (message) => {
+      dispatchTask: async (message) => {
         await env.TASK_QUEUE.send(message)
       },
       getWorkflowStatus: async (instanceId) => {

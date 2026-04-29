@@ -23,7 +23,7 @@ e2e/                 — Playwright E2E 测试
 | 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
 | 表单   | React Hook Form + Zod v4                          |
 | API    | Next.js Route Handlers (38 端点, 全部在 apps/web) |
-| 异步任务 | D1 状态机 + Cloudflare Queue + Worker 消费者 + 客户端轮询 |
+| 异步任务 | D1 状态机 + Cloudflare Workflow/Queue 双轨编排 + Worker 分发桥 + 客户端轮询 |
 | 定时任务 | Cloudflare Worker Cron (*/10 * * * *)            |
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
 | 缓存   | Cloudflare KV (限流/存储配额)                     |

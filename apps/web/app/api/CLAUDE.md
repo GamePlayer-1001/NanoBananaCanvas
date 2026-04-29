@@ -56,7 +56,7 @@ webhooks/               — 外部账户与计费事件同步 (2 端点)
   stripe/route.ts       — POST Stripe 账单 webhook (checkout/invoice/subscription)
 
 tasks/                  — P2 异步任务队列 (3 端点)
-  route.ts              — POST 提交任务 / GET 任务列表 / DELETE 批量删除终态任务（图片提交先落 D1 再投递 Cloudflare Queue，由独立 Worker 真后台执行，彻底规避前台 524）
+  route.ts              — POST 提交任务 / GET 任务列表 / DELETE 批量删除终态任务（图片提交先落 D1 并返回最小 dispatch 指令，再按 Workflow/Queue 双轨投递，由独立 Worker 真后台执行，彻底规避前台 524）
   [id]/route.ts         — GET  任务状态查询 + 懒评估
   [id]/cancel/route.ts  — POST 取消任务
 

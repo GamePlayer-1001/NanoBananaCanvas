@@ -8,8 +8,7 @@
 export {
   checkConcurrency,
   submitTask,
-  processDeferredTask,
-  processQueuedTask,
+  processTaskDispatch,
   checkTask,
   cancelTask,
   listTasks,
@@ -19,6 +18,7 @@ export {
 export type {
   SubmitTaskParams,
   SubmitTaskResult,
+  TaskExecutionDispatch,
   TaskDetail,
   ListTasksResult,
   DeleteTasksResult,

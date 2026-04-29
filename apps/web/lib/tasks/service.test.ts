@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./service，依赖 @/services/ai 的 getPlatformKey mock
- * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、延后执行图片任务的落库/大 payload 清洗、orchestrator 分流与 user_key 后台凭据回放
+ * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、图片任务执行快照落库/大 payload 清洗、dispatch 分流与 user_key 后台凭据回放
  * [POS]: lib/tasks 的服务层回归测试，防止平台密钥缺失重新退化成 UNKNOWN 500，并保护图片任务从前台同步阻塞切回后台执行
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -56,7 +56,7 @@ vi.mock('./processors', () => ({
 import { getPlatformKey } from '@/services/ai'
 import { getProcessor } from './processors'
 
-import { checkTask, processDeferredTask, processQueuedTask, submitTask } from './service'
+import { checkTask, processTaskDispatch, submitTask } from './service'
 
 interface PreparedCall {
   sql: string
@@ -225,10 +225,8 @@ describe('submitTask', () => {
 
     expect(task.status).toBe('pending')
     expect(task.output).toBeNull()
-    expect(task.deferredExecution).toMatchObject({
+    expect(task.dispatch).toMatchObject({
       taskId: task.id,
-      resolvedProvider: 'openrouter',
-      resolvedModelId: 'openai/dall-e-3',
       orchestrator: 'legacy_queue',
     })
   })
@@ -251,8 +249,8 @@ describe('submitTask', () => {
       cancel: vi.fn(),
     })
 
-    const db = createDbMock()
-    const task = await submitTask(db, {
+    const submitDb = createDbMock()
+    const task = await submitTask(submitDb, {
       userId: 'user-1',
       taskType: 'image_gen',
       provider: 'openrouter',
@@ -261,10 +259,44 @@ describe('submitTask', () => {
       input: { prompt: 'test prompt' },
     })
 
-    expect(task.deferredExecution).toBeDefined()
-    await processDeferredTask(db, task.deferredExecution!)
+    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    expect(insertCall).toBeDefined()
 
-    const completionUpdate = db.__calls.find(
+    const executionSnapshot = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
+    r2Mock.get.mockResolvedValue({
+      json: async () => JSON.parse(executionSnapshot),
+    })
+
+    const queuedDb = createDbMock(0, {
+      id: task.id,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: String(insertCall?.args[7]),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+
+    expect(task.dispatch).toBeDefined()
+    await processTaskDispatch(queuedDb, {
+      taskId: task.id,
+      userId: 'user-1',
+    })
+
+    const completionUpdate = queuedDb.__calls.find(
       (call) =>
         call.sql.includes("SET status = 'completed'") &&
         call.sql.includes('output_data = ?'),
@@ -305,9 +337,9 @@ describe('submitTask', () => {
     const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
     expect(insertCall).toBeDefined()
 
-    const deferredPayload = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
+    const executionSnapshot = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
     r2Mock.get.mockResolvedValue({
-      json: async () => JSON.parse(deferredPayload),
+      json: async () => JSON.parse(executionSnapshot),
     })
 
     const queuedDb = createDbMock(0, {
@@ -333,7 +365,7 @@ describe('submitTask', () => {
       updated_at: new Date().toISOString(),
     })
 
-    await processQueuedTask(queuedDb, {
+    await processTaskDispatch(queuedDb, {
       taskId: task.id,
       userId: 'user-1',
     })
@@ -348,7 +380,7 @@ describe('submitTask', () => {
     expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
   })
 
-  it('replays user_key runtime credentials from deferred payload without requiring ENCRYPTION_KEY in worker', async () => {
+  it('replays user_key runtime credentials from task execution snapshot without requiring ENCRYPTION_KEY in worker', async () => {
     vi.mocked(getProcessor).mockReturnValue({
       taskType: 'image_gen',
       provider: 'openai-compatible',
@@ -425,7 +457,7 @@ describe('submitTask', () => {
       updated_at: new Date().toISOString(),
     })
 
-    await processQueuedTask(queuedDb, {
+    await processTaskDispatch(queuedDb, {
       taskId,
       userId: 'user-1',
     }, {
@@ -476,9 +508,9 @@ describe('submitTask', () => {
     const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
     expect(insertCall).toBeDefined()
 
-    const deferredPayload = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
+    const executionSnapshot = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
     r2Mock.get.mockResolvedValue({
-      json: async () => JSON.parse(deferredPayload),
+      json: async () => JSON.parse(executionSnapshot),
     })
 
     const queuedRow = {
@@ -505,18 +537,18 @@ describe('submitTask', () => {
     }
 
     const pollingDb = createDbMock(0, queuedRow)
-    const enqueueTask = vi.fn().mockResolvedValue(undefined)
+    const dispatchTask = vi.fn().mockResolvedValue(undefined)
     const detail = await checkTask(pollingDb, task.id, 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
       invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      enqueueTask,
+      dispatchTask,
     })
 
     expect(detail.status).toBe('pending')
     expect(detail.output).toBeNull()
-    expect(enqueueTask).toHaveBeenCalledWith({
+    expect(dispatchTask).toHaveBeenCalledWith({
       taskId: task.id,
       userId: 'user-1',
     })
@@ -553,7 +585,7 @@ describe('submitTask', () => {
 
     const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
     expect(insertCall).toBeDefined()
-    expect(task.deferredExecution?.orchestrator).toBe('workflow')
+    expect(task.dispatch?.orchestrator).toBe('workflow')
 
     const queuedRow = {
       id: task.id,
@@ -579,17 +611,17 @@ describe('submitTask', () => {
     }
 
     const pollingDb = createDbMock(0, queuedRow)
-    const enqueueTask = vi.fn().mockResolvedValue(undefined)
+    const dispatchTask = vi.fn().mockResolvedValue(undefined)
     const detail = await checkTask(pollingDb, task.id, 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
       invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      enqueueTask,
+      dispatchTask,
     })
 
     expect(detail.status).toBe('pending')
-    expect(enqueueTask).not.toHaveBeenCalled()
+    expect(dispatchTask).not.toHaveBeenCalled()
   })
 
   it('does not fail workflow-managed image tasks via legacy timeout checks', async () => {
@@ -627,7 +659,7 @@ describe('submitTask', () => {
       getR2: vi.fn().mockResolvedValue(r2Mock),
       invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      enqueueTask: vi.fn().mockResolvedValue(undefined),
+      dispatchTask: vi.fn().mockResolvedValue(undefined),
     })
 
     expect(detail.status).toBe('pending')
@@ -679,7 +711,7 @@ describe('submitTask', () => {
           message: 'workflow exploded',
         },
       }),
-      enqueueTask: vi.fn().mockResolvedValue(undefined),
+      dispatchTask: vi.fn().mockResolvedValue(undefined),
     })
 
     expect(detail.status).toBe('failed')
