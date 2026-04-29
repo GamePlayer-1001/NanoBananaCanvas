@@ -161,9 +161,9 @@
             "body": "For trying ideas and building momentum.",
             "planLabel": "Free",
             "period": "Start here",
-            "note": "Validate the workflow before you think about upgrading.",
-            "storageNote": "Start inside the canvas with the default account state.",
-            "supportNote": "Best when you are still finding your creative rhythm.",
+            "note": "Jump into the canvas immediately.",
+            "storageNote": "Test visual workflows before you spend.",
+            "supportNote": "Upgrade only when creating becomes a daily habit.",
             "cta": "Start Free"
           },
           "standard": {
@@ -172,7 +172,7 @@
             "planLabel": "Standard",
             "period": "Per month",
             "note": "For ongoing output",
-            "supportNote": "Best when creation has become a real daily operating habit.",
+            "supportNote": "Built for solo creators shipping every day.",
             "cta": "Start subscription"
           },
           "pro": {
@@ -187,7 +187,7 @@
             "planLabel": "Ultimate",
             "period": "Per month",
             "note": "For high-load teams",
-            "supportNote": "Best when multiple operators and production throughput matter.",
+            "supportNote": "Built for teams, reviews, and production-scale output.",
             "cta": "Start subscription"
           }
         },

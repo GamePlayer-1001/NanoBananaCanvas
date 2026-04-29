@@ -161,9 +161,9 @@
             "body": "For trying ideas and building momentum.",
             "planLabel": "Free",
             "period": "从这里开始",
-            "note": "先把工作流试清楚，再考虑升级。",
-            "storageNote": "先以默认账户状态进入画布开始创作。",
-            "supportNote": "适合还在摸索节奏和方向的阶段。",
+            "note": "立即进入画布开始创作。",
+            "storageNote": "先验证工作流，再决定是否付费。",
+            "supportNote": "当创作进入日常节奏后再升级。",
             "cta": "Start Free"
           },
           "standard": {
@@ -172,7 +172,7 @@
             "planLabel": "Standard",
             "period": "按月",
             "note": "适合持续产出",
-            "supportNote": "适合已经进入日更或高频产出的个人创作者。",
+            "supportNote": "适合每天都在稳定产出的个人创作者。",
             "cta": "开始订阅"
           },
           "pro": {
@@ -187,7 +187,7 @@
             "planLabel": "Ultimate",
             "period": "按月",
             "note": "面向高负载团队",
-            "supportNote": "适合多人协作、并行项目和正式生产流程。",
+            "supportNote": "适合多人协作、审核流和正式生产环境。",
             "cta": "开始订阅"
           }
         },
