@@ -8,7 +8,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  assertOpenAICompatiblePromptSafety,
   ImageGenProcessor,
+  normalizeImagePromptForApi,
   resolveImageGenerationSize,
   resolveOpenAICompatibleRequestSize,
 } from './image-gen'
@@ -99,6 +101,46 @@ describe('ImageGenProcessor', () => {
     )
   })
 
+  it('flattens formatted prompts before sending them to the image api', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        data: [{ url: 'https://example.com/flat.png' }],
+      }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/flat.png' }],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openai-compatible')
+    await processor.submit(
+      {
+        model: 'demo-model',
+        params: {
+          prompt: '角色设定：\n- 男孩\n- 背带裤\t\t- 篮球场',
+          baseUrl: 'https://example.com/v1',
+        },
+      },
+      'test-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.com/v1/images/generations',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'demo-model',
+          prompt: '角色设定： - 男孩 - 背带裤 - 篮球场',
+          size: '1920x1920',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+  })
+
   it('resolves preset size and aspect ratio into concrete dimensions', () => {
     expect(resolveImageGenerationSize('auto', '16:9')).toBe('1920x1080')
     expect(resolveImageGenerationSize('720p', '16:9')).toBe('1280x720')
@@ -175,5 +217,43 @@ describe('ImageGenProcessor', () => {
         'test-key',
       ),
     ).rejects.toThrow(/Check that baseUrl points to an OpenAI-compatible image endpoint/)
+  })
+
+  it('blocks oversized OpenAI-compatible prompts before the gateway request is sent', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openai-compatible')
+    const prompt = '超长提示词'.repeat(1000)
+
+    await expect(
+      processor.submit(
+        {
+          model: 'demo-model',
+          params: {
+            prompt,
+            baseUrl: 'http://www.1314mc.net:3333/v1',
+          },
+        },
+        'test-key',
+      ),
+    ).rejects.toThrow(/Long prompts sent to http:\/\/www\.1314mc\.net:3333 are prone to upstream 524 timeouts/)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('allows prompts within the safety guard limits', () => {
+    expect(() =>
+      assertOpenAICompatiblePromptSafety(
+        '生成一张在户外打篮球的男孩照片',
+        'https://example.com/v1',
+      ),
+    ).not.toThrow()
+  })
+
+  it('normalizes multiline prompts into a single blob string', () => {
+    expect(
+      normalizeImagePromptForApi('第一段\n\n第二段\t第三段   第四段'),
+    ).toBe('第一段 第二段 第三段 第四段')
   })
 })
