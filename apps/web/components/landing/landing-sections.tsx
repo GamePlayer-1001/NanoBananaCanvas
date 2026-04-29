@@ -480,7 +480,7 @@ export function PricingSection({
 
                 <Link
                   href="/pricing"
-                  className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
+                  className="mt-auto pt-6 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
                 >
                   {pricingT(`plans.${planKey}.cta`)}
                 </Link>
