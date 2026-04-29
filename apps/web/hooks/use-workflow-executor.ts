@@ -124,7 +124,7 @@ export function useWorkflowExecutor(workflowId?: string) {
     if (isExecuting) return
     startTimeRef.current = Date.now()
 
-    await executorRef.current.execute(nodes, edges, {
+    await executorRef.current.execute(nodes, edges, workflowId, {
       onStart: (order) => startExecution(order),
 
       onNodeStart: (nodeId) => {

@@ -20,6 +20,7 @@ const log = createLogger('NodeExecutor')
 
 export interface NodeExecutionContext {
   nodeId: string
+  workflowId?: string
   nodeType: string
   data: WorkflowNodeData
   inputs: Record<string, unknown>
@@ -257,6 +258,8 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const resultUrl = await executeTaskOutputViaApi({
     taskType: 'image_gen',
+    workflowId: ctx.workflowId,
+    nodeId: ctx.nodeId,
     provider: target.provider,
     capability: target.capability,
     modelId: target.modelId,
@@ -303,6 +306,8 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const resultUrl = await executeTaskOutputViaApi({
     taskType: 'video_gen',
+    workflowId: ctx.workflowId,
+    nodeId: ctx.nodeId,
     provider: target.provider,
     capability: target.capability,
     modelId: target.modelId,
@@ -355,6 +360,8 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
 
   const resultUrl = await executeTaskOutputViaApi({
     taskType: 'audio_gen',
+    workflowId: ctx.workflowId,
+    nodeId: ctx.nodeId,
     provider: target.provider,
     capability: target.capability,
     modelId: target.modelId,
@@ -676,6 +683,8 @@ async function createApiWorkflowError(response: Response): Promise<WorkflowError
 
 interface ExecuteTaskOutputApiParams {
   taskType: 'image_gen' | 'video_gen' | 'audio_gen'
+  workflowId?: string
+  nodeId?: string
   provider?: string
   capability?: 'text' | 'image' | 'video' | 'audio'
   modelId?: string
@@ -701,6 +710,8 @@ async function executeTaskOutputViaApi(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       taskType: params.taskType,
+      workflowId: params.workflowId,
+      nodeId: params.nodeId,
       provider: params.provider,
       capability: params.capability,
       modelId: params.modelId,

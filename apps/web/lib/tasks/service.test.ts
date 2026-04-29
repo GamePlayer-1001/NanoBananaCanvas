@@ -93,18 +93,28 @@ function createDbMock(
           }
         }
 
+        if (
+          sql.includes('SELECT * FROM async_tasks') &&
+          sql.includes('workflow_id = ?') &&
+          sql.includes('node_id = ?')
+        ) {
+          return {
+            first: vi.fn().mockResolvedValue(taskRow),
+          }
+        }
+
         if (sql.includes('UPDATE async_tasks')) {
           if (
             taskRow &&
-            sql.includes("SET status = 'running', progress = 5")
+            sql.includes("SET status = 'running', progress = ?")
           ) {
             return {
               run: vi.fn().mockImplementation(async () => {
                 if (taskRow.status === 'pending' && taskRow.external_task_id == null) {
                   taskRow.status = 'running'
-                  taskRow.progress = 5
-                  taskRow.started_at = String(args[0])
-                  taskRow.updated_at = String(args[1])
+                  taskRow.progress = Number(args[0] ?? 5)
+                  taskRow.started_at = String(args[1] ?? new Date().toISOString())
+                  taskRow.updated_at = String(args[3] ?? args[2] ?? new Date().toISOString())
                   return { meta: { changes: 1 } }
                 }
 
@@ -229,6 +239,63 @@ describe('submitTask', () => {
       taskId: task.id,
       orchestrator: 'legacy_queue',
     })
+  })
+
+  it('reuses the latest active task when the same workflow node is rerun', async () => {
+    const activeRow = {
+      id: 'active-task-1',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: JSON.stringify({
+        prompt: 'existing prompt',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const db = createDbMock(0, activeRow)
+
+    const task = await submitTask(db, {
+      userId: 'user-1',
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      modelId: 'openai/dall-e-3',
+      executionMode: 'platform',
+      workflowId: 'workflow-1',
+      nodeId: 'node-1',
+      input: { prompt: 'new prompt' },
+    }, {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'running',
+      }),
+    })
+
+    expect(task.id).toBe('active-task-1')
+    expect(task.status).toBe('running')
+    expect(
+      db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks')),
+    ).toBe(false)
   })
 
   it('completes deferred image tasks in background and updates persistence with internal output url', async () => {

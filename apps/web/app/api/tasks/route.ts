@@ -76,6 +76,27 @@ export async function POST(req: Request) {
       workflowId: params.workflowId,
       nodeId: params.nodeId,
       orchestrator,
+    }, {
+      getWorkflowStatus: async (instanceId) => {
+        const instance = await env.IMAGE_TASK_WORKFLOW.get(instanceId)
+        return instance.status()
+      },
+      getPlatformKey: async (provider) => {
+        const { getPlatformKey } = await import('@/services/ai')
+        return getPlatformKey(provider)
+      },
+      getR2: async () => {
+        const { getR2 } = await import('@/lib/r2')
+        return getR2()
+      },
+      invalidateStorageCache: async (targetUserId) => {
+        const { invalidateStorageCache } = await import('@/lib/storage')
+        await invalidateStorageCache(targetUserId)
+      },
+      requireEnv: async (key) => {
+        const { requireEnv } = await import('@/lib/env')
+        return requireEnv(key)
+      },
     })
 
     if (task.dispatch) {

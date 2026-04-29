@@ -698,6 +698,68 @@ export async function checkConcurrency(
   }
 }
 
+async function findLatestActiveTaskForNode(
+  db: D1Database,
+  input: {
+    userId: string
+    taskType: AsyncTaskType
+    workflowId?: string
+    nodeId?: string
+  },
+): Promise<TaskRow | null> {
+  if (!input.workflowId || !input.nodeId) {
+    return null
+  }
+
+  return db
+    .prepare(
+      `SELECT * FROM async_tasks
+       WHERE user_id = ?
+         AND task_type = ?
+         AND workflow_id = ?
+         AND node_id = ?
+         AND status IN ('pending', 'running')
+       ORDER BY created_at DESC
+       LIMIT 1`,
+    )
+    .bind(input.userId, input.taskType, input.workflowId, input.nodeId)
+    .first<TaskRow>()
+}
+
+async function resolveReusableActiveTask(
+  db: D1Database,
+  row: TaskRow,
+  runtime: TaskServiceRuntime,
+): Promise<TaskDetail | null> {
+  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
+  const taskOrchestrator = runtimeMeta?.orchestrator ?? 'legacy_queue'
+
+  if (taskOrchestrator === 'workflow') {
+    const observed = await observeWorkflowTaskState(db, row, runtime)
+    if (observed) {
+      return isTerminal(observed.status) ? null : observed
+    }
+  }
+
+  const config = TASK_CONFIG[row.task_type]
+  const created = new Date(row.created_at).getTime()
+  if (Date.now() - created > config.timeoutMs) {
+    if (taskOrchestrator === 'workflow') {
+      await handleFailure(
+        db,
+        row,
+        `Task slot expired after ${config.timeoutMs / 1000}s before node rerun`,
+      )
+    } else {
+      await handleTimeout(db, row)
+    }
+    return null
+  }
+
+  return rowToDetail(row)
+}
+
 /* ─── 2. Submit Task ────────────────────────────────── */
 
 export async function submitTask(
@@ -746,6 +808,27 @@ export async function submitTask(
   let persistedRuntimeMeta: PersistedTaskRuntimeMeta | undefined
   const taskId = nanoid()
   const taskOrchestrator = normalizeTaskOrchestrator(taskType, orchestrator)
+
+  const activeTaskForNode = await findLatestActiveTaskForNode(db, {
+    userId,
+    taskType,
+    workflowId,
+    nodeId,
+  })
+
+  if (activeTaskForNode) {
+    const reusableTask = await resolveReusableActiveTask(db, activeTaskForNode, runtime)
+    if (reusableTask) {
+      log.info('Reusing active task for node rerun', {
+        taskId: reusableTask.id,
+        taskType,
+        workflowId,
+        nodeId,
+        status: reusableTask.status,
+      })
+      return reusableTask
+    }
+  }
 
   /* 并发检查 */
   await checkConcurrency(db, userId)
