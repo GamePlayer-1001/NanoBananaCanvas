@@ -154,22 +154,22 @@
         "credits": "每月 {value} 积分",
         "storage": "{value} 存储空间",
         "cta": "查看定价",
-        "pricePending": "实时价格见 /pricing",
+        "pricePending": "实时价格请见定价页",
         "plans": {
           "free": {
-            "name": "For Explorers",
-            "body": "For trying ideas and building momentum.",
-            "planLabel": "Free",
+            "name": "探索者",
+            "body": "适合试想法、攒动能的阶段。",
+            "planLabel": "免费版",
             "period": "从这里开始",
             "note": "立即进入画布开始创作。",
             "storageNote": "先验证工作流，再决定是否付费。",
             "supportNote": "当创作进入日常节奏后再升级。",
-            "cta": "Start Free"
+            "cta": "免费开始"
           },
           "standard": {
-            "name": "For Daily Creators",
-            "body": "For people creating every day.",
-            "planLabel": "Standard",
+            "name": "日更创作者",
+            "body": "适合每天都在稳定创作的人。",
+            "planLabel": "标准版",
             "period": "按月",
             "note": "适合持续产出",
             "supportNote": "适合每天都在稳定产出的个人创作者。",
@@ -182,9 +182,9 @@
             "note": "最适合真实生产的平衡档"
           },
           "ultimate": {
-            "name": "For Studios",
-            "body": "For teams and production workflows.",
-            "planLabel": "Ultimate",
+            "name": "工作室团队",
+            "body": "适合团队协作与正式生产流程。",
+            "planLabel": "旗舰版",
             "period": "按月",
             "note": "面向高负载团队",
             "supportNote": "适合多人协作、审核流和正式生产环境。",
