@@ -54,11 +54,25 @@ function ensureEdgeConfig(buildDir, sourceDir) {
   ]
 
   const sourcePath = sourceCandidates.find((candidate) => fs.existsSync(candidate))
-  if (!sourcePath) {
+  if (sourcePath) {
+    fs.copyFileSync(sourcePath, edgeConfigPath)
     return
   }
 
-  fs.copyFileSync(sourcePath, edgeConfigPath)
+  const tsConfigPath = path.join(appDir, 'open-next.config.ts')
+  if (!fs.existsSync(tsConfigPath)) {
+    return
+  }
+
+  const source = fs.readFileSync(tsConfigPath, 'utf8')
+  const transpiled = source
+    .replace(/^import type .*$/gm, '')
+    .replace(
+      /const config\s*:\s*OpenNextConfig\s*=/g,
+      'const config =',
+    )
+
+  fs.writeFileSync(edgeConfigPath, transpiled)
 }
 
 function copyTreeSync(source, destination) {
