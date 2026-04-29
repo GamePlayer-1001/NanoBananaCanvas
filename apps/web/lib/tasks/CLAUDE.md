@@ -27,7 +27,7 @@ Browser → API Route → service.ts → D1 (状态持久化)
 - **user_key 去平台账本化**: `user_key` 模式不再写平台 credits 预估，不参与平台账本冻结/确认/退款
 - **语义隔离**: API 请求体中 `provider` 只表达平台供应商，`capability` 只表达用户配置能力，避免两套密钥体系互相污染
 - **失败即终态**: handleFailure 直接标记 failed，不做自动重试
-- **超时检测**: checkTask 中比较 created_at vs timeoutMs，超时标记 failed
+- **超时检测**: checkTask 中比较 created_at vs timeoutMs，超时标记 failed；当前 `image_gen` 超时窗与后台 Queue 消费窗口对齐为 15 分钟，避免 10 分钟 Cron 误杀仍在执行的后台出图
 - **输出收口**: provider 返回的图片/视频/音频 URL 或 data URL 在 completed 分支统一写入账户私有 R2，再回写站内 `/api/files/...` 地址
 - **图片真后台执行**: `image_gen` 不再在 submit 请求内同步等待上游出图，而是先返回 `pending`，把完整执行快照写入内部 `task-inputs/`，再投递 Cloudflare Queue，由 Worker 通过 `processQueuedTask()` 重建上下文并补完执行，彻底规避 Cloudflare 524
 - **执行去重 + 自愈补启动**: `runDeferredTask()` 先原子认领 `pending + no external_task_id` 任务，挡住重复 Queue/重复补触发；若生产 Consumer 缺席，`checkTask()` 会在轮询期间补投递一次后台执行消息，但不会在当前 HTTP 请求里同步跑上游生成，避免图片任务白白耗尽超时窗或把 524 带回前端
