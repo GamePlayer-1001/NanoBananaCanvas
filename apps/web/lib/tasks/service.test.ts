@@ -896,4 +896,112 @@ describe('submitTask', () => {
     expect(detail.status).toBe('failed')
     expect(detail.output).toEqual({ error: 'workflow exploded' })
   })
+
+  it('dispatches queue fallback when workflow task stays queued past startup grace window', async () => {
+    const oldCreatedAt = new Date(Date.now() - 2 * 60 * 1_000).toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-workflow-queued-stale',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'user_key',
+      input_data: JSON.stringify({
+        prompt: '一个女孩',
+        size: 'auto',
+        aspectRatio: '16:9',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+          userConfigId: 'image-config',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: oldCreatedAt,
+      started_at: null,
+      completed_at: null,
+      updated_at: oldCreatedAt,
+    })
+
+    const dispatchTask = vi.fn().mockResolvedValue(undefined)
+    const detail = await checkTask(pollingDb, 'task-workflow-queued-stale', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'queued',
+      }),
+      dispatchTask,
+    })
+
+    expect(detail.status).toBe('pending')
+    expect(dispatchTask).toHaveBeenCalledWith({
+      taskId: 'task-workflow-queued-stale',
+      userId: 'user-1',
+    })
+    expect(
+      pollingDb.__calls.some(
+        (call) =>
+          call.sql.includes('SET last_checked_at = ?, updated_at = ?') &&
+          call.args[2] === 'task-workflow-queued-stale',
+      ),
+    ).toBe(true)
+  })
+
+  it('fails workflow tasks that complete without updating d1 state', async () => {
+    const createdAt = new Date().toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-workflow-complete-pending',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'user_key',
+      input_data: JSON.stringify({
+        prompt: '一个女孩',
+        size: 'auto',
+        aspectRatio: '16:9',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+          userConfigId: 'image-config',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: createdAt,
+      started_at: null,
+      completed_at: null,
+      updated_at: createdAt,
+    })
+
+    const detail = await checkTask(pollingDb, 'task-workflow-complete-pending', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'complete',
+      }),
+    })
+
+    expect(detail.status).toBe('failed')
+    expect(detail.output).toEqual({
+      error: 'Workflow completed without updating task state',
+    })
+  })
 })

@@ -62,6 +62,7 @@ import type { TaskOutput, TaskProcessor } from './processors'
 
 const log = createLogger('task:service')
 const FREE_TASK_CONCURRENCY_LIMIT = 1
+const WORKFLOW_STARTUP_GRACE_MS = 60_000
 
 /* ─── D1 Row Shape ──────────────────────────────────── */
 
@@ -380,6 +381,55 @@ function isWorkflowRunningLikeStatus(
   )
 }
 
+async function dispatchWorkflowStartupFallback(
+  db: D1Database,
+  row: TaskRow,
+  runtime: TaskServiceRuntime,
+  workflowStatus: WorkflowRuntimeStatus['status'],
+): Promise<TaskDetail | null> {
+  if (!runtime.dispatchTask) {
+    return null
+  }
+
+  const now = Date.now()
+  const created = new Date(row.created_at).getTime()
+  const lastChecked = row.last_checked_at ? new Date(row.last_checked_at).getTime() : 0
+
+  if (now - created < WORKFLOW_STARTUP_GRACE_MS) {
+    return null
+  }
+
+  if (lastChecked && now - lastChecked < WORKFLOW_STARTUP_GRACE_MS) {
+    return null
+  }
+
+  const nowIso = new Date(now).toISOString()
+
+  await runtime.dispatchTask({
+    taskId: row.id,
+    userId: row.user_id,
+  })
+
+  await db
+    .prepare(
+      `UPDATE async_tasks
+       SET last_checked_at = ?, updated_at = ?
+       WHERE id = ? AND user_id = ? AND status = 'pending' AND external_task_id IS NULL`,
+    )
+    .bind(nowIso, nowIso, row.id, row.user_id)
+    .run()
+
+  log.warn('Workflow task startup stalled, dispatched queue fallback', {
+    taskId: row.id,
+    userId: row.user_id,
+    taskType: row.task_type,
+    workflowStatus,
+  })
+
+  const refreshedRow = await loadTaskRow(db, row.id, row.user_id)
+  return refreshedRow ? rowToDetail(refreshedRow) : null
+}
+
 async function observeWorkflowTaskState(
   db: D1Database,
   row: TaskRow,
@@ -391,7 +441,7 @@ async function observeWorkflowTaskState(
 
   const workflowStatus = await runtime.getWorkflowStatus(row.id)
   if (!workflowStatus) {
-    return null
+    return dispatchWorkflowStartupFallback(db, row, runtime, 'unknown')
   }
 
   if (workflowStatus.status === 'errored' || workflowStatus.status === 'terminated') {
@@ -399,6 +449,18 @@ async function observeWorkflowTaskState(
       workflowStatus.error?.message ??
       `Workflow instance ${workflowStatus.status}`
     return handleFailure(db, row, errorMessage)
+  }
+
+  if (
+    workflowStatus.status === 'complete' &&
+    row.status === 'pending' &&
+    !row.external_task_id
+  ) {
+    return handleFailure(
+      db,
+      row,
+      'Workflow completed without updating task state',
+    )
   }
 
   if (row.status === 'pending' && isWorkflowRunningLikeStatus(workflowStatus.status)) {
@@ -415,6 +477,14 @@ async function observeWorkflowTaskState(
 
     const refreshedRow = await loadTaskRow(db, row.id, row.user_id)
     return refreshedRow ? rowToDetail(refreshedRow) : null
+  }
+
+  if (
+    row.status === 'pending' &&
+    !row.external_task_id &&
+    (workflowStatus.status === 'queued' || workflowStatus.status === 'unknown')
+  ) {
+    return dispatchWorkflowStartupFallback(db, row, runtime, workflowStatus.status)
   }
 
   return null
