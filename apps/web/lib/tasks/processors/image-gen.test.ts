@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   assertOpenAICompatiblePromptSafety,
   ImageGenProcessor,
+  normalizeImagePromptForApi,
   resolveImageGenerationSize,
   resolveOpenAICompatibleRequestSize,
 } from './image-gen'
@@ -93,6 +94,46 @@ describe('ImageGenProcessor', () => {
           model: 'openai/dall-e-3',
           prompt: 'draw a city',
           size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+  })
+
+  it('flattens formatted prompts before sending them to the image api', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        data: [{ url: 'https://example.com/flat.png' }],
+      }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/flat.png' }],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openai-compatible')
+    await processor.submit(
+      {
+        model: 'demo-model',
+        params: {
+          prompt: '角色设定：\n- 男孩\n- 背带裤\t\t- 篮球场',
+          baseUrl: 'https://example.com/v1',
+        },
+      },
+      'test-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.com/v1/images/generations',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'demo-model',
+          prompt: '角色设定： - 男孩 - 背带裤 - 篮球场',
+          size: '1920x1920',
           aspect_ratio: '1:1',
           n: 1,
         }),
@@ -208,5 +249,11 @@ describe('ImageGenProcessor', () => {
         'https://example.com/v1',
       ),
     ).not.toThrow()
+  })
+
+  it('normalizes multiline prompts into a single blob string', () => {
+    expect(
+      normalizeImagePromptForApi('第一段\n\n第二段\t第三段   第四段'),
+    ).toBe('第一段 第二段 第三段 第四段')
   })
 })

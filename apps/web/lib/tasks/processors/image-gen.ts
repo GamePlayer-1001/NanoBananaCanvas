@@ -107,6 +107,10 @@ function buildPromptTooLongMessage(baseUrl: string, chars: number, bytes: number
   )
 }
 
+export function normalizeImagePromptForApi(prompt: string): string {
+  return prompt.replace(/\s+/g, ' ').trim()
+}
+
 export function assertOpenAICompatiblePromptSafety(prompt: string, baseUrl: string): void {
   const { chars, bytes } = measurePromptSize(prompt)
   if (
@@ -138,7 +142,7 @@ async function openAICompatibleSubmit(
   provider: string,
 ): Promise<{ url: string }> {
   const { model, params } = input
-  const prompt = (params.prompt as string) ?? ''
+  const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
   const capabilities = readImageCapabilities(params)
@@ -234,7 +238,7 @@ async function googleImageSubmit(
   apiKey: string,
 ): Promise<{ url: string }> {
   const { model, params } = input
-  const prompt = (params.prompt as string) ?? ''
+  const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
   const capabilities = readImageCapabilities(params)
