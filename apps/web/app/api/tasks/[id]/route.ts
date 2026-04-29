@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/tasks
- * [OUTPUT]: 对外提供 GET /api/tasks/:id (查询任务状态 + 懒评估)
- * [POS]: api/tasks/[id] 的状态查询端点，触发 checkTask 懒评估
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/tasks，依赖 Cloudflare Queue/Workflow 绑定
+ * [OUTPUT]: 对外提供 GET /api/tasks/:id (查询任务状态 + 懒评估 + Workflow 状态观察)
+ * [POS]: api/tasks/[id] 的状态查询端点，触发 checkTask 懒评估，并在 workflow 主路观察实例状态
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -27,6 +27,10 @@ export async function GET(
     const task = await checkTask(db, id, userId, {
       enqueueTask: async (message) => {
         await env.TASK_QUEUE.send(message)
+      },
+      getWorkflowStatus: async (instanceId) => {
+        const instance = await env.IMAGE_TASK_WORKFLOW.get(instanceId)
+        return instance.status()
       },
       getPlatformKey: async (provider) => {
         const { getPlatformKey } = await import('@/services/ai')

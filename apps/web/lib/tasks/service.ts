@@ -186,6 +186,24 @@ interface DeferredTaskExecution {
   orchestrator: TaskOrchestrator
 }
 
+interface WorkflowRuntimeStatus {
+  status:
+    | 'queued'
+    | 'running'
+    | 'paused'
+    | 'errored'
+    | 'terminated'
+    | 'complete'
+    | 'waitingForPause'
+    | 'waiting'
+    | 'unknown'
+  error?: {
+    name: string
+    message: string
+  }
+  output?: unknown
+}
+
 export interface SubmitTaskResult extends TaskDetail {
   deferredExecution?: DeferredTaskExecution
 }
@@ -196,6 +214,7 @@ export interface TaskServiceRuntime {
   invalidateStorageCache: (userId: string) => Promise<void>
   getPlatformKey: (provider: string) => Promise<string>
   enqueueTask?: (message: TaskQueueMessage) => Promise<void>
+  getWorkflowStatus?: (instanceId: string) => Promise<WorkflowRuntimeStatus | null>
 }
 
 const defaultTaskRuntime: TaskServiceRuntime = {
@@ -340,6 +359,57 @@ function normalizeTaskOrchestrator(
   }
 
   return orchestrator === 'workflow' ? 'workflow' : 'legacy_queue'
+}
+
+function isWorkflowRunningLikeStatus(
+  status: WorkflowRuntimeStatus['status'],
+): boolean {
+  return (
+    status === 'running' ||
+    status === 'waiting' ||
+    status === 'waitingForPause' ||
+    status === 'paused'
+  )
+}
+
+async function observeWorkflowTaskState(
+  db: D1Database,
+  row: TaskRow,
+  runtime: TaskServiceRuntime,
+): Promise<TaskDetail | null> {
+  if (!runtime.getWorkflowStatus) {
+    return null
+  }
+
+  const workflowStatus = await runtime.getWorkflowStatus(row.id)
+  if (!workflowStatus) {
+    return null
+  }
+
+  if (workflowStatus.status === 'errored' || workflowStatus.status === 'terminated') {
+    const errorMessage =
+      workflowStatus.error?.message ??
+      `Workflow instance ${workflowStatus.status}`
+    return handleFailure(db, row, errorMessage)
+  }
+
+  if (row.status === 'pending' && isWorkflowRunningLikeStatus(workflowStatus.status)) {
+    const nowIso = new Date().toISOString()
+    await db
+      .prepare(
+        `UPDATE async_tasks
+         SET status = 'running', progress = ?,
+             started_at = COALESCE(started_at, ?), last_checked_at = ?, updated_at = ?
+         WHERE id = ? AND user_id = ? AND status = 'pending'`,
+      )
+      .bind(5, nowIso, nowIso, nowIso, row.id, row.user_id)
+      .run()
+
+    const refreshedRow = await loadTaskRow(db, row.id, row.user_id)
+    return refreshedRow ? rowToDetail(refreshedRow) : null
+  }
+
+  return null
 }
 
 function getReservedTaskCredits(input: Record<string, unknown>): number {
@@ -1429,9 +1499,18 @@ export async function checkTask(
     return rowToDetail(row)
   }
 
-  /* 超时检测: workflow 主编排任务不再吃 legacy timeout，避免被旧链路误杀 */
+  if (taskOrchestrator === 'workflow') {
+    const observed = await observeWorkflowTaskState(db, row, runtime)
+    if (observed) {
+      return observed
+    }
+
+    return rowToDetail(row)
+  }
+
+  /* 超时检测: 这里只剩 legacy queue / 传统任务路径 */
   const created = new Date(row.created_at).getTime()
-  if (taskOrchestrator !== 'workflow' && now - created > config.timeoutMs) {
+  if (now - created > config.timeoutMs) {
     await handleTimeout(db, row)
     return {
       ...rowToDetail(row),

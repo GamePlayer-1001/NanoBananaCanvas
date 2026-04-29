@@ -117,6 +117,23 @@ interface Queue<Message = unknown> {
 
 interface WorkflowInstance {
   id: string
+  status(): Promise<{
+    status:
+      | 'queued'
+      | 'running'
+      | 'paused'
+      | 'errored'
+      | 'terminated'
+      | 'complete'
+      | 'waitingForPause'
+      | 'waiting'
+      | 'unknown'
+    error?: {
+      name: string
+      message: string
+    }
+    output?: unknown
+  }>
 }
 
 interface WorkflowBinding<Params = unknown> {

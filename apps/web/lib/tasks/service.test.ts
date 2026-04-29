@@ -539,4 +539,53 @@ describe('submitTask', () => {
       pollingDb.__calls.some((call) => call.sql.includes("SET status = 'failed'")),
     ).toBe(false)
   })
+
+  it('marks workflow-managed image tasks as failed when workflow instance reports errored', async () => {
+    const createdAt = new Date().toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-workflow-errored',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: JSON.stringify({
+        prompt: 'test prompt',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: createdAt,
+      started_at: null,
+      completed_at: null,
+      updated_at: createdAt,
+    })
+
+    const detail = await checkTask(pollingDb, 'task-workflow-errored', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'errored',
+        error: {
+          name: 'WorkflowError',
+          message: 'workflow exploded',
+        },
+      }),
+      enqueueTask: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(detail.status).toBe('failed')
+    expect(detail.output).toEqual({ error: 'workflow exploded' })
+  })
 })

@@ -31,6 +31,7 @@ Browser → API Route → service.ts → D1 (状态持久化)
 - **输出收口**: provider 返回的图片/视频/音频 URL 或 data URL 在 completed 分支统一写入账户私有 R2，再回写站内 `/api/files/...` 地址
 - **图片真后台执行**: `image_gen` 不再在 submit 请求内同步等待上游出图，而是先返回 `pending`，把完整执行快照写入内部 `task-inputs/`，再按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue，由 Worker 通过 `processQueuedTask()` 重建上下文并补完执行，彻底规避 Cloudflare 524
 - **Workflow 主编排切流**: `image_gen` 现在可通过 `TASK_IMAGE_ORCHESTRATOR=workflow` 切到 Cloudflare Workflows，让长生命周期任务不再依赖 Queue/Cron 做主裁决；旧 Queue 仍保留为回滚兜底
+- **Workflow 状态观察**: `checkTask()` 对 workflow 任务会直接读取 Workflow 实例状态；若实例已 `errored/terminated`，D1 会立即收敛为 failed；若实例已进入运行态，D1 会从 pending 提升到 running
 - **执行去重 + 自愈补启动**: `runDeferredTask()` 先原子认领 `pending + no external_task_id` 任务，挡住重复 Queue/重复补触发；若生产 Consumer 缺席，`checkTask()` 只会对 legacy queue 任务在轮询期间补投递一次后台执行消息，不会在当前 HTTP 请求里同步跑上游生成，避免图片任务白白耗尽超时窗或把 524 带回前端
 - **同步直落盘**: 后台执行完成后的同步图片/TTS provider 不再把 data URL 塞进 `external_task_id`，而是转存 R2，只把短 URL / 元数据落进 D1
 - **持久化瘦身**: 写入 `input_data` 前递归剔除超大 data URL，保留类型/长度描述，保证任务历史可读但不污染数据库；真正执行所需的完整 payload 单独进 R2 私有快照
