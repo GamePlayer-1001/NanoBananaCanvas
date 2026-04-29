@@ -114,6 +114,7 @@ jobs:
           name: web-open-next
           path: apps/web/.open-next
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 1
 
   # ── Deploy: 推送 main 时自动部署 ───────────
