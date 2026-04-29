@@ -57,6 +57,7 @@ function createCallbacks() {
     updateNodeStatus: vi.fn((nodeId, status) => {
       updates.push({ nodeId, status })
     }),
+    updateNodeConfig: vi.fn(),
   }
 
   return { callbacks, updates, completions }

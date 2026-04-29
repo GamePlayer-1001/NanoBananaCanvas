@@ -25,10 +25,19 @@ export interface NodeExecutionContext {
   inputs: Record<string, unknown>
   signal: AbortSignal
   onStreamChunk?: (nodeId: string, chunk: string) => void
+  onTaskStateChange?: (change: NodeTaskStateChange) => void
 }
 
 export interface NodeExecutionResult {
   outputs: Record<string, unknown>
+}
+
+export interface NodeTaskStateChange {
+  status?: Extract<
+    NonNullable<WorkflowNodeData['status']>,
+    'queued' | 'running' | 'finalizing'
+  >
+  configPatch?: Record<string, unknown>
 }
 
 /* ─── Executor Registry ──────────────────────────────── */
@@ -256,6 +265,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     input: { prompt, size, aspectRatio, imageUrl: referenceImage },
     outputType: 'image',
     signal,
+    onStateChange: ctx.onTaskStateChange,
   })
 
   log.debug('Image gen complete', {
@@ -674,6 +684,7 @@ interface ExecuteTaskOutputApiParams {
   input: Record<string, unknown>
   outputType: 'image' | 'video' | 'audio'
   signal: AbortSignal
+  onStateChange?: (change: NodeTaskStateChange) => void
 }
 
 function getTaskPollingPlan(taskType: ExecuteTaskOutputApiParams['taskType']) {
@@ -716,6 +727,11 @@ async function executeTaskOutputViaApi(
     )
   }
 
+  params.onStateChange?.({
+    status: 'queued',
+    configPatch: { progress: 0, taskId },
+  })
+
   const polling = getTaskPollingPlan(params.taskType)
 
   for (;;) {
@@ -733,14 +749,34 @@ async function executeTaskOutputViaApi(
     const taskPayload = (await taskResponse.json()) as {
       data?: {
         status?: string
+        progress?: number
         output?: { url?: string; error?: string } | null
       }
     }
 
     const status = taskPayload.data?.status
+    const progress = typeof taskPayload.data?.progress === 'number' ? taskPayload.data.progress : 0
     const output = taskPayload.data?.output
 
+    if (status === 'pending') {
+      params.onStateChange?.({
+        status: 'queued',
+        configPatch: { progress: 0, taskId },
+      })
+    }
+
+    if (status === 'running') {
+      params.onStateChange?.({
+        status: 'running',
+        configPatch: { progress, taskId },
+      })
+    }
+
     if (status === 'completed' && output?.url) {
+      params.onStateChange?.({
+        status: 'finalizing',
+        configPatch: { progress: 100, taskId },
+      })
       return output.url
     }
 

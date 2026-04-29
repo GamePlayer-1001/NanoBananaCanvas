@@ -63,6 +63,23 @@ function syncOutputsToNodeData(
   }
 }
 
+function getNodeRunStartConfigPatch(nodeId: string): Record<string, unknown> {
+  const node = useFlowStore.getState().nodes.find((item) => item.id === nodeId)
+  if (!node) return {}
+
+  const config = getNodeConfig(nodeId)
+  switch (node.type) {
+    case 'llm':
+      return { ...config, output: '' }
+    case 'image-gen':
+    case 'video-gen':
+    case 'audio-gen':
+      return { ...config, resultUrl: '', progress: 0 }
+    default:
+      return config
+  }
+}
+
 /* ─── Record Execution History ────────────────────────── */
 
 function recordHistory(
@@ -112,7 +129,7 @@ export function useWorkflowExecutor(workflowId?: string) {
 
       onNodeStart: (nodeId) => {
         setCurrentNode(nodeId)
-        updateNodeData(nodeId, { config: { ...getNodeConfig(nodeId), output: '' } })
+        updateNodeData(nodeId, { config: getNodeRunStartConfigPatch(nodeId) })
       },
 
       onNodeComplete: (nodeId, outputs) => {
@@ -149,6 +166,9 @@ export function useWorkflowExecutor(workflowId?: string) {
 
       updateNodeStatus: (nodeId, status) => {
         updateNodeData(nodeId, { status })
+      },
+      updateNodeConfig: (nodeId, patch) => {
+        updateNodeData(nodeId, { config: { ...getNodeConfig(nodeId), ...patch } })
       },
     })
   }, [

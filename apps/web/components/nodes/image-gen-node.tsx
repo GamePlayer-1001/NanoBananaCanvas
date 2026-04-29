@@ -135,8 +135,17 @@ export function ImageGenNode(props: NodeProps) {
     : DEFAULT_ASPECT_RATIO
   const executionMode = (config.executionMode as string) ?? 'platform'
   const resultUrl = (config.resultUrl as string) ?? ''
+  const progress = (config.progress as number) ?? 0
   const showPreview = config.showPreview === true
   const status = data.status ?? 'idle'
+  const isTaskActive =
+    status === 'queued' || status === 'running' || status === 'finalizing'
+  const statusLabel =
+    status === 'queued'
+      ? t('queued')
+      : status === 'finalizing'
+        ? t('finalizing')
+        : t('generating')
 
   const {
     getConfigByCapability,
@@ -433,13 +442,13 @@ export function ImageGenNode(props: NodeProps) {
           </div>
         </ConfigField>
 
-        {showPreview && (status === 'running' || resultUrl) ? (
+        {showPreview && (isTaskActive || resultUrl) ? (
           <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('output')}
               </span>
-              {status === 'running' ? (
+              {isTaskActive ? (
                 <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
               ) : null}
             </div>
@@ -452,11 +461,29 @@ export function ImageGenNode(props: NodeProps) {
                   className="h-full max-h-full max-w-full rounded object-contain"
                 />
               ) : (
-                <span className="text-muted-foreground text-xs italic">
-                  {t('generating')}
-                </span>
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <span className="text-muted-foreground text-xs italic">
+                    {statusLabel}
+                  </span>
+                  {progress > 0 ? (
+                    <span className="text-muted-foreground text-[10px]">
+                      {progress}%
+                    </span>
+                  ) : null}
+                </div>
               )}
             </div>
+
+            {isTaskActive ? (
+              <div className="px-2 pb-2">
+                <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
+                  <div
+                    className="h-full rounded-full bg-[var(--brand-500)] transition-all"
+                    style={{ width: `${Math.max(progress, status === 'queued' ? 8 : 12)}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

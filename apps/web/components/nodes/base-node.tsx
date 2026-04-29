@@ -33,7 +33,9 @@ export interface BaseNodeProps extends NodeProps {
 
 const STATUS_COLORS = {
   idle: 'bg-muted',
+  queued: 'bg-amber-500 animate-pulse',
   running: 'bg-brand-500 animate-pulse',
+  finalizing: 'bg-sky-500 animate-pulse',
   success: 'bg-green-500',
   error: 'bg-destructive',
   skipped: 'bg-muted-foreground',

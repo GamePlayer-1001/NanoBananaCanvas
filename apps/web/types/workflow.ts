@@ -48,4 +48,11 @@ export type NodeCategory =
   | 'api-call'
   | 'media'
 
-export type ExecutionStatus = 'idle' | 'running' | 'success' | 'error' | 'skipped'
+export type ExecutionStatus =
+  | 'idle'
+  | 'queued'
+  | 'running'
+  | 'finalizing'
+  | 'success'
+  | 'error'
+  | 'skipped'

@@ -26,6 +26,7 @@ export interface ExecutionCallbacks {
   onComplete: () => void
   onError: (error: string) => void
   updateNodeStatus: (nodeId: string, status: WorkflowNodeData['status']) => void
+  updateNodeConfig: (nodeId: string, patch: Record<string, unknown>) => void
 }
 
 /* ─── Executor ───────────────────────────────────────── */
@@ -94,6 +95,14 @@ export class WorkflowExecutor {
           inputs,
           signal,
           onStreamChunk: callbacks.onStreamChunk,
+          onTaskStateChange: (change) => {
+            if (change.status) {
+              callbacks.updateNodeStatus(nodeId, change.status)
+            }
+            if (change.configPatch) {
+              callbacks.updateNodeConfig(nodeId, change.configPatch)
+            }
+          },
         })
 
         nodeOutputs[nodeId] = result.outputs
