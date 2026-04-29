@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./service，依赖 @/services/ai 的 getPlatformKey mock
- * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、图片任务执行快照落库/大 payload 清洗、dispatch 分流与 user_key 后台凭据回放
- * [POS]: lib/tasks 的服务层回归测试，防止平台密钥缺失重新退化成 UNKNOWN 500，并保护图片任务从前台同步阻塞切回后台执行
+ * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、图片任务执行快照落库/大 payload 清洗、dispatch 分流、user_key 后台凭据回放与分发失败收口
+ * [POS]: lib/tasks 的服务层回归测试，防止平台密钥缺失重新退化成 UNKNOWN 500，并保护图片任务从前台同步阻塞切回后台执行与后台黑洞显式失败
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -1003,5 +1003,59 @@ describe('submitTask', () => {
     expect(detail.output).toEqual({
       error: 'Workflow completed without updating task state',
     })
+  })
+
+  it('fails dispatched tasks when execution snapshot is missing instead of leaving them pending', async () => {
+    const taskId = 'task-missing-snapshot'
+    const taskRow = {
+      id: taskId,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'user_key',
+      input_data: JSON.stringify({
+        prompt: '一个女孩',
+        size: 'auto',
+        aspectRatio: '16:9',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+          userConfigId: 'image-config',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    r2Mock.get.mockResolvedValueOnce(null)
+    const db = createDbMock(0, taskRow)
+
+    await processTaskDispatch(
+      db,
+      { taskId, userId: 'user-1' },
+      {
+        requireEnv: vi.fn(),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+        getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      },
+    )
+
+    expect(taskRow.status).toBe('failed')
+    expect(JSON.parse(String(taskRow.output_data))).toEqual({
+      error: `Task execution snapshot not found for task: ${taskId}`,
+    })
+    expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${taskId}.json`)
   })
 })

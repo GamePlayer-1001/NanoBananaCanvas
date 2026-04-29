@@ -3,8 +3,8 @@
  *          依赖 @/stores/use-flow-store 的节点/边数据，
  *          依赖 @/stores/use-execution-store 的执行状态，
  *          依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting + 执行历史记录)
- * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store，执行完成后写入 execution_history
+ * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting + 执行历史记录 + abort 时联动取消活跃异步任务)
+ * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store，执行完成后写入 execution_history，并在用户中止时同步清理后端任务
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -24,6 +24,8 @@ const ERROR_KEY_MAP: Record<string, string> = {
   'Execution aborted': 'executionAborted',
   'Failed to sort workflow': 'sortFailed',
 }
+
+const ABORTABLE_NODE_STATUSES = new Set(['queued', 'running', 'finalizing'])
 
 /* ─── Store Helpers (非响应式，直接读快照) ────────────── */
 
@@ -80,6 +82,43 @@ function getNodeRunStartConfigPatch(nodeId: string): Record<string, unknown> {
   }
 }
 
+function collectAbortableTaskIds(): string[] {
+  const nodes = useFlowStore.getState().nodes
+  const activeTaskIds = nodes.flatMap((node) => {
+    const status = node.data.status
+    const taskId = node.data.config?.taskId
+    if (
+      typeof taskId === 'string' &&
+      taskId.length > 0 &&
+      status &&
+      ABORTABLE_NODE_STATUSES.has(status)
+    ) {
+      return [taskId]
+    }
+    return []
+  })
+
+  return Array.from(new Set(activeTaskIds))
+}
+
+async function cancelActiveTasks(taskIds: string[]): Promise<void> {
+  if (taskIds.length === 0) {
+    return
+  }
+
+  await Promise.allSettled(
+    taskIds.map(async (taskId) => {
+      const response = await fetch(`/api/tasks/${taskId}/cancel`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to cancel task ${taskId} (${response.status})`)
+      }
+    }),
+  )
+}
+
 /* ─── Record Execution History ────────────────────────── */
 
 function recordHistory(
@@ -106,6 +145,7 @@ function recordHistory(
 export function useWorkflowExecutor(workflowId?: string) {
   const executorRef = useRef(new WorkflowExecutor())
   const startTimeRef = useRef(0)
+  const abortingRef = useRef(false)
   const t = useTranslations('canvas')
   const tExec = useTranslations('executor')
 
@@ -123,6 +163,7 @@ export function useWorkflowExecutor(workflowId?: string) {
   const execute = useCallback(async () => {
     if (isExecuting) return
     startTimeRef.current = Date.now()
+    abortingRef.current = false
 
     await executorRef.current.execute(nodes, edges, workflowId, {
       onStart: (order) => startExecution(order),
@@ -149,6 +190,7 @@ export function useWorkflowExecutor(workflowId?: string) {
       },
 
       onComplete: () => {
+        abortingRef.current = false
         finishExecution()
         toast.success(t('workflowCompleted'))
         if (workflowId) {
@@ -156,6 +198,12 @@ export function useWorkflowExecutor(workflowId?: string) {
         }
       },
       onError: (error) => {
+        const isUserAbort = abortingRef.current && error === 'Execution aborted'
+        if (isUserAbort) {
+          abortingRef.current = false
+          return
+        }
+
         failExecution(error)
         const key = ERROR_KEY_MAP[error]
         toast.error(key ? tExec(key) : error)
@@ -178,7 +226,9 @@ export function useWorkflowExecutor(workflowId?: string) {
   ])
 
   const abort = useCallback(() => {
+    abortingRef.current = true
     executorRef.current.abort()
+    void cancelActiveTasks(collectAbortableTaskIds())
     failExecution('Execution aborted by user')
     if (workflowId) {
       recordHistory(workflowId, 'aborted', startTimeRef.current, nodes.length)

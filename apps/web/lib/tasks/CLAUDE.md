@@ -5,8 +5,8 @@ P2 异步任务执行核心 — D1 真相源 + Queue/Workflow 双轨编排 + 客
 
 ## 成员清单
 
-- `service.ts`: 核心服务层，7 大函数 (checkConcurrency/submitTask/processTaskDispatch/checkTask/cancelTask/listTasks/deleteTasks)，平台模式显式读 provider/model 并接回 `freeze/confirm/refund`，user_key 模式显式读 capability/configId 且不再写平台 credits 语义；图片任务现为“submit 先返回最小 dispatch 指令 + R2 持久化执行快照 + 按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue + Worker 真后台执行 + 完成后回写 D1/R2”，并额外在 `executeTaskRequest` 做原子认领、在 `checkTask` 仅对 legacy queue 任务做节流补投递，不在当前 HTTP 请求里同步执行，避免轮询请求被上游出图阻塞成 524；持久化输入继续做 data URL 清洗，避免 D1 被超大 payload 撑爆
-- `service.test.ts`: 服务层回归测试，验证平台前置失败会收敛为 TaskError，而不是漏成 UNKNOWN 500，并覆盖图片任务排队返回 / 后台完成回写 / data URL 清洗 / Queue 消费者从 R2+D1 重建执行上下文 / 轮询侧自愈补投递
+- `service.ts`: 核心服务层，7 大函数 (checkConcurrency/submitTask/processTaskDispatch/checkTask/cancelTask/listTasks/deleteTasks)，平台模式显式读 provider/model 并接回 `freeze/confirm/refund`，user_key 模式显式读 capability/configId 且不再写平台 credits 语义；图片任务现为“submit 先返回最小 dispatch 指令 + R2 持久化执行快照 + 按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue + Worker 真后台执行 + 完成后回写 D1/R2”，并额外在 `executeTaskRequest` 做原子认领、在 `checkTask` 仅对 legacy queue 任务做节流补投递，不在当前 HTTP 请求里同步执行，避免轮询请求被上游出图阻塞成 524；`processTaskDispatch()` 现在会把快照缺失、配置恢复失败、运行时凭据缺失等 Worker 黑洞显式收敛为 `failed`，不再让任务永远卡在 `pending`
+- `service.test.ts`: 服务层回归测试，验证平台前置失败会收敛为 TaskError，而不是漏成 UNKNOWN 500，并覆盖图片任务排队返回 / 后台完成回写 / data URL 清洗 / Queue 消费者从 R2+D1 重建执行上下文 / 轮询侧自愈补投递 / 分发黑洞失败收口
 - `index.ts`: 桶文件，统一导出 service + processors 的公共 API
 - `processors/`: Provider 处理器子模块，详见 processors/CLAUDE.md
 
@@ -40,5 +40,6 @@ Browser → API Route → service.ts → D1 (状态持久化)
 - **后台凭据回放**: 任务执行快照现在会把本次后台执行所需的运行时凭据写入私有 R2 快照，Worker 优先直接回放，避免 user_key 图片任务在后台再次强依赖 `ENCRYPTION_KEY`
 - **同节点重跑复用**: submit 阶段若带上 `workflowId/nodeId`，会优先复用同一工作流同一节点仍在进行中的活跃任务；只有旧任务已过期或已被观察到终态，才会释放槽位并重新创建，避免用户重跑画板时被全局 `1/1` 并发门闸误伤
 - **并发闸门前自愈**: submit 在真正执行全局 `1/1` 并发检查前，会先扫描该用户全部活跃任务，把已超时、已坏死或已被 Workflow 观察到终态的旧槽位自动释放；并发门闸继续保留为最后一道保护，而不是让历史脏任务永久卡住新提交
+- **分发失败显式落库**: Worker/Workflow 在后台重建执行上下文时，若遇到快照缺失、凭据恢复失败或其他分发前异常，会直接把 D1 任务标记为 `failed` 并清理快照，避免前端长期看到 `pending + startedAt=null`
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

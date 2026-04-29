@@ -1260,53 +1260,58 @@ export async function processTaskDispatch(
     return
   }
 
-  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
-  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
-  const executionSnapshot = await readTaskExecutionSnapshot(row.id, row.user_id, runtime)
+  try {
+    const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+    const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
+    const executionSnapshot = await readTaskExecutionSnapshot(row.id, row.user_id, runtime)
 
-  let runtimeConfig: UserModelRuntimeConfig | null = executionSnapshot.runtimeConfig ?? null
-  let apiKey = executionSnapshot.apiKey ?? ''
+    let runtimeConfig: UserModelRuntimeConfig | null = executionSnapshot.runtimeConfig ?? null
+    let apiKey = executionSnapshot.apiKey ?? ''
 
-  if (!apiKey) {
-    if (row.execution_mode === 'platform') {
-      apiKey = await getTaskPlatformKey(executionSnapshot.resolvedProvider, runtime)
-    } else {
-      runtimeConfig = await getUserTaskRuntimeConfig(
-        db,
-        row.user_id,
-        row.provider as NodeCapability,
-        runtimeMeta?.userConfigId ?? executionSnapshot.runtimeMeta?.userConfigId,
-        runtime,
-      )
-      apiKey =
-        runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
-          ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
-          : runtimeConfig.apiKey
+    if (!apiKey) {
+      if (row.execution_mode === 'platform') {
+        apiKey = await getTaskPlatformKey(executionSnapshot.resolvedProvider, runtime)
+      } else {
+        runtimeConfig = await getUserTaskRuntimeConfig(
+          db,
+          row.user_id,
+          row.provider as NodeCapability,
+          runtimeMeta?.userConfigId ?? executionSnapshot.runtimeMeta?.userConfigId,
+          runtime,
+        )
+        apiKey =
+          runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
+            ? `${runtimeConfig.apiKey}:${runtimeConfig.secretKey}`
+            : runtimeConfig.apiKey
+      }
     }
-  }
 
-  await executeTaskRequest(
-    db,
-    {
-      taskId: row.id,
-      userId: row.user_id,
-      taskType: row.task_type,
-      requestProvider: executionSnapshot.requestProvider,
-      resolvedProvider: executionSnapshot.resolvedProvider,
-      resolvedModelId: executionSnapshot.resolvedModelId,
-      executionMode: row.execution_mode,
-      resolvedInput: executionSnapshot.resolvedInput,
-      originalInput: executionSnapshot.originalInput,
-      apiKey,
-      reservedPlatformCredits: getReservedTaskCredits(persistedInput),
-      runtimeConfig,
-      orchestrator:
-        runtimeMeta?.orchestrator ??
-        executionSnapshot.runtimeMeta?.orchestrator ??
-        'legacy_queue',
-    },
-    runtime,
-  )
+    await executeTaskRequest(
+      db,
+      {
+        taskId: row.id,
+        userId: row.user_id,
+        taskType: row.task_type,
+        requestProvider: executionSnapshot.requestProvider,
+        resolvedProvider: executionSnapshot.resolvedProvider,
+        resolvedModelId: executionSnapshot.resolvedModelId,
+        executionMode: row.execution_mode,
+        resolvedInput: executionSnapshot.resolvedInput,
+        originalInput: executionSnapshot.originalInput,
+        apiKey,
+        reservedPlatformCredits: getReservedTaskCredits(persistedInput),
+        runtimeConfig,
+        orchestrator:
+          runtimeMeta?.orchestrator ??
+          executionSnapshot.runtimeMeta?.orchestrator ??
+          'legacy_queue',
+      },
+      runtime,
+    )
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    await handleFailure(db, row, errorMessage, runtime)
+  }
 }
 
 async function executeTaskRequest(
@@ -2026,6 +2031,7 @@ async function handleFailure(
   db: D1Database,
   row: TaskRow,
   errorMsg: string,
+  runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<TaskDetail> {
   const nowIso = new Date().toISOString()
 
@@ -2051,6 +2057,7 @@ async function handleFailure(
     .bind(JSON.stringify({ error: errorMsg }), nowIso, nowIso, row.id)
     .run()
 
+  await deleteTaskExecutionSnapshot(row.id, row.user_id, runtime).catch(() => undefined)
   log.error('Task failed', undefined, { taskId: row.id, errorMsg })
   return {
     ...rowToDetail(row),
