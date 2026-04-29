@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:e2e": "pnpm run db:reset-local && pnpm run db:init && next dev --turbopack --port 3000",
-    "build": "pnpm run clean && next build --webpack",
+    "build": "next build --webpack",
+    "build:clean": "pnpm run clean && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",

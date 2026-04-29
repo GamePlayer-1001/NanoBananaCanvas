@@ -84,7 +84,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
-- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (Web + Worker，Queue 消费者与生产者绑定随 wrangler 配置一并发布)
+- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (CI 复用 pnpm/Turbo/Playwright 缓存并产出 OpenNext artifact；Deploy job 直接复用 artifact 发布 Web + Worker，Queue 消费者与生产者绑定随 wrangler 配置一并发布)
 - **域名**: nanobananacanvas.com → Cloudflare Workers (wrangler routes)
 - **监控**: Cloudflare Analytics (零成本, Workers 内置)
 
