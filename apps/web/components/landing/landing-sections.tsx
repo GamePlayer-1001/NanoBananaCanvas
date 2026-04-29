@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next/image 的本地营销素材渲染，
+ * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
  *          依赖 next-intl 的 useLocale/useTranslations，依赖 lucide-react 的区块与交互图标，
  *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
@@ -11,7 +11,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
