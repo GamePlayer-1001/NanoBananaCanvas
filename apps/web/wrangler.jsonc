@@ -42,8 +42,19 @@
     ]
   },
 
+  // Workflows 绑定 — image_gen 长任务主编排
+  "workflows": [
+    {
+      "binding": "IMAGE_TASK_WORKFLOW",
+      "name": "nano-banana-image-task",
+      "class_name": "ImageTaskWorkflow",
+      "script_name": "nano-banana-api"
+    }
+  ],
+
   // 非敏感运行时变量 — 生产部署默认值
   "vars": {
-    "NEXT_PUBLIC_APP_URL": "https://nanobananacanvas.com"
+    "NEXT_PUBLIC_APP_URL": "https://nanobananacanvas.com",
+    "TASK_IMAGE_ORCHESTRATOR": "workflow"
   }
 }

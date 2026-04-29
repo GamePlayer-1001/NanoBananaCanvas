@@ -1,12 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/tasks, @/lib/validations/task
- * [OUTPUT]: 对外提供 POST /api/tasks (提交任务) + GET /api/tasks (列表) + DELETE /api/tasks (批量删除终态任务)
- * [POS]: api/tasks 的入口端点，编排 auth → validate → service → response，兼顾账户页生成作品管理
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db, @/lib/tasks, @/lib/validations/task，依赖 Cloudflare Queue/Workflow 绑定
+ * [OUTPUT]: 对外提供 POST /api/tasks (提交任务并按 orchestrator 分发) + GET /api/tasks (列表) + DELETE /api/tasks (批量删除终态任务)
+ * [POS]: api/tasks 的入口端点，编排 auth → validate → service → queue/workflow dispatch → response，兼顾账户页生成作品管理
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { getCloudflareContext } from '@opennextjs/cloudflare'
-import type { TaskQueueMessage } from '@nano-banana/shared'
+import type { TaskOrchestrator, TaskQueueMessage } from '@nano-banana/shared'
 
 import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
@@ -16,6 +16,10 @@ import { isAppError } from '@/lib/errors'
 import { deleteTasks, listTasks, submitTask } from '@/lib/tasks'
 import { deleteTasksSchema, listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 import { ZodError } from 'zod'
+
+function resolveImageTaskOrchestrator(env: CloudflareEnv): TaskOrchestrator {
+  return env.TASK_IMAGE_ORCHESTRATOR === 'workflow' ? 'workflow' : 'legacy_queue'
+}
 
 /* ─── POST /api/tasks — 提交任务 ────────────────────── */
 
@@ -30,6 +34,8 @@ export async function POST(req: Request) {
     const db = await getDb()
     const body = await req.json()
     const params = submitTaskSchema.parse(body)
+    const { env } = await getCloudflareContext()
+    const orchestrator = resolveImageTaskOrchestrator(env)
 
     const task = await submitTask(db, {
       userId,
@@ -42,15 +48,25 @@ export async function POST(req: Request) {
       input: params.input,
       workflowId: params.workflowId,
       nodeId: params.nodeId,
+      orchestrator,
     })
 
     if (task.deferredExecution) {
-      const { env } = await getCloudflareContext()
-      const message: TaskQueueMessage = {
-        taskId: task.id,
-        userId,
+      if (task.deferredExecution.orchestrator === 'workflow') {
+        await env.IMAGE_TASK_WORKFLOW.create({
+          id: task.id,
+          params: {
+            taskId: task.id,
+            userId,
+          },
+        })
+      } else {
+        const message: TaskQueueMessage = {
+          taskId: task.id,
+          userId,
+        }
+        await env.TASK_QUEUE.send(message)
       }
-      await env.TASK_QUEUE.send(message)
     }
 
     const responseTask = { ...task }

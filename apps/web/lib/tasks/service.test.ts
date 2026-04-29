@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./service，依赖 @/services/ai 的 getPlatformKey mock
- * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义与延后执行图片任务的落库/大 payload 清洗
+ * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、延后执行图片任务的落库/大 payload 清洗与 orchestrator 分流
  * [POS]: lib/tasks 的服务层回归测试，防止平台密钥缺失重新退化成 UNKNOWN 500，并保护图片任务从前台同步阻塞切回后台执行
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -229,6 +229,7 @@ describe('submitTask', () => {
       taskId: task.id,
       resolvedProvider: 'openrouter',
       resolvedModelId: 'openai/dall-e-3',
+      orchestrator: 'legacy_queue',
     })
   })
 
@@ -422,5 +423,75 @@ describe('submitTask', () => {
       taskId: task.id,
       userId: 'user-1',
     })
+  })
+
+  it('does not re-enqueue workflow-managed image tasks during polling self-heal', async () => {
+    vi.mocked(getPlatformKey).mockResolvedValue('platform-key')
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      submit: vi.fn().mockResolvedValue({
+        externalTaskId: null,
+        initialStatus: 'completed',
+        result: {
+          type: 'url',
+          url: 'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
+          contentType: 'image/png',
+        },
+      }),
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const submitDb = createDbMock()
+    const task = await submitTask(submitDb, {
+      userId: 'user-1',
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      modelId: 'openai/dall-e-3',
+      executionMode: 'platform',
+      input: { prompt: 'test prompt' },
+      orchestrator: 'workflow',
+    })
+
+    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    expect(insertCall).toBeDefined()
+    expect(task.deferredExecution?.orchestrator).toBe('workflow')
+
+    const queuedRow = {
+      id: task.id,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: String(insertCall?.args[7]),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const pollingDb = createDbMock(0, queuedRow)
+    const enqueueTask = vi.fn().mockResolvedValue(undefined)
+    const detail = await checkTask(pollingDb, task.id, 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      enqueueTask,
+    })
+
+    expect(detail.status).toBe('pending')
+    expect(enqueueTask).not.toHaveBeenCalled()
   })
 })

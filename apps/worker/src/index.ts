@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的两个定时任务，依赖 queue/process-task 的队列消费者
- * [OUTPUT]: 对外提供 Cloudflare Worker API 入口 (HTTP + Queue + Cron Scheduled)
- * [POS]: apps/worker 的主入口，HTTP 路由 + Queue 消费 + 每 10 分钟 Cron 调度
+ * [INPUT]: 依赖 hono 的 Hono/cors/logger，依赖 cron/* 的两个定时任务，依赖 queue/process-task 的队列消费者，依赖 workflows/image-task-workflow 的长任务编排类
+ * [OUTPUT]: 对外提供 Cloudflare Worker API 入口 (HTTP + Queue + Cron Scheduled) 与 ImageTaskWorkflow 导出
+ * [POS]: apps/worker 的主入口，HTTP 路由 + Queue 消费 + 每 10 分钟 Cron 调度，并对外暴露 Workflows 编排类
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,6 +13,7 @@ import type { TaskQueueMessage } from '@nano-banana/shared'
 import { cleanupExpiredOutputs } from './cron/cleanup'
 import { markTimedOutTasks } from './cron/timeout'
 import { handleTaskQueueMessage } from './queue/process-task'
+import { ImageTaskWorkflow } from './workflows/image-task-workflow'
 
 /* ─── Bindings 类型 ──────────────────────────────────── */
 
@@ -105,3 +106,5 @@ export default {
     )
   },
 }
+
+export { ImageTaskWorkflow }

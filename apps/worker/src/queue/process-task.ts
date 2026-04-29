@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 TaskQueueMessage，依赖 ../../../web/lib/tasks 的 processQueuedTask/TaskServiceRuntime
- * [OUTPUT]: 对外提供 handleTaskQueueMessage，用 Worker 绑定把队列消息桥接到共享任务服务
- * [POS]: worker/queue 的消费者适配层，把 Cloudflare Queue 事件转换为 web 任务服务可执行的 runtime
+ * [OUTPUT]: 对外提供 WorkerTaskBindings/createWorkerTaskRuntime/handleTaskQueueMessage，用 Worker 绑定把队列或 Workflow 事件桥接到共享任务服务
+ * [POS]: worker/queue 的消费者适配层，把 Cloudflare Queue/Workflow 运行时统一转换为 web 任务服务可执行的 runtime
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -9,7 +9,7 @@ import type { TaskQueueMessage } from '@nano-banana/shared'
 
 import { processQueuedTask, type TaskServiceRuntime } from '../../../web/lib/tasks'
 
-type WorkerTaskBindings = {
+export type WorkerTaskBindings = {
   DB: D1Database
   KV: KVNamespace
   UPLOADS: R2Bucket
@@ -36,7 +36,7 @@ function requireBinding(env: WorkerTaskBindings, key: keyof WorkerTaskBindings):
   return value
 }
 
-function createWorkerTaskRuntime(env: WorkerTaskBindings): TaskServiceRuntime {
+export function createWorkerTaskRuntime(env: WorkerTaskBindings): TaskServiceRuntime {
   return {
     requireEnv: async (key) => requireBinding(env, key as keyof WorkerTaskBindings),
     getR2: async () => env.UPLOADS,

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 由 wrangler.jsonc 绑定配置定义
- * [OUTPUT]: 对外提供 CloudflareEnv 类型 + Cloudflare 绑定类型 (D1/KV/R2/Fetcher)
+ * [OUTPUT]: 对外提供 CloudflareEnv 类型 + Cloudflare 绑定类型 (D1/KV/R2/Fetcher/Workflow)
  * [POS]: apps/web 的 Cloudflare Workers 绑定类型声明
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -115,6 +115,15 @@ interface Queue<Message = unknown> {
   send(message: Message, options?: { contentType?: 'json' | 'text' | 'bytes' }): Promise<void>
 }
 
+interface WorkflowInstance {
+  id: string
+}
+
+interface WorkflowBinding<Params = unknown> {
+  create(options?: { id?: string; params?: Params }): Promise<WorkflowInstance>
+  get(id: string): WorkflowInstance
+}
+
 /* ─── CloudflareEnv ──────────────────────────────────────── */
 
 interface CloudflareEnv {
@@ -123,6 +132,8 @@ interface CloudflareEnv {
   UPLOADS: R2Bucket
   ASSETS: Fetcher
   TASK_QUEUE: Queue
+  IMAGE_TASK_WORKFLOW: WorkflowBinding<{ taskId: string; userId: string }>
+  TASK_IMAGE_ORCHESTRATOR?: 'legacy_queue' | 'workflow'
 
   // API Key 加密
   ENCRYPTION_KEY: string

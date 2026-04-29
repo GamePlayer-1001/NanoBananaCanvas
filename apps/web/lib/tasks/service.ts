@@ -3,8 +3,8 @@
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
  *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
- * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processDeferredTask / processQueuedTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款
- * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + 平台 Key / 账号级模型槽位协作
+ * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processDeferredTask / processQueuedTask / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款与 orchestrator 持久化
+ * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Queue/Workflow 双轨 + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,6 +13,7 @@ import type {
   AsyncTaskStatus,
   AsyncTaskType,
   ExecutionMode,
+  TaskOrchestrator,
   TaskQueueMessage,
 } from '@nano-banana/shared'
 
@@ -100,6 +101,7 @@ export interface SubmitTaskParams {
   input: Record<string, unknown>
   workflowId?: string
   nodeId?: string
+  orchestrator?: TaskOrchestrator
 }
 
 interface ReservedTaskBillingDraft {
@@ -125,6 +127,7 @@ interface PersistedDataUrlDescriptor {
 
 interface PersistedTaskRuntimeMeta {
   userConfigId?: string
+  orchestrator?: TaskOrchestrator
 }
 
 interface DeferredTaskPayload {
@@ -180,6 +183,7 @@ interface DeferredTaskExecution {
   apiKey: string
   reservedPlatformCredits: number
   runtimeConfig: UserModelRuntimeConfig | null
+  orchestrator: TaskOrchestrator
 }
 
 export interface SubmitTaskResult extends TaskDetail {
@@ -293,7 +297,19 @@ function readPersistedTaskRuntimeMeta(input: Record<string, unknown>): Persisted
   }
 
   const meta = raw as PersistedTaskRuntimeMeta
-  return meta.userConfigId ? { userConfigId: meta.userConfigId } : null
+  const orchestrator =
+    meta.orchestrator === 'workflow' || meta.orchestrator === 'legacy_queue'
+      ? meta.orchestrator
+      : undefined
+
+  if (!meta.userConfigId && !orchestrator) {
+    return null
+  }
+
+  return {
+    ...(meta.userConfigId ? { userConfigId: meta.userConfigId } : {}),
+    ...(orchestrator ? { orchestrator } : {}),
+  }
 }
 
 function isTerminal(status: AsyncTaskStatus): boolean {
@@ -313,6 +329,17 @@ async function loadTaskRow(
 
 function shouldDeferTaskExecution(taskType: AsyncTaskType): boolean {
   return taskType === 'image_gen'
+}
+
+function normalizeTaskOrchestrator(
+  taskType: AsyncTaskType,
+  orchestrator?: TaskOrchestrator,
+): TaskOrchestrator {
+  if (!shouldDeferTaskExecution(taskType)) {
+    return 'legacy_queue'
+  }
+
+  return orchestrator === 'workflow' ? 'workflow' : 'legacy_queue'
 }
 
 function getReservedTaskCredits(input: Record<string, unknown>): number {
@@ -603,6 +630,7 @@ export async function submitTask(
     input,
     workflowId,
     nodeId,
+    orchestrator,
   } = params
   const config = TASK_CONFIG[taskType]
   const requestProvider = executionMode === 'platform' ? provider : capability
@@ -631,6 +659,7 @@ export async function submitTask(
   let imageCapabilities: ImageModelCapabilities | undefined
   let persistedRuntimeMeta: PersistedTaskRuntimeMeta | undefined
   const taskId = nanoid()
+  const taskOrchestrator = normalizeTaskOrchestrator(taskType, orchestrator)
 
   /* 并发检查 */
   await checkConcurrency(db, userId)
@@ -699,7 +728,10 @@ export async function submitTask(
         ...(runtimeConfig.baseUrl ? { baseUrl: runtimeConfig.baseUrl } : {}),
         ...(imageCapabilities ? { imageCapabilities } : {}),
       }
-      persistedRuntimeMeta = { userConfigId: runtimeConfig.configId }
+      persistedRuntimeMeta = {
+        userConfigId: runtimeConfig.configId,
+        orchestrator: taskOrchestrator,
+      }
     }
 
     if (!shouldDeferTaskExecution(taskType)) {
@@ -716,6 +748,10 @@ export async function submitTask(
         persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
       }
     } else {
+      persistedRuntimeMeta = {
+        ...persistedRuntimeMeta,
+        orchestrator: taskOrchestrator,
+      }
       getProcessor(taskType, resolvedProvider)
       await persistDeferredTaskPayload(
         taskId,
@@ -865,6 +901,7 @@ export async function submitTask(
             apiKey,
             reservedPlatformCredits,
             runtimeConfig,
+            orchestrator: taskOrchestrator,
           }
         : undefined,
   }
@@ -982,6 +1019,10 @@ export async function processQueuedTask(
       apiKey,
       reservedPlatformCredits: getReservedTaskCredits(persistedInput),
       runtimeConfig,
+      orchestrator:
+        runtimeMeta?.orchestrator ??
+        deferredPayload.runtimeMeta?.orchestrator ??
+        'legacy_queue',
     },
     runtime,
   )
@@ -1328,8 +1369,17 @@ export async function checkTask(
     throw new TaskError(ErrorCode.TASK_NOT_FOUND, `Task not found: ${taskId}`, { taskId })
   }
 
+  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
+  const taskOrchestrator = runtimeMeta?.orchestrator ?? 'legacy_queue'
+
   /* 自愈: 图片任务若仍停留 pending 且尚未拿到 external_task_id，则补投递队列，避免轮询请求同步执行 */
-  if (row.task_type === 'image_gen' && row.status === 'pending' && !row.external_task_id) {
+  if (
+    row.task_type === 'image_gen' &&
+    taskOrchestrator === 'legacy_queue' &&
+    row.status === 'pending' &&
+    !row.external_task_id
+  ) {
     const config = TASK_CONFIG[row.task_type]
     const now = Date.now()
     const lastChecked = row.last_checked_at ? new Date(row.last_checked_at).getTime() : 0
@@ -1393,8 +1443,6 @@ export async function checkTask(
   /* 懒评估: 向 Provider 查询最新状态 */
   let apiKey = ''
   let processorProvider = row.provider
-  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
-  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
   if (row.execution_mode === 'user_key' && row.external_task_id) {
     const runtimeConfig = await getUserTaskRuntimeConfig(
       db,
