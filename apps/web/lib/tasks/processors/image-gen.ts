@@ -62,6 +62,31 @@ function readImageCapabilities(params: Record<string, unknown>): ImageModelCapab
     : undefined
 }
 
+function summarizeBaseUrl(baseUrl: string): string {
+  try {
+    const parsed = new URL(baseUrl)
+    return parsed.origin
+  } catch {
+    return baseUrl
+  }
+}
+
+function buildGatewayFailureMessage(
+  status: number,
+  provider: string,
+  baseUrl: string,
+  body: string,
+): string {
+  const endpoint = summarizeBaseUrl(baseUrl)
+  const preview = summarizeResponseBody(body)
+
+  return (
+    `OpenAI-compatible image API ${status} from ${endpoint}: ${preview}. ` +
+    `This usually means the upstream compatible gateway timed out or failed before returning image data, ` +
+    `not that the local workflow worker timed out. Provider=${provider}.`
+  )
+}
+
 function resolveOpenAICompatibleRequestSize(
   sizePreset: string,
   aspectRatio: string,
@@ -109,6 +134,9 @@ async function openAICompatibleSubmit(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    if (statusIsGatewayLikeFailure(res.status)) {
+      throw new Error(buildGatewayFailureMessage(res.status, provider, baseUrl, text))
+    }
     throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
 
@@ -141,6 +169,10 @@ async function openAICompatibleSubmit(
     )
   }
   return { url }
+}
+
+function statusIsGatewayLikeFailure(status: number): boolean {
+  return [502, 503, 504, 520, 522, 524].includes(status)
 }
 
 function resolveOpenAICompatibleBaseUrl(
