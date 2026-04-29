@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG，消费 async_tasks / credit_balances / credit_transactions
- * [OUTPUT]: 对外提供 markTimedOutTasks — 批量标记超时任务为失败，并为平台模式退回冻结 credits
- * [POS]: cron 的超时扫描任务，按 TASK_CONFIG.timeoutMs 判定，并接住漏过前端轮询的超时退款/解冻
+ * [OUTPUT]: 对外提供 markTimedOutTasks — 批量标记 legacy queue 超时任务为失败，并为平台模式退回冻结 credits
+ * [POS]: cron 的超时扫描任务，按 TASK_CONFIG.timeoutMs 判定，并接住漏过前端轮询的 legacy queue 超时退款/解冻
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -16,7 +16,19 @@ interface StaleTask {
   model_id: string
   execution_mode: 'platform' | 'user_key'
   input_data: string
+  external_task_id: string | null
   created_at: string
+}
+
+function isWorkflowManagedTask(inputData: string): boolean {
+  try {
+    const parsed = JSON.parse(inputData) as {
+      __taskRuntime?: { orchestrator?: unknown }
+    }
+    return parsed.__taskRuntime?.orchestrator === 'workflow'
+  } catch {
+    return false
+  }
 }
 
 function createTxnId(): string {
@@ -184,7 +196,7 @@ export async function markTimedOutTasks(db: D1Database): Promise<{ timedOut: num
 
     const { results } = await db
       .prepare(
-        `SELECT id, user_id, task_type, provider, model_id, execution_mode, input_data, created_at
+        `SELECT id, user_id, task_type, provider, model_id, execution_mode, input_data, external_task_id, created_at
          FROM async_tasks
          WHERE task_type = ?
            AND status IN ('pending', 'running')
@@ -197,6 +209,10 @@ export async function markTimedOutTasks(db: D1Database): Promise<{ timedOut: num
     if (!results || results.length === 0) continue
 
     for (const task of results) {
+      if (isWorkflowManagedTask(task.input_data)) {
+        continue
+      }
+
       const nowIso = new Date().toISOString()
       const didRefund = await refundTimedOutTaskCredits(db, task)
 

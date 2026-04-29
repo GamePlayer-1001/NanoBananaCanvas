@@ -1429,9 +1429,9 @@ export async function checkTask(
     return rowToDetail(row)
   }
 
-  /* 超时检测: 创建时间超过 timeoutMs 则标记失败 */
+  /* 超时检测: workflow 主编排任务不再吃 legacy timeout，避免被旧链路误杀 */
   const created = new Date(row.created_at).getTime()
-  if (now - created > config.timeoutMs) {
+  if (taskOrchestrator !== 'workflow' && now - created > config.timeoutMs) {
     await handleTimeout(db, row)
     return {
       ...rowToDetail(row),

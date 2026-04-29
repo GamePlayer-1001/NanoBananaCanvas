@@ -494,4 +494,49 @@ describe('submitTask', () => {
     expect(detail.status).toBe('pending')
     expect(enqueueTask).not.toHaveBeenCalled()
   })
+
+  it('does not fail workflow-managed image tasks via legacy timeout checks', async () => {
+    const oldCreatedAt = new Date(Date.now() - 20 * 60 * 1_000).toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-timeout-workflow',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: JSON.stringify({
+        prompt: 'test prompt',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: oldCreatedAt,
+      started_at: null,
+      completed_at: null,
+      updated_at: oldCreatedAt,
+    })
+
+    const detail = await checkTask(pollingDb, 'task-timeout-workflow', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      enqueueTask: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(detail.status).toBe('pending')
+    expect(detail.output).toBeNull()
+    expect(
+      pollingDb.__calls.some((call) => call.sql.includes("SET status = 'failed'")),
+    ).toBe(false)
+  })
 })

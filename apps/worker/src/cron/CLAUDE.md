@@ -6,7 +6,7 @@ Cloudflare Worker Cron 定时任务 — 每 10 分钟执行一次 (`*/10 * * * *
 ## 成员清单
 
 - `cleanup.ts`: 清理过期 AI 输出文件，按统一 7 天保留期过滤，删除 R2 对象
-- `timeout.ts`: 标记超时异步任务为 failed，按 `TASK_CONFIG.timeoutMs` 判定，并为平台模式退回冻结 credits
+- `timeout.ts`: 标记 legacy queue 超时异步任务为 failed，按 `TASK_CONFIG.timeoutMs` 判定，并为平台模式退回冻结 credits；Workflow 主编排任务不再由 Cron 误杀
 
 ## 架构
 
