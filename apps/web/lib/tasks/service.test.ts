@@ -66,8 +66,13 @@ interface PreparedCall {
 function createDbMock(
   activeCount = 0,
   taskRow: Record<string, unknown> | null = null,
+  options?: {
+    activeRows?: Record<string, unknown>[]
+    dynamicActiveCount?: boolean
+  },
 ): D1Database & { __calls: PreparedCall[] } {
   const calls: PreparedCall[] = []
+  const activeRows = options?.activeRows ?? (taskRow ? [taskRow] : [])
 
   return {
     __calls: calls,
@@ -76,8 +81,24 @@ function createDbMock(
         calls.push({ sql, args })
 
         if (sql.includes('COUNT(*) as cnt')) {
+          const dynamicCount = options?.dynamicActiveCount
+            ? activeRows.filter(
+                (row) => row.status === 'pending' || row.status === 'running',
+              ).length
+            : activeCount
           return {
-            first: vi.fn().mockResolvedValue({ cnt: activeCount }),
+            first: vi.fn().mockResolvedValue({ cnt: dynamicCount }),
+          }
+        }
+
+        if (
+          sql.includes('SELECT * FROM async_tasks') &&
+          sql.includes("status IN ('pending', 'running')") &&
+          sql.includes('ORDER BY created_at DESC') &&
+          !sql.includes('workflow_id = ?')
+        ) {
+          return {
+            all: vi.fn().mockResolvedValue({ results: activeRows }),
           }
         }
 
@@ -131,6 +152,25 @@ function createDbMock(
                 taskRow.output_data = String(args[1] ?? args[0] ?? null)
                 taskRow.completed_at = String(args[2] ?? args[1] ?? new Date().toISOString())
                 taskRow.updated_at = String(args[4] ?? args[2] ?? new Date().toISOString())
+                return { meta: { changes: 1 } }
+              }),
+            }
+          }
+
+          if (sql.includes("SET status = 'failed'")) {
+            return {
+              run: vi.fn().mockImplementation(async () => {
+                const failedRow =
+                  activeRows.find((row) => row.id === args[3]) ??
+                  (taskRow && taskRow.id === args[3] ? taskRow : null)
+
+                if (failedRow) {
+                  failedRow.status = 'failed'
+                  failedRow.output_data = String(args[0] ?? null)
+                  failedRow.completed_at = String(args[1] ?? new Date().toISOString())
+                  failedRow.updated_at = String(args[2] ?? new Date().toISOString())
+                }
+
                 return { meta: { changes: 1 } }
               }),
             }
@@ -296,6 +336,78 @@ describe('submitTask', () => {
     expect(
       db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks')),
     ).toBe(false)
+  })
+
+  it('releases expired active slots before concurrency check so new submissions can continue', async () => {
+    vi.mocked(getPlatformKey).mockResolvedValue('platform-key')
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      submit: vi.fn().mockResolvedValue({
+        externalTaskId: null,
+        initialStatus: 'completed',
+        result: {
+          type: 'url',
+          url: 'data:image/png;base64,ZmFrZS1pbWFnZS1ieXRlcw==',
+          contentType: 'image/png',
+        },
+      }),
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const oldCreatedAt = new Date(Date.now() - 20 * 60 * 1_000).toISOString()
+    const staleRow = {
+      id: 'stale-active-task',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'openrouter',
+      model_id: 'openai/dall-e-3',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: JSON.stringify({ prompt: 'stale prompt' }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: oldCreatedAt,
+      started_at: null,
+      completed_at: null,
+      updated_at: oldCreatedAt,
+    }
+
+    const db = createDbMock(1, null, {
+      activeRows: [staleRow],
+      dynamicActiveCount: true,
+    })
+
+    const task = await submitTask(db, {
+      userId: 'user-1',
+      taskType: 'image_gen',
+      provider: 'openrouter',
+      modelId: 'openai/dall-e-3',
+      executionMode: 'platform',
+      workflowId: 'workflow-2',
+      nodeId: 'node-2',
+      input: { prompt: 'fresh prompt' },
+    })
+
+    expect(task.id).not.toBe('stale-active-task')
+    expect(staleRow.status).toBe('failed')
+    expect(
+      db.__calls.some(
+        (call) =>
+          call.sql.includes("SET status = 'failed'") &&
+          String(call.args[0]).includes('before new submission'),
+      ),
+    ).toBe(true)
+    expect(
+      db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks')),
+    ).toBe(true)
   })
 
   it('completes deferred image tasks in background and updates persistence with internal output url', async () => {

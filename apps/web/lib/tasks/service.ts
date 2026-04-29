@@ -698,6 +698,83 @@ export async function checkConcurrency(
   }
 }
 
+async function listActiveTasksForUser(
+  db: D1Database,
+  userId: string,
+): Promise<TaskRow[]> {
+  const result = await db
+    .prepare(
+      `SELECT * FROM async_tasks
+       WHERE user_id = ? AND status IN ('pending', 'running')
+       ORDER BY created_at DESC`,
+    )
+    .bind(userId)
+    .all<TaskRow>()
+
+  return result.results ?? []
+}
+
+async function resolveActiveTaskSlot(
+  db: D1Database,
+  row: TaskRow,
+  runtime: TaskServiceRuntime,
+  expirationMessage: string,
+): Promise<{ detail: TaskDetail | null; released: boolean }> {
+  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
+  const taskOrchestrator = runtimeMeta?.orchestrator ?? 'legacy_queue'
+
+  if (taskOrchestrator === 'workflow') {
+    const observed = await observeWorkflowTaskState(db, row, runtime)
+    if (observed) {
+      return {
+        detail: isTerminal(observed.status) ? null : observed,
+        released: isTerminal(observed.status),
+      }
+    }
+  }
+
+  const config = TASK_CONFIG[row.task_type]
+  const created = new Date(row.created_at).getTime()
+  if (Date.now() - created > config.timeoutMs) {
+    if (taskOrchestrator === 'workflow') {
+      await handleFailure(db, row, expirationMessage)
+    } else {
+      await handleTimeout(db, row, expirationMessage)
+    }
+    return { detail: null, released: true }
+  }
+
+  return { detail: rowToDetail(row), released: false }
+}
+
+async function releaseBlockedActiveTasksBeforeConcurrency(
+  db: D1Database,
+  userId: string,
+  runtime: TaskServiceRuntime,
+): Promise<void> {
+  const activeRows = await listActiveTasksForUser(db, userId)
+
+  for (const row of activeRows) {
+    const resolution = await resolveActiveTaskSlot(
+      db,
+      row,
+      runtime,
+      `Task slot expired after ${TASK_CONFIG[row.task_type].timeoutMs / 1000}s before new submission`,
+    )
+
+    if (resolution.released) {
+      log.warn('Released stale active task slot before concurrency gate', {
+        taskId: row.id,
+        userId,
+        taskType: row.task_type,
+        workflowId: row.workflow_id,
+        nodeId: row.node_id,
+      })
+    }
+  }
+}
+
 async function findLatestActiveTaskForNode(
   db: D1Database,
   input: {
@@ -731,33 +808,14 @@ async function resolveReusableActiveTask(
   row: TaskRow,
   runtime: TaskServiceRuntime,
 ): Promise<TaskDetail | null> {
-  const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
-  const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
-  const taskOrchestrator = runtimeMeta?.orchestrator ?? 'legacy_queue'
+  const resolution = await resolveActiveTaskSlot(
+    db,
+    row,
+    runtime,
+    `Task slot expired after ${TASK_CONFIG[row.task_type].timeoutMs / 1000}s before node rerun`,
+  )
 
-  if (taskOrchestrator === 'workflow') {
-    const observed = await observeWorkflowTaskState(db, row, runtime)
-    if (observed) {
-      return isTerminal(observed.status) ? null : observed
-    }
-  }
-
-  const config = TASK_CONFIG[row.task_type]
-  const created = new Date(row.created_at).getTime()
-  if (Date.now() - created > config.timeoutMs) {
-    if (taskOrchestrator === 'workflow') {
-      await handleFailure(
-        db,
-        row,
-        `Task slot expired after ${config.timeoutMs / 1000}s before node rerun`,
-      )
-    } else {
-      await handleTimeout(db, row)
-    }
-    return null
-  }
-
-  return rowToDetail(row)
+  return resolution.released ? null : resolution.detail
 }
 
 /* ─── 2. Submit Task ────────────────────────────────── */
@@ -829,6 +887,8 @@ export async function submitTask(
       return reusableTask
     }
   }
+
+  await releaseBlockedActiveTasksBeforeConcurrency(db, userId, runtime)
 
   /* 并发检查 */
   await checkConcurrency(db, userId)
@@ -1932,7 +1992,11 @@ async function handleFailure(
 
 /* ─── Internal: Timeout Handling ────────────────────── */
 
-async function handleTimeout(db: D1Database, row: TaskRow): Promise<void> {
+async function handleTimeout(
+  db: D1Database,
+  row: TaskRow,
+  errorMessage = 'Task timed out',
+): Promise<void> {
   const nowIso = new Date().toISOString()
 
   if (row.execution_mode === 'platform') {
@@ -1954,8 +2018,8 @@ async function handleTimeout(db: D1Database, row: TaskRow): Promise<void> {
            completed_at = ?, updated_at = ?
        WHERE id = ?`,
     )
-    .bind(JSON.stringify({ error: 'Task timed out' }), nowIso, nowIso, row.id)
+    .bind(JSON.stringify({ error: errorMessage }), nowIso, nowIso, row.id)
     .run()
 
-  log.warn('Task timed out', { taskId: row.id, taskType: row.task_type })
+  log.warn('Task timed out', { taskId: row.id, taskType: row.task_type, errorMessage })
 }
