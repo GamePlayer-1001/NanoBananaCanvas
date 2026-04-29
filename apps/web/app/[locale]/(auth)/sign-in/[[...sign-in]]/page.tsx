@@ -69,11 +69,7 @@ export default async function SignInPage({
       switchText={t('register')}
       t={{
         brandName: t('brandName'),
-        visualHeadline: t('visualHeadline'),
-        visualDescription: t('visualDescription'),
-        visualPointOne: t('visualPointOne'),
-        visualPointTwo: t('visualPointTwo'),
-        visualPointThree: t('visualPointThree'),
+        visualHeadline: t('loginVisualHeadline'),
         termsPrefix: t('termsPrefix'),
         termsLink: t('termsLink'),
         and: t('and'),

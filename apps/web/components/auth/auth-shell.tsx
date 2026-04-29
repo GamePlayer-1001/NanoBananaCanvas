@@ -31,10 +31,10 @@ interface AuthShellProps {
   t: {
     brandName: string
     visualHeadline: string
-    visualDescription: string
-    visualPointOne: string
-    visualPointTwo: string
-    visualPointThree: string
+    visualDescription?: string
+    visualPointOne?: string
+    visualPointTwo?: string
+    visualPointThree?: string
     termsPrefix: string
     termsLink: string
     and: string
@@ -53,6 +53,9 @@ export function AuthShell({
   t,
 }: AuthShellProps) {
   const isSignIn = mode === 'sign-in'
+  const visualPoints = [t.visualPointOne, t.visualPointTwo, t.visualPointThree].filter(
+    (point): point is string => Boolean(point),
+  )
 
   return (
     <div className="min-h-screen bg-[#f6f3ef]">
@@ -94,23 +97,27 @@ export function AuthShell({
               <h1 className="max-w-xl font-serif text-5xl leading-[1.02] tracking-tight text-white xl:text-6xl">
                 {t.visualHeadline}
               </h1>
-              <p className="max-w-lg text-lg leading-8 text-white/72">
-                {t.visualDescription}
-              </p>
+              {t.visualDescription ? (
+                <p className="max-w-lg text-lg leading-8 text-white/72">
+                  {t.visualDescription}
+                </p>
+              ) : null}
 
-              <div className="grid gap-4 md:grid-cols-3">
-                {[t.visualPointOne, t.visualPointTwo, t.visualPointThree].map((point) => (
-                  <div
-                    key={point}
-                    className="rounded-[28px] border border-white/12 bg-black/16 px-5 py-5 backdrop-blur-md"
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
-                      <ArrowRight className="h-4 w-4" />
+              {visualPoints.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {visualPoints.map((point) => (
+                    <div
+                      key={point}
+                      className="rounded-[28px] border border-white/12 bg-black/16 px-5 py-5 backdrop-blur-md"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-white/72">{point}</p>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-white/72">{point}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
