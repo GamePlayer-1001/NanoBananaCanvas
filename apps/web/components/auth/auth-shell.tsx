@@ -140,7 +140,7 @@ export function AuthShell({
             </div>
 
             <div className="mb-8 space-y-4 text-center">
-              <div className="mx-auto w-[32rem] max-w-full">
+              <div className="mx-auto w-[24rem] max-w-full">
                 <Image
                   src="/auth-login-right-v2.png"
                   alt=""
