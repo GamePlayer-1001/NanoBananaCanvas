@@ -17,6 +17,8 @@ import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './ty
 const log = createLogger('processor:image-gen')
 const OPENROUTER_IMAGE_BASE_URL = 'https://openrouter.ai/api/v1'
 const OPENAI_IMAGE_BASE_URL = 'https://api.openai.com/v1'
+const OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_CHARS = 3500
+const OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_BYTES = 10_000
 
 interface OpenAICompatibleImageResponse {
   data?: Array<{
@@ -87,6 +89,36 @@ function buildGatewayFailureMessage(
   )
 }
 
+function measurePromptSize(prompt: string): { chars: number; bytes: number } {
+  return {
+    chars: prompt.length,
+    bytes: new TextEncoder().encode(prompt).length,
+  }
+}
+
+function buildPromptTooLongMessage(baseUrl: string, chars: number, bytes: number): string {
+  const endpoint = summarizeBaseUrl(baseUrl)
+  return (
+    `OpenAI-compatible image prompt is too large for the current gateway safety guard ` +
+    `(${chars} chars / ${bytes} bytes, limit ${OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_CHARS} chars ` +
+    `or ${OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_BYTES} bytes). ` +
+    `Long prompts sent to ${endpoint} are prone to upstream 524 timeouts while the real image provider may still bill the request. ` +
+    `Shorten the prompt or switch this image node to a provider with a more reliable image endpoint.`
+  )
+}
+
+export function assertOpenAICompatiblePromptSafety(prompt: string, baseUrl: string): void {
+  const { chars, bytes } = measurePromptSize(prompt)
+  if (
+    chars <= OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_CHARS &&
+    bytes <= OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_BYTES
+  ) {
+    return
+  }
+
+  throw new Error(buildPromptTooLongMessage(baseUrl, chars, bytes))
+}
+
 function resolveOpenAICompatibleRequestSize(
   sizePreset: string,
   aspectRatio: string,
@@ -122,6 +154,8 @@ async function openAICompatibleSubmit(
   if (!baseUrl) {
     throw new Error('OpenAI-compatible image provider requires baseUrl')
   }
+
+  assertOpenAICompatiblePromptSafety(prompt, baseUrl)
 
   const res = await fetch(`${baseUrl}/images/generations`, {
     method: 'POST',

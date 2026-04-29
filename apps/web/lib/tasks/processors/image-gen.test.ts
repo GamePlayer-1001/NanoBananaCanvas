@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  assertOpenAICompatiblePromptSafety,
   ImageGenProcessor,
   resolveImageGenerationSize,
   resolveOpenAICompatibleRequestSize,
@@ -175,5 +176,37 @@ describe('ImageGenProcessor', () => {
         'test-key',
       ),
     ).rejects.toThrow(/Check that baseUrl points to an OpenAI-compatible image endpoint/)
+  })
+
+  it('blocks oversized OpenAI-compatible prompts before the gateway request is sent', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openai-compatible')
+    const prompt = '超长提示词'.repeat(1000)
+
+    await expect(
+      processor.submit(
+        {
+          model: 'demo-model',
+          params: {
+            prompt,
+            baseUrl: 'http://www.1314mc.net:3333/v1',
+          },
+        },
+        'test-key',
+      ),
+    ).rejects.toThrow(/Long prompts sent to http:\/\/www\.1314mc\.net:3333 are prone to upstream 524 timeouts/)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('allows prompts within the safety guard limits', () => {
+    expect(() =>
+      assertOpenAICompatiblePromptSafety(
+        '生成一张在户外打篮球的男孩照片',
+        'https://example.com/v1',
+      ),
+    ).not.toThrow()
   })
 })
