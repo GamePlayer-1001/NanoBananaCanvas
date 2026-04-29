@@ -8,7 +8,7 @@
 
 ```
 index.ts              — 聚合导出执行引擎公共 API
-topological-sort.ts   — Kahn 算法 BFS 拓扑排序 + 环检测 (O(V+E))
+topological-sort.ts   — Kahn 拓扑排序 + 环检测 (O(V+E))，对 ready 节点采用“已打开分支优先”调度，尽量让独立分支先走到展示/终端再切换
 node-executor.ts      — 节点执行分发器 (14 种节点类型)，先经 ai-node-config 解析平台 provider / 用户 capability，再路由到执行函数；任务型节点现按 TASK_CONFIG 间隔持续轮询，直到 completed/failed/cancelled 或用户中止
 workflow-executor.ts  — 顶层编排器 WorkflowExecutor 类 (排序→执行→条件跳过→循环迭代→中断→错误处理)
 topological-sort.test.ts — 拓扑排序单元测试 (8 用例: 空图/线性/钻石/断连/环检测)
@@ -20,7 +20,7 @@ workflow-executor.test.ts — 执行器集成测试 (条件分支跳过传播 + 
 
 ```
 WorkflowExecutor.execute()
-    ├── topologicalSort(nodes, edges)    → 确定执行顺序
+    ├── topologicalSort(nodes, edges)    → 确定执行顺序（优先延续当前 ready 分支）
     ├── for nodeId of order:
     │   ├── skip if in skippedNodes      → 被条件/循环标记的节点
     │   ├── collectInputs()              → 沿 edges 回溯上游输出
@@ -53,5 +53,10 @@ WorkflowExecutor.execute()
 3. 主循环标记 body 节点为 skipped，由 executeLoopBody() 独立驱动
 4. 每次迭代: 更新 item-out/index-out → 按拓扑序执行 body（支持 body 内 conditional/loop）→ 收集终端输出
 5. results-out = 所有迭代的聚合结果
+
+## 排序策略
+
+对满足依赖的 ready 节点，不再简单按 BFS 横向扫层，而是优先继续当前已经打开的分支。
+这样像 `文本1→图片1→展示1` 与 `文本2→图片2→展示2` 这样的独立链路，会先把第一条链路走通，再切到第二条链路，减少“前一条分支明明成功却被后一条无关失败截断展示”的体验裂缝。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

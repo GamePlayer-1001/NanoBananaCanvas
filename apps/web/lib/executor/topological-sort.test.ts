@@ -59,6 +59,33 @@ describe('topologicalSort', () => {
     expect(result).toContain('c')
   })
 
+  it('finishes the current ready branch before switching to another disconnected root', () => {
+    const nodes = [
+      node('text-1'),
+      node('image-1'),
+      node('display-1'),
+      node('text-2'),
+      node('image-2'),
+      node('display-2'),
+    ]
+    const edges = [
+      edge('text-1', 'image-1'),
+      edge('image-1', 'display-1'),
+      edge('text-2', 'image-2'),
+      edge('image-2', 'display-2'),
+    ]
+
+    const result = topologicalSort(nodes, edges)
+    expect(result).toEqual([
+      'text-1',
+      'image-1',
+      'display-1',
+      'text-2',
+      'image-2',
+      'display-2',
+    ])
+  })
+
   it('throws on cycle: A → B → A', () => {
     const nodes = [node('a'), node('b')]
     const edges = [edge('a', 'b'), edge('b', 'a')]
