@@ -1,33 +1,22 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
- *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的定价与交互图标，
+ * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 next/image 的本地营销素材渲染，
+ *          依赖 next-intl 的 useLocale/useTranslations，依赖 lucide-react 的区块与交互图标，
  *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
- *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态价格
+ *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/定价/评价/FAQ 叙事区块
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
-import {
-  BadgeDollarSign,
-  ChevronDown,
-  Coins,
-  ShieldCheck,
-  Sparkles,
-  Workflow,
-  Zap,
-} from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
-import {
-  BILLING_CREDIT_PACK_SNAPSHOTS,
-  BILLING_PLAN_SNAPSHOTS,
-} from '@/lib/billing/plans'
+import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
+import { BILLING_PLAN_SNAPSHOTS } from '@/lib/billing/plans'
 import { Link } from '@/i18n/navigation'
 export { ModelMindMapSection } from './model-mind-map-section'
 
@@ -56,38 +45,7 @@ const FEATURE_VISUALS = {
   },
 } as const
 
-const LANDING_PRICING_MODES = [
-  {
-    key: 'monthly',
-    icon: BadgeDollarSign,
-    titleKey: 'toggleMonthly',
-    panelTitleKey: 'toggleMonthly',
-    className:
-      'border-[#6b5cff]/40 bg-[linear-gradient(180deg,rgba(19,18,29,0.98),rgba(13,13,21,0.98))] shadow-[0_24px_72px_rgba(88,76,214,0.16)]',
-    badgeClassName: 'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d0c9ff]',
-    chipClassName: 'border-[#6b5cff]/22 bg-[#6b5cff]/10 text-[#ddd7ff]',
-  },
-  {
-    key: 'oneTime',
-    icon: ShieldCheck,
-    titleKey: 'toggleOneTime',
-    panelTitleKey: 'toggleOneTime',
-    className:
-      'border-white/10 bg-[linear-gradient(180deg,rgba(23,23,28,0.98),rgba(16,16,20,0.98))] shadow-[0_18px_54px_rgba(0,0,0,0.18)]',
-    badgeClassName: 'border-white/10 bg-white/6 text-white/78',
-    chipClassName: 'border-white/10 bg-white/6 text-white/82',
-  },
-  {
-    key: 'credits',
-    icon: Coins,
-    titleKey: 'toggleCredits',
-    panelTitleKey: 'toggleCredits',
-    className:
-      'border-[#7f7256]/20 bg-[linear-gradient(180deg,rgba(28,28,26,0.98),rgba(20,20,19,0.98))] shadow-[0_18px_54px_rgba(0,0,0,0.18)]',
-    badgeClassName: 'border-[#8c7a54]/18 bg-[#8c7a54]/10 text-[#ece0c5]',
-    chipClassName: 'border-[#8c7a54]/14 bg-[#8c7a54]/8 text-[#f0e3c8]',
-  },
-] as const
+const LANDING_PERSONA_ITEMS = ['free', 'standard', 'ultimate'] as const
 
 const TESTIMONIAL_ITEMS = [
   'pixel',
@@ -419,33 +377,18 @@ export function FeaturesSection() {
 
 export function PricingSection({
   plans,
-  creditPacks,
 }: {
   plans: PublicBillingPlanPrice[]
-  creditPacks: PublicCreditPackPrice[]
 }) {
   const pricingT = useTranslations('landing.sections.pricing')
   const billingT = useTranslations('pricing')
   const locale = useLocale()
-  const [selectedMode, setSelectedMode] =
-    useState<(typeof LANDING_PRICING_MODES)[number]['key']>('monthly')
-
-  const planDescriptions = {
-    standard: billingT('standardDescription'),
-    pro: billingT('proDescription'),
-    ultimate: billingT('ultimateDescription'),
-  } as const
-  const selectedModeConfig =
-    LANDING_PRICING_MODES.find((mode) => mode.key === selectedMode) ??
-    LANDING_PRICING_MODES[0]
-  const visiblePlans = plans.filter((plan) =>
-    selectedMode === 'monthly'
-      ? plan.purchaseMode === 'plan_auto_monthly'
-      : selectedMode === 'oneTime'
-        ? plan.purchaseMode === 'plan_one_time'
-        : false,
+  const monthlyPlans = plans.filter(
+    (plan) => plan.purchaseMode === 'plan_auto_monthly',
   )
-  const visibleCreditPacks = selectedMode === 'credits' ? creditPacks : []
+  const monthlyPlanMap = Object.fromEntries(
+    monthlyPlans.map((plan) => [plan.plan, plan]),
+  ) as Partial<Record<'standard' | 'pro' | 'ultimate', PublicBillingPlanPrice>>
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
@@ -458,214 +401,92 @@ export function PricingSection({
             {pricingT('body')}
           </p>
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            {LANDING_PRICING_MODES.map((mode) => (
-              <button
-                key={mode.key}
-                type="button"
-                onClick={() => setSelectedMode(mode.key)}
-                className={`inline-flex min-w-[120px] items-center justify-center rounded-full border px-5 py-3 text-sm font-semibold transition ${
-                  selectedMode === mode.key
-                    ? 'border-white bg-white text-black'
-                    : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-white/20 hover:text-white'
-                }`}
-              >
-                {billingT(mode.titleKey)}
-              </button>
-            ))}
-          </div>
-
-          <p className="mx-auto mt-5 max-w-[46rem] text-sm leading-7 text-white/48 md:text-base">
-            {pricingT(`groups.${selectedMode}.body`)}
-          </p>
         </div>
 
-        <div
-          className={`mt-14 rounded-[32px] border p-6 md:p-8 ${selectedModeConfig.className}`}
-        >
-          <div className="flex flex-col gap-4 border-b border-white/8 pb-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-white/82">
-                <selectedModeConfig.icon className="h-5.5 w-5.5" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
+        <div className="mt-14 grid gap-4 xl:grid-cols-3">
+          {LANDING_PERSONA_ITEMS.map((planKey) => {
+            const snapshot =
+              planKey === 'free' ? null : BILLING_PLAN_SNAPSHOTS[planKey]
+            const livePlan =
+              planKey === 'free' ? null : monthlyPlanMap[planKey]
+            const priceLabel =
+              planKey === 'free'
+                ? billingT('freePriceValue')
+                : livePlan
+                  ? formatLandingMoney(locale, livePlan.currency, livePlan.unitAmount)
+                  : pricingT('pricePending')
+
+            return (
+              <article
+                key={planKey}
+                className={`flex h-full flex-col rounded-[28px] border p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-7 ${
+                  planKey === 'standard'
+                    ? 'border-[#6b5cff]/30 bg-[linear-gradient(180deg,rgba(20,18,35,0.98),rgba(12,11,21,0.98))]'
+                    : planKey === 'ultimate'
+                      ? 'border-[#3a342d] bg-[linear-gradient(180deg,rgba(28,24,19,0.94),rgba(13,12,10,0.98))]'
+                      : 'border-white/10 bg-[linear-gradient(180deg,rgba(19,20,24,0.96),rgba(11,12,15,0.98))]'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[1.7rem] leading-tight font-semibold tracking-tight text-white md:text-[1.95rem]">
+                      {pricingT(`plans.${planKey}.name`)}
+                    </p>
+                    <p className="mt-3 text-sm leading-7 text-white/60 md:text-base">
+                      {pricingT(`plans.${planKey}.body`)}
+                    </p>
+                  </div>
                   <span
-                    className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] uppercase ${selectedModeConfig.badgeClassName}`}
+                    className={`inline-flex shrink-0 rounded-full border px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase ${
+                      planKey === 'standard'
+                        ? 'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d3ccff]'
+                        : planKey === 'ultimate'
+                          ? 'border-[#8c7a54]/18 bg-[#8c7a54]/10 text-[#ece0c5]'
+                          : 'border-white/10 bg-white/[0.06] text-white/72'
+                    }`}
                   >
-                    {pricingT(`groups.${selectedMode}.badge`)}
+                    {pricingT(`plans.${planKey}.planLabel`)}
                   </span>
-                  {selectedMode === 'monthly' ? (
-                    <span className="rounded-full border border-[#6b5cff]/30 bg-[#6b5cff]/12 px-3 py-1 text-xs font-medium text-[#d3ccff]">
-                      {pricingT('popular')}
-                    </span>
-                  ) : null}
                 </div>
-                <h3 className="mt-4 text-[1.9rem] font-semibold tracking-tight text-white md:text-[2.3rem]">
-                  {billingT(selectedModeConfig.panelTitleKey)}
-                </h3>
-                <p className="mt-2 max-w-[42rem] text-sm leading-7 text-white/58 md:text-base">
-                  {pricingT('summaryNote')}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div
-            className={`mt-8 grid gap-4 ${
-              selectedMode === 'credits'
-                ? 'md:grid-cols-2 xl:grid-cols-4'
-                : 'xl:grid-cols-3'
-            }`}
-          >
-            {selectedMode === 'credits'
-              ? visibleCreditPacks.map((creditPack) => {
-                  const packageId = creditPack.packageId
-                  const pack = BILLING_CREDIT_PACK_SNAPSHOTS[packageId]
-                  return (
-                    <article
-                      key={packageId}
-                      className={`flex h-full flex-col rounded-[26px] border p-5 ${
-                        packageId === '3500'
-                          ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
-                          : 'border-white/8 bg-white/[0.03]'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[1.8rem] font-semibold tracking-tight text-white">
-                            {billingT('creditsValue', {
-                              value: pack.totalCredits.toLocaleString(),
-                            })}
-                          </p>
-                          <p className="mt-2 text-sm leading-6 text-white/55">
-                            {pack.bonusCredits > 0
-                              ? billingT('creditsBonus', {
-                                  base: pack.credits.toLocaleString(),
-                                  bonus: pack.bonusCredits.toLocaleString(),
-                                })
-                              : billingT('creditsBaseOnly', {
-                                  base: pack.credits.toLocaleString(),
-                                })}
-                          </p>
-                        </div>
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${selectedModeConfig.chipClassName}`}
-                        >
-                          {billingT('toggleCredits')}
-                        </span>
-                      </div>
+                <div className="mt-6 border-t border-white/8 pt-6">
+                  <p className="text-[2.55rem] leading-none font-semibold tracking-tight text-white">
+                    {priceLabel}
+                  </p>
+                  <p className="mt-2 text-sm text-white/45">
+                    {planKey === 'free'
+                      ? billingT('freePriceLabel')
+                      : billingT('billedMonthly')}
+                  </p>
+                </div>
 
-                      <div className="mt-5 border-t border-white/8 pt-5">
-                        <p className="text-[2.35rem] leading-none font-semibold tracking-tight text-white">
-                          {formatLandingMoney(locale, creditPack.currency, creditPack.unitAmount)}
-                        </p>
-                        <p className="mt-2 text-sm text-white/45">
-                          {billingT('billedOneTime')}
-                        </p>
-                      </div>
+                <div className="mt-6 space-y-2 text-sm leading-6 text-white/62">
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                    {planKey === 'free'
+                      ? pricingT('plans.free.note')
+                      : `${billingT('monthlyCredits')} · ${snapshot?.monthlyCredits.toLocaleString()}`}
+                  </div>
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                    {planKey === 'free'
+                      ? pricingT('plans.free.storageNote')
+                      : `${billingT('storageIncluded')} · ${billingT('storageValue', {
+                          value: snapshot?.storageGB ?? 0,
+                        })}`}
+                  </div>
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
+                    {pricingT(`plans.${planKey}.supportNote`)}
+                  </div>
+                </div>
 
-                      <div className="mt-5 space-y-2 text-sm leading-6 text-white/62">
-                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
-                          {billingT('creditsIncluded')} · {pack.credits.toLocaleString()}
-                        </div>
-                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
-                          {billingT('creditsBonusLabel')} · +
-                          {pack.bonusCredits.toLocaleString()}
-                        </div>
-                      </div>
-
-                      <Link
-                        href="/pricing"
-                        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
-                      >
-                        {billingT('buyCredits')}
-                      </Link>
-                    </article>
-                  )
-                })
-              : visiblePlans.map((plan) => {
-                  const planKey = plan.plan
-                  const snapshot = BILLING_PLAN_SNAPSHOTS[planKey]
-                  const creditsLabel =
-                    selectedMode === 'monthly'
-                      ? billingT('monthlyCredits')
-                      : billingT('permanentCredits')
-                  const ctaLabel =
-                    selectedMode === 'monthly'
-                      ? `${billingT('startSubscription')} ${billingT(`${planKey}Name`)}`
-                      : `${billingT('buyOneTime')} ${billingT(`${planKey}Name`)}`
-
-                  return (
-                    <article
-                      key={`${selectedMode}-${planKey}`}
-                      className={`flex h-full flex-col rounded-[26px] border p-5 ${
-                        planKey === 'pro'
-                          ? 'border-[#6b5cff]/28 bg-[#6b5cff]/[0.06]'
-                          : 'border-white/8 bg-white/[0.03]'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-[1.8rem] font-semibold tracking-tight text-white">
-                              {billingT(`${planKey}Name`)}
-                            </p>
-                            {planKey === 'pro' ? (
-                              <span className="rounded-full border border-[#6b5cff]/30 bg-[#6b5cff]/12 px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.14em] text-[#d3ccff] uppercase">
-                                {pricingT('popular')}
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-white/55">
-                            {planDescriptions[planKey]}
-                          </p>
-                        </div>
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${selectedModeConfig.chipClassName}`}
-                        >
-                          {selectedMode === 'monthly'
-                            ? pricingT(`plans.${planKey}.period`)
-                            : billingT('billedOneTime')}
-                        </span>
-                      </div>
-
-                      <div className="mt-5 border-t border-white/8 pt-5">
-                        <p className="text-[2.35rem] leading-none font-semibold tracking-tight text-white">
-                          {formatLandingMoney(locale, plan.currency, plan.unitAmount)}
-                        </p>
-                        <p className="mt-2 text-sm text-white/45">
-                          {selectedMode === 'monthly'
-                            ? billingT('billedMonthly')
-                            : billingT('billedOneTime')}
-                        </p>
-                      </div>
-
-                      <div className="mt-5 space-y-2 text-sm leading-6 text-white/62">
-                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
-                          {creditsLabel} · {snapshot.monthlyCredits.toLocaleString()}
-                        </div>
-                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
-                          {billingT('storageIncluded')} ·{' '}
-                          {billingT('storageValue', {
-                            value: snapshot.storageGB,
-                          })}
-                        </div>
-                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3">
-                          {pricingT(`plans.${planKey}.note`)}
-                        </div>
-                      </div>
-
-                      <Link
-                        href="/pricing"
-                        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
-                      >
-                        {ctaLabel}
-                      </Link>
-                    </article>
-                  )
-                })}
-          </div>
+                <Link
+                  href="/pricing"
+                  className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
+                >
+                  {pricingT(`plans.${planKey}.cta`)}
+                </Link>
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>

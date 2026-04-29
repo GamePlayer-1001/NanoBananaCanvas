@@ -148,24 +148,32 @@
       },
       "pricing": {
         "eyebrow": "Pricing",
-        "title": "Clear boundaries from first test to steady production.",
-        "body": "Three purchase modes designed for recurring use, project-based buying, and fast top-ups, so Nano Banana Canvas fits the way your production actually scales.",
+        "title": "Plans for every stage of creating",
+        "body": "Three simple tiers for testing ideas, creating every day, and running team production workflows without forcing the homepage to explain every billing edge case.",
         "popular": "Recommended",
         "credits": "{value} monthly credits",
         "storage": "{value} storage",
         "cta": "View pricing",
+        "pricePending": "Live price on /pricing",
         "plans": {
           "free": {
-            "name": "Free",
-            "body": "Start by validating whether the workflow works before you upgrade.",
+            "name": "For Explorers",
+            "body": "For trying ideas and building momentum.",
+            "planLabel": "Free",
             "period": "Start here",
-            "note": "Best for proving the workflow first"
+            "note": "Validate the workflow before you think about upgrading.",
+            "storageNote": "Start inside the canvas with the default account state.",
+            "supportNote": "Best when you are still finding your creative rhythm.",
+            "cta": "Start Free"
           },
           "standard": {
-            "name": "Standard",
-            "body": "Fits solo creators and lighter teams running AI workflows on a steady basis.",
+            "name": "For Daily Creators",
+            "body": "For people creating every day.",
+            "planLabel": "Standard",
             "period": "Per month",
-            "note": "For ongoing output"
+            "note": "For ongoing output",
+            "supportNote": "Best when creation has become a real daily operating habit.",
+            "cta": "Start subscription"
           },
           "pro": {
             "name": "Pro",
@@ -174,10 +182,13 @@
             "note": "Best balance for working teams"
           },
           "ultimate": {
-            "name": "Ultimate",
-            "body": "Fits studio-scale capacity, parallel projects, and heavier output requirements.",
+            "name": "For Studios",
+            "body": "For teams and production workflows.",
+            "planLabel": "Ultimate",
             "period": "Per month",
-            "note": "For high-load teams"
+            "note": "For high-load teams",
+            "supportNote": "Best when multiple operators and production throughput matter.",
+            "cta": "Start subscription"
           }
         },
         "summaryNote": "Auto monthly plans fit steady production, one-time plans fit project-based buying, and credit packs fit fast top-ups during busy runs.",

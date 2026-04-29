@@ -4,7 +4,7 @@
  *          依赖 @/components/landing/landing-sections，
  *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，动态注入 Stripe 定价后按 Hero/功能/定价/评价/模型/FAQ/Footer 承载公开转化叙事
+ * [POS]: (landing) 路由组的首页，动态注入 Stripe 定价后按 Hero/功能/人格分层定价/评价/模型/FAQ/Footer 承载公开转化叙事
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -155,10 +155,7 @@ export default async function LandingPage({
       />
       <HeroSection />
       <FeaturesSection />
-      <PricingSection
-        plans={pricing?.plans ?? []}
-        creditPacks={pricing?.creditPacks ?? []}
-      />
+      <PricingSection plans={pricing?.plans ?? []} />
       <TestimonialsSection />
       <ModelMindMapSection />
       <FaqSection />

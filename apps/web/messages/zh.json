@@ -148,24 +148,32 @@
       },
       "pricing": {
         "eyebrow": "定价",
-        "title": "从试用到稳定生产，都有清楚边界。",
-        "body": "围绕持续使用、项目制购买与高峰期补能设计的三类价格结构，让 Nano Banana Canvas 更容易按你的生产节奏使用。",
+        "title": "覆盖每个创作阶段的方案",
+        "body": "用三张清楚的人格分层卡片，分别承接试想法、日常高频创作和团队生产流程，而不是在首页把所有计费边界一次讲完。",
         "popular": "推荐",
         "credits": "每月 {value} 积分",
         "storage": "{value} 存储空间",
         "cta": "查看定价",
+        "pricePending": "实时价格见 /pricing",
         "plans": {
           "free": {
-            "name": "Free",
-            "body": "先进入画布验证工作流是否成立，再决定是否升级。",
+            "name": "For Explorers",
+            "body": "For trying ideas and building momentum.",
+            "planLabel": "Free",
             "period": "从这里开始",
-            "note": "适合先试清楚流程"
+            "note": "先把工作流试清楚，再考虑升级。",
+            "storageNote": "先以默认账户状态进入画布开始创作。",
+            "supportNote": "适合还在摸索节奏和方向的阶段。",
+            "cta": "Start Free"
           },
           "standard": {
-            "name": "Standard",
-            "body": "适合稳定使用 AI 工作流的个人创作者与轻量团队。",
+            "name": "For Daily Creators",
+            "body": "For people creating every day.",
+            "planLabel": "Standard",
             "period": "按月",
-            "note": "适合持续产出"
+            "note": "适合持续产出",
+            "supportNote": "适合已经进入日更或高频产出的个人创作者。",
+            "cta": "开始订阅"
           },
           "pro": {
             "name": "Pro",
@@ -174,10 +182,13 @@
             "note": "最适合真实生产的平衡档"
           },
           "ultimate": {
-            "name": "Ultimate",
-            "body": "适合工作室级容量、复杂项目并行与更高输出需求。",
+            "name": "For Studios",
+            "body": "For teams and production workflows.",
+            "planLabel": "Ultimate",
             "period": "按月",
-            "note": "面向高负载团队"
+            "note": "面向高负载团队",
+            "supportNote": "适合多人协作、并行项目和正式生产流程。",
+            "cta": "开始订阅"
           }
         },
         "summaryNote": "月付适合稳定生产，一次性套餐适合项目制购买，积分充值适合高峰期快速补能。",
