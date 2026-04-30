@@ -75,7 +75,7 @@
 
 ### Agent 基础能力层
 
-- [ ] `AGENT-100` 创建 `lib/agent/types.ts`
+- [x] `AGENT-100` 创建 `lib/agent/types.ts`
 - [ ] `AGENT-101` 创建 `lib/agent/constants.ts`
 - [ ] `AGENT-102` 创建 `lib/agent/summarize-canvas.ts`
 - [ ] `AGENT-103` 创建 `lib/agent/build-agent-plan.ts`
