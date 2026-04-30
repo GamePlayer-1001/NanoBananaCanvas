@@ -314,6 +314,7 @@ export function useAgentSession({
           id: crypto.randomUUID(),
           role: 'prompt-confirmation',
           payloadId: nextPlan.promptConfirmation.id,
+          payload: nextPlan.promptConfirmation,
           createdAt: new Date().toISOString(),
         })
       }

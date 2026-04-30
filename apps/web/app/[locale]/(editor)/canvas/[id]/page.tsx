@@ -68,7 +68,6 @@ export default function CanvasPage({
   const mode = useAgentStore((state) => state.mode)
   const status = useAgentStore((state) => state.status)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
-  const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
   const selectionContext = useAgentStore((state) => state.selectionContext)
   const errorMessage = useAgentStore((state) => state.errorMessage)
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
@@ -221,22 +220,10 @@ export default function CanvasPage({
             id: message.id,
             type: 'prompt-confirmation' as const,
             payloadId: message.payloadId,
-            originalIntent:
-              promptConfirmation?.id === message.payloadId
-                ? promptConfirmation.originalIntent
-                : '待接入 Prompt Confirmation Payload',
-            visualProposal:
-              promptConfirmation?.id === message.payloadId
-                ? promptConfirmation.visualProposal
-                : `占位 Payload：${message.payloadId}`,
-            executionPrompt:
-              promptConfirmation?.id === message.payloadId
-                ? promptConfirmation.executionPrompt
-                : '后续在 M4 接入真实 prompt 对比内容。',
-            styleOptions:
-              promptConfirmation?.id === message.payloadId
-                ? promptConfirmation.styleOptions?.map((item) => item.label)
-                : [],
+            originalIntent: message.payload.originalIntent,
+            visualProposal: message.payload.visualProposal,
+            executionPrompt: message.payload.executionPrompt,
+            styleOptions: message.payload.styleOptions?.map((item) => item.label) ?? [],
             expanded: expandedPromptId === message.payloadId,
           }
         }
@@ -253,7 +240,15 @@ export default function CanvasPage({
 
         throw new Error(`Unhandled agent message role: ${String((message as { role?: string }).role)}`)
       }),
-    [expandedPromptId, messages, pendingPlan, pendingPlanAlternatives, promptConfirmation, status, tAgent],
+    [
+      expandedPromptId,
+      messages,
+      pendingPlan,
+      pendingPlanAlternatives,
+      selectPendingPlanVariant,
+      status,
+      tAgent,
+    ],
   )
 
   const modeLabel = {
@@ -391,7 +386,7 @@ export default function CanvasPage({
                         ? activeTaskLabel
                       : executionLabel
                         ? executionLabel
-                      : promptConfirmation
+                      : pendingPlan?.promptConfirmation
                         ? tAgent('contextPromptConfirm')
                       : template
                         ? `当前模板：${template.name}`
@@ -402,12 +397,12 @@ export default function CanvasPage({
                           : tAgent('contextConnected')
                   }
                   actionLabel={
-                    pendingPlan && !promptConfirmation
+                    pendingPlan && !pendingPlan.promptConfirmation
                       ? (isApplying ? tAgent('actionApplying') : tAgent('actionApply'))
                       : undefined
                   }
                   onAction={
-                    pendingPlan && !promptConfirmation ? () => void applyPendingPlan() : undefined
+                    pendingPlan && !pendingPlan.promptConfirmation ? () => void applyPendingPlan() : undefined
                   }
                   secondaryActionLabel={pendingPlan ? tAgent('actionReject') : undefined}
                   onSecondaryAction={pendingPlan ? rejectPendingPlan : undefined}

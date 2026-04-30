@@ -6,7 +6,7 @@
  */
 
 import { agentPlanRequestSchema, agentPlanResponseSchema } from '@/lib/validations/agent'
-import type { AgentPlan, AgentPlanRequest, AgentPlanResponse } from './types'
+import type { AgentPlanRequest, AgentPlanResponse } from './types'
 
 export async function buildAgentPlan(input: AgentPlanRequest): Promise<AgentPlanResponse> {
   const request = agentPlanRequestSchema.parse(input)

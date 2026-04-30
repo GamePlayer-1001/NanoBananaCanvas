@@ -299,6 +299,7 @@ export type AgentMessage =
       id: string
       role: 'prompt-confirmation'
       payloadId: string
+      payload: PromptConfirmationPayload
       createdAt: string
     }
   | {

@@ -160,4 +160,27 @@ describe('useAgentStore', () => {
 
     expect(useAgentStore.getState()).toMatchObject(initialState)
   })
+
+  it('keeps prompt confirmation payload snapshots inside historical messages', () => {
+    const payload = createPromptPayload()
+
+    useAgentStore.getState().appendMessage({
+      id: 'msg-prompt-1',
+      role: 'prompt-confirmation',
+      payloadId: payload.id,
+      payload,
+      createdAt: '2026-04-30T00:00:00.000Z',
+    })
+    useAgentStore.getState().clearPromptConfirmation()
+
+    expect(useAgentStore.getState().messages).toEqual([
+      {
+        id: 'msg-prompt-1',
+        role: 'prompt-confirmation',
+        payloadId: payload.id,
+        payload,
+        createdAt: '2026-04-30T00:00:00.000Z',
+      },
+    ])
+  })
 })
