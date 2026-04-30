@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils'
 const DEFAULT_WIDTH = 600
 const MIN_WIDTH = 510
 const MAX_WIDTH = 840
+const DEFAULT_HEIGHT = 760
+const MIN_HEIGHT = 520
+const MAX_HEIGHT = 920
 const DEFAULT_POSITION = { x: -24, y: 0 }
 
 interface AgentPanelProps {
@@ -37,6 +40,7 @@ export function AgentPanel({
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [width, setWidth] = useState(DEFAULT_WIDTH)
+  const [height, setHeight] = useState(DEFAULT_HEIGHT)
   const [position, setPosition] = useState(DEFAULT_POSITION)
   const dragRef = useRef<{
     pointerId: number
@@ -47,9 +51,13 @@ export function AgentPanel({
   } | null>(null)
   const resizeRef = useRef<{
     pointerId: number
+    mode: 'left' | 'top' | 'corner'
     startX: number
+    startY: number
     startWidth: number
+    startHeight: number
     originX: number
+    originY: number
   } | null>(null)
 
   useEffect(() => {
@@ -65,16 +73,37 @@ export function AgentPanel({
 
       if (resizeRef.current) {
         const deltaX = resizeRef.current.startX - event.clientX
-        const nextWidth = Math.min(
-          MAX_WIDTH,
-          Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX),
-        )
+        const deltaY = resizeRef.current.startY - event.clientY
+        const nextWidth =
+          resizeRef.current.mode === 'top'
+            ? resizeRef.current.startWidth
+            : Math.min(
+                MAX_WIDTH,
+                Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX),
+              )
+        const nextHeight =
+          resizeRef.current.mode === 'left'
+            ? resizeRef.current.startHeight
+            : Math.min(
+                MAX_HEIGHT,
+                Math.max(MIN_HEIGHT, resizeRef.current.startHeight + deltaY),
+              )
+
         const widthDelta = nextWidth - resizeRef.current.startWidth
+        const heightDelta = nextHeight - resizeRef.current.startHeight
+
         setWidth(nextWidth)
-        setPosition((current) => ({
-          ...current,
-          x: resizeRef.current?.originX ?? current.x - widthDelta,
-        }))
+        setHeight(nextHeight)
+        setPosition({
+          x:
+            resizeRef.current.mode === 'top'
+              ? resizeRef.current.originX
+              : resizeRef.current.originX - widthDelta,
+          y:
+            resizeRef.current.mode === 'left'
+              ? resizeRef.current.originY
+              : resizeRef.current.originY - heightDelta,
+        })
       }
     }
 
@@ -108,13 +137,20 @@ export function AgentPanel({
     }
   }
 
-  function startResize(event: ReactPointerEvent<HTMLButtonElement>) {
+  function startResize(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    mode: 'left' | 'top' | 'corner',
+  ) {
     event.preventDefault()
     resizeRef.current = {
       pointerId: event.pointerId,
+      mode,
       startX: event.clientX,
+      startY: event.clientY,
       startWidth: width,
+      startHeight: height,
       originX: position.x,
+      originY: position.y,
     }
   }
 
@@ -137,17 +173,40 @@ export function AgentPanel({
           'pointer-events-auto relative overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow] duration-200 motion-reduce:transition-none',
           isCollapsed ? 'h-[80px]' : 'h-[min(82vh,760px)]',
         )}
-        style={{ width: panelWidth }}
+        style={{
+          width: panelWidth,
+          height: isCollapsed ? 80 : Math.min(height, 920),
+        }}
       >
         <button
           type="button"
           data-agent-panel-action="true"
-          aria-label="Resize agent panel"
+          aria-label="Resize agent panel width"
           className={cn(
             'absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block',
             isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
           )}
-          onPointerDown={startResize}
+          onPointerDown={(event) => startResize(event, 'left')}
+        />
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="Resize agent panel height"
+          className={cn(
+            'absolute -top-3 inset-x-8 hidden h-6 cursor-ns-resize lg:block',
+            isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
+          )}
+          onPointerDown={(event) => startResize(event, 'top')}
+        />
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="Resize agent panel width and height"
+          className={cn(
+            'absolute -top-3 -left-3 hidden h-7 w-7 cursor-nwse-resize lg:block',
+            isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
+          )}
+          onPointerDown={(event) => startResize(event, 'corner')}
         />
 
         <div
