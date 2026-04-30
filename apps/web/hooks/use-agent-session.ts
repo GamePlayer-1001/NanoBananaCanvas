@@ -83,9 +83,11 @@ export function useAgentSession({
 
     try {
       setStatus('understanding')
-      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
+      const createLikeMessage = requestKindMatchesCreateLikeMessage(value)
+      if (!createLikeMessage) {
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
+      }
 
-      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.summarizing))
       const { template, auditTrail } = useWorkflowMetadataStore.getState()
       const canvasSummary = summarizeCanvas({
         workflowId,
@@ -93,6 +95,17 @@ export function useAgentSession({
         template: template ?? undefined,
         auditTrail,
       })
+      const preferLightweightCreationFlow =
+        createLikeMessage &&
+        (mode === 'create' || canvasSummary.nodeCount === 0)
+
+      if (!preferLightweightCreationFlow && createLikeMessage) {
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
+      }
+
+      if (!preferLightweightCreationFlow) {
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.summarizing))
+      }
       void safeRecordAudit({
         eventType: 'message_sent',
         mode,
@@ -226,7 +239,9 @@ export function useAgentSession({
       }
 
       setStatus('planning')
-      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.planning))
+      if (!preferLightweightCreationFlow) {
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.planning))
+      }
       const planBuilder =
         requestKind === 'plan' && (mode === 'template' || canvasSummary.template)
           ? buildTemplatePlan
@@ -241,7 +256,9 @@ export function useAgentSession({
       const plan = 'plan' in planned ? planned.plan : planned
       const alternatives = 'alternatives' in planned && planned.alternatives ? planned.alternatives : []
 
-      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.validating))
+      if (!preferLightweightCreationFlow) {
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.validating))
+      }
       const validation = validateAgentPlan(plan)
 
       if (!validation.ok) {
@@ -332,8 +349,12 @@ export function useAgentSession({
       }
 
       if (shouldAutoApply) {
-        appendProcessMessage(tAgent('processBuildingWorkflow'))
-        await applyPendingPlan(nextPlan)
+        if (!preferLightweightCreationFlow) {
+          appendProcessMessage(tAgent('processBuildingWorkflow'))
+        }
+        await applyPendingPlan(nextPlan, {
+          silentProgress: preferLightweightCreationFlow,
+        })
         const latestPlan = useAgentStore.getState().pendingPlan
         if (latestPlan?.promptConfirmation) {
           appendMessage({
@@ -385,13 +406,20 @@ export function useAgentSession({
     })
   }
 
-  async function applyPendingPlan(planOverride = pendingPlan) {
+  async function applyPendingPlan(
+    planOverride = pendingPlan,
+    options?: {
+      silentProgress?: boolean
+    },
+  ) {
     if (!planOverride || isApplying) return
 
     setIsApplying(true)
     setErrorMessage(null)
     setStatus('applying-patch')
-    appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.applying))
+    if (!options?.silentProgress) {
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.applying))
+    }
 
     try {
       const result = await applyAgentPlan(planOverride, {
@@ -704,6 +732,16 @@ export function useAgentSession({
     confirmPromptAndRun,
   }
 
+}
+
+function requestKindMatchesCreateLikeMessage(value: string) {
+  return (
+    value.includes('工作流') ||
+    value.includes('图生图') ||
+    value.includes('文生图') ||
+    value.includes('搭建') ||
+    value.includes('创建')
+  )
 }
 
 function extractFocusNodeIds(plan: AgentPlan) {

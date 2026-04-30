@@ -14,6 +14,7 @@ import {
   buildSelectedNodePromptOperations,
   inferIntentFromMessage,
   inferModeFromMessage,
+  isSafeCreationPlan,
   shouldOptimizeSelectedNode,
   shouldPatchSelectedNodePrompt,
 } from '@/lib/agent/plan-rules'
@@ -68,16 +69,20 @@ function buildPlannerResponse(input: AgentPlanRequest): { plan: AgentPlan; alter
         : buildIncrementalOperations(normalized, canvas, intent)
 
   const reasons = buildReasons(normalized, canvas, inferredMode, operations, intent)
+  const safeCreationPlan = isSafeCreationPlan(inferredMode, canvas.nodeCount, operations)
   const requiresConfirmation =
-    operations.length > AGENT_MAX_AUTO_OPERATIONS ||
-    operations.some((operation) =>
-      operation.type === 'insert_between' ||
-      operation.type === 'replace_node' ||
-      operation.type === 'duplicate_node_branch' ||
-      operation.type === 'batch_update_node_data' ||
-      operation.type === 'remove_node' ||
-      operation.type === 'request_prompt_confirmation' ||
-      operation.type === 'run_workflow',
+    !safeCreationPlan &&
+    (
+      operations.length > AGENT_MAX_AUTO_OPERATIONS ||
+      operations.some((operation) =>
+        operation.type === 'insert_between' ||
+        operation.type === 'replace_node' ||
+        operation.type === 'duplicate_node_branch' ||
+        operation.type === 'batch_update_node_data' ||
+        operation.type === 'remove_node' ||
+        operation.type === 'request_prompt_confirmation' ||
+        operation.type === 'run_workflow',
+      )
     )
 
   const plan: AgentPlan = {

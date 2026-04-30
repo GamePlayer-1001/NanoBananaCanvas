@@ -51,7 +51,7 @@ describe('POST /api/agent/*', () => {
       .mockReturnValueOnce('refine-seed')
   })
 
-  it('returns a prompt-confirmation image creation plan for image requests on empty canvas', async () => {
+  it('returns a lightweight image creation plan for image requests on empty canvas', async () => {
     const response = await planPost(
       new Request('http://localhost/api/agent/plan', {
         method: 'POST',
@@ -71,18 +71,14 @@ describe('POST /api/agent/*', () => {
       ok: true,
       data: {
         plan: {
-          id: 'plan_prompt-seed',
+          id: 'plan_plan-seed',
           mode: 'create',
-          requiresConfirmation: true,
+          requiresConfirmation: false,
           operations: expect.arrayContaining([
             expect.objectContaining({ type: 'add_node', nodeType: 'text-input' }),
             expect.objectContaining({ type: 'add_node', nodeType: 'image-gen' }),
-            expect.objectContaining({ type: 'request_prompt_confirmation' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'display' }),
           ]),
-          promptConfirmation: expect.objectContaining({
-            id: 'prompt_plan-seed',
-            targetNodeId: 'draft-text-input',
-          }),
         },
         alternatives: expect.arrayContaining([
           expect.objectContaining({
@@ -94,6 +90,44 @@ describe('POST /api/agent/*', () => {
             variantTone: 'aggressive',
           }),
         ]),
+      },
+    })
+  })
+
+  it('returns an image-to-image creation plan with image input when request asks for image editing', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '帮我搭建一个图生图工作流，把这个图片修改成写实风格',
+          mode: 'create',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary(),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'create',
+          requiresConfirmation: false,
+          operations: expect.arrayContaining([
+            expect.objectContaining({ type: 'add_node', nodeType: 'image-input' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'text-input' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'image-gen' }),
+            expect.objectContaining({
+              type: 'connect',
+              source: 'draft-image-input',
+              target: 'draft-image-gen',
+              targetHandle: 'image-in',
+            }),
+          ]),
+        },
       },
     })
   })

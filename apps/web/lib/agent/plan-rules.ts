@@ -1,11 +1,9 @@
 /**
- * [INPUT]: 依赖 @/lib/nanoid，依赖 agent/types 的 CanvasSummary/AgentPlanIntent/WorkflowOperation
+ * [INPUT]: 依赖 agent/types 的 CanvasSummary/AgentPlanIntent/WorkflowOperation
  * [OUTPUT]: 对外提供 planner 规则辅助函数，收口创建链路、节点级改动、结果续写、多提案变体构造
  * [POS]: lib/agent 的 planner 规则层，被 /api/agent/plan 入口消费，用于拆分单文件规则坏味道
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
-
-import { nanoid } from '@/lib/nanoid'
 import type {
   AgentPlan,
   AgentPlanIntent,
@@ -13,6 +11,30 @@ import type {
   CanvasSummaryNode,
   WorkflowOperation,
 } from './types'
+
+function isImageToImageRequest(normalized: string) {
+  return (
+    normalized.includes('图生图') ||
+    normalized.includes('以图生图') ||
+    normalized.includes('参考图') ||
+    normalized.includes('垫图') ||
+    normalized.includes('图片修改') ||
+    normalized.includes('改图') ||
+    (normalized.includes('修改') && normalized.includes('图片'))
+  )
+}
+
+export function isSafeCreationPlan(
+  mode: AgentPlan['mode'],
+  canvasNodeCount: number,
+  operations: WorkflowOperation[],
+) {
+  return (
+    mode === 'create' &&
+    canvasNodeCount === 0 &&
+    operations.every((operation) => operation.type === 'add_node' || operation.type === 'connect')
+  )
+}
 
 export function inferModeFromMessage(
   inputMode: AgentPlan['mode'],
@@ -141,6 +163,36 @@ export function buildCreationOperations(normalized: string): WorkflowOperation[]
   }
 
   if (normalized.includes('图') || normalized.includes('海报') || normalized.includes('图片')) {
+    if (isImageToImageRequest(normalized)) {
+      return [
+        { type: 'add_node', nodeId: 'draft-image-input', nodeType: 'image-input' },
+        { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+        { type: 'add_node', nodeId: 'draft-image-gen', nodeType: 'image-gen' },
+        { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+        {
+          type: 'connect',
+          source: 'draft-image-input',
+          sourceHandle: 'image-out',
+          target: 'draft-image-gen',
+          targetHandle: 'image-in',
+        },
+        {
+          type: 'connect',
+          source: 'draft-text-input',
+          sourceHandle: 'text-out',
+          target: 'draft-image-gen',
+          targetHandle: 'prompt-in',
+        },
+        {
+          type: 'connect',
+          source: 'draft-image-gen',
+          sourceHandle: 'image-out',
+          target: 'draft-display',
+          targetHandle: 'content-in',
+        },
+      ]
+    }
+
     return [
       { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
       { type: 'add_node', nodeId: 'draft-image-gen', nodeType: 'image-gen' },
@@ -158,21 +210,6 @@ export function buildCreationOperations(normalized: string): WorkflowOperation[]
         sourceHandle: 'image-out',
         target: 'draft-display',
         targetHandle: 'content-in',
-      },
-      {
-        type: 'request_prompt_confirmation',
-        payload: {
-          id: `prompt_${nanoid()}`,
-          originalIntent: normalized,
-          visualProposal: '先给出一版清晰画面方向，再决定是否直接写入图片生成节点。',
-          executionPrompt: '请基于用户意图生成一版清晰、可执行、构图明确的图像生成提示词。',
-          targetNodeId: 'draft-text-input',
-          styleOptions: [
-            { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影质感、自然光与镜头语言' },
-            { id: 'anime', label: '更动漫', promptDelta: '强调动漫分镜、线稿与色彩层次' },
-            { id: 'commercial', label: '更商业', promptDelta: '强调广告级构图、主体清晰与品牌化质感' },
-          ],
-        },
       },
     ]
   }

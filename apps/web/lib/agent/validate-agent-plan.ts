@@ -15,6 +15,7 @@ import {
   AGENT_MAX_BRANCH_DUPLICATION_COUNT,
   AGENT_MAX_AUTO_OPERATIONS,
 } from './constants'
+import { isSafeCreationPlan } from './plan-rules'
 import type {
   AgentCanvasEdge,
   AgentCanvasNode,
@@ -37,6 +38,7 @@ export function validateAgentPlan(
   const errors: string[] = []
   const warnings: string[] = []
   let requiresConfirmation = plan.requiresConfirmation
+  const safeCreationPlan = isSafeCreationPlan(plan.mode, nodes.length, plan.operations)
 
   for (const operation of plan.operations) {
     if (!AGENT_ALLOWED_OPERATIONS.includes(operation.type)) {
@@ -152,7 +154,7 @@ export function validateAgentPlan(
     }
   }
 
-  if (plan.operations.length > AGENT_MAX_AUTO_OPERATIONS) {
+  if (!safeCreationPlan && plan.operations.length > AGENT_MAX_AUTO_OPERATIONS) {
     requiresConfirmation = true
     warnings.push(`本次提案包含 ${plan.operations.length} 个操作，超过自动落地阈值`)
   }
