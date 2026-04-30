@@ -24,7 +24,7 @@
 | M2 | 计划链路 | 从用户输入到结构化 plan 跑通 | [x] |
 | M3 | 落图链路 | plan 可安全修改画布并自动保存 | [x] |
 | M4 | 提示词确认 | refine + confirm + execute 跑通 | [x] |
-| M5 | 诊断与收口 | diagnose、任务联动、体验打磨完成 | [ ] |
+| M5 | 诊断与收口 | diagnose、任务联动、体验打磨完成 | [x] |
 
 ---
 
@@ -187,36 +187,36 @@
 
 ### Diagnose API
 
-- [ ] `AGENT-400` 创建 `app/api/agent/diagnose/route.ts`
-- [ ] `AGENT-401` 定义 `AgentDiagnosis` schema
-- [ ] `AGENT-402` 接入最近执行失败摘要
-- [ ] `AGENT-403` 输出现象、根因、修复建议
+- [x] `AGENT-400` 创建 `app/api/agent/diagnose/route.ts`
+- [x] `AGENT-401` 定义 `AgentDiagnosis` schema
+- [x] `AGENT-402` 接入最近执行失败摘要
+- [x] `AGENT-403` 输出现象、根因、修复建议
 
 ### Explain API
 
-- [ ] `AGENT-410` 创建 `app/api/agent/explain/route.ts`
-- [ ] `AGENT-411` 支持解释当前工作流
-- [ ] `AGENT-412` 支持解释当前选中节点
+- [x] `AGENT-410` 创建 `app/api/agent/explain/route.ts`
+- [x] `AGENT-411` 支持解释当前工作流
+- [x] `AGENT-412` 支持解释当前选中节点
 
 ### 异步任务联动
 
-- [ ] `AGENT-420` 聊天区订阅现有任务/执行状态
-- [ ] `AGENT-421` 异步任务运行中显示简洁进度反馈
-- [ ] `AGENT-422` 异步任务完成后生成自然语言结果消息
+- [x] `AGENT-420` 聊天区订阅现有任务/执行状态
+- [x] `AGENT-421` 异步任务运行中显示简洁进度反馈
+- [x] `AGENT-422` 异步任务完成后生成自然语言结果消息
 
 ### 体验打磨
 
-- [ ] `AGENT-430` 接入面板动效与 reduced motion 降级
-- [ ] `AGENT-431` 接入节点高亮、连线描边、focus nodes 视图定位
-- [ ] `AGENT-432` 接入 Quick Actions
-- [ ] `AGENT-433` 完成中英文文案补齐
+- [x] `AGENT-430` 接入面板动效与 reduced motion 降级
+- [x] `AGENT-431` 接入节点高亮、连线描边、focus nodes 视图定位
+- [x] `AGENT-432` 接入 Quick Actions
+- [x] `AGENT-433` 完成中英文文案补齐
 
 ### M5 验收
 
-- [ ] `AGENT-440` 用户可询问“为什么跑不通”
-- [ ] `AGENT-441` 聊天区能给出像样诊断
-- [ ] `AGENT-442` 执行与异步任务状态可被理解
-- [ ] `AGENT-443` 体验达到可内测水平
+- [x] `AGENT-440` 用户可询问“为什么跑不通”
+- [x] `AGENT-441` 聊天区能给出像样诊断
+- [x] `AGENT-442` 执行与异步任务状态可被理解
+- [x] `AGENT-443` 体验达到可内测水平
 
 ---
 

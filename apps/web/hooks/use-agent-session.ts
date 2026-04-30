@@ -1,8 +1,8 @@
 /**
- * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 的 plan/apply/prompt refine 链路，
+ * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 的 plan/diagnose/explain/apply/prompt refine 链路，
  *          依赖 @/stores/use-agent-store 与 @/stores/use-flow-store 的会话/画布真相源
- * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan API -> validation -> prompt confirm -> apply -> run 的高层动作
- * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，负责右侧提案与左侧落图之间的安全桥接
+ * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan|diagnose|explain -> prompt confirm -> apply -> run 的高层动作
+ * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，负责右侧提案、诊断与左侧落图之间的安全桥接
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,6 +13,8 @@ import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
 import { applyAgentPlan } from '@/lib/agent/apply-agent-plan'
 import { AGENT_ERROR_FALLBACK, AGENT_PROCESS_MESSAGES } from '@/lib/agent/constants'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
+import { diagnoseCanvas } from '@/lib/agent/diagnose-canvas'
+import { explainCanvas } from '@/lib/agent/explain-canvas'
 import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
@@ -71,6 +73,73 @@ export function useAgentSession({
         workflowId,
         workflowName,
       })
+
+      const requestKind = resolveRequestKind(value, mode)
+
+      if (requestKind === 'diagnose') {
+        setStatus('diagnosing')
+        appendProcessMessage('我正在结合最近一次执行状态做诊断。')
+        const diagnosis = await diagnoseCanvas({
+          userMessage: value,
+          canvasSummary,
+          locale,
+        })
+
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'diagnosis',
+          text: [
+            diagnosis.summary,
+            `现象：${diagnosis.phenomenon}`,
+            `根因：${diagnosis.rootCause}`,
+            `建议：${diagnosis.repairSuggestion}`,
+          ].join('\n'),
+          severity: 'warning',
+          createdAt: new Date().toISOString(),
+        })
+
+        if (diagnosis.suggestedOperations?.length) {
+          const nextPlan: AgentPlan = {
+            id: crypto.randomUUID(),
+            goal: value,
+            mode: 'diagnose',
+            summary: diagnosis.summary,
+            reasons: [diagnosis.rootCause, diagnosis.repairSuggestion],
+            requiresConfirmation: diagnosis.requiresConfirmation,
+            operations: diagnosis.suggestedOperations,
+          }
+
+          setPendingPlan(nextPlan)
+          appendMessage({
+            id: crypto.randomUUID(),
+            role: 'proposal',
+            planId: nextPlan.id,
+            createdAt: new Date().toISOString(),
+          })
+          setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+        } else {
+          setStatus('idle')
+        }
+        return
+      }
+
+      if (requestKind === 'explain') {
+        appendProcessMessage('我正在把当前工作流翻译成更容易理解的说明。')
+        const answer = await explainCanvas({
+          userMessage: value,
+          canvasSummary,
+          locale,
+        })
+
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: answer,
+          createdAt: new Date().toISOString(),
+        })
+        setStatus('idle')
+        return
+      }
 
       setStatus('planning')
       appendProcessMessage(AGENT_PROCESS_MESSAGES.planning)
@@ -373,4 +442,36 @@ function mergeNodeTextIntoInitialData(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function resolveRequestKind(
+  userMessage: string,
+  mode: 'create' | 'update' | 'diagnose' | 'optimize',
+): 'plan' | 'diagnose' | 'explain' {
+  const normalized = userMessage.trim().toLowerCase()
+
+  if (mode === 'diagnose') {
+    return 'diagnose'
+  }
+
+  if (
+    normalized.includes('为什么') ||
+    normalized.includes('报错') ||
+    normalized.includes('跑不通') ||
+    normalized.includes('失败') ||
+    normalized.includes('诊断')
+  ) {
+    return 'diagnose'
+  }
+
+  if (
+    normalized.includes('解释') ||
+    normalized.includes('这条链在做什么') ||
+    normalized.includes('这个节点在做什么') ||
+    normalized.includes('workflow 在做什么')
+  ) {
+    return 'explain'
+  }
+
+  return 'plan'
 }

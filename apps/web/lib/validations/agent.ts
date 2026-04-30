@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 zod
- * [OUTPUT]: 对外提供 Agent planner 请求/响应 schema，与共享 operation schema
- * [POS]: lib/validations 的 Agent 结构化校验层，被 API route 与前端 buildAgentPlan 共同消费
+ * [OUTPUT]: 对外提供 Agent planner / diagnose / explain / prompt refine schema，与共享 operation schema
+ * [POS]: lib/validations 的 Agent 结构化校验层，被 API route 与前端 Agent 客户端共同消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -142,6 +142,42 @@ export const promptConfirmationResponseSchema = z.object({
   ok: z.literal(true),
   data: z.object({
     payload: promptConfirmationPayloadSchema,
+  }),
+})
+
+const agentDiagnosisSchema = z.object({
+  summary: z.string().min(1),
+  phenomenon: z.string().min(1),
+  rootCause: z.string().min(1),
+  repairSuggestion: z.string().min(1),
+  affectedNodeIds: z.array(z.string().min(1)),
+  suggestedOperations: z.array(workflowOperationSchema).optional(),
+  requiresConfirmation: z.boolean(),
+})
+
+export const agentDiagnosisRequestSchema = z.object({
+  userMessage: z.string().trim().min(1),
+  locale: z.string().trim().min(1),
+  canvasSummary: agentPlanRequestSchema.shape.canvasSummary,
+})
+
+export const agentDiagnosisResponseSchema = z.object({
+  ok: z.literal(true),
+  data: z.object({
+    diagnosis: agentDiagnosisSchema,
+  }),
+})
+
+export const agentExplainRequestSchema = z.object({
+  userMessage: z.string().trim().min(1),
+  locale: z.string().trim().min(1),
+  canvasSummary: agentPlanRequestSchema.shape.canvasSummary,
+})
+
+export const agentExplainResponseSchema = z.object({
+  ok: z.literal(true),
+  data: z.object({
+    answer: z.string().min(1),
   }),
 })
 

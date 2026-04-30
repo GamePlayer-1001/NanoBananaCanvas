@@ -250,10 +250,16 @@ function applyFocusNodes(
   working: WorkingFlow,
 ) {
   const nodeIds = operation.nodeIds.map((nodeId) => resolveNodeId(nodeId, working.idMap))
+  const focusedNodes = working.nodes.filter((node) => nodeIds.includes(node.id))
+
   working.nodes = working.nodes.map((node) => ({
     ...node,
     selected: nodeIds.includes(node.id),
   }))
+
+  if (focusedNodes.length > 0) {
+    working.viewport = buildViewportForNodes(focusedNodes)
+  }
 }
 
 function resolveNodeId(nodeId: string, idMap: Map<string, string>) {
@@ -281,6 +287,39 @@ function getDefaultPosition(index: number) {
   return {
     x: 120 + column * 260,
     y: 140 + row * 180,
+  }
+}
+
+function buildViewportForNodes(nodes: FlowNode[]): Viewport {
+  const bounds = nodes.reduce(
+    (acc, node) => {
+      const width = typeof node.measured?.width === 'number' ? node.measured.width : 220
+      const height = typeof node.measured?.height === 'number' ? node.measured.height : 140
+
+      return {
+        minX: Math.min(acc.minX, node.position.x),
+        minY: Math.min(acc.minY, node.position.y),
+        maxX: Math.max(acc.maxX, node.position.x + width),
+        maxY: Math.max(acc.maxY, node.position.y + height),
+      }
+    },
+    {
+      minX: Number.POSITIVE_INFINITY,
+      minY: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY,
+      maxY: Number.NEGATIVE_INFINITY,
+    },
+  )
+
+  const width = Math.max(bounds.maxX - bounds.minX, 280)
+  const height = Math.max(bounds.maxY - bounds.minY, 180)
+  const padding = 120
+  const zoom = Math.max(0.65, Math.min(1.15, Math.min(1080 / (width + padding), 760 / (height + padding))))
+
+  return {
+    x: -(bounds.minX + width / 2) * zoom + 540,
+    y: -(bounds.minY + height / 2) * zoom + 380,
+    zoom,
   }
 }
 

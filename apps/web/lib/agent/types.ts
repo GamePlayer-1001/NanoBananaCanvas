@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 Edge/Node 类型，依赖 @/types 的 PortDefinition/WorkflowNodeData
- * [OUTPUT]: 对外提供 AgentMode、AgentMessage、AgentPlan、CanvasSummary、AgentPlanRequest 等 Agent 语义层共享类型
+ * [OUTPUT]: 对外提供 AgentMode、AgentMessage、AgentPlan、CanvasSummary、Diagnosis/Explain 契约等 Agent 语义层共享类型
  * [POS]: lib/agent 的类型真相源，被 store、hooks、摘要器、校验器与 API route 共同消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -192,6 +192,36 @@ export interface AgentPlanValidationResult {
   requiresConfirmation: boolean
   errors: string[]
   warnings: string[]
+}
+
+export interface AgentDiagnosis {
+  summary: string
+  phenomenon: string
+  rootCause: string
+  repairSuggestion: string
+  affectedNodeIds: string[]
+  suggestedOperations?: WorkflowOperation[]
+  requiresConfirmation: boolean
+}
+
+export interface AgentDiagnosisRequest {
+  userMessage: string
+  canvasSummary: CanvasSummary
+  locale: string
+}
+
+export interface AgentDiagnosisResponse {
+  diagnosis: AgentDiagnosis
+}
+
+export interface AgentExplainRequest {
+  userMessage: string
+  canvasSummary: CanvasSummary
+  locale: string
+}
+
+export interface AgentExplainResponse {
+  answer: string
 }
 
 export type AgentCanvasNode = Node<WorkflowNodeData>
