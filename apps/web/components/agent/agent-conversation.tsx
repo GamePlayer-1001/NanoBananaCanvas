@@ -54,17 +54,21 @@ export function AgentConversation({
   onPromptToggleExpand,
   onPromptStyleSelect,
 }: AgentConversationProps) {
+  if (items.length === 0) {
+    return (
+      <div className="h-full min-h-0">
+        {hero ?? (
+          <div className="flex h-full min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-black/8 bg-slate-50 px-6 text-center">
+            <p className="max-w-[22rem] text-sm leading-7 text-slate-500">{emptyState}</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <ScrollArea className="h-full">
       <div className="space-y-4 pb-2 pr-2">
-        {items.length === 0 ? (
-          hero ?? (
-            <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-black/8 bg-slate-50 px-6 text-center">
-              <p className="max-w-[22rem] text-sm leading-7 text-slate-500">{emptyState}</p>
-            </div>
-          )
-        ) : null}
-
         {items.map((item) => {
           if (item.type === 'message') {
             return (
