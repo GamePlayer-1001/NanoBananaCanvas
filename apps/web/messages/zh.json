@@ -1693,6 +1693,7 @@
     "promptConfirm": "确认并执行",
     "promptRegenerate": "再来一版",
     "promptManualEdit": "我自己改"
+  },
   "toolbar": {
     "select": "选择",
     "hand": "拖动画布",
