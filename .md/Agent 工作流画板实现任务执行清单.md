@@ -227,7 +227,7 @@
 - [x] `AGENT-500` 为 `summarize-canvas.ts` 添加单测
 - [x] `AGENT-501` 为 `validate-agent-plan.ts` 添加单测
 - [x] `AGENT-502` 为 `apply-agent-plan.ts` 添加单测
-- [ ] `AGENT-503` 为 `use-agent-store.ts` 添加单测
+- [x] `AGENT-503` 为 `use-agent-store.ts` 添加单测
 - [ ] `AGENT-504` 为 Agent API route 添加路由测试
 - [ ] `AGENT-505` 增加一条 E2E：一句话生成工作流
 - [ ] `AGENT-506` 增加一条 E2E：prompt 确认并执行
