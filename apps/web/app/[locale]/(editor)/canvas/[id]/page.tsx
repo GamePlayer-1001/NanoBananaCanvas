@@ -268,6 +268,22 @@ export default function CanvasPage({
         ]
       : []),
   ]
+  const heroActions = [
+    { id: 'hero-cat-image', label: tAgent('heroCatImage'), accent: 'hero' as const },
+    { id: 'hero-realistic-edit', label: tAgent('heroRealisticEdit'), accent: 'hero' as const },
+    { id: 'hero-diagnose', label: tAgent('heroDiagnose'), accent: 'hero' as const },
+    { id: 'hero-explain', label: tAgent('heroExplain'), accent: 'hero' as const },
+  ]
+  const shouldShowDetailHeader =
+    messages.length > 0 ||
+    Boolean(errorMessage) ||
+    Boolean(selectionContext?.nodeLabel) ||
+    Boolean(activeTaskLabel) ||
+    Boolean(executionLabel) ||
+    Boolean(pendingPlan?.promptConfirmation) ||
+    Boolean(template) ||
+    Boolean(lastAppliedPlanId) ||
+    changeLogItems.length > 0
 
   /* ── 从 API 数据注入 FlowStore ──────────────────────── */
   useEffect(() => {
@@ -360,42 +376,60 @@ export default function CanvasPage({
             <Canvas workflowId={id} canEdit={canEdit} />
             <AgentPanel
               className="w-[400px]"
-              header={(
-                <AgentHeader
-                  title={tAgent('title')}
-                  subtitle={tAgent('headerSubtitle')}
-                  contextLabel={
-                    errorMessage
-                      ? tAgent('contextError', { message: errorMessage })
-                      : selectionContext?.nodeLabel
-                        ? tAgent('contextSelectedNode', { name: selectionContext.nodeLabel })
-                      : activeTaskLabel
-                        ? activeTaskLabel
-                      : executionLabel
-                        ? executionLabel
-                      : pendingPlan?.promptConfirmation
-                        ? tAgent('contextPromptConfirm')
-                      : template
-                        ? tAgent('contextTemplate', { name: template.name })
-                      : lastAppliedPlanId
-                        ? tAgent('contextLastApplied', { planId: lastAppliedPlanId })
-                        : undefined
-                  }
-                  historyLabel={changeLogItems.length > 0 ? tAgent('actionViewChanges') : undefined}
-                  onHistoryClick={changeLogItems.length > 0 ? () => setIsChangeLogOpen(true) : undefined}
-                />
-              )}
+              header={
+                shouldShowDetailHeader ? (
+                  <AgentHeader
+                    title={tAgent('title')}
+                    subtitle={tAgent('headerSubtitle')}
+                    contextLabel={
+                      errorMessage
+                        ? tAgent('contextError', { message: errorMessage })
+                        : selectionContext?.nodeLabel
+                          ? tAgent('contextSelectedNode', { name: selectionContext.nodeLabel })
+                        : activeTaskLabel
+                          ? activeTaskLabel
+                        : executionLabel
+                          ? executionLabel
+                        : pendingPlan?.promptConfirmation
+                          ? tAgent('contextPromptConfirm')
+                        : template
+                          ? tAgent('contextTemplate', { name: template.name })
+                        : lastAppliedPlanId
+                          ? tAgent('contextLastApplied', { planId: lastAppliedPlanId })
+                          : undefined
+                    }
+                    historyLabel={changeLogItems.length > 0 ? tAgent('actionViewChanges') : undefined}
+                    onHistoryClick={changeLogItems.length > 0 ? () => setIsChangeLogOpen(true) : undefined}
+                  />
+                ) : null
+              }
               conversation={(
                 <AgentConversation
                   items={conversationItems}
                   emptyState={tAgent('emptyState')}
                   hero={(
-                    <div className="flex min-h-[320px] flex-col items-center justify-center px-8 text-center">
+                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-10 px-8 text-center">
                       <div className="space-y-0">
                         <h3 className="text-[32px] leading-tight font-semibold tracking-[-0.03em] text-slate-950">
                           {tAgent('heroTitle')}
                         </h3>
                       </div>
+                      <AgentQuickActions
+                        actions={heroActions}
+                        onSelect={(actionId) => {
+                          const actionMap: Record<string, string> = {
+                            'hero-cat-image': tAgent('heroCatImageAsk'),
+                            'hero-realistic-edit': tAgent('heroRealisticEditAsk'),
+                            'hero-diagnose': tAgent('heroDiagnoseAsk'),
+                            'hero-explain': tAgent('heroExplainAsk'),
+                          }
+                          if (actionId === 'hero-cat-image') setMode('create')
+                          if (actionId === 'hero-realistic-edit') setMode('update')
+                          if (actionId === 'hero-diagnose') setMode('diagnose')
+                          if (actionId === 'hero-explain') setMode('update')
+                          void sendMessage(actionMap[actionId] ?? actionId)
+                        }}
+                      />
                     </div>
                   )}
                   onPromptRegenerate={(payloadId) => void regeneratePrompt(payloadId)}

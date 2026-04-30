@@ -132,18 +132,18 @@ export function AgentPanel({
         )}
         style={{ width: panelWidth }}
       >
-        <div className="absolute inset-y-6 left-0 w-3">
-          <button
-            type="button"
-            data-agent-panel-action="true"
-            aria-label="Resize agent panel"
-            className={cn(
-              'absolute inset-y-0 left-0 hidden w-3 cursor-col-resize rounded-full bg-transparent transition hover:bg-indigo-500/10 lg:block',
-              isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
-            )}
-            onPointerDown={startResize}
-          />
-        </div>
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="Resize agent panel"
+          className={cn(
+            'absolute inset-y-5 left-0 hidden w-5 cursor-ew-resize items-center justify-center lg:flex',
+            isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
+          )}
+          onPointerDown={startResize}
+        >
+          <span className="h-20 w-1 rounded-full bg-indigo-500/20 transition hover:bg-indigo-500/40" />
+        </button>
 
         <div
           className={cn(
