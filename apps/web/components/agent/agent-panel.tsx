@@ -118,7 +118,7 @@ export function AgentPanel({
     }
   }
 
-  const collapsedWidth = 76
+  const collapsedWidth = 88
   const panelWidth = isCollapsed ? collapsedWidth : width
 
   return (
@@ -153,43 +153,74 @@ export function AgentPanel({
         </div>
 
         <div
-          className="flex items-center justify-between gap-3 border-b border-black/6 px-4 py-3"
+          className={cn(
+            'border-b border-black/6',
+            isCollapsed ? 'px-3 py-3' : 'px-4 py-3',
+          )}
           onPointerDown={startDrag}
         >
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
-              <GripHorizontal size={16} />
-            </div>
-            {!isCollapsed ? (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">Agent</p>
-                <p className="truncate text-[11px] text-slate-500">悬浮创作助手</p>
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
+                <GripHorizontal size={16} />
               </div>
-            ) : null}
-          </div>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                data-agent-panel-action="true"
+                className="rounded-full text-slate-500 hover:text-slate-900"
+                onClick={() => setIsCollapsed(false)}
+              >
+                <PanelRightOpen size={16} />
+              </Button>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                data-agent-panel-action="true"
+                className="rounded-full text-slate-500 hover:text-slate-900"
+                onClick={() => setIsExpanded((current) => !current)}
+              >
+                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="flex size-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
+                  <GripHorizontal size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">Agent</p>
+                  <p className="truncate text-[11px] text-slate-500">悬浮创作助手</p>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-1.5">
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              data-agent-panel-action="true"
-              className="rounded-full text-slate-500 hover:text-slate-900"
-              onClick={() => setIsExpanded((current) => !current)}
-            >
-              {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </Button>
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              data-agent-panel-action="true"
-              className="rounded-full text-slate-500 hover:text-slate-900"
-              onClick={() => setIsCollapsed((current) => !current)}
-            >
-              {isCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}
-            </Button>
-          </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  data-agent-panel-action="true"
+                  className="rounded-full text-slate-500 hover:text-slate-900"
+                  onClick={() => setIsExpanded((current) => !current)}
+                >
+                  {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  data-agent-panel-action="true"
+                  className="rounded-full text-slate-500 hover:text-slate-900"
+                  onClick={() => setIsCollapsed(true)}
+                >
+                  <PanelRightClose size={16} />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {!isExpanded ? null : isCollapsed ? (
