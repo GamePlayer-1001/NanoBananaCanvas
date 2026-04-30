@@ -42,7 +42,7 @@
 
 - [x] `AGENT-010` 创建 `components/agent/agent-panel.tsx`
 - [x] `AGENT-011` 创建 `components/agent/agent-header.tsx`
-- [ ] `AGENT-012` 创建 `components/agent/agent-conversation.tsx`
+- [x] `AGENT-012` 创建 `components/agent/agent-conversation.tsx`
 - [ ] `AGENT-013` 创建 `components/agent/agent-message-item.tsx`
 - [ ] `AGENT-014` 创建 `components/agent/agent-composer.tsx`
 - [ ] `AGENT-015` 创建 `components/agent/agent-quick-actions.tsx`
