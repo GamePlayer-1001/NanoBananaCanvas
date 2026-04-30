@@ -32,4 +32,22 @@ test.describe('Agent Workflow Creation', () => {
     await expect(agentPanel.getByText('计划新增 1 个 image-gen 节点')).toBeVisible()
     await expect(agentPanel.getByText('计划新增 1 个 display 节点')).toBeVisible()
   })
+
+  test('confirms prompt and applies workflow to canvas', async ({ page }) => {
+    await createProject(page)
+
+    const agentPanel = page.getByRole('complementary')
+    const composer = agentPanel.getByPlaceholder('描述你想搭建或修改的工作流...')
+    await composer.fill('帮我生成一张电商海报图片')
+    await composer.press('Enter')
+
+    await expect(agentPanel.getByText('Prompt 确认', { exact: true })).toBeVisible()
+    await agentPanel.getByRole('button', { name: '确认并执行' }).click()
+
+    await expect(agentPanel.getByText('提示词已确认，我现在开始执行这个图片工作流。')).toBeVisible()
+    await expect(agentPanel.getByText('我现在开始把提案安全落到左侧画板。')).toBeVisible()
+    await expect(page.getByText('Text Input', { exact: true })).toBeVisible()
+    await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
+    await expect(page.getByText('Display', { exact: true })).toBeVisible()
+  })
 })

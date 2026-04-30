@@ -230,7 +230,7 @@
 - [x] `AGENT-503` 为 `use-agent-store.ts` 添加单测
 - [x] `AGENT-504` 为 Agent API route 添加路由测试
 - [x] `AGENT-505` 增加一条 E2E：一句话生成工作流
-- [ ] `AGENT-506` 增加一条 E2E：prompt 确认并执行
+- [x] `AGENT-506` 增加一条 E2E：prompt 确认并执行
 - [ ] `AGENT-507` 增加一条 E2E：诊断失败链路
 
 ### 4.2 文案与国际化
