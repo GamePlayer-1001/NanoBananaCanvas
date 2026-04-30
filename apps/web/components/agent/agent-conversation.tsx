@@ -47,12 +47,21 @@ type ConversationItem =
 
 interface AgentConversationProps {
   items: ConversationItem[]
+  emptyState?: string
 }
 
-export function AgentConversation({ items }: AgentConversationProps) {
+export function AgentConversation({
+  items,
+  emptyState = '告诉我你想搭建什么工作流，我会先给出一个提案。',
+}: AgentConversationProps) {
   return (
     <ScrollArea className="h-full">
       <div className="space-y-4 pr-3">
+        {items.length === 0 ? (
+          <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-black/10 bg-black/[0.02] px-5 text-center">
+            <p className="text-muted-foreground text-sm leading-6">{emptyState}</p>
+          </div>
+        ) : null}
         {items.map((item) => {
           if (item.type === 'message') {
             return (

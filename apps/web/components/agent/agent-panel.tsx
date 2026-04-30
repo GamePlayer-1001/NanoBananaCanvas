@@ -6,12 +6,14 @@
  */
 
 import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 interface AgentPanelProps {
   header?: ReactNode
   conversation?: ReactNode
   quickActions?: ReactNode
   composer?: ReactNode
+  className?: string
 }
 
 export function AgentPanel({
@@ -19,9 +21,15 @@ export function AgentPanel({
   conversation,
   quickActions,
   composer,
+  className,
 }: AgentPanelProps) {
   return (
-    <aside className="border-border/80 bg-background/96 flex h-full min-h-0 w-full flex-col border-l backdrop-blur-sm">
+    <aside
+      className={cn(
+        'border-border/80 bg-background/96 flex h-full min-h-0 w-full flex-col border-l backdrop-blur-sm',
+        className,
+      )}
+    >
       <div className="border-border/80 shrink-0 border-b px-4 py-3">
         {header ?? (
           <div className="space-y-1">

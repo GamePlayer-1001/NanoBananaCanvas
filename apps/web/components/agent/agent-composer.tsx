@@ -14,6 +14,7 @@ interface AgentComposerProps {
   placeholder?: string
   hint?: string
   disabled?: boolean
+  submitLabel?: string
   onSubmit?: (value: string) => void
 }
 
@@ -21,6 +22,7 @@ export function AgentComposer({
   placeholder = '描述你想搭建或修改的工作流...',
   hint = '右侧输入只负责提案，最终结构仍会落到左侧画板。',
   disabled = false,
+  submitLabel = '发送',
   onSubmit,
 }: AgentComposerProps) {
   const [value, setValue] = useState('')
@@ -59,7 +61,7 @@ export function AgentComposer({
             disabled={disabled || value.trim().length === 0}
             onClick={handleSubmit}
           >
-            发送
+            {submitLabel}
           </Button>
         </div>
       </div>
