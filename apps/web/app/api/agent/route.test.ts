@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 agent 路由模块，mock 认证与稳定 ID 生成
- * [OUTPUT]: 对外提供 Agent API route 回归测试，覆盖 plan/diagnose/explain/refine-prompt 的成功与基础错误路径
- * [POS]: app/api/agent 的路由测试闭环，保护右侧 Agent 面板依赖的四个核心端点
+ * [OUTPUT]: 对外提供 Agent API route 回归测试，覆盖 plan/diagnose/optimize/explain/refine-prompt 的成功与基础错误路径
+ * [POS]: app/api/agent 的路由测试闭环，保护右侧 Agent 面板依赖的五个核心端点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,6 +20,7 @@ import { nanoid } from '@/lib/nanoid'
 
 import { POST as diagnosePost } from './diagnose/route'
 import { POST as explainPost } from './explain/route'
+import { POST as optimizePost } from './optimize/route'
 import { POST as planPost } from './plan/route'
 import { POST as refinePromptPost } from './refine-prompt/route'
 import { POST as templatePlanPost } from './template-plan/route'
@@ -237,6 +238,60 @@ describe('POST /api/agent/*', () => {
       ok: true,
       data: {
         answer: expect.stringContaining('当前选中的节点是“文案生成”。'),
+      },
+    })
+  })
+
+  it('returns optimize diagnosis for cost-heavy workflow', async () => {
+    const response = await optimizePost(
+      new Request('http://localhost/api/agent/optimize', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '哪里可以更省钱',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 3,
+            edgeCount: 2,
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '图片生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+            ],
+            optimizationSignals: {
+              aiNodeCount: 2,
+              expensiveModelNodeIds: ['image-1'],
+              slowNodeIds: [],
+              redundantNodeGroups: [],
+              previewEnabledNodeIds: ['image-1'],
+              missingDisplayNodeIds: [],
+              missingMergeCandidateNodeIds: [],
+              estimatedCostLevel: 'high',
+              estimatedLatencyLevel: 'low',
+            },
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        diagnosis: {
+          dimension: 'cost',
+          optimizationProposal: {
+            issue: '模型成本偏高',
+          },
+          suggestedOperations: expect.arrayContaining([
+            expect.objectContaining({ type: 'replace_node', nodeId: 'image-1' }),
+          ]),
+        },
       },
     })
   })

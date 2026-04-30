@@ -86,6 +86,23 @@ const canvasSummaryNodeSchema = z.object({
   configSummary: z.record(z.string(), z.unknown()),
 })
 
+const canvasOptimizationSignalsSchema = z.object({
+  aiNodeCount: z.number().int().nonnegative(),
+  expensiveModelNodeIds: z.array(z.string().min(1)),
+  slowNodeIds: z.array(z.string().min(1)),
+  redundantNodeGroups: z.array(
+    z.object({
+      type: z.string().min(1),
+      nodeIds: z.array(z.string().min(1)).min(1),
+    }),
+  ),
+  previewEnabledNodeIds: z.array(z.string().min(1)),
+  missingDisplayNodeIds: z.array(z.string().min(1)),
+  missingMergeCandidateNodeIds: z.array(z.string().min(1)),
+  estimatedCostLevel: z.enum(['low', 'medium', 'high']),
+  estimatedLatencyLevel: z.enum(['low', 'medium', 'high']),
+})
+
 const workflowOperationSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('add_node'),
@@ -183,6 +200,7 @@ export const agentPlanSchema = z.object({
       'repair_flow',
       'optimize_cost',
       'optimize_speed',
+      'optimize_structure',
       'explain_flow',
     ])
     .optional(),
@@ -212,6 +230,7 @@ export const agentPlanRequestSchema = z.object({
     template: templateSummarySchema.optional(),
     auditTrail: z.array(workflowAuditEntrySchema).optional(),
     templateContext: templateConversationSummarySchema.optional(),
+    optimizationSignals: canvasOptimizationSignalsSchema.optional(),
     latestExecution: z
       .object({
         status: z.enum(['idle', 'running', 'completed', 'failed']),
@@ -253,6 +272,16 @@ const agentDiagnosisSchema = z.object({
   affectedNodeIds: z.array(z.string().min(1)),
   suggestedOperations: z.array(workflowOperationSchema).optional(),
   requiresConfirmation: z.boolean(),
+  dimension: z.enum(['cost', 'speed', 'structure', 'runtime']).optional(),
+  riskSummary: z.string().min(1).optional(),
+  optimizationProposal: z
+    .object({
+      issue: z.string().min(1),
+      cause: z.string().min(1),
+      proposal: z.string().min(1),
+      risk: z.string().min(1),
+    })
+    .optional(),
 })
 
 export const agentDiagnosisRequestSchema = z.object({

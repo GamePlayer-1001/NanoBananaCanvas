@@ -32,6 +32,7 @@ agent/                  — Agent 结构化提案 API (4 端点)
   plan/route.ts         — POST 右侧 Agent planner 入口 (用户目标 + CanvasSummary -> 严格 AgentPlan)
   template-plan/route.ts — POST 模板改造 planner 入口 (模板上下文 + 用户方向 -> 基于模板改造的 AgentPlan)
   diagnose/route.ts     — POST Agent diagnose 入口 (用户问题 + CanvasSummary -> AgentDiagnosis)
+  optimize/route.ts     — POST Agent optimize 入口 (用户问题 + CanvasSummary -> 成本/速度/结构优化诊断与 patch 提案)
   explain/route.ts      — POST Agent explain 入口 (用户问题 + CanvasSummary -> 当前工作流/节点解释)
   refine-prompt/route.ts — POST Prompt refine 入口 (原始意图 + 旧 prompt + 风格方向 -> PromptConfirmationPayload)
 

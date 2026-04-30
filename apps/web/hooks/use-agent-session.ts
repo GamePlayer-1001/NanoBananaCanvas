@@ -20,6 +20,7 @@ import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
 import { buildTemplatePlan } from '@/lib/agent/build-template-plan'
 import { diagnoseCanvas } from '@/lib/agent/diagnose-canvas'
 import { explainCanvas } from '@/lib/agent/explain-canvas'
+import { optimizeCanvas } from '@/lib/agent/optimize-canvas'
 import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
@@ -115,6 +116,63 @@ export function useAgentSession({
             mode: 'diagnose',
             summary: diagnosis.summary,
             reasons: [diagnosis.rootCause, diagnosis.repairSuggestion],
+            requiresConfirmation: diagnosis.requiresConfirmation,
+            operations: diagnosis.suggestedOperations,
+          }
+
+          setPendingPlan(nextPlan)
+          appendMessage({
+            id: crypto.randomUUID(),
+            role: 'proposal',
+            planId: nextPlan.id,
+            createdAt: new Date().toISOString(),
+          })
+          setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+        } else {
+          setStatus('idle')
+        }
+        return
+      }
+
+      if (requestKind === 'optimize') {
+        setStatus('optimizing')
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.diagnosing))
+        const diagnosis = await optimizeCanvas({
+          userMessage: value,
+          canvasSummary,
+          locale,
+        })
+
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'diagnosis',
+          text: [
+            diagnosis.summary,
+            `问题：${diagnosis.optimizationProposal?.issue ?? diagnosis.phenomenon}`,
+            `原因：${diagnosis.optimizationProposal?.cause ?? diagnosis.rootCause}`,
+            `提案：${diagnosis.optimizationProposal?.proposal ?? diagnosis.repairSuggestion}`,
+            `风险：${diagnosis.optimizationProposal?.risk ?? diagnosis.riskSummary ?? '需要你确认后再动图。'}`,
+          ].join('\n'),
+          severity: 'warning',
+          createdAt: new Date().toISOString(),
+        })
+
+        if (diagnosis.suggestedOperations?.length) {
+          const nextPlan: AgentPlan = {
+            id: crypto.randomUUID(),
+            goal: value,
+            mode: 'optimize',
+            intent:
+              diagnosis.dimension === 'speed'
+                ? 'optimize_speed'
+                : diagnosis.dimension === 'structure'
+                  ? 'optimize_structure'
+                  : 'optimize_cost',
+            summary: diagnosis.summary,
+            reasons: [
+              diagnosis.optimizationProposal?.cause ?? diagnosis.rootCause,
+              diagnosis.optimizationProposal?.risk ?? diagnosis.riskSummary ?? diagnosis.repairSuggestion,
+            ],
             requiresConfirmation: diagnosis.requiresConfirmation,
             operations: diagnosis.suggestedOperations,
           }
@@ -480,11 +538,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function resolveRequestKind(
   userMessage: string,
   mode: AgentMode,
-): 'plan' | 'diagnose' | 'explain' {
+): 'plan' | 'diagnose' | 'explain' | 'optimize' {
   const normalized = userMessage.trim().toLowerCase()
 
   if (mode === 'diagnose') {
     return 'diagnose'
+  }
+
+  if (mode === 'optimize') {
+    return 'optimize'
   }
 
   if (
@@ -495,6 +557,16 @@ function resolveRequestKind(
     normalized.includes('诊断')
   ) {
     return 'diagnose'
+  }
+
+  if (
+    normalized.includes('优化') ||
+    normalized.includes('省钱') ||
+    normalized.includes('成本') ||
+    normalized.includes('更快') ||
+    normalized.includes('太慢')
+  ) {
+    return 'optimize'
   }
 
   if (

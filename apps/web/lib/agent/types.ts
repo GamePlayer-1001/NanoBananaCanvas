@@ -48,7 +48,23 @@ export type AgentPlanIntent =
   | 'repair_flow'
   | 'optimize_cost'
   | 'optimize_speed'
+  | 'optimize_structure'
   | 'explain_flow'
+
+export interface CanvasOptimizationSignals {
+  aiNodeCount: number
+  expensiveModelNodeIds: string[]
+  slowNodeIds: string[]
+  redundantNodeGroups: Array<{
+    type: string
+    nodeIds: string[]
+  }>
+  previewEnabledNodeIds: string[]
+  missingDisplayNodeIds: string[]
+  missingMergeCandidateNodeIds: string[]
+  estimatedCostLevel: 'low' | 'medium' | 'high'
+  estimatedLatencyLevel: 'low' | 'medium' | 'high'
+}
 
 export interface AgentSelectionContext {
   nodeId?: string
@@ -247,6 +263,7 @@ export interface CanvasSummary {
   template?: TemplateSummary
   auditTrail?: WorkflowAuditEntry[]
   templateContext?: TemplateConversationSummary
+  optimizationSignals?: CanvasOptimizationSignals
 }
 
 export interface AgentPlanRequest {
@@ -286,6 +303,14 @@ export interface AgentDiagnosis {
   affectedNodeIds: string[]
   suggestedOperations?: WorkflowOperation[]
   requiresConfirmation: boolean
+  dimension?: 'cost' | 'speed' | 'structure' | 'runtime'
+  riskSummary?: string
+  optimizationProposal?: {
+    issue: string
+    cause: string
+    proposal: string
+    risk: string
+  }
 }
 
 export interface AgentDiagnosisRequest {

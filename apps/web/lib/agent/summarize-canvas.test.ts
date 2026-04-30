@@ -218,4 +218,70 @@ describe('summarizeCanvas', () => {
       status: 'completed',
     })
   })
+
+  it('collects optimization signals for cost, speed and structural redundancy', () => {
+    const llmA = createNode('llm-a', 'llm', {
+      data: {
+        label: 'Planner A',
+        type: 'ai-model',
+        config: {
+          text: 'same prompt',
+          platformProvider: 'openrouter',
+          platformModel: 'openai/gpt-4o',
+        },
+      },
+    })
+    const llmB = createNode('llm-b', 'llm', {
+      data: {
+        label: 'Planner B',
+        type: 'ai-model',
+        config: {
+          text: 'same prompt',
+          platformProvider: 'openrouter',
+          platformModel: 'openai/gpt-4o',
+        },
+      },
+    })
+    const video = createNode('video-1', 'video-gen', {
+      data: {
+        label: 'Video',
+        type: 'ai-model',
+        config: {
+          platformProvider: 'kling',
+          platformModel: 'kling-v2-0',
+          duration: '10',
+          showPreview: true,
+        },
+      },
+    })
+    const display = createNode('display-1', 'display', {
+      data: {
+        label: 'Display',
+        type: 'output',
+        config: {},
+      },
+    })
+
+    const summary = summarizeCanvas({
+      workflowId: 'wf_5',
+      nodes: [llmA, llmB, video, display],
+      edges: [
+        createEdge('edge-a', 'llm-a', 'display', 'text-out', 'content-in'),
+        createEdge('edge-b', 'llm-b', 'display', 'text-out', 'content-in'),
+      ],
+    })
+
+    expect(summary.optimizationSignals).toMatchObject({
+      aiNodeCount: 3,
+      expensiveModelNodeIds: expect.arrayContaining(['llm-a', 'llm-b', 'video-1']),
+      slowNodeIds: expect.arrayContaining(['video-1']),
+      previewEnabledNodeIds: ['video-1'],
+      missingMergeCandidateNodeIds: [],
+      estimatedCostLevel: 'high',
+      estimatedLatencyLevel: 'medium',
+    })
+    expect(summary.optimizationSignals?.redundantNodeGroups).toEqual([
+      { type: 'llm', nodeIds: ['llm-a', 'llm-b'] },
+    ])
+  })
 })
