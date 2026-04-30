@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 @/components/ui/scroll-area，依赖同目录消息组件与提案卡片组件
- * [OUTPUT]: 对外提供 AgentConversation 组件，渲染消息流、过程消息和提案卡片
+ * [INPUT]: 依赖 @/components/ui/scroll-area，依赖同目录消息组件与确认卡片组件
+ * [OUTPUT]: 对外提供 AgentConversation 组件，渲染轻量消息流、过程消息和 prompt 确认结构
  * [POS]: components/agent 的对话承载层，被 AgentPanel 组合使用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -8,7 +8,6 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { AgentMessageItem } from './agent-message-item'
 import { AgentProcessMessage } from './agent-process-message'
-import { AgentProposalCard } from './agent-proposal-card'
 import { AgentPromptCompareCard } from './agent-prompt-compare-card'
 
 type ConversationItem =
@@ -27,23 +26,6 @@ type ConversationItem =
     }
   | {
       id: string
-      type: 'proposal'
-      title: string
-      summary: string
-      sourceLabel?: string
-      comparisonLabel?: string
-      reasons?: string[]
-      requiresConfirmation?: boolean
-      actionLabel?: string
-      onAction?: () => void
-      changes?: Array<{
-        label: string
-        detail: string
-        risk?: 'low' | 'medium' | 'high'
-      }>
-    }
-  | {
-      id: string
       type: 'prompt-confirmation'
       payloadId?: string
       originalIntent: string
@@ -56,7 +38,7 @@ type ConversationItem =
 interface AgentConversationProps {
   items: ConversationItem[]
   emptyState?: string
-  onPromptConfirm?: (payloadId?: string) => void
+  hero?: React.ReactNode
   onPromptRegenerate?: (payloadId?: string) => void
   onPromptManualEdit?: (payloadId?: string) => void
   onPromptToggleExpand?: (payloadId?: string) => void
@@ -65,8 +47,8 @@ interface AgentConversationProps {
 
 export function AgentConversation({
   items,
-  emptyState = '告诉我你想搭建什么工作流，我会先给出一个提案。',
-  onPromptConfirm,
+  emptyState = '告诉我你今天想做什么，我会先帮你理清方向。',
+  hero,
   onPromptRegenerate,
   onPromptManualEdit,
   onPromptToggleExpand,
@@ -74,12 +56,15 @@ export function AgentConversation({
 }: AgentConversationProps) {
   return (
     <ScrollArea className="h-full">
-      <div className="space-y-4 pr-3">
+      <div className="space-y-4 pb-2 pr-2">
         {items.length === 0 ? (
-          <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-black/10 bg-black/[0.02] px-5 text-center">
-            <p className="text-muted-foreground text-sm leading-6">{emptyState}</p>
-          </div>
+          hero ?? (
+            <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-black/8 bg-slate-50 px-6 text-center">
+              <p className="max-w-[22rem] text-sm leading-7 text-slate-500">{emptyState}</p>
+            </div>
+          )
         ) : null}
+
         {items.map((item) => {
           if (item.type === 'message') {
             return (
@@ -102,23 +87,6 @@ export function AgentConversation({
             )
           }
 
-          if (item.type === 'proposal') {
-            return (
-              <AgentProposalCard
-                key={item.id}
-              title={item.title}
-              summary={item.summary}
-              sourceLabel={item.sourceLabel}
-              comparisonLabel={item.comparisonLabel}
-              reasons={item.reasons}
-              actionLabel={item.actionLabel}
-              onAction={item.onAction}
-              changes={item.changes}
-              requiresConfirmation={item.requiresConfirmation}
-              />
-            )
-          }
-
           return (
             <AgentPromptCompareCard
               key={item.id}
@@ -128,7 +96,6 @@ export function AgentConversation({
               executionPrompt={item.executionPrompt}
               styleOptions={item.styleOptions}
               expanded={item.expanded}
-              onConfirm={() => onPromptConfirm?.(item.payloadId)}
               onRegenerate={() => onPromptRegenerate?.(item.payloadId)}
               onManualEdit={() => onPromptManualEdit?.(item.payloadId)}
               onToggleExpand={() => onPromptToggleExpand?.(item.payloadId)}

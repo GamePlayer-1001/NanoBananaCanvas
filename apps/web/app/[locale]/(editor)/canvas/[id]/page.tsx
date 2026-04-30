@@ -24,12 +24,15 @@ import { AgentChangeLogSheet } from '@/components/agent/agent-change-log-sheet'
 import { AgentHeader } from '@/components/agent/agent-header'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
+import { useAIModels } from '@/hooks/use-ai-models'
+import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
 import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
 import { useWorkflow } from '@/hooks/use-workflows'
 import { fetchLatestAgentReplay } from '@/lib/agent/agent-audit'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
+import { groupPlatformModelsByProvider } from '@/lib/platform-models'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -65,7 +68,7 @@ export default function CanvasPage({
   const emittedTerminalTaskIdsRef = useRef<Set<string>>(new Set())
   const canEdit = (data as Record<string, unknown> | undefined)?.canEdit === true
   const messages = useAgentStore((state) => state.messages)
-  const mode = useAgentStore((state) => state.mode)
+  const setMode = useAgentStore((state) => state.setMode)
   const status = useAgentStore((state) => state.status)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
   const selectionContext = useAgentStore((state) => state.selectionContext)
@@ -79,6 +82,8 @@ export default function CanvasPage({
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null)
   const [isChangeLogOpen, setIsChangeLogOpen] = useState(false)
   const [changeLogItems, setChangeLogItems] = useState<string[]>([])
+  const [composerExecutionMode, setComposerExecutionMode] = useState<'platform' | 'user_key'>('platform')
+  const [composerModel, setComposerModel] = useState<string>('instant')
   const workflowName =
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
       ? String((data as Record<string, unknown>).name)
@@ -86,13 +91,8 @@ export default function CanvasPage({
   const {
     sendMessage,
     isSubmitting,
-    applyPendingPlan,
-    pendingPlanAlternatives,
-    selectPendingPlanVariant,
-    rejectPendingPlan,
     isApplying,
     regeneratePrompt,
-    confirmPromptAndRun,
   } = useAgentSession({
     workflowId: id,
     workflowName,
@@ -105,6 +105,8 @@ export default function CanvasPage({
   } = useAgentTaskSummary({
     workflowId: id,
   })
+  const { data: platformModels = [] } = useAIModels('text')
+  const { getConfigsByCapability } = useModelConfigs()
   const resultAwareSummary = useMemo(
     () =>
       summarizeCanvas({
@@ -117,6 +119,32 @@ export default function CanvasPage({
       }),
     [auditTrail, edges, id, nodes, template, workflowName],
   )
+  const platformGroups = useMemo(
+    () => groupPlatformModelsByProvider(platformModels),
+    [platformModels],
+  )
+  const modelOptions = useMemo(() => {
+    if (composerExecutionMode === 'user_key') {
+      return getConfigsByCapability('text').map((item) => ({
+        value: item.configId,
+        label: item.label ?? item.modelId ?? item.providerId ?? item.configId,
+      }))
+    }
+
+    return platformGroups.flatMap((group) =>
+      group.models.map((model) => ({
+        value: model.modelId,
+        label: `${group.providerLabel} · ${model.modelName}`,
+      })),
+    )
+  }, [composerExecutionMode, getConfigsByCapability, platformGroups])
+  const resolvedComposerModel = useMemo(() => {
+    if (modelOptions.some((item) => item.value === composerModel)) {
+      return composerModel
+    }
+    return modelOptions[0]?.value ?? 'instant'
+  }, [composerModel, modelOptions])
+
   useAgentSelectionContext({
     workflowId: id,
     workflowName,
@@ -156,52 +184,26 @@ export default function CanvasPage({
         }
 
         if (message.role === 'proposal') {
-          const changes = pendingPlan?.id === message.planId
-            ? pendingPlan.operations.map((operation) => ({
-                label: toOperationLabel(operation.type),
-                detail: toOperationDetail(operation),
-                risk: toOperationRisk(operation.type),
-              }))
-            : []
-
+          const summary =
+            pendingPlan?.id === message.planId
+              ? pendingPlan.summary
+              : tAgent('proposalFallback', { planId: message.planId })
           return {
             id: message.id,
-            type: 'proposal' as const,
-            title: tAgent('proposalTitle'),
-            sourceLabel:
-              pendingPlan?.id === message.planId && pendingPlan.mode === 'template'
-                ? tAgent('proposalSourceTemplate')
-                : undefined,
-            summary:
-              pendingPlan?.id === message.planId
-                ? pendingPlan.summary
-                : tAgent('proposalFallback', { planId: message.planId }),
-            reasons: pendingPlan?.id === message.planId ? pendingPlan.reasons : [],
-            changes,
-            requiresConfirmation:
-              pendingPlan?.id === message.planId
-                ? pendingPlan.requiresConfirmation
-                : false,
+            type: 'message' as const,
+            role: 'assistant' as const,
+            text: summary,
+            timestamp: new Date(message.createdAt).toLocaleTimeString(),
           }
         }
 
         if (message.role === 'proposal-comparison') {
-          const primaryAlternative = pendingPlanAlternatives.find((plan) => plan.id !== pendingPlan?.id)
           return {
             id: message.id,
-            type: 'proposal' as const,
-            title: tAgent('proposalTitle'),
-            comparisonLabel: tAgent('proposalComparison'),
-            summary: '我先给你准备了多版方向提案，你可以先比较，再决定落哪一版。',
-            reasons: pendingPlanAlternatives
-              .slice(0, 3)
-              .map((plan) => `${plan.variantLabel ?? '默认方案'}：${plan.summary}`),
-            changes: [],
-            requiresConfirmation: true,
-            actionLabel: primaryAlternative
-              ? tAgent('proposalSwitchVariant', { label: primaryAlternative.variantLabel ?? '下一版' })
-              : undefined,
-            onAction: primaryAlternative ? () => selectPendingPlanVariant(primaryAlternative.id) : undefined,
+            type: 'message' as const,
+            role: 'assistant' as const,
+            text: tAgent('messageMultipleDirections'),
+            timestamp: new Date(message.createdAt).toLocaleTimeString(),
           }
         }
 
@@ -244,22 +246,17 @@ export default function CanvasPage({
       expandedPromptId,
       messages,
       pendingPlan,
-      pendingPlanAlternatives,
-      selectPendingPlanVariant,
       status,
       tAgent,
     ],
   )
 
-  const modeLabel = {
-    create: tAgent('modeCreate'),
-    update: tAgent('modeUpdate'),
-    repair: tAgent('modeUpdate'),
-    diagnose: tAgent('modeDiagnose'),
-    optimize: tAgent('modeOptimize'),
-    extend: tAgent('modeUpdate'),
-    template: tAgent('modeCreate'),
-  }[mode]
+  const heroActions = [
+    { id: 'hero-cat-image', label: tAgent('heroCatImage'), accent: 'hero' as const },
+    { id: 'hero-realistic-edit', label: tAgent('heroRealisticEdit'), accent: 'hero' as const },
+    { id: 'hero-diagnose', label: tAgent('heroDiagnose'), accent: 'hero' as const },
+    { id: 'hero-explain', label: tAgent('heroExplain'), accent: 'hero' as const },
+  ]
 
   const quickActions = [
     ...(resultAwareSummary.latestSuccessfulAsset
@@ -268,7 +265,6 @@ export default function CanvasPage({
     { id: 'diagnose', label: tAgent('quickDiagnose') },
     { id: 'explain', label: tAgent('quickExplain') },
     { id: 'optimize', label: tAgent('quickOptimize') },
-    { id: 'more-realistic', label: tAgent('quickRealistic') },
     ...(template
       ? [
           {
@@ -367,21 +363,19 @@ export default function CanvasPage({
       {/* 画布编辑器 (lg+) */}
       <div className="hidden h-full lg:block">
         <ReactFlowProvider>
-          <div className="flex h-full">
-            <div className="min-w-0 flex-1">
-              <Canvas workflowId={id} canEdit={canEdit} />
-            </div>
+          <div className="relative h-full">
+            <Canvas workflowId={id} canEdit={canEdit} />
             <AgentPanel
-              className="w-[320px] xl:w-[360px]"
+              className="w-[400px]"
               header={(
                 <AgentHeader
                   title={tAgent('title')}
-                  modeLabel={modeLabel}
+                  subtitle={tAgent('heroTitle')}
                   contextLabel={
                     errorMessage
                       ? tAgent('contextError', { message: errorMessage })
                       : selectionContext?.nodeLabel
-                        ? `已选中节点：${selectionContext.nodeLabel}`
+                        ? tAgent('contextSelectedNode', { name: selectionContext.nodeLabel })
                       : activeTaskLabel
                         ? activeTaskLabel
                       : executionLabel
@@ -389,46 +383,50 @@ export default function CanvasPage({
                       : pendingPlan?.promptConfirmation
                         ? tAgent('contextPromptConfirm')
                       : template
-                        ? `当前模板：${template.name}`
-                      : pendingPlan
-                        ? tAgent('contextPlanReady')
-                        : lastAppliedPlanId
-                          ? tAgent('contextLastApplied', { planId: lastAppliedPlanId })
-                          : tAgent('contextConnected')
+                        ? tAgent('contextTemplate', { name: template.name })
+                      : lastAppliedPlanId
+                        ? tAgent('contextLastApplied', { planId: lastAppliedPlanId })
+                        : tAgent('contextConnected')
                   }
-                  actionLabel={
-                    pendingPlan && !pendingPlan.promptConfirmation
-                      ? (isApplying ? tAgent('actionApplying') : tAgent('actionApply'))
-                      : undefined
-                  }
-                  onAction={
-                    pendingPlan && !pendingPlan.promptConfirmation ? () => void applyPendingPlan() : undefined
-                  }
-                  secondaryActionLabel={pendingPlan ? tAgent('actionReject') : undefined}
-                  onSecondaryAction={pendingPlan ? rejectPendingPlan : undefined}
-                  tertiaryActionLabel={
-                    pendingPlan
-                      ? tAgent('actionBackToProposal')
-                      : changeLogItems.length > 0
-                        ? tAgent('actionViewChanges')
-                        : undefined
-                  }
-                  onTertiaryAction={
-                    pendingPlan || changeLogItems.length > 0
-                      ? () => setIsChangeLogOpen(true)
-                      : undefined
-                  }
+                  historyLabel={changeLogItems.length > 0 ? tAgent('actionViewChanges') : undefined}
+                  onHistoryClick={changeLogItems.length > 0 ? () => setIsChangeLogOpen(true) : undefined}
                 />
               )}
               conversation={(
                 <AgentConversation
                   items={conversationItems}
                   emptyState={tAgent('emptyState')}
-                  onPromptConfirm={(payloadId) => void confirmPromptAndRun(payloadId)}
+                  hero={(
+                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-8 px-3 text-center">
+                      <div className="space-y-3">
+                        <h3 className="text-[32px] leading-tight font-semibold tracking-[-0.03em] text-slate-950">
+                          {tAgent('heroTitle')}
+                        </h3>
+                        <p className="mx-auto max-w-[26rem] text-sm leading-7 text-slate-500">
+                          {tAgent('heroSubtitle')}
+                        </p>
+                      </div>
+                      <AgentQuickActions
+                        actions={heroActions}
+                        onSelect={(actionId) => {
+                          const actionMap: Record<string, string> = {
+                            'hero-cat-image': tAgent('heroCatImageAsk'),
+                            'hero-realistic-edit': tAgent('heroRealisticEditAsk'),
+                            'hero-diagnose': tAgent('heroDiagnoseAsk'),
+                            'hero-explain': tAgent('heroExplainAsk'),
+                          }
+                          if (actionId === 'hero-cat-image') setMode('create')
+                          if (actionId === 'hero-realistic-edit') setMode('update')
+                          if (actionId === 'hero-diagnose') setMode('diagnose')
+                          if (actionId === 'hero-explain') setMode('update')
+                          void sendMessage(actionMap[actionId] ?? actionId)
+                        }}
+                      />
+                    </div>
+                  )}
                   onPromptRegenerate={(payloadId) => void regeneratePrompt(payloadId)}
                   onPromptManualEdit={(payloadId) => {
                     setExpandedPromptId(payloadId ?? null)
-                    void rejectPendingPlan()
                   }}
                   onPromptToggleExpand={(payloadId) =>
                     setExpandedPromptId((current) => (current === payloadId ? null : payloadId ?? null))
@@ -438,6 +436,8 @@ export default function CanvasPage({
               )}
               quickActions={(
                 <AgentQuickActions
+                  title={messages.length > 0 ? tAgent('quickActionsTitle') : undefined}
+                  compact
                   actions={pendingPlan ? [] : quickActions}
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
@@ -454,11 +454,13 @@ export default function CanvasPage({
                       diagnose: tAgent('quickDiagnoseAsk'),
                       explain: tAgent('quickExplainAsk'),
                       optimize: tAgent('quickOptimizeAsk'),
-                      'more-realistic': tAgent('quickRealisticAsk'),
                       'template-adapt': tAgent('quickTemplateAdaptAsk', {
                         name: template?.name ?? '当前模板',
                       }),
                     }
+                    if (actionId === 'diagnose') setMode('diagnose')
+                    if (actionId === 'optimize') setMode('optimize')
+                    if (actionId === 'explain') setMode('update')
                     void sendMessage(actionMap[actionId] ?? actionId)
                   }}
                 />
@@ -466,6 +468,11 @@ export default function CanvasPage({
               composer={(
                 <AgentComposer
                   disabled={isSubmitting || isApplying}
+                  modelOptions={modelOptions}
+                  modelValue={resolvedComposerModel}
+                  onModelChange={setComposerModel}
+                  executionMode={composerExecutionMode}
+                  onExecutionModeChange={setComposerExecutionMode}
                   hint={
                     isApplying
                       ? tAgent('hintApplying')
@@ -499,84 +506,6 @@ function toConversationRole(
   >,
 ): 'user' | 'assistant' | 'diagnosis' {
   return message.role
-}
-
-function toOperationLabel(type: string) {
-  const labels: Record<string, string> = {
-    add_node: '新增节点',
-    update_node_data: '修改节点配置',
-    remove_node: '删除节点',
-    connect: '新增连线',
-    insert_between: '插入中间步骤',
-    replace_node: '替换节点模型',
-    duplicate_node_branch: '复制变体分支',
-    batch_update_node_data: '批量更新参数',
-    relabel_node: '重命名节点',
-    annotate_change: '记录改动说明',
-    disconnect: '移除连线',
-    focus_nodes: '聚焦节点',
-    request_prompt_confirmation: '提示词确认',
-    run_workflow: '执行工作流',
-  }
-
-  return labels[type] ?? type
-}
-
-function toOperationDetail(
-  operation: NonNullable<ReturnType<typeof useAgentStore.getState>['pendingPlan']>['operations'][number],
-) {
-  switch (operation.type) {
-    case 'add_node':
-      return `计划新增 1 个 ${operation.nodeType} 节点`
-    case 'update_node_data':
-      return `计划调整节点 ${operation.nodeId} 的局部配置`
-    case 'remove_node':
-      return `计划删除节点 ${operation.nodeId}`
-    case 'connect':
-      return `计划连接 ${operation.source} -> ${operation.target}`
-    case 'insert_between':
-      return `计划在 ${operation.source} 和 ${operation.target} 之间插入 ${operation.nodeType}`
-    case 'replace_node':
-      return `计划将节点 ${operation.nodeId} 切换为 ${operation.nextNodeType} 方案`
-    case 'duplicate_node_branch':
-      return `计划从节点 ${operation.nodeId} 复制 ${operation.count} 条变体支线`
-    case 'batch_update_node_data':
-      return `计划批量更新 ${operation.nodeIds.length} 个节点`
-    case 'relabel_node':
-      return `计划将节点 ${operation.nodeId} 重命名为 ${operation.label}`
-    case 'annotate_change':
-      return `计划为节点 ${operation.nodeId} 追加改动说明`
-    case 'disconnect':
-      return `计划移除连线 ${operation.edgeId}`
-    case 'focus_nodes':
-      return `计划先聚焦 ${operation.nodeIds.length} 个相关节点`
-    case 'request_prompt_confirmation':
-      return '这一步会先进入提示词确认，不会直接改图'
-    case 'run_workflow':
-      return operation.scope === 'from-node'
-        ? `计划从节点 ${operation.nodeId ?? '-'} 开始执行`
-        : '计划执行当前工作流'
-  }
-}
-
-function toOperationRisk(type: string): 'low' | 'medium' | 'high' {
-  if (
-    type === 'remove_node' ||
-    type === 'run_workflow' ||
-    type === 'replace_node' ||
-    type === 'duplicate_node_branch'
-  ) {
-    return 'high'
-  }
-  if (
-    type === 'request_prompt_confirmation' ||
-    type === 'update_node_data' ||
-    type === 'insert_between' ||
-    type === 'batch_update_node_data'
-  ) {
-    return 'medium'
-  }
-  return 'low'
 }
 
 /* ─── Mobile Guard ──────────────────────────────────── */

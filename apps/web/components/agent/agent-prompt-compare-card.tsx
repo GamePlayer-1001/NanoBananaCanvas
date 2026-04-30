@@ -21,7 +21,6 @@ interface AgentPromptCompareCardProps {
   executionPrompt: string
   styleOptions?: string[]
   expanded?: boolean
-  onConfirm?: () => void
   onRegenerate?: () => void
   onManualEdit?: () => void
   onToggleExpand?: () => void
@@ -52,7 +51,6 @@ export function AgentPromptCompareCard({
   executionPrompt,
   styleOptions = [],
   expanded = false,
-  onConfirm,
   onRegenerate,
   onManualEdit,
   onToggleExpand,
@@ -65,7 +63,7 @@ export function AgentPromptCompareCard({
       : `${executionPrompt.slice(0, 180)}...`
 
   return (
-    <Card className="gap-4 rounded-3xl border-black/8 bg-white/96 py-4 shadow-sm">
+    <Card className="gap-4 rounded-[26px] border-black/8 bg-white/96 py-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
       <CardHeader className="px-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm">{t('promptCardTitle')}</CardTitle>
@@ -111,14 +109,6 @@ export function AgentPromptCompareCard({
           <Button
             type="button"
             size="sm"
-            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
-            onClick={onConfirm}
-          >
-            {t('promptConfirm')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
             variant="secondary"
             className="rounded-full px-4 transition-colors motion-reduce:transition-none"
             onClick={onRegenerate}
@@ -135,6 +125,9 @@ export function AgentPromptCompareCard({
             {t('promptManualEdit')}
           </Button>
         </div>
+        <p className="text-[12px] leading-5 text-slate-500">
+          {t('promptConfirmHint')}
+        </p>
       </CardContent>
     </Card>
   )

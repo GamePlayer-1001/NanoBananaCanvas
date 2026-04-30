@@ -30,6 +30,7 @@ interface ApplyAgentPlanResult {
   appliedOperations: WorkflowOperation[]
   summary: string
   rolledBack: boolean
+  nodeIdMap: Record<string, string>
   error?: string
 }
 
@@ -65,6 +66,7 @@ export async function applyAgentPlan(
       appliedOperations: [],
       summary: validation.errors.join('；'),
       rolledBack: false,
+      nodeIdMap: {},
       error: validation.errors.join('；'),
     }
   }
@@ -111,6 +113,7 @@ export async function applyAgentPlan(
       appliedOperations,
       summary: explanation.summary,
       rolledBack: false,
+      nodeIdMap: Object.fromEntries(working.idMap.entries()),
     }
   } catch (error) {
     useFlowStore.getState().setFlow(snapshot.nodes, snapshot.edges, snapshot.viewport)
@@ -122,6 +125,7 @@ export async function applyAgentPlan(
       appliedOperations,
       summary: error instanceof Error ? error.message : '落图失败，已尝试回滚。',
       rolledBack: true,
+      nodeIdMap: {},
       error: error instanceof Error ? error.message : String(error),
     }
   }

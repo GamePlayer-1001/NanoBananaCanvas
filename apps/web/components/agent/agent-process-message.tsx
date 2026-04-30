@@ -18,8 +18,8 @@ export function AgentProcessMessage({
   active = false,
 }: AgentProcessMessageProps) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2.5 text-xs text-slate-600 shadow-sm">
-      <div className="flex items-center gap-2">
+    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/75 px-3.5 py-3 text-[12px] text-slate-600 shadow-sm">
+      <div className="flex items-center gap-2.5">
         <Loader2
           size={13}
           className={cn(
@@ -29,16 +29,6 @@ export function AgentProcessMessage({
           )}
         />
         <span className="leading-5">{text}</span>
-      </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200/80">
-        <div
-          className={cn(
-            'h-full rounded-full bg-indigo-500/75 transition-all duration-500 motion-reduce:transition-none',
-            active
-              ? 'w-2/3 motion-safe:animate-pulse'
-              : 'w-1/3 opacity-60',
-          )}
-        />
       </div>
     </div>
   )

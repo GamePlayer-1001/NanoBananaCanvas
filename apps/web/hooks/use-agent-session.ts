@@ -65,6 +65,10 @@ export function useAgentSession({
     const value = rawValue.trim()
     if (!value || isSubmitting) return
 
+    if (tryHandleConversationalConfirmation(value)) {
+      return
+    }
+
     setIsSubmitting(true)
     clearPendingPlan()
     clearPromptConfirmation()
@@ -273,6 +277,8 @@ export function useAgentSession({
         },
       })
 
+      const shouldAutoApply = shouldAutoApplyPlan(nextPlan, requestKind)
+
       if (nextPlan.templateContext) {
         appendMessage({
           id: crypto.randomUUID(),
@@ -282,14 +288,16 @@ export function useAgentSession({
         })
       }
 
-      appendMessage({
-        id: crypto.randomUUID(),
-        role: 'proposal',
-        planId: nextPlan.id,
-        createdAt: new Date().toISOString(),
-      })
+      if (!shouldAutoApply) {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'proposal',
+          planId: nextPlan.id,
+          createdAt: new Date().toISOString(),
+        })
+      }
 
-      if (alternatives.length > 0) {
+      if (!shouldAutoApply && alternatives.length > 0) {
         appendMessage({
           id: crypto.randomUUID(),
           role: 'proposal-comparison',
@@ -309,7 +317,7 @@ export function useAgentSession({
         })
       }
 
-      if (nextPlan.promptConfirmation) {
+      if (!shouldAutoApply && nextPlan.promptConfirmation) {
         appendMessage({
           id: crypto.randomUUID(),
           role: 'prompt-confirmation',
@@ -321,6 +329,29 @@ export function useAgentSession({
 
       if (validation.warnings.length > 0) {
         appendProcessMessage(validation.warnings.join('；'))
+      }
+
+      if (shouldAutoApply) {
+        appendProcessMessage(tAgent('processBuildingWorkflow'))
+        await applyPendingPlan(nextPlan)
+        const latestPlan = useAgentStore.getState().pendingPlan
+        if (latestPlan?.promptConfirmation) {
+          appendMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            text: tAgent('messageWorkflowReadyForPrompt'),
+            createdAt: new Date().toISOString(),
+          })
+          appendMessage({
+            id: crypto.randomUUID(),
+            role: 'prompt-confirmation',
+            payloadId: latestPlan.promptConfirmation.id,
+            payload: latestPlan.promptConfirmation,
+            createdAt: new Date().toISOString(),
+          })
+          setStatus('awaiting-confirmation')
+        }
+        return
       }
 
       setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
@@ -385,6 +416,15 @@ export function useAgentSession({
         )
       }
 
+      const nextPromptPlan = resolvePromptTargetWithNodeMap(
+        planOverride,
+        result.nodeIdMap,
+      )
+      if (nextPromptPlan) {
+        setPendingPlan(nextPromptPlan)
+        setPromptConfirmation(nextPromptPlan.promptConfirmation ?? null)
+      }
+
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -411,9 +451,11 @@ export function useAgentSession({
 
       setLastAppliedPlanId(planOverride.id)
       setErrorMessage(null)
-      clearPendingPlan()
-      clearPromptConfirmation()
-      setStatus('idle')
+      if (!nextPromptPlan) {
+        clearPendingPlan()
+        clearPromptConfirmation()
+        setStatus('idle')
+      }
     } catch (error) {
       const message =
         error instanceof Error && error.message
@@ -620,6 +662,36 @@ export function useAgentSession({
     })
   }
 
+  function tryHandleConversationalConfirmation(value: string) {
+    if (!pendingPlan) return false
+
+    const normalized = normalizeConfirmationText(value)
+    const isConfirmed = CONFIRMATION_PATTERNS.some((pattern) => pattern.test(normalized))
+    const isRejected = REJECTION_PATTERNS.some((pattern) => pattern.test(normalized))
+
+    if (!isConfirmed && !isRejected) return false
+
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'user',
+      text: value,
+      createdAt: new Date().toISOString(),
+    })
+
+    if (isRejected) {
+      rejectPendingPlan()
+      return true
+    }
+
+    if (pendingPlan.promptConfirmation) {
+      void confirmPromptAndRun(pendingPlan.promptConfirmation.id)
+      return true
+    }
+
+    void applyPendingPlan(pendingPlan)
+    return true
+  }
+
   return {
     sendMessage,
     isSubmitting,
@@ -660,6 +732,49 @@ function mergeNodeTextIntoInitialData(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const CONFIRMATION_PATTERNS = [
+  /^(我确认|确认|可以|可以执行|执行吧|开始吧|开始执行|是的|好的|好|ok|okay|yes|yep|继续)/i,
+]
+
+const REJECTION_PATTERNS = [
+  /^(不|不用|先不要|取消|算了|先等等|先别执行|不要这样)/i,
+]
+
+function normalizeConfirmationText(value: string) {
+  return value.replace(/[。！!？，,\s]/g, '').trim().toLowerCase()
+}
+
+function shouldAutoApplyPlan(
+  plan: AgentPlan,
+  requestKind: 'plan' | 'diagnose' | 'explain' | 'optimize',
+) {
+  if (requestKind !== 'plan') return false
+  if (plan.mode === 'create') return true
+  return !plan.requiresConfirmation && !plan.promptConfirmation
+}
+
+function resolvePromptTargetWithNodeMap(
+  plan: AgentPlan,
+  nodeIdMap: Record<string, string>,
+): AgentPlan | null {
+  if (!plan.promptConfirmation?.targetNodeId) return null
+
+  const mappedTargetNodeId =
+    nodeIdMap[plan.promptConfirmation.targetNodeId] ?? plan.promptConfirmation.targetNodeId
+  const nodes = useFlowStore.getState().nodes
+  if (!nodes.some((node) => node.id === mappedTargetNodeId)) {
+    return null
+  }
+
+  return {
+    ...plan,
+    promptConfirmation: {
+      ...plan.promptConfirmation,
+      targetNodeId: mappedTargetNodeId,
+    },
+  }
 }
 
 function resolveRequestKind(
