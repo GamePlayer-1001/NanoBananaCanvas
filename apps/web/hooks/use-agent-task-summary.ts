@@ -72,11 +72,14 @@ export function useAgentTaskSummary({
     (): AgentTaskTerminalEvent[] =>
       workflowTasks.flatMap<AgentTaskTerminalEvent>((task) => {
         if (task.status === 'completed') {
-          return [{
-            taskId: task.id,
-            message: `异步任务已经完成，${toTaskTypeLabel(task.taskType)} 结果已回到左侧节点。`,
-            tone: 'assistant' as const,
-          }]
+          return [
+            {
+              taskId: task.id,
+              message: `异步任务已经完成，${toTaskTypeLabel(task.taskType)} 结果已回到左侧节点。`,
+              tone: 'assistant' as const,
+            },
+            ...buildFollowUpEvents(task),
+          ]
         }
 
         if (task.status === 'failed') {
@@ -112,4 +115,38 @@ function toTaskTypeLabel(taskType: string) {
   if (taskType === 'video_gen') return '视频生成'
   if (taskType === 'audio_gen') return '音频生成'
   return taskType
+}
+
+function buildFollowUpEvents(task: { id: string; taskType: string }) {
+  if (task.taskType === 'image_gen') {
+    return [
+      {
+        taskId: `${task.id}:follow-up`,
+        message: '这次图片结果已经出来了。要不要我基于这张图继续补一个视频分支，或者再长出标题/正文文案分支？',
+        tone: 'assistant' as const,
+      },
+    ]
+  }
+
+  if (task.taskType === 'video_gen') {
+    return [
+      {
+        taskId: `${task.id}:follow-up`,
+        message: '这次视频结果已经出来了。要不要我继续帮你补字幕、封面文案或拆出静帧变体？',
+        tone: 'assistant' as const,
+      },
+    ]
+  }
+
+  if (task.taskType === 'audio_gen') {
+    return [
+      {
+        taskId: `${task.id}:follow-up`,
+        message: '这次音频结果已经出来了。要不要我继续帮你补封面图、摘要文案或短视频脚本分支？',
+        tone: 'assistant' as const,
+      },
+    ]
+  }
+
+  return []
 }

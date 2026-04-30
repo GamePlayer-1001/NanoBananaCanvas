@@ -9,7 +9,8 @@
 ```
 use-context-menu.ts      — useContextMenu 画布右键菜单状态管理 (pane/node 菜单切换，Escape 关闭)
 use-agent-session.ts     — useAgentSession Agent 会话编排 (summary -> plan|template-plan|diagnose|optimize|explain -> prompt refine/confirm -> apply -> run，右侧提案与左侧落图的安全桥接)
-use-agent-task-summary.ts — useAgentTaskSummary Agent 执行/任务摘要层 (执行态 + 异步任务态 -> 自然语言反馈)
+use-agent-task-summary.ts — useAgentTaskSummary Agent 执行/任务摘要层 (执行态 + 异步任务态 -> 自然语言反馈，并在结果完成后生成“下一步建议”续写提示)
+use-agent-task-summary.test.tsx — useAgentTaskSummary 回归测试 (验证图片任务完成后会产出基于结果继续的建议消息，失败任务保持诊断语气)
 use-workflow-executor.ts — useWorkflowExecutor 工作流执行 hook (连接 WorkflowExecutor 引擎与 Zustand Store，含 toast 通知；用户 abort 时会同步下发任务 cancel，避免后端异步任务继续占坑)
 use-workflow-executor.test.tsx — useWorkflowExecutor 中止回归测试 (验证 abort 会取消活跃任务并记录 aborted 历史)
 use-auto-save.ts         — useAutoSave 防抖自动保存 + 页面加载恢复 (400ms local / 1200ms cloud + 页面离场 keepalive 冲刷，并同步模板元数据与审计轨迹)
