@@ -375,9 +375,9 @@
 
 ### 节点选择上下文
 
-- [ ] `AGENT-1000` 创建 `use-agent-selection-context.ts`
-- [ ] `AGENT-1001` 在 `useFlowStore` 选中态基础上建立节点语境快照
-- [ ] `AGENT-1002` 支持识别当前节点输入、输出、关键配置、最近执行结果
+- [x] `AGENT-1000` 创建 `use-agent-selection-context.ts`
+- [x] `AGENT-1001` 在 `useFlowStore` 选中态基础上建立节点语境快照
+- [x] `AGENT-1002` 支持识别当前节点输入、输出、关键配置、最近执行结果
 - [ ] `AGENT-1003` Header 展示“当前已选中某节点”的轻提示
 
 ### 节点级对话

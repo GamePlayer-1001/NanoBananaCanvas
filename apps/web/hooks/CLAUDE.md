@@ -8,6 +8,7 @@
 
 ```
 use-context-menu.ts      — useContextMenu 画布右键菜单状态管理 (pane/node 菜单切换，Escape 关闭)
+use-agent-selection-context.ts — useAgentSelectionContext 选中节点语境桥接 (从 Flow/Execution/模板上下文压缩当前节点快照，并同步到 AgentStore)
 use-agent-session.ts     — useAgentSession Agent 会话编排 (summary -> plan|template-plan|diagnose|optimize|explain -> prompt refine/confirm -> apply -> run，右侧提案与左侧落图的安全桥接)
 use-agent-task-summary.ts — useAgentTaskSummary Agent 执行/任务摘要层 (执行态 + 异步任务态 -> 自然语言反馈，并在结果完成后生成“下一步建议”续写提示)
 use-agent-task-summary.test.tsx — useAgentTaskSummary 回归测试 (验证图片任务完成后会产出基于结果继续的建议消息，失败任务保持诊断语气)

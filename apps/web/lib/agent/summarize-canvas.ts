@@ -10,6 +10,7 @@ import type { TemplateSummary, WorkflowAuditEntry } from '@/types'
 import { useExecutionStore } from '@/stores/use-execution-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type {
+  AgentSelectionContext,
   AgentCanvasEdge,
   AgentCanvasNode,
   CanvasExecutionSummary,
@@ -44,6 +45,9 @@ export function summarizeCanvas({
   const lastAuditEntry = auditTrail.at(-1)
   const optimizationSignals = buildOptimizationSignals(nodes, edges)
   const assets = summarizeResultAssets(nodes, execution.nodeResults)
+  const selectionContext = selectedNode
+    ? buildSelectionContext(selectedNode, assets, execution)
+    : undefined
 
   return {
     workflowId,
@@ -53,6 +57,7 @@ export function summarizeCanvas({
     selectedNodeId: selectedNode?.id,
     selectedNodeType: selectedNode?.type,
     selectedNodeLabel: getNodeLabel(selectedNode),
+    selectionContext,
     nodes: nodes.slice(0, AGENT_MAX_SUMMARY_NODES).map((node) => ({
       id: node.id,
       type: node.type ?? 'unknown',
@@ -81,6 +86,41 @@ export function summarizeCanvas({
           lastAuditEntry,
         }
       : undefined,
+  }
+}
+
+function buildSelectionContext(
+  selectedNode: AgentCanvasNode,
+  assets: Array<{
+    id: string
+    kind: 'image' | 'video' | 'audio' | 'text'
+    sourceNodeId: string
+    summary: string
+  }>,
+  execution: ReturnType<typeof useExecutionStore.getState>,
+): AgentSelectionContext {
+  const latestAsset = assets
+    .filter((asset) => asset.sourceNodeId === selectedNode.id)
+    .at(-1)
+  const latestRuntimeText = extractTextFromRuntimeResult(execution.nodeResults[selectedNode.id])
+  const latestResultSummary =
+    latestAsset?.summary ??
+    (latestRuntimeText
+      ? summarizeTextAsset(selectedNode, latestRuntimeText)
+      : undefined)
+  const executionStatus = resolveSelectionExecutionStatus(selectedNode.id, execution)
+
+  return {
+    nodeId: selectedNode.id,
+    nodeType: selectedNode.type ?? 'unknown',
+    nodeLabel: getNodeLabel(selectedNode),
+    inputs: getNodePorts(selectedNode.type ?? '').inputs,
+    outputs: getNodePorts(selectedNode.type ?? '').outputs,
+    keyConfig: summarizeNodeConfig(selectedNode.data?.config),
+    latestResultSummary,
+    latestResultKind: latestAsset?.kind ?? (latestRuntimeText ? 'text' : undefined),
+    executionStatus,
+    executionHint: buildSelectionExecutionHint(selectedNode.id, executionStatus, execution),
   }
 }
 
@@ -165,6 +205,58 @@ function summarizeExecution(execution: ReturnType<typeof useExecutionStore.getSt
   return {
     status: 'idle',
   }
+}
+
+function resolveSelectionExecutionStatus(
+  nodeId: string,
+  execution: ReturnType<typeof useExecutionStore.getState>,
+): CanvasExecutionSummary['status'] {
+  if (execution.isExecuting && execution.currentNodeId === nodeId) {
+    return 'running'
+  }
+
+  if (execution.error && execution.currentNodeId === nodeId) {
+    return 'failed'
+  }
+
+  if (nodeId in execution.nodeResults) {
+    const nodeResult = execution.nodeResults[nodeId]
+    if (isRecord(nodeResult) && typeof nodeResult.error === 'string' && nodeResult.error.trim()) {
+      return 'failed'
+    }
+    return 'completed'
+  }
+
+  return 'idle'
+}
+
+function buildSelectionExecutionHint(
+  nodeId: string,
+  status: CanvasExecutionSummary['status'],
+  execution: ReturnType<typeof useExecutionStore.getState>,
+): string | undefined {
+  if (status === 'running') {
+    return '这个节点刚刚正在执行。'
+  }
+
+  if (status === 'failed') {
+    const nodeResult = execution.nodeResults[nodeId]
+    if (isRecord(nodeResult) && typeof nodeResult.error === 'string' && nodeResult.error.trim()) {
+      return `最近一次执行在这里失败：${compressValue(nodeResult.error)}`
+    }
+
+    if (execution.error) {
+      return `最近一次执行在这里失败：${compressValue(execution.error)}`
+    }
+
+    return '最近一次执行在这个节点失败了。'
+  }
+
+  if (status === 'completed') {
+    return '这个节点最近已经产出过结果。'
+  }
+
+  return undefined
 }
 
 function buildOptimizationSignals(nodes: AgentCanvasNode[], edges: AgentCanvasEdge[]) {

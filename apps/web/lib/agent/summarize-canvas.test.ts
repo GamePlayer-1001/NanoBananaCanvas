@@ -121,6 +121,15 @@ describe('summarizeCanvas', () => {
     expect(summary.selectedNodeId).toBe('prompt')
     expect(summary.selectedNodeType).toBe('text-input')
     expect(summary.selectedNodeLabel).toBe('Prompt Writer')
+    expect(summary.selectionContext).toMatchObject({
+      nodeId: 'prompt',
+      nodeType: 'text-input',
+      nodeLabel: 'Prompt Writer',
+      keyConfig: {
+        text: 'make a poster',
+      },
+      executionStatus: 'idle',
+    })
     expect(summary.disconnectedNodeIds).toEqual(['note-1'])
     expect(summary.displayMissingForNodeIds).toEqual(['image'])
     expect(summary.nodes[0]).toMatchObject({
@@ -217,6 +226,40 @@ describe('summarizeCanvas', () => {
     expect(summary.latestExecution).toEqual({
       status: 'completed',
     })
+    expect(summary.selectionContext).toBeUndefined()
+  })
+
+  it('captures selected node latest result summary and execution hint', () => {
+    useExecutionStore.getState().setNodeResult('image', {
+      'image-out': 'https://cdn.example.com/result.png',
+    })
+
+    const summary = summarizeCanvas({
+      workflowId: 'wf_5',
+      nodes: [
+        createNode('image', 'image-gen', {
+          selected: true,
+          data: {
+            label: 'Hero Image',
+            type: 'ai-model',
+            config: {
+              prompt: 'hero banner',
+              platformModel: 'openai/dall-e-3',
+              resultUrl: 'https://cdn.example.com/result.png',
+            },
+          },
+        }),
+      ],
+      edges: [],
+    })
+
+    expect(summary.selectionContext).toMatchObject({
+      nodeId: 'image',
+      latestResultKind: 'image',
+      executionStatus: 'completed',
+    })
+    expect(summary.selectionContext?.latestResultSummary).toContain('Hero Image')
+    expect(summary.selectionContext?.executionHint).toBe('这个节点最近已经产出过结果。')
   })
 
   it('collects optimization signals for cost, speed and structural redundancy', () => {

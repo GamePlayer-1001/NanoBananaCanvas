@@ -86,6 +86,33 @@ const canvasSummaryNodeSchema = z.object({
   configSummary: z.record(z.string(), z.unknown()),
 })
 
+const agentSelectionContextSchema = z.object({
+  nodeId: z.string().min(1).optional(),
+  nodeType: z.string().min(1).optional(),
+  nodeLabel: z.string().min(1).optional(),
+  inputs: z.array(
+    z.object({
+      id: z.string().min(1),
+      label: z.string().min(1),
+      type: z.string().min(1),
+      required: z.boolean().optional(),
+    }),
+  ).optional(),
+  outputs: z.array(
+    z.object({
+      id: z.string().min(1),
+      label: z.string().min(1),
+      type: z.string().min(1),
+      required: z.boolean().optional(),
+    }),
+  ).optional(),
+  keyConfig: z.record(z.string(), z.unknown()).optional(),
+  latestResultSummary: z.string().min(1).optional(),
+  latestResultKind: z.enum(['image', 'video', 'audio', 'text']).optional(),
+  executionStatus: z.enum(['idle', 'running', 'completed', 'failed']).optional(),
+  executionHint: z.string().min(1).optional(),
+})
+
 const canvasOptimizationSignalsSchema = z.object({
   aiNodeCount: z.number().int().nonnegative(),
   expensiveModelNodeIds: z.array(z.string().min(1)),
@@ -224,6 +251,7 @@ export const agentPlanRequestSchema = z.object({
     selectedNodeId: z.string().optional(),
     selectedNodeType: z.string().optional(),
     selectedNodeLabel: z.string().optional(),
+    selectionContext: agentSelectionContextSchema.optional(),
     nodes: z.array(canvasSummaryNodeSchema),
     disconnectedNodeIds: z.array(z.string()),
     displayMissingForNodeIds: z.array(z.string()),

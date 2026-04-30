@@ -70,6 +70,13 @@ export interface AgentSelectionContext {
   nodeId?: string
   nodeType?: string
   nodeLabel?: string
+  inputs?: PortDefinition[]
+  outputs?: PortDefinition[]
+  keyConfig?: Record<string, unknown>
+  latestResultSummary?: string
+  latestResultKind?: 'image' | 'video' | 'audio' | 'text'
+  executionStatus?: CanvasExecutionSummary['status']
+  executionHint?: string
 }
 
 export interface AgentPromptStyleOption {
@@ -256,6 +263,7 @@ export interface CanvasSummary {
   selectedNodeId?: string
   selectedNodeType?: string
   selectedNodeLabel?: string
+  selectionContext?: AgentSelectionContext
   nodes: CanvasSummaryNode[]
   disconnectedNodeIds: string[]
   displayMissingForNodeIds: string[]
