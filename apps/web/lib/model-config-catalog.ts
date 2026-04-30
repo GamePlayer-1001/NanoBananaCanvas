@@ -11,6 +11,7 @@ export interface ModelProviderOption {
   providerId: string
   providerKind:
     | 'openai-compatible'
+    | 'openrouter'
     | 'google-image'
     | 'gemini'
     | 'kling'
@@ -37,6 +38,11 @@ export const MODEL_PROVIDER_OPTIONS: Record<CapabilityId, ModelProviderOption[]>
     },
   ],
   image: [
+    {
+      providerId: 'openrouter',
+      providerKind: 'openrouter',
+      label: 'OpenRouter',
+    },
     {
       providerId: 'openai-compatible',
       providerKind: 'openai-compatible',
