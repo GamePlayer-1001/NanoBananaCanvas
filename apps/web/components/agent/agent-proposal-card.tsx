@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
 
 interface AgentProposalChange {
   label: string
@@ -28,12 +29,6 @@ interface AgentProposalCardProps {
   requiresConfirmation?: boolean
 }
 
-const RISK_LABEL: Record<NonNullable<AgentProposalChange['risk']>, string> = {
-  low: '低风险',
-  medium: '需留意',
-  high: '建议确认',
-}
-
 export function AgentProposalCard({
   title,
   summary,
@@ -41,13 +36,20 @@ export function AgentProposalCard({
   changes = [],
   requiresConfirmation = false,
 }: AgentProposalCardProps) {
+  const t = useTranslations('agentPanel')
+  const riskLabel: Record<NonNullable<AgentProposalChange['risk']>, string> = {
+    low: t('proposalRiskLow'),
+    medium: t('proposalRiskMedium'),
+    high: t('proposalRiskHigh'),
+  }
+
   return (
     <Card className="gap-4 rounded-3xl border-black/8 bg-white/96 py-4 shadow-sm">
       <CardHeader className="gap-3 px-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm">{title}</CardTitle>
           <Badge variant={requiresConfirmation ? 'default' : 'secondary'}>
-            {requiresConfirmation ? '待确认' : '可直接落地'}
+            {requiresConfirmation ? t('proposalStatusPending') : t('proposalStatusReady')}
           </Badge>
         </div>
         <CardDescription className="text-xs leading-5">{summary}</CardDescription>
@@ -77,7 +79,7 @@ export function AgentProposalCard({
                 <p className="text-sm font-medium text-slate-900">{change.label}</p>
                 {change.risk ? (
                   <span className="text-[11px] text-slate-500">
-                    {RISK_LABEL[change.risk]}
+                    {riskLabel[change.risk]}
                   </span>
                 ) : null}
               </div>

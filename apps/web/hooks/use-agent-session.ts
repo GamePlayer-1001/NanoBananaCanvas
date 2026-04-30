@@ -9,9 +9,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
 import { applyAgentPlan } from '@/lib/agent/apply-agent-plan'
-import { AGENT_ERROR_FALLBACK, AGENT_PROCESS_MESSAGES } from '@/lib/agent/constants'
+import {
+  AGENT_ERROR_FALLBACK_KEY,
+  AGENT_PROCESS_MESSAGE_KEYS,
+} from '@/lib/agent/constants'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
 import { diagnoseCanvas } from '@/lib/agent/diagnose-canvas'
 import { explainCanvas } from '@/lib/agent/explain-canvas'
@@ -33,6 +37,7 @@ export function useAgentSession({
   workflowName,
   locale,
 }: UseAgentSessionOptions) {
+  const tAgent = useTranslations('agentPanel')
   const { execute } = useWorkflowExecutor(workflowId)
   const mode = useAgentStore((state) => state.mode)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
@@ -66,9 +71,9 @@ export function useAgentSession({
 
     try {
       setStatus('understanding')
-      appendProcessMessage(AGENT_PROCESS_MESSAGES.understanding)
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
 
-      appendProcessMessage(AGENT_PROCESS_MESSAGES.summarizing)
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.summarizing))
       const canvasSummary = summarizeCanvas({
         workflowId,
         workflowName,
@@ -78,7 +83,7 @@ export function useAgentSession({
 
       if (requestKind === 'diagnose') {
         setStatus('diagnosing')
-        appendProcessMessage('我正在结合最近一次执行状态做诊断。')
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.diagnosing))
         const diagnosis = await diagnoseCanvas({
           userMessage: value,
           canvasSummary,
@@ -124,7 +129,7 @@ export function useAgentSession({
       }
 
       if (requestKind === 'explain') {
-        appendProcessMessage('我正在把当前工作流翻译成更容易理解的说明。')
+        appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
         const answer = await explainCanvas({
           userMessage: value,
           canvasSummary,
@@ -142,7 +147,7 @@ export function useAgentSession({
       }
 
       setStatus('planning')
-      appendProcessMessage(AGENT_PROCESS_MESSAGES.planning)
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.planning))
       const plan = await buildAgentPlan({
         userMessage: value,
         mode,
@@ -150,7 +155,7 @@ export function useAgentSession({
         locale,
       })
 
-      appendProcessMessage(AGENT_PROCESS_MESSAGES.validating)
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.validating))
       const validation = validateAgentPlan(plan)
 
       if (!validation.ok) {
@@ -186,7 +191,10 @@ export function useAgentSession({
 
       setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
     } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : AGENT_ERROR_FALLBACK
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : tAgent(AGENT_ERROR_FALLBACK_KEY)
       setPendingPlan(null)
       setStatus('error')
       setErrorMessage(message)
@@ -217,7 +225,7 @@ export function useAgentSession({
     setIsApplying(true)
     setErrorMessage(null)
     setStatus('applying-patch')
-    appendProcessMessage('我现在开始把提案安全落到左侧画板。')
+    appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.applying))
 
     try {
       const result = await applyAgentPlan(planOverride, {
@@ -250,7 +258,10 @@ export function useAgentSession({
       clearPromptConfirmation()
       setStatus('idle')
     } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : AGENT_ERROR_FALLBACK
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : tAgent(AGENT_ERROR_FALLBACK_KEY)
       setStatus('error')
       setErrorMessage(message)
       appendMessage({
@@ -271,7 +282,7 @@ export function useAgentSession({
     appendMessage({
       id: crypto.randomUUID(),
       role: 'assistant',
-      text: '这次提案我先撤回了，左侧画板保持不变。',
+      text: tAgent('messageRejected'),
       createdAt: new Date().toISOString(),
     })
     clearPendingPlan()
@@ -286,8 +297,8 @@ export function useAgentSession({
     setIsApplying(true)
     appendProcessMessage(
       styleDirection
-        ? `我正在往“${styleDirection}”方向重写提示词。`
-        : '我正在重新整理一版提示词。',
+        ? tAgent(AGENT_PROCESS_MESSAGE_KEYS.regenerateStyle, { style: styleDirection })
+        : tAgent(AGENT_PROCESS_MESSAGE_KEYS.regenerateDefault),
     )
 
     try {
@@ -310,7 +321,10 @@ export function useAgentSession({
       })
       setStatus('awaiting-confirmation')
     } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : AGENT_ERROR_FALLBACK
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : tAgent(AGENT_ERROR_FALLBACK_KEY)
       setStatus('error')
       setErrorMessage(message)
       appendMessage({
@@ -331,7 +345,7 @@ export function useAgentSession({
 
     const currentPlan = buildPromptConfirmedPlan(pendingPlan)
     if (!currentPlan) {
-      const message = '没有找到需要回写提示词的目标节点。'
+      const message = tAgent('errorMissingPromptTarget')
       setStatus('error')
       setErrorMessage(message)
       appendMessage({
@@ -346,7 +360,7 @@ export function useAgentSession({
 
     setPendingPlan(currentPlan)
     setPromptConfirmation(null)
-    appendProcessMessage('提示词已确认，我现在开始执行这个图片工作流。')
+    appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.promptConfirmed))
     await applyPendingPlan(currentPlan)
   }
 

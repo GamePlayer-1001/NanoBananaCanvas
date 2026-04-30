@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useTranslations } from 'next-intl'
 
 interface AgentPromptCompareCardProps {
   payloadId?: string
@@ -57,6 +58,7 @@ export function AgentPromptCompareCard({
   onToggleExpand,
   onStyleSelect,
 }: AgentPromptCompareCardProps) {
+  const t = useTranslations('agentPanel')
   const compactPrompt =
     expanded || executionPrompt.length <= 180
       ? executionPrompt
@@ -66,29 +68,29 @@ export function AgentPromptCompareCard({
     <Card className="gap-4 rounded-3xl border-black/8 bg-white/96 py-4 shadow-sm">
       <CardHeader className="px-4">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-sm">Prompt 确认</CardTitle>
+          <CardTitle className="text-sm">{t('promptCardTitle')}</CardTitle>
           {payloadId ? (
             <span className="text-muted-foreground text-[11px]">{payloadId}</span>
           ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-3 px-4">
-        <Section title="原始意图" body={originalIntent} />
-        <Section title="画面提案" body={visualProposal} />
-        <Section title="执行提示词" body={compactPrompt} />
+        <Section title={t('promptOriginalIntent')} body={originalIntent} />
+        <Section title={t('promptVisualProposal')} body={visualProposal} />
+        <Section title={t('promptExecutionPrompt')} body={compactPrompt} />
         {executionPrompt.length > 180 ? (
           <button
             type="button"
             className="text-[12px] text-indigo-600 hover:text-indigo-700"
             onClick={onToggleExpand}
           >
-            {expanded ? '收起完整 Prompt' : '展开完整 Prompt'}
+            {expanded ? t('promptCollapse') : t('promptExpand')}
           </button>
         ) : null}
         {styleOptions.length > 0 ? (
           <div className="space-y-2 rounded-2xl border border-black/6 bg-slate-50 px-3 py-3">
             <p className="text-[11px] font-medium tracking-[0.08em] text-slate-500 uppercase">
-              风格方向
+              {t('promptStyleOptions')}
             </p>
             <div className="flex flex-wrap gap-2">
               {styleOptions.map((style) => (
@@ -107,13 +109,13 @@ export function AgentPromptCompareCard({
         ) : null}
         <div className="flex flex-wrap gap-2 pt-1">
           <Button type="button" size="sm" className="rounded-full px-4" onClick={onConfirm}>
-            确认并执行
+            {t('promptConfirm')}
           </Button>
           <Button type="button" size="sm" variant="secondary" className="rounded-full px-4" onClick={onRegenerate}>
-            再来一版
+            {t('promptRegenerate')}
           </Button>
           <Button type="button" size="sm" variant="ghost" className="rounded-full px-4" onClick={onManualEdit}>
-            我自己改
+            {t('promptManualEdit')}
           </Button>
         </div>
       </CardContent>
