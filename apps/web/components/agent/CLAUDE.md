@@ -14,6 +14,7 @@ agent-message-item.tsx        — 基础消息渲染器，按 role 渲染用户/
 agent-process-message.tsx     — 过程消息组件，承载“正在理解 / 正在搭建 / 已同步”等轻反馈，并提供 reduced motion 兼容状态条
 agent-proposal-card.tsx       — 工作流提案卡片，展示计划摘要、理由、改动项、模板来源标识与确认需求
 agent-prompt-compare-card.tsx — Prompt 对比卡片，展示原始意图 / 画面提案 / 执行提示词 / 风格方向，并承载确认/重写/展开动作
+agent-change-log-sheet.tsx    — Agent 改动回看侧板，展示最近提案/回放摘要与“查看改动”内容
 agent-quick-actions.tsx       — 轻量建议动作区，承载诊断 / 解释 / 优化 / 模板改造 / 风格调整等下一步建议
 agent-composer.tsx            — 输入区，负责文本输入、发送动作与最小工作流影响提示
 ```

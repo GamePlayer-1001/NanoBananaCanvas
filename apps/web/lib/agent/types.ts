@@ -115,6 +115,37 @@ export interface AgentConversationMemoryEntry {
   createdAt: string
 }
 
+export interface AgentAuditLog {
+  id: string
+  workflowId: string
+  eventType:
+    | 'message_sent'
+    | 'plan_generated'
+    | 'plan_compared'
+    | 'plan_selected'
+    | 'plan_applied'
+    | 'prompt_confirmed'
+    | 'workflow_run'
+    | 'result_recorded'
+    | 'replay_opened'
+  mode?: AgentMode
+  userMessage?: string
+  canvasSummary?: CanvasSummary
+  plan?: AgentPlan
+  alternatives?: AgentPlan[]
+  result?: Record<string, unknown>
+  replaySnapshot?: {
+    focusNodeIds?: string[]
+    changeSummary?: string
+    planId?: string
+  }
+  targetNodeId?: string
+  proposalId?: string
+  confirmed?: boolean
+  metadata?: Record<string, unknown>
+  createdAt: string
+}
+
 export interface PromptConfirmationPayload {
   id: string
   originalIntent: string

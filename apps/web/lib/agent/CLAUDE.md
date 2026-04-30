@@ -21,6 +21,7 @@ apply-agent-plan.ts     — 落图应用器，把结构化 operation 映射到 F
 explain-agent-change.ts — 变更解释器，把落图结果翻译成用户可读摘要
 prompt-confirmation.ts  — Prompt 确认语义层，请求 refine-prompt API，处理原始意图 / 画面提案 / 执行提示词三段结构
 plan-rules.ts           — Planner 规则拆分层，承载创建链路、节点级改动、结果续写与多提案规则 helper，避免 plan route 继续膨胀
+agent-audit.ts          — Agent 审计语义层，负责记录共创事件、拉取审计日志与读取最近一次回放
 ```
 
 ## 职责边界

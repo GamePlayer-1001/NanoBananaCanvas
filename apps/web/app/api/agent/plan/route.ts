@@ -133,6 +133,14 @@ function buildIncrementalOperations(
     return [{ type: 'focus_nodes', nodeIds: canvas.disconnectedNodeIds.slice(0, 3) }]
   }
 
+  if (selectedNode && shouldPatchSelectedNodePrompt(normalized, selectedNode)) {
+    return buildSelectedNodePromptOperations(normalized, selectedNode)
+  }
+
+  if (selectedNode && shouldOptimizeSelectedNode(normalized)) {
+    return buildSelectedNodeOptimizationOperations(normalized, selectedNode)
+  }
+
   if (intent === 'add_step') {
     const insertTarget = selectedNode ?? findFirstNodeByType(canvas.nodes, 'image-gen') ?? canvas.nodes[0]
     const upstreamNode = insertTarget ? findSingleUpstreamNode(canvas, insertTarget.id) : null
@@ -219,14 +227,6 @@ function buildIncrementalOperations(
         },
       ]
     }
-  }
-
-  if (selectedNode && shouldPatchSelectedNodePrompt(normalized, selectedNode)) {
-    return buildSelectedNodePromptOperations(normalized, selectedNode)
-  }
-
-  if (selectedNode && shouldOptimizeSelectedNode(normalized)) {
-    return buildSelectedNodeOptimizationOperations(normalized, selectedNode)
   }
 
   if (intent === 'change_output_count') {

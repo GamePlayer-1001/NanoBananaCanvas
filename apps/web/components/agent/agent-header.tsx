@@ -16,6 +16,8 @@ interface AgentHeaderProps {
   onAction?: () => void
   secondaryActionLabel?: string
   onSecondaryAction?: () => void
+  tertiaryActionLabel?: string
+  onTertiaryAction?: () => void
 }
 
 export function AgentHeader({
@@ -26,7 +28,15 @@ export function AgentHeader({
   onAction,
   secondaryActionLabel,
   onSecondaryAction,
+  tertiaryActionLabel,
+  onTertiaryAction,
 }: AgentHeaderProps) {
+  const showActions = Boolean(
+    (tertiaryActionLabel && onTertiaryAction) ||
+    (secondaryActionLabel && onSecondaryAction) ||
+    (actionLabel && onAction),
+  )
+
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 space-y-2">
@@ -43,28 +53,41 @@ export function AgentHeader({
         </Badge>
       </div>
 
-      {actionLabel && onAction ? (
+      {showActions ? (
         <div className="flex shrink-0 items-center gap-2">
+          {tertiaryActionLabel && onTertiaryAction ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full px-3 text-xs transition-colors motion-reduce:transition-none"
+              onClick={onTertiaryAction}
+            >
+              {tertiaryActionLabel}
+            </Button>
+          ) : null}
           {secondaryActionLabel && onSecondaryAction ? (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 rounded-full px-3 text-xs"
+              className="h-8 rounded-full px-3 text-xs transition-colors motion-reduce:transition-none"
               onClick={onSecondaryAction}
             >
               {secondaryActionLabel}
             </Button>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 rounded-full px-3 text-xs"
-            onClick={onAction}
-          >
-            {actionLabel}
-          </Button>
+          {actionLabel && onAction ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full px-3 text-xs transition-colors motion-reduce:transition-none"
+              onClick={onAction}
+            >
+              {actionLabel}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </div>

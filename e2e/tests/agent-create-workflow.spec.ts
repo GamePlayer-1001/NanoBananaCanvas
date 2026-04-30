@@ -6,15 +6,7 @@
  */
 
 import { expect, test } from '@playwright/test'
-
-async function createProject(page: Parameters<typeof test>[0]['page']) {
-  await page.goto('/zh/workspace')
-  await page.getByRole('button', { name: '新建项目' }).click()
-  await expect(page.getByRole('heading', { name: '创建项目' })).toBeVisible()
-  await page.getByPlaceholder('未命名项目').fill(`Agent E2E ${Date.now()}`)
-  await page.getByRole('button', { name: '创建项目' }).last().click()
-  await expect(page).toHaveURL(/\/zh\/canvas\/[^/]+$/)
-}
+import { createProject } from './helpers/agent'
 
 test.describe('Agent Workflow Creation', () => {
   test('creates a workflow proposal from one sentence', async ({ page }) => {
@@ -25,9 +17,9 @@ test.describe('Agent Workflow Creation', () => {
     await composer.fill('帮我生成一张电商海报图片')
     await composer.press('Enter')
 
-    await expect(agentPanel.getByText('工作流提案', { exact: true })).toBeVisible()
+    await expect(agentPanel.getByText('工作流提案', { exact: true }).first()).toBeVisible()
     await expect(agentPanel.getByText('Prompt 确认', { exact: true })).toBeVisible()
-    await expect(agentPanel.getByText('待确认', { exact: true })).toBeVisible()
+    await expect(agentPanel.getByText('待确认', { exact: true }).first()).toBeVisible()
     await expect(agentPanel.getByText('计划新增 1 个 text-input 节点')).toBeVisible()
     await expect(agentPanel.getByText('计划新增 1 个 image-gen 节点')).toBeVisible()
     await expect(agentPanel.getByText('计划新增 1 个 display 节点')).toBeVisible()

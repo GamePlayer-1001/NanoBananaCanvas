@@ -147,8 +147,13 @@ describe('POST /api/agent/*', () => {
           intent: 'replace_model',
           operations: expect.arrayContaining([
             expect.objectContaining({
-              type: 'replace_node',
+              type: 'update_node_data',
               nodeId: 'image-1',
+              patch: {
+                config: expect.objectContaining({
+                  platformModel: 'openai/gpt-image-1-mini',
+                }),
+              },
             }),
           ]),
         },

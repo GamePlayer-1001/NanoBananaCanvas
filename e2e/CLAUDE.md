@@ -13,6 +13,11 @@ tests/navigation.spec.ts — 公开路由可达性与匿名主链稳定性 (land
 tests/api-public.spec.ts — API 烟雾测试 (health + 匿名请求守卫，依赖 `apps/web` 在 `dev:e2e` 启动前自动重置并重建本地 D1 schema)
 tests/seo.spec.ts        — SEO 基础设施 (robots.txt/sitemap.xml/OG/meta)
 tests/agent-create-workflow.spec.ts — Agent 工作流创建主链 E2E，覆盖 workspace 新建项目 + 一句话生成提案
+tests/agent-template-adapt.spec.ts — Agent 模板改造链路 E2E
+tests/agent-node-edit.spec.ts — Agent 节点级修改链路 E2E
+tests/agent-result-followup.spec.ts — Agent 基于结果建议下一步 E2E
+tests/agent-multi-proposal.spec.ts — Agent 多提案比较与切换 E2E
+tests/agent-optimize-apply.spec.ts — Agent 优化建议生成与应用入口 E2E
 playwright.config.ts     — Playwright 配置 (chromium, 固定 3000 端口, 串行稳定运行，启动时调用 `apps/web` 的自重置 + 自初始化 `dev:e2e`)
 tsconfig.json            — TypeScript 配置
 package.json             — 包描述与脚本

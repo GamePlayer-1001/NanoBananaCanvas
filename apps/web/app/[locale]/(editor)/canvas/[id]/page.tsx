@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl'
 import { ReactFlowProvider } from '@xyflow/react'
 import { AgentComposer } from '@/components/agent/agent-composer'
 import { AgentConversation } from '@/components/agent/agent-conversation'
+import { AgentChangeLogSheet } from '@/components/agent/agent-change-log-sheet'
 import { AgentHeader } from '@/components/agent/agent-header'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
@@ -27,6 +28,7 @@ import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
 import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
 import { useWorkflow } from '@/hooks/use-workflows'
+import { fetchLatestAgentReplay } from '@/lib/agent/agent-audit'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
@@ -72,7 +74,12 @@ export default function CanvasPage({
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const template = useWorkflowMetadataStore((state) => state.template)
+  const auditTrail = useWorkflowMetadataStore((state) => state.auditTrail)
+  const nodes = useFlowStore((state) => state.nodes)
+  const edges = useFlowStore((state) => state.edges)
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null)
+  const [isChangeLogOpen, setIsChangeLogOpen] = useState(false)
+  const [changeLogItems, setChangeLogItems] = useState<string[]>([])
   const workflowName =
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
       ? String((data as Record<string, unknown>).name)
@@ -104,14 +111,38 @@ export default function CanvasPage({
       summarizeCanvas({
         workflowId: id,
         workflowName,
+        nodes,
+        edges,
         template: template ?? undefined,
+        auditTrail,
       }),
-    [id, template, workflowName],
+    [auditTrail, edges, id, nodes, template, workflowName],
   )
   useAgentSelectionContext({
     workflowId: id,
     workflowName,
   })
+
+  useEffect(() => {
+    let cancelled = false
+
+    void fetchLatestAgentReplay(id)
+      .then((payload) => {
+        if (cancelled) return
+        const replay = (payload as { data?: { replay?: { replaySnapshot?: { changeSummary?: string } } } }).data?.replay
+        const summary = replay?.replaySnapshot?.changeSummary
+        setChangeLogItems(summary ? [summary] : [])
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setChangeLogItems([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id, lastAppliedPlanId])
 
   const conversationItems = useMemo(
     () =>
@@ -380,6 +411,18 @@ export default function CanvasPage({
                   }
                   secondaryActionLabel={pendingPlan ? tAgent('actionReject') : undefined}
                   onSecondaryAction={pendingPlan ? rejectPendingPlan : undefined}
+                  tertiaryActionLabel={
+                    pendingPlan
+                      ? tAgent('actionBackToProposal')
+                      : changeLogItems.length > 0
+                        ? tAgent('actionViewChanges')
+                        : undefined
+                  }
+                  onTertiaryAction={
+                    pendingPlan || changeLogItems.length > 0
+                      ? () => setIsChangeLogOpen(true)
+                      : undefined
+                  }
                 />
               )}
               conversation={(
@@ -441,6 +484,13 @@ export default function CanvasPage({
               )}
             />
           </div>
+          <AgentChangeLogSheet
+            open={isChangeLogOpen}
+            onOpenChange={setIsChangeLogOpen}
+            title={tAgent('changeLogTitle')}
+            description={tAgent('changeLogDescription')}
+            changes={changeLogItems}
+          />
         </ReactFlowProvider>
       </div>
     </>

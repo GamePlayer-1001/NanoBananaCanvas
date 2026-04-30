@@ -81,7 +81,7 @@ export function AgentPromptCompareCard({
         {executionPrompt.length > 180 ? (
           <button
             type="button"
-            className="text-[12px] text-indigo-600 hover:text-indigo-700"
+            className="text-[12px] text-indigo-600 transition-colors hover:text-indigo-700 motion-reduce:transition-none"
             onClick={onToggleExpand}
           >
             {expanded ? t('promptCollapse') : t('promptExpand')}
@@ -98,7 +98,7 @@ export function AgentPromptCompareCard({
                   key={style}
                   type="button"
                   variant="secondary"
-                  className="h-8 rounded-full px-3 text-xs"
+                  className="h-8 rounded-full px-3 text-xs transition-colors motion-reduce:transition-none"
                   onClick={() => onStyleSelect?.(style)}
                 >
                   {style}
@@ -108,13 +108,30 @@ export function AgentPromptCompareCard({
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button type="button" size="sm" className="rounded-full px-4" onClick={onConfirm}>
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+            onClick={onConfirm}
+          >
             {t('promptConfirm')}
           </Button>
-          <Button type="button" size="sm" variant="secondary" className="rounded-full px-4" onClick={onRegenerate}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+            onClick={onRegenerate}
+          >
             {t('promptRegenerate')}
           </Button>
-          <Button type="button" size="sm" variant="ghost" className="rounded-full px-4" onClick={onManualEdit}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+            onClick={onManualEdit}
+          >
             {t('promptManualEdit')}
           </Button>
         </div>

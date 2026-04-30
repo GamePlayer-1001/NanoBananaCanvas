@@ -33,8 +33,8 @@ export function AgentQuickActions({
           variant="secondary"
           className={
             action.accent === 'template'
-              ? 'h-8 rounded-full bg-amber-500/12 px-3 text-xs text-amber-900 hover:bg-amber-500/18'
-              : 'h-8 rounded-full bg-indigo-500/8 px-3 text-xs text-slate-700 hover:bg-indigo-500/14'
+              ? 'h-8 rounded-full bg-amber-500/12 px-3 text-xs text-amber-900 transition-colors hover:bg-amber-500/18 motion-reduce:transition-none'
+              : 'h-8 rounded-full bg-indigo-500/8 px-3 text-xs text-slate-700 transition-colors hover:bg-indigo-500/14 motion-reduce:transition-none'
           }
           onClick={() => onSelect?.(action.id)}
         >

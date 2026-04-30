@@ -11,6 +11,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
+import { recordAgentAudit } from '@/lib/agent/agent-audit'
 import { applyAgentPlan } from '@/lib/agent/apply-agent-plan'
 import {
   AGENT_ERROR_FALLBACK_KEY,
@@ -87,6 +88,13 @@ export function useAgentSession({
         workflowName,
         template: template ?? undefined,
         auditTrail,
+      })
+      void safeRecordAudit({
+        eventType: 'message_sent',
+        mode,
+        userMessage: value,
+        canvasSummary,
+        targetNodeId: canvasSummary.selectionContext?.nodeId,
       })
 
       const requestKind = resolveRequestKind(value, mode)
@@ -251,6 +259,19 @@ export function useAgentSession({
         selectedNodeLabel: selectionContext?.nodeLabel,
         createdAt: new Date().toISOString(),
       })
+      void safeRecordAudit({
+        eventType: 'plan_generated',
+        mode: nextPlan.mode,
+        userMessage: value,
+        canvasSummary,
+        plan: nextPlan,
+        alternatives,
+        proposalId: nextPlan.id,
+        targetNodeId: canvasSummary.selectionContext?.nodeId,
+        metadata: {
+          alternativeCount: alternatives.length,
+        },
+      })
 
       if (nextPlan.templateContext) {
         appendMessage({
@@ -274,6 +295,17 @@ export function useAgentSession({
           role: 'proposal-comparison',
           proposalIds: [nextPlan.id, ...alternatives.map((item) => item.id)],
           createdAt: new Date().toISOString(),
+        })
+        void safeRecordAudit({
+          eventType: 'plan_compared',
+          mode: nextPlan.mode,
+          userMessage: value,
+          plan: nextPlan,
+          alternatives,
+          proposalId: nextPlan.id,
+          metadata: {
+            proposalIds: [nextPlan.id, ...alternatives.map((item) => item.id)],
+          },
         })
       }
 
@@ -357,6 +389,23 @@ export function useAgentSession({
         role: 'assistant',
         text: result.summary,
         createdAt: new Date().toISOString(),
+      })
+      void safeRecordAudit({
+        eventType: 'plan_applied',
+        mode: planOverride.mode,
+        plan: planOverride,
+        proposalId: planOverride.id,
+        confirmed: true,
+        result: {
+          ok: result.ok,
+          summary: result.summary,
+          rolledBack: result.rolledBack,
+        },
+        replaySnapshot: {
+          focusNodeIds: extractFocusNodeIds(planOverride),
+          changeSummary: result.summary,
+          planId: planOverride.id,
+        },
       })
 
       setLastAppliedPlanId(planOverride.id)
@@ -468,6 +517,14 @@ export function useAgentSession({
     setPendingPlan(currentPlan)
     setPromptConfirmation(null)
     appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.promptConfirmed))
+    void safeRecordAudit({
+      eventType: 'prompt_confirmed',
+      mode: currentPlan.mode,
+      plan: currentPlan,
+      proposalId: currentPlan.id,
+      confirmed: true,
+      targetNodeId: currentPlan.promptConfirmation?.targetNodeId,
+    })
     await applyPendingPlan(currentPlan)
   }
 
@@ -535,6 +592,33 @@ export function useAgentSession({
     return null
   }
 
+  function selectPendingPlanVariant(planId: string) {
+    const nextPlan = pendingPlanAlternatives.find((plan) => plan.id === planId)
+    if (!nextPlan) return
+    setPendingPlan(nextPlan)
+    setPromptConfirmation(nextPlan.promptConfirmation ?? null)
+    setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+    void safeRecordAudit({
+      eventType: 'plan_selected',
+      mode: nextPlan.mode,
+      plan: nextPlan,
+      proposalId: nextPlan.id,
+      metadata: {
+        selectedVariant: nextPlan.variantLabel ?? nextPlan.id,
+      },
+    })
+  }
+
+  function safeRecordAudit(
+    payload: Omit<Parameters<typeof recordAgentAudit>[1], 'metadata'> & {
+      metadata?: Record<string, unknown>
+    },
+  ) {
+    void recordAgentAudit(workflowId, payload).catch(() => {
+      // 审计失败不阻塞主链
+    })
+  }
+
   return {
     sendMessage,
     isSubmitting,
@@ -547,13 +631,14 @@ export function useAgentSession({
     confirmPromptAndRun,
   }
 
-  function selectPendingPlanVariant(planId: string) {
-    const nextPlan = pendingPlanAlternatives.find((plan) => plan.id === planId)
-    if (!nextPlan) return
-    setPendingPlan(nextPlan)
-    setPromptConfirmation(nextPlan.promptConfirmation ?? null)
-    setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
-  }
+}
+
+function extractFocusNodeIds(plan: AgentPlan) {
+  return plan.operations
+    .filter((operation): operation is Extract<typeof plan.operations[number], { type: 'focus_nodes' }> =>
+      operation.type === 'focus_nodes',
+    )
+    .flatMap((operation) => operation.nodeIds)
 }
 
 function mergeNodeTextIntoInitialData(

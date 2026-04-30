@@ -377,6 +377,32 @@ CREATE TABLE IF NOT EXISTS execution_history (
 
 CREATE INDEX IF NOT EXISTS idx_exec_history_workflow ON execution_history(workflow_id, created_at DESC);
 
+-- ── agent_audit_logs ──────────────────────────
+-- 记录 Agent 共创过程中的提案、确认、执行、结果与回放索引
+CREATE TABLE IF NOT EXISTS agent_audit_logs (
+  id                TEXT PRIMARY KEY,
+  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workflow_id       TEXT NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+  event_type        TEXT NOT NULL,
+  mode              TEXT,
+  user_message      TEXT,
+  canvas_summary    TEXT,
+  plan_json         TEXT,
+  alternatives_json TEXT,
+  result_json       TEXT,
+  replay_snapshot   TEXT,
+  target_node_id    TEXT,
+  proposal_id       TEXT,
+  confirmed         INTEGER NOT NULL DEFAULT 0,
+  metadata_json     TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_audit_workflow
+  ON agent_audit_logs(workflow_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_audit_event
+  ON agent_audit_logs(user_id, event_type, created_at DESC);
+
 -- ── video_analysis_history ───────────────────
 -- 用户级视频分析历史，保存文件元信息、执行状态与结构化分析结果
 CREATE TABLE IF NOT EXISTS video_analysis_history (

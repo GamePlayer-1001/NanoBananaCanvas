@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
+import { usePrefersReducedMotion } from '@/hooks/use-media-query'
 
 interface AgentProposalChange {
   label: string
@@ -45,6 +46,7 @@ export function AgentProposalCard({
   onAction,
 }: AgentProposalCardProps) {
   const t = useTranslations('agentPanel')
+  const prefersReducedMotion = usePrefersReducedMotion()
   const riskLabel: Record<NonNullable<AgentProposalChange['risk']>, string> = {
     low: t('proposalRiskLow'),
     medium: t('proposalRiskMedium'),
@@ -86,6 +88,7 @@ export function AgentProposalCard({
             <div
               key={`${change.label}-${change.detail}`}
               className="rounded-2xl border border-black/6 bg-slate-50 px-3 py-3"
+              style={prefersReducedMotion ? undefined : { transition: 'transform 180ms ease, box-shadow 180ms ease' }}
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-900">{change.label}</p>
@@ -105,7 +108,7 @@ export function AgentProposalCard({
         <CardContent className="px-4 pt-0">
           <button
             type="button"
-            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50 motion-reduce:transition-none"
             onClick={onAction}
           >
             {actionLabel}
