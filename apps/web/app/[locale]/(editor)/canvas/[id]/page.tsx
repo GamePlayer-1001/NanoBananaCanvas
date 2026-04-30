@@ -408,28 +408,12 @@ export default function CanvasPage({
                   items={conversationItems}
                   emptyState={tAgent('emptyState')}
                   hero={(
-                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-10 px-8 text-center">
+                    <div className="flex h-full min-h-[320px] w-full items-center justify-center px-8 text-center">
                       <div className="space-y-0">
                         <h3 className="text-[32px] leading-tight font-semibold tracking-[-0.03em] text-slate-950">
                           {tAgent('heroTitle')}
                         </h3>
                       </div>
-                      <AgentQuickActions
-                        actions={heroActions}
-                        onSelect={(actionId) => {
-                          const actionMap: Record<string, string> = {
-                            'hero-cat-image': tAgent('heroCatImageAsk'),
-                            'hero-realistic-edit': tAgent('heroRealisticEditAsk'),
-                            'hero-diagnose': tAgent('heroDiagnoseAsk'),
-                            'hero-explain': tAgent('heroExplainAsk'),
-                          }
-                          if (actionId === 'hero-cat-image') setMode('create')
-                          if (actionId === 'hero-realistic-edit') setMode('update')
-                          if (actionId === 'hero-diagnose') setMode('diagnose')
-                          if (actionId === 'hero-explain') setMode('update')
-                          void sendMessage(actionMap[actionId] ?? actionId)
-                        }}
-                      />
                     </div>
                   )}
                   onPromptRegenerate={(payloadId) => void regeneratePrompt(payloadId)}
@@ -446,9 +430,19 @@ export default function CanvasPage({
                 <AgentQuickActions
                   title={messages.length > 0 ? tAgent('quickActionsTitle') : undefined}
                   compact
-                  actions={pendingPlan || messages.length === 0 ? [] : quickActions}
+                  actions={
+                    pendingPlan
+                      ? []
+                      : messages.length === 0
+                        ? heroActions
+                        : quickActions
+                  }
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
+                      'hero-cat-image': tAgent('heroCatImageAsk'),
+                      'hero-realistic-edit': tAgent('heroRealisticEditAsk'),
+                      'hero-diagnose': tAgent('heroDiagnoseAsk'),
+                      'hero-explain': tAgent('heroExplainAsk'),
                       'continue-from-result': tAgent('quickContinueFromResultAsk', {
                         asset:
                           resultAwareSummary.latestSuccessfulAsset?.kind === 'image'
@@ -466,6 +460,10 @@ export default function CanvasPage({
                         name: template?.name ?? '当前模板',
                       }),
                     }
+                    if (actionId === 'hero-cat-image') setMode('create')
+                    if (actionId === 'hero-realistic-edit') setMode('update')
+                    if (actionId === 'hero-diagnose') setMode('diagnose')
+                    if (actionId === 'hero-explain') setMode('update')
                     if (actionId === 'diagnose') setMode('diagnose')
                     if (actionId === 'optimize') setMode('optimize')
                     if (actionId === 'explain') setMode('update')
