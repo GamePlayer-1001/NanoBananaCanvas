@@ -957,7 +957,7 @@ describe('submitTask', () => {
   })
 
   it('fails workflow tasks that complete without updating d1 state', async () => {
-    const createdAt = new Date().toISOString()
+    const createdAt = new Date(Date.now() - 2 * 60 * 1_000).toISOString()
     const pollingDb = createDbMock(0, {
       id: 'task-workflow-complete-pending',
       user_id: 'user-1',
@@ -990,6 +990,55 @@ describe('submitTask', () => {
     })
 
     const detail = await checkTask(pollingDb, 'task-workflow-complete-pending', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'complete',
+      }),
+    })
+
+    expect(detail.status).toBe('failed')
+    expect(detail.output).toEqual({
+      error: 'Workflow completed without updating task state',
+    })
+  })
+
+  it('fails workflow tasks stuck in running when workflow already completed without external task id', async () => {
+    const createdAt = new Date().toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-workflow-complete-running',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'user_key',
+      input_data: JSON.stringify({
+        prompt: '一个女孩',
+        size: 'auto',
+        aspectRatio: '16:9',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+          userConfigId: 'image-config',
+        },
+      }),
+      output_data: null,
+      status: 'running',
+      progress: 5,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: createdAt,
+      started_at: createdAt,
+      completed_at: null,
+      updated_at: createdAt,
+    })
+
+    const detail = await checkTask(pollingDb, 'task-workflow-complete-running', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
       invalidateStorageCache: vi.fn().mockResolvedValue(undefined),

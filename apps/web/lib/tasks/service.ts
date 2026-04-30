@@ -453,7 +453,7 @@ async function observeWorkflowTaskState(
 
   if (
     workflowStatus.status === 'complete' &&
-    row.status === 'pending' &&
+    (row.status === 'pending' || row.status === 'running') &&
     !row.external_task_id
   ) {
     return handleFailure(
