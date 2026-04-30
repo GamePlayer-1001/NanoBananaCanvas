@@ -3,7 +3,7 @@
  *          依赖 @/components/agent/* 的 Agent 面板组件，
  *          依赖 @/hooks/use-agent-session 与 @/hooks/use-agent-task-summary，
  *          依赖 @/hooks/use-workflows 的 useWorkflow 数据获取，
- *          依赖 @/stores/use-flow-store 与 @/stores/use-agent-store，
+ *          依赖 @/stores/use-flow-store / use-agent-store / use-workflow-metadata-store，
  *          依赖 @/services/storage/serializer 的反序列化，
  *          依赖 lucide-react 的 Loader2
  * [OUTPUT]: 对外提供全屏画布编辑器页面 (CSR)
@@ -29,6 +29,7 @@ import { useWorkflow } from '@/hooks/use-workflows'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { useWorkflowMetadataStore } from '@/stores/use-workflow-metadata-store'
 import { deserializeWorkflow } from '@/services/storage/serializer'
 
 const Canvas = dynamic(
@@ -67,6 +68,7 @@ export default function CanvasPage({
   const errorMessage = useAgentStore((state) => state.errorMessage)
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
   const appendMessage = useAgentStore((state) => state.appendMessage)
+  const template = useWorkflowMetadataStore((state) => state.template)
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null)
   const workflowName =
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
@@ -118,6 +120,10 @@ export default function CanvasPage({
             id: message.id,
             type: 'proposal' as const,
             title: tAgent('proposalTitle'),
+            sourceLabel:
+              pendingPlan?.id === message.planId && pendingPlan.mode === 'template'
+                ? tAgent('proposalSourceTemplate')
+                : undefined,
             summary:
               pendingPlan?.id === message.planId
                 ? pendingPlan.summary
@@ -128,6 +134,16 @@ export default function CanvasPage({
               pendingPlan?.id === message.planId
                 ? pendingPlan.requiresConfirmation
                 : false,
+          }
+        }
+
+        if (message.role === 'template-context') {
+          return {
+            id: message.id,
+            type: 'message' as const,
+            role: 'assistant' as const,
+            text: message.text,
+            timestamp: new Date(message.createdAt).toLocaleTimeString(),
           }
         }
 
@@ -182,6 +198,15 @@ export default function CanvasPage({
     { id: 'explain', label: tAgent('quickExplain') },
     { id: 'optimize', label: tAgent('quickOptimize') },
     { id: 'more-realistic', label: tAgent('quickRealistic') },
+    ...(template
+      ? [
+          {
+            id: 'template-adapt',
+            label: tAgent('quickTemplateAdapt'),
+            accent: 'template' as const,
+          },
+        ]
+      : []),
   ]
 
   /* ── 从 API 数据注入 FlowStore ──────────────────────── */
@@ -195,8 +220,10 @@ export default function CanvasPage({
 
     try {
       const parsed = JSON.parse(raw)
-      const { nodes, edges, viewport } = deserializeWorkflow(parsed)
+      const { nodes, edges, viewport, template, auditTrail } = deserializeWorkflow(parsed)
       useFlowStore.getState().setFlow(nodes, edges, viewport)
+      useWorkflowMetadataStore.getState().setTemplate(template ?? null)
+      useWorkflowMetadataStore.getState().setAuditTrail(auditTrail ?? [])
     } catch {
       /* 解析失败时从空画布开始 */
     }
@@ -288,6 +315,8 @@ export default function CanvasPage({
                         ? executionLabel
                       : promptConfirmation
                         ? tAgent('contextPromptConfirm')
+                      : template
+                        ? `当前模板：${template.name}`
                       : pendingPlan
                         ? tAgent('contextPlanReady')
                         : lastAppliedPlanId
@@ -331,6 +360,9 @@ export default function CanvasPage({
                       explain: tAgent('quickExplainAsk'),
                       optimize: tAgent('quickOptimizeAsk'),
                       'more-realistic': tAgent('quickRealisticAsk'),
+                      'template-adapt': tAgent('quickTemplateAdaptAsk', {
+                        name: template?.name ?? '当前模板',
+                      }),
                     }
                     void sendMessage(actionMap[actionId] ?? actionId)
                   }}

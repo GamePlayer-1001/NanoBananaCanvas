@@ -22,6 +22,7 @@ import { POST as diagnosePost } from './diagnose/route'
 import { POST as explainPost } from './explain/route'
 import { POST as planPost } from './plan/route'
 import { POST as refinePromptPost } from './refine-prompt/route'
+import { POST as templatePlanPost } from './template-plan/route'
 
 function createCanvasSummary(overrides: Record<string, unknown> = {}) {
   return {
@@ -236,6 +237,83 @@ describe('POST /api/agent/*', () => {
       ok: true,
       data: {
         answer: expect.stringContaining('当前选中的节点是“文案生成”。'),
+      },
+    })
+  })
+
+  it('returns a template adaptation plan when template context exists', async () => {
+    const response = await templatePlanPost(
+      new Request('http://localhost/api/agent/template-plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '把它改成适合服装商品的方向，并输出 4 个版本',
+          mode: 'template',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 4,
+            edgeCount: 3,
+            nodes: [
+              {
+                id: 'prompt-1',
+                type: 'llm',
+                label: '电商视觉规划',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'text-out', label: 'Response', type: 'string' }],
+                configSummary: {},
+              },
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '商品主图生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+            ],
+            template: {
+              id: 'tpl_ecom_image_launch',
+              key: 'ecom-image-launch',
+              name: '电商商品图起手模板',
+              description: 'desc',
+              goal: 'goal',
+              category: 'image-commerce',
+              targetAudience: ['电商运营'],
+              applicableIndustries: ['服装'],
+              recommendedStyles: ['写实商业'],
+              defaultPrompt: 'prompt',
+              defaultModel: 'openai/dall-e-3',
+              defaultOutputSpec: {
+                modality: 'image',
+                count: 4,
+                aspectRatio: '1:1',
+              },
+              source: 'system-template',
+            },
+            auditTrail: [],
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'template',
+          intent: 'adapt_template',
+          templateContext: {
+            sourceTemplate: {
+              id: 'tpl_ecom_image_launch',
+            },
+            adaptationDirection: expect.stringContaining('服装商品'),
+          },
+          operations: expect.arrayContaining([
+            expect.objectContaining({ type: 'update_node_data', nodeId: 'prompt-1' }),
+            expect.objectContaining({ type: 'batch_update_node_data', nodeIds: ['image-1'] }),
+          ]),
+        },
       },
     })
   })

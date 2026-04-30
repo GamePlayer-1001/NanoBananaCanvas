@@ -17,6 +17,7 @@ import {
   AGENT_PROCESS_MESSAGE_KEYS,
 } from '@/lib/agent/constants'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
+import { buildTemplatePlan } from '@/lib/agent/build-template-plan'
 import { diagnoseCanvas } from '@/lib/agent/diagnose-canvas'
 import { explainCanvas } from '@/lib/agent/explain-canvas'
 import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
@@ -25,6 +26,7 @@ import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
 import type { AgentMode, AgentPlan } from '@/lib/agent/types'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { useWorkflowMetadataStore } from '@/stores/use-workflow-metadata-store'
 
 interface UseAgentSessionOptions {
   workflowId: string
@@ -74,9 +76,12 @@ export function useAgentSession({
       appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
 
       appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.summarizing))
+      const { template, auditTrail } = useWorkflowMetadataStore.getState()
       const canvasSummary = summarizeCanvas({
         workflowId,
         workflowName,
+        template: template ?? undefined,
+        auditTrail,
       })
 
       const requestKind = resolveRequestKind(value, mode)
@@ -148,7 +153,12 @@ export function useAgentSession({
 
       setStatus('planning')
       appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.planning))
-      const plan = await buildAgentPlan({
+      const planBuilder =
+        requestKind === 'plan' && (mode === 'template' || canvasSummary.template)
+          ? buildTemplatePlan
+          : buildAgentPlan
+
+      const plan = await planBuilder({
         userMessage: value,
         mode,
         canvasSummary,
@@ -168,6 +178,15 @@ export function useAgentSession({
       }
 
       setPendingPlan(nextPlan)
+
+      if (nextPlan.templateContext) {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'template-context',
+          text: `当前模板：${nextPlan.templateContext.sourceTemplate.name}；改造方向：${nextPlan.templateContext.adaptationDirection ?? '待进一步明确'}`,
+          createdAt: new Date().toISOString(),
+        })
+      }
 
       appendMessage({
         id: crypto.randomUUID(),

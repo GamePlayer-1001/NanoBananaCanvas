@@ -27,6 +27,7 @@ interface AgentProposalCardProps {
   reasons?: string[]
   changes?: AgentProposalChange[]
   requiresConfirmation?: boolean
+  sourceLabel?: string
 }
 
 export function AgentProposalCard({
@@ -35,6 +36,7 @@ export function AgentProposalCard({
   reasons = [],
   changes = [],
   requiresConfirmation = false,
+  sourceLabel,
 }: AgentProposalCardProps) {
   const t = useTranslations('agentPanel')
   const riskLabel: Record<NonNullable<AgentProposalChange['risk']>, string> = {
@@ -48,9 +50,12 @@ export function AgentProposalCard({
       <CardHeader className="gap-3 px-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm">{title}</CardTitle>
-          <Badge variant={requiresConfirmation ? 'default' : 'secondary'}>
-            {requiresConfirmation ? t('proposalStatusPending') : t('proposalStatusReady')}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {sourceLabel ? <Badge variant="outline">{sourceLabel}</Badge> : null}
+            <Badge variant={requiresConfirmation ? 'default' : 'secondary'}>
+              {requiresConfirmation ? t('proposalStatusPending') : t('proposalStatusReady')}
+            </Badge>
+          </div>
         </div>
         <CardDescription className="text-xs leading-5">{summary}</CardDescription>
       </CardHeader>

@@ -13,6 +13,7 @@ use-canvas-tool-store.ts  — 画布工具状态 (select/hand/text-input/llm/dis
 use-execution-store.ts    — 工作流执行状态 (当前节点/执行顺序/结果/错误追踪)
 use-history-store.ts      — 撤销/重做快照栈 (past/future 各 50 条上限，防抖推入)
 use-agent-store.ts        — Agent 会话状态 (消息流 / 模式 / 状态机 / 待确认计划 / prompt confirmation / 最近落图记录)
+use-workflow-metadata-store.ts — 工作流模板元数据状态 (template/auditTrail)，为模板改造与自动保存提供单一真相源
 use-workspace-store.ts    — 工作区 UI 状态 (viewMode/sortBy/searchQuery)
 ```
 

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/validations/agent
  * [OUTPUT]: 对外提供 POST /api/agent/explain，返回当前工作流或选中节点的自然语言解释
- * [POS]: api/agent 的解释端点，把画布结构翻译成用户可读说明
+ * [POS]: api/agent 的解释端点，把画布结构与模板上下文翻译成用户可读说明
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -38,11 +38,33 @@ function buildExplanation(
   const selectedNode = canvasSummary.nodes.find(
     (node) => node.id === canvasSummary.selectedNodeId,
   )
+  const template = canvasSummary.template
+  const templateContext = canvasSummary.templateContext
+  const latestTemplateChange = canvasSummary.auditTrail?.at(-1)
+
+  if (template && !selectedNode) {
+    const direction =
+      templateContext?.adaptationDirection ??
+      latestTemplateChange?.adaptationGoal ??
+      '当前还没有额外行业化改造'
+
+    return [
+      `当前这张画板基于模板“${template.name}”创建。`,
+      `它的核心目标是${template.goal}，更适合 ${template.targetAudience.join('、') || '创作者团队'}，典型行业包括 ${template.applicableIndustries.join('、') || '通用内容生产'}。`,
+      `目前的改造方向是：${direction}。`,
+      `从结构上看，当前画布保留了模板主链，并允许继续围绕 prompt、模型和输出规格做增量调整。`,
+    ].join('')
+  }
 
   if (selectedNode) {
+    const templateText = template
+      ? `它属于模板“${template.name}”当前改造链的一部分。`
+      : '它当前主要反映的是这张工作流里的局部职责。'
+
     return [
       `当前选中的节点是“${selectedNode.label}”。`,
       `它的类型是 ${selectedNode.type}，主要负责接收 ${selectedNode.inputs.map((item) => item.label).join('、') || '上游输入'}，再输出 ${selectedNode.outputs.map((item) => item.label).join('、') || '结果'}。`,
+      templateText,
       `从当前画布来看，它处在整条工作流的局部语境里，更适合围绕这个节点继续细化，而不是一次性大改整张图。`,
     ].join('')
   }

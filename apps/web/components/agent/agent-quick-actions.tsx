@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 export interface AgentQuickAction {
   id: string
   label: string
+  accent?: 'default' | 'template'
 }
 
 interface AgentQuickActionsProps {
@@ -30,7 +31,11 @@ export function AgentQuickActions({
           key={action.id}
           type="button"
           variant="secondary"
-          className="h-8 rounded-full bg-indigo-500/8 px-3 text-xs text-slate-700 hover:bg-indigo-500/14"
+          className={
+            action.accent === 'template'
+              ? 'h-8 rounded-full bg-amber-500/12 px-3 text-xs text-amber-900 hover:bg-amber-500/18'
+              : 'h-8 rounded-full bg-indigo-500/8 px-3 text-xs text-slate-700 hover:bg-indigo-500/14'
+          }
           onClick={() => onSelect?.(action.id)}
         >
           {action.label}

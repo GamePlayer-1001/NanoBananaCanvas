@@ -30,6 +30,7 @@ type ConversationItem =
       type: 'proposal'
       title: string
       summary: string
+      sourceLabel?: string
       reasons?: string[]
       requiresConfirmation?: boolean
       changes?: Array<{
@@ -102,11 +103,12 @@ export function AgentConversation({
             return (
               <AgentProposalCard
                 key={item.id}
-                title={item.title}
-                summary={item.summary}
-                reasons={item.reasons}
-                changes={item.changes}
-                requiresConfirmation={item.requiresConfirmation}
+              title={item.title}
+              summary={item.summary}
+              sourceLabel={item.sourceLabel}
+              reasons={item.reasons}
+              changes={item.changes}
+              requiresConfirmation={item.requiresConfirmation}
               />
             )
           }

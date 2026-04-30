@@ -1,12 +1,17 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 Edge/Node 类型，依赖 @/types 的 PortDefinition/WorkflowNodeData
+ * [INPUT]: 依赖 @xyflow/react 的 Edge/Node 类型，依赖 @/types 的 PortDefinition/WorkflowNodeData/TemplateSummary/WorkflowAuditEntry
  * [OUTPUT]: 对外提供 AgentMode、AgentMessage、AgentPlan、CanvasSummary、Diagnosis/Explain 契约等 Agent 语义层共享类型
  * [POS]: lib/agent 的类型真相源，被 store、hooks、摘要器、校验器与 API route 共同消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Edge, Node } from '@xyflow/react'
-import type { PortDefinition, WorkflowNodeData } from '@/types'
+import type {
+  PortDefinition,
+  TemplateSummary,
+  WorkflowAuditEntry,
+  WorkflowNodeData,
+} from '@/types'
 
 export type AgentMode =
   | 'create'
@@ -34,6 +39,7 @@ export type AgentSessionStatus =
 
 export type AgentPlanIntent =
   | 'create_workflow'
+  | 'adapt_template'
   | 'add_step'
   | 'split_step'
   | 'replace_model'
@@ -63,6 +69,13 @@ export interface PromptConfirmationPayload {
   executionPrompt: string
   targetNodeId?: string
   styleOptions?: AgentPromptStyleOption[]
+}
+
+export interface TemplateConversationSummary {
+  sourceTemplate: TemplateSummary
+  adaptationDirection?: string
+  currentFocus?: string
+  lastAuditEntry?: WorkflowAuditEntry
 }
 
 export type WorkflowOperation =
@@ -155,6 +168,7 @@ export interface AgentPlan {
   requiresConfirmation: boolean
   operations: WorkflowOperation[]
   promptConfirmation?: PromptConfirmationPayload
+  templateContext?: TemplateConversationSummary
 }
 
 export type AgentMessage =
@@ -181,6 +195,12 @@ export type AgentMessage =
       id: string
       role: 'proposal'
       planId: string
+      createdAt: string
+    }
+  | {
+      id: string
+      role: 'template-context'
+      text: string
       createdAt: string
     }
   | {
@@ -224,6 +244,9 @@ export interface CanvasSummary {
   disconnectedNodeIds: string[]
   displayMissingForNodeIds: string[]
   latestExecution?: CanvasExecutionSummary
+  template?: TemplateSummary
+  auditTrail?: WorkflowAuditEntry[]
+  templateContext?: TemplateConversationSummary
 }
 
 export interface AgentPlanRequest {

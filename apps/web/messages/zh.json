@@ -1285,6 +1285,9 @@
     "newProject": "新建项目",
     "untitledProject": "未命名项目",
     "createProject": "创建项目",
+    "templateLabel": "起手模板",
+    "templateEmptyTitle": "空白项目",
+    "templateEmptyBody": "从空白画布开始，后续再让 Agent 帮你搭建。",
     "projectName": "项目名称",
     "projectDescription": "描述（可选）",
     "noProjects": "还没有项目",
@@ -1634,6 +1637,7 @@
   "agentPanel": {
     "title": "Agent",
     "proposalTitle": "工作流提案",
+    "proposalSourceTemplate": "基于模板改造",
     "proposalFallback": "提案 ID：{planId}",
     "proposalStatusPending": "待确认",
     "proposalStatusReady": "可直接落地",
@@ -1648,10 +1652,12 @@
     "quickExplain": "解释这条链",
     "quickOptimize": "帮我优化成本",
     "quickRealistic": "改成更写实",
+    "quickTemplateAdapt": "改造当前模板",
     "quickDiagnoseAsk": "为什么这条链跑不通？",
     "quickExplainAsk": "解释这条工作流在做什么",
     "quickOptimizeAsk": "帮我优化这条工作流的成本和结构",
     "quickRealisticAsk": "把当前工作流改成更写实的方向",
+    "quickTemplateAdaptAsk": "基于模板“{name}”，把它改成适合服装商品的方向",
     "contextError": "上一次提案失败：{message}",
     "contextPromptConfirm": "这一步需要先确认提示词，确认后我再把结果落到左侧画板并执行。",
     "contextPlanReady": "提案已经准备好，确认后我会安全落到左侧画板。",
@@ -1687,7 +1693,6 @@
     "promptConfirm": "确认并执行",
     "promptRegenerate": "再来一版",
     "promptManualEdit": "我自己改"
-  },
   "toolbar": {
     "select": "选择",
     "hand": "拖动画布",

@@ -27,6 +27,26 @@ interface CreateWorkflowInput {
   name: string
   description?: string
   data?: string
+  template?: {
+    id: string
+    key: string
+    name: string
+    description: string
+    goal: string
+    category: string
+    targetAudience: string[]
+    applicableIndustries: string[]
+    recommendedStyles: string[]
+    defaultPrompt?: string
+    defaultModel?: string
+    defaultOutputSpec?: {
+      modality?: 'text' | 'image' | 'video' | 'audio' | 'mixed'
+      count?: number
+      aspectRatio?: string
+    }
+    source: 'system-template' | 'user-template'
+    createdFromWorkflowId?: string
+  }
 }
 
 interface CreateWorkflowResult {

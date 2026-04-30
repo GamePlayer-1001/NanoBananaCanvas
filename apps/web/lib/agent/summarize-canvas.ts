@@ -1,11 +1,12 @@
 /**
  * [INPUT]: 依赖 @/components/nodes/plugin-registry 的节点元数据，依赖 @/stores/use-flow-store 与 @/stores/use-execution-store 的当前真相源
- * [OUTPUT]: 对外提供 summarizeCanvas()，把节点、连线、执行态和选中语境压缩成稳定 CanvasSummary
+ * [OUTPUT]: 对外提供 summarizeCanvas()，把节点、连线、执行态、模板上下文与选中语境压缩成稳定 CanvasSummary
  * [POS]: lib/agent 的画布摘要器，被 use-agent-session 与后续诊断/解释 API 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { getNodeMeta, getNodePorts } from '@/components/nodes/plugin-registry'
+import type { TemplateSummary, WorkflowAuditEntry } from '@/types'
 import { useExecutionStore } from '@/stores/use-execution-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type {
@@ -26,6 +27,8 @@ interface SummarizeCanvasOptions {
   workflowName?: string
   nodes?: AgentCanvasNode[]
   edges?: AgentCanvasEdge[]
+  template?: TemplateSummary
+  auditTrail?: WorkflowAuditEntry[]
 }
 
 export function summarizeCanvas({
@@ -33,9 +36,12 @@ export function summarizeCanvas({
   workflowName,
   nodes = useFlowStore.getState().nodes,
   edges = useFlowStore.getState().edges,
+  template,
+  auditTrail = [],
 }: SummarizeCanvasOptions): CanvasSummary {
   const execution = useExecutionStore.getState()
   const selectedNode = nodes.find((node) => node.selected)
+  const lastAuditEntry = auditTrail.at(-1)
 
   return {
     workflowId,
@@ -60,6 +66,16 @@ export function summarizeCanvas({
       .filter((node) => needsDisplayButHasNoConsumer(node.id, node.type ?? '', edges))
       .map((node) => node.id),
     latestExecution: summarizeExecution(execution),
+    template,
+    auditTrail,
+    templateContext: template
+      ? {
+          sourceTemplate: template,
+          adaptationDirection: lastAuditEntry?.adaptationGoal,
+          currentFocus: selectedNode ? getNodeLabel(selectedNode) : template.goal,
+          lastAuditEntry,
+        }
+      : undefined,
   }
 }
 
@@ -145,4 +161,3 @@ function summarizeExecution(execution: ReturnType<typeof useExecutionStore.getSt
     status: 'idle',
   }
 }
-

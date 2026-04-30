@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的边工具，依赖 @/lib/utils/create-node 的节点工厂，依赖 @/lib/utils/validate-connection 的连线校验，
- *          依赖 @/stores/use-flow-store 与 @/stores/use-history-store 的真相源，依赖 explain-agent-change 的用户可读摘要
+ *          依赖 @/stores/use-flow-store / use-history-store / use-workflow-metadata-store 的真相源，依赖 explain-agent-change 的用户可读摘要
  * [OUTPUT]: 对外提供 applyAgentPlan()，把结构化 operation 安全映射到现有画布 store，并在失败时尝试回滚
  * [POS]: lib/agent 的落图应用器，被 use-agent-session 调用，作为右侧 Agent 真正修改左侧画布的唯一入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,7 +12,8 @@ import { getNodeMeta } from '@/components/nodes/plugin-registry'
 import { isValidConnection } from '@/lib/utils/validate-connection'
 import { useHistoryStore } from '@/stores/use-history-store'
 import { useFlowStore } from '@/stores/use-flow-store'
-import type { WorkflowNodeData } from '@/types'
+import { useWorkflowMetadataStore } from '@/stores/use-workflow-metadata-store'
+import type { WorkflowAuditEntry, WorkflowNodeData } from '@/types'
 import { explainAgentChange } from './explain-agent-change'
 import { validateAgentPlan } from './validate-agent-plan'
 import type { AgentPlan, WorkflowOperation } from './types'
@@ -50,6 +51,11 @@ export async function applyAgentPlan(
     nodes: flowStore.nodes,
     edges: flowStore.edges,
     viewport: flowStore.viewport,
+  }
+  const metadataStore = useWorkflowMetadataStore.getState()
+  const metadataSnapshot = {
+    template: metadataStore.template,
+    auditTrail: structuredClone(metadataStore.auditTrail),
   }
 
   const validation = validateAgentPlan(plan)
@@ -98,6 +104,7 @@ export async function applyAgentPlan(
     }
 
     const explanation = explainAgentChange({ plan, appliedOperations })
+    syncTemplateAudit(plan)
 
     return {
       ok: true,
@@ -107,6 +114,8 @@ export async function applyAgentPlan(
     }
   } catch (error) {
     useFlowStore.getState().setFlow(snapshot.nodes, snapshot.edges, snapshot.viewport)
+    useWorkflowMetadataStore.getState().setTemplate(metadataSnapshot.template)
+    useWorkflowMetadataStore.getState().setAuditTrail(metadataSnapshot.auditTrail)
 
     return {
       ok: false,
@@ -116,6 +125,26 @@ export async function applyAgentPlan(
       error: error instanceof Error ? error.message : String(error),
     }
   }
+}
+
+function syncTemplateAudit(plan: AgentPlan) {
+  if (!plan.templateContext) return
+
+  const metadataStore = useWorkflowMetadataStore.getState()
+  metadataStore.setTemplate(plan.templateContext.sourceTemplate)
+
+  const entry: WorkflowAuditEntry = {
+    id: `audit_${crypto.randomUUID()}`,
+    kind: 'template-adapted',
+    message: `Agent 已将模板「${plan.templateContext.sourceTemplate.name}」改造成${plan.templateContext.adaptationDirection ?? '新的目标方向'}。`,
+    createdAt: new Date().toISOString(),
+    actor: 'agent',
+    templateId: plan.templateContext.sourceTemplate.id,
+    templateName: plan.templateContext.sourceTemplate.name,
+    adaptationGoal: plan.templateContext.adaptationDirection,
+  }
+
+  metadataStore.appendAuditEntry(entry)
 }
 
 async function applyOperation(

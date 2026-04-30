@@ -22,6 +22,47 @@ const promptConfirmationPayloadSchema = z.object({
   styleOptions: z.array(promptStyleOptionSchema).optional(),
 })
 
+const templateSummarySchema = z.object({
+  id: z.string().min(1),
+  key: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  goal: z.string().min(1),
+  category: z.string().min(1),
+  targetAudience: z.array(z.string().min(1)),
+  applicableIndustries: z.array(z.string().min(1)),
+  recommendedStyles: z.array(z.string().min(1)),
+  defaultPrompt: z.string().min(1).optional(),
+  defaultModel: z.string().min(1).optional(),
+  defaultOutputSpec: z
+    .object({
+      modality: z.enum(['text', 'image', 'video', 'audio', 'mixed']).optional(),
+      count: z.number().int().positive().optional(),
+      aspectRatio: z.string().min(1).optional(),
+    })
+    .optional(),
+  source: z.enum(['system-template', 'user-template']),
+  createdFromWorkflowId: z.string().min(1).optional(),
+})
+
+const workflowAuditEntrySchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['template-created', 'template-adapted']),
+  message: z.string().min(1),
+  createdAt: z.string().min(1),
+  actor: z.enum(['agent', 'user']),
+  templateId: z.string().min(1).optional(),
+  templateName: z.string().min(1).optional(),
+  adaptationGoal: z.string().min(1).optional(),
+})
+
+const templateConversationSummarySchema = z.object({
+  sourceTemplate: templateSummarySchema,
+  adaptationDirection: z.string().min(1).optional(),
+  currentFocus: z.string().min(1).optional(),
+  lastAuditEntry: workflowAuditEntrySchema.optional(),
+})
+
 const canvasSummaryNodeSchema = z.object({
   id: z.string().min(1),
   type: z.string().min(1),
@@ -133,6 +174,7 @@ export const agentPlanSchema = z.object({
   intent: z
     .enum([
       'create_workflow',
+      'adapt_template',
       'add_step',
       'split_step',
       'replace_model',
@@ -149,6 +191,7 @@ export const agentPlanSchema = z.object({
   requiresConfirmation: z.boolean(),
   operations: z.array(workflowOperationSchema),
   promptConfirmation: promptConfirmationPayloadSchema.optional(),
+  templateContext: templateConversationSummarySchema.optional(),
 })
 
 export const agentPlanRequestSchema = z.object({
@@ -166,6 +209,9 @@ export const agentPlanRequestSchema = z.object({
     nodes: z.array(canvasSummaryNodeSchema),
     disconnectedNodeIds: z.array(z.string()),
     displayMissingForNodeIds: z.array(z.string()),
+    template: templateSummarySchema.optional(),
+    auditTrail: z.array(workflowAuditEntrySchema).optional(),
+    templateContext: templateConversationSummarySchema.optional(),
     latestExecution: z
       .object({
         status: z.enum(['idle', 'running', 'completed', 'failed']),
@@ -182,6 +228,8 @@ export const agentPlanResponseSchema = z.object({
     plan: agentPlanSchema,
   }),
 })
+
+export const agentTemplatePlanResponseSchema = agentPlanResponseSchema
 
 export const promptConfirmationRequestSchema = z.object({
   originalIntent: z.string().trim().min(1),
