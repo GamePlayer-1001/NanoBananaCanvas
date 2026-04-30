@@ -236,7 +236,7 @@
 ### 4.2 文案与国际化
 
 - [x] `AGENT-520` 在 `messages/zh.json` 增加 Agent 文案
-- [ ] `AGENT-521` 在 `messages/en.json` 增加 Agent 文案
+- [x] `AGENT-521` 在 `messages/en.json` 增加 Agent 文案
 - [ ] `AGENT-522` 为系统过程消息建立统一 key 命名
 
 ### 4.3 文档回环
