@@ -36,7 +36,7 @@
 
 - [x] `AGENT-001` 在 `.md/CLAUDE.MD` 中登记新增 Agent 技术文档与清单
 - [x] `AGENT-002` 为 `apps/web/components/agent/` 创建 `CLAUDE.md`
-- [ ] `AGENT-003` 为 `apps/web/lib/agent/` 创建 `CLAUDE.md`
+- [x] `AGENT-003` 为 `apps/web/lib/agent/` 创建 `CLAUDE.md`
 
 ### 前端目录与空组件
 

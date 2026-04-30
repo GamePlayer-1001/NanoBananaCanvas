@@ -1,0 +1,27 @@
+# apps/web/lib/agent/
+
+> L2 | 父级: apps/web/lib/CLAUDE.md
+
+Agent 编排语义层。这里承载右侧助手与左侧画布之间的中间语义，不承载 React 视图，也不直接越权改动持久化层。
+
+## 成员清单
+
+```
+types.ts                — Agent 核心类型定义，收口 AgentMode / AgentMessage / AgentPlan / CanvasSummary
+constants.ts            — Agent 常量与阈值真相源，收口状态枚举、批量改动阈值与默认文案键
+summarize-canvas.ts     — 画布摘要器，从 Flow/Execution/节点元数据提炼稳定上下文
+build-agent-plan.ts     — 计划构建器，连接前端会话与后端 Planner API
+validate-agent-plan.ts  — 本地安全校验器，约束 nodeType / nodeId / 端口兼容与高风险确认
+apply-agent-plan.ts     — 落图应用器，把结构化 operation 映射到 FlowStore / HistoryStore
+explain-agent-change.ts — 变更解释器，把落图结果翻译成用户可读摘要
+prompt-confirmation.ts  — Prompt 确认语义层，处理原始意图 / 画面提案 / 执行提示词三段结构
+```
+
+## 职责边界
+
+1. 本目录只负责 Agent 编排语义，不包含 React 组件
+2. 最终工作流真相源仍是 `useFlowStore`，本目录只能生成与应用结构化意图
+3. 所有高风险改动必须先经过 `validate-agent-plan.ts`，不得绕过确认规则
+4. 真正执行工作流仍复用既有执行链与 `lib/tasks/`，不自建第二套运行时
+
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
