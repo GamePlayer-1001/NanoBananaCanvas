@@ -42,6 +42,7 @@ export const MODEL_PROVIDER_OPTIONS: Record<CapabilityId, ModelProviderOption[]>
       providerId: 'openrouter',
       providerKind: 'openrouter',
       label: 'OpenRouter',
+      requiresBaseUrl: true,
     },
     {
       providerId: 'openai-compatible',

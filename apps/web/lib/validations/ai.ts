@@ -96,6 +96,7 @@ export const apiKeySchema = z.object({
   configId: z.string().trim().min(1).optional(),
   providerKind: z.enum([
     'openai-compatible',
+    'openrouter',
     'google-image',
     'gemini',
     'kling',

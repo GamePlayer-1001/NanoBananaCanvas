@@ -115,7 +115,7 @@ export async function PUT(req: Request) {
       : null
 
     const normalizedBaseUrl =
-      parsed.providerKind === 'openai-compatible'
+      parsed.providerKind === 'openai-compatible' || parsed.providerKind === 'openrouter'
         ? normalizeOpenAIBaseUrl(parsed.baseUrl ?? '')
         : undefined
 
@@ -142,10 +142,13 @@ export async function PUT(req: Request) {
       return apiError('VALIDATION_FAILED', 'Secret key is required for Kling', 400)
     }
 
-    if (parsed.providerKind === 'openai-compatible' && !nextConfig.baseUrl) {
+    if (
+      (parsed.providerKind === 'openai-compatible' || parsed.providerKind === 'openrouter') &&
+      !nextConfig.baseUrl
+    ) {
       return apiError(
         'VALIDATION_FAILED',
-        'Base URL is required for OpenAI-compatible providers',
+        'Base URL is required for OpenAI-compatible/OpenRouter providers',
         400,
       )
     }

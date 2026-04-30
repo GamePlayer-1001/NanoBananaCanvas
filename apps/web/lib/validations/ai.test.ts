@@ -130,6 +130,22 @@ describe('apiKeySchema', () => {
     expect(result.label).toBe('My Key')
     expect(result.baseUrl).toBe('https://openrouter.ai/api/v1')
   })
+
+  it('accepts openrouter image configs with baseUrl', () => {
+    const result = apiKeySchema.parse({
+      name: 'OpenRouter Image',
+      apiKey: 'sk-or-v1-image',
+      modelId: 'openai/gpt-5.4-image-2',
+      capability: 'image',
+      providerKind: 'openrouter',
+      providerId: 'openrouter',
+      baseUrl: 'https://openrouter.ai/api/v1',
+    })
+
+    expect(result.providerKind).toBe('openrouter')
+    expect(result.providerId).toBe('openrouter')
+    expect(result.baseUrl).toBe('https://openrouter.ai/api/v1')
+  })
 })
 
 describe('modelsQuerySchema', () => {

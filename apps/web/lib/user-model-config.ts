@@ -67,6 +67,7 @@ export type UserModelConfigSlotId = keyof typeof USER_MODEL_CONFIG_SLOTS
 export type UserModelCapability = (typeof USER_MODEL_CONFIG_SLOTS)[UserModelConfigSlotId]['capability']
 export type UserModelProviderKind =
   | 'openai-compatible'
+  | 'openrouter'
   | 'google-image'
   | 'gemini'
   | 'kling'
@@ -305,6 +306,7 @@ function isResolvedCapability(capability: unknown, configId: string): capability
 function isProviderKind(value: unknown): value is UserModelProviderKind {
   return (
     value === 'openai-compatible' ||
+    value === 'openrouter' ||
     value === 'google-image' ||
     value === 'gemini' ||
     value === 'kling' ||
@@ -321,6 +323,8 @@ function toRuntimeProviderId(providerKind: UserModelProviderKind): string {
       return 'kling'
     case 'openai-audio':
       return 'openai'
+    case 'openrouter':
+      return 'openrouter'
     case 'openai-compatible':
     default:
       return 'openai-compatible'
