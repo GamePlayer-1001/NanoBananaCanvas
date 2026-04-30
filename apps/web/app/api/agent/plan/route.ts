@@ -168,6 +168,7 @@ function buildCreationOperations(normalized: string): WorkflowOperation[] {
           originalIntent: normalized,
           visualProposal: '先给出一版清晰画面方向，再决定是否直接写入图片生成节点。',
           executionPrompt: '请基于用户意图生成一版清晰、可执行、构图明确的图像生成提示词。',
+          targetNodeId: 'draft-text-input',
           styleOptions: [
             { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影质感、自然光与镜头语言' },
             { id: 'anime', label: '更动漫', promptDelta: '强调动漫分镜、线稿与色彩层次' },

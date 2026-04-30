@@ -41,20 +41,32 @@ type ConversationItem =
   | {
       id: string
       type: 'prompt-confirmation'
+      payloadId?: string
       originalIntent: string
       visualProposal: string
       executionPrompt: string
       styleOptions?: string[]
+      expanded?: boolean
     }
 
 interface AgentConversationProps {
   items: ConversationItem[]
   emptyState?: string
+  onPromptConfirm?: (payloadId?: string) => void
+  onPromptRegenerate?: (payloadId?: string) => void
+  onPromptManualEdit?: (payloadId?: string) => void
+  onPromptToggleExpand?: (payloadId?: string) => void
+  onPromptStyleSelect?: (payloadId: string | undefined, styleLabel: string) => void
 }
 
 export function AgentConversation({
   items,
   emptyState = '告诉我你想搭建什么工作流，我会先给出一个提案。',
+  onPromptConfirm,
+  onPromptRegenerate,
+  onPromptManualEdit,
+  onPromptToggleExpand,
+  onPromptStyleSelect,
 }: AgentConversationProps) {
   return (
     <ScrollArea className="h-full">
@@ -102,10 +114,17 @@ export function AgentConversation({
           return (
             <AgentPromptCompareCard
               key={item.id}
+              payloadId={item.payloadId}
               originalIntent={item.originalIntent}
               visualProposal={item.visualProposal}
               executionPrompt={item.executionPrompt}
               styleOptions={item.styleOptions}
+              expanded={item.expanded}
+              onConfirm={() => onPromptConfirm?.(item.payloadId)}
+              onRegenerate={() => onPromptRegenerate?.(item.payloadId)}
+              onManualEdit={() => onPromptManualEdit?.(item.payloadId)}
+              onToggleExpand={() => onPromptToggleExpand?.(item.payloadId)}
+              onStyleSelect={(styleLabel) => onPromptStyleSelect?.(item.payloadId, styleLabel)}
             />
           )
         })}

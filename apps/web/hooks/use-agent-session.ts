@@ -1,6 +1,7 @@
 /**
- * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 计划链路与 @/stores/use-agent-store 的会话真相源
- * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan API -> validation -> apply 的高层动作
+ * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 的 plan/apply/prompt refine 链路，
+ *          依赖 @/stores/use-agent-store 与 @/stores/use-flow-store 的会话/画布真相源
+ * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan API -> validation -> prompt confirm -> apply -> run 的高层动作
  * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，负责右侧提案与左侧落图之间的安全桥接
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,9 +13,12 @@ import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
 import { applyAgentPlan } from '@/lib/agent/apply-agent-plan'
 import { AGENT_ERROR_FALLBACK, AGENT_PROCESS_MESSAGES } from '@/lib/agent/constants'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
+import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
+import type { AgentPlan } from '@/lib/agent/types'
 import { useAgentStore } from '@/stores/use-agent-store'
+import { useFlowStore } from '@/stores/use-flow-store'
 
 interface UseAgentSessionOptions {
   workflowId: string
@@ -36,6 +40,8 @@ export function useAgentSession({
   const clearPendingPlan = useAgentStore((state) => state.clearPendingPlan)
   const setErrorMessage = useAgentStore((state) => state.setErrorMessage)
   const setLastAppliedPlanId = useAgentStore((state) => state.setLastAppliedPlanId)
+  const setPromptConfirmation = useAgentStore((state) => state.setPromptConfirmation)
+  const clearPromptConfirmation = useAgentStore((state) => state.clearPromptConfirmation)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
@@ -46,6 +52,7 @@ export function useAgentSession({
 
     setIsSubmitting(true)
     clearPendingPlan()
+    clearPromptConfirmation()
     setErrorMessage(null)
 
     appendMessage({
@@ -135,8 +142,8 @@ export function useAgentSession({
     })
   }
 
-  async function applyPendingPlan() {
-    if (!pendingPlan || isApplying) return
+  async function applyPendingPlan(planOverride = pendingPlan) {
+    if (!planOverride || isApplying) return
 
     setIsApplying(true)
     setErrorMessage(null)
@@ -144,7 +151,7 @@ export function useAgentSession({
     appendProcessMessage('我现在开始把提案安全落到左侧画板。')
 
     try {
-      const result = await applyAgentPlan(pendingPlan, {
+      const result = await applyAgentPlan(planOverride, {
         workflowId,
         runWorkflow: async (scope) => {
           if (scope === 'all') {
@@ -168,10 +175,11 @@ export function useAgentSession({
         createdAt: new Date().toISOString(),
       })
 
-      setLastAppliedPlanId(pendingPlan.id)
+      setLastAppliedPlanId(planOverride.id)
       setErrorMessage(null)
       clearPendingPlan()
-      setStatus('ready-to-run')
+      clearPromptConfirmation()
+      setStatus('idle')
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : AGENT_ERROR_FALLBACK
       setStatus('error')
@@ -198,7 +206,142 @@ export function useAgentSession({
       createdAt: new Date().toISOString(),
     })
     clearPendingPlan()
+    clearPromptConfirmation()
     setStatus('idle')
+  }
+
+  async function regeneratePrompt(payloadId?: string, styleDirection?: string) {
+    if (!pendingPlan?.promptConfirmation) return
+    if (payloadId && pendingPlan.promptConfirmation.id !== payloadId) return
+
+    setIsApplying(true)
+    appendProcessMessage(
+      styleDirection
+        ? `我正在往“${styleDirection}”方向重写提示词。`
+        : '我正在重新整理一版提示词。',
+    )
+
+    try {
+      const payload = await refinePromptConfirmation({
+        originalIntent: pendingPlan.promptConfirmation.originalIntent,
+        executionPrompt: pendingPlan.promptConfirmation.executionPrompt,
+        styleDirection,
+        regenerate: true,
+      })
+
+      const nextPayload = {
+        ...payload,
+        targetNodeId: pendingPlan.promptConfirmation.targetNodeId,
+      }
+
+      setPromptConfirmation(nextPayload)
+      setPendingPlan({
+        ...pendingPlan,
+        promptConfirmation: nextPayload,
+      })
+      setStatus('awaiting-confirmation')
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : AGENT_ERROR_FALLBACK
+      setStatus('error')
+      setErrorMessage(message)
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'diagnosis',
+        text: message,
+        severity: 'error',
+        createdAt: new Date().toISOString(),
+      })
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  async function confirmPromptAndRun(payloadId?: string) {
+    if (!pendingPlan?.promptConfirmation) return
+    if (payloadId && pendingPlan.promptConfirmation.id !== payloadId) return
+
+    const currentPlan = buildPromptConfirmedPlan(pendingPlan)
+    if (!currentPlan) {
+      const message = '没有找到需要回写提示词的目标节点。'
+      setStatus('error')
+      setErrorMessage(message)
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'diagnosis',
+        text: message,
+        severity: 'error',
+        createdAt: new Date().toISOString(),
+      })
+      return
+    }
+
+    setPendingPlan(currentPlan)
+    setPromptConfirmation(null)
+    appendProcessMessage('提示词已确认，我现在开始执行这个图片工作流。')
+    await applyPendingPlan(currentPlan)
+  }
+
+  function buildPromptConfirmedPlan(plan: AgentPlan): AgentPlan | null {
+    const payload = plan.promptConfirmation
+    if (!payload?.targetNodeId) return null
+
+    const executionPrompt = payload.executionPrompt
+    let hasResolvedTarget = false
+
+    const operations = plan.operations
+      .filter((operation) => operation.type !== 'request_prompt_confirmation')
+      .map((operation) => {
+        if (
+          operation.type === 'add_node' &&
+          operation.nodeId === payload.targetNodeId
+        ) {
+          hasResolvedTarget = true
+          return {
+            ...operation,
+            initialData: mergeNodeTextIntoInitialData(operation.initialData, executionPrompt),
+          }
+        }
+
+        return operation
+      })
+
+    if (!hasResolvedTarget) {
+      const targetNodeId = resolvePromptTargetNodeId(payload.targetNodeId)
+      if (!targetNodeId) return null
+
+      operations.push({
+        type: 'update_node_data',
+        nodeId: targetNodeId,
+        patch: {
+          config: {
+            text: executionPrompt,
+          },
+        },
+      })
+    }
+
+    operations.push({
+      type: 'run_workflow',
+      scope: 'all',
+    })
+
+    return {
+      ...plan,
+      requiresConfirmation: false,
+      operations,
+      promptConfirmation: undefined,
+    }
+  }
+
+  function resolvePromptTargetNodeId(nodeId?: string) {
+    if (!nodeId) return null
+
+    const currentNodes = useFlowStore.getState().nodes
+    if (currentNodes.some((node) => node.id === nodeId)) {
+      return nodeId
+    }
+
+    return null
   }
 
   return {
@@ -207,5 +350,27 @@ export function useAgentSession({
     applyPendingPlan,
     rejectPendingPlan,
     isApplying,
+    regeneratePrompt,
+    confirmPromptAndRun,
   }
+}
+
+function mergeNodeTextIntoInitialData(
+  initialData: Record<string, unknown> | undefined,
+  text: string,
+): Record<string, unknown> {
+  const nextInitialData = isRecord(initialData) ? { ...initialData } : {}
+  const currentConfig = isRecord(nextInitialData.config) ? nextInitialData.config : {}
+
+  return {
+    ...nextInitialData,
+    config: {
+      ...currentConfig,
+      text,
+    },
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

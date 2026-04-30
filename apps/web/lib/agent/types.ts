@@ -39,6 +39,7 @@ export interface PromptConfirmationPayload {
   originalIntent: string
   visualProposal: string
   executionPrompt: string
+  targetNodeId?: string
   styleOptions?: AgentPromptStyleOption[]
 }
 
@@ -173,6 +174,17 @@ export interface AgentPlanRequest {
 
 export interface AgentPlanResponse {
   plan: AgentPlan
+}
+
+export interface PromptConfirmationRequest {
+  originalIntent: string
+  executionPrompt?: string
+  styleDirection?: string
+  regenerate?: boolean
+}
+
+export interface PromptConfirmationResponse {
+  payload: PromptConfirmationPayload
 }
 
 export interface AgentPlanValidationResult {

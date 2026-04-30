@@ -18,6 +18,7 @@ const promptConfirmationPayloadSchema = z.object({
   originalIntent: z.string().min(1),
   visualProposal: z.string().min(1),
   executionPrompt: z.string().min(1),
+  targetNodeId: z.string().min(1).optional(),
   styleOptions: z.array(promptStyleOptionSchema).optional(),
 })
 
@@ -127,6 +128,20 @@ export const agentPlanResponseSchema = z.object({
   ok: z.literal(true),
   data: z.object({
     plan: agentPlanSchema,
+  }),
+})
+
+export const promptConfirmationRequestSchema = z.object({
+  originalIntent: z.string().trim().min(1),
+  executionPrompt: z.string().trim().optional(),
+  styleDirection: z.string().trim().optional(),
+  regenerate: z.boolean().optional(),
+})
+
+export const promptConfirmationResponseSchema = z.object({
+  ok: z.literal(true),
+  data: z.object({
+    payload: promptConfirmationPayloadSchema,
   }),
 })
 

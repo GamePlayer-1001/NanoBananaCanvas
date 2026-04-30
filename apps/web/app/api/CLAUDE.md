@@ -28,8 +28,9 @@ ai/                     — AI 模型集成 (3 端点)
   execute/route.test.ts — 非流式执行计费编排回归测试
   stream/route.ts       — POST SSE 流式 AI 执行 (平台模式已接回预冻结/确认/失败退款，user_key 继续只记 usage)
 
-agent/                  — Agent 结构化提案 API (1 端点)
+agent/                  — Agent 结构化提案 API (2 端点)
   plan/route.ts         — POST 右侧 Agent planner 入口 (用户目标 + CanvasSummary -> 严格 AgentPlan)
+  refine-prompt/route.ts — POST Prompt refine 入口 (原始意图 + 旧 prompt + 风格方向 -> PromptConfirmationPayload)
 
 folders/                — 文件夹 CRUD (2+2 端点)
   route.ts              — GET 列表 / POST 创建

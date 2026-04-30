@@ -14,7 +14,7 @@
 
 'use client'
 
-import { use, useEffect, useMemo, useRef } from 'react'
+import { use, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Loader2, Monitor } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -62,6 +62,7 @@ export default function CanvasPage({
   const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
   const errorMessage = useAgentStore((state) => state.errorMessage)
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
+  const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null)
   const workflowName =
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
       ? String((data as Record<string, unknown>).name)
@@ -72,6 +73,8 @@ export default function CanvasPage({
     applyPendingPlan,
     rejectPendingPlan,
     isApplying,
+    regeneratePrompt,
+    confirmPromptAndRun,
   } = useAgentSession({
     workflowId: id,
     workflowName,
@@ -120,6 +123,7 @@ export default function CanvasPage({
           return {
             id: message.id,
             type: 'prompt-confirmation' as const,
+            payloadId: message.payloadId,
             originalIntent:
               promptConfirmation?.id === message.payloadId
                 ? promptConfirmation.originalIntent
@@ -136,6 +140,7 @@ export default function CanvasPage({
               promptConfirmation?.id === message.payloadId
                 ? promptConfirmation.styleOptions?.map((item) => item.label)
                 : [],
+            expanded: expandedPromptId === message.payloadId,
           }
         }
 
@@ -147,7 +152,7 @@ export default function CanvasPage({
           timestamp: new Date(message.createdAt).toLocaleTimeString(),
         }
       }),
-    [messages, pendingPlan, promptConfirmation, status],
+    [expandedPromptId, messages, pendingPlan, promptConfirmation, status],
   )
 
   const modeLabel = {
@@ -210,14 +215,22 @@ export default function CanvasPage({
                   contextLabel={
                     errorMessage
                       ? `上一次提案失败：${errorMessage}`
+                      : promptConfirmation
+                        ? '这一步需要先确认提示词，确认后我再把结果落到左侧画板并执行。'
                       : pendingPlan
                         ? '提案已经准备好，确认后我会安全落到左侧画板。'
                         : lastAppliedPlanId
                           ? `最近一次已应用提案：${lastAppliedPlanId}`
-                      : '已连接到当前画板，我会先基于左侧工作流给出结构化提案。'
+                          : '已连接到当前画板，我会先基于左侧工作流给出结构化提案。'
                   }
-                  actionLabel={pendingPlan ? (isApplying ? '正在落图...' : '应用提案') : undefined}
-                  onAction={pendingPlan ? () => void applyPendingPlan() : undefined}
+                  actionLabel={
+                    pendingPlan && !promptConfirmation
+                      ? (isApplying ? '正在落图...' : '应用提案')
+                      : undefined
+                  }
+                  onAction={
+                    pendingPlan && !promptConfirmation ? () => void applyPendingPlan() : undefined
+                  }
                   secondaryActionLabel={pendingPlan ? '撤回提案' : undefined}
                   onSecondaryAction={pendingPlan ? rejectPendingPlan : undefined}
                 />
@@ -226,6 +239,16 @@ export default function CanvasPage({
                 <AgentConversation
                   items={conversationItems}
                   emptyState="告诉我你想搭建什么工作流，我会先在右侧生成提案，再把结果落到左侧画板。"
+                  onPromptConfirm={(payloadId) => void confirmPromptAndRun(payloadId)}
+                  onPromptRegenerate={(payloadId) => void regeneratePrompt(payloadId)}
+                  onPromptManualEdit={(payloadId) => {
+                    setExpandedPromptId(payloadId ?? null)
+                    void rejectPendingPlan()
+                  }}
+                  onPromptToggleExpand={(payloadId) =>
+                    setExpandedPromptId((current) => (current === payloadId ? null : payloadId ?? null))
+                  }
+                  onPromptStyleSelect={(payloadId, styleLabel) => void regeneratePrompt(payloadId, styleLabel)}
                 />
               )}
               quickActions={(

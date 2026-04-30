@@ -23,7 +23,7 @@
 | M1 | 面板骨架 | 右侧 Agent UI 与状态骨架可运行 | [x] |
 | M2 | 计划链路 | 从用户输入到结构化 plan 跑通 | [x] |
 | M3 | 落图链路 | plan 可安全修改画布并自动保存 | [x] |
-| M4 | 提示词确认 | refine + confirm + execute 跑通 | [ ] |
+| M4 | 提示词确认 | refine + confirm + execute 跑通 | [x] |
 | M5 | 诊断与收口 | diagnose、任务联动、体验打磨完成 | [ ] |
 
 ---
@@ -156,30 +156,30 @@
 
 ### Prompt refine API
 
-- [ ] `AGENT-300` 创建 `app/api/agent/refine-prompt/route.ts`
-- [ ] `AGENT-301` 定义 `PromptConfirmationPayload` schema
-- [ ] `AGENT-302` 服务端实现原始意图、画面提案、执行 prompt 三段输出
-- [ ] `AGENT-303` 支持基础风格变体建议
+- [x] `AGENT-300` 创建 `app/api/agent/refine-prompt/route.ts`
+- [x] `AGENT-301` 定义 `PromptConfirmationPayload` schema
+- [x] `AGENT-302` 服务端实现原始意图、画面提案、执行 prompt 三段输出
+- [x] `AGENT-303` 支持基础风格变体建议
 
 ### 前端确认卡片
 
-- [ ] `AGENT-310` 完成 `agent-prompt-compare-card.tsx` 正式结构
-- [ ] `AGENT-311` 支持“确认并执行”
-- [ ] `AGENT-312` 支持“再来一版”
-- [ ] `AGENT-313` 支持“更写实 / 更动漫 / 更商业”
-- [ ] `AGENT-314` 支持展开查看完整 prompt
+- [x] `AGENT-310` 完成 `agent-prompt-compare-card.tsx` 正式结构
+- [x] `AGENT-311` 支持“确认并执行”
+- [x] `AGENT-312` 支持“再来一版”
+- [x] `AGENT-313` 支持“更写实 / 更动漫 / 更商业”
+- [x] `AGENT-314` 支持展开查看完整 prompt
 
 ### 执行联动
 
-- [ ] `AGENT-320` 将确认后的 prompt patch 回对应节点
-- [ ] `AGENT-321` 支持确认后触发 `run_workflow`
-- [ ] `AGENT-322` 聊天区展示执行开始过程消息
+- [x] `AGENT-320` 将确认后的 prompt patch 回对应节点
+- [x] `AGENT-321` 支持确认后触发 `run_workflow`
+- [x] `AGENT-322` 聊天区展示执行开始过程消息
 
 ### M4 验收
 
-- [ ] `AGENT-330` 图片工作流创建后能进入 prompt 确认态
-- [ ] `AGENT-331` 用户确认后左侧节点配置被更新
-- [ ] `AGENT-332` 用户可基于风格建议快速再生成一版
+- [x] `AGENT-330` 图片工作流创建后能进入 prompt 确认态
+- [x] `AGENT-331` 用户确认后左侧节点配置被更新
+- [x] `AGENT-332` 用户可基于风格建议快速再生成一版
 
 ---
 

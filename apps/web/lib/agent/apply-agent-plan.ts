@@ -187,10 +187,13 @@ function applyUpdateNodeData(
   node.data = {
     ...node.data,
     ...operation.patch,
-    config: {
+  }
+
+  if (isRecord(operation.patch.config)) {
+    node.data.config = {
       ...node.data.config,
-      ...(isRecord(operation.patch.config) ? operation.patch.config : {}),
-    },
+      ...operation.patch.config,
+    }
   }
 }
 

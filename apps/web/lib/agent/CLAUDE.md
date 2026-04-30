@@ -14,7 +14,7 @@ build-agent-plan.ts     — 计划构建器，连接前端会话与 `/api/agent/
 validate-agent-plan.ts  — 本地安全校验器，约束 nodeType / nodeId / 连线兼容与高风险确认
 apply-agent-plan.ts     — 落图应用器，把结构化 operation 映射到 FlowStore / HistoryStore
 explain-agent-change.ts — 变更解释器，把落图结果翻译成用户可读摘要
-prompt-confirmation.ts  — Prompt 确认语义层，处理原始意图 / 画面提案 / 执行提示词三段结构
+prompt-confirmation.ts  — Prompt 确认语义层，请求 refine-prompt API，处理原始意图 / 画面提案 / 执行提示词三段结构
 ```
 
 ## 职责边界
