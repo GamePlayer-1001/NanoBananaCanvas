@@ -51,6 +51,7 @@ NUL
 
 # Debug logs
 tail_err.txt
+.codex-logs/
 
 # Misc
 *.tsbuildinfo
