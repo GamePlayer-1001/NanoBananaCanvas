@@ -327,5 +327,11 @@ describe('summarizeCanvas', () => {
         summary: 'Hero Image 输出了 1 个图片资产（已生成文件）。',
       },
     ])
+    expect(summary.latestSuccessfulAsset).toEqual({
+      id: 'image-1:image',
+      kind: 'image',
+      sourceNodeId: 'image-1',
+      summary: 'Hero Image 输出了 1 个图片资产（已生成文件）。',
+    })
   })
 })

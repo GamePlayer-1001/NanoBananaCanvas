@@ -68,6 +68,7 @@ export function summarizeCanvas({
       .filter((node) => needsDisplayButHasNoConsumer(node.id, node.type ?? '', edges))
       .map((node) => node.id),
     assets,
+    latestSuccessfulAsset: assets.at(-1),
     latestExecution: summarizeExecution(execution),
     template,
     auditTrail,

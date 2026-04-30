@@ -265,6 +265,12 @@ export interface CanvasSummary {
     sourceNodeId: string
     summary: string
   }>
+  latestSuccessfulAsset?: {
+    id: string
+    kind: 'image' | 'video' | 'audio' | 'text'
+    sourceNodeId: string
+    summary: string
+  }
   latestExecution?: CanvasExecutionSummary
   template?: TemplateSummary
   auditTrail?: WorkflowAuditEntry[]

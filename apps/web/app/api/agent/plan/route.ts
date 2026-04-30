@@ -491,6 +491,14 @@ function buildSummary(
     return '我准备先搭出“文本输入 -> LLM -> 结果展示”的最小工作流提案。'
   }
 
+  if (
+    mode === 'extend' &&
+    canvas.latestSuccessfulAsset &&
+    operations.length > 0
+  ) {
+    return `我会基于最近产出的${assetKindLabel(canvas.latestSuccessfulAsset.kind)}结果继续往下长一条新分支，而不是改坏原主链。`
+  }
+
   if (operations[0]?.type === 'focus_nodes') {
     return '我先把注意力聚焦到最相关的节点范围，再给你一个可检查的修改方向。'
   }
@@ -541,6 +549,10 @@ function buildReasons(
     reasons.push(`当前有 ${canvas.disconnectedNodeIds.length} 个节点处于未连线状态，后续需要重点确认。`)
   }
 
+  if (canvas.latestSuccessfulAsset) {
+    reasons.push(`最近一次成功结果已经沉淀为${assetKindLabel(canvas.latestSuccessfulAsset.kind)}资产，适合拿来继续扩展。`)
+  }
+
   if (mode === 'diagnose') {
     reasons.push('你当前的目标更像是在定位问题，所以我先收缩到问题节点而不是直接改图。')
   }
@@ -570,6 +582,19 @@ function buildReasons(
   }
 
   return reasons.slice(0, 3)
+}
+
+function assetKindLabel(kind: 'image' | 'video' | 'audio' | 'text') {
+  switch (kind) {
+    case 'image':
+      return '图片'
+    case 'video':
+      return '视频'
+    case 'audio':
+      return '音频'
+    case 'text':
+      return '文本'
+  }
 }
 
 function findFirstNodeByType(nodes: CanvasSummaryNode[], type: string) {

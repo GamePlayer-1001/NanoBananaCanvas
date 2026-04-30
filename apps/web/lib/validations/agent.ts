@@ -227,6 +227,24 @@ export const agentPlanRequestSchema = z.object({
     nodes: z.array(canvasSummaryNodeSchema),
     disconnectedNodeIds: z.array(z.string()),
     displayMissingForNodeIds: z.array(z.string()),
+    assets: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          kind: z.enum(['image', 'video', 'audio', 'text']),
+          sourceNodeId: z.string().min(1),
+          summary: z.string().min(1),
+        }),
+      )
+      .optional(),
+    latestSuccessfulAsset: z
+      .object({
+        id: z.string().min(1),
+        kind: z.enum(['image', 'video', 'audio', 'text']),
+        sourceNodeId: z.string().min(1),
+        summary: z.string().min(1),
+      })
+      .optional(),
     template: templateSummarySchema.optional(),
     auditTrail: z.array(workflowAuditEntrySchema).optional(),
     templateContext: templateConversationSummarySchema.optional(),

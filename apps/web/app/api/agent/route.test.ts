@@ -242,6 +242,58 @@ describe('POST /api/agent/*', () => {
     })
   })
 
+  it('accepts latest successful asset in plan request context', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '基于这张结果图继续扩展',
+          mode: 'extend',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 2,
+            edgeCount: 1,
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '主图生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+            ],
+            assets: [
+              {
+                id: 'image-1:image',
+                kind: 'image',
+                sourceNodeId: 'image-1',
+                summary: '主图生成 输出了 1 个图片资产（已生成文件）。',
+              },
+            ],
+            latestSuccessfulAsset: {
+              id: 'image-1:image',
+              kind: 'image',
+              sourceNodeId: 'image-1',
+              summary: '主图生成 输出了 1 个图片资产（已生成文件）。',
+            },
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          summary: expect.stringContaining('最近产出的图片结果'),
+        },
+      },
+    })
+  })
+
   it('returns optimize diagnosis for cost-heavy workflow', async () => {
     const response = await optimizePost(
       new Request('http://localhost/api/agent/optimize', {
