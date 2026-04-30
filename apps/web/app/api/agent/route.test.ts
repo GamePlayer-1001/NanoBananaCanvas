@@ -294,6 +294,132 @@ describe('POST /api/agent/*', () => {
     })
   })
 
+  it('builds a follow-up video branch proposal from the latest image result', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '基于这张结果图继续，帮我补一个视频分支',
+          mode: 'extend',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 2,
+            edgeCount: 1,
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '主图生成',
+                inputs: [
+                  { id: 'prompt-in', label: 'Prompt', type: 'string' },
+                  { id: 'image-in', label: 'Image', type: 'image' },
+                ],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+            ],
+            assets: [
+              {
+                id: 'image-1:image',
+                kind: 'image',
+                sourceNodeId: 'image-1',
+                summary: '主图生成 输出了 1 个图片资产（已生成文件）。',
+              },
+            ],
+            latestSuccessfulAsset: {
+              id: 'image-1:image',
+              kind: 'image',
+              sourceNodeId: 'image-1',
+              summary: '主图生成 输出了 1 个图片资产（已生成文件）。',
+            },
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'extend',
+          intent: 'add_branch',
+          operations: expect.arrayContaining([
+            expect.objectContaining({ type: 'add_node', nodeType: 'video-gen' }),
+            expect.objectContaining({
+              type: 'connect',
+              source: 'image-1',
+              target: 'draft-followup-video',
+            }),
+          ]),
+        },
+      },
+    })
+  })
+
+  it('builds a follow-up copy branch proposal from the latest image result', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '基于这张图继续，帮我补标题和正文文案',
+          mode: 'extend',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 2,
+            edgeCount: 1,
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '主图生成',
+                inputs: [
+                  { id: 'prompt-in', label: 'Prompt', type: 'string' },
+                  { id: 'image-in', label: 'Image', type: 'image' },
+                ],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+            ],
+            assets: [
+              {
+                id: 'image-1:image',
+                kind: 'image',
+                sourceNodeId: 'image-1',
+                summary: '主图生成 输出了 1 个图片资产（已生成文件）。',
+              },
+            ],
+            latestSuccessfulAsset: {
+              id: 'image-1:image',
+              kind: 'image',
+              sourceNodeId: 'image-1',
+              summary: '主图生成 输出了 1 个图片资产（已生成文件）。',
+            },
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          operations: expect.arrayContaining([
+            expect.objectContaining({ type: 'add_node', nodeType: 'llm' }),
+            expect.objectContaining({
+              type: 'connect',
+              source: 'image-1',
+              target: 'draft-followup-copy',
+            }),
+          ]),
+        },
+      },
+    })
+  })
+
   it('returns optimize diagnosis for cost-heavy workflow', async () => {
     const response = await optimizePost(
       new Request('http://localhost/api/agent/optimize', {

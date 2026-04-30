@@ -26,6 +26,7 @@ import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
 import { useAgentSession } from '@/hooks/use-agent-session'
 import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
 import { useWorkflow } from '@/hooks/use-workflows'
+import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -94,6 +95,15 @@ export default function CanvasPage({
   } = useAgentTaskSummary({
     workflowId: id,
   })
+  const resultAwareSummary = useMemo(
+    () =>
+      summarizeCanvas({
+        workflowId: id,
+        workflowName,
+        template: template ?? undefined,
+      }),
+    [id, template, workflowName],
+  )
 
   const conversationItems = useMemo(
     () =>
@@ -194,6 +204,9 @@ export default function CanvasPage({
   }[mode]
 
   const quickActions = [
+    ...(resultAwareSummary.latestSuccessfulAsset
+      ? [{ id: 'continue-from-result', label: tAgent('quickContinueFromResult') }]
+      : []),
     { id: 'diagnose', label: tAgent('quickDiagnose') },
     { id: 'explain', label: tAgent('quickExplain') },
     { id: 'optimize', label: tAgent('quickOptimize') },
@@ -356,6 +369,16 @@ export default function CanvasPage({
                   actions={pendingPlan ? [] : quickActions}
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
+                      'continue-from-result': tAgent('quickContinueFromResultAsk', {
+                        asset:
+                          resultAwareSummary.latestSuccessfulAsset?.kind === 'image'
+                            ? tAgent('resultAssetImage')
+                            : resultAwareSummary.latestSuccessfulAsset?.kind === 'video'
+                              ? tAgent('resultAssetVideo')
+                              : resultAwareSummary.latestSuccessfulAsset?.kind === 'audio'
+                                ? tAgent('resultAssetAudio')
+                                : tAgent('resultAssetText'),
+                      }),
                       diagnose: tAgent('quickDiagnoseAsk'),
                       explain: tAgent('quickExplainAsk'),
                       optimize: tAgent('quickOptimizeAsk'),

@@ -122,6 +122,10 @@ function inferIntent(
   canvas: CanvasSummary,
   mode: AgentPlan['mode'],
 ): AgentPlanIntent {
+  if (mode === 'extend' && canvas.latestSuccessfulAsset) {
+    return 'add_branch'
+  }
+
   if (mode === 'create' || canvas.nodeCount === 0) {
     return 'create_workflow'
   }
@@ -266,6 +270,10 @@ function buildIncrementalOperations(
   canvas: CanvasSummary,
   intent: AgentPlanIntent,
 ): WorkflowOperation[] {
+  if (canvas.latestSuccessfulAsset && shouldBuildFollowUpFromResult(normalized, canvas)) {
+    return buildResultFollowUpOperations(normalized, canvas)
+  }
+
   const selectedNodeId = canvas.selectedNodeId ?? canvas.nodes[0]?.id
   const selectedNode = selectedNodeId
     ? canvas.nodes.find((node) => node.id === selectedNodeId) ?? null
@@ -492,7 +500,7 @@ function buildSummary(
   }
 
   if (
-    mode === 'extend' &&
+    (mode === 'extend' || shouldBuildFollowUpFromResult(normalized, canvas)) &&
     canvas.latestSuccessfulAsset &&
     operations.length > 0
   ) {
@@ -595,6 +603,164 @@ function assetKindLabel(kind: 'image' | 'video' | 'audio' | 'text') {
     case 'text':
       return '文本'
   }
+}
+
+function shouldBuildFollowUpFromResult(normalized: string, canvas: CanvasSummary) {
+  if (!canvas.latestSuccessfulAsset) return false
+
+  return (
+    normalized.includes('基于结果继续') ||
+    normalized.includes('基于这张') ||
+    normalized.includes('继续扩展') ||
+    normalized.includes('继续做下去') ||
+    normalized.includes('下一步') ||
+    normalized.includes('补视频') ||
+    normalized.includes('加视频') ||
+    normalized.includes('补标题') ||
+    normalized.includes('加标题') ||
+    normalized.includes('正文') ||
+    normalized.includes('文案变体')
+  )
+}
+
+function buildResultFollowUpOperations(
+  normalized: string,
+  canvas: CanvasSummary,
+): WorkflowOperation[] {
+  const asset = canvas.latestSuccessfulAsset
+  if (!asset) return []
+
+  if (
+    asset.kind === 'image' &&
+    (normalized.includes('视频') || normalized.includes('动起来') || normalized.includes('动态'))
+  ) {
+    return [
+      {
+        type: 'add_node',
+        nodeId: 'draft-followup-video',
+        nodeType: 'video-gen',
+        initialData: {
+          label: 'Video Follow-up',
+          config: {
+            mode: 'image-to-video',
+          },
+        },
+      },
+      {
+        type: 'add_node',
+        nodeId: 'draft-followup-display',
+        nodeType: 'display',
+        initialData: {
+          label: 'Video Preview',
+        },
+      },
+      {
+        type: 'connect',
+        source: asset.sourceNodeId,
+        sourceHandle: 'image-out',
+        target: 'draft-followup-video',
+        targetHandle: 'image-in',
+      },
+      {
+        type: 'connect',
+        source: 'draft-followup-video',
+        sourceHandle: 'video-out',
+        target: 'draft-followup-display',
+        targetHandle: 'content-in',
+      },
+      {
+        type: 'annotate_change',
+        nodeId: asset.sourceNodeId,
+        note: '基于最近图片结果新增了一条补视频分支，原主链保持不动。',
+      },
+      {
+        type: 'focus_nodes',
+        nodeIds: [asset.sourceNodeId, 'draft-followup-video', 'draft-followup-display'],
+      },
+    ]
+  }
+
+  if (
+    asset.kind === 'image' &&
+    (normalized.includes('标题') || normalized.includes('正文') || normalized.includes('文案'))
+  ) {
+    return [
+      {
+        type: 'add_node',
+        nodeId: 'draft-followup-copy',
+        nodeType: 'llm',
+        initialData: {
+          label: 'Copy Follow-up',
+          config: {
+            text:
+              normalized.includes('正文')
+                ? '基于最新图片结果生成一版正文文案。'
+                : normalized.includes('标题')
+                  ? '基于最新图片结果生成 3 个标题变体。'
+                  : '基于最新图片结果生成标题和正文文案变体。',
+          },
+        },
+      },
+      {
+        type: 'add_node',
+        nodeId: 'draft-followup-display',
+        nodeType: 'display',
+        initialData: {
+          label: 'Copy Preview',
+        },
+      },
+      {
+        type: 'connect',
+        source: asset.sourceNodeId,
+        sourceHandle: 'image-out',
+        target: 'draft-followup-copy',
+        targetHandle: 'image-in',
+      },
+      {
+        type: 'connect',
+        source: 'draft-followup-copy',
+        sourceHandle: 'text-out',
+        target: 'draft-followup-display',
+        targetHandle: 'content-in',
+      },
+      {
+        type: 'annotate_change',
+        nodeId: asset.sourceNodeId,
+        note: '基于最近图片结果补出了一条文案续写分支，方便继续做标题/正文承接。',
+      },
+      {
+        type: 'focus_nodes',
+        nodeIds: [asset.sourceNodeId, 'draft-followup-copy', 'draft-followup-display'],
+      },
+    ]
+  }
+
+  if (asset.kind === 'text') {
+    return [
+      {
+        type: 'duplicate_node_branch',
+        nodeId: asset.sourceNodeId,
+        count: 2,
+        strategy: 'style-variants',
+      },
+      {
+        type: 'annotate_change',
+        nodeId: asset.sourceNodeId,
+        note: '基于最近文本结果复制出变体支线，方便继续扩写或改写。',
+      },
+      {
+        type: 'focus_nodes',
+        nodeIds: [asset.sourceNodeId],
+      },
+    ]
+  }
+
+  return [
+    {
+      type: 'focus_nodes',
+      nodeIds: [asset.sourceNodeId],
+    },
+  ]
 }
 
 function findFirstNodeByType(nodes: CanvasSummaryNode[], type: string) {
