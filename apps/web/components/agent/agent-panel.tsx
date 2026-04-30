@@ -20,7 +20,7 @@ const MAX_WIDTH = 840
 const DEFAULT_HEIGHT = 1140
 const MIN_HEIGHT = 520
 const MAX_HEIGHT = 1280
-const DEFAULT_POSITION = { x: 0, y: 0 }
+const DEFAULT_POSITION = { x: -220, y: 0 }
 
 interface AgentPanelProps {
   header?: ReactNode
