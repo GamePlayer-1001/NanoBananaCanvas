@@ -77,6 +77,7 @@ describe('summarizeCanvas', () => {
       selected: true,
       data: {
         label: 'Prompt Writer',
+        type: 'input',
         config: {
           text: 'make a poster',
         },
@@ -85,6 +86,7 @@ describe('summarizeCanvas', () => {
     const imageNode = createNode('image', 'image-gen', {
       data: {
         label: 'Poster Image',
+        type: 'ai-model',
         config: {
           prompt: 'cinematic poster',
           size: '1024x1024',
@@ -94,6 +96,7 @@ describe('summarizeCanvas', () => {
     const noteNode = createNode('note-1', 'note', {
       data: {
         label: 'Loose Note',
+        type: 'transform',
         config: {
           text: 'draft ideas',
         },
@@ -136,6 +139,7 @@ describe('summarizeCanvas', () => {
         createNode('llm-1', 'llm', {
           data: {
             label: 'LLM Node',
+            type: 'ai-model',
             config: {
               text: `${'very long prompt '.repeat(20)}tail`,
               prompt: `${'refined scene description '.repeat(20)}tail`,

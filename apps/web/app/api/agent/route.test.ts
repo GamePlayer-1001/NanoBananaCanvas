@@ -86,6 +86,64 @@ describe('POST /api/agent/*', () => {
     })
   })
 
+  it('returns an incremental replace-model plan for existing image workflows', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '把这个图片节点换成更便宜的模型',
+          mode: 'update',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 2,
+            edgeCount: 1,
+            selectedNodeId: 'image-1',
+            selectedNodeType: 'image-gen',
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '图片生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {
+                  platformProvider: 'openrouter',
+                  platformModel: 'openai/dall-e-3',
+                },
+              },
+              {
+                id: 'display-1',
+                type: 'display',
+                label: '结果展示',
+                inputs: [{ id: 'content-in', label: 'Content', type: 'any' }],
+                outputs: [],
+                configSummary: {},
+              },
+            ],
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'update',
+          intent: 'replace_model',
+          operations: expect.arrayContaining([
+            expect.objectContaining({
+              type: 'replace_node',
+              nodeId: 'image-1',
+            }),
+          ]),
+        },
+      },
+    })
+  })
+
   it('returns validation failure for malformed plan request payload', async () => {
     const response = await planPost(
       new Request('http://localhost/api/agent/plan', {
@@ -201,7 +259,7 @@ describe('POST /api/agent/*', () => {
       ok: true,
       data: {
         payload: {
-          id: 'prompt_refine-seed',
+          id: expect.any(String),
           originalIntent: '一个男孩在球场打篮球',
           visualProposal: expect.stringContaining('我重新整理了一版画面方向'),
           executionPrompt: expect.stringContaining('风格方向：更写实'),

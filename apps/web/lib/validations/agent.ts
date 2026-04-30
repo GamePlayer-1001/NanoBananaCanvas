@@ -59,6 +59,44 @@ const workflowOperationSchema = z.discriminatedUnion('type', [
     patch: z.record(z.string(), z.unknown()),
   }),
   z.object({
+    type: z.literal('insert_between'),
+    source: z.string().min(1),
+    target: z.string().min(1),
+    nodeId: z.string().min(1).optional(),
+    nodeType: z.string().min(1),
+    initialData: z.record(z.string(), z.unknown()).optional(),
+    sourceHandle: z.string().optional(),
+    targetHandle: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('replace_node'),
+    nodeId: z.string().min(1),
+    nextNodeType: z.string().min(1),
+    configPatch: z.record(z.string(), z.unknown()).optional(),
+    preserveConfigKeys: z.array(z.string().min(1)).optional(),
+  }),
+  z.object({
+    type: z.literal('duplicate_node_branch'),
+    nodeId: z.string().min(1),
+    count: z.number().int().min(1).max(8),
+    strategy: z.enum(['parallel-variants', 'style-variants']).optional(),
+  }),
+  z.object({
+    type: z.literal('batch_update_node_data'),
+    nodeIds: z.array(z.string().min(1)).min(1),
+    patch: z.record(z.string(), z.unknown()),
+  }),
+  z.object({
+    type: z.literal('relabel_node'),
+    nodeId: z.string().min(1),
+    label: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal('annotate_change'),
+    nodeId: z.string().min(1),
+    note: z.string().min(1),
+  }),
+  z.object({
     type: z.literal('remove_node'),
     nodeId: z.string().min(1),
   }),
@@ -91,7 +129,21 @@ const workflowOperationSchema = z.discriminatedUnion('type', [
 export const agentPlanSchema = z.object({
   id: z.string().min(1),
   goal: z.string().min(1),
-  mode: z.enum(['create', 'update', 'diagnose', 'optimize']),
+  mode: z.enum(['create', 'update', 'repair', 'diagnose', 'optimize', 'extend', 'template']),
+  intent: z
+    .enum([
+      'create_workflow',
+      'add_step',
+      'split_step',
+      'replace_model',
+      'change_output_count',
+      'add_branch',
+      'repair_flow',
+      'optimize_cost',
+      'optimize_speed',
+      'explain_flow',
+    ])
+    .optional(),
   summary: z.string().min(1),
   reasons: z.array(z.string().min(1)).min(1),
   requiresConfirmation: z.boolean(),
@@ -101,7 +153,7 @@ export const agentPlanSchema = z.object({
 
 export const agentPlanRequestSchema = z.object({
   userMessage: z.string().trim().min(1),
-  mode: z.enum(['create', 'update', 'diagnose', 'optimize']),
+  mode: z.enum(['create', 'update', 'repair', 'diagnose', 'optimize', 'extend', 'template']),
   locale: z.string().trim().min(1),
   canvasSummary: z.object({
     workflowId: z.string().min(1),

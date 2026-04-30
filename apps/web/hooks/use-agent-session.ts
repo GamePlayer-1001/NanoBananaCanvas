@@ -22,7 +22,7 @@ import { explainCanvas } from '@/lib/agent/explain-canvas'
 import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
-import type { AgentPlan } from '@/lib/agent/types'
+import type { AgentMode, AgentPlan } from '@/lib/agent/types'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 
@@ -460,7 +460,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function resolveRequestKind(
   userMessage: string,
-  mode: 'create' | 'update' | 'diagnose' | 'optimize',
+  mode: AgentMode,
 ): 'plan' | 'diagnose' | 'explain' {
   const normalized = userMessage.trim().toLowerCase()
 

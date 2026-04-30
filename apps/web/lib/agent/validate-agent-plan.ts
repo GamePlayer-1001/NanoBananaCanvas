@@ -11,6 +11,8 @@ import { isValidConnection } from '@/lib/utils/validate-connection'
 import { useFlowStore } from '@/stores/use-flow-store'
 import {
   AGENT_ALLOWED_OPERATIONS,
+  AGENT_MAX_BATCH_UPDATE_NODE_COUNT,
+  AGENT_MAX_BRANCH_DUPLICATION_COUNT,
   AGENT_MAX_AUTO_OPERATIONS,
 } from './constants'
 import type {
@@ -52,6 +54,73 @@ export function validateAgentPlan(
       }
     }
 
+    if (operation.type === 'relabel_node' || operation.type === 'annotate_change') {
+      if (!nodes.some((node) => node.id === operation.nodeId)) {
+        errors.push(`目标节点不存在：${operation.nodeId}`)
+      }
+    }
+
+    if (operation.type === 'replace_node') {
+      if (!nodes.some((node) => node.id === operation.nodeId)) {
+        errors.push(`目标节点不存在：${operation.nodeId}`)
+      }
+      if (!getNodeMeta(operation.nextNodeType)) {
+        errors.push(`未知替换节点类型：${operation.nextNodeType}`)
+      }
+      requiresConfirmation = true
+    }
+
+    if (operation.type === 'insert_between') {
+      const sourceNode = nodes.find((node) => node.id === operation.source)
+      const targetNode = nodes.find((node) => node.id === operation.target)
+      if (!sourceNode) {
+        errors.push(`插入起点节点不存在：${operation.source}`)
+      }
+      if (!targetNode) {
+        errors.push(`插入终点节点不存在：${operation.target}`)
+      }
+      if (!getNodeMeta(operation.nodeType)) {
+        errors.push(`未知节点类型：${operation.nodeType}`)
+      }
+      const matchingEdge = edges.find(
+        (edge) =>
+          edge.source === operation.source &&
+          edge.target === operation.target &&
+          (operation.sourceHandle ? edge.sourceHandle === operation.sourceHandle : true) &&
+          (operation.targetHandle ? edge.targetHandle === operation.targetHandle : true),
+      )
+      if (!matchingEdge) {
+        warnings.push(`未找到 ${operation.source} -> ${operation.target} 的直接主链连线，插入操作会按相邻节点重连`)
+      }
+      requiresConfirmation = true
+    }
+
+    if (operation.type === 'duplicate_node_branch') {
+      if (!nodes.some((node) => node.id === operation.nodeId)) {
+        errors.push(`目标节点不存在：${operation.nodeId}`)
+      }
+      if (operation.count > AGENT_MAX_BRANCH_DUPLICATION_COUNT) {
+        errors.push(`分支复制数量超限：${operation.count}`)
+      }
+      requiresConfirmation = true
+    }
+
+    if (operation.type === 'batch_update_node_data') {
+      const missingNodeIds = operation.nodeIds.filter(
+        (nodeId) => !nodes.some((node) => node.id === nodeId),
+      )
+      if (missingNodeIds.length > 0) {
+        errors.push(`批量更新目标节点不存在：${missingNodeIds.join('、')}`)
+      }
+      if (operation.nodeIds.length > AGENT_MAX_BATCH_UPDATE_NODE_COUNT) {
+        errors.push(`批量更新节点数量超限：${operation.nodeIds.length}`)
+      }
+      if (Object.keys(operation.patch).some((key) => ['text', 'prompt', 'systemPrompt'].includes(key))) {
+        warnings.push('批量更新包含核心文本字段，请确认不会覆盖用户手写内容')
+        requiresConfirmation = true
+      }
+    }
+
     if (operation.type === 'disconnect') {
       if (!edges.some((edge) => edge.id === operation.edgeId)) {
         errors.push(`目标连线不存在：${operation.edgeId}`)
@@ -62,8 +131,8 @@ export function validateAgentPlan(
       const connection: Connection = {
         source: operation.source,
         target: operation.target,
-        sourceHandle: operation.sourceHandle,
-        targetHandle: operation.targetHandle,
+        sourceHandle: operation.sourceHandle ?? null,
+        targetHandle: operation.targetHandle ?? null,
       }
 
       if (!isValidConnection(connection, nodes, edges)) {
@@ -72,6 +141,9 @@ export function validateAgentPlan(
     }
 
     if (
+      operation.type === 'insert_between' ||
+      operation.type === 'replace_node' ||
+      operation.type === 'duplicate_node_branch' ||
       operation.type === 'remove_node' ||
       operation.type === 'request_prompt_confirmation' ||
       operation.type === 'run_workflow'
@@ -92,4 +164,3 @@ export function validateAgentPlan(
     warnings,
   }
 }
-

@@ -159,6 +159,7 @@ describe('applyAgentPlan', () => {
         createNode('llm-1', 'llm', 20, 30, {
           data: {
             label: 'Writer',
+            type: 'ai-model',
             config: {
               temperature: 0.7,
               platformModel: 'openai/gpt-4o-mini',
@@ -263,5 +264,121 @@ describe('applyAgentPlan', () => {
     expect(flowState.nodes.map((node) => node.id)).toEqual(['llm-1'])
     expect(flowState.viewport).toEqual({ x: 10, y: 20, zoom: 0.9 })
     expect(useHistoryStore.getState().past).toHaveLength(1)
+  })
+
+  it('supports M6 incremental modifications while preserving the original main chain', async () => {
+    useFlowStore.setState({
+      nodes: [
+        createNode('text-1', 'text-input', 0, 0),
+        createNode('image-1', 'image-gen', 260, 0, {
+          data: {
+            label: 'Image Gen',
+            type: 'ai-model',
+            config: {
+              platformProvider: 'openrouter',
+              platformModel: 'openai/dall-e-3',
+            },
+          },
+        }),
+        createNode('display-1', 'display', 520, 0),
+      ],
+      edges: [
+        {
+          id: 'edge-1',
+          source: 'text-1',
+          target: 'image-1',
+          sourceHandle: 'text-out',
+          targetHandle: 'prompt-in',
+          type: 'custom',
+        },
+        {
+          id: 'edge-2',
+          source: 'image-1',
+          target: 'display-1',
+          sourceHandle: 'image-out',
+          targetHandle: 'content-in',
+          type: 'custom',
+        },
+      ],
+      viewport: { x: 0, y: 0, zoom: 1 },
+    })
+
+    const uuidMock = vi
+      .spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('insert-node-id')
+      .mockReturnValueOnce('variant-node-id')
+      .mockReturnValueOnce('variant-node-id-2')
+
+    const result = await applyAgentPlan(
+      createPlan({
+        goal: '增量改造现有工作流',
+        operations: [
+          {
+            type: 'insert_between',
+            source: 'text-1',
+            target: 'image-1',
+            sourceHandle: 'text-out',
+            targetHandle: 'prompt-in',
+            nodeId: 'draft-style-node',
+            nodeType: 'llm',
+          },
+          {
+            type: 'replace_node',
+            nodeId: 'image-1',
+            nextNodeType: 'image-gen',
+            configPatch: {
+              platformModel: 'google/gemini-2.5-flash-image-preview',
+            },
+          },
+          {
+            type: 'batch_update_node_data',
+            nodeIds: ['image-1'],
+            patch: {
+              config: {
+                count: 4,
+              },
+            },
+          },
+          {
+            type: 'relabel_node',
+            nodeId: 'image-1',
+            label: 'Image Gen x4',
+          },
+          {
+            type: 'annotate_change',
+            nodeId: 'image-1',
+            note: '保留原主链，只做增量改造',
+          },
+          {
+            type: 'duplicate_node_branch',
+            nodeId: 'image-1',
+            count: 2,
+            strategy: 'style-variants',
+          },
+        ],
+      }),
+      {
+        workflowId: 'wf_apply_m6',
+      },
+    )
+
+    uuidMock.mockRestore()
+
+    const flowState = useFlowStore.getState()
+    const insertedNode = flowState.nodes.find((node) => node.id === 'insert-node-id')
+    const imageNode = flowState.nodes.find((node) => node.id === 'image-1')
+    const variantNodes = flowState.nodes.filter((node) => node.id.startsWith('variant-node-id'))
+
+    expect(result.ok).toBe(true)
+    expect(result.summary).toContain('插入 llm 节点')
+    expect(insertedNode?.type).toBe('llm')
+    expect(imageNode?.data.label).toBe('Image Gen x4')
+    expect(imageNode?.data.config.platformModel).toBe('google/gemini-2.5-flash-image-preview')
+    expect(imageNode?.data.config.count).toBe(4)
+    expect(imageNode?.data.config.agentAnnotation).toBe('保留原主链，只做增量改造')
+    expect(variantNodes).toHaveLength(2)
+    expect(flowState.edges.some((edge) => edge.source === 'text-1' && edge.target === 'insert-node-id')).toBe(true)
+    expect(flowState.edges.some((edge) => edge.source === 'insert-node-id' && edge.target === 'image-1')).toBe(true)
+    expect(flowState.edges.some((edge) => edge.source === 'image-1' && edge.target === 'display-1')).toBe(true)
   })
 })

@@ -207,4 +207,44 @@ describe('validateAgentPlan', () => {
     expect(result.requiresConfirmation).toBe(true)
     expect(result.warnings).toContain('本次提案包含 5 个操作，超过自动落地阈值')
   })
+
+  it('accepts incremental M6 operations and upgrades risky changes to confirmation', () => {
+    const plan = createPlan({
+      operations: [
+        {
+          type: 'insert_between',
+          source: 'text-1',
+          target: 'llm-1',
+          nodeType: 'llm',
+          sourceHandle: 'text-out',
+          targetHandle: 'prompt-in',
+        },
+        {
+          type: 'replace_node',
+          nodeId: 'image-1',
+          nextNodeType: 'image-gen',
+        },
+        {
+          type: 'batch_update_node_data',
+          nodeIds: ['image-1'],
+          patch: {
+            config: {
+              count: 4,
+            },
+          },
+        },
+        {
+          type: 'relabel_node',
+          nodeId: 'image-1',
+          label: 'Image x4',
+        },
+      ],
+    })
+
+    const result = validateAgentPlan(plan, { nodes, edges })
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+    expect(result.requiresConfirmation).toBe(true)
+  })
 })

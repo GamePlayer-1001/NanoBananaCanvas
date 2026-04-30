@@ -12,8 +12,10 @@ import { nanoid } from '@/lib/nanoid'
 import { agentPlanRequestSchema, agentPlanSchema } from '@/lib/validations/agent'
 import type {
   AgentPlan,
+  AgentPlanIntent,
   AgentPlanRequest,
   CanvasSummary,
+  CanvasSummaryNode,
   WorkflowOperation,
 } from '@/lib/agent/types'
 
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     const input = agentPlanRequestSchema.parse(body)
-    const plan = buildPlannerResponse(input)
+    const plan = buildPlannerResponse(input as AgentPlanRequest)
     const parsedPlan = agentPlanSchema.parse(plan)
 
     return apiOk({ plan: parsedPlan })
@@ -46,17 +48,22 @@ function buildPlannerResponse(input: AgentPlanRequest): AgentPlan {
   const normalized = goal.toLowerCase()
   const canvas = input.canvasSummary
   const inferredMode = inferMode(input, normalized)
+  const intent = inferIntent(normalized, canvas, inferredMode)
   const operations =
     inferredMode === 'diagnose'
       ? buildDiagnoseOperations(canvas)
       : canvas.nodeCount === 0
         ? buildCreationOperations(normalized)
-        : buildUpdateOperations(normalized, canvas)
+        : buildIncrementalOperations(normalized, canvas, intent)
 
-  const reasons = buildReasons(normalized, canvas, inferredMode, operations)
+  const reasons = buildReasons(normalized, canvas, inferredMode, operations, intent)
   const requiresConfirmation =
     operations.length > AGENT_MAX_AUTO_OPERATIONS ||
     operations.some((operation) =>
+      operation.type === 'insert_between' ||
+      operation.type === 'replace_node' ||
+      operation.type === 'duplicate_node_branch' ||
+      operation.type === 'batch_update_node_data' ||
       operation.type === 'remove_node' ||
       operation.type === 'request_prompt_confirmation' ||
       operation.type === 'run_workflow',
@@ -66,6 +73,7 @@ function buildPlannerResponse(input: AgentPlanRequest): AgentPlan {
     id: `plan_${nanoid()}`,
     goal,
     mode: inferredMode,
+    intent,
     summary: buildSummary(normalized, canvas, inferredMode, operations),
     reasons,
     requiresConfirmation,
@@ -82,7 +90,11 @@ function inferMode(input: AgentPlanRequest, normalized: string): AgentPlan['mode
     return 'diagnose'
   }
 
-  if (normalized.includes('优化')) {
+  if (normalized.includes('修复') || normalized.includes('补救')) {
+    return 'repair'
+  }
+
+  if (normalized.includes('优化') || normalized.includes('省钱') || normalized.includes('更快')) {
     return 'optimize'
   }
 
@@ -90,11 +102,60 @@ function inferMode(input: AgentPlanRequest, normalized: string): AgentPlan['mode
     return 'create'
   }
 
+  if (normalized.includes('模板')) {
+    return 'template'
+  }
+
+  if (normalized.includes('继续') || normalized.includes('延伸') || normalized.includes('追加分支')) {
+    return 'extend'
+  }
+
   if (normalized.includes('新建') || normalized.includes('搭建') || normalized.includes('创建')) {
     return 'create'
   }
 
   return input.mode === 'create' && input.canvasSummary.nodeCount > 0 ? 'update' : input.mode
+}
+
+function inferIntent(
+  normalized: string,
+  canvas: CanvasSummary,
+  mode: AgentPlan['mode'],
+): AgentPlanIntent {
+  if (mode === 'create' || canvas.nodeCount === 0) {
+    return 'create_workflow'
+  }
+
+  if (mode === 'repair' || normalized.includes('修复') || normalized.includes('跑不通')) {
+    return 'repair_flow'
+  }
+
+  if (mode === 'optimize') {
+    return normalized.includes('快') ? 'optimize_speed' : 'optimize_cost'
+  }
+
+  if (normalized.includes('拆') && normalized.includes('步')) {
+    return 'split_step'
+  }
+
+  if (normalized.includes('换成') || normalized.includes('替换模型') || normalized.includes('更便宜的模型')) {
+    return 'replace_model'
+  }
+
+  if (
+    normalized.includes('4个变体') ||
+    normalized.includes('四个变体') ||
+    normalized.includes('多个变体') ||
+    normalized.includes('输出改成')
+  ) {
+    return 'change_output_count'
+  }
+
+  if (normalized.includes('分支') || normalized.includes('变体支线')) {
+    return 'add_branch'
+  }
+
+  return 'add_step'
 }
 
 function buildCreationOperations(normalized: string): WorkflowOperation[] {
@@ -200,8 +261,15 @@ function buildCreationOperations(normalized: string): WorkflowOperation[] {
   ]
 }
 
-function buildUpdateOperations(normalized: string, canvas: CanvasSummary): WorkflowOperation[] {
+function buildIncrementalOperations(
+  normalized: string,
+  canvas: CanvasSummary,
+  intent: AgentPlanIntent,
+): WorkflowOperation[] {
   const selectedNodeId = canvas.selectedNodeId ?? canvas.nodes[0]?.id
+  const selectedNode = selectedNodeId
+    ? canvas.nodes.find((node) => node.id === selectedNodeId) ?? null
+    : null
 
   if (normalized.includes('补') && canvas.displayMissingForNodeIds.length > 0) {
     return [
@@ -217,6 +285,148 @@ function buildUpdateOperations(normalized: string, canvas: CanvasSummary): Workf
 
   if ((normalized.includes('优化') || normalized.includes('整理')) && canvas.disconnectedNodeIds.length > 0) {
     return [{ type: 'focus_nodes', nodeIds: canvas.disconnectedNodeIds.slice(0, 3) }]
+  }
+
+  if (intent === 'add_step') {
+    const insertTarget = selectedNode ?? findFirstNodeByType(canvas.nodes, 'image-gen') ?? canvas.nodes[0]
+    const upstreamNode = insertTarget ? findSingleUpstreamNode(canvas, insertTarget.id) : null
+
+    if (insertTarget && upstreamNode) {
+      return [
+        {
+          type: 'insert_between',
+          source: upstreamNode.id,
+          target: insertTarget.id,
+          sourceHandle: guessPrimaryOutputHandle(upstreamNode),
+          targetHandle: guessPrimaryInputHandle(insertTarget),
+          nodeId: 'draft-style-analyzer',
+          nodeType: 'llm',
+          initialData: {
+            label: 'Style Analyzer',
+            config: {
+              text: '请先分析风格方向，再把结果传给下游生成节点。',
+            },
+          },
+        },
+        {
+          type: 'annotate_change',
+          nodeId: insertTarget.id,
+          note: '在主生成前补入风格分析步骤，保持原主链走向不变。',
+        },
+        {
+          type: 'focus_nodes',
+          nodeIds: [upstreamNode.id, insertTarget.id],
+        },
+      ]
+    }
+  }
+
+  if (intent === 'split_step' && selectedNode) {
+    return [
+      {
+        type: 'insert_between',
+        source: selectedNode.id,
+        target: findFirstDownstreamNode(canvas, selectedNode.id)?.id ?? selectedNode.id,
+        sourceHandle: guessPrimaryOutputHandle(selectedNode),
+        targetHandle: guessPrimaryInputHandle(findFirstDownstreamNode(canvas, selectedNode.id) ?? selectedNode),
+        nodeId: 'draft-secondary-llm',
+        nodeType: 'llm',
+        initialData: {
+          label: 'Body Writer',
+          config: {
+            text: '把当前单步产出拆成标题与正文两步。',
+          },
+        },
+      },
+      {
+        type: 'relabel_node',
+        nodeId: selectedNode.id,
+        label: 'Title Writer',
+      },
+      {
+        type: 'annotate_change',
+        nodeId: selectedNode.id,
+        note: '原单步已拆成更细的两步，方便后续单独调参。',
+      },
+    ]
+  }
+
+  if (intent === 'replace_model') {
+    const targetNode = selectedNode ?? findFirstAIGenNode(canvas.nodes)
+    if (targetNode) {
+      return [
+        {
+          type: 'replace_node',
+          nodeId: targetNode.id,
+          nextNodeType: targetNode.type,
+          configPatch: buildCheaperModelPatch(targetNode),
+          preserveConfigKeys: ['aspectRatio', 'size', 'mode', 'duration', 'showPreview'],
+        },
+        {
+          type: 'annotate_change',
+          nodeId: targetNode.id,
+          note: '替换为更便宜的模型组合，同时保留主链结构与关键配置。',
+        },
+        {
+          type: 'focus_nodes',
+          nodeIds: [targetNode.id],
+        },
+      ]
+    }
+  }
+
+  if (intent === 'change_output_count') {
+    const targetNode = selectedNode ?? findFirstNodeByType(canvas.nodes, 'image-gen')
+    if (targetNode) {
+      return [
+        {
+          type: 'batch_update_node_data',
+          nodeIds: [targetNode.id],
+          patch: {
+            config: {
+              count: 4,
+            },
+          },
+        },
+        {
+          type: 'relabel_node',
+          nodeId: targetNode.id,
+          label: `${targetNode.label} x4`,
+        },
+        {
+          type: 'annotate_change',
+          nodeId: targetNode.id,
+          note: '输出规格已调整为 4 个变体。',
+        },
+        {
+          type: 'focus_nodes',
+          nodeIds: [targetNode.id],
+        },
+      ]
+    }
+  }
+
+  if (intent === 'add_branch') {
+    const targetNode = selectedNode ?? findFirstNodeByType(canvas.nodes, 'image-gen')
+    if (targetNode) {
+      return [
+        {
+          type: 'duplicate_node_branch',
+          nodeId: targetNode.id,
+          count: 2,
+          strategy: 'style-variants',
+        },
+        {
+          type: 'annotate_change',
+          nodeId: targetNode.id,
+          note: '基于当前节点复制出变体分支，保留原主链作为基线。',
+        },
+        {
+          type: 'focus_nodes',
+          nodeIds: [targetNode.id],
+        },
+      ]
+    }
   }
 
   if (selectedNodeId && (normalized.includes('提示词') || normalized.includes('prompt'))) {
@@ -289,6 +499,18 @@ function buildSummary(
     return '我准备先做一个小范围配置修改提案，不直接动整张图。'
   }
 
+  if (operations[0]?.type === 'insert_between') {
+    return '我会在现有主链中间补一小步，而不是推翻重建整条流程。'
+  }
+
+  if (operations[0]?.type === 'replace_node') {
+    return '我会只替换目标节点的模型配置，尽量保留上下游连接和原链路。'
+  }
+
+  if (operations[0]?.type === 'batch_update_node_data') {
+    return '我准备做一次受控的小范围批量调参，并把改动粒度保持在可撤销范围内。'
+  }
+
   if (operations[0]?.type === 'run_workflow') {
     return '我会先把执行动作作为待确认提案，而不是直接替你运行。'
   }
@@ -301,6 +523,7 @@ function buildReasons(
   canvas: CanvasSummary,
   mode: AgentPlan['mode'],
   operations: WorkflowOperation[],
+  intent: AgentPlanIntent,
 ) {
   const reasons = []
 
@@ -322,6 +545,18 @@ function buildReasons(
     reasons.push('你当前的目标更像是在定位问题，所以我先收缩到问题节点而不是直接改图。')
   }
 
+  if (intent === 'add_step' || intent === 'split_step') {
+    reasons.push('这次更适合在现有主链上增量插入步骤，而不是整体重建。')
+  }
+
+  if (intent === 'replace_model') {
+    reasons.push('你的目标是替换模型而不是改结构，所以我优先保留上下游关系。')
+  }
+
+  if (intent === 'change_output_count') {
+    reasons.push('这属于输出规格改造，优先走局部参数 patch 更稳。')
+  }
+
   if (
     normalized.includes('图') ||
     normalized.includes('图片') ||
@@ -335,4 +570,64 @@ function buildReasons(
   }
 
   return reasons.slice(0, 3)
+}
+
+function findFirstNodeByType(nodes: CanvasSummaryNode[], type: string) {
+  return nodes.find((node) => node.type === type) ?? null
+}
+
+function findFirstAIGenNode(nodes: CanvasSummaryNode[]) {
+  return nodes.find((node) => ['image-gen', 'video-gen', 'audio-gen', 'llm'].includes(node.type)) ?? null
+}
+
+function findSingleUpstreamNode(canvas: CanvasSummary, targetId: string) {
+  const targetNode = canvas.nodes.find((node) => node.id === targetId)
+  if (!targetNode) return null
+
+  const index = canvas.nodes.findIndex((node) => node.id === targetId)
+  if (index <= 0) return null
+
+  return canvas.nodes[index - 1] ?? null
+}
+
+function findFirstDownstreamNode(canvas: CanvasSummary, sourceId: string) {
+  const index = canvas.nodes.findIndex((node) => node.id === sourceId)
+  if (index < 0 || index >= canvas.nodes.length - 1) return null
+  return canvas.nodes[index + 1] ?? null
+}
+
+function guessPrimaryInputHandle(node: CanvasSummaryNode | null) {
+  return node?.inputs[0]?.id
+}
+
+function guessPrimaryOutputHandle(node: CanvasSummaryNode | null) {
+  return node?.outputs[0]?.id
+}
+
+function buildCheaperModelPatch(node: CanvasSummaryNode) {
+  const config = node.configSummary
+  const currentProvider = typeof config.platformProvider === 'string' ? config.platformProvider : undefined
+
+  if (node.type === 'image-gen') {
+    return {
+      platformProvider: currentProvider === 'openrouter' ? 'openrouter' : 'openrouter',
+      platformModel: 'google/gemini-2.5-flash-image-preview',
+    }
+  }
+
+  if (node.type === 'video-gen') {
+    return {
+      platformProvider: 'kling',
+      platformModel: 'kling-v1-6',
+    }
+  }
+
+  if (node.type === 'llm') {
+    return {
+      platformProvider: 'openrouter',
+      platformModel: 'openai/gpt-4o-mini',
+    }
+  }
+
+  return {}
 }

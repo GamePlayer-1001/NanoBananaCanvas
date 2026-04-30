@@ -30,6 +30,18 @@ function describeOperation(operation: WorkflowOperation) {
       return `新增 ${operation.nodeType} 节点`
     case 'update_node_data':
       return `更新节点 ${operation.nodeId} 的局部配置`
+    case 'insert_between':
+      return `在 ${operation.source} 和 ${operation.target} 之间插入 ${operation.nodeType} 节点`
+    case 'replace_node':
+      return `将节点 ${operation.nodeId} 替换为 ${operation.nextNodeType} 方案`
+    case 'duplicate_node_branch':
+      return `从节点 ${operation.nodeId} 复制 ${operation.count} 条变体分支`
+    case 'batch_update_node_data':
+      return `批量更新 ${operation.nodeIds.length} 个节点的局部配置`
+    case 'relabel_node':
+      return `将节点 ${operation.nodeId} 重命名为 ${operation.label}`
+    case 'annotate_change':
+      return `为节点 ${operation.nodeId} 记录本次改动说明`
     case 'remove_node':
       return `删除节点 ${operation.nodeId}`
     case 'connect':
@@ -46,4 +58,3 @@ function describeOperation(operation: WorkflowOperation) {
         : '执行当前工作流'
   }
 }
-

@@ -170,8 +170,11 @@ export default function CanvasPage({
   const modeLabel = {
     create: tAgent('modeCreate'),
     update: tAgent('modeUpdate'),
+    repair: tAgent('modeUpdate'),
     diagnose: tAgent('modeDiagnose'),
     optimize: tAgent('modeOptimize'),
+    extend: tAgent('modeUpdate'),
+    template: tAgent('modeCreate'),
   }[mode]
 
   const quickActions = [
@@ -231,14 +234,22 @@ export default function CanvasPage({
     for (const event of terminalEvents) {
       if (emittedTerminalTaskIdsRef.current.has(event.taskId)) continue
       emittedTerminalTaskIdsRef.current.add(event.taskId)
-
-      appendMessage({
-        id: crypto.randomUUID(),
-        role: event.tone,
-        ...(event.tone === 'diagnosis' ? { severity: 'warning' as const } : {}),
-        text: event.message,
-        createdAt: new Date().toISOString(),
-      })
+      if (event.tone === 'diagnosis') {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'diagnosis',
+          severity: 'warning',
+          text: event.message,
+          createdAt: new Date().toISOString(),
+        })
+      } else {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: event.message,
+          createdAt: new Date().toISOString(),
+        })
+      }
     }
   }, [appendMessage, terminalEvents])
 
@@ -362,6 +373,12 @@ function toOperationLabel(type: string) {
     update_node_data: '修改节点配置',
     remove_node: '删除节点',
     connect: '新增连线',
+    insert_between: '插入中间步骤',
+    replace_node: '替换节点模型',
+    duplicate_node_branch: '复制变体分支',
+    batch_update_node_data: '批量更新参数',
+    relabel_node: '重命名节点',
+    annotate_change: '记录改动说明',
     disconnect: '移除连线',
     focus_nodes: '聚焦节点',
     request_prompt_confirmation: '提示词确认',
@@ -383,6 +400,18 @@ function toOperationDetail(
       return `计划删除节点 ${operation.nodeId}`
     case 'connect':
       return `计划连接 ${operation.source} -> ${operation.target}`
+    case 'insert_between':
+      return `计划在 ${operation.source} 和 ${operation.target} 之间插入 ${operation.nodeType}`
+    case 'replace_node':
+      return `计划将节点 ${operation.nodeId} 切换为 ${operation.nextNodeType} 方案`
+    case 'duplicate_node_branch':
+      return `计划从节点 ${operation.nodeId} 复制 ${operation.count} 条变体支线`
+    case 'batch_update_node_data':
+      return `计划批量更新 ${operation.nodeIds.length} 个节点`
+    case 'relabel_node':
+      return `计划将节点 ${operation.nodeId} 重命名为 ${operation.label}`
+    case 'annotate_change':
+      return `计划为节点 ${operation.nodeId} 追加改动说明`
     case 'disconnect':
       return `计划移除连线 ${operation.edgeId}`
     case 'focus_nodes':
@@ -397,8 +426,22 @@ function toOperationDetail(
 }
 
 function toOperationRisk(type: string): 'low' | 'medium' | 'high' {
-  if (type === 'remove_node' || type === 'run_workflow') return 'high'
-  if (type === 'request_prompt_confirmation' || type === 'update_node_data') return 'medium'
+  if (
+    type === 'remove_node' ||
+    type === 'run_workflow' ||
+    type === 'replace_node' ||
+    type === 'duplicate_node_branch'
+  ) {
+    return 'high'
+  }
+  if (
+    type === 'request_prompt_confirmation' ||
+    type === 'update_node_data' ||
+    type === 'insert_between' ||
+    type === 'batch_update_node_data'
+  ) {
+    return 'medium'
+  }
   return 'low'
 }
 

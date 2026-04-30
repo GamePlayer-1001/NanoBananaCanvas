@@ -25,7 +25,7 @@
 | M3 | 落图链路 | plan 可安全修改画布并自动保存 | [x] |
 | M4 | 提示词确认 | refine + confirm + execute 跑通 | [x] |
 | M5 | 诊断与收口 | diagnose、任务联动、体验打磨完成 | [x] |
-| M6 | 增量改造 | Agent 能对已有工作流做稳定、小中型增量改造 | [ ] |
+| M6 | 增量改造 | Agent 能对已有工作流做稳定、小中型增量改造 | [x] |
 | M7 | 模板对话化 | 模板选择、模板解释、模板改造主链打通 | [ ] |
 | M8 | 优化建议 | 成本/速度/结构优化建议与半自动修复打通 | [ ] |
 | M9 | 结果续写 | 基于输出资产自动建议下一步并可安全落图 | [ ] |
@@ -260,34 +260,34 @@
 
 ### Planner 增强
 
-- [ ] `AGENT-600` 扩展 `AgentMode`，细分 `update / optimize / extend / repair`
-- [ ] `AGENT-601` 为增量改造新增 `plan intent` 分类：加步骤 / 拆步骤 / 替换模型 / 改输出规模 / 补分支
-- [ ] `AGENT-602` 为 Planner 增加“保持现有主链”的系统约束，禁止默认全量重建
-- [ ] `AGENT-603` 为 Planner 增加“基于选中节点优先改造”的决策逻辑
-- [ ] `AGENT-604` 支持把一句自然语言拆成多步结构化 patch，而不是单操作聚焦
+- [x] `AGENT-600` 扩展 `AgentMode`，细分 `update / optimize / extend / repair`
+- [x] `AGENT-601` 为增量改造新增 `plan intent` 分类：加步骤 / 拆步骤 / 替换模型 / 改输出规模 / 补分支
+- [x] `AGENT-602` 为 Planner 增加“保持现有主链”的系统约束，禁止默认全量重建
+- [x] `AGENT-603` 为 Planner 增加“基于选中节点优先改造”的决策逻辑
+- [x] `AGENT-604` 支持把一句自然语言拆成多步结构化 patch，而不是单操作聚焦
 
 ### Operation 协议扩展
 
-- [ ] `AGENT-610` 新增 `insert_between` 操作，支持在两节点之间插入中间步骤
-- [ ] `AGENT-611` 新增 `duplicate_node_branch` 操作，支持生成变体分支
-- [ ] `AGENT-612` 新增 `replace_node` 操作，支持替换模型节点并保留上下游连接
-- [ ] `AGENT-613` 新增 `batch_update_node_data` 操作，支持多节点小范围参数批改
-- [ ] `AGENT-614` 新增 `relabel_node` / `annotate_change` 操作，提升改动可读性
+- [x] `AGENT-610` 新增 `insert_between` 操作，支持在两节点之间插入中间步骤
+- [x] `AGENT-611` 新增 `duplicate_node_branch` 操作，支持生成变体分支
+- [x] `AGENT-612` 新增 `replace_node` 操作，支持替换模型节点并保留上下游连接
+- [x] `AGENT-613` 新增 `batch_update_node_data` 操作，支持多节点小范围参数批改
+- [x] `AGENT-614` 新增 `relabel_node` / `annotate_change` 操作，提升改动可读性
 
 ### 落图与校验
 
-- [ ] `AGENT-620` 扩展 `validate-agent-plan.ts`，校验中间插入、替换节点、分支复制的安全性
-- [ ] `AGENT-621` 扩展 `apply-agent-plan.ts`，实现插入中间节点的断边重连
-- [ ] `AGENT-622` 实现替换节点时保留兼容端口与局部配置迁移
-- [ ] `AGENT-623` 实现批量改造时的分阶段回滚，避免单点失败污染整图
-- [ ] `AGENT-624` 为增量改造生成更细粒度的 change summary
+- [x] `AGENT-620` 扩展 `validate-agent-plan.ts`，校验中间插入、替换节点、分支复制的安全性
+- [x] `AGENT-621` 扩展 `apply-agent-plan.ts`，实现插入中间节点的断边重连
+- [x] `AGENT-622` 实现替换节点时保留兼容端口与局部配置迁移
+- [x] `AGENT-623` 实现批量改造时的分阶段回滚，避免单点失败污染整图
+- [x] `AGENT-624` 为增量改造生成更细粒度的 change summary
 
 ### M6 验收
 
-- [ ] `AGENT-630` 用户可说“在这个流程前面加一个风格分析步骤”
-- [ ] `AGENT-631` 用户可说“把这个图片节点换成更便宜的模型”
-- [ ] `AGENT-632` 用户可说“把输出改成 4 个变体”
-- [ ] `AGENT-633` 增量改造成功后原有主链不被意外破坏
+- [x] `AGENT-630` 用户可说“在这个流程前面加一个风格分析步骤”
+- [x] `AGENT-631` 用户可说“把这个图片节点换成更便宜的模型”
+- [x] `AGENT-632` 用户可说“把输出改成 4 个变体”
+- [x] `AGENT-633` 增量改造成功后原有主链不被意外破坏
 
 ---
 

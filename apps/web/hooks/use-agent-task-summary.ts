@@ -69,8 +69,8 @@ export function useAgentTaskSummary({
   }, [activeTask])
 
   const terminalEvents = useMemo(
-    () =>
-      workflowTasks.flatMap((task) => {
+    (): AgentTaskTerminalEvent[] =>
+      workflowTasks.flatMap<AgentTaskTerminalEvent>((task) => {
         if (task.status === 'completed') {
           return [{
             taskId: task.id,

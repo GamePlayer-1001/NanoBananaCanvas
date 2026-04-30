@@ -8,6 +8,12 @@
 export const AGENT_ALLOWED_OPERATIONS = [
   'add_node',
   'update_node_data',
+  'insert_between',
+  'replace_node',
+  'duplicate_node_branch',
+  'batch_update_node_data',
+  'relabel_node',
+  'annotate_change',
   'remove_node',
   'connect',
   'disconnect',
@@ -17,9 +23,19 @@ export const AGENT_ALLOWED_OPERATIONS = [
 ] as const
 
 export const AGENT_MAX_AUTO_OPERATIONS = 4
+export const AGENT_MAX_BRANCH_DUPLICATION_COUNT = 4
+export const AGENT_MAX_BATCH_UPDATE_NODE_COUNT = 6
 export const AGENT_MAX_SUMMARY_NODES = 12
 export const AGENT_MAX_SUMMARY_TEXT_LENGTH = 160
 export const AGENT_MAX_CONFIG_KEYS = 8
+
+export const AGENT_INCREMENTAL_INTENTS = [
+  'add_step',
+  'split_step',
+  'replace_model',
+  'change_output_count',
+  'add_branch',
+] as const
 
 export const AGENT_CONFIG_SUMMARY_KEYS = [
   'text',

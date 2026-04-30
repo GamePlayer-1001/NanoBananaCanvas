@@ -8,6 +8,7 @@
 
 import { addEdge, type Connection, type Edge, type Node, type Viewport } from '@xyflow/react'
 import { createNode } from '@/lib/utils/create-node'
+import { getNodeMeta } from '@/components/nodes/plugin-registry'
 import { isValidConnection } from '@/lib/utils/validate-connection'
 import { useHistoryStore } from '@/stores/use-history-store'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -128,6 +129,24 @@ async function applyOperation(
     case 'update_node_data':
       applyUpdateNodeData(operation, working)
       return
+    case 'insert_between':
+      applyInsertBetween(operation, working)
+      return
+    case 'replace_node':
+      applyReplaceNode(operation, working)
+      return
+    case 'duplicate_node_branch':
+      applyDuplicateNodeBranch(operation, working)
+      return
+    case 'batch_update_node_data':
+      applyBatchUpdateNodeData(operation, working)
+      return
+    case 'relabel_node':
+      applyRelabelNode(operation, working)
+      return
+    case 'annotate_change':
+      applyAnnotateChange(operation, working)
+      return
     case 'remove_node':
       applyRemoveNode(operation, working)
       return
@@ -199,6 +218,206 @@ function applyUpdateNodeData(
   }
 }
 
+function applyBatchUpdateNodeData(
+  operation: Extract<WorkflowOperation, { type: 'batch_update_node_data' }>,
+  working: WorkingFlow,
+) {
+  for (const nodeId of operation.nodeIds) {
+    applyUpdateNodeData(
+      {
+        type: 'update_node_data',
+        nodeId,
+        patch: operation.patch,
+      },
+      working,
+    )
+  }
+}
+
+function applyInsertBetween(
+  operation: Extract<WorkflowOperation, { type: 'insert_between' }>,
+  working: WorkingFlow,
+) {
+  const sourceId = resolveNodeId(operation.source, working.idMap)
+  const targetId = resolveNodeId(operation.target, working.idMap)
+  const sourceNode = working.nodes.find((node) => node.id === sourceId)
+  const targetNode = working.nodes.find((node) => node.id === targetId)
+
+  if (!sourceNode || !targetNode) {
+    throw new Error(`无法插入中间节点，目标链路不存在：${operation.source} -> ${operation.target}`)
+  }
+
+  const sourceEdgeIndex = working.edges.findIndex(
+    (edge) =>
+      edge.source === sourceId &&
+      edge.target === targetId &&
+      normalizeHandleId(edge.sourceHandle) === normalizeHandleId(operation.sourceHandle) &&
+      normalizeHandleId(edge.targetHandle) === normalizeHandleId(operation.targetHandle),
+  )
+
+  const middlePosition = {
+    x: (sourceNode.position.x + targetNode.position.x) / 2,
+    y: (sourceNode.position.y + targetNode.position.y) / 2,
+  }
+
+  const middleNode = createNode(operation.nodeType, middlePosition)
+  if (operation.initialData) {
+    middleNode.data = mergePatchedNodeData(middleNode.data, operation.initialData)
+  }
+  working.nodes.push(middleNode)
+
+  if (operation.nodeId) {
+    working.idMap.set(operation.nodeId, middleNode.id)
+  }
+
+  if (sourceEdgeIndex >= 0) {
+    working.edges.splice(sourceEdgeIndex, 1)
+  }
+
+  const middleMeta = getNodeMeta(operation.nodeType)
+  const middleInputHandle = middleMeta?.ports.inputs[0]?.id
+  const middleOutputHandle = middleMeta?.ports.outputs[0]?.id
+
+  applyConnect(
+    {
+      type: 'connect',
+      source: sourceId,
+      target: middleNode.id,
+      sourceHandle: operation.sourceHandle,
+      targetHandle: middleInputHandle,
+    },
+    working,
+  )
+
+  applyConnect(
+    {
+      type: 'connect',
+      source: middleNode.id,
+      target: targetId,
+      sourceHandle: middleOutputHandle,
+      targetHandle: operation.targetHandle,
+    },
+    working,
+  )
+}
+
+function applyReplaceNode(
+  operation: Extract<WorkflowOperation, { type: 'replace_node' }>,
+  working: WorkingFlow,
+) {
+  const targetNodeId = resolveNodeId(operation.nodeId, working.idMap)
+  const targetNode = working.nodes.find((node) => node.id === targetNodeId)
+  if (!targetNode) {
+    throw new Error(`无法替换节点，目标不存在：${operation.nodeId}`)
+  }
+
+  const meta = getNodeMeta(operation.nextNodeType)
+  if (!meta) {
+    throw new Error(`无法替换节点，未知节点类型：${operation.nextNodeType}`)
+  }
+
+  const currentConfig = isRecord(targetNode.data.config) ? targetNode.data.config : {}
+  const preservedConfig = operation.preserveConfigKeys?.reduce<Record<string, unknown>>((acc, key) => {
+    if (key in currentConfig) {
+      acc[key] = currentConfig[key]
+    }
+    return acc
+  }, {}) ?? currentConfig
+
+  targetNode.type = operation.nextNodeType
+  targetNode.data = {
+    ...targetNode.data,
+    label: meta.label,
+    type: meta.category,
+    config: {
+      ...meta.defaults,
+      ...preservedConfig,
+      ...(operation.configPatch ?? {}),
+    },
+  }
+}
+
+function applyDuplicateNodeBranch(
+  operation: Extract<WorkflowOperation, { type: 'duplicate_node_branch' }>,
+  working: WorkingFlow,
+) {
+  const sourceNodeId = resolveNodeId(operation.nodeId, working.idMap)
+  const sourceNode = working.nodes.find((node) => node.id === sourceNodeId)
+  if (!sourceNode) {
+    throw new Error(`无法复制分支，目标不存在：${operation.nodeId}`)
+  }
+
+  const incomingEdges = working.edges.filter((edge) => edge.target === sourceNodeId)
+  for (let index = 0; index < operation.count; index += 1) {
+    const clone = structuredClone(sourceNode)
+    clone.id = crypto.randomUUID()
+    clone.position = {
+      x: sourceNode.position.x + 260 * (index + 1),
+      y: sourceNode.position.y + 120 * (index + 1),
+    }
+    clone.selected = false
+    clone.data = {
+      ...clone.data,
+      label: `${sourceNode.data.label} Variant ${index + 1}`,
+      config: {
+        ...(isRecord(clone.data.config) ? clone.data.config : {}),
+        variantIndex: index + 1,
+        variantStrategy: operation.strategy ?? 'parallel-variants',
+      },
+    }
+    working.nodes.push(clone)
+
+    for (const edge of incomingEdges) {
+      applyConnect(
+        {
+          type: 'connect',
+          source: edge.source,
+          target: clone.id,
+          sourceHandle: edge.sourceHandle ?? undefined,
+          targetHandle: edge.targetHandle ?? undefined,
+        },
+        working,
+      )
+    }
+  }
+}
+
+function applyRelabelNode(
+  operation: Extract<WorkflowOperation, { type: 'relabel_node' }>,
+  working: WorkingFlow,
+) {
+  const targetNodeId = resolveNodeId(operation.nodeId, working.idMap)
+  const node = working.nodes.find((item) => item.id === targetNodeId)
+  if (!node) {
+    throw new Error(`无法重命名节点，目标不存在：${operation.nodeId}`)
+  }
+
+  node.data = {
+    ...node.data,
+    label: operation.label,
+  }
+}
+
+function applyAnnotateChange(
+  operation: Extract<WorkflowOperation, { type: 'annotate_change' }>,
+  working: WorkingFlow,
+) {
+  const targetNodeId = resolveNodeId(operation.nodeId, working.idMap)
+  const node = working.nodes.find((item) => item.id === targetNodeId)
+  if (!node) {
+    throw new Error(`无法记录改动说明，目标不存在：${operation.nodeId}`)
+  }
+
+  const config = isRecord(node.data.config) ? node.data.config : {}
+  node.data = {
+    ...node.data,
+    config: {
+      ...config,
+      agentAnnotation: operation.note,
+    },
+  }
+}
+
 function applyRemoveNode(
   operation: Extract<WorkflowOperation, { type: 'remove_node' }>,
   working: WorkingFlow,
@@ -222,8 +441,8 @@ function applyConnect(
   const connection: Connection = {
     source,
     target,
-      sourceHandle: operation.sourceHandle,
-      targetHandle: operation.targetHandle,
+    sourceHandle: operation.sourceHandle ?? null,
+    targetHandle: operation.targetHandle ?? null,
   }
 
   if (!isValidConnection(connection, working.nodes, working.edges)) {
@@ -289,6 +508,23 @@ function getDefaultPosition(index: number) {
   return {
     x: 120 + column * 260,
     y: 140 + row * 180,
+  }
+}
+
+function mergePatchedNodeData(
+  currentData: WorkflowNodeData,
+  patch: Record<string, unknown>,
+): WorkflowNodeData {
+  const currentConfig = isRecord(currentData.config) ? currentData.config : {}
+  const patchConfig = isRecord(patch.config) ? patch.config : {}
+
+  return {
+    ...currentData,
+    ...patch,
+    config: {
+      ...currentConfig,
+      ...patchConfig,
+    },
   }
 }
 

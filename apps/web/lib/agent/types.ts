@@ -8,19 +8,41 @@
 import type { Edge, Node } from '@xyflow/react'
 import type { PortDefinition, WorkflowNodeData } from '@/types'
 
-export type AgentMode = 'create' | 'update' | 'diagnose' | 'optimize'
+export type AgentMode =
+  | 'create'
+  | 'update'
+  | 'repair'
+  | 'diagnose'
+  | 'optimize'
+  | 'extend'
+  | 'template'
 
 export type AgentSessionStatus =
   | 'idle'
   | 'understanding'
   | 'planning'
+  | 'comparing'
   | 'patch-ready'
   | 'awaiting-confirmation'
   | 'applying-patch'
   | 'ready-to-run'
   | 'running'
   | 'diagnosing'
+  | 'optimizing'
+  | 'replaying'
   | 'error'
+
+export type AgentPlanIntent =
+  | 'create_workflow'
+  | 'add_step'
+  | 'split_step'
+  | 'replace_model'
+  | 'change_output_count'
+  | 'add_branch'
+  | 'repair_flow'
+  | 'optimize_cost'
+  | 'optimize_speed'
+  | 'explain_flow'
 
 export interface AgentSelectionContext {
   nodeId?: string
@@ -68,6 +90,44 @@ export type WorkflowOperation =
       targetHandle?: string
     }
   | {
+      type: 'insert_between'
+      source: string
+      target: string
+      nodeId?: string
+      nodeType: string
+      initialData?: Record<string, unknown>
+      sourceHandle?: string
+      targetHandle?: string
+    }
+  | {
+      type: 'replace_node'
+      nodeId: string
+      nextNodeType: string
+      configPatch?: Record<string, unknown>
+      preserveConfigKeys?: string[]
+    }
+  | {
+      type: 'duplicate_node_branch'
+      nodeId: string
+      count: number
+      strategy?: 'parallel-variants' | 'style-variants'
+    }
+  | {
+      type: 'batch_update_node_data'
+      nodeIds: string[]
+      patch: Record<string, unknown>
+    }
+  | {
+      type: 'relabel_node'
+      nodeId: string
+      label: string
+    }
+  | {
+      type: 'annotate_change'
+      nodeId: string
+      note: string
+    }
+  | {
       type: 'disconnect'
       edgeId: string
     }
@@ -89,6 +149,7 @@ export interface AgentPlan {
   id: string
   goal: string
   mode: AgentMode
+  intent?: AgentPlanIntent
   summary: string
   reasons: string[]
   requiresConfirmation: boolean
