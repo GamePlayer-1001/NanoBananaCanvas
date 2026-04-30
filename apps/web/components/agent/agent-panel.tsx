@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 const DEFAULT_WIDTH = 600
 const MIN_WIDTH = 510
 const MAX_WIDTH = 840
-const DEFAULT_POSITION = { x: 0, y: 0 }
+const DEFAULT_POSITION = { x: -24, y: 0 }
 
 interface AgentPanelProps {
   header?: ReactNode
@@ -49,6 +49,7 @@ export function AgentPanel({
     pointerId: number
     startX: number
     startWidth: number
+    originX: number
   } | null>(null)
 
   useEffect(() => {
@@ -68,7 +69,12 @@ export function AgentPanel({
           MAX_WIDTH,
           Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX),
         )
+        const widthDelta = nextWidth - resizeRef.current.startWidth
         setWidth(nextWidth)
+        setPosition((current) => ({
+          ...current,
+          x: resizeRef.current?.originX ?? current.x - widthDelta,
+        }))
       }
     }
 
@@ -108,6 +114,7 @@ export function AgentPanel({
       pointerId: event.pointerId,
       startX: event.clientX,
       startWidth: width,
+      originX: position.x,
     }
   }
 
@@ -118,7 +125,7 @@ export function AgentPanel({
     <div
       ref={shellRef}
       className={cn(
-        'pointer-events-none absolute right-6 bottom-6 z-40 hidden lg:block',
+        'pointer-events-none absolute bottom-6 left-[calc(100%-24px)] z-40 hidden lg:block',
         className,
       )}
       style={{
@@ -137,13 +144,11 @@ export function AgentPanel({
           data-agent-panel-action="true"
           aria-label="Resize agent panel"
           className={cn(
-            'absolute inset-y-5 left-0 hidden w-5 cursor-ew-resize items-center justify-center lg:flex',
+            'absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block',
             isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
           )}
           onPointerDown={startResize}
-        >
-          <span className="h-20 w-1 rounded-full bg-indigo-500/20 transition hover:bg-indigo-500/40" />
-        </button>
+        />
 
         <div
           className={cn(
