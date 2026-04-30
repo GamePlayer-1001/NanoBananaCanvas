@@ -8,6 +8,10 @@
 
 import { TASK_CONFIG } from '@nano-banana/shared'
 import { ErrorCode, WorkflowError } from '@/lib/errors'
+import {
+  findGuestRuntimeConfig,
+  isGuestModelConfigId,
+} from '@/lib/guest-model-config'
 import { createLogger } from '@/lib/logger'
 import { getNodePorts } from '@/components/nodes/plugin-registry'
 import { resolveNodeExecutionTarget } from '@/lib/ai-node-config'
@@ -152,6 +156,10 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   const maxTokens = (config.maxTokens as number) ?? 1024
   const systemPrompt = (config.systemPrompt as string) ?? ''
   const executionMode = target.executionMode
+  const guestUserKeyConfig = resolveGuestUserKeyConfig(
+    target.capability,
+    target.configId,
+  )
 
   /* ── 收集 prompt：优先上游输入，其次 config ────── */
   const promptText = (inputs['prompt-in'] as string) ?? ''
@@ -191,6 +199,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
           capability: target.capability,
           modelId: target.modelId,
           configId: target.configId,
+          guestUserKeyConfig,
           messages,
           executionMode,
           temperature,
@@ -203,6 +212,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
           capability: target.capability,
           modelId: target.modelId,
           configId: target.configId,
+          guestUserKeyConfig,
           messages,
           executionMode,
           temperature,
@@ -237,6 +247,10 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const size = (config.size as string) ?? '1k'
   const aspectRatio = (config.aspectRatio as string) ?? '1:1'
   const executionMode = target.executionMode
+  const guestUserKeyConfig = resolveGuestUserKeyConfig(
+    target.capability,
+    target.configId,
+  )
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const referenceImage = (inputs['image-in'] as string) || undefined
 
@@ -264,6 +278,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     capability: target.capability,
     modelId: target.modelId,
     configId: target.configId,
+    guestUserKeyConfig,
     executionMode,
     input: { prompt, size, aspectRatio, imageUrl: referenceImage },
     outputType: 'image',
@@ -285,6 +300,10 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const config = data.config
   const target = resolveNodeExecutionTarget('video-gen', config)
   const executionMode = target.executionMode
+  const guestUserKeyConfig = resolveGuestUserKeyConfig(
+    target.capability,
+    target.configId,
+  )
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const imageUrl = (inputs['image-in'] as string) || undefined
 
@@ -312,6 +331,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
     capability: target.capability,
     modelId: target.modelId,
     configId: target.configId,
+    guestUserKeyConfig,
     executionMode,
     input: {
       prompt,
@@ -338,6 +358,10 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const config = data.config
   const target = resolveNodeExecutionTarget('audio-gen', config)
   const executionMode = target.executionMode
+  const guestUserKeyConfig = resolveGuestUserKeyConfig(
+    target.capability,
+    target.configId,
+  )
   const voice = (config.voice as string) ?? 'alloy'
   const speed = (config.speed as number) ?? 1.0
   const text = (inputs['text-in'] as string) ?? ''
@@ -366,6 +390,7 @@ async function executeAudioGen(ctx: NodeExecutionContext): Promise<NodeExecution
     capability: target.capability,
     modelId: target.modelId,
     configId: target.configId,
+    guestUserKeyConfig,
     executionMode,
     input: { text, voice, speed },
     outputType: 'audio',
@@ -574,6 +599,7 @@ interface ExecuteLLMApiParams {
   capability?: 'text' | 'image' | 'video' | 'audio'
   modelId?: string
   configId?: string
+  guestUserKeyConfig?: ReturnType<typeof findGuestRuntimeConfig>
   messages: ChatMessage[]
   executionMode: 'platform' | 'user_key'
   temperature: number
@@ -586,7 +612,22 @@ async function executeLLMViaApi(params: ExecuteLLMApiParams): Promise<string> {
   const response = await fetch('/api/ai/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      ...body,
+      guestUserKeyConfig: body.guestUserKeyConfig
+        ? {
+            configId: body.guestUserKeyConfig.configId,
+            capability: body.guestUserKeyConfig.capability,
+            providerKind: body.guestUserKeyConfig.providerKind,
+            providerId: body.guestUserKeyConfig.providerId,
+            apiKey: body.guestUserKeyConfig.apiKey,
+            secretKey: body.guestUserKeyConfig.secretKey,
+            baseUrl: body.guestUserKeyConfig.baseUrl,
+            modelId: body.guestUserKeyConfig.modelId,
+            imageCapabilities: body.guestUserKeyConfig.imageCapabilities,
+          }
+        : undefined,
+    }),
     signal,
   })
 
@@ -621,7 +662,22 @@ async function executeLLMViaStreamApi(
   const response = await fetch('/api/ai/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      ...body,
+      guestUserKeyConfig: body.guestUserKeyConfig
+        ? {
+            configId: body.guestUserKeyConfig.configId,
+            capability: body.guestUserKeyConfig.capability,
+            providerKind: body.guestUserKeyConfig.providerKind,
+            providerId: body.guestUserKeyConfig.providerId,
+            apiKey: body.guestUserKeyConfig.apiKey,
+            secretKey: body.guestUserKeyConfig.secretKey,
+            baseUrl: body.guestUserKeyConfig.baseUrl,
+            modelId: body.guestUserKeyConfig.modelId,
+            imageCapabilities: body.guestUserKeyConfig.imageCapabilities,
+          }
+        : undefined,
+    }),
     signal,
   })
 
@@ -689,6 +745,7 @@ interface ExecuteTaskOutputApiParams {
   capability?: 'text' | 'image' | 'video' | 'audio'
   modelId?: string
   configId?: string
+  guestUserKeyConfig?: ReturnType<typeof findGuestRuntimeConfig>
   executionMode: 'platform' | 'user_key'
   input: Record<string, unknown>
   outputType: 'image' | 'video' | 'audio'
@@ -700,6 +757,17 @@ function getTaskPollingPlan(taskType: ExecuteTaskOutputApiParams['taskType']) {
   const config = TASK_CONFIG[taskType]
   const intervalMs = Math.max(1_000, config.pollIntervalMs)
   return { intervalMs }
+}
+
+function resolveGuestUserKeyConfig(
+  capability: 'text' | 'image' | 'video' | 'audio' | undefined,
+  configId?: string,
+) {
+  if (!capability || !configId || !isGuestModelConfigId(configId)) {
+    return undefined
+  }
+
+  return findGuestRuntimeConfig(capability, configId) ?? undefined
 }
 
 async function executeTaskOutputViaApi(
@@ -716,6 +784,19 @@ async function executeTaskOutputViaApi(
       capability: params.capability,
       modelId: params.modelId,
       configId: params.configId,
+      guestUserKeyConfig: params.guestUserKeyConfig
+        ? {
+            configId: params.guestUserKeyConfig.configId,
+            capability: params.guestUserKeyConfig.capability,
+            providerKind: params.guestUserKeyConfig.providerKind,
+            providerId: params.guestUserKeyConfig.providerId,
+            apiKey: params.guestUserKeyConfig.apiKey,
+            secretKey: params.guestUserKeyConfig.secretKey,
+            baseUrl: params.guestUserKeyConfig.baseUrl,
+            modelId: params.guestUserKeyConfig.modelId,
+            imageCapabilities: params.guestUserKeyConfig.imageCapabilities,
+          }
+        : undefined,
       executionMode: params.executionMode,
       input: params.input,
     }),

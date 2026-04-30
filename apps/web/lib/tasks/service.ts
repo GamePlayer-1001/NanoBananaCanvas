@@ -98,6 +98,23 @@ export interface SubmitTaskParams {
   capability?: NodeCapability
   modelId?: string
   configId?: string
+  guestUserKeyConfig?: {
+    configId?: string
+    capability: NodeCapability
+    providerKind:
+      | 'openai-compatible'
+      | 'openrouter'
+      | 'google-image'
+      | 'gemini'
+      | 'kling'
+      | 'openai-audio'
+    providerId: string
+    apiKey: string
+    modelId: string
+    baseUrl?: string
+    secretKey?: string
+    imageCapabilities?: ImageModelCapabilities
+  }
   executionMode: ExecutionMode
   input: Record<string, unknown>
   workflowId?: string
@@ -902,6 +919,7 @@ export async function submitTask(
     capability,
     modelId,
     configId,
+    guestUserKeyConfig,
     executionMode,
     input,
     workflowId,
@@ -1005,6 +1023,7 @@ export async function submitTask(
         capability as NodeCapability,
         configId,
         runtime,
+        guestUserKeyConfig,
       )
       apiKey =
         runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
@@ -1479,8 +1498,23 @@ async function getUserTaskRuntimeConfig(
   capability: NodeCapability,
   configId?: string,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
+  guestConfig?: SubmitTaskParams['guestUserKeyConfig'],
 ): Promise<UserModelRuntimeConfig> {
   try {
+    if (guestConfig) {
+      return {
+        configId: guestConfig.configId?.trim() || `guest_${capability}`,
+        capability: guestConfig.capability,
+        providerKind: guestConfig.providerKind,
+        providerId: guestConfig.providerId,
+        apiKey: guestConfig.apiKey,
+        modelId: guestConfig.modelId,
+        baseUrl: guestConfig.baseUrl,
+        secretKey: guestConfig.secretKey,
+        imageCapabilities: guestConfig.imageCapabilities,
+      }
+    }
+
     const keyRow = await findUserConfigRow(db, userId, capability, configId, runtime)
 
     if (!keyRow) {

@@ -222,7 +222,13 @@ async function executeWithUserKey(
   startTime: number,
 ) {
   const capability = params.capability as string
-  const runtimeConfig = await getUserRuntimeConfig(db, userId, capability, params.configId)
+  const runtimeConfig = await getUserRuntimeConfig(
+    db,
+    userId,
+    capability,
+    params.configId,
+    params.guestUserKeyConfig,
+  )
 
   try {
     const provider = getUserKeyProvider(runtimeConfig)
@@ -248,10 +254,12 @@ async function executeWithUserKey(
     })
 
     // 更新 last_used_at
-    await db
-      .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
-      .bind(userId, runtimeConfig.configId)
-      .run()
+    if (!params.guestUserKeyConfig) {
+      await db
+        .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
+        .bind(userId, runtimeConfig.configId)
+        .run()
+    }
 
     // 写日志
     await writeUsageLog(db, {
@@ -298,7 +306,22 @@ async function getUserRuntimeConfig(
   userId: string,
   capability: string,
   configId?: string,
+  guestConfig?: ReturnType<typeof aiExecuteSchema.parse>['guestUserKeyConfig'],
 ): Promise<UserModelRuntimeConfig> {
+  if (guestConfig) {
+    return {
+      configId: guestConfig.configId?.trim() || `guest_${capability}`,
+      capability: guestConfig.capability,
+      providerKind: guestConfig.providerKind,
+      providerId: guestConfig.providerId,
+      apiKey: guestConfig.apiKey,
+      modelId: guestConfig.modelId,
+      baseUrl: guestConfig.baseUrl,
+      secretKey: guestConfig.secretKey,
+      imageCapabilities: guestConfig.imageCapabilities,
+    }
+  }
+
   const keyRow = await findUserConfigRow(db, userId, capability, configId)
 
   if (!keyRow) {

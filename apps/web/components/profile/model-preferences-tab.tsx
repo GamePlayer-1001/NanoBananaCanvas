@@ -1,9 +1,10 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @tanstack/react-query 的 query/mutation，
  *          依赖 sonner 的 toast，依赖 @/hooks/use-model-configs / use-user，
- *          依赖 @/i18n/navigation 的 Link，依赖 @/lib/model-config-catalog
+ *          依赖 @/i18n/navigation 的 Link，依赖 @/lib/model-config-catalog，
+ *          依赖 @/lib/guest-model-config 的本地临时配置存储
  * [OUTPUT]: 对外提供 ModelPreferencesTab API 接入配置面板
- * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的多条 API 接入配置，支持修改/测试/删除
+ * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的多条配置；登录用户写账户级配置，访客写本机临时测试配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -25,7 +26,10 @@ import { toast } from 'sonner'
 
 import { useModelConfigs, type ModelConfigItem } from '@/hooks/use-model-configs'
 import { useCurrentUser } from '@/hooks/use-user'
-import { Link } from '@/i18n/navigation'
+import {
+  deleteGuestModelConfig,
+  upsertGuestModelConfig,
+} from '@/lib/guest-model-config'
 import {
   IMAGE_ASPECT_RATIO_OPTIONS,
   IMAGE_SIZE_OPTIONS,
@@ -75,6 +79,21 @@ async function saveApiConfig(payload: DraftState) {
   }
 }
 
+async function saveGuestApiConfig(payload: DraftState) {
+  upsertGuestModelConfig({
+    configId: payload.configId ?? payload.tempId,
+    capability: payload.capability,
+    providerKind: payload.providerKind,
+    providerId: payload.providerId,
+    apiKey: payload.apiKey,
+    secretKey: payload.secretKey,
+    baseUrl: payload.baseUrl,
+    modelId: payload.modelId,
+    label: payload.name,
+    imageCapabilities: payload.imageCapabilities,
+  })
+}
+
 async function testApiConfig(configId: string) {
   const res = await fetch(`/api/settings/api-keys/${configId}`, { method: 'POST' })
   const body = (await res.json()) as {
@@ -95,6 +114,10 @@ async function deleteApiConfig(configId: string) {
   if (!res.ok) {
     throw new Error(body.error?.message ?? 'Failed to delete API config')
   }
+}
+
+async function deleteGuestApiConfig(configId: string) {
+  deleteGuestModelConfig(configId)
 }
 
 function createDraft(capability: CapabilityId, saved?: ModelConfigItem): DraftState {
@@ -138,6 +161,7 @@ export function ModelPreferencesTab() {
     isLoading,
     isError,
     error,
+    isGuestMode,
     getConfigsByCapability,
     getConfigById,
   } = useModelConfigs()
@@ -154,7 +178,8 @@ export function ModelPreferencesTab() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: (payload: DraftState) => saveApiConfig(payload),
+    mutationFn: (payload: DraftState) =>
+      isGuestMode ? saveGuestApiConfig(payload) : saveApiConfig(payload),
     onSuccess: async (_data, draft) => {
       setDrafts((current) => {
         const next = { ...current }
@@ -187,7 +212,8 @@ export function ModelPreferencesTab() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (configId: string) => deleteApiConfig(configId),
+    mutationFn: (configId: string) =>
+      isGuestMode ? deleteGuestApiConfig(configId) : deleteApiConfig(configId),
     onSuccess: async (_data, configId) => {
       setDrafts((current) => {
         const next = { ...current }
@@ -266,15 +292,19 @@ export function ModelPreferencesTab() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-foreground">{t('modelPreferences')}</h3>
-        <p className="text-sm leading-6 text-muted-foreground">{t('apiConfigDesc')}</p>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {isGuestMode ? t('guestApiConfigDesc') : t('apiConfigDesc')}
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/20 p-4">
         <div className="flex items-start gap-3">
           <ShieldCheck size={18} className="mt-0.5 text-brand-500" />
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">{t('apiConfigSecurityTitle')}</p>
-            <p>{t('apiConfigSecurityBody')}</p>
+            <p className="font-medium text-foreground">
+              {isGuestMode ? t('guestApiConfigSecurityTitle') : t('apiConfigSecurityTitle')}
+            </p>
+            <p>{isGuestMode ? t('guestApiConfigSecurityBody') : t('apiConfigSecurityBody')}</p>
           </div>
         </div>
       </div>
@@ -284,24 +314,18 @@ export function ModelPreferencesTab() {
           <div className="space-y-3">
             <div className="space-y-1">
               <p className="text-sm font-semibold text-amber-950">
-                {t('accountLoginRequiredTitle')}
+                {t('guestTestingModeTitle')}
               </p>
               <p className="text-sm leading-6 text-amber-800">
-                {t('accountLoginRequiredBody')}
+                {t('guestTestingModeBody')}
               </p>
             </div>
-
-            <Link
-              href="/sign-in"
-              className="inline-flex items-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
-            >
-              {t('accountLoginRequiredAction')}
-            </Link>
+            <p className="text-xs leading-5 text-amber-700">{t('guestTestingModeHint')}</p>
           </div>
         </div>
       ) : null}
 
-      {currentUser && !currentUser.isAuthenticated ? null : isLoading ? (
+      {isLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 size={14} className="animate-spin" />
           {t('apiConfigLoading')}
@@ -429,9 +453,10 @@ export function ModelPreferencesTab() {
                               type="button"
                               onClick={() => {
                                 if (!configId) return
+                                if (isGuestMode) return
                                 testMutation.mutate(configId)
                               }}
-                              disabled={isTesting}
+                              disabled={isTesting || isGuestMode}
                               className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {isTesting ? (
@@ -439,7 +464,7 @@ export function ModelPreferencesTab() {
                               ) : (
                                 <RefreshCw size={12} />
                               )}
-                              {t('testApiConfig')}
+                              {isGuestMode ? t('guestConfigTestNotNeeded') : t('testApiConfig')}
                             </button>
 
                             <button
