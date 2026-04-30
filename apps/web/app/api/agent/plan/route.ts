@@ -383,6 +383,14 @@ function buildIncrementalOperations(
     }
   }
 
+  if (selectedNode && shouldPatchSelectedNodePrompt(normalized, selectedNode)) {
+    return buildSelectedNodePromptOperations(normalized, selectedNode)
+  }
+
+  if (selectedNode && shouldOptimizeSelectedNode(normalized)) {
+    return buildSelectedNodeOptimizationOperations(normalized, selectedNode)
+  }
+
   if (intent === 'change_output_count') {
     const targetNode = selectedNode ?? findFirstNodeByType(canvas.nodes, 'image-gen')
     if (targetNode) {
@@ -437,19 +445,14 @@ function buildIncrementalOperations(
     }
   }
 
-  if (selectedNodeId && (normalized.includes('提示词') || normalized.includes('prompt'))) {
-    return [
-      {
-        type: 'update_node_data',
-        nodeId: selectedNodeId,
-        patch: {
-          promptDraft: '根据用户新目标生成一版更新后的提示词草稿',
-        },
-      },
-    ]
-  }
-
   if (normalized.includes('运行') || normalized.includes('执行')) {
+    if (selectedNodeId && (normalized.includes('从这个节点') || normalized.includes('当前节点') || normalized.includes('选中节点'))) {
+      return [
+        { type: 'focus_nodes', nodeIds: [selectedNodeId] },
+        { type: 'run_workflow', scope: 'from-node', nodeId: selectedNodeId },
+      ]
+    }
+
     return [{ type: 'run_workflow', scope: 'all' }]
   }
 
@@ -573,6 +576,10 @@ function buildReasons(
     reasons.push('你的目标是替换模型而不是改结构，所以我优先保留上下游关系。')
   }
 
+  if (canvas.selectionContext?.nodeLabel) {
+    reasons.push(`当前已选中节点「${canvas.selectionContext.nodeLabel}」，我会优先围绕这个局部上下文生成提案。`)
+  }
+
   if (intent === 'change_output_count') {
     reasons.push('这属于输出规格改造，优先走局部参数 patch 更稳。')
   }
@@ -590,6 +597,133 @@ function buildReasons(
   }
 
   return reasons.slice(0, 3)
+}
+
+function shouldPatchSelectedNodePrompt(normalized: string, selectedNode: CanvasSummaryNode) {
+  return (
+    (normalized.includes('提示词') || normalized.includes('prompt') || normalized.includes('更写实') || normalized.includes('更真实')) &&
+    ['text-input', 'llm', 'image-gen', 'video-gen'].includes(selectedNode.type)
+  )
+}
+
+function buildSelectedNodePromptOperations(normalized: string, selectedNode: CanvasSummaryNode): WorkflowOperation[] {
+  const promptValue = buildSelectedNodePromptDraft(normalized, selectedNode)
+
+  return [
+    {
+      type: 'update_node_data',
+      nodeId: selectedNode.id,
+      patch: {
+        config: selectedNode.type === 'text-input'
+          ? { text: promptValue }
+          : { prompt: promptValue },
+      },
+    },
+    {
+      type: 'annotate_change',
+      nodeId: selectedNode.id,
+      note: '只调整当前选中节点的提示词方向，不改整张图的结构。',
+    },
+    {
+      type: 'focus_nodes',
+      nodeIds: [selectedNode.id],
+    },
+  ]
+}
+
+function buildSelectedNodePromptDraft(normalized: string, selectedNode: CanvasSummaryNode) {
+  const basePrompt =
+    String(
+      selectedNode.configSummary.text ??
+      selectedNode.configSummary.prompt ??
+      selectedNode.label,
+    ).trim() || selectedNode.label
+
+  if (normalized.includes('更写实') || normalized.includes('更真实')) {
+    return `${basePrompt}，强调真实摄影质感、自然光、材质细节与镜头语言`
+  }
+
+  if (normalized.includes('更快')) {
+    return `${basePrompt}，收缩画面复杂度，减少主体数量，优先稳定快速出图`
+  }
+
+  if (normalized.includes('更便宜')) {
+    return `${basePrompt}，保持核心构图，弱化高成本细节，优先低成本稳定生成`
+  }
+
+  return `${basePrompt}，根据当前目标补齐一版更清晰可执行的提示词`
+}
+
+function shouldOptimizeSelectedNode(normalized: string) {
+  return normalized.includes('更便宜') || normalized.includes('更快')
+}
+
+function buildSelectedNodeOptimizationOperations(
+  normalized: string,
+  selectedNode: CanvasSummaryNode,
+): WorkflowOperation[] {
+  const patch: Record<string, unknown> = {}
+  const noteParts: string[] = []
+
+  if (normalized.includes('更便宜')) {
+    patch.platformModel = inferLowerCostModel(selectedNode)
+    noteParts.push('切到更省钱的模型')
+  }
+
+  if (normalized.includes('更快')) {
+    patch.platformModel = inferFasterModel(selectedNode, patch.platformModel)
+    patch.quality = 'fast'
+    noteParts.push('收缩到更快的执行规格')
+  }
+
+  return [
+    {
+      type: 'update_node_data',
+      nodeId: selectedNode.id,
+      patch: {
+        config: patch,
+      },
+    },
+    {
+      type: 'annotate_change',
+      nodeId: selectedNode.id,
+      note: `只优化当前节点：${noteParts.join('，')}。`,
+    },
+    {
+      type: 'focus_nodes',
+      nodeIds: [selectedNode.id],
+    },
+  ]
+}
+
+function inferLowerCostModel(selectedNode: CanvasSummaryNode) {
+  const currentModel = String(selectedNode.configSummary.platformModel ?? '')
+
+  if (selectedNode.type === 'image-gen') {
+    return currentModel.includes('flux') ? 'black-forest-labs/flux-schnell' : 'openai/gpt-image-1-mini'
+  }
+
+  if (selectedNode.type === 'video-gen') {
+    return 'kling-v1-6'
+  }
+
+  return 'openai/gpt-4o-mini'
+}
+
+function inferFasterModel(selectedNode: CanvasSummaryNode, nextModel?: unknown) {
+  if (typeof nextModel === 'string' && nextModel.trim()) {
+    return nextModel
+  }
+
+  if (selectedNode.type === 'image-gen') {
+    return 'black-forest-labs/flux-schnell'
+  }
+
+  if (selectedNode.type === 'video-gen') {
+    return 'kling-v1-6'
+  }
+
+  return 'openai/gpt-4o-mini'
 }
 
 function assetKindLabel(kind: 'image' | 'video' | 'audio' | 'text') {

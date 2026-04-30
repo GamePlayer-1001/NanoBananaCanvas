@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 的 plan/diagnose/explain/apply/prompt refine 链路，
  *          依赖 @/stores/use-agent-store 与 @/stores/use-flow-store 的会话/画布真相源
- * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan|diagnose|explain -> prompt confirm -> apply -> run 的高层动作
+ * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan|diagnose|explain -> prompt confirm -> apply -> run 的高层动作，并支持节点级局部执行
  * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，负责右侧提案、诊断与左侧落图之间的安全桥接
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -41,7 +41,7 @@ export function useAgentSession({
   locale,
 }: UseAgentSessionOptions) {
   const tAgent = useTranslations('agentPanel')
-  const { execute } = useWorkflowExecutor(workflowId)
+  const { execute, executeFromNode } = useWorkflowExecutor(workflowId)
   const mode = useAgentStore((state) => state.mode)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
   const appendMessage = useAgentStore((state) => state.appendMessage)
@@ -307,9 +307,14 @@ export function useAgentSession({
     try {
       const result = await applyAgentPlan(planOverride, {
         workflowId,
-        runWorkflow: async (scope) => {
+        runWorkflow: async (scope, nodeId) => {
           if (scope === 'all') {
             await execute()
+            return
+          }
+
+          if (scope === 'from-node' && nodeId) {
+            await executeFromNode(nodeId)
           }
         },
       })
@@ -482,7 +487,8 @@ export function useAgentSession({
 
     operations.push({
       type: 'run_workflow',
-      scope: 'all',
+      scope: 'from-node',
+      nodeId: payload.targetNodeId,
     })
 
     return {

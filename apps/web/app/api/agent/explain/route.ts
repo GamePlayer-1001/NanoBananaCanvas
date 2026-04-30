@@ -57,13 +57,38 @@ function buildExplanation(
   }
 
   if (selectedNode) {
+    const selectionContext = canvasSummary.selectionContext
+    const inputLabels =
+      selectionContext?.inputs?.map((item) => item.label).join('、') ||
+      selectedNode.inputs.map((item) => item.label).join('、') ||
+      '上游输入'
+    const outputLabels =
+      selectionContext?.outputs?.map((item) => item.label).join('、') ||
+      selectedNode.outputs.map((item) => item.label).join('、') ||
+      '结果'
+    const keyConfigEntries = Object.entries(selectionContext?.keyConfig ?? {})
+      .slice(0, 3)
+      .map(([key, value]) => `${key}=${String(value)}`)
+    const keyConfigText =
+      keyConfigEntries.length > 0
+        ? `当前关键配置主要是 ${keyConfigEntries.join('，')}。`
+        : '当前还没有特别突出的关键配置。'
+    const resultText = selectionContext?.latestResultSummary
+      ? `最近结果上，它已经产出：${selectionContext.latestResultSummary}`
+      : '最近结果上，它还没有明显的稳定产出。'
+    const executionText = selectionContext?.executionHint
+      ? selectionContext.executionHint
+      : '执行态上暂时没有额外异常线索。'
     const templateText = template
       ? `它属于模板“${template.name}”当前改造链的一部分。`
       : '它当前主要反映的是这张工作流里的局部职责。'
 
     return [
       `当前选中的节点是“${selectedNode.label}”。`,
-      `它的类型是 ${selectedNode.type}，主要负责接收 ${selectedNode.inputs.map((item) => item.label).join('、') || '上游输入'}，再输出 ${selectedNode.outputs.map((item) => item.label).join('、') || '结果'}。`,
+      `它的类型是 ${selectedNode.type}，主要负责接收 ${inputLabels}，再输出 ${outputLabels}。`,
+      keyConfigText,
+      resultText,
+      executionText,
       templateText,
       `从当前画布来看，它处在整条工作流的局部语境里，更适合围绕这个节点继续细化，而不是一次性大改整张图。`,
     ].join('')

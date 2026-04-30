@@ -23,6 +23,7 @@ import { AgentConversation } from '@/components/agent/agent-conversation'
 import { AgentHeader } from '@/components/agent/agent-header'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
+import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
 import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
 import { useWorkflow } from '@/hooks/use-workflows'
@@ -66,6 +67,7 @@ export default function CanvasPage({
   const status = useAgentStore((state) => state.status)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
   const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
+  const selectionContext = useAgentStore((state) => state.selectionContext)
   const errorMessage = useAgentStore((state) => state.errorMessage)
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
   const appendMessage = useAgentStore((state) => state.appendMessage)
@@ -104,6 +106,10 @@ export default function CanvasPage({
       }),
     [id, template, workflowName],
   )
+  useAgentSelectionContext({
+    workflowId: id,
+    workflowName,
+  })
 
   const conversationItems = useMemo(
     () =>
@@ -322,6 +328,8 @@ export default function CanvasPage({
                   contextLabel={
                     errorMessage
                       ? tAgent('contextError', { message: errorMessage })
+                      : selectionContext?.nodeLabel
+                        ? `已选中节点：${selectionContext.nodeLabel}`
                       : activeTaskLabel
                         ? activeTaskLabel
                       : executionLabel

@@ -101,4 +101,20 @@ describe('useWorkflowExecutor', () => {
     )
     expect(useExecutionStore.getState().error).toBe('Execution aborted by user')
   })
+
+  it('passes the selected start node into executor when executing from node', async () => {
+    const { result } = renderHook(() => useWorkflowExecutor('workflow-1'))
+
+    await act(async () => {
+      await result.current.executeFromNode('running-node')
+    })
+
+    expect(executeMock).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      'workflow-1',
+      expect.any(Object),
+      'running-node',
+    )
+  })
 })

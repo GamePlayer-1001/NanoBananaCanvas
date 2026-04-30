@@ -153,6 +153,37 @@ describe('applyAgentPlan', () => {
     expect(historyState.past[0]?.nodes.map((node) => node.id)).toEqual(['text-1'])
   })
 
+  it('forwards from-node run operations with the selected node id', async () => {
+    useFlowStore.setState({
+      nodes: [createNode('image-1', 'image-gen', 40, 50)],
+      edges: [],
+      viewport: { x: 0, y: 0, zoom: 1 },
+    })
+
+    const runWorkflow = vi.fn(async () => undefined)
+
+    const result = await applyAgentPlan(
+      createPlan({
+        goal: '从当前节点继续执行',
+        operations: [
+          {
+            type: 'run_workflow',
+            scope: 'from-node',
+            nodeId: 'image-1',
+          },
+        ],
+      }),
+      {
+        workflowId: 'wf_apply_from_node',
+        runWorkflow,
+      },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(runWorkflow).toHaveBeenCalledWith('from-node', 'image-1')
+    expect(result.summary).toContain('从节点 image-1 开始执行')
+  })
+
   it('updates an existing node config without clobbering untouched config fields', async () => {
     useFlowStore.setState({
       nodes: [

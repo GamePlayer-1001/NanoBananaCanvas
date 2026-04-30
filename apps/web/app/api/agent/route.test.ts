@@ -228,6 +228,19 @@ describe('POST /api/agent/*', () => {
                 configSummary: {},
               },
             ],
+            selectionContext: {
+              nodeId: 'llm-1',
+              nodeType: 'llm',
+              nodeLabel: '文案生成',
+              inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+              outputs: [{ id: 'text-out', label: 'Response', type: 'string' }],
+              keyConfig: {
+                platformModel: 'openai/gpt-4o-mini',
+              },
+              latestResultSummary: '文案生成 最近已经产出了一段可用文案。',
+              executionStatus: 'completed',
+              executionHint: '这个节点最近已经产出过结果。',
+            },
           }),
         }),
       }),
@@ -238,6 +251,110 @@ describe('POST /api/agent/*', () => {
       ok: true,
       data: {
         answer: expect.stringContaining('当前选中的节点是“文案生成”。'),
+      },
+    })
+  })
+
+  it('builds a node-level prompt patch plan for the selected image node', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '把这个节点改得更写实一点',
+          mode: 'update',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 1,
+            edgeCount: 0,
+            selectedNodeId: 'image-1',
+            selectedNodeType: 'image-gen',
+            selectedNodeLabel: '主图生成',
+            selectionContext: {
+              nodeId: 'image-1',
+              nodeType: 'image-gen',
+              nodeLabel: '主图生成',
+            },
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '主图生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {
+                  prompt: '电商主图',
+                },
+              },
+            ],
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          operations: expect.arrayContaining([
+            expect.objectContaining({
+              type: 'update_node_data',
+              nodeId: 'image-1',
+              patch: {
+                config: expect.objectContaining({
+                  prompt: expect.stringContaining('真实摄影质感'),
+                }),
+              },
+            }),
+          ]),
+        },
+      },
+    })
+  })
+
+  it('builds a from-node run proposal for the selected node', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '从这个节点开始执行',
+          mode: 'update',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 1,
+            edgeCount: 0,
+            selectedNodeId: 'image-1',
+            selectedNodeType: 'image-gen',
+            nodes: [
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '主图生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+            ],
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          operations: expect.arrayContaining([
+            expect.objectContaining({
+              type: 'run_workflow',
+              scope: 'from-node',
+              nodeId: 'image-1',
+            }),
+          ]),
+        },
       },
     })
   })
