@@ -17,10 +17,10 @@ import { cn } from '@/lib/utils'
 const DEFAULT_WIDTH = 600
 const MIN_WIDTH = 510
 const MAX_WIDTH = 840
-const DEFAULT_HEIGHT = 760
+const DEFAULT_HEIGHT = 1140
 const MIN_HEIGHT = 520
-const MAX_HEIGHT = 920
-const DEFAULT_POSITION = { x: -24, y: 0 }
+const MAX_HEIGHT = 1280
+const DEFAULT_POSITION = { x: 0, y: 0 }
 
 interface AgentPanelProps {
   header?: ReactNode
@@ -89,21 +89,8 @@ export function AgentPanel({
                 Math.max(MIN_HEIGHT, resizeRef.current.startHeight + deltaY),
               )
 
-        const widthDelta = nextWidth - resizeRef.current.startWidth
-        const heightDelta = nextHeight - resizeRef.current.startHeight
-
         setWidth(nextWidth)
         setHeight(nextHeight)
-        setPosition({
-          x:
-            resizeRef.current.mode === 'top'
-              ? resizeRef.current.originX
-              : resizeRef.current.originX - widthDelta,
-          y:
-            resizeRef.current.mode === 'left'
-              ? resizeRef.current.originY
-              : resizeRef.current.originY - heightDelta,
-        })
       }
     }
 
@@ -160,8 +147,8 @@ export function AgentPanel({
   return (
     <div
       ref={shellRef}
-      className={cn(
-        'pointer-events-none absolute bottom-6 left-[calc(100%-24px)] z-40 hidden lg:block',
+        className={cn(
+        'pointer-events-none absolute right-6 bottom-6 z-40 hidden lg:block',
         className,
       )}
       style={{
@@ -170,12 +157,11 @@ export function AgentPanel({
     >
       <div
         className={cn(
-          'pointer-events-auto relative overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow] duration-200 motion-reduce:transition-none',
-          isCollapsed ? 'h-[80px]' : 'h-[min(82vh,760px)]',
+          'pointer-events-auto relative overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow,transform] duration-200 motion-reduce:transition-none',
         )}
         style={{
-          width: panelWidth,
-          height: isCollapsed ? 80 : Math.min(height, 920),
+          width: isCollapsed ? collapsedWidth : `min(${panelWidth}px, calc(100vw - 48px))`,
+          height: isCollapsed ? 80 : `min(${height}px, calc(100vh - 48px))`,
         }}
       >
         <button
