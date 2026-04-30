@@ -11,6 +11,7 @@ error-boundary.tsx — React 错误边界，捕获渲染异常并显示 fallback
 error-boundary-fallback.tsx — 错误边界本地化 fallback UI，消费 common 文案并复用 retry 语义
 locale-switcher.tsx — 语言切换器，下拉展示所有启用 locale，使用 @/i18n/navigation 路由切换
 canvas/            — 画布引擎组件 (Canvas + TopToolbar + Toolbar + Controls + ContextMenu)
+agent/             — Agent 面板组件 (Panel + Conversation + Proposal/Prompt 卡片 + Composer)
 nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合并工具节点)
 edges/             — 连线组件 (CustomEdge 贝塞尔曲线)
 layout/            — 布局组件 (LandingNav + LandingFooter + AppSidebar)
