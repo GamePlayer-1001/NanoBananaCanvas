@@ -20,9 +20,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const DEFAULT_WIDTH = 400
-const MIN_WIDTH = 340
-const MAX_WIDTH = 560
+const DEFAULT_WIDTH = 600
+const MIN_WIDTH = 510
+const MAX_WIDTH = 840
 const DEFAULT_POSITION = { x: 0, y: 0 }
 
 interface AgentPanelProps {
@@ -118,7 +118,7 @@ export function AgentPanel({
     }
   }
 
-  const collapsedWidth = 88
+  const collapsedWidth = 132
   const panelWidth = isCollapsed ? collapsedWidth : width
 
   return (
