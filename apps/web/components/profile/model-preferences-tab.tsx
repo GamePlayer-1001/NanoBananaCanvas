@@ -48,6 +48,7 @@ interface DraftState {
   providerId: string
   providerKind:
     | 'openai-compatible'
+    | 'openrouter'
     | 'google-image'
     | 'gemini'
     | 'kling'
