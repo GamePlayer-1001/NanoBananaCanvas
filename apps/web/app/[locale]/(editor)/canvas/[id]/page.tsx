@@ -61,11 +61,18 @@ export default function CanvasPage({
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
   const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
   const errorMessage = useAgentStore((state) => state.errorMessage)
+  const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
   const workflowName =
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
       ? String((data as Record<string, unknown>).name)
       : undefined
-  const { sendMessage, isSubmitting } = useAgentSession({
+  const {
+    sendMessage,
+    isSubmitting,
+    applyPendingPlan,
+    rejectPendingPlan,
+    isApplying,
+  } = useAgentSession({
     workflowId: id,
     workflowName,
     locale,
@@ -203,8 +210,16 @@ export default function CanvasPage({
                   contextLabel={
                     errorMessage
                       ? `上一次提案失败：${errorMessage}`
+                      : pendingPlan
+                        ? '提案已经准备好，确认后我会安全落到左侧画板。'
+                        : lastAppliedPlanId
+                          ? `最近一次已应用提案：${lastAppliedPlanId}`
                       : '已连接到当前画板，我会先基于左侧工作流给出结构化提案。'
                   }
+                  actionLabel={pendingPlan ? (isApplying ? '正在落图...' : '应用提案') : undefined}
+                  onAction={pendingPlan ? () => void applyPendingPlan() : undefined}
+                  secondaryActionLabel={pendingPlan ? '撤回提案' : undefined}
+                  onSecondaryAction={pendingPlan ? rejectPendingPlan : undefined}
                 />
               )}
               conversation={(
@@ -215,7 +230,7 @@ export default function CanvasPage({
               )}
               quickActions={(
                 <AgentQuickActions
-                  actions={quickActions}
+                  actions={pendingPlan ? [] : quickActions}
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
                       'more-realistic': '把当前工作流改成更写实的方向',
@@ -228,9 +243,11 @@ export default function CanvasPage({
               )}
               composer={(
                 <AgentComposer
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isApplying}
                   hint={
-                    isSubmitting
+                    isApplying
+                      ? '我正在把提案落到左侧画板，请稍等。'
+                      : isSubmitting
                       ? '我正在整理画板并生成提案，请稍等。'
                       : '右侧输入会先生成结构化提案，不会直接改左侧画板。'
                   }

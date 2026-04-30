@@ -1,13 +1,15 @@
 /**
  * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 计划链路与 @/stores/use-agent-store 的会话真相源
- * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan API -> validation -> pendingPlan 的高层动作
- * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，不直接修改左侧画布
+ * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan API -> validation -> apply 的高层动作
+ * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，负责右侧提案与左侧落图之间的安全桥接
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
 import { useState } from 'react'
+import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
+import { applyAgentPlan } from '@/lib/agent/apply-agent-plan'
 import { AGENT_ERROR_FALLBACK, AGENT_PROCESS_MESSAGES } from '@/lib/agent/constants'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
@@ -25,14 +27,18 @@ export function useAgentSession({
   workflowName,
   locale,
 }: UseAgentSessionOptions) {
+  const { execute } = useWorkflowExecutor(workflowId)
   const mode = useAgentStore((state) => state.mode)
+  const pendingPlan = useAgentStore((state) => state.pendingPlan)
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const setStatus = useAgentStore((state) => state.setStatus)
   const setPendingPlan = useAgentStore((state) => state.setPendingPlan)
   const clearPendingPlan = useAgentStore((state) => state.clearPendingPlan)
   const setErrorMessage = useAgentStore((state) => state.setErrorMessage)
+  const setLastAppliedPlanId = useAgentStore((state) => state.setLastAppliedPlanId)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isApplying, setIsApplying] = useState(false)
 
   async function sendMessage(rawValue: string) {
     const value = rawValue.trim()
@@ -129,8 +135,77 @@ export function useAgentSession({
     })
   }
 
+  async function applyPendingPlan() {
+    if (!pendingPlan || isApplying) return
+
+    setIsApplying(true)
+    setErrorMessage(null)
+    setStatus('applying-patch')
+    appendProcessMessage('我现在开始把提案安全落到左侧画板。')
+
+    try {
+      const result = await applyAgentPlan(pendingPlan, {
+        workflowId,
+        runWorkflow: async (scope) => {
+          if (scope === 'all') {
+            await execute()
+          }
+        },
+      })
+
+      if (!result.ok) {
+        throw new Error(
+          result.rolledBack
+            ? `${result.summary} 已回滚到修改前状态。`
+            : result.summary,
+        )
+      }
+
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: result.summary,
+        createdAt: new Date().toISOString(),
+      })
+
+      setLastAppliedPlanId(pendingPlan.id)
+      setErrorMessage(null)
+      clearPendingPlan()
+      setStatus('ready-to-run')
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : AGENT_ERROR_FALLBACK
+      setStatus('error')
+      setErrorMessage(message)
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'diagnosis',
+        text: message,
+        severity: 'error',
+        createdAt: new Date().toISOString(),
+      })
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  function rejectPendingPlan() {
+    if (!pendingPlan) return
+
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: '这次提案我先撤回了，左侧画板保持不变。',
+      createdAt: new Date().toISOString(),
+    })
+    clearPendingPlan()
+    setStatus('idle')
+  }
+
   return {
     sendMessage,
     isSubmitting,
+    applyPendingPlan,
+    rejectPendingPlan,
+    isApplying,
   }
 }

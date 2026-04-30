@@ -100,25 +100,67 @@ function inferMode(input: AgentPlanRequest, normalized: string): AgentPlan['mode
 function buildCreationOperations(normalized: string): WorkflowOperation[] {
   if (normalized.includes('视频')) {
     return [
-      { type: 'add_node', nodeType: 'text-input' },
-      { type: 'add_node', nodeType: 'video-gen' },
-      { type: 'add_node', nodeType: 'display' },
+      { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+      { type: 'add_node', nodeId: 'draft-video-gen', nodeType: 'video-gen' },
+      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+      {
+        type: 'connect',
+        source: 'draft-text-input',
+        sourceHandle: 'text-out',
+        target: 'draft-video-gen',
+        targetHandle: 'prompt-in',
+      },
+      {
+        type: 'connect',
+        source: 'draft-video-gen',
+        sourceHandle: 'video-out',
+        target: 'draft-display',
+        targetHandle: 'content-in',
+      },
     ]
   }
 
   if (normalized.includes('音频') || normalized.includes('配音') || normalized.includes('语音')) {
     return [
-      { type: 'add_node', nodeType: 'text-input' },
-      { type: 'add_node', nodeType: 'audio-gen' },
-      { type: 'add_node', nodeType: 'display' },
+      { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+      { type: 'add_node', nodeId: 'draft-audio-gen', nodeType: 'audio-gen' },
+      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+      {
+        type: 'connect',
+        source: 'draft-text-input',
+        sourceHandle: 'text-out',
+        target: 'draft-audio-gen',
+        targetHandle: 'text-in',
+      },
+      {
+        type: 'connect',
+        source: 'draft-audio-gen',
+        sourceHandle: 'audio-out',
+        target: 'draft-display',
+        targetHandle: 'content-in',
+      },
     ]
   }
 
   if (normalized.includes('图') || normalized.includes('海报') || normalized.includes('图片')) {
     return [
-      { type: 'add_node', nodeType: 'text-input' },
-      { type: 'add_node', nodeType: 'image-gen' },
-      { type: 'add_node', nodeType: 'display' },
+      { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+      { type: 'add_node', nodeId: 'draft-image-gen', nodeType: 'image-gen' },
+      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+      {
+        type: 'connect',
+        source: 'draft-text-input',
+        sourceHandle: 'text-out',
+        target: 'draft-image-gen',
+        targetHandle: 'prompt-in',
+      },
+      {
+        type: 'connect',
+        source: 'draft-image-gen',
+        sourceHandle: 'image-out',
+        target: 'draft-display',
+        targetHandle: 'content-in',
+      },
       {
         type: 'request_prompt_confirmation',
         payload: {
@@ -137,9 +179,23 @@ function buildCreationOperations(normalized: string): WorkflowOperation[] {
   }
 
   return [
-    { type: 'add_node', nodeType: 'text-input' },
-    { type: 'add_node', nodeType: 'llm' },
-    { type: 'add_node', nodeType: 'display' },
+    { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+    { type: 'add_node', nodeId: 'draft-llm', nodeType: 'llm' },
+    { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+    {
+      type: 'connect',
+      source: 'draft-text-input',
+      sourceHandle: 'text-out',
+      target: 'draft-llm',
+      targetHandle: 'prompt-in',
+    },
+    {
+      type: 'connect',
+      source: 'draft-llm',
+      sourceHandle: 'text-out',
+      target: 'draft-display',
+      targetHandle: 'content-in',
+    },
   ]
 }
 
@@ -147,7 +203,15 @@ function buildUpdateOperations(normalized: string, canvas: CanvasSummary): Workf
   const selectedNodeId = canvas.selectedNodeId ?? canvas.nodes[0]?.id
 
   if (normalized.includes('补') && canvas.displayMissingForNodeIds.length > 0) {
-    return [{ type: 'add_node', nodeType: 'display' }]
+    return [
+      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+      {
+        type: 'connect',
+        source: canvas.displayMissingForNodeIds[0] as string,
+        target: 'draft-display',
+        targetHandle: 'content-in',
+      },
+    ]
   }
 
   if ((normalized.includes('优化') || normalized.includes('整理')) && canvas.disconnectedNodeIds.length > 0) {
@@ -271,4 +335,3 @@ function buildReasons(
 
   return reasons.slice(0, 3)
 }
-

@@ -45,6 +45,7 @@ export interface PromptConfirmationPayload {
 export type WorkflowOperation =
   | {
       type: 'add_node'
+      nodeId?: string
       nodeType: string
       position?: { x: number; y: number }
       initialData?: Record<string, unknown>

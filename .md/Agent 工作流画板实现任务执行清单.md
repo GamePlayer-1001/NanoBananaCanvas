@@ -22,7 +22,7 @@
 | --- | --- | --- | --- |
 | M1 | 面板骨架 | 右侧 Agent UI 与状态骨架可运行 | [x] |
 | M2 | 计划链路 | 从用户输入到结构化 plan 跑通 | [x] |
-| M3 | 落图链路 | plan 可安全修改画布并自动保存 | [ ] |
+| M3 | 落图链路 | plan 可安全修改画布并自动保存 | [x] |
 | M4 | 提示词确认 | refine + confirm + execute 跑通 | [ ] |
 | M5 | 诊断与收口 | diagnose、任务联动、体验打磨完成 | [ ] |
 
@@ -116,39 +116,39 @@
 
 ### Plan 应用层
 
-- [ ] `AGENT-200` 创建 `lib/agent/apply-agent-plan.ts`
-- [ ] `AGENT-201` 实现 `add_node` 应用
-- [ ] `AGENT-202` 实现 `update_node_data` 应用
-- [ ] `AGENT-203` 实现 `connect` 应用
-- [ ] `AGENT-204` 实现 `disconnect` 应用
-- [ ] `AGENT-205` 实现 `focus_nodes` 应用
+- [x] `AGENT-200` 创建 `lib/agent/apply-agent-plan.ts`
+- [x] `AGENT-201` 实现 `add_node` 应用
+- [x] `AGENT-202` 实现 `update_node_data` 应用
+- [x] `AGENT-203` 实现 `connect` 应用
+- [x] `AGENT-204` 实现 `disconnect` 应用
+- [x] `AGENT-205` 实现 `focus_nodes` 应用
 
 ### 安全校验
 
-- [ ] `AGENT-210` 校验 nodeType 是否存在
-- [ ] `AGENT-211` 校验 nodeId 是否存在
-- [ ] `AGENT-212` 校验端口连接合法性
-- [ ] `AGENT-213` 校验高风险 operation 是否转确认态
+- [x] `AGENT-210` 校验 nodeType 是否存在
+- [x] `AGENT-211` 校验 nodeId 是否存在
+- [x] `AGENT-212` 校验端口连接合法性
+- [x] `AGENT-213` 校验高风险 operation 是否转确认态
 
 ### 与现有 store 衔接
 
-- [ ] `AGENT-220` 应用前接入 `useHistoryStore` 快照
-- [ ] `AGENT-221` 通过 `useFlowStore` 真正修改节点与边
-- [ ] `AGENT-222` 落图后生成用户可读的 change summary
-- [ ] `AGENT-223` 验证 `useAutoSave` 能自动接住变更
+- [x] `AGENT-220` 应用前接入 `useHistoryStore` 快照
+- [x] `AGENT-221` 通过 `useFlowStore` 真正修改节点与边
+- [x] `AGENT-222` 落图后生成用户可读的 change summary
+- [x] `AGENT-223` 验证 `useAutoSave` 能自动接住变更
 
 ### 错误与回滚
 
-- [ ] `AGENT-230` 实现 apply 中断与错误上报
-- [ ] `AGENT-231` 实现 apply 失败时的回滚策略
-- [ ] `AGENT-232` 在聊天区返回“是否已回滚”的真实状态
+- [x] `AGENT-230` 实现 apply 中断与错误上报
+- [x] `AGENT-231` 实现 apply 失败时的回滚策略
+- [x] `AGENT-232` 在聊天区返回“是否已回滚”的真实状态
 
 ### M3 验收
 
-- [ ] `AGENT-240` 一句话可在左侧生成最小工作流
-- [ ] `AGENT-241` 小范围修改可成功落到现有画布
-- [ ] `AGENT-242` 用户可撤销 Agent 改动
-- [ ] `AGENT-243` 自动保存无回归
+- [x] `AGENT-240` 一句话可在左侧生成最小工作流
+- [x] `AGENT-241` 小范围修改可成功落到现有画布
+- [x] `AGENT-242` 用户可撤销 Agent 改动
+- [x] `AGENT-243` 自动保存无回归
 
 ---
 

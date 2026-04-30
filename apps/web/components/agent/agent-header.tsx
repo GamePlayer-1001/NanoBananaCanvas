@@ -14,6 +14,8 @@ interface AgentHeaderProps {
   contextLabel?: string
   actionLabel?: string
   onAction?: () => void
+  secondaryActionLabel?: string
+  onSecondaryAction?: () => void
 }
 
 export function AgentHeader({
@@ -22,6 +24,8 @@ export function AgentHeader({
   contextLabel = '已连接到当前画板',
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: AgentHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -40,15 +44,28 @@ export function AgentHeader({
       </div>
 
       {actionLabel && onAction ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 rounded-full px-3 text-xs"
-          onClick={onAction}
-        >
-          {actionLabel}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {secondaryActionLabel && onSecondaryAction ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full px-3 text-xs"
+              onClick={onSecondaryAction}
+            >
+              {secondaryActionLabel}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 rounded-full px-3 text-xs"
+            onClick={onAction}
+          >
+            {actionLabel}
+          </Button>
+        </div>
       ) : null}
     </div>
   )

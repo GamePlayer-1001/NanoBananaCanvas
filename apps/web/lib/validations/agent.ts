@@ -47,6 +47,7 @@ const canvasSummaryNodeSchema = z.object({
 const workflowOperationSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('add_node'),
+    nodeId: z.string().min(1).optional(),
     nodeType: z.string().min(1),
     position: z.object({ x: z.number(), y: z.number() }).optional(),
     initialData: z.record(z.string(), z.unknown()).optional(),
@@ -131,4 +132,3 @@ export const agentPlanResponseSchema = z.object({
 
 export type AgentPlanRequestInput = z.infer<typeof agentPlanRequestSchema>
 export type AgentPlanOutput = z.infer<typeof agentPlanSchema>
-
