@@ -1643,6 +1643,7 @@
   },
   "agentPanel": {
     "title": "Agent",
+    "headerSubtitle": "Floating creative assistant",
     "heroTitle": "What would you like to do today?",
     "heroSubtitle": "I will first decide whether your request should directly build a workflow or needs prompt and visual refinement first.",
     "heroCatImage": "I want to generate a cat image",

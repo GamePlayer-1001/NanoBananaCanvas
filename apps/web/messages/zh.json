@@ -1643,6 +1643,7 @@
   },
   "agentPanel": {
     "title": "Agent",
+    "headerSubtitle": "悬浮创作助手",
     "heroTitle": "你今天想做些什么？",
     "heroSubtitle": "我会先判断你是想直接创建工作流，还是需要先帮你整理提示词和画面方向。",
     "heroCatImage": "我想生成一张小猫的图片",

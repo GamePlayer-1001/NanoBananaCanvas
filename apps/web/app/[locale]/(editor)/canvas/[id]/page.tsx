@@ -251,13 +251,6 @@ export default function CanvasPage({
     ],
   )
 
-  const heroActions = [
-    { id: 'hero-cat-image', label: tAgent('heroCatImage'), accent: 'hero' as const },
-    { id: 'hero-realistic-edit', label: tAgent('heroRealisticEdit'), accent: 'hero' as const },
-    { id: 'hero-diagnose', label: tAgent('heroDiagnose'), accent: 'hero' as const },
-    { id: 'hero-explain', label: tAgent('heroExplain'), accent: 'hero' as const },
-  ]
-
   const quickActions = [
     ...(resultAwareSummary.latestSuccessfulAsset
       ? [{ id: 'continue-from-result', label: tAgent('quickContinueFromResult') }]
@@ -370,7 +363,7 @@ export default function CanvasPage({
               header={(
                 <AgentHeader
                   title={tAgent('title')}
-                  subtitle={tAgent('heroTitle')}
+                  subtitle={tAgent('headerSubtitle')}
                   contextLabel={
                     errorMessage
                       ? tAgent('contextError', { message: errorMessage })
@@ -386,7 +379,7 @@ export default function CanvasPage({
                         ? tAgent('contextTemplate', { name: template.name })
                       : lastAppliedPlanId
                         ? tAgent('contextLastApplied', { planId: lastAppliedPlanId })
-                        : tAgent('contextConnected')
+                        : undefined
                   }
                   historyLabel={changeLogItems.length > 0 ? tAgent('actionViewChanges') : undefined}
                   onHistoryClick={changeLogItems.length > 0 ? () => setIsChangeLogOpen(true) : undefined}
@@ -397,31 +390,12 @@ export default function CanvasPage({
                   items={conversationItems}
                   emptyState={tAgent('emptyState')}
                   hero={(
-                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-8 px-3 text-center">
-                      <div className="space-y-3">
+                    <div className="flex min-h-[320px] flex-col items-center justify-center px-8 text-center">
+                      <div className="space-y-0">
                         <h3 className="text-[32px] leading-tight font-semibold tracking-[-0.03em] text-slate-950">
                           {tAgent('heroTitle')}
                         </h3>
-                        <p className="mx-auto max-w-[26rem] text-sm leading-7 text-slate-500">
-                          {tAgent('heroSubtitle')}
-                        </p>
                       </div>
-                      <AgentQuickActions
-                        actions={heroActions}
-                        onSelect={(actionId) => {
-                          const actionMap: Record<string, string> = {
-                            'hero-cat-image': tAgent('heroCatImageAsk'),
-                            'hero-realistic-edit': tAgent('heroRealisticEditAsk'),
-                            'hero-diagnose': tAgent('heroDiagnoseAsk'),
-                            'hero-explain': tAgent('heroExplainAsk'),
-                          }
-                          if (actionId === 'hero-cat-image') setMode('create')
-                          if (actionId === 'hero-realistic-edit') setMode('update')
-                          if (actionId === 'hero-diagnose') setMode('diagnose')
-                          if (actionId === 'hero-explain') setMode('update')
-                          void sendMessage(actionMap[actionId] ?? actionId)
-                        }}
-                      />
                     </div>
                   )}
                   onPromptRegenerate={(payloadId) => void regeneratePrompt(payloadId)}
@@ -438,7 +412,7 @@ export default function CanvasPage({
                 <AgentQuickActions
                   title={messages.length > 0 ? tAgent('quickActionsTitle') : undefined}
                   compact
-                  actions={pendingPlan ? [] : quickActions}
+                  actions={pendingPlan || messages.length === 0 ? [] : quickActions}
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
                       'continue-from-result': tAgent('quickContinueFromResultAsk', {

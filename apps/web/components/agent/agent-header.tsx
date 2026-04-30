@@ -18,24 +18,24 @@ interface AgentHeaderProps {
 
 export function AgentHeader({
   title = 'Agent',
-  subtitle = '你今天想做些什么？',
-  contextLabel = '我会先理解你的目标，再决定是搭工作流还是润色提示词。',
+  subtitle = '悬浮创作助手',
+  contextLabel,
   historyLabel,
   onHistoryClick,
 }: AgentHeaderProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1.5">
+        <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
               <Sparkles size={14} />
             </div>
             <p className="text-sm font-semibold text-slate-900">{title}</p>
           </div>
-          <h2 className="text-[22px] leading-8 font-semibold tracking-[-0.02em] text-slate-950">
-            {subtitle}
-          </h2>
+          {subtitle ? (
+            <p className="text-[11px] text-slate-500">{subtitle}</p>
+          ) : null}
         </div>
 
         {historyLabel && onHistoryClick ? (
@@ -52,9 +52,11 @@ export function AgentHeader({
         ) : null}
       </div>
 
-      <p className="max-w-[32rem] text-[13px] leading-6 text-slate-500">
-        {contextLabel}
-      </p>
+      {contextLabel ? (
+        <p className="max-w-[32rem] text-[13px] leading-6 text-slate-500">
+          {contextLabel}
+        </p>
+      ) : null}
     </div>
   )
 }
