@@ -1,0 +1,32 @@
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+⨯ Error: Failed to call `useTranslations` because the context from `NextIntlClientProvider` was not found.
+
+This can happen because:
+1) You intended to render this component as a Server Component, the render
+   failed, and therefore React attempted to render the component on the client
+   instead. If this is the case, check the console for server errors.
+2) You intended to render this component on the client side, but no context was found.
+   Learn more about this error here: https://next-intl.dev/docs/environments/server-client-components#missing-context
+    at HeroSection (components\landing\hero-section.tsx:352:28)
+  350 |
+  351 | export function HeroSection() {
+> 352 |   const t = useTranslations('landing.hero')
+      |                            ^
+  353 |   const containerRef = useRef<HTMLDivElement>(null)
+  354 |   const [nodes, setNodes] = useState<DemoNode[]>(INITIAL_NODES)
+  355 |   const [stageSize, setStageSize] = useState<StageSize>({ {
+  digest: '2459983348'
+}
+⨯ The requested resource isn't a valid image for /auth-login-right-v2.png received null
+⨯ ReferenceError: useState is not defined
+    at FeaturesSection (components\landing\landing-sections.tsx:167:5)
+  165 |   }))
+  166 |   const [activeFeature, setActiveFeature] =
+> 167 |     useState<(typeof FEATURE_KEYS)[number]>('canvas')
+      |     ^
+  168 |   const wheelCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  169 |   const activeFeatureIndex = Math.max(
+  170 |     featureItems.findIndex((item) => item.key === activeFeature), {
+  digest: '3785286240'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
