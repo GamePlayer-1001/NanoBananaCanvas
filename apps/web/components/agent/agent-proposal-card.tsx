@@ -23,6 +23,7 @@ interface AgentProposalChange {
 interface AgentProposalCardProps {
   title: string
   summary: string
+  reasons?: string[]
   changes?: AgentProposalChange[]
   requiresConfirmation?: boolean
 }
@@ -36,6 +37,7 @@ const RISK_LABEL: Record<NonNullable<AgentProposalChange['risk']>, string> = {
 export function AgentProposalCard({
   title,
   summary,
+  reasons = [],
   changes = [],
   requiresConfirmation = false,
 }: AgentProposalCardProps) {
@@ -50,6 +52,19 @@ export function AgentProposalCard({
         </div>
         <CardDescription className="text-xs leading-5">{summary}</CardDescription>
       </CardHeader>
+
+      {reasons.length > 0 ? (
+        <CardContent className="space-y-2 px-4 pt-0">
+          {reasons.map((reason) => (
+            <div
+              key={reason}
+              className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-3 py-2"
+            >
+              <p className="text-xs leading-5 text-slate-600">{reason}</p>
+            </div>
+          ))}
+        </CardContent>
+      ) : null}
 
       {changes.length > 0 ? (
         <CardContent className="space-y-3 px-4">

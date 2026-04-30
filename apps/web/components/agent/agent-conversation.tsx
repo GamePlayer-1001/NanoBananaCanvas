@@ -30,6 +30,7 @@ type ConversationItem =
       type: 'proposal'
       title: string
       summary: string
+      reasons?: string[]
       requiresConfirmation?: boolean
       changes?: Array<{
         label: string
@@ -43,6 +44,7 @@ type ConversationItem =
       originalIntent: string
       visualProposal: string
       executionPrompt: string
+      styleOptions?: string[]
     }
 
 interface AgentConversationProps {
@@ -90,6 +92,7 @@ export function AgentConversation({
                 key={item.id}
                 title={item.title}
                 summary={item.summary}
+                reasons={item.reasons}
                 changes={item.changes}
                 requiresConfirmation={item.requiresConfirmation}
               />
@@ -102,6 +105,7 @@ export function AgentConversation({
               originalIntent={item.originalIntent}
               visualProposal={item.visualProposal}
               executionPrompt={item.executionPrompt}
+              styleOptions={item.styleOptions}
             />
           )
         })}

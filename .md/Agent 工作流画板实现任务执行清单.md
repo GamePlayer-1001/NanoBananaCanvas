@@ -21,7 +21,7 @@
 | 里程碑 | 名称 | 目标 | 状态 |
 | --- | --- | --- | --- |
 | M1 | 面板骨架 | 右侧 Agent UI 与状态骨架可运行 | [x] |
-| M2 | 计划链路 | 从用户输入到结构化 plan 跑通 | [ ] |
+| M2 | 计划链路 | 从用户输入到结构化 plan 跑通 | [x] |
 | M3 | 落图链路 | plan 可安全修改画布并自动保存 | [ ] |
 | M4 | 提示词确认 | refine + confirm + execute 跑通 | [ ] |
 | M5 | 诊断与收口 | diagnose、任务联动、体验打磨完成 | [ ] |
@@ -76,39 +76,39 @@
 ### Agent 基础能力层
 
 - [x] `AGENT-100` 创建 `lib/agent/types.ts`
-- [ ] `AGENT-101` 创建 `lib/agent/constants.ts`
-- [ ] `AGENT-102` 创建 `lib/agent/summarize-canvas.ts`
-- [ ] `AGENT-103` 创建 `lib/agent/build-agent-plan.ts`
-- [ ] `AGENT-104` 创建 `lib/agent/validate-agent-plan.ts`
+- [x] `AGENT-101` 创建 `lib/agent/constants.ts`
+- [x] `AGENT-102` 创建 `lib/agent/summarize-canvas.ts`
+- [x] `AGENT-103` 创建 `lib/agent/build-agent-plan.ts`
+- [x] `AGENT-104` 创建 `lib/agent/validate-agent-plan.ts`
 
 ### 画布摘要
 
-- [ ] `AGENT-110` 从 `useFlowStore` 提取节点与连线摘要
-- [ ] `AGENT-111` 从 `plugin-registry` 提取 label / ports 元信息
-- [ ] `AGENT-112` 接入最近执行状态与失败节点摘要
-- [ ] `AGENT-113` 接入当前选中节点语境
-- [ ] `AGENT-114` 对长文本和复杂节点配置做压缩
+- [x] `AGENT-110` 从 `useFlowStore` 提取节点与连线摘要
+- [x] `AGENT-111` 从 `plugin-registry` 提取 label / ports 元信息
+- [x] `AGENT-112` 接入最近执行状态与失败节点摘要
+- [x] `AGENT-113` 接入当前选中节点语境
+- [x] `AGENT-114` 对长文本和复杂节点配置做压缩
 
 ### 后端 API
 
-- [ ] `AGENT-120` 创建 `app/api/agent/CLAUDE.md`
-- [ ] `AGENT-121` 创建 `app/api/agent/plan/route.ts`
-- [ ] `AGENT-122` 定义 `AgentPlanRequest / AgentPlanResponse` schema
-- [ ] `AGENT-123` 实现服务端 planner 输出 JSON schema 校验
-- [ ] `AGENT-124` 实现失败时的稳定错误响应
+- [x] `AGENT-120` 创建 `app/api/agent/CLAUDE.md`
+- [x] `AGENT-121` 创建 `app/api/agent/plan/route.ts`
+- [x] `AGENT-122` 定义 `AgentPlanRequest / AgentPlanResponse` schema
+- [x] `AGENT-123` 实现服务端 planner 输出 JSON schema 校验
+- [x] `AGENT-124` 实现失败时的稳定错误响应
 
 ### 前后端打通
 
-- [ ] `AGENT-130` 创建 `hooks/use-agent-session.ts`
-- [ ] `AGENT-131` 发送用户消息后串起 `summary -> plan API -> pendingPlan`
-- [ ] `AGENT-132` 面板中渲染 Proposal Card
-- [ ] `AGENT-133` plan 返回后切换到 `patch-ready` 或 `awaiting-confirmation`
+- [x] `AGENT-130` 创建 `hooks/use-agent-session.ts`
+- [x] `AGENT-131` 发送用户消息后串起 `summary -> plan API -> pendingPlan`
+- [x] `AGENT-132` 面板中渲染 Proposal Card
+- [x] `AGENT-133` plan 返回后切换到 `patch-ready` 或 `awaiting-confirmation`
 
 ### M2 验收
 
-- [ ] `AGENT-140` 用户输入一句话后能得到结构化提案
-- [ ] `AGENT-141` 提案在 UI 中可读，不暴露原始 JSON
-- [ ] `AGENT-142` 失败时有清晰错误提示
+- [x] `AGENT-140` 用户输入一句话后能得到结构化提案
+- [x] `AGENT-141` 提案在 UI 中可读，不暴露原始 JSON
+- [x] `AGENT-142` 失败时有清晰错误提示
 
 ---
 

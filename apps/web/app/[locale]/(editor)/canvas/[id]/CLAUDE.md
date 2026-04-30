@@ -4,6 +4,6 @@
 
 成员清单
 layout.tsx: 画布详情 SEO 布局，为编辑器详情路由输出 `noindex`
-page.tsx: 画布编辑器客户端页面，从工作流数据恢复 FlowStore 后挂载 ReactFlow 画布
+page.tsx: 画布编辑器客户端页面，从工作流数据恢复 FlowStore 后挂载 ReactFlow 画布，并串起右侧 Agent 提案会话
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

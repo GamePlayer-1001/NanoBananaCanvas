@@ -16,6 +16,7 @@ interface AgentPromptCompareCardProps {
   originalIntent: string
   visualProposal: string
   executionPrompt: string
+  styleOptions?: string[]
 }
 
 function Section({
@@ -39,6 +40,7 @@ export function AgentPromptCompareCard({
   originalIntent,
   visualProposal,
   executionPrompt,
+  styleOptions = [],
 }: AgentPromptCompareCardProps) {
   return (
     <Card className="gap-4 rounded-3xl border-black/8 bg-white/96 py-4 shadow-sm">
@@ -49,6 +51,9 @@ export function AgentPromptCompareCard({
         <Section title="原始意图" body={originalIntent} />
         <Section title="画面提案" body={visualProposal} />
         <Section title="执行提示词" body={executionPrompt} />
+        {styleOptions.length > 0 ? (
+          <Section title="风格方向" body={styleOptions.join(' / ')} />
+        ) : null}
       </CardContent>
     </Card>
   )

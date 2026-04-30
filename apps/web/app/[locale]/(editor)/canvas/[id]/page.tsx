@@ -1,13 +1,14 @@
 /**
  * [INPUT]: 依赖 next/dynamic 的客户端动态导入，依赖 @/components/canvas/canvas，
  *          依赖 @/components/agent/* 的 M1 面板骨架，
+ *          依赖 @/hooks/use-agent-session 的 M2 提案链路，
  *          依赖 @/hooks/use-workflows 的 useWorkflow 数据获取，
  *          依赖 @/stores/use-flow-store 的 setFlow 注入画布数据，
- *          依赖 @/stores/use-agent-store 的会话占位状态，
+ *          依赖 @/stores/use-agent-store 的会话与待确认计划，
  *          依赖 @/services/storage/serializer 的反序列化，
  *          依赖 lucide-react 的 Loader2
  * [OUTPUT]: 对外提供全屏画布编辑器页面 (CSR)
- * [POS]: (editor)/canvas/[id] 路由，全屏无侧边栏，从 D1 加载工作流数据注入 FlowStore，并在右侧挂载 Agent 面板骨架
+ * [POS]: (editor)/canvas/[id] 路由，全屏无侧边栏，从 D1 加载工作流数据注入 FlowStore，并在右侧挂载 Agent 提案面板
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -23,6 +24,7 @@ import { AgentConversation } from '@/components/agent/agent-conversation'
 import { AgentHeader } from '@/components/agent/agent-header'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
+import { useAgentSession } from '@/hooks/use-agent-session'
 import { useWorkflow } from '@/hooks/use-workflows'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
@@ -48,7 +50,7 @@ export default function CanvasPage({
 }: {
   params: Promise<{ locale: string; id: string }>
 }) {
-  const { id } = use(params)
+  const { locale, id } = use(params)
   const t = useTranslations('canvas')
   const { data, isLoading } = useWorkflow(id)
   const hasLoaded = useRef(false)
@@ -56,7 +58,18 @@ export default function CanvasPage({
   const messages = useAgentStore((state) => state.messages)
   const mode = useAgentStore((state) => state.mode)
   const status = useAgentStore((state) => state.status)
-  const appendMessage = useAgentStore((state) => state.appendMessage)
+  const pendingPlan = useAgentStore((state) => state.pendingPlan)
+  const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
+  const errorMessage = useAgentStore((state) => state.errorMessage)
+  const workflowName =
+    typeof (data as Record<string, unknown> | undefined)?.name === 'string'
+      ? String((data as Record<string, unknown>).name)
+      : undefined
+  const { sendMessage, isSubmitting } = useAgentSession({
+    workflowId: id,
+    workflowName,
+    locale,
+  })
 
   const conversationItems = useMemo(
     () =>
@@ -71,12 +84,28 @@ export default function CanvasPage({
         }
 
         if (message.role === 'proposal') {
+          const changes = pendingPlan?.id === message.planId
+            ? pendingPlan.operations.map((operation) => ({
+                label: toOperationLabel(operation.type),
+                detail: toOperationDetail(operation),
+                risk: toOperationRisk(operation.type),
+              }))
+            : []
+
           return {
             id: message.id,
             type: 'proposal' as const,
             title: '工作流提案',
-            summary: `提案 ID：${message.planId}`,
-            requiresConfirmation: false,
+            summary:
+              pendingPlan?.id === message.planId
+                ? pendingPlan.summary
+                : `提案 ID：${message.planId}`,
+            reasons: pendingPlan?.id === message.planId ? pendingPlan.reasons : [],
+            changes,
+            requiresConfirmation:
+              pendingPlan?.id === message.planId
+                ? pendingPlan.requiresConfirmation
+                : false,
           }
         }
 
@@ -84,9 +113,22 @@ export default function CanvasPage({
           return {
             id: message.id,
             type: 'prompt-confirmation' as const,
-            originalIntent: '待接入 Prompt Confirmation Payload',
-            visualProposal: `占位 Payload：${message.payloadId}`,
-            executionPrompt: '后续在 M4 接入真实 prompt 对比内容。',
+            originalIntent:
+              promptConfirmation?.id === message.payloadId
+                ? promptConfirmation.originalIntent
+                : '待接入 Prompt Confirmation Payload',
+            visualProposal:
+              promptConfirmation?.id === message.payloadId
+                ? promptConfirmation.visualProposal
+                : `占位 Payload：${message.payloadId}`,
+            executionPrompt:
+              promptConfirmation?.id === message.payloadId
+                ? promptConfirmation.executionPrompt
+                : '后续在 M4 接入真实 prompt 对比内容。',
+            styleOptions:
+              promptConfirmation?.id === message.payloadId
+                ? promptConfirmation.styleOptions?.map((item) => item.label)
+                : [],
           }
         }
 
@@ -98,7 +140,7 @@ export default function CanvasPage({
           timestamp: new Date(message.createdAt).toLocaleTimeString(),
         }
       }),
-    [messages, status],
+    [messages, pendingPlan, promptConfirmation, status],
   )
 
   const modeLabel = {
@@ -158,7 +200,11 @@ export default function CanvasPage({
                 <AgentHeader
                   title="Agent"
                   modeLabel={modeLabel}
-                  contextLabel="已连接到当前画板，后续会基于左侧工作流生成提案。"
+                  contextLabel={
+                    errorMessage
+                      ? `上一次提案失败：${errorMessage}`
+                      : '已连接到当前画板，我会先基于左侧工作流给出结构化提案。'
+                  }
                 />
               )}
               conversation={(
@@ -171,33 +217,25 @@ export default function CanvasPage({
                 <AgentQuickActions
                   actions={quickActions}
                   onSelect={(actionId) => {
-                    appendMessage({
-                      id: crypto.randomUUID(),
-                      role: 'process',
-                      text: `已选择快捷建议：${actionId}`,
-                      createdAt: new Date().toISOString(),
-                    })
+                    const actionMap: Record<string, string> = {
+                      'more-realistic': '把当前工作流改成更写实的方向',
+                      'add-style-step': '帮我补一个风格分析节点',
+                      'generate-variants': '基于当前思路生成 4 个变体方案',
+                    }
+                    void sendMessage(actionMap[actionId] ?? actionId)
                   }}
                 />
               )}
               composer={(
                 <AgentComposer
-                  hint="当前先接入 M1 骨架；后续会在 M2 把输入真正串到结构化提案链路。"
+                  disabled={isSubmitting}
+                  hint={
+                    isSubmitting
+                      ? '我正在整理画板并生成提案，请稍等。'
+                      : '右侧输入会先生成结构化提案，不会直接改左侧画板。'
+                  }
                   submitLabel={t('run')}
-                  onSubmit={(value) => {
-                    appendMessage({
-                      id: crypto.randomUUID(),
-                      role: 'user',
-                      text: value,
-                      createdAt: new Date().toISOString(),
-                    })
-                    appendMessage({
-                      id: crypto.randomUUID(),
-                      role: 'process',
-                      text: '我先理解一下你的目标。',
-                      createdAt: new Date().toISOString(),
-                    })
-                  }}
+                  onSubmit={(value) => void sendMessage(value)}
                 />
               )}
             />
@@ -215,6 +253,52 @@ function toConversationRole(
   >,
 ): 'user' | 'assistant' | 'diagnosis' {
   return message.role
+}
+
+function toOperationLabel(type: string) {
+  const labels: Record<string, string> = {
+    add_node: '新增节点',
+    update_node_data: '修改节点配置',
+    remove_node: '删除节点',
+    connect: '新增连线',
+    disconnect: '移除连线',
+    focus_nodes: '聚焦节点',
+    request_prompt_confirmation: '提示词确认',
+    run_workflow: '执行工作流',
+  }
+
+  return labels[type] ?? type
+}
+
+function toOperationDetail(
+  operation: NonNullable<ReturnType<typeof useAgentStore.getState>['pendingPlan']>['operations'][number],
+) {
+  switch (operation.type) {
+    case 'add_node':
+      return `计划新增 1 个 ${operation.nodeType} 节点`
+    case 'update_node_data':
+      return `计划调整节点 ${operation.nodeId} 的局部配置`
+    case 'remove_node':
+      return `计划删除节点 ${operation.nodeId}`
+    case 'connect':
+      return `计划连接 ${operation.source} -> ${operation.target}`
+    case 'disconnect':
+      return `计划移除连线 ${operation.edgeId}`
+    case 'focus_nodes':
+      return `计划先聚焦 ${operation.nodeIds.length} 个相关节点`
+    case 'request_prompt_confirmation':
+      return '这一步会先进入提示词确认，不会直接改图'
+    case 'run_workflow':
+      return operation.scope === 'from-node'
+        ? `计划从节点 ${operation.nodeId ?? '-'} 开始执行`
+        : '计划执行当前工作流'
+  }
+}
+
+function toOperationRisk(type: string): 'low' | 'medium' | 'high' {
+  if (type === 'remove_node' || type === 'run_workflow') return 'high'
+  if (type === 'request_prompt_confirmation' || type === 'update_node_data') return 'medium'
+  return 'low'
 }
 
 /* ─── Mobile Guard ──────────────────────────────────── */
