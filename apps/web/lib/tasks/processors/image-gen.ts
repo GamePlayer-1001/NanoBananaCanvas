@@ -28,6 +28,18 @@ interface OpenAICompatibleImageResponse {
   }>
 }
 
+interface OpenRouterChatImageResponse {
+  choices?: Array<{
+    message?: {
+      images?: Array<{
+        image_url?: {
+          url?: string
+        }
+      }>
+    }
+  }>
+}
+
 function summarizeResponseBody(body: string, maxLength = 160): string {
   const normalized = body.replace(/\s+/g, ' ').trim()
   if (!normalized) return '(empty response body)'
@@ -55,6 +67,13 @@ function extractOpenAICompatibleImageUrl(
   }
 
   return null
+}
+
+function extractOpenRouterChatImageUrl(
+  payload: OpenRouterChatImageResponse,
+): string | null {
+  const first = payload.choices?.[0]?.message?.images?.[0]?.image_url?.url
+  return typeof first === 'string' && first.trim() ? first.trim() : null
 }
 
 function readImageCapabilities(params: Record<string, unknown>): ImageModelCapabilities | undefined {
@@ -135,6 +154,87 @@ function resolveOpenAICompatibleRequestSize(
   return resolveImageGenerationSize(sizePreset, aspectRatio)
 }
 
+function shouldUseOpenRouterChatImageApi(provider: string, model: string): boolean {
+  return provider === 'openrouter' && /^openai\/gpt-.*image/i.test(model)
+}
+
+async function parseJsonResponse<T>(
+  res: Response,
+  errorPrefix: string,
+): Promise<T> {
+  const contentType = res.headers.get('content-type') ?? ''
+  const rawBody = await res.text().catch(() => '')
+
+  if (!contentType.toLowerCase().includes('application/json')) {
+    throw new Error(
+      `${errorPrefix} returned non-JSON content (${contentType || 'unknown content type'}). ` +
+        `Check that baseUrl points to an OpenAI-compatible image endpoint. ` +
+        `Response preview: ${summarizeResponseBody(rawBody)}`,
+    )
+  }
+
+  try {
+    return JSON.parse(rawBody) as T
+  } catch {
+    throw new Error(
+      `${errorPrefix} returned invalid JSON. ` +
+        `Check that baseUrl points to an OpenAI-compatible image endpoint. ` +
+        `Response preview: ${summarizeResponseBody(rawBody)}`,
+    )
+  }
+}
+
+async function openRouterChatImageSubmit(
+  input: SubmitInput,
+  apiKey: string,
+): Promise<{ url: string }> {
+  const { model, params } = input
+  const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
+  const baseUrl = resolveOpenAICompatibleBaseUrl('openrouter', params)
+
+  assertOpenAICompatiblePromptSafety(prompt, baseUrl)
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      modalities: ['image', 'text'],
+    }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    if (statusIsGatewayLikeFailure(res.status)) {
+      throw new Error(buildGatewayFailureMessage(res.status, 'openrouter', baseUrl, text))
+    }
+    throw new Error(`OpenRouter chat image API ${res.status}: ${text}`)
+  }
+
+  const data = await parseJsonResponse<OpenRouterChatImageResponse>(
+    res,
+    'OpenRouter chat image API',
+  )
+  const url = extractOpenRouterChatImageUrl(data)
+
+  if (!url) {
+    throw new Error(
+      'OpenRouter chat image API returned no assistant image data',
+    )
+  }
+
+  return { url }
+}
+
 /* ─── OpenAI-compatible Image API ────────────────────── */
 
 async function openAICompatibleSubmit(
@@ -162,6 +262,10 @@ async function openAICompatibleSubmit(
 
   assertOpenAICompatiblePromptSafety(prompt, baseUrl)
 
+  if (shouldUseOpenRouterChatImageApi(provider, model)) {
+    return openRouterChatImageSubmit(input, apiKey)
+  }
+
   const res = await fetch(`${baseUrl}/images/generations`, {
     method: 'POST',
     headers: {
@@ -179,27 +283,10 @@ async function openAICompatibleSubmit(
     throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
 
-  const contentType = res.headers.get('content-type') ?? ''
-  const rawBody = await res.text().catch(() => '')
-
-  if (!contentType.toLowerCase().includes('application/json')) {
-    throw new Error(
-      `OpenAI-compatible image API returned non-JSON content (${contentType || 'unknown content type'}). ` +
-        `Check that baseUrl points to an OpenAI-compatible image endpoint. ` +
-        `Response preview: ${summarizeResponseBody(rawBody)}`,
-    )
-  }
-
-  let data: OpenAICompatibleImageResponse
-  try {
-    data = JSON.parse(rawBody) as OpenAICompatibleImageResponse
-  } catch {
-    throw new Error(
-      `OpenAI-compatible image API returned invalid JSON. ` +
-        `Check that baseUrl points to an OpenAI-compatible image endpoint. ` +
-        `Response preview: ${summarizeResponseBody(rawBody)}`,
-    )
-  }
+  const data = await parseJsonResponse<OpenAICompatibleImageResponse>(
+    res,
+    'OpenAI-compatible image API',
+  )
 
   const url = extractOpenAICompatibleImageUrl(data)
   if (!url) {

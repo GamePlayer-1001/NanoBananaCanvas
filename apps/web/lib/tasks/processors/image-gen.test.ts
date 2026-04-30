@@ -101,6 +101,68 @@ describe('ImageGenProcessor', () => {
     )
   })
 
+  it('uses OpenRouter chat completions for gpt image models', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                images: [
+                  {
+                    image_url: {
+                      url: 'data:image/png;base64,b3BlbnJvdXRlci1pbWFnZQ==',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openrouter')
+    const result = await processor.submit(
+      {
+        model: 'openai/gpt-5.4-image-2',
+        params: {
+          prompt: 'draw a city skyline at sunrise',
+          size: 'auto',
+          aspectRatio: '16:9',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer platform-key',
+        }),
+        body: JSON.stringify({
+          model: 'openai/gpt-5.4-image-2',
+          messages: [
+            {
+              role: 'user',
+              content: 'draw a city skyline at sunrise',
+            },
+          ],
+          modalities: ['image', 'text'],
+        }),
+      }),
+    )
+    expect(result.result).toEqual({
+      type: 'url',
+      url: 'data:image/png;base64,b3BlbnJvdXRlci1pbWFnZQ==',
+      contentType: 'image/png',
+    })
+  })
+
   it('flattens formatted prompts before sending them to the image api', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
