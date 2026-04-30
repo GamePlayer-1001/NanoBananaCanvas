@@ -808,6 +808,21 @@ POST /api/agent/explain
 
 ---
 
+## 二十三点五、实现状态
+
+截至 2026-04-30，本设计稿对应的 V1 实现已完成闭环，当前状态如下：
+
+1. 右侧 Agent 面板、结构化提案、Prompt 确认、落图执行、诊断解释链路均已接入编辑器主画布
+2. `Plan -> Validate -> Apply -> Auto Save -> Execute -> Task Summary` 主链已打通，没有自建平行 workflow 真相源
+3. `summarize-canvas / validate-agent-plan / apply-agent-plan / use-agent-store / Agent API route` 已补齐回归测试
+4. 已新增 3 条 Agent E2E，覆盖一句话生成提案、Prompt 确认并执行、最近一次失败诊断
+5. Agent 相关中英文文案与系统过程消息 key 已统一收口到 i18n 命名空间
+6. Agent 新增目录与测试目录的 `CLAUDE.md` 镜像已补齐，核心业务文件 L3 契约已核查完成
+
+这意味着本文档第 23 节定义的 V1 验收标准已经满足，可视为进入“可内测、可继续迭代”的实现状态。
+
+---
+
 ## 二十四、禁区清单
 
 1. 不允许 LLM 直接覆盖 workflow JSON
