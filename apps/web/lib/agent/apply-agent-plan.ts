@@ -184,16 +184,18 @@ function applyUpdateNodeData(
     throw new Error(`无法更新节点，目标不存在：${operation.nodeId}`)
   }
 
+  const currentConfig = isRecord(node.data.config) ? node.data.config : {}
+  const patchConfig = isRecord(operation.patch.config) ? operation.patch.config : undefined
+
   node.data = {
     ...node.data,
     ...operation.patch,
-  }
-
-  if (isRecord(operation.patch.config)) {
-    node.data.config = {
-      ...node.data.config,
-      ...operation.patch.config,
-    }
+    config: patchConfig
+      ? {
+          ...currentConfig,
+          ...patchConfig,
+        }
+      : currentConfig,
   }
 }
 
