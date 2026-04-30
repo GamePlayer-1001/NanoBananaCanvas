@@ -1,16 +1,10 @@
 /**
- * [INPUT]: 依赖 @/components/ui/card 与 @/components/ui/button，依赖原始意图 / 画面提案 / 执行提示词三段文本与确认动作
- * [OUTPUT]: 对外提供 AgentPromptCompareCard 组件，展示 prompt 确认结构与交互动作
- * [POS]: components/agent 的 prompt 对比卡片，被 AgentConversation 复用
+ * [INPUT]: 依赖 @/components/ui/button，依赖原始意图 / 画面提案 / 执行提示词三段文本与确认动作
+ * [OUTPUT]: 对外提供 AgentPromptCompareCard 组件，以纯文本分行方式展示 prompt 确认内容与轻交互
+ * [POS]: components/agent 的 prompt 对比展示组件，被 AgentConversation 复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useTranslations } from 'next-intl'
 
@@ -25,23 +19,6 @@ interface AgentPromptCompareCardProps {
   onManualEdit?: () => void
   onToggleExpand?: () => void
   onStyleSelect?: (styleLabel: string) => void
-}
-
-function Section({
-  title,
-  body,
-}: {
-  title: string
-  body: string
-}) {
-  return (
-    <div className="space-y-1.5 rounded-2xl border border-black/6 bg-slate-50 px-3 py-3">
-      <p className="text-[11px] font-medium tracking-[0.08em] text-slate-500 uppercase">
-        {title}
-      </p>
-      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-900">{body}</p>
-    </div>
-  )
 }
 
 export function AgentPromptCompareCard({
@@ -63,19 +40,32 @@ export function AgentPromptCompareCard({
       : `${executionPrompt.slice(0, 180)}...`
 
   return (
-    <Card className="gap-4 rounded-[26px] border-black/8 bg-white/96 py-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
-      <CardHeader className="px-4">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-sm">{t('promptCardTitle')}</CardTitle>
-          {payloadId ? (
-            <span className="text-muted-foreground text-[11px]">{payloadId}</span>
-          ) : null}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 px-4">
-        <Section title={t('promptOriginalIntent')} body={originalIntent} />
-        <Section title={t('promptVisualProposal')} body={visualProposal} />
-        <Section title={t('promptExecutionPrompt')} body={compactPrompt} />
+    <div className="space-y-3 rounded-[22px] border border-black/6 bg-white px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+      <div className="space-y-1">
+        <p className="text-[11px] font-medium tracking-[0.08em] text-slate-400 uppercase">
+          {t('promptCardTitle')}
+        </p>
+        {payloadId ? (
+          <p className="text-[11px] text-slate-400">{payloadId}</p>
+        ) : null}
+      </div>
+
+      <div className="space-y-2 text-[13px] leading-6 text-slate-800">
+        <p className="whitespace-pre-wrap">
+          {t('promptOriginalIntent')}
+          {'\n'}
+          {originalIntent}
+        </p>
+        <p className="whitespace-pre-wrap">
+          {t('promptVisualProposal')}
+          {'\n'}
+          {visualProposal}
+        </p>
+        <p className="whitespace-pre-wrap">
+          {t('promptExecutionPrompt')}
+          {'\n'}
+          {compactPrompt}
+        </p>
         {executionPrompt.length > 180 ? (
           <button
             type="button"
@@ -85,8 +75,10 @@ export function AgentPromptCompareCard({
             {expanded ? t('promptCollapse') : t('promptExpand')}
           </button>
         ) : null}
+      </div>
+
         {styleOptions.length > 0 ? (
-          <div className="space-y-2 rounded-2xl border border-black/6 bg-slate-50 px-3 py-3">
+          <div className="space-y-2 pt-1">
             <p className="text-[11px] font-medium tracking-[0.08em] text-slate-500 uppercase">
               {t('promptStyleOptions')}
             </p>
@@ -105,30 +97,31 @@ export function AgentPromptCompareCard({
             </div>
           </div>
         ) : null}
-        <div className="flex flex-wrap gap-2 pt-1">
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
-            onClick={onRegenerate}
-          >
-            {t('promptRegenerate')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
-            onClick={onManualEdit}
-          >
-            {t('promptManualEdit')}
-          </Button>
-        </div>
-        <p className="text-[12px] leading-5 text-slate-500">
-          {t('promptConfirmHint')}
-        </p>
-      </CardContent>
-    </Card>
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+          onClick={onRegenerate}
+        >
+          {t('promptRegenerate')}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+          onClick={onManualEdit}
+        >
+          {t('promptManualEdit')}
+        </Button>
+      </div>
+
+      <p className="whitespace-pre-wrap text-[12px] leading-5 text-slate-500">
+        {t('promptConfirmHint')}
+      </p>
+    </div>
   )
 }
