@@ -44,7 +44,7 @@
 - [x] `AGENT-011` 创建 `components/agent/agent-header.tsx`
 - [x] `AGENT-012` 创建 `components/agent/agent-conversation.tsx`
 - [x] `AGENT-013` 创建 `components/agent/agent-message-item.tsx`
-- [ ] `AGENT-014` 创建 `components/agent/agent-composer.tsx`
+- [x] `AGENT-014` 创建 `components/agent/agent-composer.tsx`
 - [ ] `AGENT-015` 创建 `components/agent/agent-quick-actions.tsx`
 - [ ] `AGENT-016` 创建 `components/agent/agent-process-message.tsx`
 - [ ] `AGENT-017` 创建 `components/agent/agent-proposal-card.tsx`
