@@ -50,4 +50,36 @@ test.describe('Agent Workflow Creation', () => {
     await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
     await expect(page.getByText('Display', { exact: true })).toBeVisible()
   })
+
+  test('diagnoses the latest failed execution chain', async ({ page }) => {
+    await createProject(page)
+
+    const agentPanel = page.getByRole('complementary')
+    const composer = agentPanel.getByPlaceholder('描述你想搭建或修改的工作流...')
+    await composer.fill('帮我生成一张电商海报图片')
+    await composer.press('Enter')
+    await expect(agentPanel.getByText('Prompt 确认', { exact: true })).toBeVisible()
+    await agentPanel.getByRole('button', { name: '确认并执行' }).click()
+
+    const textInputNode = page.getByPlaceholder('输入文本...')
+    await expect(textInputNode).toBeVisible()
+    await textInputNode.click()
+    await textInputNode.press('Control+A')
+    await textInputNode.press('Backspace')
+
+    await page.getByRole('button', { name: '运行' }).first().click()
+
+    await expect(
+      agentPanel
+        .getByText(/最近一次执行没有成功收口：Node "Image Gen" failed: Image gen node received empty prompt/)
+        .first(),
+    ).toBeVisible()
+
+    await agentPanel.getByRole('button', { name: '为什么跑不通' }).click()
+
+    await expect(agentPanel.getByText(/我定位到最近一次失败主要卡在/)).toBeVisible()
+    await expect(agentPanel.getByText(/现象：.*Image gen node received empty prompt/)).toBeVisible()
+    await expect(agentPanel.getByText(/根因：/)).toBeVisible()
+    await expect(agentPanel.getByText(/建议：/)).toBeVisible()
+  })
 })
