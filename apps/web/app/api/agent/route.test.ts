@@ -1,0 +1,215 @@
+/**
+ * [INPUT]: 依赖 vitest，依赖 agent 路由模块，mock 认证与稳定 ID 生成
+ * [OUTPUT]: 对外提供 Agent API route 回归测试，覆盖 plan/diagnose/explain/refine-prompt 的成功与基础错误路径
+ * [POS]: app/api/agent 的路由测试闭环，保护右侧 Agent 面板依赖的四个核心端点
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/lib/api/auth', () => ({
+  requireAuth: vi.fn(),
+}))
+
+vi.mock('@/lib/nanoid', () => ({
+  nanoid: vi.fn(),
+}))
+
+import { requireAuth } from '@/lib/api/auth'
+import { nanoid } from '@/lib/nanoid'
+
+import { POST as diagnosePost } from './diagnose/route'
+import { POST as explainPost } from './explain/route'
+import { POST as planPost } from './plan/route'
+import { POST as refinePromptPost } from './refine-prompt/route'
+
+function createCanvasSummary(overrides: Record<string, unknown> = {}) {
+  return {
+    workflowId: 'wf-agent-1',
+    workflowName: 'Agent Workflow',
+    nodeCount: 0,
+    edgeCount: 0,
+    nodes: [],
+    disconnectedNodeIds: [],
+    displayMissingForNodeIds: [],
+    latestExecution: {
+      status: 'idle',
+    },
+    ...overrides,
+  }
+}
+
+describe('POST /api/agent/*', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(requireAuth).mockResolvedValue({ userId: 'user_agent_1' } as never)
+    vi.mocked(nanoid)
+      .mockReturnValueOnce('plan-seed')
+      .mockReturnValueOnce('prompt-seed')
+      .mockReturnValueOnce('refine-seed')
+  })
+
+  it('returns a prompt-confirmation image creation plan for image requests on empty canvas', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '帮我生成一张电商海报图片',
+          mode: 'create',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary(),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          id: 'plan_prompt-seed',
+          mode: 'create',
+          requiresConfirmation: true,
+          operations: expect.arrayContaining([
+            expect.objectContaining({ type: 'add_node', nodeType: 'text-input' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'image-gen' }),
+            expect.objectContaining({ type: 'request_prompt_confirmation' }),
+          ]),
+          promptConfirmation: expect.objectContaining({
+            id: 'prompt_plan-seed',
+            targetNodeId: 'draft-text-input',
+          }),
+        },
+      },
+    })
+  })
+
+  it('returns validation failure for malformed plan request payload', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'create',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary(),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: {
+        code: 'VALIDATION_FAILED',
+      },
+    })
+  })
+
+  it('returns diagnosis focused on failed execution context', async () => {
+    const response = await diagnosePost(
+      new Request('http://localhost/api/agent/diagnose', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '为什么这条链跑不通？',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 2,
+            edgeCount: 1,
+            latestExecution: {
+              status: 'failed',
+              failedNodeId: 'image-1',
+              failedReason: 'Provider timeout',
+            },
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        diagnosis: {
+          summary: '我定位到最近一次失败主要卡在 image-1。',
+          affectedNodeIds: ['image-1'],
+          suggestedOperations: [
+            {
+              type: 'focus_nodes',
+              nodeIds: ['image-1'],
+            },
+          ],
+        },
+      },
+    })
+  })
+
+  it('returns selected-node explanation when selection context exists', async () => {
+    const response = await explainPost(
+      new Request('http://localhost/api/agent/explain', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '解释一下这个节点',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 1,
+            selectedNodeId: 'llm-1',
+            nodes: [
+              {
+                id: 'llm-1',
+                type: 'llm',
+                label: '文案生成',
+                inputs: [{ id: 'prompt-in', label: 'Prompt', type: 'string' }],
+                outputs: [{ id: 'text-out', label: 'Response', type: 'string' }],
+                configSummary: {},
+              },
+            ],
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        answer: expect.stringContaining('当前选中的节点是“文案生成”。'),
+      },
+    })
+  })
+
+  it('returns prompt refinement payload with style direction and regenerate hint', async () => {
+    const response = await refinePromptPost(
+      new Request('http://localhost/api/agent/refine-prompt', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          originalIntent: '一个男孩在球场打篮球',
+          executionPrompt: 'A boy playing basketball on a court',
+          styleDirection: '更写实',
+          regenerate: true,
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        payload: {
+          id: 'prompt_refine-seed',
+          originalIntent: '一个男孩在球场打篮球',
+          visualProposal: expect.stringContaining('我重新整理了一版画面方向'),
+          executionPrompt: expect.stringContaining('风格方向：更写实'),
+          styleOptions: expect.arrayContaining([
+            expect.objectContaining({ id: 'realistic', label: '更写实' }),
+          ]),
+        },
+      },
+    })
+  })
+})
