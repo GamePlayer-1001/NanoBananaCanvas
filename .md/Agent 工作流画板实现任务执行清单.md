@@ -1,6 +1,6 @@
 # Agent 工作流画板实现任务执行清单
 
-> 文档版本：v1.0
+> 文档版本：v1.1
 > 创建日期：2026-04-30
 > 上游文档：`Agent 工作流画板最终技术设计稿.md`
 > 说明：本清单用于指导 Agent 工作流画板 V1 的真实开发执行、验收与留痕
@@ -43,11 +43,12 @@
 - [ ] `AGENT-010` 创建 `components/agent/agent-panel.tsx`
 - [ ] `AGENT-011` 创建 `components/agent/agent-header.tsx`
 - [ ] `AGENT-012` 创建 `components/agent/agent-conversation.tsx`
-- [ ] `AGENT-013` 创建 `components/agent/agent-composer.tsx`
-- [ ] `AGENT-014` 创建 `components/agent/agent-quick-actions.tsx`
-- [ ] `AGENT-015` 创建 `components/agent/agent-process-message.tsx`
-- [ ] `AGENT-016` 创建 `components/agent/agent-proposal-card.tsx`
-- [ ] `AGENT-017` 创建 `components/agent/agent-prompt-compare-card.tsx`
+- [ ] `AGENT-013` 创建 `components/agent/agent-message-item.tsx`
+- [ ] `AGENT-014` 创建 `components/agent/agent-composer.tsx`
+- [ ] `AGENT-015` 创建 `components/agent/agent-quick-actions.tsx`
+- [ ] `AGENT-016` 创建 `components/agent/agent-process-message.tsx`
+- [ ] `AGENT-017` 创建 `components/agent/agent-proposal-card.tsx`
+- [ ] `AGENT-018` 创建 `components/agent/agent-prompt-compare-card.tsx`
 
 ### 状态骨架
 
