@@ -284,4 +284,48 @@ describe('summarizeCanvas', () => {
       { type: 'llm', nodeIds: ['llm-a', 'llm-b'] },
     ])
   })
+
+  it('summarizes recent result assets from runtime outputs and generated media urls', () => {
+    useExecutionStore.getState().setNodeResult('llm-1', {
+      'text-out': 'A polished campaign headline for summer sneakers',
+    })
+
+    const summary = summarizeCanvas({
+      workflowId: 'wf_6',
+      nodes: [
+        createNode('llm-1', 'llm', {
+          data: {
+            label: 'Copywriter',
+            type: 'ai-model',
+            config: {},
+          },
+        }),
+        createNode('image-1', 'image-gen', {
+          data: {
+            label: 'Hero Image',
+            type: 'ai-model',
+            config: {
+              resultUrl: 'https://cdn.example.com/assets/hero-shot.png',
+            },
+          },
+        }),
+      ],
+      edges: [],
+    })
+
+    expect(summary.assets).toEqual([
+      {
+        id: 'llm-1:text',
+        kind: 'text',
+        sourceNodeId: 'llm-1',
+        summary: 'Copywriter 产出了文本结果：A polished campaign headline for summer sneakers',
+      },
+      {
+        id: 'image-1:image',
+        kind: 'image',
+        sourceNodeId: 'image-1',
+        summary: 'Hero Image 输出了 1 个图片资产（已生成文件）。',
+      },
+    ])
+  })
 })

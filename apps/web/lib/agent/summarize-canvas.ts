@@ -43,6 +43,7 @@ export function summarizeCanvas({
   const selectedNode = nodes.find((node) => node.selected)
   const lastAuditEntry = auditTrail.at(-1)
   const optimizationSignals = buildOptimizationSignals(nodes, edges)
+  const assets = summarizeResultAssets(nodes, execution.nodeResults)
 
   return {
     workflowId,
@@ -66,6 +67,7 @@ export function summarizeCanvas({
     displayMissingForNodeIds: nodes
       .filter((node) => needsDisplayButHasNoConsumer(node.id, node.type ?? '', edges))
       .map((node) => node.id),
+    assets,
     latestExecution: summarizeExecution(execution),
     template,
     auditTrail,
@@ -261,4 +263,111 @@ function findMissingMergeCandidates(nodes: AgentCanvasNode[], edges: AgentCanvas
     .filter((node) => (incomingCounts.get(node.id) ?? 0) >= 2)
     .filter((node) => !['text-merge', 'image-merge'].includes(node.type ?? ''))
     .map((node) => node.id)
+}
+
+function summarizeResultAssets(
+  nodes: AgentCanvasNode[],
+  nodeResults: Record<string, unknown>,
+) {
+  return nodes
+    .flatMap((node) => buildNodeAssets(node, nodeResults[node.id]))
+    .slice(0, AGENT_MAX_SUMMARY_NODES)
+}
+
+function buildNodeAssets(node: AgentCanvasNode, runtimeResult: unknown) {
+  const assets = new Map<string, { kind: 'image' | 'video' | 'audio' | 'text'; summary: string }>()
+  const config = isRecord(node.data?.config) ? node.data.config : {}
+
+  const resultUrl = typeof config.resultUrl === 'string' ? config.resultUrl.trim() : ''
+  if (resultUrl) {
+    const mediaKind = inferMediaKindFromUrl(resultUrl)
+    if (mediaKind) {
+      assets.set(mediaKind, {
+        kind: mediaKind,
+        summary: summarizeMediaAsset(node, mediaKind, resultUrl),
+      })
+    }
+  }
+
+  const textCandidates = [
+    typeof config.output === 'string' ? config.output : null,
+    typeof config.content === 'string' ? config.content : null,
+    extractTextFromRuntimeResult(runtimeResult),
+  ].filter((value): value is string => Boolean(value && value.trim()))
+
+  const latestText = textCandidates.at(-1)
+  if (latestText) {
+    assets.set('text', {
+      kind: 'text',
+      summary: summarizeTextAsset(node, latestText),
+    })
+  }
+
+  return Array.from(assets.entries()).map(([kind, asset]) => ({
+    id: `${node.id}:${kind}`,
+    kind: asset.kind,
+    sourceNodeId: node.id,
+    summary: asset.summary,
+  }))
+}
+
+function extractTextFromRuntimeResult(runtimeResult: unknown): string | null {
+  if (!runtimeResult || typeof runtimeResult !== 'object' || Array.isArray(runtimeResult)) {
+    return null
+  }
+
+  const result = runtimeResult as Record<string, unknown>
+  const candidate = result['text-out'] ?? result.content ?? result.text ?? result.output
+  return typeof candidate === 'string' && candidate.trim() ? candidate : null
+}
+
+function inferMediaKindFromUrl(url: string): 'image' | 'video' | 'audio' | null {
+  const normalized = url.toLowerCase()
+
+  if (
+    normalized.startsWith('data:image/') ||
+    /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(normalized)
+  ) {
+    return 'image'
+  }
+
+  if (
+    normalized.startsWith('data:video/') ||
+    /\.(mp4|webm|mov|avi)(\?|$)/.test(normalized)
+  ) {
+    return 'video'
+  }
+
+  if (
+    normalized.startsWith('data:audio/') ||
+    /\.(mp3|wav|ogg|m4a|aac)(\?|$)/.test(normalized)
+  ) {
+    return 'audio'
+  }
+
+  return null
+}
+
+function summarizeMediaAsset(
+  node: AgentCanvasNode,
+  kind: 'image' | 'video' | 'audio',
+  url: string,
+) {
+  const label = getNodeLabel(node)
+  const visibility = url.startsWith('data:') ? '内联结果' : '已生成文件'
+  return `${label} 输出了 1 个${kind === 'image' ? '图片' : kind === 'video' ? '视频' : '音频'}资产（${visibility}）。`
+}
+
+function summarizeTextAsset(node: AgentCanvasNode, text: string) {
+  const label = getNodeLabel(node)
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  const excerpt =
+    normalized.length > AGENT_MAX_SUMMARY_TEXT_LENGTH
+      ? `${normalized.slice(0, AGENT_MAX_SUMMARY_TEXT_LENGTH)}...`
+      : normalized
+  return `${label} 产出了文本结果：${excerpt}`
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

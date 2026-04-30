@@ -259,6 +259,12 @@ export interface CanvasSummary {
   nodes: CanvasSummaryNode[]
   disconnectedNodeIds: string[]
   displayMissingForNodeIds: string[]
+  assets?: Array<{
+    id: string
+    kind: 'image' | 'video' | 'audio' | 'text'
+    sourceNodeId: string
+    summary: string
+  }>
   latestExecution?: CanvasExecutionSummary
   template?: TemplateSummary
   auditTrail?: WorkflowAuditEntry[]
