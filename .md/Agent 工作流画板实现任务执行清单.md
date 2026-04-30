@@ -52,9 +52,9 @@
 
 ### 状态骨架
 
-- [ ] `AGENT-020` 创建 `stores/use-agent-store.ts`
-- [ ] `AGENT-021` 定义 `AgentMode / AgentSessionStatus / AgentMessage / AgentPlan` 基础类型
-- [ ] `AGENT-022` 实现消息追加、状态切换、待确认计划设置与清空
+- [x] `AGENT-020` 创建 `stores/use-agent-store.ts`
+- [x] `AGENT-021` 定义 `AgentMode / AgentSessionStatus / AgentMessage / AgentPlan` 基础类型
+- [x] `AGENT-022` 实现消息追加、状态切换、待确认计划设置与清空
 
 ### 编辑器接入
 
