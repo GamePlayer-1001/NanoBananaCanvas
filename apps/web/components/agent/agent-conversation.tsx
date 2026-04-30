@@ -31,8 +31,11 @@ type ConversationItem =
       title: string
       summary: string
       sourceLabel?: string
+      comparisonLabel?: string
       reasons?: string[]
       requiresConfirmation?: boolean
+      actionLabel?: string
+      onAction?: () => void
       changes?: Array<{
         label: string
         detail: string
@@ -106,7 +109,10 @@ export function AgentConversation({
               title={item.title}
               summary={item.summary}
               sourceLabel={item.sourceLabel}
+              comparisonLabel={item.comparisonLabel}
               reasons={item.reasons}
+              actionLabel={item.actionLabel}
+              onAction={item.onAction}
               changes={item.changes}
               requiresConfirmation={item.requiresConfirmation}
               />

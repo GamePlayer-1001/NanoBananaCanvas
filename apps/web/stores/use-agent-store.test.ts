@@ -14,8 +14,10 @@ const initialState = {
   status: 'idle' as const,
   messages: [],
   pendingPlan: null,
+  pendingPlanAlternatives: [],
   promptConfirmation: null,
   selectionContext: null,
+  conversationMemory: [],
   lastAppliedPlanId: null,
   errorMessage: null,
 }
@@ -100,14 +102,22 @@ describe('useAgentStore', () => {
 
   it('keeps pending plan and prompt confirmation in sync', () => {
     const plan = createPlan()
+    const alternative = {
+      ...plan,
+      id: 'plan-2',
+      summary: '更保守的海报工作流',
+    }
 
     useAgentStore.getState().setPendingPlan(plan)
+    useAgentStore.getState().setPendingPlanAlternatives([plan, alternative])
 
     expect(useAgentStore.getState().pendingPlan).toEqual(plan)
+    expect(useAgentStore.getState().pendingPlanAlternatives).toEqual([plan, alternative])
     expect(useAgentStore.getState().promptConfirmation).toEqual(plan.promptConfirmation)
 
     useAgentStore.getState().clearPendingPlan()
     expect(useAgentStore.getState().pendingPlan).toBeNull()
+    expect(useAgentStore.getState().pendingPlanAlternatives).toEqual([])
     expect(useAgentStore.getState().promptConfirmation).toEqual(plan.promptConfirmation)
 
     useAgentStore.getState().clearPromptConfirmation()
@@ -132,10 +142,19 @@ describe('useAgentStore', () => {
       nodeType: 'text-input',
       nodeLabel: '文本输入',
     })
+    useAgentStore.getState().rememberConversationTurn({
+      id: 'memory-1',
+      userMessage: '给我一版更商业化的方向',
+      summary: '用户希望当前工作流往更商业化的输出方向继续收敛。',
+      selectedNodeId: 'text-1',
+      selectedNodeLabel: '文本输入',
+      createdAt: '2026-04-30T00:00:02.000Z',
+    })
     useAgentStore.getState().setLastAppliedPlanId('plan-2')
     useAgentStore.getState().setErrorMessage('temporary error')
 
     expect(useAgentStore.getState().promptConfirmation).toEqual(payload)
+    expect(useAgentStore.getState().conversationMemory).toHaveLength(1)
 
     useAgentStore.getState().resetSession()
 

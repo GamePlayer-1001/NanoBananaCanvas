@@ -81,6 +81,8 @@ export default function CanvasPage({
     sendMessage,
     isSubmitting,
     applyPendingPlan,
+    pendingPlanAlternatives,
+    selectPendingPlanVariant,
     rejectPendingPlan,
     isApplying,
     regeneratePrompt,
@@ -153,6 +155,26 @@ export default function CanvasPage({
           }
         }
 
+        if (message.role === 'proposal-comparison') {
+          const primaryAlternative = pendingPlanAlternatives.find((plan) => plan.id !== pendingPlan?.id)
+          return {
+            id: message.id,
+            type: 'proposal' as const,
+            title: tAgent('proposalTitle'),
+            comparisonLabel: tAgent('proposalComparison'),
+            summary: '我先给你准备了多版方向提案，你可以先比较，再决定落哪一版。',
+            reasons: pendingPlanAlternatives
+              .slice(0, 3)
+              .map((plan) => `${plan.variantLabel ?? '默认方案'}：${plan.summary}`),
+            changes: [],
+            requiresConfirmation: true,
+            actionLabel: primaryAlternative
+              ? tAgent('proposalSwitchVariant', { label: primaryAlternative.variantLabel ?? '下一版' })
+              : undefined,
+            onAction: primaryAlternative ? () => selectPendingPlanVariant(primaryAlternative.id) : undefined,
+          }
+        }
+
         if (message.role === 'template-context') {
           return {
             id: message.id,
@@ -188,15 +210,19 @@ export default function CanvasPage({
           }
         }
 
-        return {
-          id: message.id,
-          type: 'message' as const,
-          role: toConversationRole(message),
-          text: message.text,
-          timestamp: new Date(message.createdAt).toLocaleTimeString(),
+        if (message.role === 'user' || message.role === 'assistant' || message.role === 'diagnosis') {
+          return {
+            id: message.id,
+            type: 'message' as const,
+            role: toConversationRole(message),
+            text: message.text,
+            timestamp: new Date(message.createdAt).toLocaleTimeString(),
+          }
         }
+
+        throw new Error(`Unhandled agent message role: ${String((message as { role?: string }).role)}`)
       }),
-    [expandedPromptId, messages, pendingPlan, promptConfirmation, status, tAgent],
+    [expandedPromptId, messages, pendingPlan, pendingPlanAlternatives, promptConfirmation, status, tAgent],
   )
 
   const modeLabel = {

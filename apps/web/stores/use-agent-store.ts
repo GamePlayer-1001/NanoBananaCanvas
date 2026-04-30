@@ -7,6 +7,7 @@
 
 import { create } from 'zustand'
 import type {
+  AgentConversationMemoryEntry,
   AgentMessage,
   AgentMode,
   AgentPlan,
@@ -19,6 +20,7 @@ export type {
   AgentMessage,
   AgentMode,
   AgentPlan,
+  AgentConversationMemoryEntry,
   AgentPromptStyleOption,
   AgentSelectionContext,
   AgentSessionStatus,
@@ -33,8 +35,10 @@ interface AgentStoreState {
   status: AgentSessionStatus
   messages: AgentMessage[]
   pendingPlan: AgentPlan | null
+  pendingPlanAlternatives: AgentPlan[]
   promptConfirmation: PromptConfirmationPayload | null
   selectionContext: AgentSelectionContext | null
+  conversationMemory: AgentConversationMemoryEntry[]
   lastAppliedPlanId: string | null
   errorMessage: string | null
 
@@ -42,10 +46,13 @@ interface AgentStoreState {
   setMode: (mode: AgentMode) => void
   setStatus: (status: AgentSessionStatus) => void
   setPendingPlan: (plan: AgentPlan | null) => void
+  setPendingPlanAlternatives: (plans: AgentPlan[]) => void
   clearPendingPlan: () => void
   setPromptConfirmation: (payload: PromptConfirmationPayload | null) => void
   clearPromptConfirmation: () => void
   setSelectionContext: (context: AgentSelectionContext | null) => void
+  rememberConversationTurn: (entry: AgentConversationMemoryEntry) => void
+  clearConversationMemory: () => void
   setLastAppliedPlanId: (planId: string | null) => void
   setErrorMessage: (message: string | null) => void
   resetSession: () => void
@@ -59,8 +66,10 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
   status: INITIAL_STATUS,
   messages: [],
   pendingPlan: null,
+  pendingPlanAlternatives: [],
   promptConfirmation: null,
   selectionContext: null,
+  conversationMemory: [],
   lastAppliedPlanId: null,
   errorMessage: null,
 
@@ -79,9 +88,12 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
       promptConfirmation: plan?.promptConfirmation ?? null,
     }),
 
+  setPendingPlanAlternatives: (plans) => set({ pendingPlanAlternatives: plans }),
+
   clearPendingPlan: () =>
     set({
       pendingPlan: null,
+      pendingPlanAlternatives: [],
     }),
 
   setPromptConfirmation: (payload) => set({ promptConfirmation: payload }),
@@ -89,6 +101,13 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
   clearPromptConfirmation: () => set({ promptConfirmation: null }),
 
   setSelectionContext: (context) => set({ selectionContext: context }),
+
+  rememberConversationTurn: (entry) =>
+    set((state) => ({
+      conversationMemory: [...state.conversationMemory, entry].slice(-4),
+    })),
+
+  clearConversationMemory: () => set({ conversationMemory: [] }),
 
   setLastAppliedPlanId: (planId) => set({ lastAppliedPlanId: planId }),
 
@@ -100,8 +119,10 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
       status: INITIAL_STATUS,
       messages: [],
       pendingPlan: null,
+      pendingPlanAlternatives: [],
       promptConfirmation: null,
       selectionContext: null,
+      conversationMemory: [],
       lastAppliedPlanId: null,
       errorMessage: null,
     }),

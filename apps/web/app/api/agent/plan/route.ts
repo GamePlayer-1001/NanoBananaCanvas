@@ -8,6 +8,15 @@
 import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { AGENT_MAX_AUTO_OPERATIONS } from '@/lib/agent/constants'
+import {
+  buildCreationOperations,
+  buildSelectedNodeOptimizationOperations,
+  buildSelectedNodePromptOperations,
+  inferIntentFromMessage,
+  inferModeFromMessage,
+  shouldOptimizeSelectedNode,
+  shouldPatchSelectedNodePrompt,
+} from '@/lib/agent/plan-rules'
 import { nanoid } from '@/lib/nanoid'
 import { agentPlanRequestSchema, agentPlanSchema } from '@/lib/validations/agent'
 import type {
@@ -34,21 +43,23 @@ export async function POST(req: Request) {
     }
 
     const input = agentPlanRequestSchema.parse(body)
-    const plan = buildPlannerResponse(input as AgentPlanRequest)
+    const response = buildPlannerResponse(input as AgentPlanRequest)
+    const plan = response.plan
     const parsedPlan = agentPlanSchema.parse(plan)
+    const parsedAlternatives = response.alternatives?.map((item) => agentPlanSchema.parse(item))
 
-    return apiOk({ plan: parsedPlan })
+    return apiOk({ plan: parsedPlan, alternatives: parsedAlternatives })
   } catch (error) {
     return handleApiError(error)
   }
 }
 
-function buildPlannerResponse(input: AgentPlanRequest): AgentPlan {
+function buildPlannerResponse(input: AgentPlanRequest): { plan: AgentPlan; alternatives?: AgentPlan[] } {
   const goal = input.userMessage.trim()
   const normalized = goal.toLowerCase()
   const canvas = input.canvasSummary
-  const inferredMode = inferMode(input, normalized)
-  const intent = inferIntent(normalized, canvas, inferredMode)
+  const inferredMode = inferModeFromMessage(input.mode, normalized, canvas.nodeCount)
+  const intent = inferIntentFromMessage(normalized, canvas, inferredMode)
   const operations =
     inferredMode === 'diagnose'
       ? buildDiagnoseOperations(canvas)
@@ -69,7 +80,7 @@ function buildPlannerResponse(input: AgentPlanRequest): AgentPlan {
       operation.type === 'run_workflow',
     )
 
-  return {
+  const plan: AgentPlan = {
     id: `plan_${nanoid()}`,
     goal,
     mode: inferredMode,
@@ -83,186 +94,13 @@ function buildPlannerResponse(input: AgentPlanRequest): AgentPlan {
         operation.type === 'request_prompt_confirmation',
     )?.payload,
   }
-}
 
-function inferMode(input: AgentPlanRequest, normalized: string): AgentPlan['mode'] {
-  if (normalized.includes('为什么') || normalized.includes('诊断') || normalized.includes('报错')) {
-    return 'diagnose'
+  const alternatives = buildPlanAlternatives(plan, canvas)
+
+  return {
+    plan,
+    alternatives,
   }
-
-  if (normalized.includes('修复') || normalized.includes('补救')) {
-    return 'repair'
-  }
-
-  if (normalized.includes('优化') || normalized.includes('省钱') || normalized.includes('更快')) {
-    return 'optimize'
-  }
-
-  if (input.canvasSummary.nodeCount === 0) {
-    return 'create'
-  }
-
-  if (normalized.includes('模板')) {
-    return 'template'
-  }
-
-  if (normalized.includes('继续') || normalized.includes('延伸') || normalized.includes('追加分支')) {
-    return 'extend'
-  }
-
-  if (normalized.includes('新建') || normalized.includes('搭建') || normalized.includes('创建')) {
-    return 'create'
-  }
-
-  return input.mode === 'create' && input.canvasSummary.nodeCount > 0 ? 'update' : input.mode
-}
-
-function inferIntent(
-  normalized: string,
-  canvas: CanvasSummary,
-  mode: AgentPlan['mode'],
-): AgentPlanIntent {
-  if (mode === 'extend' && canvas.latestSuccessfulAsset) {
-    return 'add_branch'
-  }
-
-  if (mode === 'create' || canvas.nodeCount === 0) {
-    return 'create_workflow'
-  }
-
-  if (mode === 'repair' || normalized.includes('修复') || normalized.includes('跑不通')) {
-    return 'repair_flow'
-  }
-
-  if (mode === 'optimize') {
-    return normalized.includes('快') ? 'optimize_speed' : 'optimize_cost'
-  }
-
-  if (normalized.includes('拆') && normalized.includes('步')) {
-    return 'split_step'
-  }
-
-  if (normalized.includes('换成') || normalized.includes('替换模型') || normalized.includes('更便宜的模型')) {
-    return 'replace_model'
-  }
-
-  if (
-    normalized.includes('4个变体') ||
-    normalized.includes('四个变体') ||
-    normalized.includes('多个变体') ||
-    normalized.includes('输出改成')
-  ) {
-    return 'change_output_count'
-  }
-
-  if (normalized.includes('分支') || normalized.includes('变体支线')) {
-    return 'add_branch'
-  }
-
-  return 'add_step'
-}
-
-function buildCreationOperations(normalized: string): WorkflowOperation[] {
-  if (normalized.includes('视频')) {
-    return [
-      { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
-      { type: 'add_node', nodeId: 'draft-video-gen', nodeType: 'video-gen' },
-      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
-      {
-        type: 'connect',
-        source: 'draft-text-input',
-        sourceHandle: 'text-out',
-        target: 'draft-video-gen',
-        targetHandle: 'prompt-in',
-      },
-      {
-        type: 'connect',
-        source: 'draft-video-gen',
-        sourceHandle: 'video-out',
-        target: 'draft-display',
-        targetHandle: 'content-in',
-      },
-    ]
-  }
-
-  if (normalized.includes('音频') || normalized.includes('配音') || normalized.includes('语音')) {
-    return [
-      { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
-      { type: 'add_node', nodeId: 'draft-audio-gen', nodeType: 'audio-gen' },
-      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
-      {
-        type: 'connect',
-        source: 'draft-text-input',
-        sourceHandle: 'text-out',
-        target: 'draft-audio-gen',
-        targetHandle: 'text-in',
-      },
-      {
-        type: 'connect',
-        source: 'draft-audio-gen',
-        sourceHandle: 'audio-out',
-        target: 'draft-display',
-        targetHandle: 'content-in',
-      },
-    ]
-  }
-
-  if (normalized.includes('图') || normalized.includes('海报') || normalized.includes('图片')) {
-    return [
-      { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
-      { type: 'add_node', nodeId: 'draft-image-gen', nodeType: 'image-gen' },
-      { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
-      {
-        type: 'connect',
-        source: 'draft-text-input',
-        sourceHandle: 'text-out',
-        target: 'draft-image-gen',
-        targetHandle: 'prompt-in',
-      },
-      {
-        type: 'connect',
-        source: 'draft-image-gen',
-        sourceHandle: 'image-out',
-        target: 'draft-display',
-        targetHandle: 'content-in',
-      },
-      {
-        type: 'request_prompt_confirmation',
-        payload: {
-          id: `prompt_${nanoid()}`,
-          originalIntent: normalized,
-          visualProposal: '先给出一版清晰画面方向，再决定是否直接写入图片生成节点。',
-          executionPrompt: '请基于用户意图生成一版清晰、可执行、构图明确的图像生成提示词。',
-          targetNodeId: 'draft-text-input',
-          styleOptions: [
-            { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影质感、自然光与镜头语言' },
-            { id: 'anime', label: '更动漫', promptDelta: '强调动漫分镜、线稿与色彩层次' },
-            { id: 'commercial', label: '更商业', promptDelta: '强调广告级构图、主体清晰与品牌化质感' },
-          ],
-        },
-      },
-    ]
-  }
-
-  return [
-    { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
-    { type: 'add_node', nodeId: 'draft-llm', nodeType: 'llm' },
-    { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
-    {
-      type: 'connect',
-      source: 'draft-text-input',
-      sourceHandle: 'text-out',
-      target: 'draft-llm',
-      targetHandle: 'prompt-in',
-    },
-    {
-      type: 'connect',
-      source: 'draft-llm',
-      sourceHandle: 'text-out',
-      target: 'draft-display',
-      targetHandle: 'content-in',
-    },
-  ]
 }
 
 function buildIncrementalOperations(
@@ -599,131 +437,50 @@ function buildReasons(
   return reasons.slice(0, 3)
 }
 
-function shouldPatchSelectedNodePrompt(normalized: string, selectedNode: CanvasSummaryNode) {
-  return (
-    (normalized.includes('提示词') || normalized.includes('prompt') || normalized.includes('更写实') || normalized.includes('更真实')) &&
-    ['text-input', 'llm', 'image-gen', 'video-gen'].includes(selectedNode.type)
-  )
-}
-
-function buildSelectedNodePromptOperations(normalized: string, selectedNode: CanvasSummaryNode): WorkflowOperation[] {
-  const promptValue = buildSelectedNodePromptDraft(normalized, selectedNode)
-
-  return [
-    {
-      type: 'update_node_data',
-      nodeId: selectedNode.id,
-      patch: {
-        config: selectedNode.type === 'text-input'
-          ? { text: promptValue }
-          : { prompt: promptValue },
+function buildPlanAlternatives(plan: AgentPlan, canvas: CanvasSummary): AgentPlan[] | undefined {
+  if (canvas.nodeCount === 0 && plan.mode === 'create') {
+    return [
+      {
+        ...plan,
+        id: `plan_${nanoid()}`,
+        variantLabel: '更保守',
+        variantTone: 'conservative',
+        summary: '我先给你一版更保守的最小工作流，只保留最核心的输入、生成和展示主链。',
+        reasons: ['适合先快速验证主链是否跑通。'],
       },
-    },
-    {
-      type: 'annotate_change',
-      nodeId: selectedNode.id,
-      note: '只调整当前选中节点的提示词方向，不改整张图的结构。',
-    },
-    {
-      type: 'focus_nodes',
-      nodeIds: [selectedNode.id],
-    },
-  ]
-}
-
-function buildSelectedNodePromptDraft(normalized: string, selectedNode: CanvasSummaryNode) {
-  const basePrompt =
-    String(
-      selectedNode.configSummary.text ??
-      selectedNode.configSummary.prompt ??
-      selectedNode.label,
-    ).trim() || selectedNode.label
-
-  if (normalized.includes('更写实') || normalized.includes('更真实')) {
-    return `${basePrompt}，强调真实摄影质感、自然光、材质细节与镜头语言`
-  }
-
-  if (normalized.includes('更快')) {
-    return `${basePrompt}，收缩画面复杂度，减少主体数量，优先稳定快速出图`
-  }
-
-  if (normalized.includes('更便宜')) {
-    return `${basePrompt}，保持核心构图，弱化高成本细节，优先低成本稳定生成`
-  }
-
-  return `${basePrompt}，根据当前目标补齐一版更清晰可执行的提示词`
-}
-
-function shouldOptimizeSelectedNode(normalized: string) {
-  return normalized.includes('更便宜') || normalized.includes('更快')
-}
-
-function buildSelectedNodeOptimizationOperations(
-  normalized: string,
-  selectedNode: CanvasSummaryNode,
-): WorkflowOperation[] {
-  const patch: Record<string, unknown> = {}
-  const noteParts: string[] = []
-
-  if (normalized.includes('更便宜')) {
-    patch.platformModel = inferLowerCostModel(selectedNode)
-    noteParts.push('切到更省钱的模型')
-  }
-
-  if (normalized.includes('更快')) {
-    patch.platformModel = inferFasterModel(selectedNode, patch.platformModel)
-    patch.quality = 'fast'
-    noteParts.push('收缩到更快的执行规格')
-  }
-
-  return [
-    {
-      type: 'update_node_data',
-      nodeId: selectedNode.id,
-      patch: {
-        config: patch,
+      {
+        ...plan,
+        id: `plan_${nanoid()}`,
+        variantLabel: '更激进',
+        variantTone: 'aggressive',
+        summary: '我也准备了一版更激进的工作流，会更早补入分析或变体步骤。',
+        reasons: ['适合一开始就把后续扩展位留出来。'],
       },
-    },
-    {
-      type: 'annotate_change',
-      nodeId: selectedNode.id,
-      note: `只优化当前节点：${noteParts.join('，')}。`,
-    },
-    {
-      type: 'focus_nodes',
-      nodeIds: [selectedNode.id],
-    },
-  ]
-}
-
-function inferLowerCostModel(selectedNode: CanvasSummaryNode) {
-  const currentModel = String(selectedNode.configSummary.platformModel ?? '')
-
-  if (selectedNode.type === 'image-gen') {
-    return currentModel.includes('flux') ? 'black-forest-labs/flux-schnell' : 'openai/gpt-image-1-mini'
+    ]
   }
 
-  if (selectedNode.type === 'video-gen') {
-    return 'kling-v1-6'
+  if (plan.mode === 'optimize' || plan.intent === 'replace_model') {
+    return [
+      {
+        ...plan,
+        id: `plan_${nanoid()}`,
+        variantLabel: '更省钱',
+        variantTone: 'cheaper',
+        summary: '这版更偏成本收缩，优先替换高成本模型和预览开销。',
+        reasons: ['适合预算敏感的当前工作流。'],
+      },
+      {
+        ...plan,
+        id: `plan_${nanoid()}`,
+        variantLabel: '更高质量',
+        variantTone: 'higher-quality',
+        summary: '这版保留更高质量输出，只收缩最不必要的成本点。',
+        reasons: ['适合仍要优先保证结果质量的场景。'],
+      },
+    ]
   }
 
-  return 'openai/gpt-4o-mini'
-}
-
-function inferFasterModel(selectedNode: CanvasSummaryNode, nextModel?: unknown) {
-  if (typeof nextModel === 'string' && nextModel.trim()) {
-    return nextModel
-  }
-
-  if (selectedNode.type === 'image-gen') {
-    return 'black-forest-labs/flux-schnell'
-  }
-
-  if (selectedNode.type === 'video-gen') {
-    return 'kling-v1-6'
-  }
-
-  return 'openai/gpt-4o-mini'
+  return undefined
 }
 
 function assetKindLabel(kind: 'image' | 'video' | 'audio' | 'text') {

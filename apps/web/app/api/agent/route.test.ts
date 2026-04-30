@@ -84,6 +84,16 @@ describe('POST /api/agent/*', () => {
             targetNodeId: 'draft-text-input',
           }),
         },
+        alternatives: expect.arrayContaining([
+          expect.objectContaining({
+            variantLabel: '更保守',
+            variantTone: 'conservative',
+          }),
+          expect.objectContaining({
+            variantLabel: '更激进',
+            variantTone: 'aggressive',
+          }),
+        ]),
       },
     })
   })
@@ -142,6 +152,16 @@ describe('POST /api/agent/*', () => {
             }),
           ]),
         },
+        alternatives: expect.arrayContaining([
+          expect.objectContaining({
+            variantLabel: '更省钱',
+            variantTone: 'cheaper',
+          }),
+          expect.objectContaining({
+            variantLabel: '更高质量',
+            variantTone: 'higher-quality',
+          }),
+        ]),
       },
     })
   })

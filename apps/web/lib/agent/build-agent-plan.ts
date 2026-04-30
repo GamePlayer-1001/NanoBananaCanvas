@@ -6,9 +6,9 @@
  */
 
 import { agentPlanRequestSchema, agentPlanResponseSchema } from '@/lib/validations/agent'
-import type { AgentPlan, AgentPlanRequest } from './types'
+import type { AgentPlan, AgentPlanRequest, AgentPlanResponse } from './types'
 
-export async function buildAgentPlan(input: AgentPlanRequest): Promise<AgentPlan> {
+export async function buildAgentPlan(input: AgentPlanRequest): Promise<AgentPlanResponse> {
   const request = agentPlanRequestSchema.parse(input)
 
   const response = await fetch('/api/agent/plan', {
@@ -41,5 +41,8 @@ export async function buildAgentPlan(input: AgentPlanRequest): Promise<AgentPlan
   }
 
   const parsed = agentPlanResponseSchema.parse(payload)
-  return parsed.data.plan
+  return {
+    plan: parsed.data.plan,
+    alternatives: parsed.data.alternatives,
+  }
 }

@@ -28,6 +28,9 @@ interface AgentProposalCardProps {
   changes?: AgentProposalChange[]
   requiresConfirmation?: boolean
   sourceLabel?: string
+  comparisonLabel?: string
+  actionLabel?: string
+  onAction?: () => void
 }
 
 export function AgentProposalCard({
@@ -37,6 +40,9 @@ export function AgentProposalCard({
   changes = [],
   requiresConfirmation = false,
   sourceLabel,
+  comparisonLabel,
+  actionLabel,
+  onAction,
 }: AgentProposalCardProps) {
   const t = useTranslations('agentPanel')
   const riskLabel: Record<NonNullable<AgentProposalChange['risk']>, string> = {
@@ -52,6 +58,7 @@ export function AgentProposalCard({
           <CardTitle className="text-sm">{title}</CardTitle>
           <div className="flex items-center gap-2">
             {sourceLabel ? <Badge variant="outline">{sourceLabel}</Badge> : null}
+            {comparisonLabel ? <Badge variant="secondary">{comparisonLabel}</Badge> : null}
             <Badge variant={requiresConfirmation ? 'default' : 'secondary'}>
               {requiresConfirmation ? t('proposalStatusPending') : t('proposalStatusReady')}
             </Badge>
@@ -91,6 +98,18 @@ export function AgentProposalCard({
               <p className="mt-1 text-xs leading-5 text-slate-600">{change.detail}</p>
             </div>
           ))}
+        </CardContent>
+      ) : null}
+
+      {actionLabel && onAction ? (
+        <CardContent className="px-4 pt-0">
+          <button
+            type="button"
+            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50"
+            onClick={onAction}
+          >
+            {actionLabel}
+          </button>
         </CardContent>
       ) : null}
     </Card>

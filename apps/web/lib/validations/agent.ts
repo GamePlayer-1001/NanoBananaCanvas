@@ -63,6 +63,27 @@ const templateConversationSummarySchema = z.object({
   lastAuditEntry: workflowAuditEntrySchema.optional(),
 })
 
+const canvasRecentTimelineEntrySchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['template', 'agent', 'execution', 'result']),
+  summary: z.string().min(1),
+  createdAt: z.string().min(1).optional(),
+})
+
+const canvasClusterSummarySchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  nodeIds: z.array(z.string().min(1)).min(1),
+  nodeTypes: z.array(z.string().min(1)).min(1),
+  summary: z.string().min(1),
+})
+
+const canvasSubchainSummarySchema = z.object({
+  id: z.string().min(1),
+  nodeIds: z.array(z.string().min(1)).min(1),
+  summary: z.string().min(1),
+})
+
 const canvasSummaryNodeSchema = z.object({
   id: z.string().min(1),
   type: z.string().min(1),
@@ -231,6 +252,8 @@ export const agentPlanSchema = z.object({
       'explain_flow',
     ])
     .optional(),
+  variantLabel: z.string().min(1).optional(),
+  variantTone: z.enum(['balanced', 'conservative', 'aggressive', 'cheaper', 'higher-quality']).optional(),
   summary: z.string().min(1),
   reasons: z.array(z.string().min(1)).min(1),
   requiresConfirmation: z.boolean(),
@@ -246,6 +269,7 @@ export const agentPlanRequestSchema = z.object({
   canvasSummary: z.object({
     workflowId: z.string().min(1),
     workflowName: z.string().optional(),
+    workflowGoal: z.string().min(1).optional(),
     nodeCount: z.number().int().nonnegative(),
     edgeCount: z.number().int().nonnegative(),
     selectedNodeId: z.string().optional(),
@@ -273,6 +297,11 @@ export const agentPlanRequestSchema = z.object({
         summary: z.string().min(1),
       })
       .optional(),
+    assetSummary: z.string().min(1).optional(),
+    diagnosisSummary: z.string().min(1).optional(),
+    clusters: z.array(canvasClusterSummarySchema).optional(),
+    subchains: z.array(canvasSubchainSummarySchema).optional(),
+    recentTimeline: z.array(canvasRecentTimelineEntrySchema).optional(),
     template: templateSummarySchema.optional(),
     auditTrail: z.array(workflowAuditEntrySchema).optional(),
     templateContext: templateConversationSummarySchema.optional(),
@@ -291,6 +320,7 @@ export const agentPlanResponseSchema = z.object({
   ok: z.literal(true),
   data: z.object({
     plan: agentPlanSchema,
+    alternatives: z.array(agentPlanSchema).optional(),
   }),
 })
 

@@ -1651,6 +1651,8 @@
     "proposalRiskLow": "低风险",
     "proposalRiskMedium": "需留意",
     "proposalRiskHigh": "建议确认",
+    "proposalComparison": "多方案比较",
+    "proposalSwitchVariant": "切换到{label}",
     "modeCreate": "开始搭建",
     "modeUpdate": "修改当前工作流",
     "modeDiagnose": "诊断问题",

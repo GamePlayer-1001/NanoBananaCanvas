@@ -13,14 +13,18 @@ import type {
   AgentSelectionContext,
   AgentCanvasEdge,
   AgentCanvasNode,
+  CanvasRecentTimelineEntry,
   CanvasExecutionSummary,
   CanvasSummary,
 } from './types'
 import {
   AGENT_CONFIG_SUMMARY_KEYS,
+  AGENT_MAX_CLUSTERS,
   AGENT_MAX_CONFIG_KEYS,
   AGENT_MAX_SUMMARY_NODES,
   AGENT_MAX_SUMMARY_TEXT_LENGTH,
+  AGENT_MAX_SUBCHAINS,
+  AGENT_MAX_TIMELINE_ENTRIES,
 } from './constants'
 
 interface SummarizeCanvasOptions {
@@ -48,10 +52,22 @@ export function summarizeCanvas({
   const selectionContext = selectedNode
     ? buildSelectionContext(selectedNode, assets, execution)
     : undefined
+  const latestExecution = summarizeExecution(execution)
+  const workflowGoal = buildWorkflowGoal(nodes, template)
+  const diagnosisSummary = buildDiagnosisSummary(selectionContext, latestExecution)
+  const clusters = buildClusterSummaries(nodes)
+  const subchains = buildSubchainSummaries(nodes, edges)
+  const recentTimeline = buildRecentTimeline({
+    assets,
+    latestExecution,
+    auditTrail,
+    selectedNode,
+  })
 
   return {
     workflowId,
     workflowName,
+    workflowGoal,
     nodeCount: nodes.length,
     edgeCount: edges.length,
     selectedNodeId: selectedNode?.id,
@@ -73,8 +89,13 @@ export function summarizeCanvas({
       .filter((node) => needsDisplayButHasNoConsumer(node.id, node.type ?? '', edges))
       .map((node) => node.id),
     assets,
+    assetSummary: buildAssetSummary(assets),
+    diagnosisSummary,
+    clusters,
+    subchains,
+    recentTimeline,
     latestSuccessfulAsset: assets.at(-1),
-    latestExecution: summarizeExecution(execution),
+    latestExecution,
     template,
     auditTrail,
     optimizationSignals,
@@ -257,6 +278,179 @@ function buildSelectionExecutionHint(
   }
 
   return undefined
+}
+
+function buildWorkflowGoal(
+  nodes: AgentCanvasNode[],
+  template?: TemplateSummary,
+) {
+  if (template?.goal) {
+    return template.goal
+  }
+
+  const primaryNode = nodes.find((node) => ['image-gen', 'video-gen', 'audio-gen', 'llm'].includes(node.type ?? ''))
+  if (!primaryNode) return undefined
+
+  return `${getNodeLabel(primaryNode)} 为当前工作流的核心产出节点。`
+}
+
+function buildAssetSummary(
+  assets: Array<{
+    id: string
+    kind: 'image' | 'video' | 'audio' | 'text'
+    sourceNodeId: string
+    summary: string
+  }>,
+) {
+  if (assets.length === 0) {
+    return '当前还没有沉淀出明显结果资产。'
+  }
+
+  const byKind = assets.reduce<Record<string, number>>((acc, asset) => {
+    acc[asset.kind] = (acc[asset.kind] ?? 0) + 1
+    return acc
+  }, {})
+
+  return Object.entries(byKind)
+    .map(([kind, count]) => `${count} 个${kind === 'image' ? '图片' : kind === 'video' ? '视频' : kind === 'audio' ? '音频' : '文本'}结果`)
+    .join('，')
+}
+
+function buildDiagnosisSummary(
+  selectionContext: AgentSelectionContext | undefined,
+  latestExecution: CanvasExecutionSummary,
+) {
+  if (selectionContext?.executionStatus === 'failed') {
+    return selectionContext.executionHint ?? '当前选中节点最近一次执行失败。'
+  }
+
+  if (latestExecution.status === 'failed') {
+    return latestExecution.failedReason
+      ? `最近一次执行失败：${latestExecution.failedReason}`
+      : '最近一次执行失败，但还没有更详细的错误线索。'
+  }
+
+  if (latestExecution.status === 'running') {
+    return '当前工作流正在执行。'
+  }
+
+  return '当前没有明显诊断风险。'
+}
+
+function buildClusterSummaries(nodes: AgentCanvasNode[]) {
+  const groups = new Map<string, AgentCanvasNode[]>()
+
+  for (const node of nodes) {
+    const key = getNodeMeta(node.type ?? '')?.category ?? node.type ?? 'unknown'
+    const current = groups.get(key) ?? []
+    current.push(node)
+    groups.set(key, current)
+  }
+
+  return Array.from(groups.entries())
+    .slice(0, AGENT_MAX_CLUSTERS)
+    .map(([key, group], index) => ({
+      id: `cluster_${index}_${key}`,
+      label: key,
+      nodeIds: group.map((node) => node.id),
+      nodeTypes: Array.from(new Set(group.map((node) => node.type ?? 'unknown'))),
+      summary: `${group.length} 个${key}节点，主要包括 ${group.slice(0, 3).map((node) => getNodeLabel(node)).join('、')}。`,
+    }))
+}
+
+function buildSubchainSummaries(nodes: AgentCanvasNode[], edges: AgentCanvasEdge[]) {
+  const rootNodes = nodes.filter((node) => !edges.some((edge) => edge.target === node.id))
+  return rootNodes.slice(0, AGENT_MAX_SUBCHAINS).map((root, index) => {
+    const chainNodeIds = collectReachableNodeIds(root.id, edges).slice(0, AGENT_MAX_SUMMARY_NODES)
+    const chainLabels = chainNodeIds
+      .map((nodeId) => nodes.find((node) => node.id === nodeId))
+      .filter((node): node is AgentCanvasNode => Boolean(node))
+      .map((node) => getNodeLabel(node))
+
+    return {
+      id: `subchain_${index}_${root.id}`,
+      nodeIds: chainNodeIds,
+      summary: `${chainLabels.slice(0, 4).join(' -> ')}${chainLabels.length > 4 ? ' -> ...' : ''}`,
+    }
+  })
+}
+
+function collectReachableNodeIds(startNodeId: string, edges: AgentCanvasEdge[]) {
+  const visited = new Set<string>([startNodeId])
+  const ordered = [startNodeId]
+  const queue = [startNodeId]
+
+  while (queue.length > 0) {
+    const current = queue.shift()
+    if (!current) continue
+
+    for (const edge of edges) {
+      if (edge.source !== current || visited.has(edge.target)) continue
+      visited.add(edge.target)
+      ordered.push(edge.target)
+      queue.push(edge.target)
+    }
+  }
+
+  return ordered
+}
+
+function buildRecentTimeline({
+  assets,
+  latestExecution,
+  auditTrail,
+  selectedNode,
+}: {
+  assets: Array<{
+    id: string
+    kind: 'image' | 'video' | 'audio' | 'text'
+    sourceNodeId: string
+    summary: string
+  }>
+  latestExecution: CanvasExecutionSummary
+  auditTrail: WorkflowAuditEntry[]
+  selectedNode?: AgentCanvasNode
+}) {
+  const timeline: CanvasRecentTimelineEntry[] = [
+    ...auditTrail.slice(-2).map((entry) => ({
+      id: entry.id,
+      kind: 'template' as const,
+      summary: entry.message,
+      createdAt: entry.createdAt,
+    })),
+  ]
+
+  if (selectedNode) {
+    timeline.push({
+      id: `focus_${selectedNode.id}`,
+      kind: 'agent',
+      summary: `当前焦点节点切到 ${getNodeLabel(selectedNode)}。`,
+    })
+  }
+
+  if (latestExecution.status !== 'idle') {
+    timeline.push({
+      id: `execution_${latestExecution.status}`,
+      kind: 'execution',
+      summary:
+        latestExecution.status === 'failed'
+          ? `执行失败：${latestExecution.failedReason ?? '未记录详细错误'}`
+          : latestExecution.status === 'running'
+            ? '工作流正在执行中。'
+            : '最近一次执行已经完成。',
+    })
+  }
+
+  const latestAsset = assets.at(-1)
+  if (latestAsset) {
+    timeline.push({
+      id: latestAsset.id,
+      kind: 'result',
+      summary: latestAsset.summary,
+    })
+  }
+
+  return timeline.slice(-AGENT_MAX_TIMELINE_ENTRIES)
 }
 
 function buildOptimizationSignals(nodes: AgentCanvasNode[], edges: AgentCanvasEdge[]) {

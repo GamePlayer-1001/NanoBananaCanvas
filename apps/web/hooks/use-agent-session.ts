@@ -44,14 +44,18 @@ export function useAgentSession({
   const { execute, executeFromNode } = useWorkflowExecutor(workflowId)
   const mode = useAgentStore((state) => state.mode)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
+  const pendingPlanAlternatives = useAgentStore((state) => state.pendingPlanAlternatives)
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const setStatus = useAgentStore((state) => state.setStatus)
   const setPendingPlan = useAgentStore((state) => state.setPendingPlan)
+  const setPendingPlanAlternatives = useAgentStore((state) => state.setPendingPlanAlternatives)
   const clearPendingPlan = useAgentStore((state) => state.clearPendingPlan)
   const setErrorMessage = useAgentStore((state) => state.setErrorMessage)
   const setLastAppliedPlanId = useAgentStore((state) => state.setLastAppliedPlanId)
   const setPromptConfirmation = useAgentStore((state) => state.setPromptConfirmation)
   const clearPromptConfirmation = useAgentStore((state) => state.clearPromptConfirmation)
+  const selectionContext = useAgentStore((state) => state.selectionContext)
+  const rememberConversationTurn = useAgentStore((state) => state.rememberConversationTurn)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
@@ -216,12 +220,14 @@ export function useAgentSession({
           ? buildTemplatePlan
           : buildAgentPlan
 
-      const plan = await planBuilder({
+      const planned = await planBuilder({
         userMessage: value,
         mode,
         canvasSummary,
         locale,
       })
+      const plan = 'plan' in planned ? planned.plan : planned
+      const alternatives = 'alternatives' in planned && planned.alternatives ? planned.alternatives : []
 
       appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.validating))
       const validation = validateAgentPlan(plan)
@@ -236,6 +242,15 @@ export function useAgentSession({
       }
 
       setPendingPlan(nextPlan)
+      setPendingPlanAlternatives([nextPlan, ...alternatives])
+      rememberConversationTurn({
+        id: crypto.randomUUID(),
+        userMessage: value,
+        summary: nextPlan.summary,
+        selectedNodeId: selectionContext?.nodeId,
+        selectedNodeLabel: selectionContext?.nodeLabel,
+        createdAt: new Date().toISOString(),
+      })
 
       if (nextPlan.templateContext) {
         appendMessage({
@@ -252,6 +267,15 @@ export function useAgentSession({
         planId: nextPlan.id,
         createdAt: new Date().toISOString(),
       })
+
+      if (alternatives.length > 0) {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'proposal-comparison',
+          proposalIds: [nextPlan.id, ...alternatives.map((item) => item.id)],
+          createdAt: new Date().toISOString(),
+        })
+      }
 
       if (nextPlan.promptConfirmation) {
         appendMessage({
@@ -273,6 +297,7 @@ export function useAgentSession({
           ? error.message
           : tAgent(AGENT_ERROR_FALLBACK_KEY)
       setPendingPlan(null)
+      setPendingPlanAlternatives([])
       setStatus('error')
       setErrorMessage(message)
       appendMessage({
@@ -514,10 +539,20 @@ export function useAgentSession({
     sendMessage,
     isSubmitting,
     applyPendingPlan,
+    pendingPlanAlternatives,
+    selectPendingPlanVariant,
     rejectPendingPlan,
     isApplying,
     regeneratePrompt,
     confirmPromptAndRun,
+  }
+
+  function selectPendingPlanVariant(planId: string) {
+    const nextPlan = pendingPlanAlternatives.find((plan) => plan.id === planId)
+    if (!nextPlan) return
+    setPendingPlan(nextPlan)
+    setPromptConfirmation(nextPlan.promptConfirmation ?? null)
+    setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
   }
 }
 

@@ -1651,6 +1651,8 @@
     "proposalRiskLow": "Low risk",
     "proposalRiskMedium": "Needs review",
     "proposalRiskHigh": "Confirm first",
+    "proposalComparison": "Compare proposals",
+    "proposalSwitchVariant": "Switch to {label}",
     "modeCreate": "Start Building",
     "modeUpdate": "Update Workflow",
     "modeDiagnose": "Diagnose Issue",

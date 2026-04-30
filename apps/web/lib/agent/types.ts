@@ -85,6 +85,36 @@ export interface AgentPromptStyleOption {
   promptDelta: string
 }
 
+export interface CanvasRecentTimelineEntry {
+  id: string
+  kind: 'template' | 'agent' | 'execution' | 'result'
+  summary: string
+  createdAt?: string
+}
+
+export interface CanvasClusterSummary {
+  id: string
+  label: string
+  nodeIds: string[]
+  nodeTypes: string[]
+  summary: string
+}
+
+export interface CanvasSubchainSummary {
+  id: string
+  nodeIds: string[]
+  summary: string
+}
+
+export interface AgentConversationMemoryEntry {
+  id: string
+  userMessage: string
+  summary: string
+  selectedNodeId?: string
+  selectedNodeLabel?: string
+  createdAt: string
+}
+
 export interface PromptConfirmationPayload {
   id: string
   originalIntent: string
@@ -186,6 +216,8 @@ export interface AgentPlan {
   goal: string
   mode: AgentMode
   intent?: AgentPlanIntent
+  variantLabel?: string
+  variantTone?: 'balanced' | 'conservative' | 'aggressive' | 'cheaper' | 'higher-quality'
   summary: string
   reasons: string[]
   requiresConfirmation: boolean
@@ -218,6 +250,12 @@ export type AgentMessage =
       id: string
       role: 'proposal'
       planId: string
+      createdAt: string
+    }
+  | {
+      id: string
+      role: 'proposal-comparison'
+      proposalIds: string[]
       createdAt: string
     }
   | {
@@ -258,6 +296,7 @@ export interface CanvasExecutionSummary {
 export interface CanvasSummary {
   workflowId: string
   workflowName?: string
+  workflowGoal?: string
   nodeCount: number
   edgeCount: number
   selectedNodeId?: string
@@ -280,6 +319,11 @@ export interface CanvasSummary {
     summary: string
   }
   latestExecution?: CanvasExecutionSummary
+  assetSummary?: string
+  diagnosisSummary?: string
+  clusters?: CanvasClusterSummary[]
+  subchains?: CanvasSubchainSummary[]
+  recentTimeline?: CanvasRecentTimelineEntry[]
   template?: TemplateSummary
   auditTrail?: WorkflowAuditEntry[]
   templateContext?: TemplateConversationSummary
@@ -295,6 +339,7 @@ export interface AgentPlanRequest {
 
 export interface AgentPlanResponse {
   plan: AgentPlan
+  alternatives?: AgentPlan[]
 }
 
 export interface PromptConfirmationRequest {

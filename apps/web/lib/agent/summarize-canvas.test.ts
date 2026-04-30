@@ -118,6 +118,7 @@ describe('summarizeCanvas', () => {
     expect(summary.workflowName).toBe('Poster Workflow')
     expect(summary.nodeCount).toBe(3)
     expect(summary.edgeCount).toBe(1)
+    expect(summary.workflowGoal).toBe('Poster Image 为当前工作流的核心产出节点。')
     expect(summary.selectedNodeId).toBe('prompt')
     expect(summary.selectedNodeType).toBe('text-input')
     expect(summary.selectedNodeLabel).toBe('Prompt Writer')
@@ -139,6 +140,7 @@ describe('summarizeCanvas', () => {
     })
     expect(summary.nodes[1]?.inputs.map((item) => item.id)).toEqual(['prompt-in', 'image-in'])
     expect(summary.nodes[1]?.outputs.map((item) => item.id)).toEqual(['image-out'])
+    expect(summary.subchains?.[0]?.summary).toContain('Prompt Writer -> Poster Image')
   })
 
   it('compresses whitelisted text fields and drops noisy non-whitelisted structured config', () => {
@@ -260,6 +262,8 @@ describe('summarizeCanvas', () => {
     })
     expect(summary.selectionContext?.latestResultSummary).toContain('Hero Image')
     expect(summary.selectionContext?.executionHint).toBe('这个节点最近已经产出过结果。')
+    expect(summary.assetSummary).toContain('1 个图片结果')
+    expect(summary.recentTimeline?.at(-1)?.summary).toContain('Hero Image')
   })
 
   it('collects optimization signals for cost, speed and structural redundancy', () => {
@@ -326,6 +330,7 @@ describe('summarizeCanvas', () => {
     expect(summary.optimizationSignals?.redundantNodeGroups).toEqual([
       { type: 'llm', nodeIds: ['llm-a', 'llm-b'] },
     ])
+    expect(summary.clusters?.some((cluster) => cluster.label === 'ai-model')).toBe(true)
   })
 
   it('summarizes recent result assets from runtime outputs and generated media urls', () => {
@@ -376,5 +381,41 @@ describe('summarizeCanvas', () => {
       sourceNodeId: 'image-1',
       summary: 'Hero Image 输出了 1 个图片资产（已生成文件）。',
     })
+  })
+
+  it('builds diagnosis summary and recent timeline from failed execution plus audit trail', () => {
+    useExecutionStore.getState().startExecution(['image-1'])
+    useExecutionStore.getState().setCurrentNode('image-1')
+    useExecutionStore.getState().failExecution('Provider timeout')
+
+    const summary = summarizeCanvas({
+      workflowId: 'wf_7',
+      nodes: [
+        createNode('image-1', 'image-gen', {
+          selected: true,
+          data: {
+            label: 'Image Node',
+            type: 'ai-model',
+            config: {
+              prompt: 'hero shot',
+            },
+          },
+        }),
+      ],
+      edges: [],
+      auditTrail: [
+        {
+          id: 'audit-1',
+          kind: 'template-adapted',
+          message: 'Agent 已将模板改造成更偏服装商品图方向。',
+          createdAt: '2026-04-30T00:00:00.000Z',
+          actor: 'agent',
+        },
+      ],
+    })
+
+    expect(summary.diagnosisSummary).toContain('最近一次执行失败')
+    expect(summary.recentTimeline?.some((item) => item.kind === 'template')).toBe(true)
+    expect(summary.recentTimeline?.some((item) => item.kind === 'execution')).toBe(true)
   })
 })
