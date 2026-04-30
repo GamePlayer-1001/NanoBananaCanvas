@@ -143,11 +143,11 @@ export function assertOpenAICompatiblePromptSafety(prompt: string, baseUrl: stri
 }
 
 function resolveOpenAICompatibleRequestSize(
-  provider: string,
+  _provider: string,
   sizePreset: string,
   aspectRatio: string,
 ): string {
-  if (sizePreset === 'auto' && provider !== 'openai-compatible') {
+  if (sizePreset === 'auto') {
     return 'auto'
   }
 

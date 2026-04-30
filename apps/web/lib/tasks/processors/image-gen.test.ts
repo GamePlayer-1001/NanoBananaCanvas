@@ -213,10 +213,10 @@ describe('ImageGenProcessor', () => {
     expect(resolveImageGenerationSize('1024x1792', '1:1')).toBe('1024x1792')
   })
 
-  it('preserves auto size for OpenAI-compatible image requests', () => {
+  it('preserves auto size for image requests across providers', () => {
     expect(resolveOpenAICompatibleRequestSize('openrouter', 'auto', '16:9')).toBe('auto')
     expect(resolveOpenAICompatibleRequestSize('openai', 'auto', '16:9')).toBe('auto')
-    expect(resolveOpenAICompatibleRequestSize('openai-compatible', 'auto', '16:9')).toBe('1920x1080')
+    expect(resolveOpenAICompatibleRequestSize('openai-compatible', 'auto', '16:9')).toBe('auto')
     expect(resolveOpenAICompatibleRequestSize('openai-compatible', '1k', '16:9')).toBe('1920x1080')
   })
 
