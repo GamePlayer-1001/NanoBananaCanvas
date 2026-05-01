@@ -1233,7 +1233,12 @@ export async function submitTask(
       })
       resolvedProvider = runtimeModel.supplierId
       resolvedModelId = runtimeModel.modelId
-      apiKey = await getTaskPlatformKey(runtimeModel.supplierId, runtime)
+      apiKey = await getTaskPlatformKey(
+        runtimeModel.supplierId,
+        taskType,
+        resolvedModelId,
+        runtime,
+      )
       imageCapabilities =
         taskType === 'image_gen'
           ? mergeImageModelCapabilities(
@@ -1549,7 +1554,12 @@ export async function processTaskDispatch(
 
     if (!apiKey) {
       if (row.execution_mode === 'platform') {
-        apiKey = await getTaskPlatformKey(executionSnapshot.resolvedProvider, runtime)
+        apiKey = await getTaskPlatformKey(
+          executionSnapshot.resolvedProvider,
+          row.task_type,
+          executionSnapshot.resolvedModelId,
+          runtime,
+        )
       } else {
         runtimeConfig = await getUserTaskRuntimeConfig(
           db,
@@ -1924,9 +1934,17 @@ async function findUserConfigRow(
 }
 
 async function getTaskPlatformKey(
-  provider: PlatformSupplierId,
+  providerHint: string,
+  taskType: AsyncTaskType,
+  modelId: string,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<string> {
+  const provider = resolvePlatformRuntimeModel({
+    category: taskTypeToPlatformCategory(taskType),
+    modelId,
+    supplierHint: providerHint,
+  }).supplierId
+
   try {
     return await runtime.getPlatformSupplierApiKey(provider)
   } catch (error) {
@@ -2061,7 +2079,12 @@ export async function checkTask(
         : runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
   } else if (row.execution_mode === 'platform' && row.external_task_id) {
-    apiKey = await getTaskPlatformKey(row.provider, runtime)
+    apiKey = await getTaskPlatformKey(
+      row.provider,
+      row.task_type,
+      row.model_id,
+      runtime,
+    )
   }
 
   if (!row.external_task_id) {
@@ -2211,7 +2234,12 @@ export async function cancelTask(
         apiKey = runtimeConfig.apiKey
         processorProvider = runtimeConfig.providerId
       } else if (row.execution_mode === 'platform') {
-        apiKey = await getTaskPlatformKey(row.provider, runtime)
+        apiKey = await getTaskPlatformKey(
+          row.provider,
+          row.task_type,
+          row.model_id,
+          runtime,
+        )
       }
       const processor = getProcessor(row.task_type, processorProvider)
       await processor.cancel(row.external_task_id, apiKey)

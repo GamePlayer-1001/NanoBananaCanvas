@@ -9,6 +9,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo } from 'react'
+import type { ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, KeyRound, Loader2, Video } from 'lucide-react'

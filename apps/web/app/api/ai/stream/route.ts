@@ -28,7 +28,10 @@ import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
-import { resolvePlatformRuntimeModel } from '@/lib/platform-runtime'
+import {
+  resolvePlatformRuntimeModel,
+  type PlatformSupplierId,
+} from '@/lib/platform-runtime'
 import {
   deserializeUserModelConfig,
   toRuntimeUserModelConfig,
@@ -73,6 +76,7 @@ export async function POST(req: Request) {
     let resolvedModelId: string
     let runtimeConfig: UserModelRuntimeConfig | null = null
     let providerId: string
+    let platformSupplierId: PlatformSupplierId | null = null
 
     if (params.executionMode === 'user_key') {
       runtimeConfig = await getUserRuntimeConfig(
@@ -91,9 +95,10 @@ export async function POST(req: Request) {
         modelId: params.modelId,
         supplierHint: params.provider,
       })
-      providerId = runtimeModel.supplierId
+      platformSupplierId = runtimeModel.supplierId
+      providerId = platformSupplierId
       resolvedModelId = runtimeModel.modelId
-      apiKey = await getPlatformSupplierApiKey(providerId)
+      apiKey = await getPlatformSupplierApiKey(platformSupplierId)
     }
 
     const executionReferenceId = `ai_stream_${nanoid()}`
@@ -122,7 +127,7 @@ export async function POST(req: Request) {
     const provider =
       runtimeConfig
         ? getUserKeyProvider(runtimeConfig)
-        : createPlatformTextProvider(providerId as never)
+        : createPlatformTextProvider(platformSupplierId!)
     const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
