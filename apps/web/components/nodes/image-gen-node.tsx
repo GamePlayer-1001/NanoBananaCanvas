@@ -294,6 +294,17 @@ export function ImageGenNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<ImageIcon size={14} />}
+      headerRight={
+        executionMode === 'platform' && platformPricing ? (
+          <CreditPill
+            value={
+              platformPricing.credits == null
+                ? t('creditsAutoPending')
+                : String(platformPricing.credits)
+            }
+          />
+        ) : null
+      }
       minHeight={220}
       bodyClassName="min-h-0"
     >
@@ -390,21 +401,8 @@ export function ImageGenNode(props: NodeProps) {
           )}
         </ConfigField>
 
-        <ConfigField
-          label={t('imageSize')}
-          labelRight={
-            executionMode === 'platform' && platformPricing ? (
-              <CreditPill
-                value={
-                  platformPricing.credits == null
-                    ? t('creditsAutoPending')
-                    : String(platformPricing.credits)
-                }
-              />
-            ) : null
-          }
-        >
-          <div className="space-y-2">
+        <ConfigField label={t('imageSize')}>
+          <div>
             <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
               {IMAGE_SIZE_OPTIONS.map((item) => (
                 <option
@@ -523,19 +521,14 @@ function CreditPill({ value }: { value: string }) {
 
 function ConfigField({
   label,
-  labelRight,
   children,
 }: {
   label: string
-  labelRight?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <div>
-      <div className="text-muted-foreground mb-1 flex items-center justify-between gap-2 text-xs">
-        <label>{label}</label>
-        {labelRight}
-      </div>
+      <div className="text-muted-foreground mb-1 text-xs">{label}</div>
       {children}
     </div>
   )

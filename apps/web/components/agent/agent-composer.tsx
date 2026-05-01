@@ -119,44 +119,47 @@ export function AgentComposer({
           </Select>
         </div>
 
-        <div className="flex items-end gap-3 px-4 py-3">
-          <textarea
-            value={value}
-            disabled={disabled}
-            rows={1}
-            placeholder={resolvedPlaceholder}
-            className="max-h-36 min-h-[72px] flex-1 resize-none border-0 bg-transparent text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-            onChange={(event) => setValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault()
-                handleSubmit()
-              }
-            }}
-          />
+        <div className="px-4 py-3">
+          <div className="flex items-end gap-3">
+            <div className="relative flex-1">
+            <textarea
+              value={value}
+              disabled={disabled}
+              rows={1}
+              placeholder={resolvedPlaceholder}
+              className="max-h-36 min-h-[72px] w-full resize-none border-0 bg-transparent pr-18 pb-8 text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+              onChange={(event) => setValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault()
+                  handleSubmit()
+                }
+              }}
+            />
 
-          <Button
-            type="button"
-            size="icon-lg"
-            className="mb-1 rounded-full"
-            disabled={disabled || value.trim().length === 0}
-            onClick={handleSubmit}
-          >
-            <ArrowUp size={18} />
-            <span className="sr-only">{resolvedSubmitLabel}</span>
-          </Button>
+            {executionMode === 'platform' ? (
+              <span className="pointer-events-none absolute right-0 bottom-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                <Coins size={11} />
+                <span>{PLATFORM_TEXT_EXECUTION_CREDITS}</span>
+              </span>
+            ) : null}
+            </div>
+
+            <Button
+              type="button"
+              size="icon-lg"
+              className="mb-1 rounded-full"
+              disabled={disabled || value.trim().length === 0}
+              onClick={handleSubmit}
+            >
+              <ArrowUp size={18} />
+              <span className="sr-only">{resolvedSubmitLabel}</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-1">
-        <p className="text-[11px] leading-5 text-slate-400">{resolvedHint}</p>
-        {executionMode === 'platform' ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-            <Coins size={11} />
-            <span>{PLATFORM_TEXT_EXECUTION_CREDITS}</span>
-          </span>
-        ) : null}
-      </div>
+      <p className="px-1 text-[11px] leading-5 text-slate-400">{resolvedHint}</p>
     </div>
   )
 }

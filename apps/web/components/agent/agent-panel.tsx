@@ -10,7 +10,7 @@
 
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { GripHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react'
+import { PanelRightClose, PanelRightOpen, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -205,9 +205,6 @@ export function AgentPanel({
           {isCollapsed ? (
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
-                  <GripHorizontal size={16} />
-                </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">Agent</p>
                   <p className="truncate text-[11px] text-slate-500">悬浮创作助手</p>
@@ -226,9 +223,9 @@ export function AgentPanel({
             </div>
           ) : (
             <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <div className="flex size-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
-                  <GripHorizontal size={16} />
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
+                  <Sparkles size={14} />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">Agent</p>

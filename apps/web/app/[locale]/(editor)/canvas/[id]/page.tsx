@@ -21,7 +21,6 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { AgentComposer } from '@/components/agent/agent-composer'
 import { AgentConversation } from '@/components/agent/agent-conversation'
 import { AgentChangeLogSheet } from '@/components/agent/agent-change-log-sheet'
-import { AgentHeader } from '@/components/agent/agent-header'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
 import { useAIModels } from '@/hooks/use-ai-models'
@@ -71,8 +70,6 @@ export default function CanvasPage({
   const setMode = useAgentStore((state) => state.setMode)
   const status = useAgentStore((state) => state.status)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
-  const selectionContext = useAgentStore((state) => state.selectionContext)
-  const errorMessage = useAgentStore((state) => state.errorMessage)
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const template = useWorkflowMetadataStore((state) => state.template)
@@ -274,17 +271,6 @@ export default function CanvasPage({
     { id: 'hero-diagnose', label: tAgent('heroDiagnose'), accent: 'hero' as const },
     { id: 'hero-explain', label: tAgent('heroExplain'), accent: 'hero' as const },
   ]
-  const shouldShowDetailHeader =
-    messages.length > 0 ||
-    Boolean(errorMessage) ||
-    Boolean(selectionContext?.nodeLabel) ||
-    Boolean(activeTaskLabel) ||
-    Boolean(executionLabel) ||
-    Boolean(pendingPlan?.promptConfirmation) ||
-    Boolean(template) ||
-    Boolean(lastAppliedPlanId) ||
-    changeLogItems.length > 0
-
   /* ── 从 API 数据注入 FlowStore ──────────────────────── */
   useEffect(() => {
     if (hasLoaded.current || isLoading) return
@@ -376,33 +362,6 @@ export default function CanvasPage({
             <Canvas workflowId={id} canEdit={canEdit} />
             <AgentPanel
               className="w-[400px]"
-              header={
-                shouldShowDetailHeader ? (
-                  <AgentHeader
-                    title={tAgent('title')}
-                    subtitle={tAgent('headerSubtitle')}
-                    contextLabel={
-                      errorMessage
-                        ? tAgent('contextError', { message: errorMessage })
-                        : selectionContext?.nodeLabel
-                          ? tAgent('contextSelectedNode', { name: selectionContext.nodeLabel })
-                        : activeTaskLabel
-                          ? activeTaskLabel
-                        : executionLabel
-                          ? executionLabel
-                        : pendingPlan?.promptConfirmation
-                          ? tAgent('contextPromptConfirm')
-                        : template
-                          ? tAgent('contextTemplate', { name: template.name })
-                        : lastAppliedPlanId
-                          ? tAgent('contextLastApplied', { planId: lastAppliedPlanId })
-                          : undefined
-                    }
-                    historyLabel={changeLogItems.length > 0 ? tAgent('actionViewChanges') : undefined}
-                    onHistoryClick={changeLogItems.length > 0 ? () => setIsChangeLogOpen(true) : undefined}
-                  />
-                ) : null
-              }
               conversation={(
                 <AgentConversation
                   items={conversationItems}
