@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 Node.js fs/path/child_process，依赖 wrangler CLI，依赖 apps/web/db 下的 D1 迁移脚本
- * [OUTPUT]: 对外提供可重复执行的 D1 迁移入口，支持 `--local` 与 `--remote`，按固定顺序把生产运行时需要的 schema 补齐
- * [POS]: scripts 的数据库迁移编排器，被 CI/CD 与本地运维复用，负责把“代码要求的 schema”同步到 Cloudflare D1 真相源
+ * [OUTPUT]: 对外提供可重复执行的 D1 迁移入口，支持 `--local` 与 `--remote`，按固定顺序把生产运行时需要的 schema 补齐，并记录迁移历史
+ * [POS]: scripts 的数据库迁移编排器，被 CI/CD 与本地运维复用，负责把“代码要求的 schema”同步到 Cloudflare D1 真相源，同时避免远端 import 权限导致部署中断
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -14,6 +14,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const appDir = path.resolve(scriptDir, '..')
 const dbDir = path.join(appDir, 'db')
 const databaseName = 'nano-banana-canvas-db'
+const migrationsTableName = 'schema_migrations'
 
 const orderedMigrations = [
   'migration-008-media-runtime.sql',
@@ -52,7 +53,7 @@ function ensureMigrationFilesExist() {
   throw new Error(`Missing migration files: ${missing.join(', ')}`)
 }
 
-function runWranglerD1Execute(targetFlag, fileName) {
+function runWranglerD1Execute(targetFlag, sql) {
   const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
   const args = [
     'exec',
@@ -61,17 +62,106 @@ function runWranglerD1Execute(targetFlag, fileName) {
     'execute',
     databaseName,
     targetFlag,
-    '--file',
-    `./db/${fileName}`,
+    '--command',
+    sql,
   ]
 
   const result = spawnSync(command, args, {
     cwd: appDir,
-    stdio: 'inherit',
+    encoding: 'utf8',
+    stdio: 'pipe',
     env: process.env,
   })
 
+  if (result.stdout) {
+    process.stdout.write(result.stdout)
+  }
+
+  if (result.stderr) {
+    process.stderr.write(result.stderr)
+  }
+
+  return result
+}
+
+function escapeSqlString(value) {
+  return value.replaceAll("'", "''")
+}
+
+function stripSqlComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*--.*$/gm, '')
+}
+
+function splitSqlStatements(source) {
+  return stripSqlComments(source)
+    .split(/;\s*(?:\r?\n|$)/)
+    .map((statement) => statement.trim())
+    .filter(Boolean)
+}
+
+function ensureMigrationsTable(targetFlag) {
+  const sql = `
+    CREATE TABLE IF NOT EXISTS ${migrationsTableName} (
+      id TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `
+
+  const result = runWranglerD1Execute(targetFlag, sql)
   if (result.status !== 0) {
+    process.exit(result.status ?? 1)
+  }
+}
+
+function hasAppliedMigration(targetFlag, fileName) {
+  const sql = `SELECT id FROM ${migrationsTableName} WHERE id = '${escapeSqlString(fileName)}' LIMIT 1`
+  const result = runWranglerD1Execute(targetFlag, sql)
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1)
+  }
+
+  return result.stdout.includes(`"id": "${fileName}"`)
+}
+
+function markMigrationApplied(targetFlag, fileName) {
+  const sql = `
+    INSERT OR REPLACE INTO ${migrationsTableName} (id, applied_at)
+    VALUES ('${escapeSqlString(fileName)}', datetime('now'))
+  `
+
+  const result = runWranglerD1Execute(targetFlag, sql)
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1)
+  }
+}
+
+function isSafeDuplicateError(output) {
+  return [
+    'duplicate column name',
+    'already exists',
+    'UNIQUE constraint failed: schema_migrations.id',
+  ].some((pattern) => output.includes(pattern))
+}
+
+function applyMigrationStatements(targetFlag, fileName) {
+  const filePath = path.join(dbDir, fileName)
+  const statements = splitSqlStatements(fs.readFileSync(filePath, 'utf8'))
+
+  for (const statement of statements) {
+    const result = runWranglerD1Execute(targetFlag, statement)
+
+    if (result.status === 0) {
+      continue
+    }
+
+    const combinedOutput = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
+    if (isSafeDuplicateError(combinedOutput)) {
+      console.warn(`Skipping already-applied statement in ${fileName}`)
+      continue
+    }
+
     process.exit(result.status ?? 1)
   }
 }
@@ -79,10 +169,17 @@ function runWranglerD1Execute(targetFlag, fileName) {
 function main() {
   const targetFlag = resolveTargetFlag(process.argv.slice(2))
   ensureMigrationFilesExist()
+  ensureMigrationsTable(targetFlag)
 
   for (const fileName of orderedMigrations) {
+    if (hasAppliedMigration(targetFlag, fileName)) {
+      console.log(`\n==> Skipping ${fileName} (${targetFlag.slice(2)})`)
+      continue
+    }
+
     console.log(`\n==> Applying ${fileName} (${targetFlag.slice(2)})`)
-    runWranglerD1Execute(targetFlag, fileName)
+    applyMigrationStatements(targetFlag, fileName)
+    markMigrationApplied(targetFlag, fileName)
   }
 }
 
