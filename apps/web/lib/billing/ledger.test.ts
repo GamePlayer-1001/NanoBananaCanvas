@@ -113,6 +113,7 @@ describe('billing ledger', () => {
     expect(result).toEqual({
       referenceId: 'exec_1',
       frozen: {
+        trial: 0,
         monthly: 300,
         permanent: 150,
         total: 450,
@@ -124,7 +125,7 @@ describe('billing ledger', () => {
     expect(recordedBatches).toHaveLength(1)
     expect(recordedBatches[0]).toHaveLength(3)
     expect(recordedBatches[0][0]?.sql).toContain('UPDATE credit_balances')
-    expect(recordedBatches[0][0]?.args).toEqual([0, 350, 460, 'user-1'])
+    expect(recordedBatches[0][0]?.args).toEqual([0, 0, 350, 460, 'user-1'])
     expect(recordedBatches[0][1]?.args.slice(2, 9)).toEqual([
       'freeze',
       'monthly',
@@ -198,6 +199,7 @@ describe('billing ledger', () => {
     expect(result).toEqual({
       referenceId: 'exec_1',
       finalized: {
+        trial: 0,
         monthly: 300,
         permanent: 150,
         total: 450,
@@ -207,7 +209,7 @@ describe('billing ledger', () => {
       totalSpentAfter: 570,
     })
 
-    expect(recordedBatches[0]?.[0]?.args).toEqual([0, 350, 0, 570, 'user-1'])
+    expect(recordedBatches[0]?.[0]?.args).toEqual([0, 0, 350, 0, 570, 'user-1'])
     expect(recordedBatches[0]?.[1]?.args.slice(2, 9)).toEqual([
       'spend',
       'monthly',
@@ -258,6 +260,7 @@ describe('billing ledger', () => {
     expect(result).toEqual({
       referenceId: 'exec_partial',
       finalized: {
+        trial: 0,
         monthly: 300,
         permanent: 20,
         total: 320,
@@ -267,7 +270,7 @@ describe('billing ledger', () => {
       totalSpentAfter: 440,
     })
 
-    expect(recordedBatches[0]?.[0]?.args).toEqual([0, 350, 130, 440, 'user-1'])
+    expect(recordedBatches[0]?.[0]?.args).toEqual([0, 0, 350, 130, 440, 'user-1'])
     expect(recordedBatches[0]?.[1]?.args.slice(2, 9)).toEqual([
       'spend',
       'monthly',
@@ -317,6 +320,7 @@ describe('billing ledger', () => {
     expect(result).toEqual({
       referenceId: 'exec_1',
       finalized: {
+        trial: 0,
         monthly: 300,
         permanent: 150,
         total: 450,
@@ -326,7 +330,7 @@ describe('billing ledger', () => {
       totalSpentAfter: 120,
     })
 
-    expect(recordedBatches[0]?.[0]?.args).toEqual([300, 500, 0, 120, 'user-1'])
+    expect(recordedBatches[0]?.[0]?.args).toEqual([0, 300, 500, 0, 120, 'user-1'])
     expect(recordedBatches[0]?.[1]?.args.slice(2, 9)).toEqual([
       'refund',
       'monthly',
@@ -360,16 +364,19 @@ describe('billing ledger', () => {
     await expect(getReferenceCreditSummary('user-1', 'exec_1')).resolves.toEqual({
       referenceId: 'exec_1',
       frozen: {
+        trial: 0,
         monthly: 300,
         permanent: 150,
         total: 450,
       },
       settled: {
+        trial: 0,
         monthly: 100,
         permanent: 20,
         total: 120,
       },
       remaining: {
+        trial: 0,
         monthly: 200,
         permanent: 130,
         total: 330,

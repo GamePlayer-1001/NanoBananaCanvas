@@ -477,12 +477,12 @@ describe('submitTask', () => {
 
     const completionUpdate = queuedDb.__calls.find(
       (call) =>
-        call.sql.includes("SET status = 'completed'") &&
+        call.sql.includes("status = 'completed'") &&
         call.sql.includes('output_data = ?'),
     )
 
     expect(completionUpdate).toBeDefined()
-    expect(String(completionUpdate?.args[1])).toContain('/api/files/outputs/user-1/task-1.png')
+    expect(String(completionUpdate?.args[3])).toContain('/api/files/outputs/user-1/task-1.png')
   })
 
   it('rebuilds queued image tasks from persisted payload snapshots', async () => {
@@ -551,7 +551,7 @@ describe('submitTask', () => {
 
     const completionUpdate = queuedDb.__calls.find(
       (call) =>
-        call.sql.includes("SET status = 'completed'") &&
+        call.sql.includes("status = 'completed'") &&
         call.sql.includes('output_data = ?'),
     )
 
@@ -648,7 +648,7 @@ describe('submitTask', () => {
 
     const completionUpdate = queuedDb.__calls.find(
       (call) =>
-        call.sql.includes("SET status = 'completed'") &&
+        call.sql.includes("status = 'completed'") &&
         call.sql.includes('output_data = ?'),
     )
 
