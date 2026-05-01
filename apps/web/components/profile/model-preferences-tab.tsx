@@ -1,8 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @tanstack/react-query 的 query/mutation，
  *          依赖 sonner 的 toast，依赖 @/hooks/use-model-configs / use-user，
- *          依赖 @/i18n/navigation 的 Link，依赖 @/lib/model-config-catalog，
- *          依赖 @/lib/guest-model-config 的本地临时配置存储
+ *          依赖 @/i18n/navigation 的 Link，依赖 @/lib/model-config-catalog
  * [OUTPUT]: 对外提供 ModelPreferencesTab API 接入配置面板
  * [POS]: profile 的模型偏好面板，被账户页消费，负责管理四类能力卡片的多条配置；登录用户写账户级配置，访客写本机临时测试配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -17,6 +16,7 @@ import {
   CheckCircle2,
   KeyRound,
   Loader2,
+  Lock,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -26,10 +26,6 @@ import { toast } from 'sonner'
 
 import { useModelConfigs, type ModelConfigItem } from '@/hooks/use-model-configs'
 import { useCurrentUser } from '@/hooks/use-user'
-import {
-  deleteGuestModelConfig,
-  upsertGuestModelConfig,
-} from '@/lib/guest-model-config'
 import {
   IMAGE_ASPECT_RATIO_OPTIONS,
   IMAGE_SIZE_OPTIONS,
@@ -79,21 +75,6 @@ async function saveApiConfig(payload: DraftState) {
   }
 }
 
-async function saveGuestApiConfig(payload: DraftState) {
-  upsertGuestModelConfig({
-    configId: payload.configId ?? payload.tempId,
-    capability: payload.capability,
-    providerKind: payload.providerKind,
-    providerId: payload.providerId,
-    apiKey: payload.apiKey,
-    secretKey: payload.secretKey,
-    baseUrl: payload.baseUrl,
-    modelId: payload.modelId,
-    label: payload.name,
-    imageCapabilities: payload.imageCapabilities,
-  })
-}
-
 async function testApiConfig(configId: string) {
   const res = await fetch(`/api/settings/api-keys/${configId}`, { method: 'POST' })
   const body = (await res.json()) as {
@@ -114,10 +95,6 @@ async function deleteApiConfig(configId: string) {
   if (!res.ok) {
     throw new Error(body.error?.message ?? 'Failed to delete API config')
   }
-}
-
-async function deleteGuestApiConfig(configId: string) {
-  deleteGuestModelConfig(configId)
 }
 
 function createDraft(capability: CapabilityId, saved?: ModelConfigItem): DraftState {
@@ -178,8 +155,7 @@ export function ModelPreferencesTab() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: (payload: DraftState) =>
-      isGuestMode ? saveGuestApiConfig(payload) : saveApiConfig(payload),
+    mutationFn: (payload: DraftState) => saveApiConfig(payload),
     onSuccess: async (_data, draft) => {
       setDrafts((current) => {
         const next = { ...current }
@@ -212,8 +188,7 @@ export function ModelPreferencesTab() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (configId: string) =>
-      isGuestMode ? deleteGuestApiConfig(configId) : deleteApiConfig(configId),
+    mutationFn: (configId: string) => deleteApiConfig(configId),
     onSuccess: async (_data, configId) => {
       setDrafts((current) => {
         const next = { ...current }
@@ -317,10 +292,13 @@ export function ModelPreferencesTab() {
                 {t('guestTestingModeTitle')}
               </p>
               <p className="text-sm leading-6 text-amber-800">
-                {t('guestTestingModeBody')}
+                {t('accountLoginRequiredBody')}
               </p>
             </div>
-            <p className="text-xs leading-5 text-amber-700">{t('guestTestingModeHint')}</p>
+            <div className="flex items-center gap-2 text-xs leading-5 text-amber-700">
+              <Lock size={12} />
+              <span>{t('guestStatusBody')}</span>
+            </div>
           </div>
         </div>
       ) : null}
@@ -371,7 +349,8 @@ export function ModelPreferencesTab() {
                   <button
                     type="button"
                     onClick={() => addDraft(capability)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                    disabled={isGuestMode}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Plus size={14} />
                     {t('addApiConfig')}
@@ -379,9 +358,15 @@ export function ModelPreferencesTab() {
                 </div>
               </div>
 
-              {items.length === 0 ? (
+              {items.length === 0 && !isGuestMode ? (
                 <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
                   {t('noApiConfigs')}
+                </div>
+              ) : null}
+
+              {items.length === 0 && isGuestMode ? (
+                <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/60 px-3 py-4 text-sm text-amber-800">
+                  {t('accountLoginRequiredBody')}
                 </div>
               ) : null}
 
@@ -453,10 +438,9 @@ export function ModelPreferencesTab() {
                               type="button"
                               onClick={() => {
                                 if (!configId) return
-                                if (isGuestMode) return
                                 testMutation.mutate(configId)
                               }}
-                              disabled={isTesting || isGuestMode}
+                              disabled={isTesting}
                               className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {isTesting ? (
@@ -464,7 +448,7 @@ export function ModelPreferencesTab() {
                               ) : (
                                 <RefreshCw size={12} />
                               )}
-                              {isGuestMode ? t('guestConfigTestNotNeeded') : t('testApiConfig')}
+                              {t('testApiConfig')}
                             </button>
 
                             <button

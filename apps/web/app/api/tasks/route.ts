@@ -71,7 +71,6 @@ export async function POST(req: Request) {
       capability: params.capability,
       modelId: params.modelId,
       configId: params.configId,
-      guestUserKeyConfig: params.guestUserKeyConfig,
       executionMode: params.executionMode,
       input: params.input,
       workflowId: params.workflowId,

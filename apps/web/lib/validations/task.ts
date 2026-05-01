@@ -23,25 +23,6 @@ const imageCapabilitiesSchema = z
   })
   .optional()
 
-const guestUserKeyConfigSchema = z.object({
-  configId: z.string().trim().min(1).optional(),
-  capability: capabilitySchema,
-  providerKind: z.enum([
-    'openai-compatible',
-    'openrouter',
-    'google-image',
-    'gemini',
-    'kling',
-    'openai-audio',
-  ]),
-  providerId: z.string().trim().min(1),
-  apiKey: z.string().trim().min(1),
-  secretKey: z.string().trim().optional(),
-  baseUrl: z.string().trim().url('Base URL must be a valid URL').optional(),
-  modelId: z.string().trim().min(1),
-  imageCapabilities: imageCapabilitiesSchema,
-})
-
 function matchesTaskType(provider: string, modelId: string, taskType: 'image_gen' | 'video_gen' | 'audio_gen') {
   const normalizedProvider = provider.toLowerCase()
   const normalizedModel = modelId.toLowerCase()
@@ -81,7 +62,6 @@ export const submitTaskSchema = z
     modelId: z.string().trim().min(1).optional(),
     configId: z.string().trim().min(1).optional(),
     executionMode: z.enum(['platform', 'user_key']).default('user_key'),
-    guestUserKeyConfig: guestUserKeyConfigSchema.optional(),
     input: z.record(z.string(), z.unknown()).default({}),
     workflowId: z.string().optional(),
     nodeId: z.string().optional(),
@@ -121,18 +101,6 @@ export const submitTaskSchema = z
       })
     }
 
-    if (
-      value.executionMode === 'user_key' &&
-      value.guestUserKeyConfig &&
-      value.capability &&
-      value.guestUserKeyConfig.capability !== value.capability
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['guestUserKeyConfig', 'capability'],
-        message: 'Guest user key capability mismatch',
-      })
-    }
   })
 
 export type SubmitTaskInput = z.infer<typeof submitTaskSchema>

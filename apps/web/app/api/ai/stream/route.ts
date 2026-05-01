@@ -84,7 +84,6 @@ export async function POST(req: Request) {
         userId,
         params.capability as string,
         params.configId,
-        params.guestUserKeyConfig,
       )
       apiKey = runtimeConfig.apiKey
       resolvedModelId = runtimeConfig.modelId
@@ -247,22 +246,7 @@ async function getUserRuntimeConfig(
   userId: string,
   capability: string,
   configId?: string,
-  guestConfig?: ReturnType<typeof aiExecuteSchema.parse>['guestUserKeyConfig'],
 ): Promise<UserModelRuntimeConfig> {
-  if (guestConfig) {
-    return {
-      configId: guestConfig.configId?.trim() || `guest_${capability}`,
-      capability: guestConfig.capability,
-      providerKind: guestConfig.providerKind,
-      providerId: guestConfig.providerId,
-      apiKey: guestConfig.apiKey,
-      modelId: guestConfig.modelId,
-      baseUrl: guestConfig.baseUrl,
-      secretKey: guestConfig.secretKey,
-      imageCapabilities: guestConfig.imageCapabilities,
-    }
-  }
-
   const keyRow = configId
     ? await db
         .prepare(

@@ -1,22 +1,16 @@
 /**
- * [INPUT]: 依赖 @tanstack/react-query / react，依赖 @/hooks/use-user，依赖 @/lib/query/keys，
- *          依赖 @/lib/guest-model-config 的本地临时配置存储
- * [OUTPUT]: 对外提供 useModelConfigs 账号 API 接入配置数据 hook（登录读服务端，未登录读本地临时配置）
+ * [INPUT]: 依赖 @tanstack/react-query / react，依赖 @/hooks/use-user，依赖 @/lib/query/keys
+ * [OUTPUT]: 对外提供 useModelConfigs 账号 API 接入配置数据 hook（登录读服务端，未登录返回空结果）
  * [POS]: hooks 的模型配置数据层，被账户页面和节点配置面板共同消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { useCurrentUser } from '@/hooks/use-user'
-import {
-  readGuestModelConfigRecords,
-  subscribeGuestModelConfigs,
-  toGuestPublicModelConfig,
-} from '@/lib/guest-model-config'
 import { queryKeys } from '@/lib/query/keys'
 
 export interface ModelConfigItem {
@@ -63,11 +57,6 @@ async function fetchModelConfigs(): Promise<ModelConfigItem[]> {
 
 export function useModelConfigs() {
   const { data: currentUser } = useCurrentUser()
-  const guestVersion = useSyncExternalStore(
-    subscribeGuestModelConfigs,
-    () => readGuestModelConfigRecords().length,
-    () => 0,
-  )
   const isGuestMode = currentUser?.isAuthenticated === false
   const query = useQuery({
     queryKey: queryKeys.settings.apiKeys(),
@@ -76,13 +65,9 @@ export function useModelConfigs() {
     enabled: !isGuestMode,
   })
 
-  const guestItems = useMemo(() => {
-    void guestVersion
-    return readGuestModelConfigRecords().map((item) => toGuestPublicModelConfig(item))
-  }, [guestVersion])
   const items = useMemo(
-    () => (isGuestMode ? guestItems : (query.data ?? [])),
-    [guestItems, isGuestMode, query.data],
+    () => (isGuestMode ? [] : (query.data ?? [])),
+    [isGuestMode, query.data],
   )
 
   const configsByCapability = useMemo(() => {

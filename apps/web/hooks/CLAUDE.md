@@ -23,7 +23,7 @@ use-folders.ts           — useFolders / useCreateFolder / useUpdateFolder / us
 use-explore.ts           — useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow (TanStack Query)
 use-user.ts              — useCurrentUser 当前用户数据 (TanStack Query)
 use-billing.ts           — useCreditBalance / useDailySigninStatus 本地账本余额与每日签到状态 (TanStack Query)
-use-model-configs.ts     — useModelConfigs API 接入配置数据 (登录读账户配置，访客读本地临时配置；按能力聚合多配置 + 配置 ID 查找)
+use-model-configs.ts     — useModelConfigs API 接入配置数据 (登录读账户配置，访客返回空结果；按能力聚合多配置 + 配置 ID 查找)
 use-user-preferences.ts  — useUserPreferences 本地用户偏好设置 (新手提示显隐 + 引导重置)
 use-user-key-onboarding.tsx — useUserKeyOnboarding 生成类节点自有 API Key 引导 (前三次缺少配置时提示、显式保存工作流并跳转到账户模型偏好)
 use-categories.ts        — useCategories 分类数据 (TanStack Query, 5min staleTime)
