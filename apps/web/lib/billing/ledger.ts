@@ -683,6 +683,7 @@ export async function refundFrozenCredits(input: {
 }
 
 export async function getDailySigninStatus(userId: string): Promise<{
+  status: 'available' | 'claimed' | 'unavailable'
   available: boolean
   checkedInToday: boolean
   trialBalance: number
@@ -695,9 +696,15 @@ export async function getDailySigninStatus(userId: string): Promise<{
   })
 
   if (!capabilities.creditBalanceReadable || !capabilities.dailySigninReadable) {
+    const checkedInToday =
+      balance.trial_balance >= SIGNIN_TRIAL_CREDITS &&
+      Boolean(balance.trial_expires_at) &&
+      !isTrialExpired(balance.trial_expires_at)
+
     return {
-      available: false,
-      checkedInToday: false,
+      status: checkedInToday ? 'claimed' : 'unavailable',
+      available: checkedInToday,
+      checkedInToday,
       trialBalance: balance.trial_balance,
       trialExpiresAt: balance.trial_expires_at,
     }
@@ -714,6 +721,7 @@ export async function getDailySigninStatus(userId: string): Promise<{
     .first<{ id: string }>()
 
   return {
+    status: row?.id ? 'claimed' : 'available',
     available: true,
     checkedInToday: Boolean(row?.id),
     trialBalance: balance.trial_balance,

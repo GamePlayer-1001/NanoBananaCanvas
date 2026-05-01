@@ -31,6 +31,7 @@ export function useCreditBalance(enabled = true) {
 }
 
 export interface DailySigninStatus {
+  status: 'available' | 'claimed' | 'unavailable'
   available: boolean
   checkedInToday: boolean
   trialBalance: number

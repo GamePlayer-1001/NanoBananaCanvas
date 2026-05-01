@@ -333,6 +333,19 @@ export function AppSidebar() {
       toast.error(error.message)
     },
   })
+  const signinState = signinStatus?.status ?? 'available'
+  const signinButtonDisabled =
+    !user?.isAuthenticated ||
+    signinState === 'claimed' ||
+    signinState === 'unavailable' ||
+    claimSignin.isPending
+  const signinButtonLabel =
+    signinState === 'claimed' ? t('signedInToday') : t('signinAction')
+  const signinButtonVariant = signinState === 'claimed' ? 'outline' : 'default'
+  const signinButtonClassName =
+    signinState === 'claimed'
+      ? 'border-amber-300 bg-white text-amber-700'
+      : 'bg-amber-600 text-white hover:bg-amber-700'
 
   const handleCreateFolder = () => {
     setCreateDialogOpen(true)
@@ -498,17 +511,12 @@ export function AppSidebar() {
               </div>
               <Button
                 size="sm"
-                variant={signinStatus?.checkedInToday ? 'outline' : 'default'}
-                disabled={
-                  !user?.isAuthenticated ||
-                  signinStatus?.available === false ||
-                  signinStatus?.checkedInToday ||
-                  claimSignin.isPending
-                }
+                variant={signinButtonVariant}
+                disabled={signinButtonDisabled}
                 onClick={() => claimSignin.mutate()}
-                className={signinStatus?.checkedInToday ? 'border-amber-300 bg-white text-amber-700' : 'bg-amber-600 text-white hover:bg-amber-700'}
+                className={signinButtonClassName}
               >
-                {signinStatus?.checkedInToday ? t('signedInToday') : t('signinAction')}
+                {signinButtonLabel}
               </Button>
             </div>
           </div>

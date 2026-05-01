@@ -499,6 +499,7 @@ describe('billing ledger', () => {
     )
 
     await expect(getDailySigninStatus('user-1')).resolves.toEqual({
+      status: 'unavailable',
       available: false,
       checkedInToday: false,
       trialBalance: 40,
@@ -520,10 +521,49 @@ describe('billing ledger', () => {
     )
 
     await expect(getDailySigninStatus('user-1')).resolves.toEqual({
+      status: 'unavailable',
       available: false,
       checkedInToday: false,
       trialBalance: 0,
       trialExpiresAt: null,
+    })
+  })
+
+  it('preserves claimed state when legacy signin table is unavailable but trial reward is still active', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        tableColumns: {
+          credit_balances: [
+            'user_id',
+            'trial_balance',
+            'trial_expires_at',
+            'monthly_balance',
+            'permanent_balance',
+            'frozen_credits',
+            'total_earned',
+            'total_spent',
+            'updated_at',
+          ],
+          daily_signins: ['user_id'],
+        },
+        balanceRow: {
+          trial_balance: 100,
+          trial_expires_at: '2099-05-02T00:00:00.000Z',
+          monthly_balance: 0,
+          permanent_balance: 0,
+          frozen_credits: 0,
+          total_earned: 100,
+          total_spent: 0,
+        },
+      }),
+    )
+
+    await expect(getDailySigninStatus('user-1')).resolves.toEqual({
+      status: 'claimed',
+      available: true,
+      checkedInToday: true,
+      trialBalance: 100,
+      trialExpiresAt: '2099-05-02T00:00:00.000Z',
     })
   })
 
