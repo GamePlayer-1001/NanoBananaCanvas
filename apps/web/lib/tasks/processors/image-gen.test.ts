@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./image-gen 的 ImageGenProcessor
- * [OUTPUT]: 对外提供图片任务处理器测试 (OpenAI 兼容 url/base64 响应 + 尺寸档位解析)
- * [POS]: lib/tasks/processors 的回归保护，覆盖图片兼容协议的关键返回体分支
+ * [OUTPUT]: 对外提供图片任务处理器测试（OpenAI 兼容 / DLAPI 异步 / Comfly 托底）
+ * [POS]: lib/tasks/processors 的回归保护，覆盖平台图片主链的关键协议分支
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -217,7 +217,127 @@ describe('ImageGenProcessor', () => {
     expect(resolveOpenAICompatibleRequestSize('openrouter', 'auto', '16:9')).toBe('auto')
     expect(resolveOpenAICompatibleRequestSize('openai', 'auto', '16:9')).toBe('auto')
     expect(resolveOpenAICompatibleRequestSize('openai-compatible', 'auto', '16:9')).toBe('auto')
+    expect(resolveOpenAICompatibleRequestSize('dlapi', 'auto', '16:9')).toBe('auto')
     expect(resolveOpenAICompatibleRequestSize('openai-compatible', '1k', '16:9')).toBe('1920x1080')
+  })
+
+  it('submits dlapi image tasks in async mode', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          id: 'imgjob_123',
+          status: 'running',
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: 'draw a white cat',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.dlapi.xyz/v1/images/generations',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'gpt-image-2',
+          prompt: 'draw a white cat',
+          size: '1024x1024',
+          async: true,
+        }),
+      }),
+    )
+    expect(result).toMatchObject({
+      externalTaskId: 'imgjob_123',
+      initialStatus: 'running',
+    })
+  })
+
+  it('falls back from dlapi to comfly on gateway-like failures', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 524,
+        text: async () => 'upstream timed out',
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/comfly.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: 'draw a fallback cat',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/generations',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    )
+    expect(result).toMatchObject({
+      initialStatus: 'completed',
+      providerOverride: 'comfly',
+      modelOverride: 'gpt-image-2',
+      result: {
+        type: 'url',
+        url: 'https://example.com/comfly.png',
+      },
+    })
+  })
+
+  it('checks dlapi async task completion and returns image data', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            id: 'imgjob_123',
+            status: 'completed',
+            data: [{ b64_json: 'ZmFrZS1kbGFwaS1pbWFnZQ==' }],
+          }),
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.checkStatus('imgjob_123', 'platform-key')
+
+    expect(result).toEqual({
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url: 'data:image/png;base64,ZmFrZS1kbGFwaS1pbWFnZQ==',
+        contentType: 'image/png',
+      },
+    })
   })
 
   it('converts OpenAI-compatible b64_json responses into data URLs', async () => {

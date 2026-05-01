@@ -14,7 +14,7 @@ import { ChevronDown } from 'lucide-react'
 /* ─── Available Models ───────────────────────────────── */
 
 const MODELS = [
-  { id: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview' },
 ] as const
 

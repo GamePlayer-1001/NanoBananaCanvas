@@ -52,7 +52,7 @@ interface VideoAnalysisHistoryViewItem extends VideoAnalysisHistoryItem {
 export function VideoAnalysisContent() {
   const t = useTranslations('videoAnalysis')
   const [selectedVideo, setSelectedVideo] = useState<VideoUploadValue | null>(null)
-  const [model, setModel] = useState<VideoAnalysisModelId>('gemini-2.5-flash-image')
+  const [model, setModel] = useState<VideoAnalysisModelId>('gemini-2.5-flash')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<VideoAnalysisResult | null>(null)
   const [historyItems, setHistoryItems] = useState<VideoAnalysisHistoryViewItem[]>([])

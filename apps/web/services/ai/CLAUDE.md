@@ -2,13 +2,13 @@
 
 > L2 | 父级: apps/web/services/CLAUDE.md
 
-AI 推理服务层 · 多 Provider 可插拔架构 (OpenRouter + DeepSeek + Gemini)
+AI 推理服务层 · 多 Provider 可插拔架构 (OpenRouter + DeepSeek + Gemini + 平台 Key 映射)
 
 ## 成员清单
 
 ```
 types.ts        — ChatMessage/ChatParams/ChatResult/AIProvider/ModelOption/ModelGroup 类型定义
-provider.ts     — Provider 注册表 (registerProvider/getProvider/getPlatformKey/getAllProviders)
+provider.ts     — Provider 注册表 (registerProvider/getProvider/getPlatformKey/getAllProviders)，平台 key 映射现包含 dlapi/comfly
 base-openai.ts  — BaseOpenAICompatible 抽象基类 (OpenAI 兼容 API 的公共逻辑)
 openai-compatible.ts — OpenAICompatibleClient 动态 Provider (账号级自定义 baseUrl)
 openrouter.ts   — OpenRouterClient (extends BaseOpenAICompatible)，静态模型目录 OPENROUTER_MODELS
@@ -33,6 +33,8 @@ AIProvider (interface)
 openrouter → OPENROUTER_API_KEY
 deepseek   → DEEPSEEK_API_KEY
 gemini     → GEMINI_API_KEY
+dlapi      → DLAPI_API_KEY
+comfly     → COMFLY_API_KEY
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

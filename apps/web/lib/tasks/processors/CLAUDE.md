@@ -5,11 +5,11 @@ Provider 处理器层 — TaskProcessor 接口的具体实现
 
 ## 成员清单
 
-- `types.ts`: TaskProcessor 接口 + SubmitInput/SubmitResult/CheckResult/TaskOutput 类型定义；`SubmitResult` 允许同步 provider 直接返回 `completed + result`
+- `types.ts`: TaskProcessor 接口 + SubmitInput/SubmitResult/CheckResult/TaskOutput 类型定义；`SubmitResult/CheckResult` 现支持回写真实执行 provider/model，用于 fallback 后账本与任务真相收口
 - `registry.ts`: getProcessor(taskType, provider) 工厂函数，路由到对应 Processor 实例
 - `video-gen.ts`: VideoGenProcessor (可灵完整实现 + 即梦骨架)
-- `image-gen.ts`: ImageGenProcessor (平台 OpenRouter/OpenAI 兼容图片接口 + Google Imagen 实现，复用图片能力真相源做尺寸解析与后端护栏)
-- `image-gen.test.ts`: ImageGenProcessor 回归测试 (OpenAI 兼容 url/base64 双返回体 + 尺寸档位解析)
+- `image-gen.ts`: ImageGenProcessor（平台 OpenRouter/OpenAI 兼容图片接口 + Google Imagen + DLAPI 异步出图，支持 `dlapi -> comfly` 网关型失败托底）
+- `image-gen.test.ts`: ImageGenProcessor 回归测试（OpenAI 兼容 url/base64、DLAPI 异步 submit/check、Comfly fallback）
 - `audio-gen.ts`: AudioGenProcessor (OpenAI TTS 同步生成 + data URL 输出)
 - `index.ts`: 桶文件，导出 getProcessor + 所有类型
 
@@ -32,6 +32,8 @@ cancel(externalTaskId, apiKey) → void
 |-----------|-------------|---------|
 | image_gen | openai-compatible | ✅ 完成  |
 | image_gen | gemini      | ✅ 完成  |
+| image_gen | dlapi       | ✅ 完成（异步主链） |
+| image_gen | comfly      | ✅ 完成（OpenAI-compatible 托底） |
 | video_gen | kling       | ✅ 完成  |
 | video_gen | jimeng      | 🔲 骨架  |
 | audio_gen | openai      | ✅ 完成  |

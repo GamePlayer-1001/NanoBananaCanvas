@@ -23,6 +23,10 @@ export interface SubmitResult {
   initialStatus: 'pending' | 'running' | 'completed'
   /** 同步 provider 在 submit 阶段直接返回的结果 */
   result?: TaskOutput
+  /** 实际执行时若切换了供应商，则显式回写 */
+  providerOverride?: string
+  /** 实际执行时若切换了模型，则显式回写 */
+  modelOverride?: string
 }
 
 /* ─── Check ─────────────────────────────────────────── */
@@ -36,6 +40,10 @@ export interface CheckResult {
   result?: TaskOutput
   /** 失败时的错误信息 */
   error?: string
+  /** 轮询阶段若实际供应商发生切换，则显式回写 */
+  providerOverride?: string
+  /** 轮询阶段若实际模型发生切换，则显式回写 */
+  modelOverride?: string
 }
 
 export interface TaskOutput {

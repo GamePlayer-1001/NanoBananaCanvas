@@ -195,7 +195,7 @@ interface TaskExecutionRequest {
   userId: string
   taskType: AsyncTaskType
   requestProvider: string
-  resolvedProvider: string
+  initialResolvedProvider: string
   resolvedModelId: string
   executionMode: ExecutionMode
   resolvedInput: Record<string, unknown>
@@ -984,6 +984,8 @@ export async function submitTask(
   let apiKey = ''
   let submitResult: Awaited<ReturnType<TaskProcessor['submit']>> | null = null
   let persistedOutput: TaskOutput | null = null
+  let persistedProvider = requestProvider as string
+  let persistedModelId = resolvedModelId
 
   try {
     if (executionMode === 'platform') {
@@ -1057,6 +1059,8 @@ export async function submitTask(
         { model: resolvedModelId, params: resolvedInput },
         apiKey,
       )
+      persistedProvider = submitResult.providerOverride ?? requestProvider ?? resolvedProvider
+      persistedModelId = submitResult.modelOverride ?? resolvedModelId
 
       if (submitResult.initialStatus === 'completed') {
         if (!submitResult.result) {
@@ -1147,7 +1151,7 @@ export async function submitTask(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
-        taskId, userId, taskType, requestProvider, resolvedModelId,
+        taskId, userId, taskType, persistedProvider, persistedModelId,
         submitResult?.externalTaskId ?? null, executionMode, JSON.stringify(persistedInput),
         initialStatus, initialProgress,
         config.maxRetries, workflowId ?? null, nodeId ?? null,
@@ -1161,7 +1165,7 @@ export async function submitTask(
         referenceId: taskId,
         requestedCredits: reservedPlatformCredits,
         source: 'task_platform_confirm',
-        description: `Confirm async task billing ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        description: `Confirm async task billing ${taskType} ${persistedProvider}/${persistedModelId}`,
       })
     }
   } catch (error) {
@@ -1170,7 +1174,7 @@ export async function submitTask(
         userId,
         referenceId: taskId,
         source: 'task_submit_platform_insert_refund',
-        description: `Refund async task credits after persistence failure ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        description: `Refund async task credits after persistence failure ${taskType} ${persistedProvider}/${persistedModelId}`,
       })
     }
 
@@ -1185,7 +1189,7 @@ export async function submitTask(
     taskId,
     taskType,
     provider: requestProvider,
-    resolvedProvider,
+    resolvedProvider: persistedProvider,
     executionMode,
     initialStatus,
   })
@@ -1193,8 +1197,8 @@ export async function submitTask(
   return {
     id: taskId,
     taskType,
-    provider: requestProvider as string,
-    modelId: resolvedModelId,
+    provider: persistedProvider,
+    modelId: persistedModelId,
     executionMode,
     status: initialStatus,
     progress: initialProgress,
@@ -1312,7 +1316,7 @@ export async function processTaskDispatch(
         userId: row.user_id,
         taskType: row.task_type,
         requestProvider: executionSnapshot.requestProvider,
-        resolvedProvider: executionSnapshot.resolvedProvider,
+        initialResolvedProvider: executionSnapshot.resolvedProvider,
         resolvedModelId: executionSnapshot.resolvedModelId,
         executionMode: row.execution_mode,
         resolvedInput: executionSnapshot.resolvedInput,
@@ -1343,7 +1347,7 @@ async function executeTaskRequest(
     userId,
     taskType,
     requestProvider,
-    resolvedProvider,
+    initialResolvedProvider,
     resolvedModelId,
     executionMode,
     resolvedInput,
@@ -1370,11 +1374,13 @@ async function executeTaskRequest(
   }
 
   try {
-    const processor = getProcessor(taskType, resolvedProvider)
+    const processor = getProcessor(taskType, initialResolvedProvider)
     const submitResult = await processor.submit(
       { model: resolvedModelId, params: resolvedInput },
       apiKey,
     )
+    const resolvedProvider = submitResult.providerOverride ?? initialResolvedProvider
+    const persistedModelId = submitResult.modelOverride ?? resolvedModelId
 
     if (submitResult.initialStatus === 'completed') {
       if (!submitResult.result) {
@@ -1390,18 +1396,20 @@ async function executeTaskRequest(
           referenceId: taskId,
           requestedCredits: reservedPlatformCredits,
           source: 'task_platform_confirm',
-          description: `Confirm async task billing ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+          description: `Confirm async task billing ${taskType} ${resolvedProvider}/${persistedModelId}`,
         })
       }
 
       await db
         .prepare(
           `UPDATE async_tasks
-           SET status = 'completed', progress = 100, external_task_id = ?,
+           SET provider = ?, model_id = ?, status = 'completed', progress = 100, external_task_id = ?,
                output_data = ?, completed_at = ?, last_checked_at = ?, updated_at = ?
            WHERE id = ? AND user_id = ?`,
         )
         .bind(
+          resolvedProvider,
+          persistedModelId,
           submitResult.externalTaskId,
           JSON.stringify(persistedOutput),
           completedAt,
@@ -1421,10 +1429,12 @@ async function executeTaskRequest(
     await db
       .prepare(
         `UPDATE async_tasks
-         SET status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?
+         SET provider = ?, model_id = ?, status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?
          WHERE id = ? AND user_id = ?`,
       )
       .bind(
+        resolvedProvider,
+        persistedModelId,
         submitResult.initialStatus,
         submitResult.initialStatus === 'running' ? 10 : 0,
         submitResult.externalTaskId,
@@ -1459,7 +1469,7 @@ async function executeTaskRequest(
         userId,
         referenceId: taskId,
         source: 'task_submit_platform_failure_refund',
-        description: `Refund failed async task submission ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        description: `Refund failed async task submission ${taskType} ${initialResolvedProvider}/${resolvedModelId}`,
       })
     }
 
@@ -1485,7 +1495,7 @@ async function executeTaskRequest(
       taskId,
       taskType,
       provider: requestProvider,
-      resolvedProvider,
+      resolvedProvider: initialResolvedProvider,
       modelId: resolvedModelId,
       executionMode,
     })
@@ -1654,6 +1664,8 @@ async function getTaskPlatformKey(
       case 'openrouter':
       case 'deepseek':
       case 'gemini':
+      case 'dlapi':
+      case 'comfly':
         return await runtime.getPlatformKey(provider)
       case 'openai':
         return await runtime.requireEnv('OPENAI_API_KEY')
@@ -1772,6 +1784,8 @@ export async function checkTask(
   /* 懒评估: 向 Provider 查询最新状态 */
   let apiKey = ''
   let processorProvider = row.provider
+  let persistedProvider = row.provider
+  let persistedModelId = row.model_id
   if (row.execution_mode === 'user_key' && row.external_task_id) {
     const runtimeConfig = await getUserTaskRuntimeConfig(
       db,
@@ -1800,6 +1814,8 @@ export async function checkTask(
 
     /* 根据 Provider 返回状态更新 D1 */
     if (check.status === 'completed' && check.result) {
+      persistedProvider = check.providerOverride ?? processorProvider
+      persistedModelId = check.modelOverride ?? row.model_id
       const persistedOutput = await persistTaskOutput(taskId, userId, check.result, runtime)
 
       if (row.execution_mode === 'platform') {
@@ -1818,17 +1834,27 @@ export async function checkTask(
       await db
         .prepare(
           `UPDATE async_tasks
-           SET status = 'completed', progress = 100,
+           SET provider = ?, model_id = ?, status = 'completed', progress = 100,
                output_data = ?, completed_at = ?,
                last_checked_at = ?, updated_at = ?
            WHERE id = ?`,
         )
-        .bind(JSON.stringify(persistedOutput), nowIso, nowIso, nowIso, taskId)
+        .bind(
+          persistedProvider,
+          persistedModelId,
+          JSON.stringify(persistedOutput),
+          nowIso,
+          nowIso,
+          nowIso,
+          taskId,
+        )
         .run()
 
       log.info('Task completed', { taskId })
       return {
         ...rowToDetail(row),
+        provider: persistedProvider,
+        modelId: persistedModelId,
         status: 'completed',
         progress: 100,
         output: persistedOutput,
