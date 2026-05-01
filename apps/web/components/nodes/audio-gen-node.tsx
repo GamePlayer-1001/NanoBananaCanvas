@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 @/hooks/use-ai-models，依赖 @/lib/platform-models，依赖 next-intl 的 useTranslations
+ *          依赖 @/hooks/use-ai-models，依赖 @/lib/platform-models 与共享下拉，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 AudioGenNode 音频生成节点组件
  * [POS]: components/nodes 的 TTS 节点，被 registry 注册并在画布中渲染，统一消费 /api/ai/models 作为平台模型目录
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useCallback, useEffect, useMemo, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, KeyRound, Loader2, Music } from 'lucide-react'
@@ -24,11 +24,11 @@ import {
 } from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
-  groupPlatformModelsByProvider,
-  resolvePlatformModelSelection,
+  toPlatformVisualOptions,
 } from '@/lib/platform-models'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { PlatformModelSelect } from '@/components/shared/platform-model-select'
 import { BaseNode } from './base-node'
 import { Switch } from '@/components/ui/switch'
 
@@ -65,21 +65,24 @@ export function AudioGenNode(props: NodeProps) {
   /* ── Config values ─────────────────────────────────── */
   const provider = resolvePlatformProvider('audio-gen', config)
   const model = resolvePlatformModel('audio-gen', config)
-  const modelGroups = useMemo(
-    () => groupPlatformModelsByProvider(platformAudioModels),
-    [platformAudioModels],
-  )
-  const resolvedPlatformSelection = useMemo(
-    () => resolvePlatformModelSelection(modelGroups, provider, model),
-    [modelGroups, model, provider],
-  )
-  const selectedPlatformProvider = resolvedPlatformSelection?.provider ?? provider
-  const selectedPlatformModel = resolvedPlatformSelection?.modelId ?? model
-  const currentGroup = useMemo(
+  const selectedPlatformEntry = useMemo(
     () =>
-      modelGroups.find((group) => group.provider === selectedPlatformProvider) ??
-      modelGroups[0],
-    [modelGroups, selectedPlatformProvider],
+      platformAudioModels.find(
+        (item) => item.provider === provider && item.modelId === model,
+      ) ??
+      platformAudioModels.find((item) => item.modelId === model) ??
+      platformAudioModels[0],
+    [model, platformAudioModels, provider],
+  )
+  const selectedPlatformProvider = selectedPlatformEntry?.provider ?? provider
+  const selectedPlatformModel = selectedPlatformEntry?.modelId ?? model
+  const platformModelOptions = useMemo(
+    () =>
+      toPlatformVisualOptions(platformAudioModels).map((option) => ({
+        ...option,
+        description: option.providerLabel,
+      })),
+    [platformAudioModels],
   )
   const executionMode = (config.executionMode as string) ?? 'platform'
   const voice = (config.voice as string) ?? DEFAULT_VOICE
@@ -145,20 +148,16 @@ export function AudioGenNode(props: NodeProps) {
   ])
 
   const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformModel: e.target.value }),
-    [updateConfig],
-  )
+    (value: string) => {
+      const nextModel = platformAudioModels.find((item) => item.modelId === value)
+      if (!nextModel) return
 
-  const onProviderChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const newProvider = e.target.value
-      const nextGroup = modelGroups.find((group) => group.provider === newProvider)
       updateConfig({
-        platformProvider: newProvider,
-        platformModel: nextGroup?.models[0]?.modelId ?? '',
+        platformProvider: nextModel.provider,
+        platformModel: nextModel.modelId,
       })
     },
-    [modelGroups, updateConfig],
+    [platformAudioModels, updateConfig],
   )
 
   const onVoiceChange = useCallback(
@@ -174,11 +173,6 @@ export function AudioGenNode(props: NodeProps) {
 
   /* ── Speed display ─────────────────────────────────── */
   const speedLabel = useMemo(() => `${speed.toFixed(1)}x`, [speed])
-  const providerOptions = modelGroups.map((group) => ({
-    value: group.provider,
-    label: group.providerLabel,
-  }))
-
   return (
     <BaseNode
       {...props}
@@ -219,26 +213,6 @@ export function AudioGenNode(props: NodeProps) {
           </div>
         </ConfigField>
 
-        <ConfigField label={t('provider')}>
-          {executionMode === 'user_key' ? (
-            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
-              {userKeyProviderLabel}
-            </div>
-          ) : (
-            <select
-              value={selectedPlatformProvider}
-              onChange={onProviderChange}
-              className={SELECT_CLASS}
-            >
-              {providerOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          )}
-        </ConfigField>
-
         {executionMode === 'user_key' ? (
           <ConfigField label={t('accountConfigLabel')}>
             <select
@@ -261,22 +235,23 @@ export function AudioGenNode(props: NodeProps) {
 
         {/* ── Model selector ──────────────────────── */}
         <ConfigField label={t('model')}>
-          <select
-            value={executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel}
-            onChange={onModelChange}
-            className={SELECT_CLASS}
-            disabled={executionMode === 'user_key'}
-          >
-            {executionMode === 'user_key' ? (
-              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
-            ) : (
-              (currentGroup?.models ?? []).map((m) => (
-                <option key={m.id} value={m.modelId}>
-                  {m.modelName}
-                </option>
-              ))
-            )}
-          </select>
+          {executionMode === 'user_key' ? (
+            <div className="space-y-2">
+              <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+                {userKeyProviderLabel}
+              </div>
+              <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+                {userKeyModelLabel}
+              </div>
+            </div>
+          ) : (
+            <PlatformModelSelect
+              value={selectedPlatformModel}
+              options={platformModelOptions}
+              onValueChange={onModelChange}
+              triggerClassName={SELECT_CLASS}
+            />
+          )}
         </ConfigField>
 
         {/* ── Voice selector ─────────────────────── */}

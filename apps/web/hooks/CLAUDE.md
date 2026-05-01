@@ -9,7 +9,7 @@
 ```
 use-context-menu.ts      — useContextMenu 画布右键菜单状态管理 (pane/node 菜单切换，Escape 关闭)
 use-agent-selection-context.ts — useAgentSelectionContext 选中节点语境桥接 (从 Flow/Execution/模板上下文压缩当前节点快照，并同步到 AgentStore)
-use-agent-session.ts     — useAgentSession Agent 会话编排 (summary -> multi-plan|template-plan|diagnose|optimize|explain -> prompt refine/confirm -> apply -> run，创建类请求可先自动落工作流，prompt/高风险请求改为聊天确认，含短期创作记忆与右下角悬浮助手桥接)
+use-agent-session.ts     — useAgentSession Agent 会话编排 (summary -> multi-plan|template-plan|diagnose|optimize|explain -> prompt refine/confirm -> apply -> run，创建类请求可先自动落工作流，prompt/高风险请求改为聊天确认，并把助手当前平台/用户模式与模型选择传入请求链路)
 use-agent-task-summary.ts — useAgentTaskSummary Agent 执行/任务摘要层 (执行态 + 异步任务态 -> 自然语言反馈，并在结果完成后生成“下一步建议”续写提示)
 use-agent-task-summary.test.tsx — useAgentTaskSummary 回归测试 (验证图片任务完成后会产出基于结果继续的建议消息，失败任务保持诊断语气)
 use-workflow-executor.ts — useWorkflowExecutor 工作流执行 hook (连接 WorkflowExecutor 引擎与 Zustand Store，含 toast 通知；用户 abort 时会同步下发任务 cancel，避免后端异步任务继续占坑)

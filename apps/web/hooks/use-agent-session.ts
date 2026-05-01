@@ -25,7 +25,11 @@ import { optimizeCanvas } from '@/lib/agent/optimize-canvas'
 import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
-import type { AgentMode, AgentPlan } from '@/lib/agent/types'
+import type {
+  AgentAssistantRuntime,
+  AgentMode,
+  AgentPlan,
+} from '@/lib/agent/types'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { useWorkflowMetadataStore } from '@/stores/use-workflow-metadata-store'
@@ -61,7 +65,10 @@ export function useAgentSession({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
 
-  async function sendMessage(rawValue: string) {
+  async function sendMessage(
+    rawValue: string,
+    assistantRuntime?: AgentAssistantRuntime,
+  ) {
     const value = rawValue.trim()
     if (!value || isSubmitting) return
 
@@ -123,6 +130,7 @@ export function useAgentSession({
           userMessage: value,
           canvasSummary,
           locale,
+          assistantRuntime,
         })
 
         appendMessage({
@@ -170,6 +178,7 @@ export function useAgentSession({
           userMessage: value,
           canvasSummary,
           locale,
+          assistantRuntime,
         })
 
         appendMessage({
@@ -226,6 +235,7 @@ export function useAgentSession({
           userMessage: value,
           canvasSummary,
           locale,
+          assistantRuntime,
         })
 
         appendMessage({
@@ -252,6 +262,7 @@ export function useAgentSession({
         mode,
         canvasSummary,
         locale,
+        assistantRuntime,
       })
       const plan = 'plan' in planned ? planned.plan : planned
       const alternatives = 'alternatives' in planned && planned.alternatives ? planned.alternatives : []

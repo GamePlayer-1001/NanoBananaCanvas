@@ -23,7 +23,6 @@ import { AgentConversation } from '@/components/agent/agent-conversation'
 import { AgentChangeLogSheet } from '@/components/agent/agent-change-log-sheet'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
-import { useAIModels } from '@/hooks/use-ai-models'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
@@ -31,7 +30,7 @@ import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
 import { useWorkflow } from '@/hooks/use-workflows'
 import { fetchLatestAgentReplay } from '@/lib/agent/agent-audit'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
-import { groupPlatformModelsByProvider } from '@/lib/platform-models'
+import { getAgentPlatformModelOptions } from '@/lib/platform-models'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -102,7 +101,6 @@ export default function CanvasPage({
   } = useAgentTaskSummary({
     workflowId: id,
   })
-  const { data: platformModels = [] } = useAIModels('text')
   const { getConfigsByCapability } = useModelConfigs()
   const resultAwareSummary = useMemo(
     () =>
@@ -116,10 +114,6 @@ export default function CanvasPage({
       }),
     [auditTrail, edges, id, nodes, template, workflowName],
   )
-  const platformGroups = useMemo(
-    () => groupPlatformModelsByProvider(platformModels),
-    [platformModels],
-  )
   const modelOptions = useMemo(() => {
     if (composerExecutionMode === 'user_key') {
       return getConfigsByCapability('text').map((item) => ({
@@ -128,13 +122,8 @@ export default function CanvasPage({
       }))
     }
 
-    return platformGroups.flatMap((group) =>
-      group.models.map((model) => ({
-        value: model.modelId,
-        label: `${group.providerLabel} · ${model.modelName}`,
-      })),
-    )
-  }, [composerExecutionMode, getConfigsByCapability, platformGroups])
+    return getAgentPlatformModelOptions()
+  }, [composerExecutionMode, getConfigsByCapability])
   const resolvedComposerModel = useMemo(() => {
     if (modelOptions.some((item) => item.value === composerModel)) {
       return composerModel
@@ -426,7 +415,15 @@ export default function CanvasPage({
                     if (actionId === 'diagnose') setMode('diagnose')
                     if (actionId === 'optimize') setMode('optimize')
                     if (actionId === 'explain') setMode('update')
-                    void sendMessage(actionMap[actionId] ?? actionId)
+                    void sendMessage(actionMap[actionId] ?? actionId, {
+                      executionMode: composerExecutionMode,
+                      modelId:
+                        composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
+                      provider:
+                        composerExecutionMode === 'platform' ? 'comfly' : undefined,
+                      configId:
+                        composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
+                    })
                   }}
                 />
               )}
@@ -446,7 +443,17 @@ export default function CanvasPage({
                       : tAgent('hintIdle')
                   }
                   submitLabel={t('run')}
-                  onSubmit={(value) => void sendMessage(value)}
+                  onSubmit={(value) =>
+                    void sendMessage(value, {
+                      executionMode: composerExecutionMode,
+                      modelId:
+                        composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
+                      provider:
+                        composerExecutionMode === 'platform' ? 'comfly' : undefined,
+                      configId:
+                        composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
+                    })
+                  }
                 />
               )}
             />

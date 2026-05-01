@@ -42,6 +42,37 @@ const guestUserKeyConfigSchema = z.object({
   imageCapabilities: imageCapabilitiesSchema,
 })
 
+function matchesTaskType(provider: string, modelId: string, taskType: 'image_gen' | 'video_gen' | 'audio_gen') {
+  const normalizedProvider = provider.toLowerCase()
+  const normalizedModel = modelId.toLowerCase()
+
+  if (taskType === 'image_gen') {
+    return (
+      normalizedProvider === 'dlapi' ||
+      normalizedModel.includes('image') ||
+      normalizedModel.includes('dall-e') ||
+      normalizedModel.includes('imagen') ||
+      normalizedModel.includes('flux') ||
+      normalizedModel.includes('sd-')
+    )
+  }
+
+  if (taskType === 'video_gen') {
+    return (
+      normalizedProvider === 'kling' ||
+      normalizedModel.includes('video') ||
+      normalizedModel.includes('veo') ||
+      normalizedModel.includes('kling')
+    )
+  }
+
+  return (
+    normalizedModel.includes('audio') ||
+    normalizedModel.includes('speech') ||
+    normalizedModel.includes('tts')
+  )
+}
+
 export const submitTaskSchema = z
   .object({
     taskType: z.enum(['video_gen', 'image_gen', 'audio_gen']),
@@ -70,6 +101,14 @@ export const submitTaskSchema = z
           code: z.ZodIssueCode.custom,
           path: ['modelId'],
           message: 'Platform execution requires modelId',
+        })
+      }
+
+      if (value.provider && value.modelId && !matchesTaskType(value.provider, value.modelId, value.taskType)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['modelId'],
+          message: `Platform model does not support task type: ${value.taskType}`,
         })
       }
     }
