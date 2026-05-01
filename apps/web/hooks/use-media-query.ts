@@ -30,3 +30,8 @@ export function useMediaQuery(query: string): boolean {
 export function useIsDesktop() {
   return useMediaQuery('(min-width: 1024px)')
 }
+
+/** 系统 reduced motion 偏好 */
+export function usePrefersReducedMotion() {
+  return useMediaQuery('(prefers-reduced-motion: reduce)')
+}

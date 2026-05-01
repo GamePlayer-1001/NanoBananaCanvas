@@ -3,7 +3,7 @@
  *          依赖 @/stores/use-flow-store 的节点/边数据，
  *          依赖 @/stores/use-execution-store 的执行状态，
  *          依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/abort/isExecuting + 执行历史记录 + abort 时联动取消活跃异步任务)
+ * [OUTPUT]: 对外提供 useWorkflowExecutor hook (execute/executeFromNode/abort/isExecuting + 执行历史记录 + abort 时联动取消活跃异步任务)
  * [POS]: hooks 的工作流执行桥梁，连接 Executor 引擎与 Zustand Store，执行完成后写入 execution_history，并在用户中止时同步清理后端任务
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -160,7 +160,7 @@ export function useWorkflowExecutor(workflowId?: string) {
   const finishExecution = useExecutionStore((s) => s.finishExecution)
   const failExecution = useExecutionStore((s) => s.failExecution)
 
-  const execute = useCallback(async () => {
+  const executeWithScope = useCallback(async (startNodeId?: string) => {
     if (isExecuting) return
     startTimeRef.current = Date.now()
     abortingRef.current = false
@@ -218,12 +218,20 @@ export function useWorkflowExecutor(workflowId?: string) {
       updateNodeConfig: (nodeId, patch) => {
         updateNodeData(nodeId, { config: { ...getNodeConfig(nodeId), ...patch } })
       },
-    })
+    }, startNodeId)
   }, [
     nodes, edges, isExecuting, t, tExec, workflowId,
     startExecution, setCurrentNode, setNodeResult, finishExecution, failExecution,
     updateNodeData,
   ])
+
+  const execute = useCallback(async () => {
+    await executeWithScope()
+  }, [executeWithScope])
+
+  const executeFromNode = useCallback(async (nodeId: string) => {
+    await executeWithScope(nodeId)
+  }, [executeWithScope])
 
   const abort = useCallback(() => {
     abortingRef.current = true
@@ -235,5 +243,5 @@ export function useWorkflowExecutor(workflowId?: string) {
     }
   }, [failExecution, workflowId, nodes.length])
 
-  return { execute, abort, isExecuting }
+  return { execute, executeFromNode, abort, isExecuting }
 }

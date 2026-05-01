@@ -28,7 +28,12 @@ INSERT OR IGNORE INTO ai_models (id, provider, model_id, model_name, category, t
   ('mp-103', 'openrouter', 'openai/dall-e-3',               'DALL-E 3',             'image', 'premium'),
   ('mp-104', 'openrouter', 'black-forest-labs/flux-pro',    'FLUX.1 Pro',           'image', 'flagship'),
   ('mp-img-2', 'gemini',   'imagen-3.0-generate-002',       'Imagen 3',             'image', 'standard'),
-  ('mp-105', 'openai',     'dall-e-3',                      'DALL-E 3',             'image', 'premium');
+  ('mp-105', 'openai',     'dall-e-3',                      'DALL-E 3',             'image', 'premium'),
+  ('mp-dl-001', 'dlapi',   'gpt-image-2',                   'GPT Image 2',          'image', 'premium'),
+  ('mp-cf-001', 'comfly',  'dall-e-3',                      'DALL-E 3 (Comfly)',   'image', 'premium'),
+  ('mp-cf-002', 'comfly',  'gemini-2.5-flash-image',        'Gemini 2.5 Flash Image', 'image', 'premium'),
+  ('mp-cf-003', 'comfly',  'gemini-2.5-flash',              'Gemini 2.5 Flash',    'video', 'premium'),
+  ('mp-cf-004', 'comfly',  'gemini-3-pro-preview',          'Gemini 3 Pro Preview', 'video', 'flagship');
 
 -- ── 视频生成模型 ─────────────────────────────
 

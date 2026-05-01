@@ -30,7 +30,6 @@ vi.mock('@/lib/billing/metering', () => ({
   getModelPricing: vi.fn(),
   estimateBillableUnits: vi.fn(),
   estimateCreditsFromUsage: vi.fn(),
-  estimateReservedTextExecutionUsage: vi.fn(),
 }))
 
 vi.mock('@/services/ai', () => ({
@@ -44,7 +43,6 @@ import { confirmFrozenCredits, freezeCredits, refundFrozenCredits } from '@/lib/
 import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
-  estimateReservedTextExecutionUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
@@ -82,20 +80,20 @@ describe('POST /api/ai/execute', () => {
     })
     vi.mocked(freezeCredits).mockResolvedValue({
       referenceId: 'ref',
-      frozen: { monthly: 0, permanent: 0, total: 0 },
+      frozen: { trial: 0, monthly: 0, permanent: 0, total: 0 },
       availableCreditsAfter: 1000,
       frozenCreditsAfter: 0,
     })
     vi.mocked(confirmFrozenCredits).mockResolvedValue({
       referenceId: 'ref',
-      finalized: { monthly: 0, permanent: 0, total: 0 },
+      finalized: { trial: 0, monthly: 0, permanent: 0, total: 0 },
       availableCreditsAfter: 1000,
       frozenCreditsAfter: 0,
       totalSpentAfter: 0,
     })
     vi.mocked(refundFrozenCredits).mockResolvedValue({
       referenceId: 'ref',
-      finalized: { monthly: 0, permanent: 0, total: 0 },
+      finalized: { trial: 0, monthly: 0, permanent: 0, total: 0 },
       availableCreditsAfter: 1000,
       frozenCreditsAfter: 0,
       totalSpentAfter: 0,
@@ -103,12 +101,6 @@ describe('POST /api/ai/execute', () => {
   })
 
   it('freezes reserved credits, confirms actual spend, and refunds unused remainder', async () => {
-    vi.mocked(estimateReservedTextExecutionUsage).mockReturnValue({
-      category: 'text',
-      billableUnits: 5000,
-      unitLabel: 'tokens',
-      basis: 'message_char_estimate',
-    })
     vi.mocked(estimateBillableUnits).mockReturnValue({
         category: 'text',
         billableUnits: 3200,
@@ -147,24 +139,18 @@ describe('POST /api/ai/execute', () => {
     expect(freezeCredits).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user_exec_1',
-        requestedCredits: 50,
+        requestedCredits: 1,
         source: 'ai_execute_platform_freeze',
       }),
     )
     expect(confirmFrozenCredits).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user_exec_1',
-        requestedCredits: 32,
+        requestedCredits: 1,
         source: 'ai_execute_platform_confirm',
       }),
     )
-    expect(refundFrozenCredits).toHaveBeenCalledTimes(1)
-    expect(refundFrozenCredits).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'user_exec_1',
-        source: 'ai_execute_platform_refund',
-      }),
-    )
+    expect(refundFrozenCredits).not.toHaveBeenCalled()
     await expect(response.json()).resolves.toMatchObject({
       ok: true,
       data: { result: 'hello world' },
@@ -172,12 +158,6 @@ describe('POST /api/ai/execute', () => {
   })
 
   it('refunds the reserved credits when provider execution fails', async () => {
-    vi.mocked(estimateReservedTextExecutionUsage).mockReturnValue({
-      category: 'text',
-      billableUnits: 4000,
-      unitLabel: 'tokens',
-      basis: 'message_char_estimate',
-    })
     vi.mocked(estimateBillableUnits).mockReturnValue({
       category: 'text',
       billableUnits: 4000,

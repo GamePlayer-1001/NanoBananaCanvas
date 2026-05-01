@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth、@/lib/api/rate-limit、@/lib/api/response、@/lib/db、@/lib/env、
- *          @/lib/errors、@/lib/billing/ledger、@/lib/billing/metering、@/lib/nanoid、
+ *          @/lib/errors、@/lib/billing/ledger、@/lib/billing/metering、@/lib/billing/subscription、@/lib/nanoid、
  *          @/components/video-analysis/video-analysis-prompts
- * [OUTPUT]: 对外提供 GET/POST /api/video-analysis（用户级历史读取 + 平台内置 Gemini 视频分析）
- * [POS]: api/video-analysis 的服务端分析端点，承接历史持久化、视频上传、Gemini Files API 调用与平台积分结算
+ * [OUTPUT]: 对外提供 GET/POST /api/video-analysis（历史读取 + Pro 权限闸门 + 当前 Gemini 平台分析实现）
+ * [POS]: api/video-analysis 的服务端分析端点，承接历史持久化、权限控制、视频上传、分析调用与平台积分结算
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -15,6 +15,7 @@ import { requireEnv } from '@/lib/env'
 import { AIServiceError, ErrorCode } from '@/lib/errors'
 import { confirmFrozenCredits, freezeCredits, refundFrozenCredits } from '@/lib/billing/ledger'
 import { estimateBillableUnits, estimateCreditsFromUsage, getModelPricing } from '@/lib/billing/metering'
+import { getBillingSubscription } from '@/lib/billing/subscription'
 import { nanoid } from '@/lib/nanoid'
 import {
   buildVideoAnalysisSystemPrompt,
@@ -31,7 +32,7 @@ const PROCESSING_POLL_INTERVAL_MS = 2000
 const PROCESSING_MAX_POLLS = 30
 
 const VIDEO_ANALYSIS_PRICING_FALLBACK: Record<string, number> = {
-  'gemini-2.5-flash-image': 30,
+  'gemini-2.5-flash': 30,
   'gemini-3-pro-preview': 120,
 }
 
@@ -306,6 +307,11 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const { userId } = await requireAuth()
+    const subscription = await getBillingSubscription(userId)
+    if (subscription.plan !== 'pro' && subscription.plan !== 'ultimate') {
+      return apiError('PLAN_REQUIRED', 'Video analysis is available for Pro and above plans only', 403)
+    }
+
     const rl = await checkRateLimit(`video-analysis:${userId}`, 10, 60_000)
     if (!rl.ok) return rateLimitResponse(rl.resetAt)
 

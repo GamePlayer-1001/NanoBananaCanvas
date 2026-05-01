@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 ./topological-sort 的排序能力，依赖 ./node-executor 的节点执行，
  *          依赖 @/lib/errors 的 WorkflowError，依赖 @/lib/logger
- * [OUTPUT]: 对外提供 WorkflowExecutor 类 (完整工作流执行编排)
+ * [OUTPUT]: 对外提供 WorkflowExecutor 类 (完整工作流执行编排，支持从指定节点起跑)
  * [POS]: lib/executor 的顶层编排器，被 hooks/use-workflow-executor 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -41,6 +41,7 @@ export class WorkflowExecutor {
     edges: Edge[],
     workflowId: string | undefined,
     callbacks: ExecutionCallbacks,
+    startNodeId?: string,
   ): Promise<void> {
     if (nodes.length === 0) {
       callbacks.onError('Workflow is empty')
@@ -57,6 +58,15 @@ export class WorkflowExecutor {
     } catch (err) {
       callbacks.onError(isAppError(err) ? err.message : 'Failed to sort workflow')
       return
+    }
+
+    if (startNodeId) {
+      const reachableNodeIds = this.findReachableNodes(startNodeId, edges)
+      if (!reachableNodeIds.has(startNodeId)) {
+        callbacks.onError(`Start node "${startNodeId}" is not reachable`)
+        return
+      }
+      order = order.filter((nodeId) => reachableNodeIds.has(nodeId))
     }
 
     log.info('Execution plan', { order })
@@ -187,6 +197,24 @@ export class WorkflowExecutor {
     }
 
     return inputs
+  }
+
+  private findReachableNodes(startNodeId: string, edges: Edge[]): Set<string> {
+    const reachable = new Set<string>([startNodeId])
+    const queue = [startNodeId]
+
+    while (queue.length > 0) {
+      const current = queue.shift()
+      if (!current) continue
+
+      for (const edge of edges) {
+        if (edge.source !== current || reachable.has(edge.target)) continue
+        reachable.add(edge.target)
+        queue.push(edge.target)
+      }
+    }
+
+    return reachable
   }
 
   /* ── 条件分支: 跳过 null 端口的独占下游 ──────────── */

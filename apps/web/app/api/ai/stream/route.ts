@@ -21,9 +21,9 @@ import {
 import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
-  estimateReservedTextExecutionUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
+import { PLATFORM_TEXT_EXECUTION_CREDITS } from '@/lib/billing/workflow-pricing'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -75,6 +75,7 @@ export async function POST(req: Request) {
         userId,
         params.capability as string,
         params.configId,
+        params.guestUserKeyConfig,
       )
       apiKey = runtimeConfig.apiKey
       resolvedModelId = runtimeConfig.modelId
@@ -94,17 +95,8 @@ export async function POST(req: Request) {
             activeOnly: false,
           })
         : null
-    const reservedUsage =
-      params.executionMode === 'platform'
-        ? estimateReservedTextExecutionUsage(params.messages, params.maxTokens)
-        : null
     const reservedCredits =
-      pricing && reservedUsage
-        ? estimateCreditsFromUsage({
-            billableUnits: reservedUsage.billableUnits,
-            creditsPer1kUnits: pricing.creditsPer1kUnits,
-          })
-        : 0
+      params.executionMode === 'platform' ? PLATFORM_TEXT_EXECUTION_CREDITS : 0
 
     if (params.executionMode === 'platform' && reservedCredits > 0) {
       await freezeCredits({
@@ -153,24 +145,16 @@ export async function POST(req: Request) {
           outputText: streamedText,
         })
         const actualCredits =
-          pricing
-            ? estimateCreditsFromUsage({
-                billableUnits: usageEstimate.billableUnits,
-                creditsPer1kUnits: pricing.creditsPer1kUnits,
-              })
-            : null
+          params.executionMode === 'platform'
+            ? PLATFORM_TEXT_EXECUTION_CREDITS
+            : pricing
+              ? estimateCreditsFromUsage({
+                  billableUnits: usageEstimate.billableUnits,
+                  creditsPer1kUnits: pricing.creditsPer1kUnits,
+                })
+              : null
 
-        if (pricing && actualCredits != null) {
-          if (actualCredits > reservedCredits) {
-            await freezeCredits({
-              userId,
-              requestedCredits: actualCredits - reservedCredits,
-              referenceId: executionReferenceId,
-              source: 'ai_stream_platform_adjust',
-              description: `Freeze additional credits for streaming platform execution ${providerId}/${resolvedModelId}`,
-            })
-          }
-
+        if (params.executionMode === 'platform' && actualCredits != null) {
           await confirmFrozenCredits({
             userId,
             referenceId: executionReferenceId,
@@ -178,15 +162,6 @@ export async function POST(req: Request) {
             source: 'ai_stream_platform_confirm',
             description: `Confirm streaming platform execution billing ${providerId}/${resolvedModelId}`,
           })
-
-          if (actualCredits < reservedCredits) {
-            await refundFrozenCredits({
-              userId,
-              referenceId: executionReferenceId,
-              source: 'ai_stream_platform_refund',
-              description: `Refund unused reserved credits for streaming platform execution ${providerId}/${resolvedModelId}`,
-            })
-          }
         }
 
         await writeUsageLog(
@@ -257,7 +232,22 @@ async function getUserRuntimeConfig(
   userId: string,
   capability: string,
   configId?: string,
+  guestConfig?: ReturnType<typeof aiExecuteSchema.parse>['guestUserKeyConfig'],
 ): Promise<UserModelRuntimeConfig> {
+  if (guestConfig) {
+    return {
+      configId: guestConfig.configId?.trim() || `guest_${capability}`,
+      capability: guestConfig.capability,
+      providerKind: guestConfig.providerKind,
+      providerId: guestConfig.providerId,
+      apiKey: guestConfig.apiKey,
+      modelId: guestConfig.modelId,
+      baseUrl: guestConfig.baseUrl,
+      secretKey: guestConfig.secretKey,
+      imageCapabilities: guestConfig.imageCapabilities,
+    }
+  }
+
   const keyRow = configId
     ? await db
         .prepare(

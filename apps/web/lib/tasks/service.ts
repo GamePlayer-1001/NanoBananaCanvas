@@ -29,6 +29,7 @@ import {
   getModelPricing,
   type BillableUsageEstimate,
 } from '@/lib/billing/metering'
+import { getWorkflowImagePriceForSize } from '@/lib/billing/workflow-pricing'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import {
@@ -98,6 +99,23 @@ export interface SubmitTaskParams {
   capability?: NodeCapability
   modelId?: string
   configId?: string
+  guestUserKeyConfig?: {
+    configId?: string
+    capability: NodeCapability
+    providerKind:
+      | 'openai-compatible'
+      | 'openrouter'
+      | 'google-image'
+      | 'gemini'
+      | 'kling'
+      | 'openai-audio'
+    providerId: string
+    apiKey: string
+    modelId: string
+    baseUrl?: string
+    secretKey?: string
+    imageCapabilities?: ImageModelCapabilities
+  }
   executionMode: ExecutionMode
   input: Record<string, unknown>
   workflowId?: string
@@ -129,6 +147,11 @@ interface PersistedDataUrlDescriptor {
 interface PersistedTaskRuntimeMeta {
   userConfigId?: string
   orchestrator?: TaskOrchestrator
+}
+
+interface MediaDimensions {
+  width: number
+  height: number
 }
 
 interface TaskExecutionSnapshot {
@@ -178,7 +201,7 @@ interface TaskExecutionRequest {
   userId: string
   taskType: AsyncTaskType
   requestProvider: string
-  resolvedProvider: string
+  initialResolvedProvider: string
   resolvedModelId: string
   executionMode: ExecutionMode
   resolvedInput: Record<string, unknown>
@@ -529,6 +552,102 @@ async function refundTaskCredits(input: {
   })
 }
 
+async function resolveCompletedImageTaskCredits(
+  db: D1Database,
+  input: {
+    provider: string
+    modelId: string
+    taskInput: Record<string, unknown>
+    output: TaskOutput
+  },
+): Promise<number | null> {
+  const requestedSize =
+    typeof input.taskInput.size === 'string' ? input.taskInput.size : 'auto'
+  const pricing = await getModelPricing(db, {
+    provider: input.provider,
+    modelId: input.modelId,
+    activeOnly: false,
+  })
+
+  if (requestedSize !== 'auto') {
+    return getWorkflowImagePriceForSize({
+      modelId: input.modelId,
+      modelName: pricing?.modelName,
+      size: requestedSize as '1k' | '2k' | '4k' | '8k',
+    })
+  }
+
+  const actualTier = resolveImagePriceTierFromOutput(input.output)
+  if (!actualTier) {
+    return null
+  }
+
+  return getWorkflowImagePriceForSize({
+    modelId: input.modelId,
+    modelName: pricing?.modelName,
+    size: actualTier,
+  })
+}
+
+async function settleCompletedPlatformImageTask(input: {
+  db: D1Database
+  userId: string
+  taskId: string
+  provider: string
+  modelId: string
+  taskInput: Record<string, unknown>
+  output: TaskOutput
+}) {
+  const reservedCredits = getReservedTaskCredits(input.taskInput)
+  const actualCredits = await resolveCompletedImageTaskCredits(input.db, {
+    provider: input.provider,
+    modelId: input.modelId,
+    taskInput: input.taskInput,
+    output: input.output,
+  })
+
+  if (actualCredits == null) {
+    if (reservedCredits > 0) {
+      await confirmFrozenCredits({
+        userId: input.userId,
+        referenceId: input.taskId,
+        requestedCredits: reservedCredits,
+        source: 'task_platform_confirm',
+        description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
+      })
+    }
+    return
+  }
+
+  if (actualCredits > reservedCredits) {
+    await freezeCredits({
+      userId: input.userId,
+      requestedCredits: actualCredits - reservedCredits,
+      referenceId: input.taskId,
+      source: 'task_platform_adjust',
+      description: `Freeze additional credits for completed image task ${input.provider}/${input.modelId}`,
+    })
+  }
+
+  await confirmFrozenCredits({
+    userId: input.userId,
+    referenceId: input.taskId,
+    requestedCredits: actualCredits,
+    source: 'task_platform_confirm',
+    description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
+  })
+
+  if (actualCredits < reservedCredits) {
+    await refundTaskCredits({
+      userId: input.userId,
+      referenceId: input.taskId,
+      requestedCredits: reservedCredits - actualCredits,
+      source: 'task_platform_refund',
+      description: `Refund unused reserved credits for completed image task ${input.provider}/${input.modelId}`,
+    })
+  }
+}
+
 async function estimateTaskBillingDraft(
   db: D1Database,
   input: {
@@ -538,6 +657,31 @@ async function estimateTaskBillingDraft(
     taskInput: Record<string, unknown>
   },
 ): Promise<ReservedTaskBillingDraft> {
+  if (input.taskType === 'image_gen') {
+    const pricing = await getModelPricing(db, {
+      provider: input.provider,
+      modelId: input.modelId,
+      activeOnly: false,
+    })
+    const size = typeof input.taskInput.size === 'string' ? input.taskInput.size : 'auto'
+    const estimatedCredits = getWorkflowImagePriceForSize({
+      modelId: input.modelId,
+      modelName: pricing?.modelName,
+      size: size as 'auto' | '1k' | '2k' | '4k' | '8k',
+    })
+
+    return {
+      mode: 'reserved',
+      inputTokens: null,
+      outputTokens: null,
+      billableUnits: null,
+      estimatedCredits,
+      category: 'image',
+      unitLabel: null,
+      basis: size === 'auto' ? 'image_size_auto' : 'image_size_preset',
+    }
+  }
+
   const pricing = await getModelPricing(db, {
     provider: input.provider,
     modelId: input.modelId,
@@ -667,6 +811,107 @@ function inferOutputFileName(taskId: string, output: TaskOutput): string {
   return `${taskId}.${ext}`
 }
 
+function readPngDimensions(bytes: Uint8Array): MediaDimensions | null {
+  if (bytes.length < 24) return null
+  const pngHeader = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+  if (!pngHeader.every((value, index) => bytes[index] === value)) return null
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  return {
+    width: view.getUint32(16),
+    height: view.getUint32(20),
+  }
+}
+
+function readJpegDimensions(bytes: Uint8Array): MediaDimensions | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
+
+  let offset = 2
+  while (offset + 9 < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset += 1
+      continue
+    }
+
+    const marker = bytes[offset + 1]
+    const length = (bytes[offset + 2] << 8) | bytes[offset + 3]
+    if (length < 2) return null
+
+    const isSof =
+      marker >= 0xc0 &&
+      marker <= 0xcf &&
+      ![0xc4, 0xc8, 0xcc].includes(marker)
+
+    if (isSof && offset + 8 < bytes.length) {
+      return {
+        height: (bytes[offset + 5] << 8) | bytes[offset + 6],
+        width: (bytes[offset + 7] << 8) | bytes[offset + 8],
+      }
+    }
+
+    offset += 2 + length
+  }
+
+  return null
+}
+
+function readWebpDimensions(bytes: Uint8Array): MediaDimensions | null {
+  if (bytes.length < 30) return null
+  const riff = String.fromCharCode(...bytes.slice(0, 4))
+  const webp = String.fromCharCode(...bytes.slice(8, 12))
+  if (riff !== 'RIFF' || webp !== 'WEBP') return null
+
+  const chunk = String.fromCharCode(...bytes.slice(12, 16))
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+
+  if (chunk === 'VP8X' && bytes.length >= 30) {
+    const width = 1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16)
+    const height = 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16)
+    return { width, height }
+  }
+
+  if (chunk === 'VP8 ' && bytes.length >= 30) {
+    return {
+      width: view.getUint16(26, true) & 0x3fff,
+      height: view.getUint16(28, true) & 0x3fff,
+    }
+  }
+
+  if (chunk === 'VP8L' && bytes.length >= 25) {
+    const b0 = bytes[21]
+    const b1 = bytes[22]
+    const b2 = bytes[23]
+    const b3 = bytes[24]
+    const width = 1 + (((b1 & 0x3f) << 8) | b0)
+    const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6))
+    return { width, height }
+  }
+
+  return null
+}
+
+function detectImageDimensions(body: ArrayBuffer, contentType: string): MediaDimensions | null {
+  const bytes = new Uint8Array(body)
+  const normalized = contentType.split(';', 1)[0]?.trim().toLowerCase()
+
+  if (normalized === 'image/png') return readPngDimensions(bytes)
+  if (normalized === 'image/jpeg' || normalized === 'image/jpg') return readJpegDimensions(bytes)
+  if (normalized === 'image/webp') return readWebpDimensions(bytes)
+
+  return null
+}
+
+function resolveImagePriceTierFromOutput(output: TaskOutput): '1k' | '2k' | '4k' | '8k' | null {
+  const width = output.width ?? 0
+  const height = output.height ?? 0
+  const longEdge = Math.max(width, height)
+  if (longEdge <= 0) return null
+  if (longEdge <= 1920) return '1k'
+  if (longEdge <= 2560) return '2k'
+  if (longEdge <= 3840) return '4k'
+  return '8k'
+}
+
 function normalizeInternalOutput(taskId: string, output: TaskOutput, r2Key: string): TaskOutput {
   return {
     ...output,
@@ -733,11 +978,16 @@ async function persistTaskOutput(
   })
 
   await runtime.invalidateStorageCache(userId)
+  const dimensions =
+    contentType.startsWith('image/')
+      ? detectImageDimensions(body, contentType)
+      : null
 
   return {
     ...output,
     contentType,
     fileName,
+    ...(dimensions ?? {}),
     r2_key: r2Key,
     url: toInternalFileUrl(r2Key),
   }
@@ -902,6 +1152,7 @@ export async function submitTask(
     capability,
     modelId,
     configId,
+    guestUserKeyConfig,
     executionMode,
     input,
     workflowId,
@@ -966,6 +1217,8 @@ export async function submitTask(
   let apiKey = ''
   let submitResult: Awaited<ReturnType<TaskProcessor['submit']>> | null = null
   let persistedOutput: TaskOutput | null = null
+  let persistedProvider = requestProvider as string
+  let persistedModelId = resolvedModelId
 
   try {
     if (executionMode === 'platform') {
@@ -1005,6 +1258,7 @@ export async function submitTask(
         capability as NodeCapability,
         configId,
         runtime,
+        guestUserKeyConfig,
       )
       apiKey =
         runtimeConfig.providerId === 'kling' && runtimeConfig.secretKey
@@ -1038,6 +1292,8 @@ export async function submitTask(
         { model: resolvedModelId, params: resolvedInput },
         apiKey,
       )
+      persistedProvider = submitResult.providerOverride ?? requestProvider ?? resolvedProvider
+      persistedModelId = submitResult.modelOverride ?? resolvedModelId
 
       if (submitResult.initialStatus === 'completed') {
         if (!submitResult.result) {
@@ -1128,7 +1384,7 @@ export async function submitTask(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
-        taskId, userId, taskType, requestProvider, resolvedModelId,
+        taskId, userId, taskType, persistedProvider, persistedModelId,
         submitResult?.externalTaskId ?? null, executionMode, JSON.stringify(persistedInput),
         initialStatus, initialProgress,
         config.maxRetries, workflowId ?? null, nodeId ?? null,
@@ -1136,14 +1392,26 @@ export async function submitTask(
       )
       .run()
 
-    if (executionMode === 'platform' && reservedPlatformCredits > 0 && initialStatus === 'completed') {
-      await confirmFrozenCredits({
-        userId,
-        referenceId: taskId,
-        requestedCredits: reservedPlatformCredits,
-        source: 'task_platform_confirm',
-        description: `Confirm async task billing ${taskType} ${resolvedProvider}/${resolvedModelId}`,
-      })
+    if (executionMode === 'platform' && initialStatus === 'completed' && persistedOutput) {
+      if (taskType === 'image_gen') {
+        await settleCompletedPlatformImageTask({
+          db,
+          userId,
+          taskId,
+          provider: persistedProvider,
+          modelId: persistedModelId,
+          taskInput: persistedInput,
+          output: persistedOutput,
+        })
+      } else if (reservedPlatformCredits > 0) {
+        await confirmFrozenCredits({
+          userId,
+          referenceId: taskId,
+          requestedCredits: reservedPlatformCredits,
+          source: 'task_platform_confirm',
+          description: `Confirm async task billing ${taskType} ${persistedProvider}/${persistedModelId}`,
+        })
+      }
     }
   } catch (error) {
     if (executionMode === 'platform' && reservedPlatformCredits > 0) {
@@ -1151,7 +1419,7 @@ export async function submitTask(
         userId,
         referenceId: taskId,
         source: 'task_submit_platform_insert_refund',
-        description: `Refund async task credits after persistence failure ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        description: `Refund async task credits after persistence failure ${taskType} ${persistedProvider}/${persistedModelId}`,
       })
     }
 
@@ -1166,7 +1434,7 @@ export async function submitTask(
     taskId,
     taskType,
     provider: requestProvider,
-    resolvedProvider,
+    resolvedProvider: persistedProvider,
     executionMode,
     initialStatus,
   })
@@ -1174,8 +1442,8 @@ export async function submitTask(
   return {
     id: taskId,
     taskType,
-    provider: requestProvider as string,
-    modelId: resolvedModelId,
+    provider: persistedProvider,
+    modelId: persistedModelId,
     executionMode,
     status: initialStatus,
     progress: initialProgress,
@@ -1293,7 +1561,7 @@ export async function processTaskDispatch(
         userId: row.user_id,
         taskType: row.task_type,
         requestProvider: executionSnapshot.requestProvider,
-        resolvedProvider: executionSnapshot.resolvedProvider,
+        initialResolvedProvider: executionSnapshot.resolvedProvider,
         resolvedModelId: executionSnapshot.resolvedModelId,
         executionMode: row.execution_mode,
         resolvedInput: executionSnapshot.resolvedInput,
@@ -1324,7 +1592,7 @@ async function executeTaskRequest(
     userId,
     taskType,
     requestProvider,
-    resolvedProvider,
+    initialResolvedProvider,
     resolvedModelId,
     executionMode,
     resolvedInput,
@@ -1351,11 +1619,13 @@ async function executeTaskRequest(
   }
 
   try {
-    const processor = getProcessor(taskType, resolvedProvider)
+    const processor = getProcessor(taskType, initialResolvedProvider)
     const submitResult = await processor.submit(
       { model: resolvedModelId, params: resolvedInput },
       apiKey,
     )
+    const resolvedProvider = submitResult.providerOverride ?? initialResolvedProvider
+    const persistedModelId = submitResult.modelOverride ?? resolvedModelId
 
     if (submitResult.initialStatus === 'completed') {
       if (!submitResult.result) {
@@ -1365,24 +1635,38 @@ async function executeTaskRequest(
       const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
       const completedAt = new Date().toISOString()
 
-      if (executionMode === 'platform' && reservedPlatformCredits > 0) {
-        await confirmFrozenCredits({
-          userId,
-          referenceId: taskId,
-          requestedCredits: reservedPlatformCredits,
-          source: 'task_platform_confirm',
-          description: `Confirm async task billing ${taskType} ${resolvedProvider}/${resolvedModelId}`,
-        })
+      if (executionMode === 'platform') {
+        if (taskType === 'image_gen') {
+          await settleCompletedPlatformImageTask({
+            db,
+            userId,
+            taskId,
+            provider: resolvedProvider,
+            modelId: persistedModelId,
+            taskInput: resolvedInput,
+            output: persistedOutput,
+          })
+        } else if (reservedPlatformCredits > 0) {
+          await confirmFrozenCredits({
+            userId,
+            referenceId: taskId,
+            requestedCredits: reservedPlatformCredits,
+            source: 'task_platform_confirm',
+            description: `Confirm async task billing ${taskType} ${resolvedProvider}/${persistedModelId}`,
+          })
+        }
       }
 
       await db
         .prepare(
           `UPDATE async_tasks
-           SET status = 'completed', progress = 100, external_task_id = ?,
+           SET provider = ?, model_id = ?, status = 'completed', progress = 100, external_task_id = ?,
                output_data = ?, completed_at = ?, last_checked_at = ?, updated_at = ?
            WHERE id = ? AND user_id = ?`,
         )
         .bind(
+          resolvedProvider,
+          persistedModelId,
           submitResult.externalTaskId,
           JSON.stringify(persistedOutput),
           completedAt,
@@ -1402,10 +1686,12 @@ async function executeTaskRequest(
     await db
       .prepare(
         `UPDATE async_tasks
-         SET status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?
+         SET provider = ?, model_id = ?, status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?
          WHERE id = ? AND user_id = ?`,
       )
       .bind(
+        resolvedProvider,
+        persistedModelId,
         submitResult.initialStatus,
         submitResult.initialStatus === 'running' ? 10 : 0,
         submitResult.externalTaskId,
@@ -1440,7 +1726,7 @@ async function executeTaskRequest(
         userId,
         referenceId: taskId,
         source: 'task_submit_platform_failure_refund',
-        description: `Refund failed async task submission ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        description: `Refund failed async task submission ${taskType} ${initialResolvedProvider}/${resolvedModelId}`,
       })
     }
 
@@ -1466,7 +1752,7 @@ async function executeTaskRequest(
       taskId,
       taskType,
       provider: requestProvider,
-      resolvedProvider,
+      resolvedProvider: initialResolvedProvider,
       modelId: resolvedModelId,
       executionMode,
     })
@@ -1479,8 +1765,23 @@ async function getUserTaskRuntimeConfig(
   capability: NodeCapability,
   configId?: string,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
+  guestConfig?: SubmitTaskParams['guestUserKeyConfig'],
 ): Promise<UserModelRuntimeConfig> {
   try {
+    if (guestConfig) {
+      return {
+        configId: guestConfig.configId?.trim() || `guest_${capability}`,
+        capability: guestConfig.capability,
+        providerKind: guestConfig.providerKind,
+        providerId: guestConfig.providerId,
+        apiKey: guestConfig.apiKey,
+        modelId: guestConfig.modelId,
+        baseUrl: guestConfig.baseUrl,
+        secretKey: guestConfig.secretKey,
+        imageCapabilities: guestConfig.imageCapabilities,
+      }
+    }
+
     const keyRow = await findUserConfigRow(db, userId, capability, configId, runtime)
 
     if (!keyRow) {
@@ -1620,6 +1921,8 @@ async function getTaskPlatformKey(
       case 'openrouter':
       case 'deepseek':
       case 'gemini':
+      case 'dlapi':
+      case 'comfly':
         return await runtime.getPlatformKey(provider)
       case 'openai':
         return await runtime.requireEnv('OPENAI_API_KEY')
@@ -1738,6 +2041,8 @@ export async function checkTask(
   /* 懒评估: 向 Provider 查询最新状态 */
   let apiKey = ''
   let processorProvider = row.provider
+  let persistedProvider = row.provider
+  let persistedModelId = row.model_id
   if (row.execution_mode === 'user_key' && row.external_task_id) {
     const runtimeConfig = await getUserTaskRuntimeConfig(
       db,
@@ -1766,35 +2071,60 @@ export async function checkTask(
 
     /* 根据 Provider 返回状态更新 D1 */
     if (check.status === 'completed' && check.result) {
+      persistedProvider = check.providerOverride ?? processorProvider
+      persistedModelId = check.modelOverride ?? row.model_id
       const persistedOutput = await persistTaskOutput(taskId, userId, check.result, runtime)
 
       if (row.execution_mode === 'platform') {
-        const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
-        if (reservedCredits > 0) {
-          await confirmFrozenCredits({
+        const parsedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+        if (row.task_type === 'image_gen') {
+          await settleCompletedPlatformImageTask({
+            db,
             userId,
-            referenceId: row.id,
-            requestedCredits: reservedCredits,
-            source: 'task_platform_confirm',
-            description: `Confirm async task billing ${row.task_type} ${processorProvider}/${row.model_id}`,
+            taskId: row.id,
+            provider: persistedProvider,
+            modelId: persistedModelId,
+            taskInput: parsedInput,
+            output: persistedOutput,
           })
+        } else {
+          const reservedCredits = getReservedTaskCredits(parsedInput)
+          if (reservedCredits > 0) {
+            await confirmFrozenCredits({
+              userId,
+              referenceId: row.id,
+              requestedCredits: reservedCredits,
+              source: 'task_platform_confirm',
+              description: `Confirm async task billing ${row.task_type} ${processorProvider}/${row.model_id}`,
+            })
+          }
         }
       }
 
       await db
         .prepare(
           `UPDATE async_tasks
-           SET status = 'completed', progress = 100,
+           SET provider = ?, model_id = ?, status = 'completed', progress = 100,
                output_data = ?, completed_at = ?,
                last_checked_at = ?, updated_at = ?
            WHERE id = ?`,
         )
-        .bind(JSON.stringify(persistedOutput), nowIso, nowIso, nowIso, taskId)
+        .bind(
+          persistedProvider,
+          persistedModelId,
+          JSON.stringify(persistedOutput),
+          nowIso,
+          nowIso,
+          nowIso,
+          taskId,
+        )
         .run()
 
       log.info('Task completed', { taskId })
       return {
         ...rowToDetail(row),
+        provider: persistedProvider,
+        modelId: persistedModelId,
         status: 'completed',
         progress: 100,
         output: persistedOutput,

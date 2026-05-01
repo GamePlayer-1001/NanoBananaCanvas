@@ -1,6 +1,6 @@
 # Agent 工作流画板最终技术设计稿
 
-> 文档版本：v1.1
+> 文档版本：v2.0
 > 创建日期：2026-04-30
 > 适用范围：Nano Banana Canvas 右侧 Agent 面板、画布联动、Agent 编排与执行链路
 > 上游文档：`Agent 工作流画板完整方案.md`
@@ -45,6 +45,36 @@ V1 技术实现只覆盖：
 5. 复杂模板商城编排
 6. 后台自主连续执行
 
+### 2.3 V2 范围定义
+
+V2 技术实现新增覆盖：
+
+1. 对已有工作流的小中型增量改造
+2. 模板解释、模板改造、模板到工作流的对话化收口
+3. 成本/速度/结构优化建议与确认应用
+4. 基于结果资产的下一步建议与分支续写
+5. 更丰富但仍受控的 operation 协议
+
+### 2.4 V3 范围定义
+
+V3 技术实现新增覆盖：
+
+1. 节点语境自动理解
+2. 更强上下文摘要与节点簇/资产语义压缩
+3. 多版本提案比较
+4. 工作流内短期创作记忆
+5. Agent 改图审计、回放与分析
+
+### 2.5 V2 / V3 仍然不做
+
+即便进入 V2 / V3，也仍然不做：
+
+1. LLM 直接覆盖整份 workflow JSON
+2. 脱离现有 FlowStore 的平行工作流真相源
+3. 无边界后台自主连续执行
+4. 未经确认的大规模 destructive 改图
+5. 为炫技引入复杂多面板控制台
+
 ---
 
 ## 三、设计原则
@@ -81,9 +111,17 @@ Agent UI 只负责展示与触发。
 
 对于删除、替换核心模型、高成本执行、大面积改图，必须先确认。
 
+但“确认优先”不等于“所有创建请求都先卡审批”。
+
+创建类请求的推荐主链是：
+
+1. 先生成最小工作流
+2. 再按需展示 prompt confirmation
+3. 用户通过聊天确认后再继续高成本生成
+
 ### 3.5 最小惊扰
 
-右侧 Agent 面板不主动打断用户，不抢画布焦点，不制造第二个复杂工作台。
+Agent 面板应作为右下角悬浮卡片浮在画布上层，不主动打断用户，不抢画布焦点，不制造第二个复杂工作台。
 
 ---
 
@@ -129,7 +167,7 @@ Agent Action Layer
   ↓
 Canvas Summarizer
   ↓
-Planner API
+Planner / Optimize / Template / Diagnose API
   ↓
 Operation Plan
   ↓
@@ -140,6 +178,8 @@ Plan Applier
 useFlowStore / useHistoryStore / useExecutionStore
   ↓
 Auto Save / Workflow Execute / Async Tasks
+  ↓
+Agent Audit / Replay / Analytics
 ```
 
 ### 5.2 分层职责
@@ -160,6 +200,8 @@ Auto Save / Workflow Execute / Async Tasks
    负责把 plan 应用到 store
 8. `app/api/agent/*`
    负责真正的推理、解释、诊断与 prompt refine
+9. `agent audit layer`
+   负责记录用户原话、摘要、plan、确认、执行结果与回放索引
 
 ---
 
@@ -176,6 +218,8 @@ apps/web/components/agent/
   agent-prompt-compare-card.tsx
   agent-quick-actions.tsx
   agent-composer.tsx
+  agent-plan-compare-card.tsx
+  agent-change-log-sheet.tsx
 
 apps/web/stores/
   use-agent-store.ts
@@ -184,6 +228,8 @@ apps/web/hooks/
   use-agent-session.ts
   use-agent-actions.ts
   use-agent-selection-context.ts
+  use-agent-audit.ts
+  use-agent-replay.ts
 
 apps/web/lib/agent/
   types.ts
@@ -194,6 +240,11 @@ apps/web/lib/agent/
   apply-agent-plan.ts
   explain-agent-change.ts
   prompt-confirmation.ts
+  summarize-assets.ts
+  build-optimize-plan.ts
+  build-template-plan.ts
+  compare-agent-plans.ts
+  audit-agent-run.ts
 ```
 
 ---
@@ -228,6 +279,8 @@ apps/web/lib/agent/
 4. `Proposal Card` 只在 `patch-ready / awaiting-confirmation` 显示
 5. `Prompt Compare Card` 只在需要 prompt 确认时显示
 6. `Composer` 永远显示
+7. `Plan Compare Card` 只在多提案模式启用时显示
+8. `Change Log Sheet` 在用户主动查看改动时显示
 
 ---
 
@@ -255,18 +308,27 @@ apps/web/lib/agent/
 ### 8.2 状态结构
 
 ```ts
-type AgentMode = 'create' | 'update' | 'diagnose' | 'optimize'
+type AgentMode =
+  | 'create'
+  | 'update'
+  | 'diagnose'
+  | 'optimize'
+  | 'extend'
+  | 'template'
 
 type AgentSessionStatus =
   | 'idle'
   | 'understanding'
   | 'planning'
+  | 'comparing'
   | 'patch-ready'
   | 'awaiting-confirmation'
   | 'applying-patch'
   | 'ready-to-run'
   | 'running'
   | 'diagnosing'
+  | 'optimizing'
+  | 'replaying'
   | 'error'
 
 type AgentStoreState = {
@@ -274,8 +336,11 @@ type AgentStoreState = {
   status: AgentSessionStatus
   messages: AgentMessage[]
   pendingPlan: AgentPlan | null
+  candidatePlans: AgentPlan[]
   promptConfirmation: PromptConfirmationPayload | null
   selectionContext: AgentSelectionContext | null
+  workflowMemory: AgentMemoryEntry[]
+  latestAuditId: string | null
   lastAppliedPlanId: string | null
   errorMessage: string | null
 }
@@ -287,6 +352,7 @@ type AgentStoreState = {
 idle
   -> understanding
   -> planning
+  -> comparing
   -> patch-ready
   -> awaiting-confirmation | applying-patch
   -> ready-to-run
@@ -307,6 +373,7 @@ any
 type CanvasSummary = {
   workflowId: string
   workflowName?: string
+  workflowGoal?: string
   nodeCount: number
   edgeCount: number
   selectedNodeId?: string
@@ -319,9 +386,28 @@ type CanvasSummary = {
     inputs: string[]
     outputs: string[]
     configSummary: Record<string, unknown>
+    latestResultSummary?: string
+    costHint?: string
+    speedHint?: string
+  }>
+  nodeClusters?: Array<{
+    id: string
+    label: string
+    nodeIds: string[]
   }>
   disconnectedNodeIds: string[]
   displayMissingForNodeIds: string[]
+  assets?: Array<{
+    id: string
+    kind: 'image' | 'video' | 'audio' | 'text'
+    sourceNodeId: string
+    summary: string
+  }>
+  recentOperations?: Array<{
+    kind: string
+    summary: string
+    createdAt: string
+  }>
   latestExecution?: {
     status: 'idle' | 'running' | 'completed' | 'failed'
     failedNodeId?: string
@@ -338,6 +424,7 @@ type AgentMessage =
   | { id: string; role: 'assistant'; text: string; createdAt: string }
   | { id: string; role: 'process'; text: string; step?: string; createdAt: string }
   | { id: string; role: 'proposal'; planId: string; createdAt: string }
+  | { id: string; role: 'plan-compare'; candidatePlanIds: string[]; createdAt: string }
   | { id: string; role: 'prompt-confirmation'; payloadId: string; createdAt: string }
   | { id: string; role: 'diagnosis'; text: string; severity: 'info' | 'warning' | 'error'; createdAt: string }
 ```
@@ -348,11 +435,14 @@ type AgentMessage =
 type AgentPlan = {
   id: string
   goal: string
-  mode: 'create' | 'update' | 'diagnose' | 'optimize'
+  mode: 'create' | 'update' | 'diagnose' | 'optimize' | 'extend' | 'template'
   summary: string
   reasons: string[]
   requiresConfirmation: boolean
   operations: WorkflowOperation[]
+  riskLevel?: 'low' | 'medium' | 'high'
+  estimatedCostImpact?: 'lower' | 'same' | 'higher'
+  estimatedSpeedImpact?: 'faster' | 'same' | 'slower'
   promptConfirmation?: PromptConfirmationPayload
 }
 ```
@@ -363,6 +453,7 @@ type AgentPlan = {
 type WorkflowOperation =
   | {
       type: 'add_node'
+      nodeId?: string
       nodeType: string
       position?: { x: number; y: number }
       initialData?: Record<string, unknown>
@@ -382,6 +473,31 @@ type WorkflowOperation =
       sourceHandle?: string
       target: string
       targetHandle?: string
+    }
+  | {
+      type: 'insert_between'
+      source: string
+      target: string
+      nodeId?: string
+      nodeType: string
+      initialData?: Record<string, unknown>
+    }
+  | {
+      type: 'replace_node'
+      nodeId: string
+      nextNodeType: string
+      configPatch?: Record<string, unknown>
+    }
+  | {
+      type: 'duplicate_node_branch'
+      nodeId: string
+      count: number
+      strategy?: 'parallel-variants' | 'style-variants'
+    }
+  | {
+      type: 'batch_update_node_data'
+      nodeIds: string[]
+      patch: Record<string, unknown>
     }
   | {
       type: 'disconnect'
@@ -410,11 +526,42 @@ type PromptConfirmationPayload = {
   originalIntent: string
   visualProposal: string
   executionPrompt: string
+  targetNodeId?: string
   styleOptions?: Array<{
     id: string
     label: string
     promptDelta: string
   }>
+}
+```
+
+### 9.6 Agent Memory Entry
+
+```ts
+type AgentMemoryEntry = {
+  id: string
+  kind: 'user-goal' | 'applied-plan' | 'result-summary' | 'diagnosis'
+  summary: string
+  relatedNodeIds?: string[]
+  createdAt: string
+}
+```
+
+### 9.7 Agent Audit Record
+
+```ts
+type AgentAuditRecord = {
+  id: string
+  workflowId: string
+  userMessage: string
+  mode: AgentMode
+  canvasSummaryDigest: string
+  planIds: string[]
+  appliedPlanId?: string
+  requiresConfirmation: boolean
+  executionTriggered: boolean
+  result: 'accepted' | 'rejected' | 'failed'
+  createdAt: string
 }
 ```
 
@@ -446,6 +593,24 @@ type PromptConfirmationPayload = {
 2. 图片、视频、音频节点重点保留 provider / model / size / mode
 3. 文本节点重点保留摘要，不传超长全文
 4. 输出节点缺失、未连线、失败节点必须显式输出
+5. V2 起必须补充最近输出资产摘要
+6. V3 起必须补充节点簇、近期改动轨迹与短期创作记忆摘要
+
+### 10.4 V2 / V3 增强目标
+
+V2 摘要器至少新增：
+
+1. 成本线索
+2. 速度线索
+3. 结果资产摘要
+4. 当前模板上下文
+
+V3 摘要器至少新增：
+
+1. 节点簇语义
+2. 历史操作压缩
+3. 当前工作流目标摘要
+4. 近期多轮会话记忆摘要
 
 ---
 
@@ -484,6 +649,26 @@ Planner 至少要有三层提示词约束：
 2. 业务层：画布是真相源，不可覆盖用户原意
 3. 输出层：必须返回 JSON schema
 
+### 11.5 V2 Planner 扩展
+
+V2 Planner 需要新增三类能力：
+
+1. `template planner`
+   负责模板解释与模板改造
+2. `optimize planner`
+   负责成本/速度/结构优化建议
+3. `extend planner`
+   负责基于结果资产续写下一步分支
+
+### 11.6 V3 Planner 扩展
+
+V3 Planner 需要支持：
+
+1. 多提案同时输出
+2. 节点语境优先决策
+3. 基于短期工作流记忆减少重复追问
+4. 复杂工作流下限制单次 plan 动作规模
+
 ---
 
 ## 十二、Plan Validator 设计
@@ -500,6 +685,10 @@ Planner 至少要有三层提示词约束：
 4. `remove_node` 是否触发强确认
 5. 是否存在超出第一版边界的 operation
 6. 是否有超过阈值的批量改动
+7. `insert_between` 是否会破坏主链连接
+8. `replace_node` 是否存在必要的端口兼容迁移
+9. `duplicate_node_branch` 是否超过分支扩张阈值
+10. `batch_update_node_data` 是否误改用户手写核心字段
 
 ### 12.3 输出
 
@@ -546,6 +735,24 @@ type AgentPlanValidationResult = {
 1. 必须在确认后执行
 2. 走 store 原生删除逻辑
 
+`insert_between`
+
+1. 先断开原有 source -> target
+2. 新增中间节点
+3. 重连 source -> inserted -> target
+
+`replace_node`
+
+1. 保留旧节点位置
+2. 尝试迁移兼容配置
+3. 尽量保留上下游连接
+
+`duplicate_node_branch`
+
+1. 复制当前节点或节点簇
+2. 为变体分支重新生成稳定 nodeId
+3. 只在 Planner 明确要求时自动连接后续展示节点
+
 ### 13.3 回滚
 
 应用阶段任何一步失败时：
@@ -554,6 +761,13 @@ type AgentPlanValidationResult = {
 2. 标记会话为 `error`
 3. 尝试使用最近快照回滚
 4. 明确告诉用户是否已经回滚成功
+
+### 13.4 V2 / V3 额外要求
+
+1. 批量改图必须产出可读变更摘要
+2. 多提案只允许在用户明确选择后应用
+3. 节点替换与分支复制必须保留可撤销性
+4. 所有 Agent 落图行为都应进入审计链
 
 ---
 
@@ -592,6 +806,8 @@ Agent 不直接执行模型 API。
 2. 当前 `CanvasSummary`
 3. 最近执行失败信息
 4. 选中节点语境
+5. 成本与耗时线索
+6. 最近输出资产摘要
 
 ### 15.2 输出
 
@@ -600,7 +816,9 @@ Agent 不直接执行模型 API。
 ```ts
 type AgentDiagnosis = {
   summary: string
+  phenomenon: string
   rootCause: string
+  repairSuggestion: string
   affectedNodeIds: string[]
   suggestedOperations?: WorkflowOperation[]
   requiresConfirmation: boolean
@@ -615,6 +833,14 @@ type AgentDiagnosis = {
 2. 根因
 3. 修复建议
 4. 是否可直接代为修复
+
+### 15.4 Optimize 模式
+
+V2 起在 diagnose 旁新增 optimize 模式：
+
+1. 输入同样基于 `CanvasSummary`
+2. 输出除了问题，还要包含收益预估
+3. 默认先给建议，确认后再落图
 
 ---
 
@@ -638,9 +864,15 @@ type AgentDiagnosis = {
 3. 切换风格方向
 4. 高成本执行前
 
+补充规则：
+
+1. 创建工作流本身可以先自动落图
+2. 若创建链同时伴随 prompt refinement，则先落工作流，再展示 prompt confirmation
+3. prompt confirmation 的继续执行应通过聊天中的确认语句触发，而不是系统级确认按钮
+
 ### 16.3 用户操作
 
-1. `确认并执行`
+1. 聊天输入 `我确认 / 可以执行 / 继续`
 2. `改得更写实`
 3. `改得更像动漫`
 4. `我自己改`
@@ -657,6 +889,10 @@ POST /api/agent/plan
 POST /api/agent/diagnose
 POST /api/agent/refine-prompt
 POST /api/agent/explain
+POST /api/agent/optimize
+POST /api/agent/template-plan
+GET /api/agent/audits
+POST /api/agent/replay
 ```
 
 ### 17.2 `/api/agent/plan`
@@ -685,6 +921,32 @@ POST /api/agent/explain
 
 1. 用自然语言解释当前工作流或选中节点
 
+### 17.6 `/api/agent/optimize`
+
+职责：
+
+1. 接收优化意图、摘要与运行线索
+2. 返回 `AgentPlan` 或 `AgentDiagnosis + optimize proposal`
+
+### 17.7 `/api/agent/template-plan`
+
+职责：
+
+1. 接收模板上下文与改造目标
+2. 返回模板改造提案
+
+### 17.8 `/api/agent/audits`
+
+职责：
+
+1. 返回最近 Agent 改图与执行审计记录
+
+### 17.9 `/api/agent/replay`
+
+职责：
+
+1. 根据审计记录回放最近一次 Agent 提案与变更摘要
+
 ---
 
 ## 十八、权限与安全边界
@@ -705,6 +967,8 @@ POST /api/agent/explain
 3. 超过 4 个节点改动
 4. 触发高成本执行
 5. 覆盖用户手写 prompt
+6. 替换核心节点类型
+7. 一次新增多个并行分支
 
 ### 18.2 防失控约束
 
@@ -712,6 +976,7 @@ POST /api/agent/explain
 2. 不允许任意脚本执行
 3. 不允许任意文件写入
 4. 不允许直接操作数据库持久层
+5. 不允许在无确认情况下进行 destructive replay
 
 ---
 
@@ -744,6 +1009,9 @@ POST /api/agent/explain
 5. `agent_prompt_confirmed`
 6. `agent_prompt_regenerated`
 7. `agent_diagnosis_requested`
+8. `agent_optimize_requested`
+9. `agent_plan_compared`
+10. `agent_replay_opened`
 
 建议审计字段：
 
@@ -753,6 +1021,9 @@ POST /api/agent/explain
 4. operation 数量
 5. 是否确认
 6. 是否执行成功
+7. 是否来自模板改造
+8. 是否基于结果续写
+9. 是否节点级操作
 
 ---
 
@@ -781,7 +1052,9 @@ POST /api/agent/explain
 
 ---
 
-## 二十二、第一版落地顺序
+## 二十二、分阶段落地顺序
+
+### 22.1 V1
 
 推荐技术顺序：
 
@@ -792,9 +1065,26 @@ POST /api/agent/explain
 5. 再做 prompt 确认卡片
 6. 最后接诊断与执行联动
 
+### 22.2 V2
+
+1. 先扩 operation 协议与 validator/applier
+2. 再做增量改造 planner
+3. 再做模板对话化
+4. 再做 optimize 模式
+5. 最后接结果续写
+
+### 22.3 V3
+
+1. 先做节点语境
+2. 再做上下文增强与多提案
+3. 再做短期记忆
+4. 最后接审计/回放/分析与完整测试
+
 ---
 
 ## 二十三、验收标准
+
+### 23.1 V1
 
 满足以下条件才算 V1 完成：
 
@@ -805,6 +1095,49 @@ POST /api/agent/explain
 5. Prompt 确认链可跑通
 6. 异步任务执行状态能被聊天区感知
 7. 故障诊断能给出有用结论
+
+### 23.2 V2
+
+满足以下条件才算 V2 完成：
+
+1. Agent 能在已有工作流上做稳定增量改造
+2. 模板改造链能从提案到落图跑通
+3. optimize 模式可输出成本/速度/结构建议
+4. 基于结果资产可建议下一步并长出新分支
+5. 新增能力具备单测与至少 3 条 E2E 覆盖
+
+### 23.3 V3
+
+满足以下条件才算 V3 完成：
+
+1. 选中节点后 Agent 具备稳定节点语境理解
+2. 复杂工作流下支持多提案比较且可控落图
+3. 工作流内短期记忆能减少重复追问
+4. Agent 审计、回放、分析链跑通
+5. 体验、性能、测试与文档全部收口
+
+---
+
+## 二十三点五、实现状态
+
+截至 2026-04-30，本设计稿对应的 V1 实现已完成闭环，当前状态如下：
+
+1. 右侧 Agent 面板、结构化提案、Prompt 确认、落图执行、诊断解释链路均已接入编辑器主画布
+2. `Plan -> Validate -> Apply -> Auto Save -> Execute -> Task Summary` 主链已打通，没有自建平行 workflow 真相源
+3. `summarize-canvas / validate-agent-plan / apply-agent-plan / use-agent-store / Agent API route` 已补齐回归测试
+4. 已新增 3 条 Agent E2E，覆盖一句话生成提案、Prompt 确认并执行、最近一次失败诊断
+5. Agent 相关中英文文案与系统过程消息 key 已统一收口到 i18n 命名空间
+6. Agent 新增目录与测试目录的 `CLAUDE.md` 镜像已补齐，核心业务文件 L3 契约已核查完成
+
+这意味着本文档第 23 节定义的 V1 验收标准已经满足，可视为进入“可内测、可继续迭代”的实现状态。
+
+### V2 / V3 当前状态
+
+截至 2026-04-30：
+
+1. V2 / V3 主链能力已在当前仓库落地，包括模板改造、优化建议、结果续写、节点语境、短期记忆、审计回放与多提案比较
+2. 本文档中 V2 / V3 的范围、模块、类型、API、验收与安全边界已不只是设计口径，也对应当前实现现实
+3. 后续若继续演进，应以 `.md/Agent 工作流画板实现任务执行清单.md` 的完成状态与代码现实共同校准，而不是再把 M6 ~ M12 视为“未启动”
 
 ---
 

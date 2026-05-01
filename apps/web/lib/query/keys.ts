@@ -23,6 +23,7 @@ export const queryKeys = {
   billing: {
     all: ['billing'] as const,
     balance: () => [...queryKeys.billing.all, 'balance'] as const,
+    signinStatus: () => [...queryKeys.billing.all, 'signin-status'] as const,
   },
   explore: {
     all: ['explore'] as const,

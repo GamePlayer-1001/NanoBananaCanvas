@@ -13,6 +13,8 @@ type CreditBalanceSummaryRow = {
   user_id: string
   plan: string
   membership_status: string
+  trial_balance: number | null
+  trial_expires_at: string | null
   monthly_balance: number | null
   permanent_balance: number | null
   frozen_credits: number | null
@@ -27,6 +29,8 @@ export interface CreditBalanceSummary {
   userId: string
   plan: string
   membershipStatus: string
+  trialBalance: number
+  trialExpiresAt: string | null
   monthlyBalance: number
   permanentBalance: number
   frozenCredits: number
@@ -34,6 +38,7 @@ export interface CreditBalanceSummary {
   totalCredits: number
   totalEarned: number
   totalSpent: number
+  checkedInToday: boolean
   currentPlanMonthlyCredits: number
   storageGB: number
   updatedAt: string | null
@@ -54,7 +59,7 @@ type CreditTransactionRow = {
 export interface CreditTransactionItem {
   id: string
   type: 'earn' | 'spend' | 'freeze' | 'unfreeze' | 'refund'
-  pool: 'monthly' | 'permanent'
+  pool: 'trial' | 'monthly' | 'permanent'
   amount: number
   balanceAfter: number
   source: string
@@ -184,6 +189,7 @@ function canReadCreditBalances(schema: Awaited<ReturnType<typeof getBillingSchem
   return (
     schema.hasCreditBalances &&
     hasCreditBalanceColumn(schema, 'user_id') &&
+    hasCreditBalanceColumn(schema, 'trial_balance') &&
     hasCreditBalanceColumn(schema, 'monthly_balance') &&
     hasCreditBalanceColumn(schema, 'permanent_balance') &&
     hasCreditBalanceColumn(schema, 'frozen_credits')
@@ -230,6 +236,7 @@ function normalizePositiveInt(value: number | undefined, fallback: number, max: 
 }
 
 function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSummary {
+  const trialBalance = row.trial_balance ?? 0
   const monthlyBalance = row.monthly_balance ?? 0
   const permanentBalance = row.permanent_balance ?? 0
   const frozenCredits = row.frozen_credits ?? 0
@@ -238,13 +245,16 @@ function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSumm
     userId: row.user_id,
     plan: row.plan,
     membershipStatus: row.membership_status,
+    trialBalance,
+    trialExpiresAt: row.trial_expires_at,
     monthlyBalance,
     permanentBalance,
     frozenCredits,
-    availableCredits: monthlyBalance + permanentBalance,
-    totalCredits: monthlyBalance + permanentBalance + frozenCredits,
+    availableCredits: trialBalance + monthlyBalance + permanentBalance,
+    totalCredits: trialBalance + monthlyBalance + permanentBalance + frozenCredits,
     totalEarned: row.total_earned ?? 0,
     totalSpent: row.total_spent ?? 0,
+    checkedInToday: trialBalance > 0 && Boolean(row.trial_expires_at),
     currentPlanMonthlyCredits: row.subscription_monthly_credits ?? FREE_PLAN_SNAPSHOT.monthlyCredits,
     storageGB: row.storage_gb ?? FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: row.updated_at,
@@ -260,6 +270,8 @@ function createFreeCreditBalanceSummary(userId: string): CreditBalanceSummary {
     userId,
     plan: FREE_PLAN_SNAPSHOT.plan,
     membershipStatus: FREE_PLAN_SNAPSHOT.plan,
+    trialBalance: 0,
+    trialExpiresAt: null,
     monthlyBalance: 0,
     permanentBalance: 0,
     frozenCredits: 0,
@@ -267,6 +279,7 @@ function createFreeCreditBalanceSummary(userId: string): CreditBalanceSummary {
     totalCredits: 0,
     totalEarned: 0,
     totalSpent: 0,
+    checkedInToday: false,
     currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
     storageGB: FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: null,
@@ -285,7 +298,9 @@ function buildBalanceSummaryQuery(
   const readableBalances = canReadCreditBalances(schema)
   const readableSubscriptions = canReadSubscriptions(schema)
   const balanceSelect = readableBalances
-    ? `cb.monthly_balance,
+    ? `cb.trial_balance,
+         ${hasCreditBalanceColumn(schema, 'trial_expires_at') ? 'cb.trial_expires_at' : 'NULL AS trial_expires_at'},
+         cb.monthly_balance,
          cb.permanent_balance,
          cb.frozen_credits,
          ${
@@ -295,7 +310,9 @@ function buildBalanceSummaryQuery(
          },
          ${hasCreditBalanceColumn(schema, 'total_spent') ? 'cb.total_spent' : '0 AS total_spent'},
          ${hasCreditBalanceColumn(schema, 'updated_at') ? 'cb.updated_at' : 'NULL AS updated_at'}`
-    : `0 AS monthly_balance,
+    : `0 AS trial_balance,
+         NULL AS trial_expires_at,
+         0 AS monthly_balance,
          0 AS permanent_balance,
          0 AS frozen_credits,
          0 AS total_earned,

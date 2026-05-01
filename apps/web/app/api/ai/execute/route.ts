@@ -19,9 +19,9 @@ import {
 import {
   estimateBillableUnits,
   estimateCreditsFromUsage,
-  estimateReservedTextExecutionUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
+import { PLATFORM_TEXT_EXECUTION_CREDITS } from '@/lib/billing/workflow-pricing'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -83,14 +83,7 @@ async function executeWithPlatformKey(
   const modelId = params.modelId as string
   const executionReferenceId = `ai_exec_${nanoid()}`
   const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
-  const reservedUsage = estimateReservedTextExecutionUsage(params.messages, params.maxTokens)
-  const reservedCredits =
-    pricing
-      ? estimateCreditsFromUsage({
-          billableUnits: reservedUsage.billableUnits,
-          creditsPer1kUnits: pricing.creditsPer1kUnits,
-        })
-      : 0
+  const reservedCredits = PLATFORM_TEXT_EXECUTION_CREDITS
 
   try {
     if (reservedCredits > 0) {
@@ -132,49 +125,19 @@ async function executeWithPlatformKey(
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
       billableUnits: usageEstimate.billableUnits,
-      estimatedCredits:
-        pricing
-          ? estimateCreditsFromUsage({
-              billableUnits: usageEstimate.billableUnits,
-              creditsPer1kUnits: pricing.creditsPer1kUnits,
-            })
-          : null,
+      estimatedCredits: PLATFORM_TEXT_EXECUTION_CREDITS,
       durationMs: Date.now() - startTime,
       status: 'success',
     })
 
-    if (pricing) {
-      const actualCredits = estimateCreditsFromUsage({
-        billableUnits: usageEstimate.billableUnits,
-        creditsPer1kUnits: pricing.creditsPer1kUnits,
-      })
-
-      if (actualCredits > reservedCredits) {
-        await freezeCredits({
-          userId,
-          requestedCredits: actualCredits - reservedCredits,
-          referenceId: executionReferenceId,
-          source: 'ai_execute_platform_adjust',
-          description: `Freeze additional credits for platform execution ${providerId}/${modelId}`,
-        })
-      }
-
+    if (reservedCredits > 0) {
       await confirmFrozenCredits({
         userId,
         referenceId: executionReferenceId,
-        requestedCredits: actualCredits,
+        requestedCredits: reservedCredits,
         source: 'ai_execute_platform_confirm',
         description: `Confirm platform execution billing ${providerId}/${modelId}`,
       })
-
-      if (actualCredits < reservedCredits) {
-        await refundFrozenCredits({
-          userId,
-          referenceId: executionReferenceId,
-          source: 'ai_execute_platform_refund',
-          description: `Refund unused reserved credits for platform execution ${providerId}/${modelId}`,
-        })
-      }
     }
 
     return apiOk({ result: chatResult.content })
@@ -222,7 +185,13 @@ async function executeWithUserKey(
   startTime: number,
 ) {
   const capability = params.capability as string
-  const runtimeConfig = await getUserRuntimeConfig(db, userId, capability, params.configId)
+  const runtimeConfig = await getUserRuntimeConfig(
+    db,
+    userId,
+    capability,
+    params.configId,
+    params.guestUserKeyConfig,
+  )
 
   try {
     const provider = getUserKeyProvider(runtimeConfig)
@@ -248,10 +217,12 @@ async function executeWithUserKey(
     })
 
     // 更新 last_used_at
-    await db
-      .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
-      .bind(userId, runtimeConfig.configId)
-      .run()
+    if (!params.guestUserKeyConfig) {
+      await db
+        .prepare("UPDATE user_api_keys SET last_used_at = datetime('now') WHERE user_id = ? AND provider = ?")
+        .bind(userId, runtimeConfig.configId)
+        .run()
+    }
 
     // 写日志
     await writeUsageLog(db, {
@@ -298,7 +269,22 @@ async function getUserRuntimeConfig(
   userId: string,
   capability: string,
   configId?: string,
+  guestConfig?: ReturnType<typeof aiExecuteSchema.parse>['guestUserKeyConfig'],
 ): Promise<UserModelRuntimeConfig> {
+  if (guestConfig) {
+    return {
+      configId: guestConfig.configId?.trim() || `guest_${capability}`,
+      capability: guestConfig.capability,
+      providerKind: guestConfig.providerKind,
+      providerId: guestConfig.providerId,
+      apiKey: guestConfig.apiKey,
+      modelId: guestConfig.modelId,
+      baseUrl: guestConfig.baseUrl,
+      secretKey: guestConfig.secretKey,
+      imageCapabilities: guestConfig.imageCapabilities,
+    }
+  }
+
   const keyRow = await findUserConfigRow(db, userId, capability, configId)
 
   if (!keyRow) {

@@ -10,7 +10,7 @@ import { z } from 'zod'
 /* ─── AI 执行请求 ────────────────────────────────────── */
 
 const capabilitySchema = z.enum(['text', 'image', 'video', 'audio'])
-const imageSizePresetSchema = z.enum(['720p', '1k', '2k', '4k', '8k'])
+const imageSizePresetSchema = z.enum(['1k', '2k', '4k', '8k'])
 const imageAspectRatioSchema = z.enum(['1:1', '2:3', '3:2', '9:16', '16:9'])
 
 const imageCapabilitiesSchema = z
@@ -22,6 +22,25 @@ const imageCapabilitiesSchema = z
     allowedAspectRatios: z.array(imageAspectRatioSchema).optional(),
   })
   .optional()
+
+const guestUserKeyConfigSchema = z.object({
+  configId: z.string().trim().min(1).optional(),
+  capability: capabilitySchema,
+  providerKind: z.enum([
+    'openai-compatible',
+    'openrouter',
+    'google-image',
+    'gemini',
+    'kling',
+    'openai-audio',
+  ]),
+  providerId: z.string().trim().min(1),
+  apiKey: z.string().trim().min(1),
+  secretKey: z.string().trim().optional(),
+  baseUrl: z.string().trim().url('Base URL must be a valid URL').optional(),
+  modelId: z.string().trim().min(1),
+  imageCapabilities: imageCapabilitiesSchema,
+})
 
 const contentPartSchema = z.union([
   z.object({
@@ -51,6 +70,7 @@ export const aiExecuteSchema = z
       )
       .min(1),
     executionMode: z.enum(['platform', 'user_key']).default('platform'),
+    guestUserKeyConfig: guestUserKeyConfigSchema.optional(),
     temperature: z.number().min(0).max(2).optional(),
     maxTokens: z.number().int().min(1).max(32768).optional(),
     workflowId: z.string().optional(),
@@ -80,6 +100,19 @@ export const aiExecuteSchema = z
         code: z.ZodIssueCode.custom,
         path: ['capability'],
         message: 'User key execution requires capability',
+      })
+    }
+
+    if (
+      value.executionMode === 'user_key' &&
+      value.guestUserKeyConfig &&
+      value.capability &&
+      value.guestUserKeyConfig.capability !== value.capability
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['guestUserKeyConfig', 'capability'],
+        message: 'Guest user key capability mismatch',
       })
     }
   })

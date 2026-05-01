@@ -33,6 +33,8 @@ const PLATFORM_KEY_MAP: Record<string, string> = {
   openrouter: 'OPENROUTER_API_KEY',
   deepseek: 'DEEPSEEK_API_KEY',
   gemini: 'GEMINI_API_KEY',
+  dlapi: 'DLAPI_API_KEY',
+  comfly: 'COMFLY_API_KEY',
 }
 
 /**

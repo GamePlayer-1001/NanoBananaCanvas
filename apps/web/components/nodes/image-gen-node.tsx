@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
  *          依赖 next-intl 的 useTranslations，依赖平台模型目录与图片能力真相源
+ *          依赖 @/lib/billing/workflow-pricing 的平台积分规则
  * [OUTPUT]: 对外提供 ImageGenNode 图片生成节点组件
- * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置与前端能力护栏
+ * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置、平台积分展示与前端能力护栏
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -37,11 +38,10 @@ import {
   type ImageSizeOptionValue,
   validateImageSelection,
 } from '@/lib/image-model-capabilities'
+import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
-  getPlatformProviderLabel,
   groupPlatformModelsByProvider,
-  resolvePlatformModelSelection,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
@@ -99,33 +99,26 @@ export function ImageGenNode(props: NodeProps) {
     () => groupPlatformModelsByProvider(platformImageModels),
     [platformImageModels],
   )
-  const resolvedPlatformSelection = useMemo(
-    () =>
-      resolvePlatformModelSelection(
-        platformModelGroups,
-        platformProviderId,
-        platformModelId,
-      ),
-    [platformModelGroups, platformModelId, platformProviderId],
+  const flatPlatformModels = useMemo(
+    () => platformModelGroups.flatMap((group) => group.models),
+    [platformModelGroups],
   )
-  const selectedPlatformProvider =
-    resolvedPlatformSelection?.provider ?? platformProviderId
-  const selectedPlatformModelId =
-    resolvedPlatformSelection?.modelId ?? platformModelId
-  const currentPlatformGroup = useMemo(
-    () =>
-      platformModelGroups.find(
-        (group) => group.provider === selectedPlatformProvider,
-      ) ?? platformModelGroups[0],
-    [platformModelGroups, selectedPlatformProvider],
-  )
-  const selectedPlatformModel = useMemo(
-    () =>
-      currentPlatformGroup?.models.find(
-        (item) => item.modelId === selectedPlatformModelId,
-      ) ?? currentPlatformGroup?.models[0],
-    [currentPlatformGroup, selectedPlatformModelId],
-  )
+  const selectedPlatformModel = useMemo(() => {
+    const exactMatch = flatPlatformModels.find(
+      (item) =>
+        item.provider === platformProviderId && item.modelId === platformModelId,
+    )
+
+    if (exactMatch) {
+      return exactMatch
+    }
+
+    const firstModelWithSameId = flatPlatformModels.find(
+      (item) => item.modelId === platformModelId,
+    )
+
+    return firstModelWithSameId ?? flatPlatformModels[0]
+  }, [flatPlatformModels, platformModelId, platformProviderId])
 
   const sizeValue = typeof config.size === 'string' ? config.size : DEFAULT_SIZE
   const migratedLegacySize = useMemo(() => migrateLegacySize(sizeValue), [sizeValue])
@@ -178,6 +171,17 @@ export function ImageGenNode(props: NodeProps) {
     executionMode === 'user_key'
       ? userKeyModelLabel
       : selectedPlatformModel?.modelName ?? prettifyModelName(platformModelId)
+  const platformPricing = useMemo(
+    () =>
+      executionMode === 'platform'
+        ? describeWorkflowImagePrice({
+            modelId: selectedPlatformModel?.modelId ?? platformModelId,
+            modelName: selectedPlatformModel?.modelName,
+            size,
+          })
+        : null,
+    [executionMode, platformModelId, selectedPlatformModel, size],
+  )
   const currentImageCapabilities =
     executionMode === 'user_key'
       ? savedImageConfig?.imageCapabilities
@@ -221,10 +225,10 @@ export function ImageGenNode(props: NodeProps) {
     if (
       selectedPlatformModel &&
       executionMode === 'platform' &&
-      (config.platformProvider !== selectedPlatformProvider ||
+      (config.platformProvider !== selectedPlatformModel.provider ||
         config.platformModel !== selectedPlatformModel.modelId)
     ) {
-      patch.platformProvider = selectedPlatformProvider
+      patch.platformProvider = selectedPlatformModel.provider
       patch.platformModel = selectedPlatformModel.modelId
     }
 
@@ -236,7 +240,6 @@ export function ImageGenNode(props: NodeProps) {
     config,
     executionMode,
     selectedPlatformModel,
-    selectedPlatformProvider,
     selectedUserConfigId,
     size,
     sizeValue,
@@ -269,24 +272,9 @@ export function ImageGenNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const onPlatformProviderChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const nextProvider = e.target.value
-      const nextGroup = platformModelGroups.find(
-        (group) => group.provider === nextProvider,
-      )
-
-      updateConfig({
-        platformProvider: nextProvider,
-        platformModel: nextGroup?.models[0]?.modelId ?? '',
-      })
-    },
-    [platformModelGroups, updateConfig],
-  )
-
   const onPlatformModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
-      const nextModel = currentPlatformGroup?.models.find(
+      const nextModel = flatPlatformModels.find(
         (item) => item.modelId === e.target.value,
       )
       if (!nextModel) {
@@ -298,19 +286,25 @@ export function ImageGenNode(props: NodeProps) {
         platformModel: nextModel.modelId,
       })
     },
-    [currentPlatformGroup?.models, updateConfig],
+    [flatPlatformModels, updateConfig],
   )
-
-  const providerOptions = platformModelGroups.map((group) => ({
-    value: group.provider,
-    label: group.providerLabel,
-  }))
 
   return (
     <BaseNode
       {...props}
       data={data}
       icon={<ImageIcon size={14} />}
+      headerRight={
+        executionMode === 'platform' && platformPricing ? (
+          <CreditPill
+            value={
+              platformPricing.credits == null
+                ? t('creditsAutoPending')
+                : String(platformPricing.credits)
+            }
+          />
+        ) : null
+      }
       minHeight={220}
       bodyClassName="min-h-0"
     >
@@ -373,56 +367,33 @@ export function ImageGenNode(props: NodeProps) {
               </select>
             </ConfigField>
           </>
-        ) : (
-          <ConfigField label={t('provider')}>
-            <select
-              value={selectedPlatformProvider}
-              onChange={onPlatformProviderChange}
-              className={SELECT_CLASS}
-              disabled={isPlatformModelsLoading || providerOptions.length === 0}
-            >
-              {providerOptions.length === 0 ? (
-                <option value={selectedPlatformProvider}>
-                  {getPlatformProviderLabel(selectedPlatformProvider)}
-                </option>
-              ) : (
-                providerOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))
-              )}
-            </select>
-          </ConfigField>
-        )}
+        ) : null}
 
         <ConfigField label={t('model')}>
           {executionMode === 'platform' ? (
-            <select
-              value={
-                selectedPlatformModel
-                  ? selectedPlatformModel.modelId
-                  : selectedPlatformModelId
-              }
-              onChange={onPlatformModelChange}
-              className={SELECT_CLASS}
-              disabled={
-                isPlatformModelsLoading ||
-                (currentPlatformGroup?.models.length ?? 0) === 0
-              }
-            >
-              {(currentPlatformGroup?.models.length ?? 0) === 0 ? (
-                <option value={selectedPlatformModelId}>
-                  {displayModelLabel}
-                </option>
-              ) : (
-                currentPlatformGroup?.models.map((item) => (
-                  <option key={item.id} value={item.modelId}>
-                    {item.modelName?.trim() || prettifyModelName(item.modelId)}
-                  </option>
-                ))
-              )}
-            </select>
+            <div className="space-y-2">
+              <select
+                value={
+                  selectedPlatformModel
+                    ? selectedPlatformModel.modelId
+                    : platformModelId
+                }
+                onChange={onPlatformModelChange}
+                className={SELECT_CLASS}
+                disabled={isPlatformModelsLoading || flatPlatformModels.length === 0}
+              >
+                {flatPlatformModels.length === 0 ? (
+                  <option value={platformModelId}>{displayModelLabel}</option>
+                ) : (
+                  flatPlatformModels.map((item) => (
+                    <option key={item.id} value={item.modelId}>
+                      {item.modelName?.trim() || prettifyModelName(item.modelId)}
+                    </option>
+                  ))
+                )}
+              </select>
+
+            </div>
           ) : (
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
               {displayModelLabel}
@@ -431,23 +402,25 @@ export function ImageGenNode(props: NodeProps) {
         </ConfigField>
 
         <ConfigField label={t('imageSize')}>
-          <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
-            {IMAGE_SIZE_OPTIONS.map((item) => (
-              <option
-                key={item.value}
-                value={item.value}
-                disabled={Boolean(
-                  validateImageSelection(
-                    item.value,
-                    aspectRatio,
-                    currentImageCapabilities,
-                  ),
-                )}
-              >
-                {item.label}
-              </option>
-            ))}
-          </select>
+          <div>
+            <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
+              {IMAGE_SIZE_OPTIONS.map((item) => (
+                <option
+                  key={item.value}
+                  value={item.value}
+                  disabled={Boolean(
+                    validateImageSelection(
+                      item.value,
+                      aspectRatio,
+                      currentImageCapabilities,
+                    ),
+                  )}
+                >
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </ConfigField>
 
         <ConfigField label={t('imageAspect')}>
@@ -537,10 +510,25 @@ export function ImageGenNode(props: NodeProps) {
   )
 }
 
-function ConfigField({ label, children }: { label: string; children: React.ReactNode }) {
+function CreditPill({ value }: { value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+      <Coins size={11} />
+      <span>{value}</span>
+    </span>
+  )
+}
+
+function ConfigField({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
   return (
     <div>
-      <label className="text-muted-foreground mb-1 block text-xs">{label}</label>
+      <div className="text-muted-foreground mb-1 text-xs">{label}</div>
       {children}
     </div>
   )

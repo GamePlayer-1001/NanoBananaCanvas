@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid, @/lib/validations/workflow
- * [OUTPUT]: 对外提供 GET /api/workflows (列表) + POST /api/workflows (创建/导入本地草稿)
+ * [OUTPUT]: 对外提供 GET /api/workflows (列表) + POST /api/workflows (创建/导入本地草稿/模板起手)
  * [POS]: api/workflows 的用户工作流 CRUD 入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,6 +10,7 @@ import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { ValidationError } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
+import { buildTemplateWorkflow } from '@/lib/agent/template-catalog'
 import { createWorkflowSchema } from '@/lib/validations/workflow'
 
 /* ─── GET /api/workflows ─────────────────────────────── */
@@ -75,14 +76,22 @@ export async function POST(req: Request) {
 
     const db = await getDb()
     const id = nanoid()
-    const { name, description, data } = parsed.data
+    const { name, description, data, template, auditTrail } = parsed.data
+    const serializedData =
+      data ??
+      (template ? JSON.stringify({
+        ...(buildTemplateWorkflow(template.id) ?? { version: 1, name, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, savedAt: new Date().toISOString() }),
+        name,
+        template,
+        auditTrail,
+      }) : '{}')
 
     await db
       .prepare(
         `INSERT INTO workflows (id, user_id, name, description, data)
          VALUES (?, ?, ?, ?, ?)`,
       )
-      .bind(id, userId, name, description ?? '', data ?? '{}')
+      .bind(id, userId, name, description ?? '', serializedData)
       .run()
 
     return apiOk({ id, name, description: description ?? '' }, 201)

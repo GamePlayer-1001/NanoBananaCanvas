@@ -16,6 +16,7 @@ type BillingTableName =
   | 'subscriptions'
   | 'credit_balances'
   | 'credit_transactions'
+  | 'daily_signins'
   | 'ai_usage_logs'
   | 'model_pricing'
 
@@ -24,11 +25,13 @@ export interface BillingSchemaInfo {
   subscriptionsColumns: Set<string>
   creditBalancesColumns: Set<string>
   creditTransactionsColumns: Set<string>
+  dailySigninsColumns: Set<string>
   aiUsageLogsColumns: Set<string>
   modelPricingColumns: Set<string>
   hasSubscriptions: boolean
   hasCreditBalances: boolean
   hasCreditTransactions: boolean
+  hasDailySignins: boolean
   hasAiUsageLogs: boolean
   hasModelPricing: boolean
 }
@@ -64,11 +67,13 @@ export async function getBillingSchemaInfo(): Promise<BillingSchemaInfo> {
         subscriptionsColumns,
         creditBalancesColumns,
         creditTransactionsColumns,
+        dailySigninsColumns,
         aiUsageLogsColumns,
         modelPricingColumns,
         hasSubscriptions,
         hasCreditBalances,
         hasCreditTransactions,
+        hasDailySignins,
         hasAiUsageLogs,
         hasModelPricing,
       ] = await Promise.all([
@@ -76,11 +81,13 @@ export async function getBillingSchemaInfo(): Promise<BillingSchemaInfo> {
         readTableColumns('subscriptions'),
         readTableColumns('credit_balances'),
         readTableColumns('credit_transactions'),
+        readTableColumns('daily_signins'),
         readTableColumns('ai_usage_logs'),
         readTableColumns('model_pricing'),
         readTableExists('subscriptions'),
         readTableExists('credit_balances'),
         readTableExists('credit_transactions'),
+        readTableExists('daily_signins'),
         readTableExists('ai_usage_logs'),
         readTableExists('model_pricing'),
       ])
@@ -90,11 +97,13 @@ export async function getBillingSchemaInfo(): Promise<BillingSchemaInfo> {
         subscriptionsColumns,
         creditBalancesColumns,
         creditTransactionsColumns,
+        dailySigninsColumns,
         aiUsageLogsColumns,
         modelPricingColumns,
         hasSubscriptions,
         hasCreditBalances,
         hasCreditTransactions,
+        hasDailySignins,
         hasAiUsageLogs,
         hasModelPricing,
       }

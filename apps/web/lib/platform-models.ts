@@ -26,6 +26,8 @@ const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
   deepseek: 'DeepSeek',
   gemini: 'Google Gemini',
   openai: 'OpenAI',
+  dlapi: 'DLAPI',
+  comfly: 'Comfly',
   kling: 'Kling',
   jimeng: 'Jimeng',
 }

@@ -21,6 +21,7 @@
 
 import { useEffect, useRef } from 'react'
 import { create } from 'zustand'
+import { useWorkflowMetadataStore } from '@/stores/use-workflow-metadata-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { loadFromLocal, saveToLocal } from '@/services/storage/local-storage'
 import { serializeWorkflow } from '@/services/storage/serializer'
@@ -42,11 +43,15 @@ const DEBOUNCE_CLOUD_MS = 1200
 
 function getSerializedWorkflowSnapshot() {
   const { nodes, edges, viewport } = useFlowStore.getState()
+  const { template, auditTrail } = useWorkflowMetadataStore.getState()
   return {
     nodes,
     edges,
     viewport,
-    serialized: serializeWorkflow(nodes, edges, viewport),
+    serialized: serializeWorkflow(nodes, edges, viewport, 'Untitled Workflow', {
+      template: template ?? undefined,
+      auditTrail,
+    }),
   }
 }
 

@@ -9,7 +9,7 @@
 ```
 index.ts              — 聚合导出执行引擎公共 API
 topological-sort.ts   — Kahn 拓扑排序 + 环检测 (O(V+E))，对 ready 节点采用“已打开分支优先”调度，尽量让独立分支先走到展示/终端再切换
-node-executor.ts      — 节点执行分发器 (14 种节点类型)，先经 ai-node-config 解析平台 provider / 用户 capability，再路由到执行函数；任务型节点现按 TASK_CONFIG 间隔持续轮询，直到 completed/failed/cancelled 或用户中止
+node-executor.ts      — 节点执行分发器 (14 种节点类型)，先经 ai-node-config 解析平台 provider / 用户 capability，再路由到执行函数；user_key 模式现支持访客本地临时配置透传；任务型节点按 TASK_CONFIG 间隔持续轮询，直到 completed/failed/cancelled 或用户中止
 workflow-executor.ts  — 顶层编排器 WorkflowExecutor 类 (排序→执行→条件跳过→循环迭代→中断→错误处理)
 topological-sort.test.ts — 拓扑排序单元测试 (8 用例: 空图/线性/钻石/断连/环检测)
 node-executor.test.ts — 节点执行单元测试 (text-input/conditional/loop 的输入解析与输出语义)

@@ -44,8 +44,13 @@ const FALLBACK_MODELS: PublicModelRow[] = [
   { id: 'mp-104', provider: 'openrouter', model_id: 'black-forest-labs/flux-pro', model_name: 'FLUX.1 Pro', category: 'image', tier: 'flagship' },
   { id: 'mp-img-2', provider: 'gemini', model_id: 'imagen-3.0-generate-002', model_name: 'Imagen 3', category: 'image', tier: 'standard' },
   { id: 'mp-105', provider: 'openai', model_id: 'dall-e-3', model_name: 'DALL-E 3', category: 'image', tier: 'premium' },
+  { id: 'mp-dl-001', provider: 'dlapi', model_id: 'gpt-image-2', model_name: 'GPT Image 2', category: 'image', tier: 'premium' },
+  { id: 'mp-cf-001', provider: 'comfly', model_id: 'dall-e-3', model_name: 'DALL-E 3 (Comfly)', category: 'image', tier: 'premium' },
+  { id: 'mp-cf-002', provider: 'comfly', model_id: 'gemini-2.5-flash-image', model_name: 'Gemini 2.5 Flash Image', category: 'image', tier: 'premium' },
   { id: 'mp-201', provider: 'kling', model_id: 'kling-v2-0', model_name: 'Kling V2.0', category: 'video', tier: 'premium' },
   { id: 'mp-202', provider: 'kling', model_id: 'kling-v1-6', model_name: 'Kling V1.6', category: 'video', tier: 'standard' },
+  { id: 'mp-cf-003', provider: 'comfly', model_id: 'gemini-2.5-flash', model_name: 'Gemini 2.5 Flash', category: 'video', tier: 'premium' },
+  { id: 'mp-cf-004', provider: 'comfly', model_id: 'gemini-3-pro-preview', model_name: 'Gemini 3 Pro Preview', category: 'video', tier: 'flagship' },
   { id: 'mp-301', provider: 'openai', model_id: 'tts-1', model_name: 'OpenAI TTS-1', category: 'audio', tier: 'basic' },
   { id: 'mp-302', provider: 'openai', model_id: 'tts-1-hd', model_name: 'OpenAI TTS-1 HD', category: 'audio', tier: 'premium' },
 ]

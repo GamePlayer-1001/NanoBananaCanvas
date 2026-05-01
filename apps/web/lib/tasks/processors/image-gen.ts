@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 ./types 的 TaskProcessor 接口，依赖 @/lib/logger，依赖 @/lib/image-model-capabilities
- * [OUTPUT]: 对外提供 ImageGenProcessor 类 (OpenAI 兼容 + Google 图片生成)
- * [POS]: lib/tasks/processors 的图片生成处理器，按 provider 分发到 OpenAI 兼容接口或 Google Imagen，并复用统一图片能力护栏
+ * [OUTPUT]: 对外提供 ImageGenProcessor 类（OpenAI 兼容 + Google 图片生成 + DLAPI 异步出图）
+ * [POS]: lib/tasks/processors 的图片生成处理器，负责平台图片主链、托底切流与统一图片能力护栏
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -17,8 +17,34 @@ import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './ty
 const log = createLogger('processor:image-gen')
 const OPENROUTER_IMAGE_BASE_URL = 'https://openrouter.ai/api/v1'
 const OPENAI_IMAGE_BASE_URL = 'https://api.openai.com/v1'
+const COMFLY_IMAGE_BASE_URL = 'https://ai.comfly.chat/v1'
+const DLAPI_IMAGE_BASE_URL = 'https://api.dlapi.xyz/v1'
 const OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_CHARS = 3500
 const OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_BYTES = 10_000
+
+type DlapiTaskStatus = 'queued' | 'running' | 'completed' | 'failed'
+
+interface DlapiImageTaskCreateResponse {
+  id?: string
+  status?: DlapiTaskStatus
+  model?: string
+}
+
+interface DlapiImageTaskCheckResponse {
+  id?: string
+  status?: DlapiTaskStatus
+  model?: string
+  progress?: number
+  message?: string
+  data?: Array<{
+    url?: string
+    b64_json?: string
+  }>
+  error?: {
+    message?: string
+    code?: string
+  }
+}
 
 interface OpenAICompatibleImageResponse {
   data?: Array<{
@@ -90,6 +116,22 @@ function summarizeBaseUrl(baseUrl: string): string {
   } catch {
     return baseUrl
   }
+}
+
+function isRetriableImageProviderError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  return (
+    message.includes('524') ||
+    message.includes('522') ||
+    message.includes('520') ||
+    message.includes('502') ||
+    message.includes('503') ||
+    message.includes('504') ||
+    message.includes('timed out') ||
+    message.includes('timeout') ||
+    message.includes('upstream') ||
+    message.includes('gateway')
+  )
 }
 
 function buildGatewayFailureMessage(
@@ -314,8 +356,158 @@ function resolveOpenAICompatibleBaseUrl(
       return typeof params.baseUrl === 'string'
         ? params.baseUrl.trim().replace(/\/+$/, '')
         : ''
+    case 'comfly':
+      return COMFLY_IMAGE_BASE_URL
     default:
       return ''
+  }
+}
+
+async function dlapiSubmit(
+  input: SubmitInput,
+  apiKey: string,
+): Promise<SubmitResult> {
+  const { model, params } = input
+  const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
+  const sizePreset = (params.size as string) ?? '1k'
+  const aspectRatio = (params.aspectRatio as string) ?? '1:1'
+  const capabilities = readImageCapabilities(params)
+  const violation = validateImageSelection(sizePreset, aspectRatio, capabilities)
+
+  if (violation) {
+    throw new Error(violation.message)
+  }
+
+  const size = resolveOpenAICompatibleRequestSize('dlapi', sizePreset, aspectRatio)
+  const res = await fetch(`${DLAPI_IMAGE_BASE_URL}/images/generations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      prompt,
+      size,
+      async: true,
+    }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`DLAPI image API ${res.status}: ${text}`)
+  }
+
+  const data = await parseJsonResponse<DlapiImageTaskCreateResponse>(
+    res,
+    'DLAPI image API',
+  )
+
+  if (!data.id) {
+    throw new Error('DLAPI image API returned no task id')
+  }
+
+  return {
+    externalTaskId: data.id,
+    initialStatus: data.status === 'completed' ? 'completed' : 'running',
+  }
+}
+
+async function dlapiCheckStatus(
+  externalTaskId: string,
+  apiKey: string,
+): Promise<CheckResult> {
+  const res = await fetch(`${DLAPI_IMAGE_BASE_URL}/images/generations/${externalTaskId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`DLAPI image status API ${res.status}: ${text}`)
+  }
+
+  const data = await parseJsonResponse<DlapiImageTaskCheckResponse>(
+    res,
+    'DLAPI image status API',
+  )
+
+  if (data.status === 'failed') {
+    return {
+      status: 'failed',
+      progress: 0,
+      error: data.error?.message ?? data.message ?? 'DLAPI image generation failed',
+    }
+  }
+
+  if (data.status === 'completed') {
+    const url = extractOpenAICompatibleImageUrl({
+      data: data.data?.map((item) => ({
+        url: item.url,
+        b64_json: item.b64_json,
+      })),
+    })
+
+    if (!url) {
+      return {
+        status: 'failed',
+        progress: 100,
+        error: 'DLAPI image generation completed without image payload',
+      }
+    }
+
+    return {
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url,
+        contentType: inferImageContentType(url),
+      },
+    }
+  }
+
+  return {
+    status: 'running',
+    progress:
+      typeof data.progress === 'number'
+        ? Math.max(0, Math.min(99, Math.round(data.progress)))
+        : data.status === 'queued'
+          ? 5
+          : 50,
+  }
+}
+
+async function submitWithComflyFallback(
+  input: SubmitInput,
+  apiKey: string,
+): Promise<SubmitResult> {
+  try {
+    return await dlapiSubmit(input, apiKey)
+  } catch (error) {
+    if (!isRetriableImageProviderError(error)) {
+      throw error
+    }
+
+    log.warn('DLAPI image submit failed, fallback to Comfly', {
+      error: error instanceof Error ? error.message : String(error),
+      model: input.model,
+    })
+
+    const result = await openAICompatibleSubmit(input, apiKey, 'comfly')
+    return {
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: result.url,
+        contentType: inferImageContentType(result.url),
+      },
+      providerOverride: 'comfly',
+      modelOverride: input.model,
+    }
   }
 }
 
@@ -383,26 +575,49 @@ export class ImageGenProcessor implements TaskProcessor {
       case 'openai':
       case 'openai-compatible':
         result = await openAICompatibleSubmit(input, apiKey, this.provider)
-        break
+        return {
+          externalTaskId: null,
+          initialStatus: 'completed',
+          result: {
+            type: 'url',
+            url: result.url,
+            contentType: inferImageContentType(result.url),
+          },
+        }
+      case 'comfly':
+        result = await openAICompatibleSubmit(input, apiKey, this.provider)
+        return {
+          externalTaskId: null,
+          initialStatus: 'completed',
+          result: {
+            type: 'url',
+            url: result.url,
+            contentType: inferImageContentType(result.url),
+          },
+        }
+      case 'dlapi':
+        return submitWithComflyFallback(input, apiKey)
       case 'gemini':
         result = await googleImageSubmit(input, apiKey)
-        break
+        return {
+          externalTaskId: null,
+          initialStatus: 'completed',
+          result: {
+            type: 'url',
+            url: result.url,
+            contentType: inferImageContentType(result.url),
+          },
+        }
       default:
         throw new Error(`Provider "${this.provider}" not supported for image_gen`)
-    }
-
-    return {
-      externalTaskId: null,
-      initialStatus: 'completed',
-      result: {
-        type: 'url',
-        url: result.url,
-        contentType: inferImageContentType(result.url),
-      },
     }
   }
 
   async checkStatus(externalTaskId: string, _apiKey: string): Promise<CheckResult> {
+    if (this.provider === 'dlapi') {
+      return dlapiCheckStatus(externalTaskId, _apiKey)
+    }
+
     void _apiKey
     log.debug('Image gen checkStatus (sync)', { provider: this.provider })
     return {

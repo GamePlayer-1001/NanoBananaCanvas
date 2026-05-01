@@ -10,6 +10,37 @@ import { z } from 'zod'
 /* ─── Submit Task ───────────────────────────────────── */
 
 const capabilitySchema = z.enum(['text', 'image', 'video', 'audio'])
+const imageSizePresetSchema = z.enum(['1k', '2k', '4k', '8k'])
+const imageAspectRatioSchema = z.enum(['1:1', '2:3', '3:2', '9:16', '16:9'])
+
+const imageCapabilitiesSchema = z
+  .object({
+    minPixels: z.coerce.number().int().positive().optional(),
+    maxPixels: z.coerce.number().int().positive().optional(),
+    maxLongEdge: z.coerce.number().int().positive().optional(),
+    allowedSizes: z.array(imageSizePresetSchema).optional(),
+    allowedAspectRatios: z.array(imageAspectRatioSchema).optional(),
+  })
+  .optional()
+
+const guestUserKeyConfigSchema = z.object({
+  configId: z.string().trim().min(1).optional(),
+  capability: capabilitySchema,
+  providerKind: z.enum([
+    'openai-compatible',
+    'openrouter',
+    'google-image',
+    'gemini',
+    'kling',
+    'openai-audio',
+  ]),
+  providerId: z.string().trim().min(1),
+  apiKey: z.string().trim().min(1),
+  secretKey: z.string().trim().optional(),
+  baseUrl: z.string().trim().url('Base URL must be a valid URL').optional(),
+  modelId: z.string().trim().min(1),
+  imageCapabilities: imageCapabilitiesSchema,
+})
 
 export const submitTaskSchema = z
   .object({
@@ -19,6 +50,7 @@ export const submitTaskSchema = z
     modelId: z.string().trim().min(1).optional(),
     configId: z.string().trim().min(1).optional(),
     executionMode: z.enum(['platform', 'user_key']).default('user_key'),
+    guestUserKeyConfig: guestUserKeyConfigSchema.optional(),
     input: z.record(z.string(), z.unknown()).default({}),
     workflowId: z.string().optional(),
     nodeId: z.string().optional(),
@@ -47,6 +79,19 @@ export const submitTaskSchema = z
         code: z.ZodIssueCode.custom,
         path: ['capability'],
         message: 'User key execution requires capability',
+      })
+    }
+
+    if (
+      value.executionMode === 'user_key' &&
+      value.guestUserKeyConfig &&
+      value.capability &&
+      value.guestUserKeyConfig.capability !== value.capability
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['guestUserKeyConfig', 'capability'],
+        message: 'Guest user key capability mismatch',
       })
     }
   })

@@ -1,12 +1,12 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 Node/Edge/Viewport，依赖 @/types 的 WorkflowNodeData
+ * [INPUT]: 依赖 @xyflow/react 的 Node/Edge/Viewport，依赖 @/types 的 WorkflowNodeData/TemplateSummary/WorkflowAuditEntry
  * [OUTPUT]: 对外提供 serializeWorkflow / deserializeWorkflow (JSON 双向转换)
- * [POS]: services/storage 的序列化核心，被 localStorage 自动保存和导入导出消费
+ * [POS]: services/storage 的序列化核心，被 localStorage 自动保存、导入导出与模板上下文持久化消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Edge, Node, Viewport } from '@xyflow/react'
-import type { WorkflowNodeData } from '@/types'
+import type { TemplateSummary, WorkflowAuditEntry, WorkflowNodeData } from '@/types'
 
 /* ─── Serialized Format ──────────────────────────────── */
 
@@ -16,6 +16,8 @@ export interface SerializedWorkflow {
   nodes: SerializedNode[]
   edges: SerializedEdge[]
   viewport: Viewport
+  template?: TemplateSummary
+  auditTrail?: WorkflowAuditEntry[]
   savedAt: string
 }
 
@@ -42,6 +44,10 @@ export function serializeWorkflow(
   edges: Edge[],
   viewport: Viewport,
   name = 'Untitled Workflow',
+  metadata?: {
+    template?: TemplateSummary
+    auditTrail?: WorkflowAuditEntry[]
+  },
 ): SerializedWorkflow {
   return {
     version: 1,
@@ -61,6 +67,8 @@ export function serializeWorkflow(
       type: e.type,
     })),
     viewport,
+    template: metadata?.template,
+    auditTrail: metadata?.auditTrail,
     savedAt: new Date().toISOString(),
   }
 }
@@ -72,6 +80,8 @@ export function deserializeWorkflow(json: unknown): {
   edges: Edge[]
   viewport: Viewport
   name: string
+  template?: TemplateSummary
+  auditTrail?: WorkflowAuditEntry[]
 } {
   const data = json as SerializedWorkflow
 
@@ -101,7 +111,14 @@ export function deserializeWorkflow(json: unknown): {
 
   const viewport: Viewport = data.viewport ?? { x: 0, y: 0, zoom: 1 }
 
-  return { nodes, edges, viewport, name: data.name ?? 'Untitled Workflow' }
+  return {
+    nodes,
+    edges,
+    viewport,
+    name: data.name ?? 'Untitled Workflow',
+    template: data.template,
+    auditTrail: data.auditTrail,
+  }
 }
 
 /* ─── Internal ───────────────────────────────────────── */
