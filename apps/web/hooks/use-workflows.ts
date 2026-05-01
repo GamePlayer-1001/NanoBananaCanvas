@@ -27,6 +27,7 @@ interface CreateWorkflowInput {
   name: string
   description?: string
   data?: string
+  folderId?: string | null
   template?: {
     id: string
     key: string

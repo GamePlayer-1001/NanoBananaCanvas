@@ -2,7 +2,8 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/hooks/use-workflows 的 useCreateWorkflow，
- *          依赖 @/lib/agent/template-catalog 的系统模板目录
+ *          依赖 @/lib/agent/template-catalog 的系统模板目录，
+ *          依赖 workspace 当前文件夹上下文
  * [OUTPUT]: 对外提供 NewProjectDialog 创建项目弹窗
  * [POS]: workspace 的创建入口，被 workspace-content.tsx 消费，创建后跳转全屏画布
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -23,9 +24,11 @@ import { listWorkflowTemplates } from '@/lib/agent/template-catalog'
 export function NewProjectDialog({
   open,
   onClose,
+  folderId,
 }: {
   open: boolean
   onClose: () => void
+  folderId: string | null
 }) {
   const t = useTranslations('workspace')
   const tc = useTranslations('common')
@@ -46,6 +49,7 @@ export function NewProjectDialog({
       {
         name: name.trim(),
         description: description.trim() || undefined,
+        folderId,
         template: templates.find((item) => item.id === selectedTemplateId),
       },
       {

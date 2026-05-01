@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid, @/lib/validations/workflow
- * [OUTPUT]: 对外提供 GET /api/workflows (列表) + POST /api/workflows (创建/导入本地草稿/模板起手)
+ * [OUTPUT]: 对外提供 GET /api/workflows (列表) + POST /api/workflows (创建/导入本地草稿/模板起手，并继承当前文件夹归属)
  * [POS]: api/workflows 的用户工作流 CRUD 入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
     const db = await getDb()
     const id = nanoid()
-    const { name, description, data, template, auditTrail } = parsed.data
+    const { name, description, data, folderId, template, auditTrail } = parsed.data
     const serializedData =
       data ??
       (template ? JSON.stringify({
@@ -88,10 +88,10 @@ export async function POST(req: Request) {
 
     await db
       .prepare(
-        `INSERT INTO workflows (id, user_id, name, description, data)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO workflows (id, user_id, name, description, data, folder_id)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, userId, name, description ?? '', serializedData)
+      .bind(id, userId, name, description ?? '', serializedData, folderId ?? null)
       .run()
 
     return apiOk({ id, name, description: description ?? '' }, 201)

@@ -53,6 +53,7 @@ export const createWorkflowSchema = z.object({
     .max(500, 'Description must be 500 characters or less')
     .optional(),
   data: z.string().optional(),
+  folderId: z.string().nullable().optional(),
   template: templateSummarySchema.optional(),
   auditTrail: z.array(workflowAuditEntrySchema).optional(),
 })
