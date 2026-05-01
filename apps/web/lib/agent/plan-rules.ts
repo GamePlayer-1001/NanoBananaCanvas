@@ -4,6 +4,7 @@
  * [POS]: lib/agent 的 planner 规则层，被 /api/agent/plan 入口消费，用于拆分单文件规则坏味道
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
+import { getDefaultPlatformRuntimeModel } from '@/lib/platform-runtime'
 import type {
   AgentPlan,
   AgentPlanIntent,
@@ -333,17 +334,15 @@ export function buildSelectedNodePromptDraft(normalized: string, selectedNode: C
 }
 
 export function inferLowerCostModel(selectedNode: CanvasSummaryNode) {
-  const currentModel = String(selectedNode.configSummary.platformModel ?? '')
-
   if (selectedNode.type === 'image-gen') {
-    return currentModel.includes('flux') ? 'black-forest-labs/flux-schnell' : 'openai/gpt-image-1-mini'
+    return 'black-forest-labs/flux-schnell'
   }
 
   if (selectedNode.type === 'video-gen') {
     return 'kling-v1-6'
   }
 
-  return 'openai/gpt-4o-mini'
+  return getDefaultPlatformRuntimeModel('text').modelId
 }
 
 export function inferFasterModel(selectedNode: CanvasSummaryNode, nextModel?: unknown) {
@@ -359,5 +358,5 @@ export function inferFasterModel(selectedNode: CanvasSummaryNode, nextModel?: un
     return 'kling-v1-6'
   }
 
-  return 'openai/gpt-4o-mini'
+  return getDefaultPlatformRuntimeModel('text').modelId
 }

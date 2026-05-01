@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/types 的 TemplateSummary，依赖 @/services/storage/serializer 与 @/lib/utils/create-node
+ * [INPUT]: 依赖 @/types 的 TemplateSummary，依赖 @/services/storage/serializer、@/lib/utils/create-node 与平台运行时默认模型真相源
  * [OUTPUT]: 对外提供模板目录查询、模板序列化快照与模板起手工作流构造器
  * [POS]: lib/agent 的模板真相源，为新建项目、模板解释与模板改造规划提供统一目录
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -7,6 +7,7 @@
 
 import type { Edge } from '@xyflow/react'
 import type { TemplateSummary, WorkflowAuditEntry, WorkflowNode, WorkflowNodeData } from '@/types'
+import { getDefaultPlatformRuntimeModel } from '@/lib/platform-runtime'
 import { createNode } from '@/lib/utils/create-node'
 import { serializeWorkflow, type SerializedWorkflow } from '@/services/storage/serializer'
 
@@ -31,7 +32,7 @@ const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
       applicableIndustries: ['服装', '美妆', '3C', '家居'],
       recommendedStyles: ['写实商业', '简洁棚拍', '品牌广告感'],
       defaultPrompt: '请基于商品卖点生成一版适合电商主图的高转化视觉描述。',
-      defaultModel: 'openai/dall-e-3',
+      defaultModel: getDefaultPlatformRuntimeModel('image').modelId,
       defaultOutputSpec: {
         modality: 'image',
         count: 4,
@@ -47,21 +48,23 @@ const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
       })
 
       const planner = createNode('llm', { x: 360, y: 160 })
+      const defaultTextModel = getDefaultPlatformRuntimeModel('text')
       planner.data = patchNode(planner.data, {
         label: '电商视觉规划',
         config: {
-          platformProvider: 'openrouter',
-          platformModel: 'openai/gpt-4o-mini',
+          platformProvider: defaultTextModel.supplierId,
+          platformModel: defaultTextModel.modelId,
           text: '提炼商品卖点，输出适合电商主图的视觉方向、构图与场景建议。',
         },
       })
 
       const imageGen = createNode('image-gen', { x: 680, y: 160 })
+      const defaultImageModel = getDefaultPlatformRuntimeModel('image')
       imageGen.data = patchNode(imageGen.data, {
         label: '商品主图生成',
         config: {
-          platformProvider: 'openrouter',
-          platformModel: 'openai/dall-e-3',
+          platformProvider: defaultImageModel.supplierId,
+          platformModel: defaultImageModel.modelId,
           aspectRatio: '1:1',
           size: 'auto',
           outputCount: 4,
@@ -95,7 +98,7 @@ const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
       applicableIndustries: ['服装', '餐饮', '教育', '泛品牌内容'],
       recommendedStyles: ['节奏快', '剧情反转', '强卖点引导'],
       defaultPrompt: '请基于主题输出一个适合短视频传播的脚本与分镜结构。',
-      defaultModel: 'openai/gpt-4o-mini',
+      defaultModel: getDefaultPlatformRuntimeModel('text').modelId,
       defaultOutputSpec: {
         modality: 'text',
         count: 1,
@@ -110,11 +113,12 @@ const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
       })
 
       const script = createNode('llm', { x: 360, y: 200 })
+      const defaultTextModel = getDefaultPlatformRuntimeModel('text')
       script.data = patchNode(script.data, {
         label: '脚本策划',
         config: {
-          platformProvider: 'openrouter',
-          platformModel: 'openai/gpt-4o-mini',
+          platformProvider: defaultTextModel.supplierId,
+          platformModel: defaultTextModel.modelId,
           text: '把输入整理成短视频脚本结构，包括 hook、冲突、卖点与结尾 CTA。',
         },
       })

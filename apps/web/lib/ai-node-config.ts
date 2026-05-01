@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/types 的 WorkflowNodeData，依赖工作流节点 config 的 executionMode/platformProvider/platformModel/userKeyConfigId
+ * [INPUT]: 依赖 @/types 的 WorkflowNodeData，依赖工作流节点 config 的 executionMode/platformProvider/platformModel/userKeyConfigId，依赖平台运行时默认模型真相源
  * [OUTPUT]: 对外提供 AI 节点能力映射、平台配置解析、执行请求解析工具
  * [POS]: lib 的 AI 节点配置语义层，被节点组件与执行器共享，用来隔离平台 provider 与用户能力类型
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { WorkflowNodeData } from '@/types'
+import { getDefaultPlatformRuntimeModel } from '@/lib/platform-runtime'
 
 export type NodeExecutionMode = 'platform' | 'user_key'
 export type NodeCapability = 'text' | 'image' | 'video' | 'audio'
@@ -34,10 +35,22 @@ const NODE_CAPABILITY_MAP: Record<SupportedAINodeType, NodeCapability> = {
 }
 
 const NODE_PLATFORM_DEFAULTS: Record<SupportedAINodeType, PlatformDefaults> = {
-  llm: { provider: 'openrouter', model: 'openai/gpt-4o-mini' },
-  'image-gen': { provider: 'openrouter', model: 'openai/dall-e-3' },
-  'video-gen': { provider: 'kling', model: 'kling-v2-0' },
-  'audio-gen': { provider: 'openai', model: 'tts-1' },
+  llm: (() => {
+    const model = getDefaultPlatformRuntimeModel('text')
+    return { provider: model.supplierId, model: model.modelId }
+  })(),
+  'image-gen': (() => {
+    const model = getDefaultPlatformRuntimeModel('image')
+    return { provider: model.supplierId, model: model.modelId }
+  })(),
+  'video-gen': (() => {
+    const model = getDefaultPlatformRuntimeModel('video')
+    return { provider: model.supplierId, model: model.modelId }
+  })(),
+  'audio-gen': (() => {
+    const model = getDefaultPlatformRuntimeModel('audio')
+    return { provider: model.supplierId, model: model.modelId }
+  })(),
 }
 
 function isCapability(value: unknown): value is NodeCapability {

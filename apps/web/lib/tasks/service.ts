@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
  *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
- *          依赖 @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
+ *          依赖 @/lib/platform-runtime, @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
  *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
  * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processTaskDispatch / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款与 orchestrator 持久化
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Queue/Workflow 双轨 + 平台 Key / 账号级模型槽位协作
@@ -41,6 +41,10 @@ import {
 } from '@/lib/image-model-capabilities'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import {
+  resolvePlatformRuntimeModel,
+  type PlatformSupplierId,
+} from '@/lib/platform-runtime'
 import { getR2 } from '@/lib/r2'
 import {
   extractR2KeyFromFileUrl,
@@ -56,7 +60,7 @@ import {
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
 import type { NodeCapability } from '@/lib/ai-node-config'
-import { getPlatformKey } from '@/services/ai'
+import { getPlatformSupplierApiKey } from '@/services/ai'
 
 import { getProcessor } from './processors'
 import type { TaskOutput, TaskProcessor } from './processors'
@@ -244,7 +248,7 @@ export interface TaskServiceRuntime {
   requireEnv: (key: string) => Promise<string>
   getR2: () => Promise<R2Bucket>
   invalidateStorageCache: (userId: string) => Promise<void>
-  getPlatformKey: (provider: string) => Promise<string>
+  getPlatformSupplierApiKey: (provider: PlatformSupplierId) => Promise<string>
   dispatchTask?: (message: TaskQueueMessage) => Promise<void>
   getWorkflowStatus?: (instanceId: string) => Promise<WorkflowRuntimeStatus | null>
 }
@@ -253,7 +257,7 @@ const defaultTaskRuntime: TaskServiceRuntime = {
   requireEnv,
   getR2,
   invalidateStorageCache,
-  getPlatformKey,
+  getPlatformSupplierApiKey,
 }
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -1222,7 +1226,14 @@ export async function submitTask(
 
   try {
     if (executionMode === 'platform') {
-      apiKey = await getTaskPlatformKey(provider as string, runtime)
+      const runtimeModel = resolvePlatformRuntimeModel({
+        category: taskTypeToPlatformCategory(taskType),
+        modelId: modelId,
+        supplierHint: provider,
+      })
+      resolvedProvider = runtimeModel.supplierId
+      resolvedModelId = runtimeModel.modelId
+      apiKey = await getTaskPlatformKey(runtimeModel.supplierId, runtime)
       imageCapabilities =
         taskType === 'image_gen'
           ? mergeImageModelCapabilities(
@@ -1913,33 +1924,26 @@ async function findUserConfigRow(
 }
 
 async function getTaskPlatformKey(
-  provider: string,
+  provider: PlatformSupplierId,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<string> {
   try {
-    switch (provider) {
-      case 'openrouter':
-      case 'deepseek':
-      case 'gemini':
-      case 'dlapi':
-      case 'comfly':
-        return await runtime.getPlatformKey(provider)
-      case 'openai':
-        return await runtime.requireEnv('OPENAI_API_KEY')
-      case 'kling': {
-        const accessKey = await runtime.requireEnv('KLING_ACCESS_KEY')
-        const secretKey = await runtime.requireEnv('KLING_SECRET_KEY')
-        return `${accessKey}:${secretKey}`
-      }
-      default:
-        throw new TaskError(
-          ErrorCode.TASK_PROVIDER_ERROR,
-          `No platform key mapping for provider: ${provider}`,
-          { provider },
-        )
-    }
+    return await runtime.getPlatformSupplierApiKey(provider)
   } catch (error) {
     throw toTaskProviderError(error, { provider })
+  }
+}
+
+function taskTypeToPlatformCategory(
+  taskType: AsyncTaskType,
+): 'image' | 'video' | 'audio' {
+  switch (taskType) {
+    case 'image_gen':
+      return 'image'
+    case 'video_gen':
+      return 'video'
+    case 'audio_gen':
+      return 'audio'
   }
 }
 
