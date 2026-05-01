@@ -65,6 +65,79 @@ export function useAgentSession({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
 
+  async function runAssistantModel(
+    assistantRuntime: AgentAssistantRuntime | undefined,
+    prompt: string,
+  ): Promise<string | null> {
+    if (!assistantRuntime) {
+      return null
+    }
+
+    const body =
+      assistantRuntime.executionMode === 'platform'
+        ? {
+            executionMode: 'platform' as const,
+            provider: assistantRuntime.provider,
+            modelId: assistantRuntime.modelId,
+            messages: [
+              {
+                role: 'system' as const,
+                content:
+                  '你是 Nano Banana Canvas 的 Agent 助手。请基于给定上下文输出简洁、专业、可执行的中文回答，不要虚构未提供的事实。',
+              },
+              {
+                role: 'user' as const,
+                content: prompt,
+              },
+            ],
+            temperature: 0.4,
+            maxTokens: 900,
+            workflowId,
+          }
+        : {
+            executionMode: 'user_key' as const,
+            capability: 'text' as const,
+            configId: assistantRuntime.configId,
+            messages: [
+              {
+                role: 'system' as const,
+                content:
+                  '你是 Nano Banana Canvas 的 Agent 助手。请基于给定上下文输出简洁、专业、可执行的中文回答，不要虚构未提供的事实。',
+              },
+              {
+                role: 'user' as const,
+                content: prompt,
+              },
+            ],
+            temperature: 0.4,
+            maxTokens: 900,
+            workflowId,
+          }
+
+    const response = await fetch('/api/ai/execute', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      throw new Error(
+        assistantRuntime.executionMode === 'platform'
+          ? 'Agent 平台模型调用失败'
+          : 'Agent 用户模型调用失败',
+      )
+    }
+
+    const payload = (await response.json()) as {
+      ok?: boolean
+      data?: { result?: string }
+    }
+
+    return payload.data?.result?.trim() || null
+  }
+
   async function sendMessage(
     rawValue: string,
     assistantRuntime?: AgentAssistantRuntime,
@@ -133,15 +206,30 @@ export function useAgentSession({
           assistantRuntime,
         })
 
+        const diagnosisText = [
+          diagnosis.summary,
+          `现象：${diagnosis.phenomenon}`,
+          `根因：${diagnosis.rootCause}`,
+          `建议：${diagnosis.repairSuggestion}`,
+        ].join('\n')
+        const aiDiagnosisText =
+          (await runAssistantModel(
+            assistantRuntime,
+            [
+              '请把下面这份工作流诊断整理成对用户直接可读的中文回复。',
+              '要求：',
+              '1. 明确指出现象、根因、建议。',
+              '2. 语气专业、简洁，不要重复标题。',
+              '3. 如果有待确认风险，要提醒用户确认。',
+              '',
+              diagnosisText,
+            ].join('\n'),
+          )) ?? diagnosisText
+
         appendMessage({
           id: crypto.randomUUID(),
           role: 'diagnosis',
-          text: [
-            diagnosis.summary,
-            `现象：${diagnosis.phenomenon}`,
-            `根因：${diagnosis.rootCause}`,
-            `建议：${diagnosis.repairSuggestion}`,
-          ].join('\n'),
+          text: aiDiagnosisText,
           severity: 'warning',
           createdAt: new Date().toISOString(),
         })
@@ -181,16 +269,30 @@ export function useAgentSession({
           assistantRuntime,
         })
 
+        const optimizeText = [
+          diagnosis.summary,
+          `问题：${diagnosis.optimizationProposal?.issue ?? diagnosis.phenomenon}`,
+          `原因：${diagnosis.optimizationProposal?.cause ?? diagnosis.rootCause}`,
+          `提案：${diagnosis.optimizationProposal?.proposal ?? diagnosis.repairSuggestion}`,
+          `风险：${diagnosis.optimizationProposal?.risk ?? diagnosis.riskSummary ?? '需要你确认后再动图。'}`,
+        ].join('\n')
+        const aiOptimizeText =
+          (await runAssistantModel(
+            assistantRuntime,
+            [
+              '请把下面这份工作流优化建议整理成对用户直接可读的中文回复。',
+              '要求：',
+              '1. 明确指出问题、原因、提案、风险。',
+              '2. 保持简洁，但要让用户知道下一步怎么做。',
+              '',
+              optimizeText,
+            ].join('\n'),
+          )) ?? optimizeText
+
         appendMessage({
           id: crypto.randomUUID(),
           role: 'diagnosis',
-          text: [
-            diagnosis.summary,
-            `问题：${diagnosis.optimizationProposal?.issue ?? diagnosis.phenomenon}`,
-            `原因：${diagnosis.optimizationProposal?.cause ?? diagnosis.rootCause}`,
-            `提案：${diagnosis.optimizationProposal?.proposal ?? diagnosis.repairSuggestion}`,
-            `风险：${diagnosis.optimizationProposal?.risk ?? diagnosis.riskSummary ?? '需要你确认后再动图。'}`,
-          ].join('\n'),
+          text: aiOptimizeText,
           severity: 'warning',
           createdAt: new Date().toISOString(),
         })
@@ -237,11 +339,24 @@ export function useAgentSession({
           locale,
           assistantRuntime,
         })
+        const aiAnswer =
+          (await runAssistantModel(
+            assistantRuntime,
+            [
+              '请基于下面这份工作流解释，用更自然、更面向用户的中文重新表述。',
+              '要求：',
+              '1. 不要改变事实。',
+              '2. 优先解释当前主链或当前选中节点的职责。',
+              '3. 结尾补一句下一步建议。',
+              '',
+              answer,
+            ].join('\n'),
+          )) ?? answer
 
         appendMessage({
           id: crypto.randomUUID(),
           role: 'assistant',
-          text: answer,
+          text: aiAnswer,
           createdAt: new Date().toISOString(),
         })
         setStatus('idle')
@@ -280,6 +395,23 @@ export function useAgentSession({
         ...plan,
         requiresConfirmation: plan.requiresConfirmation || validation.requiresConfirmation,
       }
+      const aiPlanSummary = await runAssistantModel(
+        assistantRuntime,
+        [
+          '请根据下面这份工作流计划，给用户写一段简洁中文说明。',
+          '要求：',
+          '1. 说明你准备怎么改。',
+          '2. 点出为什么这样改。',
+          '3. 如果需要用户确认，要明确说出来。',
+          '4. 不要输出 JSON，不要编造不存在的操作。',
+          '',
+          `目标：${nextPlan.goal}`,
+          `摘要：${nextPlan.summary}`,
+          `原因：${nextPlan.reasons.join('；')}`,
+          `需要确认：${nextPlan.requiresConfirmation ? '是' : '否'}`,
+          `操作数：${nextPlan.operations.length}`,
+        ].join('\n'),
+      )
 
       setPendingPlan(nextPlan)
       setPendingPlanAlternatives([nextPlan, ...alternatives])
@@ -312,6 +444,15 @@ export function useAgentSession({
           id: crypto.randomUUID(),
           role: 'template-context',
           text: `当前模板：${nextPlan.templateContext.sourceTemplate.name}；改造方向：${nextPlan.templateContext.adaptationDirection ?? '待进一步明确'}`,
+          createdAt: new Date().toISOString(),
+        })
+      }
+
+      if (aiPlanSummary) {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: aiPlanSummary,
           createdAt: new Date().toISOString(),
         })
       }

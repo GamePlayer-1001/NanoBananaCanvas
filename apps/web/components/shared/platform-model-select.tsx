@@ -39,9 +39,18 @@ export function PlatformModelSelect({
   size = 'default',
 }: PlatformModelSelectProps) {
   const selected = options.find((option) => option.value === value) ?? options[0]
+  const selectedSelectionValue = selected?.selectionValue
 
   return (
-    <Select value={selected?.value} onValueChange={onValueChange} disabled={disabled}>
+    <Select
+      value={selectedSelectionValue}
+      onValueChange={(selectionValue) => {
+        const nextOption = options.find((option) => option.selectionValue === selectionValue)
+        if (!nextOption) return
+        onValueChange?.(nextOption.value)
+      }}
+      disabled={disabled}
+    >
       <SelectTrigger
         size={size}
         className={cn('w-full justify-between', triggerClassName)}
@@ -54,7 +63,10 @@ export function PlatformModelSelect({
       </SelectTrigger>
       <SelectContent align="start" className={contentClassName}>
         {options.map((option) => (
-          <SelectItem key={`${option.provider}:${option.value}`} value={option.value}>
+          <SelectItem
+            key={option.selectionValue}
+            value={option.selectionValue}
+          >
             <ModelOptionContent option={option} />
           </SelectItem>
         ))}

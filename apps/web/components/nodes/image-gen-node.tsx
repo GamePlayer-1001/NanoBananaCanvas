@@ -393,6 +393,7 @@ export function ImageGenNode(props: NodeProps) {
                     ? platformModelOptions
                     : [
                         {
+                          selectionValue: `${platformProviderId}:${platformModelId}`,
                           value: platformModelId,
                           label: displayModelLabel,
                           provider: platformProviderId,

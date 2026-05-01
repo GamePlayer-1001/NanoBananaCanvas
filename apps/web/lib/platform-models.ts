@@ -22,6 +22,7 @@ export interface PlatformModelProviderGroup {
 }
 
 export interface PlatformModelVisualOption {
+  selectionValue: string
   value: string
   label: string
   provider: string
@@ -165,6 +166,7 @@ export function toPlatformVisualOption(
   const logo = getPlatformProviderLogo(model.provider)
 
   return {
+    selectionValue: `${model.provider}:${model.modelId}`,
     value: model.modelId,
     label: model.modelName,
     provider: model.provider,
@@ -176,11 +178,46 @@ export function toPlatformVisualOption(
   }
 }
 
-export function getAgentPlatformModelOptions(): PlatformModelVisualOption[] {
+export function getAgentPlatformModelOptions(
+  models?: readonly PlatformModelCatalogItem[],
+): PlatformModelVisualOption[] {
+  const presetMap = new Map(
+    AGENT_PLATFORM_MODEL_PRESETS.map((preset) => [
+      `${preset.provider}:${preset.modelId}`,
+      preset,
+    ]),
+  )
+
+  const sourceModels =
+    models
+      ?.filter((model) => presetMap.has(`${model.provider}:${model.modelId}`))
+      .sort((left, right) => {
+        const leftIndex = AGENT_PLATFORM_MODEL_PRESETS.findIndex(
+          (preset) =>
+            preset.provider === left.provider && preset.modelId === left.modelId,
+        )
+        const rightIndex = AGENT_PLATFORM_MODEL_PRESETS.findIndex(
+          (preset) =>
+            preset.provider === right.provider && preset.modelId === right.modelId,
+        )
+        return leftIndex - rightIndex
+      }) ?? []
+
+  if (sourceModels.length > 0) {
+    return sourceModels.map((model) => {
+      const preset = presetMap.get(`${model.provider}:${model.modelId}`)
+      return toPlatformVisualOption(model, {
+        credits: preset?.credits,
+        description: preset ? `${preset.credits} 积分/次` : undefined,
+      })
+    })
+  }
+
   return AGENT_PLATFORM_MODEL_PRESETS.map((preset) => {
     const logo = getPlatformProviderLogo(preset.provider)
 
     return {
+      selectionValue: `${preset.provider}:${preset.modelId}`,
       value: preset.modelId,
       label: preset.modelName,
       provider: preset.provider,

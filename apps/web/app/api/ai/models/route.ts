@@ -90,6 +90,12 @@ export async function GET(req: Request) {
         : await statement.all<PublicModelRow>()
 
       const models = (rows.results ?? []).map(toPublicModel)
+      if (models.length === 0) {
+        log.warn('AI models table returned no active rows, serving fallback catalog', {
+          category,
+        })
+        return apiOk(getFallbackModels(category))
+      }
       return apiOk(models)
     } catch (error) {
       log.error('Failed to load AI models, serving fallback catalog', error, { category })
