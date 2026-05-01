@@ -8,8 +8,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowUp, Bot, KeyRound, Sparkles } from 'lucide-react'
+import { ArrowUp, Bot, Coins, KeyRound, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { PLATFORM_TEXT_EXECUTION_CREDITS } from '@/lib/billing/workflow-pricing'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -147,9 +148,15 @@ export function AgentComposer({
         </div>
       </div>
 
-      <p className="px-1 text-[11px] leading-5 text-slate-400">
-        {resolvedHint}
-      </p>
+      <div className="flex items-center justify-between gap-2 px-1">
+        <p className="text-[11px] leading-5 text-slate-400">{resolvedHint}</p>
+        {executionMode === 'platform' ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+            <Coins size={11} />
+            <span>{PLATFORM_TEXT_EXECUTION_CREDITS}</span>
+          </span>
+        ) : null}
+      </div>
     </div>
   )
 }

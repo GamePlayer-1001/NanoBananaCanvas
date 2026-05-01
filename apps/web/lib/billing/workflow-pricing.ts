@@ -19,6 +19,12 @@ export interface WorkflowImagePriceRule {
 
 export const PLATFORM_TEXT_EXECUTION_CREDITS = 1
 export const SIGNIN_TRIAL_CREDITS = 100
+export const WORKFLOW_IMAGE_FALLBACK_PRICES: Record<WorkflowImagePriceTier, number> = {
+  '1k': 10,
+  '2k': 15,
+  '4k': 20,
+  '8k': 30,
+}
 
 const WORKFLOW_IMAGE_PRICE_RULES: WorkflowImagePriceRule[] = [
   {
@@ -79,8 +85,12 @@ export function getWorkflowImagePriceForSize(input: {
   size: ImageSizeOptionValue
 }): number | null {
   const rule = matchImagePriceRule(input.modelId, input.modelName)
-  if (!rule || input.size === 'auto') {
+  if (input.size === 'auto') {
     return null
+  }
+
+  if (!rule) {
+    return WORKFLOW_IMAGE_FALLBACK_PRICES[input.size]
   }
 
   return rule.prices[input.size]
@@ -94,17 +104,26 @@ export function describeWorkflowImagePrice(input: {
   label: string
   credits: number | null
   isAuto: boolean
+  isFallback: boolean
 } | null {
   const rule = matchImagePriceRule(input.modelId, input.modelName)
-  if (!rule) {
-    return null
-  }
+  const fallbackLabel = input.modelName?.trim() || input.modelId
 
   if (input.size === 'auto') {
     return {
-      label: `${rule.label} · Auto`,
+      label: `${rule?.label ?? fallbackLabel} · Auto`,
       credits: null,
       isAuto: true,
+      isFallback: !rule,
+    }
+  }
+
+  if (!rule) {
+    return {
+      label: `${fallbackLabel} · ${input.size.toUpperCase()}`,
+      credits: WORKFLOW_IMAGE_FALLBACK_PRICES[input.size],
+      isAuto: false,
+      isFallback: true,
     }
   }
 
@@ -112,6 +131,7 @@ export function describeWorkflowImagePrice(input: {
     label: `${rule.label} · ${input.size.toUpperCase()}`,
     credits: rule.prices[input.size],
     isAuto: false,
+    isFallback: false,
   }
 }
 

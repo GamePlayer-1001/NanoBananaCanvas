@@ -38,11 +38,7 @@ import {
   type ImageSizeOptionValue,
   validateImageSelection,
 } from '@/lib/image-model-capabilities'
-import {
-  describeWorkflowImagePrice,
-  getWorkflowImageModelBadge,
-} from '@/lib/billing/workflow-pricing'
-import { cn } from '@/lib/utils'
+import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
   groupPlatformModelsByProvider,
@@ -186,10 +182,6 @@ export function ImageGenNode(props: NodeProps) {
         : null,
     [executionMode, platformModelId, selectedPlatformModel, size],
   )
-  const platformModelBadge = useMemo(
-    () => getWorkflowImageModelBadge(selectedPlatformModel),
-    [selectedPlatformModel],
-  )
   const currentImageCapabilities =
     executionMode === 'user_key'
       ? savedImageConfig?.imageCapabilities
@@ -302,18 +294,6 @@ export function ImageGenNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<ImageIcon size={14} />}
-      headerRight={
-        executionMode === 'platform' && platformPricing ? (
-          <div className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-            <Coins size={11} />
-            <span>
-              {platformPricing.credits == null
-                ? t('creditsAutoPending')
-                : t('creditsAmount', { count: platformPricing.credits })}
-            </span>
-          </div>
-        ) : null
-      }
       minHeight={220}
       bodyClassName="min-h-0"
     >
@@ -402,38 +382,6 @@ export function ImageGenNode(props: NodeProps) {
                 )}
               </select>
 
-              {platformPricing ? (
-                <div className="flex items-center justify-between gap-2 rounded-md border border-dashed px-2 py-1.5 text-xs">
-                  <div className="space-y-0.5">
-                    {platformModelBadge ? (
-                      <p className="text-foreground font-medium">{platformModelBadge}</p>
-                    ) : null}
-                    <p className="text-muted-foreground">
-                      {platformPricing.credits == null
-                        ? t('creditsAutoDescription')
-                        : t('creditsPriceDescription', {
-                            size: size.toUpperCase(),
-                            count: platformPricing.credits,
-                          })}
-                    </p>
-                  </div>
-                  <div
-                    className={cn(
-                      'flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium',
-                      platformPricing.credits == null
-                        ? 'bg-muted text-muted-foreground'
-                        : 'bg-amber-50 text-amber-700',
-                    )}
-                  >
-                    <Coins size={12} />
-                    <span>
-                      {platformPricing.credits == null
-                        ? 'Auto'
-                        : platformPricing.credits}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
             </div>
           ) : (
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
@@ -442,24 +390,39 @@ export function ImageGenNode(props: NodeProps) {
           )}
         </ConfigField>
 
-        <ConfigField label={t('imageSize')}>
-          <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
-            {IMAGE_SIZE_OPTIONS.map((item) => (
-              <option
-                key={item.value}
-                value={item.value}
-                disabled={Boolean(
-                  validateImageSelection(
-                    item.value,
-                    aspectRatio,
-                    currentImageCapabilities,
-                  ),
-                )}
-              >
-                {item.label}
-              </option>
-            ))}
-          </select>
+        <ConfigField
+          label={t('imageSize')}
+          labelRight={
+            executionMode === 'platform' && platformPricing ? (
+              <CreditPill
+                value={
+                  platformPricing.credits == null
+                    ? t('creditsAutoPending')
+                    : String(platformPricing.credits)
+                }
+              />
+            ) : null
+          }
+        >
+          <div className="space-y-2">
+            <select value={size} onChange={onSizeChange} className={SELECT_CLASS}>
+              {IMAGE_SIZE_OPTIONS.map((item) => (
+                <option
+                  key={item.value}
+                  value={item.value}
+                  disabled={Boolean(
+                    validateImageSelection(
+                      item.value,
+                      aspectRatio,
+                      currentImageCapabilities,
+                    ),
+                  )}
+                >
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </ConfigField>
 
         <ConfigField label={t('imageAspect')}>
@@ -549,10 +512,30 @@ export function ImageGenNode(props: NodeProps) {
   )
 }
 
-function ConfigField({ label, children }: { label: string; children: React.ReactNode }) {
+function CreditPill({ value }: { value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+      <Coins size={11} />
+      <span>{value}</span>
+    </span>
+  )
+}
+
+function ConfigField({
+  label,
+  labelRight,
+  children,
+}: {
+  label: string
+  labelRight?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <div>
-      <label className="text-muted-foreground mb-1 block text-xs">{label}</label>
+      <div className="text-muted-foreground mb-1 flex items-center justify-between gap-2 text-xs">
+        <label>{label}</label>
+        {labelRight}
+      </div>
       {children}
     </div>
   )
