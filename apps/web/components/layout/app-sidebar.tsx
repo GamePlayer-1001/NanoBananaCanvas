@@ -499,7 +499,12 @@ export function AppSidebar() {
               <Button
                 size="sm"
                 variant={signinStatus?.checkedInToday ? 'outline' : 'default'}
-                disabled={!user?.isAuthenticated || signinStatus?.checkedInToday || claimSignin.isPending}
+                disabled={
+                  !user?.isAuthenticated ||
+                  signinStatus?.available === false ||
+                  signinStatus?.checkedInToday ||
+                  claimSignin.isPending
+                }
                 onClick={() => claimSignin.mutate()}
                 className={signinStatus?.checkedInToday ? 'border-amber-300 bg-white text-amber-700' : 'bg-amber-600 text-white hover:bg-amber-700'}
               >

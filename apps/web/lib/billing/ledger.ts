@@ -8,7 +8,12 @@
 import { getDb } from '@/lib/db'
 import { BillingError, ErrorCode } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
-import { getBillingSchemaInfo } from './schema'
+import {
+  assertCreditBalanceWritable,
+  assertDailySigninWritable,
+  getBillingCapabilities,
+  type BillingCapabilities,
+} from './capabilities'
 import { SIGNIN_TRIAL_CREDITS } from './workflow-pricing'
 
 type CreditBalanceRow = {
@@ -78,6 +83,16 @@ interface CreditTransactionStatement {
   description: string
 }
 
+const EMPTY_CREDIT_BALANCE_SNAPSHOT: CreditBalanceSnapshot = {
+  trial_balance: 0,
+  trial_expires_at: null,
+  monthly_balance: 0,
+  permanent_balance: 0,
+  frozen_credits: 0,
+  total_earned: 0,
+  total_spent: 0,
+}
+
 function clampCredits(value: number): number {
   if (!Number.isFinite(value) || value <= 0) {
     return 0
@@ -138,6 +153,9 @@ async function clearExpiredTrialBalance(
   db: D1Database,
   userId: string,
   balance: CreditBalanceSnapshot,
+  options: {
+    persistReset: boolean
+  },
 ): Promise<CreditBalanceSnapshot> {
   if (balance.trial_balance <= 0 && !balance.trial_expires_at) {
     return balance
@@ -147,16 +165,18 @@ async function clearExpiredTrialBalance(
     return balance
   }
 
-  await db
-    .prepare(
-      `UPDATE credit_balances
-       SET trial_balance = 0,
-           trial_expires_at = NULL,
-           updated_at = datetime('now')
-       WHERE user_id = ?`,
-    )
-    .bind(userId)
-    .run()
+  if (options.persistReset) {
+    await db
+      .prepare(
+        `UPDATE credit_balances
+         SET trial_balance = 0,
+             trial_expires_at = NULL,
+             updated_at = datetime('now')
+         WHERE user_id = ?`,
+      )
+      .bind(userId)
+      .run()
+  }
 
   return {
     ...balance,
@@ -168,7 +188,34 @@ async function clearExpiredTrialBalance(
 async function readCreditBalanceRow(
   db: D1Database,
   userId: string,
+  capabilities: BillingCapabilities,
+  options?: {
+    allowFallback?: boolean
+    requireWritable?: boolean
+  },
 ): Promise<CreditBalanceSnapshot> {
+  const allowFallback = options?.allowFallback ?? false
+  const requireWritable = options?.requireWritable ?? false
+
+  if (!capabilities.creditBalanceReadable) {
+    if (allowFallback) {
+      return EMPTY_CREDIT_BALANCE_SNAPSHOT
+    }
+
+    throw new BillingError(
+      ErrorCode.BILLING_CONFIG_INVALID,
+      'Credit ledger is unavailable because the billing schema is incomplete',
+      {
+        userId,
+        reasons: capabilities.reasons.creditBalanceReadable,
+      },
+    )
+  }
+
+  if (requireWritable) {
+    assertCreditBalanceWritable(capabilities, { userId })
+  }
+
   await ensureCreditBalanceRow(db, userId)
 
   const row = await db
@@ -180,15 +227,22 @@ async function readCreditBalanceRow(
     .bind(userId)
     .first<CreditBalanceRow>()
 
-  return clearExpiredTrialBalance(db, userId, {
-    trial_balance: row?.trial_balance ?? 0,
-    trial_expires_at: row?.trial_expires_at ?? null,
-    monthly_balance: row?.monthly_balance ?? 0,
-    permanent_balance: row?.permanent_balance ?? 0,
-    frozen_credits: row?.frozen_credits ?? 0,
-    total_earned: row?.total_earned ?? 0,
-    total_spent: row?.total_spent ?? 0,
-  })
+  return clearExpiredTrialBalance(
+    db,
+    userId,
+    {
+      trial_balance: row?.trial_balance ?? 0,
+      trial_expires_at: row?.trial_expires_at ?? null,
+      monthly_balance: row?.monthly_balance ?? 0,
+      permanent_balance: row?.permanent_balance ?? 0,
+      frozen_credits: row?.frozen_credits ?? 0,
+      total_earned: row?.total_earned ?? 0,
+      total_spent: row?.total_spent ?? 0,
+    },
+    {
+      persistReset: capabilities.creditBalanceWritable,
+    },
+  )
 }
 
 function allocateCredits(
@@ -337,8 +391,12 @@ export async function freezeCredits(input: {
   description: string
 }): Promise<CreditFreezeResult> {
   const db = await getDb()
+  const capabilities = await getBillingCapabilities()
+  assertCreditBalanceWritable(capabilities, { userId: input.userId })
   const requestedCredits = clampCredits(input.requestedCredits)
-  const balance = await readCreditBalanceRow(db, input.userId)
+  const balance = await readCreditBalanceRow(db, input.userId, capabilities, {
+    requireWritable: true,
+  })
 
   if (requestedCredits === 0) {
     return {
@@ -452,7 +510,11 @@ async function finalizeFrozenCredits(
   operation: LedgerOperationType,
 ): Promise<CreditFinalizeResult> {
   const db = await getDb()
-  const balance = await readCreditBalanceRow(db, input.userId)
+  const capabilities = await getBillingCapabilities()
+  assertCreditBalanceWritable(capabilities, { userId: input.userId })
+  const balance = await readCreditBalanceRow(db, input.userId, capabilities, {
+    requireWritable: true,
+  })
   const summary = await getReferenceCreditSummary(input.userId, input.referenceId)
   const requestedCredits = clampCredits(input.requestedCredits ?? summary.remaining.total)
   const remaining =
@@ -621,16 +683,20 @@ export async function refundFrozenCredits(input: {
 }
 
 export async function getDailySigninStatus(userId: string): Promise<{
+  available: boolean
   checkedInToday: boolean
   trialBalance: number
   trialExpiresAt: string | null
 }> {
   const db = await getDb()
-  const balance = await readCreditBalanceRow(db, userId)
-  const schema = await getBillingSchemaInfo()
+  const capabilities = await getBillingCapabilities()
+  const balance = await readCreditBalanceRow(db, userId, capabilities, {
+    allowFallback: true,
+  })
 
-  if (!schema.hasDailySignins || !schema.dailySigninsColumns.has('user_id') || !schema.dailySigninsColumns.has('signin_date')) {
+  if (!capabilities.creditBalanceReadable || !capabilities.dailySigninReadable) {
     return {
+      available: false,
       checkedInToday: false,
       trialBalance: balance.trial_balance,
       trialExpiresAt: balance.trial_expires_at,
@@ -648,6 +714,7 @@ export async function getDailySigninStatus(userId: string): Promise<{
     .first<{ id: string }>()
 
   return {
+    available: true,
     checkedInToday: Boolean(row?.id),
     trialBalance: balance.trial_balance,
     trialExpiresAt: balance.trial_expires_at,
@@ -660,24 +727,13 @@ export async function awardDailySigninCredits(userId: string): Promise<{
   trialBalance: number
 }> {
   const db = await getDb()
-  const schema = await getBillingSchemaInfo()
+  const capabilities = await getBillingCapabilities()
+  assertCreditBalanceWritable(capabilities, { userId })
+  assertDailySigninWritable(capabilities, { userId })
 
-  if (
-    !schema.hasDailySignins ||
-    !schema.dailySigninsColumns.has('id') ||
-    !schema.dailySigninsColumns.has('user_id') ||
-    !schema.dailySigninsColumns.has('signin_date') ||
-    !schema.dailySigninsColumns.has('credits_awarded') ||
-    !schema.dailySigninsColumns.has('expires_at')
-  ) {
-    throw new BillingError(
-      ErrorCode.BILLING_CONFIG_INVALID,
-      'Daily sign-in is unavailable because the billing schema is incomplete',
-      { userId },
-    )
-  }
-
-  const balance = await readCreditBalanceRow(db, userId)
+  const balance = await readCreditBalanceRow(db, userId, capabilities, {
+    requireWritable: true,
+  })
   const { today, expiresAt } = getTodayBounds()
   const existing = await db
     .prepare(

@@ -2,6 +2,7 @@
 > L2 | 父级: apps/web/lib/CLAUDE.md
 
 成员清单
+capabilities.ts: 账本基础设施契约层，统一探测 credit ledger / daily signin 的读写能力并把生产库缺口翻译成显式 BillingError
 config.ts: Stripe 计费配置真相源，兼容“单 Price 多币种”“按币种拆 Price”与 `lookup_key` 动态回退，并复用 Worker 友好的 Stripe client 解析 Price ID
 config.test.ts: 计费配置单元测试，覆盖币种推断、共享 Price 回退、`lookup_key` 回退、Price 解析与统一错误码
 credits.ts: 积分余额读取层，统一汇总双池余额、冻结积分与当前套餐额度镜像，并在用户镜像/生产表缺失时安全降级为 Free
