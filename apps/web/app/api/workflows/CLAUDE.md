@@ -6,7 +6,7 @@
 ## 成员清单
 
 ```
-route.ts                  — GET (列表) / POST (创建/导入本地草稿) 当前用户的工作流
+route.ts                  — GET (列表) / POST (创建/导入本地草稿，支持写入 folder_id) 当前用户的工作流
 favorites/route.ts        — GET 当前用户收藏的工作流列表
 
 [id]/route.ts             — GET / PUT / DELETE 单个工作流详情+更新+删除

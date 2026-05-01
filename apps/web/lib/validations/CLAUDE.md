@@ -7,7 +7,7 @@ Zod 表单验证 Schema
 ## 成员清单
 
 ```
-workflow.ts — createWorkflowSchema / updateWorkflowSchema / publishWorkflowSchema 工作流表单验证 (含导入本地草稿、模板元数据与审计轨迹载荷)
+workflow.ts — createWorkflowSchema / updateWorkflowSchema / publishWorkflowSchema 工作流表单验证 (含创建 folderId、导入本地草稿、模板元数据与审计轨迹载荷)
 folder.ts   — createFolderSchema / updateFolderSchema 文件夹表单验证 (name 1-50字符)
 report.ts   — reportSchema 举报表单验证 (reason enum: spam/nsfw/copyright/other)
 explore.ts  — exploreQuerySchema / exploreTypeSchema / searchQuerySchema 广场查询验证

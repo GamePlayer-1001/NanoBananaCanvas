@@ -213,6 +213,7 @@ export function WorkspaceContent() {
         <NewProjectDialog
           open={showNewProject}
           onClose={() => setShowNewProject(false)}
+          folderId={folderId}
         />
       </div>
 
