@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/db,
- *          @/lib/user-model-config, @/services/ai (Provider 注册表), @/services/ai/openai-compatible,
+ *          @/lib/platform-runtime, @/lib/user-model-config, @/services/ai (Provider 注册表), @/services/ai/openai-compatible,
  *          @/lib/validations/ai, @/lib/api-key-crypto
  * [OUTPUT]: 对外提供 POST /api/ai/stream (平台 Key / user_key 双模式 SSE 流式执行)
  * [POS]: api/ai 的流式端点，统一免费平台执行与账号级模型槽位的 SSE 入口
@@ -28,12 +28,17 @@ import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import { resolvePlatformRuntimeModel } from '@/lib/platform-runtime'
 import {
   deserializeUserModelConfig,
   toRuntimeUserModelConfig,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
-import { getPlatformKey, getProvider } from '@/services/ai'
+import {
+  createPlatformTextProvider,
+  getPlatformSupplierApiKey,
+  getProvider,
+} from '@/services/ai'
 import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
@@ -81,9 +86,14 @@ export async function POST(req: Request) {
       resolvedModelId = runtimeConfig.modelId
       providerId = runtimeConfig.providerId
     } else {
-      providerId = params.provider as string
-      resolvedModelId = params.modelId as string
-      apiKey = await getPlatformKey(providerId)
+      const runtimeModel = resolvePlatformRuntimeModel({
+        category: 'text',
+        modelId: params.modelId,
+        supplierHint: params.provider,
+      })
+      providerId = runtimeModel.supplierId
+      resolvedModelId = runtimeModel.modelId
+      apiKey = await getPlatformSupplierApiKey(providerId)
     }
 
     const executionReferenceId = `ai_stream_${nanoid()}`
@@ -112,7 +122,7 @@ export async function POST(req: Request) {
     const provider =
       runtimeConfig
         ? getUserKeyProvider(runtimeConfig)
-        : getProvider(providerId)
+        : createPlatformTextProvider(providerId as never)
     const encoder = new TextEncoder()
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()

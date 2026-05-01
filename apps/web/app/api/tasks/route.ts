@@ -82,9 +82,9 @@ export async function POST(req: Request) {
         const instance = await env.IMAGE_TASK_WORKFLOW.get(instanceId)
         return instance.status()
       },
-      getPlatformKey: async (provider) => {
-        const { getPlatformKey } = await import('@/services/ai')
-        return getPlatformKey(provider)
+      getPlatformSupplierApiKey: async (provider) => {
+        const { getPlatformSupplierApiKey } = await import('@/services/ai')
+        return getPlatformSupplierApiKey(provider)
       },
       getR2: async () => {
         const { getR2 } = await import('@/lib/r2')

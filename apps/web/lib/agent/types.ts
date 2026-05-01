@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 Edge/Node 类型，依赖 @/types 的 PortDefinition/WorkflowNodeData/TemplateSummary/WorkflowAuditEntry
- * [OUTPUT]: 对外提供 AgentMode、AgentMessage、AgentPlan、CanvasSummary、Diagnosis/Explain 契约等 Agent 语义层共享类型
+ * [OUTPUT]: 对外提供 AgentMode、AgentMessage、AgentPlan、CanvasSummary、Diagnosis/Explain 契约，以及助手运行时上下文类型
  * [POS]: lib/agent 的类型真相源，被 store、hooks、摘要器、校验器与 API route 共同消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -367,6 +367,7 @@ export interface AgentPlanRequest {
   mode: AgentMode
   canvasSummary: CanvasSummary
   locale: string
+  assistantRuntime?: AgentAssistantRuntime
 }
 
 export interface AgentPlanResponse {
@@ -414,6 +415,7 @@ export interface AgentDiagnosisRequest {
   userMessage: string
   canvasSummary: CanvasSummary
   locale: string
+  assistantRuntime?: AgentAssistantRuntime
 }
 
 export interface AgentDiagnosisResponse {
@@ -424,6 +426,14 @@ export interface AgentExplainRequest {
   userMessage: string
   canvasSummary: CanvasSummary
   locale: string
+  assistantRuntime?: AgentAssistantRuntime
+}
+
+export interface AgentAssistantRuntime {
+  executionMode: 'platform' | 'user_key'
+  modelId?: string
+  provider?: string
+  configId?: string
 }
 
 export interface AgentExplainResponse {

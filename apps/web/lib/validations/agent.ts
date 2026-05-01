@@ -151,6 +151,13 @@ const canvasOptimizationSignalsSchema = z.object({
   estimatedLatencyLevel: z.enum(['low', 'medium', 'high']),
 })
 
+const agentAssistantRuntimeSchema = z.object({
+  executionMode: z.enum(['platform', 'user_key']),
+  modelId: z.string().min(1).optional(),
+  provider: z.string().min(1).optional(),
+  configId: z.string().min(1).optional(),
+})
+
 const workflowOperationSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('add_node'),
@@ -266,6 +273,7 @@ export const agentPlanRequestSchema = z.object({
   userMessage: z.string().trim().min(1),
   mode: z.enum(['create', 'update', 'repair', 'diagnose', 'optimize', 'extend', 'template']),
   locale: z.string().trim().min(1),
+  assistantRuntime: agentAssistantRuntimeSchema.optional(),
   canvasSummary: z.object({
     workflowId: z.string().min(1),
     workflowName: z.string().optional(),
@@ -363,6 +371,7 @@ const agentDiagnosisSchema = z.object({
 export const agentDiagnosisRequestSchema = z.object({
   userMessage: z.string().trim().min(1),
   locale: z.string().trim().min(1),
+  assistantRuntime: agentAssistantRuntimeSchema.optional(),
   canvasSummary: agentPlanRequestSchema.shape.canvasSummary,
 })
 
@@ -376,6 +385,7 @@ export const agentDiagnosisResponseSchema = z.object({
 export const agentExplainRequestSchema = z.object({
   userMessage: z.string().trim().min(1),
   locale: z.string().trim().min(1),
+  assistantRuntime: agentAssistantRuntimeSchema.optional(),
   canvasSummary: agentPlanRequestSchema.shape.canvasSummary,
 })
 

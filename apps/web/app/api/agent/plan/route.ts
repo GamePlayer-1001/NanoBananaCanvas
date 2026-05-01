@@ -19,6 +19,7 @@ import {
   shouldPatchSelectedNodePrompt,
 } from '@/lib/agent/plan-rules'
 import { nanoid } from '@/lib/nanoid'
+import { getDefaultPlatformRuntimeModel } from '@/lib/platform-runtime'
 import { agentPlanRequestSchema, agentPlanSchema } from '@/lib/validations/agent'
 import type {
   AgentPlan,
@@ -692,13 +693,11 @@ function guessPrimaryOutputHandle(node: CanvasSummaryNode | null) {
 }
 
 function buildCheaperModelPatch(node: CanvasSummaryNode) {
-  const config = node.configSummary
-  const currentProvider = typeof config.platformProvider === 'string' ? config.platformProvider : undefined
-
   if (node.type === 'image-gen') {
+    const model = getDefaultPlatformRuntimeModel('image')
     return {
-      platformProvider: currentProvider === 'openrouter' ? 'openrouter' : 'openrouter',
-      platformModel: 'google/gemini-2.5-flash-image-preview',
+      platformProvider: model.supplierId,
+      platformModel: model.modelId,
     }
   }
 
@@ -710,9 +709,10 @@ function buildCheaperModelPatch(node: CanvasSummaryNode) {
   }
 
   if (node.type === 'llm') {
+    const model = getDefaultPlatformRuntimeModel('text')
     return {
-      platformProvider: 'openrouter',
-      platformModel: 'openai/gpt-4o-mini',
+      platformProvider: model.supplierId,
+      platformModel: model.modelId,
     }
   }
 

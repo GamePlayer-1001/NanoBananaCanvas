@@ -7,6 +7,7 @@
 
 import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import { getDefaultPlatformRuntimeModel } from '@/lib/platform-runtime'
 import { agentDiagnosisRequestSchema } from '@/lib/validations/agent'
 import type { AgentDiagnosis, WorkflowOperation } from '@/lib/agent/types'
 
@@ -74,6 +75,8 @@ function buildCostDiagnosis(signals: NonNullable<ReturnType<typeof agentDiagnosi
   const suggestedOperations: WorkflowOperation[] = []
 
   if (firstNodeId) {
+    const cheaperImageModel = getDefaultPlatformRuntimeModel('image')
+    const cheaperTextModel = getDefaultPlatformRuntimeModel('text')
     suggestedOperations.push({
       type: 'replace_node',
       nodeId: firstNodeId,
@@ -82,8 +85,8 @@ function buildCostDiagnosis(signals: NonNullable<ReturnType<typeof agentDiagnosi
         firstNodeId.startsWith('video')
           ? { platformProvider: 'kling', platformModel: 'kling-v1-6' }
           : firstNodeId.startsWith('image')
-            ? { platformProvider: 'openrouter', platformModel: 'black-forest-labs/flux-schnell' }
-            : { platformProvider: 'openrouter', platformModel: 'openai/gpt-4o-mini' },
+            ? { platformProvider: cheaperImageModel.supplierId, platformModel: cheaperImageModel.modelId }
+            : { platformProvider: cheaperTextModel.supplierId, platformModel: cheaperTextModel.modelId },
       preserveConfigKeys: ['aspectRatio', 'size', 'duration', 'showPreview', 'text', 'maxTokens'],
     })
   }

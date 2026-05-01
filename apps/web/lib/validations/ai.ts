@@ -55,6 +55,41 @@ const contentPartSchema = z.union([
   }),
 ])
 
+function matchesCapability(provider: string, modelId: string, capability: 'text' | 'image' | 'video' | 'audio') {
+  const normalizedProvider = provider.toLowerCase()
+  const normalizedModel = modelId.toLowerCase()
+
+  if (capability === 'text') {
+    return !normalizedModel.includes('image') && !normalizedModel.includes('video') && !normalizedModel.includes('tts')
+  }
+
+  if (capability === 'image') {
+    return (
+      normalizedProvider === 'dlapi' ||
+      normalizedModel.includes('image') ||
+      normalizedModel.includes('dall-e') ||
+      normalizedModel.includes('imagen') ||
+      normalizedModel.includes('flux') ||
+      normalizedModel.includes('sd-')
+    )
+  }
+
+  if (capability === 'video') {
+    return (
+      normalizedProvider === 'kling' ||
+      normalizedModel.includes('video') ||
+      normalizedModel.includes('veo') ||
+      normalizedModel.includes('kling')
+    )
+  }
+
+  return (
+    normalizedModel.includes('audio') ||
+    normalizedModel.includes('speech') ||
+    normalizedModel.includes('tts')
+  )
+}
+
 export const aiExecuteSchema = z
   .object({
     provider: z.string().trim().min(1).optional(),
@@ -91,6 +126,14 @@ export const aiExecuteSchema = z
           code: z.ZodIssueCode.custom,
           path: ['modelId'],
           message: 'Platform execution requires modelId',
+        })
+      }
+
+      if (value.provider && value.modelId && value.capability && !matchesCapability(value.provider, value.modelId, value.capability)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['modelId'],
+          message: `Platform model does not support capability: ${value.capability}`,
         })
       }
     }

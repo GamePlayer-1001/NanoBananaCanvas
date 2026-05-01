@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 next-intl 的 useTranslations，依赖平台模型目录与图片能力真相源
+ *          依赖 next-intl 的 useTranslations，依赖平台模型目录/共享下拉与图片能力真相源
  *          依赖 @/lib/billing/workflow-pricing 的平台积分规则
  * [OUTPUT]: 对外提供 ImageGenNode 图片生成节点组件
  * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置、平台积分展示与前端能力护栏
@@ -42,10 +42,12 @@ import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
   groupPlatformModelsByProvider,
+  toPlatformVisualOptions,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
+import { PlatformModelSelect } from '@/components/shared/platform-model-select'
 import { Switch } from '@/components/ui/switch'
 
 import { BaseNode } from './base-node'
@@ -102,6 +104,14 @@ export function ImageGenNode(props: NodeProps) {
   const flatPlatformModels = useMemo(
     () => platformModelGroups.flatMap((group) => group.models),
     [platformModelGroups],
+  )
+  const platformModelOptions = useMemo(
+    () =>
+      toPlatformVisualOptions(flatPlatformModels).map((option) => ({
+        ...option,
+        description: option.providerLabel,
+      })),
+    [flatPlatformModels],
   )
   const selectedPlatformModel = useMemo(() => {
     const exactMatch = flatPlatformModels.find(
@@ -273,9 +283,9 @@ export function ImageGenNode(props: NodeProps) {
   )
 
   const onPlatformModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
+    (value: string) => {
       const nextModel = flatPlatformModels.find(
-        (item) => item.modelId === e.target.value,
+        (item) => item.modelId === value,
       )
       if (!nextModel) {
         return
@@ -372,26 +382,30 @@ export function ImageGenNode(props: NodeProps) {
         <ConfigField label={t('model')}>
           {executionMode === 'platform' ? (
             <div className="space-y-2">
-              <select
+              <PlatformModelSelect
                 value={
                   selectedPlatformModel
                     ? selectedPlatformModel.modelId
                     : platformModelId
                 }
-                onChange={onPlatformModelChange}
-                className={SELECT_CLASS}
+                options={
+                  platformModelOptions.length > 0
+                    ? platformModelOptions
+                    : [
+                        {
+                          value: platformModelId,
+                          label: displayModelLabel,
+                          provider: platformProviderId,
+                          providerLabel: platformProviderId,
+                          logoText: platformProviderId.slice(0, 2).toUpperCase(),
+                          logoClassName: 'bg-slate-200 text-slate-700',
+                        },
+                      ]
+                }
+                onValueChange={onPlatformModelChange}
                 disabled={isPlatformModelsLoading || flatPlatformModels.length === 0}
-              >
-                {flatPlatformModels.length === 0 ? (
-                  <option value={platformModelId}>{displayModelLabel}</option>
-                ) : (
-                  flatPlatformModels.map((item) => (
-                    <option key={item.id} value={item.modelId}>
-                      {item.modelName?.trim() || prettifyModelName(item.modelId)}
-                    </option>
-                  ))
-                )}
-              </select>
+                triggerClassName={SELECT_CLASS}
+              />
 
             </div>
           ) : (

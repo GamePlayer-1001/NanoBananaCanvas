@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db,
- *          @/lib/env, @/lib/nanoid, @/lib/user-model-config, @/services/ai, @/services/ai/openai-compatible,
+ *          @/lib/env, @/lib/nanoid, @/lib/platform-runtime, @/lib/user-model-config, @/services/ai, @/services/ai/openai-compatible,
  *          @/lib/validations/ai, @/lib/api-key-crypto
  * [OUTPUT]: 对外提供 POST /api/ai/execute (平台 Key / user_key 双模式 AI 执行)
  * [POS]: api/ai 的核心执行端点，统一免费平台执行与账号级模型槽位执行的入口
@@ -26,12 +26,17 @@ import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
+import { resolvePlatformRuntimeModel } from '@/lib/platform-runtime'
 import {
   deserializeUserModelConfig,
   toRuntimeUserModelConfig,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
-import { getPlatformKey, getProvider } from '@/services/ai'
+import {
+  createPlatformTextProvider,
+  getPlatformSupplierApiKey,
+  getProvider,
+} from '@/services/ai'
 import { OpenAICompatibleClient } from '@/services/ai/openai-compatible'
 import { aiExecuteSchema } from '@/lib/validations/ai'
 
@@ -79,8 +84,13 @@ async function executeWithPlatformKey(
   params: ReturnType<typeof aiExecuteSchema.parse>,
   startTime: number,
 ) {
-  const providerId = params.provider as string
-  const modelId = params.modelId as string
+  const runtimeModel = resolvePlatformRuntimeModel({
+    category: 'text',
+    modelId: params.modelId,
+    supplierHint: params.provider,
+  })
+  const providerId = runtimeModel.supplierId
+  const modelId = runtimeModel.modelId
   const executionReferenceId = `ai_exec_${nanoid()}`
   const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
   const reservedCredits = PLATFORM_TEXT_EXECUTION_CREDITS
@@ -96,8 +106,8 @@ async function executeWithPlatformKey(
       })
     }
 
-    const platformKey = await getPlatformKey(providerId)
-    const provider = getProvider(providerId)
+    const platformKey = await getPlatformSupplierApiKey(providerId)
+    const provider = createPlatformTextProvider(providerId)
 
     const chatResult = await provider.chat({
       model: modelId,

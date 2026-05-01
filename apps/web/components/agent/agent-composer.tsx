@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useState，依赖 shadcn Button/Select，依赖 lucide-react 的发送图标
+ * [INPUT]: 依赖 react 的 useState，依赖 shadcn Button/Select，依赖共享 PlatformModelSelect，依赖 lucide-react 的发送图标
  * [OUTPUT]: 对外提供 AgentComposer 组件，承载轻量输入、模型选择与平台/API Key 模式切换
  * [POS]: components/agent 的输入区，被 AgentPanel 组合使用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -10,8 +10,8 @@
 import { useState } from 'react'
 import { ArrowUp, Bot, Coins, KeyRound, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { PLATFORM_TEXT_EXECUTION_CREDITS } from '@/lib/billing/workflow-pricing'
 import { Button } from '@/components/ui/button'
+import { PlatformModelSelect } from '@/components/shared/platform-model-select'
 import {
   Select,
   SelectContent,
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { PlatformModelVisualOption } from '@/lib/platform-models'
 
 export type AgentComposerExecutionMode = 'platform' | 'user_key'
 
@@ -26,6 +27,10 @@ export interface AgentComposerModelOption {
   value: string
   label: string
   provider?: string
+  logoText?: string
+  logoClassName?: string
+  description?: string
+  credits?: number
 }
 
 interface AgentComposerProps {
@@ -65,6 +70,9 @@ export function AgentComposer({
 
   const selectedModelLabel =
     modelOptions.find((item) => item.value === modelValue)?.label ?? t('composerModelFallback')
+  const selectedModel =
+    modelOptions.find((item) => item.value === modelValue) ?? modelOptions[0]
+  const platformModelOptions = modelOptions as PlatformModelVisualOption[]
 
   const resolvedPlaceholder = placeholder ?? t('composerPlaceholder')
   const resolvedHint = hint ?? t('composerHint')
@@ -74,22 +82,36 @@ export function AgentComposer({
     <div className="space-y-2.5">
       <div className="overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2.5">
-          <Select value={modelValue} onValueChange={onModelChange}>
-            <SelectTrigger
-              size="sm"
-              className="h-8 min-w-[132px] rounded-full border-0 bg-slate-100 px-3 text-xs shadow-none"
-            >
-              <Bot className="size-3.5 text-slate-500" />
-              <SelectValue placeholder={selectedModelLabel} />
-            </SelectTrigger>
-            <SelectContent align="start">
-              {modelOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {executionMode === 'platform' ? (
+            <div className="min-w-[172px]">
+              <PlatformModelSelect
+                value={modelValue}
+                options={platformModelOptions}
+                onValueChange={onModelChange}
+                size="sm"
+                triggerClassName="h-8 min-w-[172px] rounded-full border-0 bg-slate-100 px-3 text-xs shadow-none"
+                contentClassName="min-w-[240px]"
+                placeholder={selectedModelLabel}
+              />
+            </div>
+          ) : (
+            <Select value={modelValue} onValueChange={onModelChange}>
+              <SelectTrigger
+                size="sm"
+                className="h-8 min-w-[132px] rounded-full border-0 bg-slate-100 px-3 text-xs shadow-none"
+              >
+                <Bot className="size-3.5 text-slate-500" />
+                <SelectValue placeholder={selectedModelLabel} />
+              </SelectTrigger>
+              <SelectContent align="start">
+                {modelOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select
             value={executionMode}
@@ -122,27 +144,27 @@ export function AgentComposer({
         <div className="px-4 py-3">
           <div className="flex items-end gap-3">
             <div className="relative flex-1">
-            <textarea
-              value={value}
-              disabled={disabled}
-              rows={1}
-              placeholder={resolvedPlaceholder}
-              className="max-h-36 min-h-[72px] w-full resize-none border-0 bg-transparent pr-18 pb-8 text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-              onChange={(event) => setValue(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault()
-                  handleSubmit()
-                }
-              }}
-            />
+              <textarea
+                value={value}
+                disabled={disabled}
+                rows={1}
+                placeholder={resolvedPlaceholder}
+                className="max-h-36 min-h-[72px] w-full resize-none border-0 bg-transparent pr-18 pb-8 text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+                onChange={(event) => setValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault()
+                    handleSubmit()
+                  }
+                }}
+              />
 
-            {executionMode === 'platform' ? (
-              <span className="pointer-events-none absolute right-0 bottom-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                <Coins size={11} />
-                <span>{PLATFORM_TEXT_EXECUTION_CREDITS}</span>
-              </span>
-            ) : null}
+              {executionMode === 'platform' ? (
+                <span className="pointer-events-none absolute right-0 bottom-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                  <Coins size={11} />
+                  <span>{selectedModel?.credits ?? '-'}</span>
+                </span>
+              ) : null}
             </div>
 
             <Button
