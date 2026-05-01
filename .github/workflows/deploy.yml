@@ -158,6 +158,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Apply D1 schema migrations
+        working-directory: apps/web
+        run: pnpm run db:migrate:remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       # ── 1. 先确保 Queue 存在，再发布引用它的 Worker ──
       - name: Ensure task queue exists
         run: |

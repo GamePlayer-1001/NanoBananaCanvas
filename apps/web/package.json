@@ -20,6 +20,8 @@
     "deploy:build": "node ./scripts/cloudflare-deploy.mjs build",
     "deploy:preview": "npx opennextjs-cloudflare preview",
     "deploy": "node ./scripts/cloudflare-deploy.mjs deploy",
+    "db:migrate:local": "node ./scripts/apply-d1-migrations.mjs --local",
+    "db:migrate:remote": "node ./scripts/apply-d1-migrations.mjs --remote",
     "dev:cf": "pnpm exec wrangler dev --compatibility-date=2025-04-01 --compatibility-flags=nodejs_compat --d1=DB",
     "db:reset-local": "node -e \"require('fs').rmSync('.wrangler/state/v3/d1',{recursive:true,force:true})\"",
     "db:init": "pnpm exec wrangler d1 execute nano-banana-canvas-db --local --file=./db/schema.sql",

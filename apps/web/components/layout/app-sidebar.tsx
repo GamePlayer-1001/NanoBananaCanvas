@@ -506,15 +506,6 @@ export function AppSidebar() {
                     {balance?.availableCredits ?? 0}
                   </span>
                 </div>
-                {typeof balance?.trialBalance === 'number' && balance.trialBalance > 0 ? (
-                  <p className="mt-1 text-[11px] text-amber-700/80">
-                    {t('trialCreditsHint', { count: balance.trialBalance })}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-[11px] text-amber-700/80">
-                    {t('creditsHint')}
-                  </p>
-                )}
               </div>
               <Button
                 size="sm"

@@ -14,6 +14,7 @@ migration-009-user-account-profile.sql — users 账户资料扩展迁移 (usern
 migration-010-category-i18n.sql — categories 多语言迁移 (新增 name_i18n + 用历史 name_en/name_zh 回填 JSON)
 migration-011-billing-rebuild.sql — Stripe 商业化重建迁移 (credit_balances / credit_transactions / subscriptions / model_pricing / credit_packages / processed_stripe_events / billing_orders)
 migration-012-billing-metering.sql — usage 计量补列迁移 (ai_usage_logs.billable_units / estimated_credits)
+migration-013-daily-signin-credits.sql — 签到试用积分迁移 (credit_balances.trial_balance / trial_expires_at + daily_signins)
 migration-013-video-analysis-history.sql — 视频分析历史迁移 (user 级分析记录 + 状态 + 结果 JSON)
 migration-014-agent-audit.sql — Agent 共创审计迁移 (用户原话 / plan / alternatives / 结果 / replay snapshot 持久化)
 seed.sql                 — 分类种子数据 (8 个 AI 工作流分类，name_i18n JSON 真相源 + 历史兼容列)
