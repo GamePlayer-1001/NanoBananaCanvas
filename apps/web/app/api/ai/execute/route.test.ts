@@ -34,7 +34,9 @@ vi.mock('@/lib/billing/metering', () => ({
 
 vi.mock('@/services/ai', () => ({
   getPlatformKey: vi.fn(),
+  getPlatformSupplierApiKey: vi.fn(),
   getProvider: vi.fn(),
+  createPlatformTextProvider: vi.fn(),
 }))
 
 import { requireAuth } from '@/lib/api/auth'
@@ -46,7 +48,12 @@ import {
   getModelPricing,
 } from '@/lib/billing/metering'
 import { getDb } from '@/lib/db'
-import { getPlatformKey, getProvider } from '@/services/ai'
+import {
+  createPlatformTextProvider,
+  getPlatformKey,
+  getPlatformSupplierApiKey,
+  getProvider,
+} from '@/services/ai'
 
 import { POST } from './route'
 
@@ -67,6 +74,7 @@ describe('POST /api/ai/execute', () => {
     vi.mocked(checkRateLimit).mockResolvedValue({ ok: true, resetAt: Date.now() } as never)
     vi.mocked(getDb).mockResolvedValue(createDbMock())
     vi.mocked(getPlatformKey).mockResolvedValue('platform-key')
+    vi.mocked(getPlatformSupplierApiKey).mockResolvedValue('platform-key')
     vi.mocked(getModelPricing).mockResolvedValue({
       id: 'pricing_1',
       provider: 'openrouter',
@@ -111,7 +119,7 @@ describe('POST /api/ai/execute', () => {
       .mockReturnValueOnce(50)
       .mockReturnValueOnce(32)
       .mockReturnValueOnce(32)
-    vi.mocked(getProvider).mockReturnValue({
+    vi.mocked(createPlatformTextProvider).mockReturnValue({
       chat: vi.fn().mockResolvedValue({
         content: 'hello world',
         usage: {
@@ -165,7 +173,7 @@ describe('POST /api/ai/execute', () => {
       basis: 'message_char_estimate',
     })
     vi.mocked(estimateCreditsFromUsage).mockReturnValue(40)
-    vi.mocked(getProvider).mockReturnValue({
+    vi.mocked(createPlatformTextProvider).mockReturnValue({
       chat: vi.fn().mockRejectedValue(new Error('provider exploded')),
     } as never)
 

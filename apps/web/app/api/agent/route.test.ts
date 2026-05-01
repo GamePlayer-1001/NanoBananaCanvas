@@ -185,7 +185,7 @@ describe('POST /api/agent/*', () => {
               nodeId: 'image-1',
               patch: {
                 config: expect.objectContaining({
-                  platformModel: 'openai/gpt-image-1-mini',
+                  platformModel: 'black-forest-labs/flux-schnell',
                 }),
               },
             }),

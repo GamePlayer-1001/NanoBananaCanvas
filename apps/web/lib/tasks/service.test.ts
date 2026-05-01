@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 vitest，依赖 ./service，依赖 @/services/ai 的 getPlatformKey mock
+ * [INPUT]: 依赖 vitest，依赖 ./service，依赖 @/services/ai 的平台密钥 mock
  * [OUTPUT]: 任务服务测试，覆盖平台前置失败时的错误包装语义、图片任务执行快照落库/大 payload 清洗、dispatch 分流、user_key 后台凭据回放与分发失败收口
  * [POS]: lib/tasks 的服务层回归测试，防止平台密钥缺失重新退化成 UNKNOWN 500，并保护图片任务从前台同步阻塞切回后台执行与后台黑洞显式失败
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,6 +11,7 @@ import { ErrorCode, TaskError } from '@/lib/errors'
 
 vi.mock('@/services/ai', () => ({
   getPlatformKey: vi.fn(),
+  getPlatformSupplierApiKey: vi.fn(),
 }))
 
 vi.mock('@/lib/billing/metering', () => ({
@@ -53,7 +54,7 @@ vi.mock('./processors', () => ({
   getProcessor: vi.fn(),
 }))
 
-import { getPlatformKey } from '@/services/ai'
+import { getPlatformKey, getPlatformSupplierApiKey } from '@/services/ai'
 import { getProcessor } from './processors'
 
 import { checkTask, processTaskDispatch, submitTask } from './service'
@@ -190,6 +191,7 @@ function createDbMock(
 describe('submitTask', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getPlatformSupplierApiKey).mockResolvedValue('platform-key')
     r2Mock.put.mockResolvedValue(undefined)
     r2Mock.get.mockResolvedValue(null)
     r2Mock.delete.mockResolvedValue(undefined)
@@ -207,6 +209,9 @@ describe('submitTask', () => {
 
   it('wraps missing platform key errors as TaskError', async () => {
     vi.mocked(getPlatformKey).mockRejectedValue(
+      new Error('Missing required environment variable: OPENROUTER_API_KEY'),
+    )
+    vi.mocked(getPlatformSupplierApiKey).mockRejectedValue(
       new Error('Missing required environment variable: OPENROUTER_API_KEY'),
     )
 
