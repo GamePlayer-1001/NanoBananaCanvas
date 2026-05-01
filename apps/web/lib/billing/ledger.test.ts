@@ -49,6 +49,7 @@ function createDbMock(options: {
   dailySigninRow?: Record<string, unknown> | null
   hasDailySigninsTable?: boolean
   dailySigninsColumns?: string[]
+  tableColumns?: Record<string, string[]>
   failTrialTransactionInsert?: boolean
   recordedBatches?: Array<Array<{ sql: string; args: unknown[] }>>
 }) {
@@ -65,6 +66,7 @@ function createDbMock(options: {
       'frozen_credits',
       'total_earned',
       'total_spent',
+      'updated_at',
     ],
     credit_transactions: [
       'user_id',
@@ -87,6 +89,10 @@ function createDbMock(options: {
     ],
     ai_usage_logs: ['user_id', 'provider', 'model_id', 'created_at'],
     model_pricing: ['provider', 'model_id', 'credits_per_1k_units'],
+  }
+  const columnsByTable = {
+    ...defaultColumnsByTable,
+    ...options.tableColumns,
   }
 
   return {
@@ -122,7 +128,7 @@ function createDbMock(options: {
       const pragmaMatch = sql.match(/PRAGMA table_info\('([^']+)'\)/)
       if (pragmaMatch) {
         const tableName = pragmaMatch[1] ?? ''
-        const columnNames = defaultColumnsByTable[tableName] ?? ['id']
+        const columnNames = columnsByTable[tableName] ?? ['id']
         return {
           all: vi.fn(async () => ({
             results: columnNames.map((name) => ({ name })),
@@ -493,9 +499,31 @@ describe('billing ledger', () => {
     )
 
     await expect(getDailySigninStatus('user-1')).resolves.toEqual({
+      available: false,
       checkedInToday: false,
       trialBalance: 40,
       trialExpiresAt: '2026-05-02T00:00:00.000Z',
+    })
+  })
+
+  it('returns a safe daily signin status when credit balances are missing in production', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        tableColumns: {
+          credit_balances: ['user_id'],
+        },
+        hasDailySigninsTable: true,
+        dailySigninRow: { id: 'signin_1' },
+        dailySigninsColumns: ['id', 'user_id', 'signin_date', 'credits_awarded', 'expires_at'],
+        balanceRow: null,
+      }),
+    )
+
+    await expect(getDailySigninStatus('user-1')).resolves.toEqual({
+      available: false,
+      checkedInToday: false,
+      trialBalance: 0,
+      trialExpiresAt: null,
     })
   })
 
@@ -512,6 +540,22 @@ describe('billing ledger', () => {
           total_spent: 0,
         },
         hasDailySigninsTable: false,
+      }),
+    )
+
+    await expect(awardDailySigninCredits('user-1')).rejects.toMatchObject({
+      code: 'BILLING_CONFIG_INVALID',
+    })
+  })
+
+  it('rejects daily signin awards when credit balance schema is incomplete', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        tableColumns: {
+          credit_balances: ['user_id', 'trial_balance'],
+          daily_signins: ['id', 'user_id', 'signin_date', 'credits_awarded', 'expires_at'],
+        },
+        balanceRow: null,
       }),
     )
 

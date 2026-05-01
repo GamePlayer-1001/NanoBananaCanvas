@@ -31,6 +31,7 @@ export function useCreditBalance(enabled = true) {
 }
 
 export interface DailySigninStatus {
+  available: boolean
   checkedInToday: boolean
   trialBalance: number
   trialExpiresAt: string | null
@@ -41,5 +42,8 @@ export function useDailySigninStatus(enabled = true) {
     queryKey: queryKeys.billing.signinStatus(),
     queryFn: () => fetchJson<DailySigninStatus>('/api/credits/signin'),
     enabled,
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 60_000,
   })
 }
