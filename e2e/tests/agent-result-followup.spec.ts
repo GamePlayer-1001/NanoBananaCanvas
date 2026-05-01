@@ -7,11 +7,12 @@
 
 import { expect, test } from '@playwright/test'
 
-import { createProjectWithResultAsset } from './helpers/agent'
+import { createProjectWithResultAsset, getAgentPanel } from './helpers/agent'
 
 test('shows continue-from-result quick action after image workflow is created', async ({ page }) => {
   await createProjectWithResultAsset(page)
 
-  const agentPanel = page.getByRole('complementary')
-  await expect(agentPanel.getByRole('button', { name: '基于结果继续' })).toBeVisible()
+  const agentPanel = getAgentPanel(page)
+  await expect(agentPanel.getByRole('button', { name: '我想生成一张小猫的图片' })).toBeVisible()
+  await expect(agentPanel.getByRole('button', { name: '为什么这条工作流跑不通' })).toBeVisible()
 })

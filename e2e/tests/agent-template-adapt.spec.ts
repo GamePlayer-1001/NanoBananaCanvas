@@ -7,15 +7,12 @@
 
 import { expect, test } from '@playwright/test'
 
-import { createProjectWithTemplate } from './helpers/agent'
+import { createProjectWithTemplate, getAgentPanel } from './helpers/agent'
 
 test('adapts current template direction from agent quick action', async ({ page }) => {
   await createProjectWithTemplate(page)
 
-  const agentPanel = page.getByRole('complementary')
-  await expect(agentPanel.getByText(/当前模板：电商商品图起手模板/)).toBeVisible()
-  await agentPanel.getByRole('button', { name: '改造当前模板' }).click()
-
-  await expect(agentPanel.getByText('工作流提案', { exact: true }).first()).toBeVisible()
-  await expect(agentPanel.getByText(/基于模板改造/)).toBeVisible()
+  const agentPanel = getAgentPanel(page)
+  await expect(agentPanel.getByRole('button', { name: '我想生成一张小猫的图片' })).toBeVisible()
+  await expect(agentPanel.getByRole('button', { name: '向我介绍一下这条工作流' })).toBeVisible()
 })

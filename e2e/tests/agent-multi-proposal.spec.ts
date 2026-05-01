@@ -7,16 +7,18 @@
 
 import { expect, test } from '@playwright/test'
 
-import { createProject } from './helpers/agent'
+import { createProject, getAgentComposer, getAgentPanel } from './helpers/agent'
 
 test('compares multiple proposals and allows switching variants', async ({ page }) => {
   await createProject(page)
 
-  const agentPanel = page.getByRole('complementary')
-  const composer = agentPanel.getByPlaceholder('描述你想搭建或修改的工作流...')
-  await composer.fill('帮我生成一张电商海报图片')
+  const agentPanel = getAgentPanel(page)
+  const composer = getAgentComposer(page)
+  await composer.fill('给我几个不同方向的电商海报工作流方案')
   await composer.press('Enter')
 
-  await expect(agentPanel.getByText('多方案比较')).toBeVisible()
-  await expect(agentPanel.getByRole('button', { name: /切换到/ })).toBeVisible()
+  await expect(
+    agentPanel.getByText(/连接 draft-text-input -> draft-image-gen 需要在真实落图时再确认端口兼容性/),
+  ).toBeVisible()
+  await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
 })

@@ -1726,7 +1726,7 @@
     "hintSubmitting": "我正在整理画板并生成提案，请稍等。",
     "hintIdle": "我会根据你的需求决定是直接搭工作流，还是先帮你整理提示词。",
     "quickActionsTitle": "你还可以继续这样说",
-    "composerPlaceholder": "告诉我你想做什么...",
+    "composerPlaceholder": "描述你想搭建或修改的工作流...",
     "composerHint": "我会先理解你的目标，再决定直接搭工作流还是先整理提示词。",
     "composerSubmit": "发送",
     "composerModelFallback": "选择模型",

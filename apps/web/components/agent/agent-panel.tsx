@@ -156,6 +156,7 @@ export function AgentPanel({
       }}
     >
       <div
+        data-testid="agent-panel"
         className={cn(
           'pointer-events-auto relative overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow,transform] duration-200 motion-reduce:transition-none',
         )}
