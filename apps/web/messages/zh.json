@@ -1151,6 +1151,7 @@
     "trialCreditsHint": "含 {count} 试用积分，今日内优先使用",
     "signinAction": "签到领分",
     "signedInToday": "今日已签到",
+    "signinUnavailable": "暂不可签到",
     "signinSuccess": "签到成功，已领取 {count} 试用积分",
     "contactUs": "联系我们",
     "guestMode": "访客模式",

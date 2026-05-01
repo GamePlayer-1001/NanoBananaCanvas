@@ -1151,6 +1151,7 @@
     "trialCreditsHint": "{count} trial credits are active and will be used first today",
     "signinAction": "Daily check-in",
     "signedInToday": "Checked in today",
+    "signinUnavailable": "Unavailable today",
     "signinSuccess": "Check-in complete. {count} trial credits added",
     "contactUs": "Contact Us",
     "guestMode": "Guest mode",

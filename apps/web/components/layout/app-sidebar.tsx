@@ -340,12 +340,19 @@ export function AppSidebar() {
     signinState === 'unavailable' ||
     claimSignin.isPending
   const signinButtonLabel =
-    signinState === 'claimed' ? t('signedInToday') : t('signinAction')
-  const signinButtonVariant = signinState === 'claimed' ? 'outline' : 'default'
+    signinState === 'claimed'
+      ? t('signedInToday')
+      : signinState === 'unavailable'
+        ? t('signinUnavailable')
+        : t('signinAction')
+  const signinButtonVariant =
+    signinState === 'available' ? 'default' : 'outline'
   const signinButtonClassName =
     signinState === 'claimed'
       ? 'border-amber-300 bg-white text-amber-700'
-      : 'bg-amber-600 text-white hover:bg-amber-700'
+      : signinState === 'unavailable'
+        ? 'border-amber-200 bg-amber-100 text-amber-500'
+        : 'bg-amber-600 text-white hover:bg-amber-700'
 
   const handleCreateFolder = () => {
     setCreateDialogOpen(true)
