@@ -14,7 +14,7 @@ text-input-node.tsx — TextInputNode 文本输入节点
 image-input-node.tsx — ImageInputNode 图片输入节点 (R2 上传 + 图片预览 + image-out 输出)
 llm-node.tsx        — LLMNode 大语言模型节点 (platformProvider/platformModel 与 userKeyConfigId 分离，平台执行 + 文本 API 配置卡片/温度/MaxTokens/SystemPrompt/流式输出)
 display-node.tsx    — DisplayNode 结果展示节点 (递归渲染文本/图片/视频/音频/JSON/数组对象/裸 base64，以扁平结果视图直接展示并支持浏览器下载)
-image-gen-node.tsx  — ImageGenNode 图片生成节点 (平台模式动态读取 `/api/ai/models?category=image`，账号模式绑定 userKeyConfigId，并按静态/学习能力动态禁用非法尺寸与比例，节点内预览可切换)
+image-gen-node.tsx  — ImageGenNode 图片生成节点 (平台模式动态读取 `/api/ai/models?category=image` 且收口为单模型选择，账号模式绑定 userKeyConfigId，并按静态/学习能力动态禁用非法尺寸与比例与展示平台积分价签，节点内预览可切换)
 video-gen-node.tsx  — VideoGenNode 视频生成节点 (平台 provider/model 与用户视频配置彻底分离，支持时长/画面比例/模式/视频播放/进度条，并在缺少自有配置时触发前三次引导，节点内预览可切换)
 audio-gen-node.tsx  — AudioGenNode 音频生成节点 (平台 provider/model 与用户音频配置分离，支持语音选择/语速调节/音频播放，并在缺少自有配置时触发前三次引导，节点内预览可切换)
 merge-node.tsx      — TextMergeNode/ImageMergeNode 工具节点 (多文本/多图片显式汇聚，端口由 plugin-registry 驱动)

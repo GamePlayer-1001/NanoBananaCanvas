@@ -5,14 +5,13 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-export type ImageSizePreset = '720p' | '1k' | '2k' | '4k' | '8k'
+export type ImageSizePreset = '1k' | '2k' | '4k' | '8k'
 export type ImageSizeOptionValue = 'auto' | ImageSizePreset
 export type ImageAspectRatio = '1:1' | '2:3' | '3:2' | '9:16' | '16:9'
 
 export const DEFAULT_IMAGE_SIZE_PRESET: ImageSizePreset = '1k'
 
 export const IMAGE_SIZE_PRESET_LONG_EDGE: Record<ImageSizePreset, number> = {
-  '720p': 1280,
   '1k': 1920,
   '2k': 2560,
   '4k': 3840,
@@ -29,7 +28,6 @@ export const IMAGE_ASPECT_RATIO_MAP: Record<ImageAspectRatio, [number, number]> 
 
 export const IMAGE_SIZE_OPTIONS = [
   { value: 'auto', label: 'Auto' },
-  { value: '720p', label: '720P' },
   { value: '1k', label: '1K' },
   { value: '2k', label: '2K' },
   { value: '4k', label: '4K' },

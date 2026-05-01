@@ -57,6 +57,10 @@ export interface TaskOutput {
   r2_key?: string
   /** 原始文件名或推导后的文件名 */
   fileName?: string
+  /** 媒体宽度 */
+  width?: number
+  /** 媒体高度 */
+  height?: number
   /** 结构化数据 (某些 Provider 返回 JSON) */
   data?: unknown
 }

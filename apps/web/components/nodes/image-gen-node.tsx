@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
  *          依赖 next-intl 的 useTranslations，依赖平台模型目录与图片能力真相源
+ *          依赖 @/lib/billing/workflow-pricing 的平台积分规则
  * [OUTPUT]: 对外提供 ImageGenNode 图片生成节点组件
- * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置与前端能力护栏
+ * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置、平台积分展示与前端能力护栏
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -37,11 +38,14 @@ import {
   type ImageSizeOptionValue,
   validateImageSelection,
 } from '@/lib/image-model-capabilities'
+import {
+  describeWorkflowImagePrice,
+  getWorkflowImageModelBadge,
+} from '@/lib/billing/workflow-pricing'
+import { cn } from '@/lib/utils'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
-  getPlatformProviderLabel,
   groupPlatformModelsByProvider,
-  resolvePlatformModelSelection,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
@@ -99,33 +103,26 @@ export function ImageGenNode(props: NodeProps) {
     () => groupPlatformModelsByProvider(platformImageModels),
     [platformImageModels],
   )
-  const resolvedPlatformSelection = useMemo(
-    () =>
-      resolvePlatformModelSelection(
-        platformModelGroups,
-        platformProviderId,
-        platformModelId,
-      ),
-    [platformModelGroups, platformModelId, platformProviderId],
+  const flatPlatformModels = useMemo(
+    () => platformModelGroups.flatMap((group) => group.models),
+    [platformModelGroups],
   )
-  const selectedPlatformProvider =
-    resolvedPlatformSelection?.provider ?? platformProviderId
-  const selectedPlatformModelId =
-    resolvedPlatformSelection?.modelId ?? platformModelId
-  const currentPlatformGroup = useMemo(
-    () =>
-      platformModelGroups.find(
-        (group) => group.provider === selectedPlatformProvider,
-      ) ?? platformModelGroups[0],
-    [platformModelGroups, selectedPlatformProvider],
-  )
-  const selectedPlatformModel = useMemo(
-    () =>
-      currentPlatformGroup?.models.find(
-        (item) => item.modelId === selectedPlatformModelId,
-      ) ?? currentPlatformGroup?.models[0],
-    [currentPlatformGroup, selectedPlatformModelId],
-  )
+  const selectedPlatformModel = useMemo(() => {
+    const exactMatch = flatPlatformModels.find(
+      (item) =>
+        item.provider === platformProviderId && item.modelId === platformModelId,
+    )
+
+    if (exactMatch) {
+      return exactMatch
+    }
+
+    const firstModelWithSameId = flatPlatformModels.find(
+      (item) => item.modelId === platformModelId,
+    )
+
+    return firstModelWithSameId ?? flatPlatformModels[0]
+  }, [flatPlatformModels, platformModelId, platformProviderId])
 
   const sizeValue = typeof config.size === 'string' ? config.size : DEFAULT_SIZE
   const migratedLegacySize = useMemo(() => migrateLegacySize(sizeValue), [sizeValue])
@@ -178,6 +175,21 @@ export function ImageGenNode(props: NodeProps) {
     executionMode === 'user_key'
       ? userKeyModelLabel
       : selectedPlatformModel?.modelName ?? prettifyModelName(platformModelId)
+  const platformPricing = useMemo(
+    () =>
+      executionMode === 'platform'
+        ? describeWorkflowImagePrice({
+            modelId: selectedPlatformModel?.modelId ?? platformModelId,
+            modelName: selectedPlatformModel?.modelName,
+            size,
+          })
+        : null,
+    [executionMode, platformModelId, selectedPlatformModel, size],
+  )
+  const platformModelBadge = useMemo(
+    () => getWorkflowImageModelBadge(selectedPlatformModel),
+    [selectedPlatformModel],
+  )
   const currentImageCapabilities =
     executionMode === 'user_key'
       ? savedImageConfig?.imageCapabilities
@@ -221,10 +233,10 @@ export function ImageGenNode(props: NodeProps) {
     if (
       selectedPlatformModel &&
       executionMode === 'platform' &&
-      (config.platformProvider !== selectedPlatformProvider ||
+      (config.platformProvider !== selectedPlatformModel.provider ||
         config.platformModel !== selectedPlatformModel.modelId)
     ) {
-      patch.platformProvider = selectedPlatformProvider
+      patch.platformProvider = selectedPlatformModel.provider
       patch.platformModel = selectedPlatformModel.modelId
     }
 
@@ -236,7 +248,6 @@ export function ImageGenNode(props: NodeProps) {
     config,
     executionMode,
     selectedPlatformModel,
-    selectedPlatformProvider,
     selectedUserConfigId,
     size,
     sizeValue,
@@ -269,24 +280,9 @@ export function ImageGenNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const onPlatformProviderChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const nextProvider = e.target.value
-      const nextGroup = platformModelGroups.find(
-        (group) => group.provider === nextProvider,
-      )
-
-      updateConfig({
-        platformProvider: nextProvider,
-        platformModel: nextGroup?.models[0]?.modelId ?? '',
-      })
-    },
-    [platformModelGroups, updateConfig],
-  )
-
   const onPlatformModelChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
-      const nextModel = currentPlatformGroup?.models.find(
+      const nextModel = flatPlatformModels.find(
         (item) => item.modelId === e.target.value,
       )
       if (!nextModel) {
@@ -298,19 +294,26 @@ export function ImageGenNode(props: NodeProps) {
         platformModel: nextModel.modelId,
       })
     },
-    [currentPlatformGroup?.models, updateConfig],
+    [flatPlatformModels, updateConfig],
   )
-
-  const providerOptions = platformModelGroups.map((group) => ({
-    value: group.provider,
-    label: group.providerLabel,
-  }))
 
   return (
     <BaseNode
       {...props}
       data={data}
       icon={<ImageIcon size={14} />}
+      headerRight={
+        executionMode === 'platform' && platformPricing ? (
+          <div className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+            <Coins size={11} />
+            <span>
+              {platformPricing.credits == null
+                ? t('creditsAutoPending')
+                : t('creditsAmount', { count: platformPricing.credits })}
+            </span>
+          </div>
+        ) : null
+      }
       minHeight={220}
       bodyClassName="min-h-0"
     >
@@ -373,56 +376,65 @@ export function ImageGenNode(props: NodeProps) {
               </select>
             </ConfigField>
           </>
-        ) : (
-          <ConfigField label={t('provider')}>
-            <select
-              value={selectedPlatformProvider}
-              onChange={onPlatformProviderChange}
-              className={SELECT_CLASS}
-              disabled={isPlatformModelsLoading || providerOptions.length === 0}
-            >
-              {providerOptions.length === 0 ? (
-                <option value={selectedPlatformProvider}>
-                  {getPlatformProviderLabel(selectedPlatformProvider)}
-                </option>
-              ) : (
-                providerOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))
-              )}
-            </select>
-          </ConfigField>
-        )}
+        ) : null}
 
         <ConfigField label={t('model')}>
           {executionMode === 'platform' ? (
-            <select
-              value={
-                selectedPlatformModel
-                  ? selectedPlatformModel.modelId
-                  : selectedPlatformModelId
-              }
-              onChange={onPlatformModelChange}
-              className={SELECT_CLASS}
-              disabled={
-                isPlatformModelsLoading ||
-                (currentPlatformGroup?.models.length ?? 0) === 0
-              }
-            >
-              {(currentPlatformGroup?.models.length ?? 0) === 0 ? (
-                <option value={selectedPlatformModelId}>
-                  {displayModelLabel}
-                </option>
-              ) : (
-                currentPlatformGroup?.models.map((item) => (
-                  <option key={item.id} value={item.modelId}>
-                    {item.modelName?.trim() || prettifyModelName(item.modelId)}
-                  </option>
-                ))
-              )}
-            </select>
+            <div className="space-y-2">
+              <select
+                value={
+                  selectedPlatformModel
+                    ? selectedPlatformModel.modelId
+                    : platformModelId
+                }
+                onChange={onPlatformModelChange}
+                className={SELECT_CLASS}
+                disabled={isPlatformModelsLoading || flatPlatformModels.length === 0}
+              >
+                {flatPlatformModels.length === 0 ? (
+                  <option value={platformModelId}>{displayModelLabel}</option>
+                ) : (
+                  flatPlatformModels.map((item) => (
+                    <option key={item.id} value={item.modelId}>
+                      {item.modelName?.trim() || prettifyModelName(item.modelId)}
+                    </option>
+                  ))
+                )}
+              </select>
+
+              {platformPricing ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border border-dashed px-2 py-1.5 text-xs">
+                  <div className="space-y-0.5">
+                    {platformModelBadge ? (
+                      <p className="text-foreground font-medium">{platformModelBadge}</p>
+                    ) : null}
+                    <p className="text-muted-foreground">
+                      {platformPricing.credits == null
+                        ? t('creditsAutoDescription')
+                        : t('creditsPriceDescription', {
+                            size: size.toUpperCase(),
+                            count: platformPricing.credits,
+                          })}
+                    </p>
+                  </div>
+                  <div
+                    className={cn(
+                      'flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium',
+                      platformPricing.credits == null
+                        ? 'bg-muted text-muted-foreground'
+                        : 'bg-amber-50 text-amber-700',
+                    )}
+                  >
+                    <Coins size={12} />
+                    <span>
+                      {platformPricing.credits == null
+                        ? 'Auto'
+                        : platformPricing.credits}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
               {displayModelLabel}

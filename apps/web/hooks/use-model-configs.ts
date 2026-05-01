@@ -37,7 +37,7 @@ export interface ModelConfigItem {
     minPixels?: number
     maxPixels?: number
     maxLongEdge?: number
-    allowedSizes?: Array<'720p' | '1k' | '2k' | '4k' | '8k'>
+    allowedSizes?: Array<'1k' | '2k' | '4k' | '8k'>
     allowedAspectRatios?: Array<'1:1' | '2:3' | '3:2' | '9:16' | '16:9'>
     learnedFrom?: string
     learnedAt?: string

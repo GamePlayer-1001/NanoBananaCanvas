@@ -29,6 +29,7 @@ import {
   getModelPricing,
   type BillableUsageEstimate,
 } from '@/lib/billing/metering'
+import { getWorkflowImagePriceForSize } from '@/lib/billing/workflow-pricing'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import {
@@ -146,6 +147,11 @@ interface PersistedDataUrlDescriptor {
 interface PersistedTaskRuntimeMeta {
   userConfigId?: string
   orchestrator?: TaskOrchestrator
+}
+
+interface MediaDimensions {
+  width: number
+  height: number
 }
 
 interface TaskExecutionSnapshot {
@@ -546,6 +552,102 @@ async function refundTaskCredits(input: {
   })
 }
 
+async function resolveCompletedImageTaskCredits(
+  db: D1Database,
+  input: {
+    provider: string
+    modelId: string
+    taskInput: Record<string, unknown>
+    output: TaskOutput
+  },
+): Promise<number | null> {
+  const requestedSize =
+    typeof input.taskInput.size === 'string' ? input.taskInput.size : 'auto'
+  const pricing = await getModelPricing(db, {
+    provider: input.provider,
+    modelId: input.modelId,
+    activeOnly: false,
+  })
+
+  if (requestedSize !== 'auto') {
+    return getWorkflowImagePriceForSize({
+      modelId: input.modelId,
+      modelName: pricing?.modelName,
+      size: requestedSize as '1k' | '2k' | '4k' | '8k',
+    })
+  }
+
+  const actualTier = resolveImagePriceTierFromOutput(input.output)
+  if (!actualTier) {
+    return null
+  }
+
+  return getWorkflowImagePriceForSize({
+    modelId: input.modelId,
+    modelName: pricing?.modelName,
+    size: actualTier,
+  })
+}
+
+async function settleCompletedPlatformImageTask(input: {
+  db: D1Database
+  userId: string
+  taskId: string
+  provider: string
+  modelId: string
+  taskInput: Record<string, unknown>
+  output: TaskOutput
+}) {
+  const reservedCredits = getReservedTaskCredits(input.taskInput)
+  const actualCredits = await resolveCompletedImageTaskCredits(input.db, {
+    provider: input.provider,
+    modelId: input.modelId,
+    taskInput: input.taskInput,
+    output: input.output,
+  })
+
+  if (actualCredits == null) {
+    if (reservedCredits > 0) {
+      await confirmFrozenCredits({
+        userId: input.userId,
+        referenceId: input.taskId,
+        requestedCredits: reservedCredits,
+        source: 'task_platform_confirm',
+        description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
+      })
+    }
+    return
+  }
+
+  if (actualCredits > reservedCredits) {
+    await freezeCredits({
+      userId: input.userId,
+      requestedCredits: actualCredits - reservedCredits,
+      referenceId: input.taskId,
+      source: 'task_platform_adjust',
+      description: `Freeze additional credits for completed image task ${input.provider}/${input.modelId}`,
+    })
+  }
+
+  await confirmFrozenCredits({
+    userId: input.userId,
+    referenceId: input.taskId,
+    requestedCredits: actualCredits,
+    source: 'task_platform_confirm',
+    description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
+  })
+
+  if (actualCredits < reservedCredits) {
+    await refundTaskCredits({
+      userId: input.userId,
+      referenceId: input.taskId,
+      requestedCredits: reservedCredits - actualCredits,
+      source: 'task_platform_refund',
+      description: `Refund unused reserved credits for completed image task ${input.provider}/${input.modelId}`,
+    })
+  }
+}
+
 async function estimateTaskBillingDraft(
   db: D1Database,
   input: {
@@ -555,6 +657,31 @@ async function estimateTaskBillingDraft(
     taskInput: Record<string, unknown>
   },
 ): Promise<ReservedTaskBillingDraft> {
+  if (input.taskType === 'image_gen') {
+    const pricing = await getModelPricing(db, {
+      provider: input.provider,
+      modelId: input.modelId,
+      activeOnly: false,
+    })
+    const size = typeof input.taskInput.size === 'string' ? input.taskInput.size : 'auto'
+    const estimatedCredits = getWorkflowImagePriceForSize({
+      modelId: input.modelId,
+      modelName: pricing?.modelName,
+      size: size as 'auto' | '1k' | '2k' | '4k' | '8k',
+    })
+
+    return {
+      mode: 'reserved',
+      inputTokens: null,
+      outputTokens: null,
+      billableUnits: null,
+      estimatedCredits,
+      category: 'image',
+      unitLabel: null,
+      basis: size === 'auto' ? 'image_size_auto' : 'image_size_preset',
+    }
+  }
+
   const pricing = await getModelPricing(db, {
     provider: input.provider,
     modelId: input.modelId,
@@ -684,6 +811,107 @@ function inferOutputFileName(taskId: string, output: TaskOutput): string {
   return `${taskId}.${ext}`
 }
 
+function readPngDimensions(bytes: Uint8Array): MediaDimensions | null {
+  if (bytes.length < 24) return null
+  const pngHeader = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+  if (!pngHeader.every((value, index) => bytes[index] === value)) return null
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  return {
+    width: view.getUint32(16),
+    height: view.getUint32(20),
+  }
+}
+
+function readJpegDimensions(bytes: Uint8Array): MediaDimensions | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
+
+  let offset = 2
+  while (offset + 9 < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset += 1
+      continue
+    }
+
+    const marker = bytes[offset + 1]
+    const length = (bytes[offset + 2] << 8) | bytes[offset + 3]
+    if (length < 2) return null
+
+    const isSof =
+      marker >= 0xc0 &&
+      marker <= 0xcf &&
+      ![0xc4, 0xc8, 0xcc].includes(marker)
+
+    if (isSof && offset + 8 < bytes.length) {
+      return {
+        height: (bytes[offset + 5] << 8) | bytes[offset + 6],
+        width: (bytes[offset + 7] << 8) | bytes[offset + 8],
+      }
+    }
+
+    offset += 2 + length
+  }
+
+  return null
+}
+
+function readWebpDimensions(bytes: Uint8Array): MediaDimensions | null {
+  if (bytes.length < 30) return null
+  const riff = String.fromCharCode(...bytes.slice(0, 4))
+  const webp = String.fromCharCode(...bytes.slice(8, 12))
+  if (riff !== 'RIFF' || webp !== 'WEBP') return null
+
+  const chunk = String.fromCharCode(...bytes.slice(12, 16))
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+
+  if (chunk === 'VP8X' && bytes.length >= 30) {
+    const width = 1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16)
+    const height = 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16)
+    return { width, height }
+  }
+
+  if (chunk === 'VP8 ' && bytes.length >= 30) {
+    return {
+      width: view.getUint16(26, true) & 0x3fff,
+      height: view.getUint16(28, true) & 0x3fff,
+    }
+  }
+
+  if (chunk === 'VP8L' && bytes.length >= 25) {
+    const b0 = bytes[21]
+    const b1 = bytes[22]
+    const b2 = bytes[23]
+    const b3 = bytes[24]
+    const width = 1 + (((b1 & 0x3f) << 8) | b0)
+    const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6))
+    return { width, height }
+  }
+
+  return null
+}
+
+function detectImageDimensions(body: ArrayBuffer, contentType: string): MediaDimensions | null {
+  const bytes = new Uint8Array(body)
+  const normalized = contentType.split(';', 1)[0]?.trim().toLowerCase()
+
+  if (normalized === 'image/png') return readPngDimensions(bytes)
+  if (normalized === 'image/jpeg' || normalized === 'image/jpg') return readJpegDimensions(bytes)
+  if (normalized === 'image/webp') return readWebpDimensions(bytes)
+
+  return null
+}
+
+function resolveImagePriceTierFromOutput(output: TaskOutput): '1k' | '2k' | '4k' | '8k' | null {
+  const width = output.width ?? 0
+  const height = output.height ?? 0
+  const longEdge = Math.max(width, height)
+  if (longEdge <= 0) return null
+  if (longEdge <= 1920) return '1k'
+  if (longEdge <= 2560) return '2k'
+  if (longEdge <= 3840) return '4k'
+  return '8k'
+}
+
 function normalizeInternalOutput(taskId: string, output: TaskOutput, r2Key: string): TaskOutput {
   return {
     ...output,
@@ -750,11 +978,16 @@ async function persistTaskOutput(
   })
 
   await runtime.invalidateStorageCache(userId)
+  const dimensions =
+    contentType.startsWith('image/')
+      ? detectImageDimensions(body, contentType)
+      : null
 
   return {
     ...output,
     contentType,
     fileName,
+    ...(dimensions ?? {}),
     r2_key: r2Key,
     url: toInternalFileUrl(r2Key),
   }
@@ -1159,14 +1392,26 @@ export async function submitTask(
       )
       .run()
 
-    if (executionMode === 'platform' && reservedPlatformCredits > 0 && initialStatus === 'completed') {
-      await confirmFrozenCredits({
-        userId,
-        referenceId: taskId,
-        requestedCredits: reservedPlatformCredits,
-        source: 'task_platform_confirm',
-        description: `Confirm async task billing ${taskType} ${persistedProvider}/${persistedModelId}`,
-      })
+    if (executionMode === 'platform' && initialStatus === 'completed' && persistedOutput) {
+      if (taskType === 'image_gen') {
+        await settleCompletedPlatformImageTask({
+          db,
+          userId,
+          taskId,
+          provider: persistedProvider,
+          modelId: persistedModelId,
+          taskInput: persistedInput,
+          output: persistedOutput,
+        })
+      } else if (reservedPlatformCredits > 0) {
+        await confirmFrozenCredits({
+          userId,
+          referenceId: taskId,
+          requestedCredits: reservedPlatformCredits,
+          source: 'task_platform_confirm',
+          description: `Confirm async task billing ${taskType} ${persistedProvider}/${persistedModelId}`,
+        })
+      }
     }
   } catch (error) {
     if (executionMode === 'platform' && reservedPlatformCredits > 0) {
@@ -1390,14 +1635,26 @@ async function executeTaskRequest(
       const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
       const completedAt = new Date().toISOString()
 
-      if (executionMode === 'platform' && reservedPlatformCredits > 0) {
-        await confirmFrozenCredits({
-          userId,
-          referenceId: taskId,
-          requestedCredits: reservedPlatformCredits,
-          source: 'task_platform_confirm',
-          description: `Confirm async task billing ${taskType} ${resolvedProvider}/${persistedModelId}`,
-        })
+      if (executionMode === 'platform') {
+        if (taskType === 'image_gen') {
+          await settleCompletedPlatformImageTask({
+            db,
+            userId,
+            taskId,
+            provider: resolvedProvider,
+            modelId: persistedModelId,
+            taskInput: resolvedInput,
+            output: persistedOutput,
+          })
+        } else if (reservedPlatformCredits > 0) {
+          await confirmFrozenCredits({
+            userId,
+            referenceId: taskId,
+            requestedCredits: reservedPlatformCredits,
+            source: 'task_platform_confirm',
+            description: `Confirm async task billing ${taskType} ${resolvedProvider}/${persistedModelId}`,
+          })
+        }
       }
 
       await db
@@ -1819,15 +2076,28 @@ export async function checkTask(
       const persistedOutput = await persistTaskOutput(taskId, userId, check.result, runtime)
 
       if (row.execution_mode === 'platform') {
-        const reservedCredits = getReservedTaskCredits(JSON.parse(row.input_data || '{}'))
-        if (reservedCredits > 0) {
-          await confirmFrozenCredits({
+        const parsedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
+        if (row.task_type === 'image_gen') {
+          await settleCompletedPlatformImageTask({
+            db,
             userId,
-            referenceId: row.id,
-            requestedCredits: reservedCredits,
-            source: 'task_platform_confirm',
-            description: `Confirm async task billing ${row.task_type} ${processorProvider}/${row.model_id}`,
+            taskId: row.id,
+            provider: persistedProvider,
+            modelId: persistedModelId,
+            taskInput: parsedInput,
+            output: persistedOutput,
           })
+        } else {
+          const reservedCredits = getReservedTaskCredits(parsedInput)
+          if (reservedCredits > 0) {
+            await confirmFrozenCredits({
+              userId,
+              referenceId: row.id,
+              requestedCredits: reservedCredits,
+              source: 'task_platform_confirm',
+              description: `Confirm async task billing ${row.task_type} ${processorProvider}/${row.model_id}`,
+            })
+          }
         }
       }
 

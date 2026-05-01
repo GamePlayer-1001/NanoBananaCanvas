@@ -15,6 +15,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -53,9 +54,10 @@ import {
   useUpdateFolder,
   useDeleteFolder,
 } from '@/hooks/use-folders'
-import { useCreditBalance } from '@/hooks/use-billing'
+import { useCreditBalance, useDailySigninStatus } from '@/hooks/use-billing'
 import { useCurrentUser } from '@/hooks/use-user'
 import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
+import { queryKeys } from '@/lib/query/keys'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -291,11 +293,13 @@ function DeleteFolderDialog({
 
 export function AppSidebar() {
   const t = useTranslations('sidebar')
+  const queryClient = useQueryClient()
   const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
   const { data: user } = useCurrentUser()
   const { data: balance } = useCreditBalance(Boolean(user?.isAuthenticated))
+  const { data: signinStatus } = useDailySigninStatus(Boolean(user?.isAuthenticated))
   const searchParams = useSearchParams()
   const activeFolderId = searchParams.get('folder')
   const { data: folders } = useFolders()
@@ -309,6 +313,26 @@ export function AppSidebar() {
   const activeAccountTab = searchParams.get('tab')
   const isDashboardEntryActive = pathname === '/account' && activeAccountTab === 'dashboard'
   const isSubscriptionEntryActive = pathname === '/account' && activeAccountTab === 'subscription'
+  const claimSignin = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/credits/signin', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(body.error?.message ?? `Request failed: ${res.status}`)
+      }
+      return body.data as { creditsAwarded: number }
+    },
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.billing.balance() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.billing.signinStatus() }),
+      ])
+      toast.success(t('signinSuccess', { count: result.creditsAwarded }))
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
 
   const handleCreateFolder = () => {
     setCreateDialogOpen(true)
@@ -452,6 +476,38 @@ export function AppSidebar() {
 
         {/* ── Footer ────────────────────────────────────── */}
         <div className="border-border space-y-2 border-t px-3 py-3">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-amber-800">{t('creditsTitle')}</p>
+                <div className="mt-1 flex items-center gap-2 text-amber-700">
+                  <Coins size={16} />
+                  <span className="text-lg font-semibold">
+                    {balance?.availableCredits ?? 0}
+                  </span>
+                </div>
+                {typeof balance?.trialBalance === 'number' && balance.trialBalance > 0 ? (
+                  <p className="mt-1 text-[11px] text-amber-700/80">
+                    {t('trialCreditsHint', { count: balance.trialBalance })}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-amber-700/80">
+                    {t('creditsHint')}
+                  </p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant={signinStatus?.checkedInToday ? 'outline' : 'default'}
+                disabled={!user?.isAuthenticated || signinStatus?.checkedInToday || claimSignin.isPending}
+                onClick={() => claimSignin.mutate()}
+                className={signinStatus?.checkedInToday ? 'border-amber-300 bg-white text-amber-700' : 'bg-amber-600 text-white hover:bg-amber-700'}
+              >
+                {signinStatus?.checkedInToday ? t('signedInToday') : t('signinAction')}
+              </Button>
+            </div>
+          </div>
+
           {/* 用户信息 */}
           <div className="space-y-2 px-1">
             <Link

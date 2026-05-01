@@ -28,6 +28,7 @@ export interface BillingSubscriptionEntitlementInput {
 }
 
 type CreditBalanceRow = {
+  trial_balance: number
   monthly_balance: number
   permanent_balance: number
   total_earned: number
@@ -43,12 +44,14 @@ async function ensureCreditBalanceRow(userId: string) {
     .prepare(
       `INSERT OR IGNORE INTO credit_balances (
          user_id,
+         trial_balance,
+         trial_expires_at,
          monthly_balance,
          permanent_balance,
          frozen_credits,
          total_earned,
          total_spent
-       ) VALUES (?, 0, 0, 0, 0, 0)`,
+       ) VALUES (?, 0, NULL, 0, 0, 0, 0, 0)`,
     )
     .bind(userId)
     .run()
@@ -60,7 +63,7 @@ async function readCreditBalanceRow(userId: string): Promise<CreditBalanceRow> {
 
   const row = await db
     .prepare(
-      `SELECT monthly_balance, permanent_balance, total_earned
+      `SELECT trial_balance, monthly_balance, permanent_balance, total_earned
        FROM credit_balances
        WHERE user_id = ?`,
     )
@@ -68,6 +71,7 @@ async function readCreditBalanceRow(userId: string): Promise<CreditBalanceRow> {
     .first<CreditBalanceRow>()
 
   return {
+    trial_balance: row?.trial_balance ?? 0,
     monthly_balance: row?.monthly_balance ?? 0,
     permanent_balance: row?.permanent_balance ?? 0,
     total_earned: row?.total_earned ?? 0,
