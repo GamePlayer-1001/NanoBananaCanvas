@@ -33,6 +33,9 @@ function createDbMock() {
           if (sql.includes('SELECT id FROM workflows')) {
             return { id: 'wf-1' }
           }
+          if (sql.includes("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+            return { name: 'agent_audit_logs' }
+          }
           if (sql.includes('FROM agent_audit_logs') && sql.includes('LIMIT 1')) {
             return {
               id: 'audit-1',
@@ -143,6 +146,39 @@ describe('POST/GET /api/workflows/[id]/agent-*', () => {
             focusNodeIds: ['image-1'],
           }),
         }),
+      },
+    })
+  })
+
+  it('returns replay null when the audit table is missing', async () => {
+    vi.mocked(getDb).mockResolvedValue({
+      prepare: vi.fn((sql: string) => ({
+        bind: vi.fn((...args: unknown[]) => ({
+          first: vi.fn(async () => {
+            if (sql.includes('SELECT id FROM workflows')) {
+              return { id: 'wf-1' }
+            }
+
+            if (sql.includes("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+              return null
+            }
+
+            throw new Error(`unexpected first query: ${sql} :: ${args.join(',')}`)
+          }),
+        })),
+      })),
+    } as never)
+
+    const response = await agentReplayGet(
+      new Request('http://localhost/api/workflows/wf-1/agent-replay') as never,
+      { params: Promise.resolve({ id: 'wf-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        replay: null,
       },
     })
   })

@@ -8,6 +8,7 @@
 import { getDb } from '@/lib/db'
 import { BillingError, ErrorCode } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
+import { getBillingSchemaInfo } from './schema'
 import { SIGNIN_TRIAL_CREDITS } from './workflow-pricing'
 
 type CreditBalanceRow = {
@@ -245,6 +246,18 @@ function buildCreditTransactionStatements(
         statement.description,
       ),
   )
+}
+
+function isLegacyTrialPoolConstraintError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  const message = error.message.toLowerCase()
+  return (
+    message.includes('check constraint failed') &&
+    message.includes('credit_transactions')
+  ) || message.includes("pool in ('monthly', 'permanent')")
 }
 
 function createInsufficientCreditsError(input: {
@@ -614,6 +627,16 @@ export async function getDailySigninStatus(userId: string): Promise<{
 }> {
   const db = await getDb()
   const balance = await readCreditBalanceRow(db, userId)
+  const schema = await getBillingSchemaInfo()
+
+  if (!schema.hasDailySignins || !schema.dailySigninsColumns.has('user_id') || !schema.dailySigninsColumns.has('signin_date')) {
+    return {
+      checkedInToday: false,
+      trialBalance: balance.trial_balance,
+      trialExpiresAt: balance.trial_expires_at,
+    }
+  }
+
   const { today } = getTodayBounds()
   const row = await db
     .prepare(
@@ -637,6 +660,23 @@ export async function awardDailySigninCredits(userId: string): Promise<{
   trialBalance: number
 }> {
   const db = await getDb()
+  const schema = await getBillingSchemaInfo()
+
+  if (
+    !schema.hasDailySignins ||
+    !schema.dailySigninsColumns.has('id') ||
+    !schema.dailySigninsColumns.has('user_id') ||
+    !schema.dailySigninsColumns.has('signin_date') ||
+    !schema.dailySigninsColumns.has('credits_awarded') ||
+    !schema.dailySigninsColumns.has('expires_at')
+  ) {
+    throw new BillingError(
+      ErrorCode.BILLING_CONFIG_INVALID,
+      'Daily sign-in is unavailable because the billing schema is incomplete',
+      { userId },
+    )
+  }
+
   const balance = await readCreditBalanceRow(db, userId)
   const { today, expiresAt } = getTodayBounds()
   const existing = await db
@@ -678,18 +718,27 @@ export async function awardDailySigninCredits(userId: string): Promise<{
          VALUES (?, ?, ?, ?, ?)`,
       )
       .bind(nanoid(), userId, today, SIGNIN_TRIAL_CREDITS, expiresAt),
-    ...buildCreditTransactionStatements(db, userId, [
-      {
-        type: 'refund',
-        pool: 'trial',
-        amount: SIGNIN_TRIAL_CREDITS,
-        balanceAfter: nextAvailable,
-        source: 'daily_signin_reward',
-        referenceId: `signin_${today}`,
-        description: `Daily sign-in reward for ${today}`,
-      },
-    ]),
   ])
+
+  try {
+    await db.batch(
+      buildCreditTransactionStatements(db, userId, [
+        {
+          type: 'refund',
+          pool: 'trial',
+          amount: SIGNIN_TRIAL_CREDITS,
+          balanceAfter: nextAvailable,
+          source: 'daily_signin_reward',
+          referenceId: `signin_${today}`,
+          description: `Daily sign-in reward for ${today}`,
+        },
+      ]),
+    )
+  } catch (error) {
+    if (!isLegacyTrialPoolConstraintError(error)) {
+      throw error
+    }
+  }
 
   return {
     creditsAwarded: SIGNIN_TRIAL_CREDITS,

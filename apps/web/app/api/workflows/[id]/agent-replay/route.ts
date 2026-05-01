@@ -26,6 +26,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     if (!wf) throw new NotFoundError('Workflow', id)
 
+    const hasAgentAuditLogs = await db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+      .bind('agent_audit_logs')
+      .first<{ name?: string }>()
+
+    if (!hasAgentAuditLogs?.name) {
+      return apiOk({ replay: null })
+    }
+
     const row = await db
       .prepare(
         `SELECT id, event_type, proposal_id, replay_snapshot, plan_json, result_json, created_at
