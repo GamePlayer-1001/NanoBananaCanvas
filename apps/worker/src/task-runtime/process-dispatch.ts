@@ -7,6 +7,7 @@
 
 import type { TaskQueueMessage } from '@nano-banana/shared'
 
+import { createLogger } from '../../../web/lib/logger'
 import { processTaskDispatch, type TaskServiceRuntime } from '../../../web/lib/tasks'
 
 export type WorkerTaskBindings = {
@@ -27,10 +28,12 @@ const PLATFORM_ENV_KEY_MAP: Record<string, keyof WorkerTaskBindings> = {
   deepseek: 'DEEPSEEK_API_KEY',
   gemini: 'GEMINI_API_KEY',
 }
+const log = createLogger('worker:task-runtime')
 
 function requireBinding(env: WorkerTaskBindings, key: keyof WorkerTaskBindings): string {
   const value = env[key]
   if (!value || typeof value !== 'string') {
+    log.error('Worker binding missing', undefined, { key })
     throw new Error(`Missing required environment variable: ${key}`)
   }
   return value
@@ -46,6 +49,7 @@ export function createWorkerTaskRuntime(env: WorkerTaskBindings): TaskServiceRun
     getPlatformKey: async (provider) => {
       const envKey = PLATFORM_ENV_KEY_MAP[provider]
       if (!envKey) {
+        log.error('Worker platform provider mapping missing', undefined, { provider })
         throw new Error(`No platform key mapping for provider: ${provider}`)
       }
       return requireBinding(env, envKey)
@@ -57,5 +61,13 @@ export async function executeDispatchedTask(
   env: WorkerTaskBindings,
   message: TaskQueueMessage,
 ): Promise<void> {
+  log.info('Worker dispatched task started', {
+    taskId: message.taskId,
+    userId: message.userId,
+  })
   await processTaskDispatch(env.DB, message, createWorkerTaskRuntime(env))
+  log.info('Worker dispatched task completed', {
+    taskId: message.taskId,
+    userId: message.userId,
+  })
 }

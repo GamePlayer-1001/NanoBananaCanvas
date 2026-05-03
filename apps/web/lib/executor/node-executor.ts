@@ -187,6 +187,8 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
   if (executionMode === 'platform' || executionMode === 'user_key') {
     result = onStreamChunk
       ? await executeLLMViaStreamApi({
+          nodeId: ctx.nodeId,
+          workflowId: ctx.workflowId,
           provider: target.provider,
           capability: target.capability,
           modelId: target.modelId,
@@ -199,6 +201,8 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
           onChunk: (chunk) => onStreamChunk(ctx.nodeId, chunk),
         })
       : await executeLLMViaApi({
+          nodeId: ctx.nodeId,
+          workflowId: ctx.workflowId,
           provider: target.provider,
           capability: target.capability,
           modelId: target.modelId,
@@ -570,6 +574,8 @@ async function executeDisplay(ctx: NodeExecutionContext): Promise<NodeExecutionR
 }
 
 interface ExecuteLLMApiParams {
+  nodeId?: string
+  workflowId?: string
   provider?: string
   capability?: 'text' | 'image' | 'video' | 'audio'
   modelId?: string
@@ -582,7 +588,17 @@ interface ExecuteLLMApiParams {
 }
 
 async function executeLLMViaApi(params: ExecuteLLMApiParams): Promise<string> {
-  const { signal, ...body } = params
+  const { signal, nodeId, workflowId, ...body } = params
+  log.info('LLM request started', {
+    nodeId: nodeId ?? null,
+    workflowId: workflowId ?? null,
+    provider: body.provider ?? null,
+    capability: body.capability ?? null,
+    modelId: body.modelId ?? null,
+    configId: body.configId ?? null,
+    executionMode: body.executionMode,
+    endpoint: '/api/ai/execute',
+  })
   const response = await fetch('/api/ai/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -591,7 +607,16 @@ async function executeLLMViaApi(params: ExecuteLLMApiParams): Promise<string> {
   })
 
   if (!response.ok) {
-    throw await createApiWorkflowError(response)
+    throw await createApiWorkflowError(response, {
+      nodeId,
+      workflowId,
+      endpoint: '/api/ai/execute',
+      provider: body.provider,
+      capability: body.capability,
+      modelId: body.modelId,
+      configId: body.configId,
+      executionMode: body.executionMode,
+    })
   }
 
   const payload = (await response.json()) as {
@@ -607,6 +632,15 @@ async function executeLLMViaApi(params: ExecuteLLMApiParams): Promise<string> {
     )
   }
 
+  log.info('LLM request completed', {
+    nodeId: nodeId ?? null,
+    workflowId: workflowId ?? null,
+    provider: body.provider ?? null,
+    capability: body.capability ?? null,
+    modelId: body.modelId ?? null,
+    executionMode: body.executionMode,
+    resultLength: result.length,
+  })
   return result
 }
 
@@ -617,7 +651,17 @@ interface ExecuteLLMStreamApiParams extends ExecuteLLMApiParams {
 async function executeLLMViaStreamApi(
   params: ExecuteLLMStreamApiParams,
 ): Promise<string> {
-  const { signal, onChunk, ...body } = params
+  const { signal, onChunk, nodeId, workflowId, ...body } = params
+  log.info('LLM stream request started', {
+    nodeId: nodeId ?? null,
+    workflowId: workflowId ?? null,
+    provider: body.provider ?? null,
+    capability: body.capability ?? null,
+    modelId: body.modelId ?? null,
+    configId: body.configId ?? null,
+    executionMode: body.executionMode,
+    endpoint: '/api/ai/stream',
+  })
   const response = await fetch('/api/ai/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -626,7 +670,16 @@ async function executeLLMViaStreamApi(
   })
 
   if (!response.ok || !response.body) {
-    throw await createApiWorkflowError(response)
+    throw await createApiWorkflowError(response, {
+      nodeId,
+      workflowId,
+      endpoint: '/api/ai/stream',
+      provider: body.provider,
+      capability: body.capability,
+      modelId: body.modelId,
+      configId: body.configId,
+      executionMode: body.executionMode,
+    })
   }
 
   const reader = response.body.getReader()
@@ -663,20 +716,42 @@ async function executeLLMViaStreamApi(
     }
   }
 
+  log.info('LLM stream request completed', {
+    nodeId: nodeId ?? null,
+    workflowId: workflowId ?? null,
+    provider: body.provider ?? null,
+    capability: body.capability ?? null,
+    modelId: body.modelId ?? null,
+    executionMode: body.executionMode,
+    resultLength: result.length,
+  })
   return result
 }
 
-async function createApiWorkflowError(response: Response): Promise<WorkflowError> {
+async function createApiWorkflowError(
+  response: Response,
+  context?: Record<string, unknown>,
+): Promise<WorkflowError> {
   let message = `AI API request failed (${response.status})`
+  let responseBody: unknown = null
 
   try {
     const payload = (await response.json()) as {
       error?: { message?: string }
     }
+    responseBody = payload
     message = payload.error?.message ?? message
   } catch {
     /* ignore malformed response body */
   }
+
+  log.error('API-backed node request failed', undefined, {
+    ...context,
+    status: response.status,
+    statusText: response.statusText,
+    responseBody,
+    message,
+  })
 
   return new WorkflowError(ErrorCode.WORKFLOW_NODE_ERROR, message)
 }
@@ -705,6 +780,16 @@ function getTaskPollingPlan(taskType: ExecuteTaskOutputApiParams['taskType']) {
 async function executeTaskOutputViaApi(
   params: ExecuteTaskOutputApiParams,
 ): Promise<string> {
+  log.info('Async task request started', {
+    taskType: params.taskType,
+    workflowId: params.workflowId ?? null,
+    nodeId: params.nodeId ?? null,
+    provider: params.provider ?? null,
+    capability: params.capability ?? null,
+    modelId: params.modelId ?? null,
+    configId: params.configId ?? null,
+    executionMode: params.executionMode,
+  })
   const submitResponse = await fetch('/api/tasks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -723,7 +808,17 @@ async function executeTaskOutputViaApi(
   })
 
   if (!submitResponse.ok) {
-    throw await createApiWorkflowError(submitResponse)
+    throw await createApiWorkflowError(submitResponse, {
+      endpoint: '/api/tasks',
+      taskType: params.taskType,
+      workflowId: params.workflowId ?? null,
+      nodeId: params.nodeId ?? null,
+      provider: params.provider ?? null,
+      capability: params.capability ?? null,
+      modelId: params.modelId ?? null,
+      configId: params.configId ?? null,
+      executionMode: params.executionMode,
+    })
   }
 
   const submitPayload = (await submitResponse.json()) as {
@@ -737,6 +832,17 @@ async function executeTaskOutputViaApi(
       'Task submission returned no task id',
     )
   }
+
+  log.info('Async task submitted', {
+    taskId,
+    taskType: params.taskType,
+    workflowId: params.workflowId ?? null,
+    nodeId: params.nodeId ?? null,
+    provider: params.provider ?? null,
+    capability: params.capability ?? null,
+    modelId: params.modelId ?? null,
+    executionMode: params.executionMode,
+  })
 
   params.onStateChange?.({
     status: 'queued',
@@ -754,7 +860,17 @@ async function executeTaskOutputViaApi(
     })
 
     if (!taskResponse.ok) {
-      throw await createApiWorkflowError(taskResponse)
+      throw await createApiWorkflowError(taskResponse, {
+        endpoint: '/api/tasks/:id',
+        taskId,
+        taskType: params.taskType,
+        workflowId: params.workflowId ?? null,
+        nodeId: params.nodeId ?? null,
+        provider: params.provider ?? null,
+        capability: params.capability ?? null,
+        modelId: params.modelId ?? null,
+        executionMode: params.executionMode,
+      })
     }
 
     const taskPayload = (await taskResponse.json()) as {
@@ -768,6 +884,15 @@ async function executeTaskOutputViaApi(
     const status = taskPayload.data?.status
     const progress = typeof taskPayload.data?.progress === 'number' ? taskPayload.data.progress : 0
     const output = taskPayload.data?.output
+
+    log.debug('Async task poll tick', {
+      taskId,
+      taskType: params.taskType,
+      workflowId: params.workflowId ?? null,
+      nodeId: params.nodeId ?? null,
+      status: status ?? 'unknown',
+      progress,
+    })
 
     if (status === 'pending') {
       params.onStateChange?.({
@@ -788,10 +913,25 @@ async function executeTaskOutputViaApi(
         status: 'finalizing',
         configPatch: { progress: 100, taskId },
       })
+      log.info('Async task completed', {
+        taskId,
+        taskType: params.taskType,
+        workflowId: params.workflowId ?? null,
+        nodeId: params.nodeId ?? null,
+        outputType: params.outputType,
+      })
       return output.url
     }
 
     if (status === 'failed' || status === 'cancelled') {
+      log.error('Async task reached terminal failure state', undefined, {
+        taskId,
+        taskType: params.taskType,
+        workflowId: params.workflowId ?? null,
+        nodeId: params.nodeId ?? null,
+        status,
+        output,
+      })
       throw new WorkflowError(
         ErrorCode.WORKFLOW_NODE_ERROR,
         output?.error ?? `${params.outputType} task ${status}`,

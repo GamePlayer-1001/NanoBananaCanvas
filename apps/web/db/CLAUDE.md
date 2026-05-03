@@ -17,6 +17,7 @@ migration-012-billing-metering.sql — usage 计量补列迁移 (ai_usage_logs.b
 migration-013-daily-signin-credits.sql — 签到试用积分迁移 (credit_balances.trial_balance / trial_expires_at + daily_signins)
 migration-013-video-analysis-history.sql — 视频分析历史迁移 (user 级分析记录 + 状态 + 结果 JSON)
 migration-014-agent-audit.sql — Agent 共创审计迁移 (用户原话 / plan / alternatives / 结果 / replay snapshot 持久化)
+migration-015-model-pricing-credits-per-1k-units.sql — model_pricing 历史兼容迁移 (为旧生产库补齐 credits_per_1k_units，并用 credits_per_call 回填)
 seed.sql                 — 分类种子数据 (8 个 AI 工作流分类，name_i18n JSON 真相源 + 历史兼容列)
 seed-models.sql          — 模型目录种子 (23 模型: 13 text + 6 image + 2 video + 2 audio，覆盖 openrouter/deepseek/gemini/openai/kling 的平台目录)
 seed-pricing.sql         — 商业化种子数据 (4 个积分包 + token 计费版 model_pricing)

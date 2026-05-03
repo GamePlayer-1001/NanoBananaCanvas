@@ -13,6 +13,7 @@ import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { isAppError } from '@/lib/errors'
+import { createLogger } from '@/lib/logger'
 import {
   deleteTasks,
   listTasks,
@@ -21,6 +22,8 @@ import {
 } from '@/lib/tasks'
 import { deleteTasksSchema, listTasksSchema, submitTaskSchema } from '@/lib/validations/task'
 import { ZodError } from 'zod'
+
+const log = createLogger('api:tasks')
 
 function resolveImageTaskOrchestrator(env: CloudflareEnv): TaskOrchestrator {
   return env.TASK_IMAGE_ORCHESTRATOR === 'workflow' ? 'workflow' : 'legacy_queue'
@@ -63,6 +66,20 @@ export async function POST(req: Request) {
     const params = submitTaskSchema.parse(body)
     const { env } = await getCloudflareContext()
     const orchestrator = resolveImageTaskOrchestrator(env)
+    const requestSummary = {
+      userId,
+      taskType: params.taskType,
+      provider: params.provider ?? null,
+      capability: params.capability ?? null,
+      modelId: params.modelId ?? null,
+      configId: params.configId ?? null,
+      executionMode: params.executionMode,
+      workflowId: params.workflowId ?? null,
+      nodeId: params.nodeId ?? null,
+      orchestrator,
+    }
+
+    log.info('Task submit request received', requestSummary)
 
     const task = await submitTask(db, {
       userId,
@@ -100,13 +117,28 @@ export async function POST(req: Request) {
     })
 
     if (task.dispatch) {
+      log.info('Dispatching deferred task', {
+        ...requestSummary,
+        taskId: task.id,
+        dispatchOrchestrator: task.dispatch.orchestrator,
+      })
       await dispatchSubmittedTask(env, task.dispatch)
     }
+
+    log.info('Task submit request completed', {
+      ...requestSummary,
+      taskId: task.id,
+      status: task.status,
+      dispatched: Boolean(task.dispatch),
+    })
 
     const responseTask = { ...task }
     delete responseTask.dispatch
     return apiOk(responseTask, 201)
   } catch (error) {
+    log.error('Task submit request failed', error, {
+      route: 'POST /api/tasks',
+    })
     if (
       error instanceof Error &&
       !isAppError(error) &&
@@ -134,8 +166,19 @@ export async function GET(req: Request) {
     })
 
     const result = await listTasks(db, userId, params)
+    log.info('Task list request completed', {
+      userId,
+      status: params.status ?? null,
+      taskType: params.taskType ?? null,
+      page: params.page,
+      limit: params.limit,
+      total: result.total,
+    })
     return apiOk(result)
   } catch (error) {
+    log.error('Task list request failed', error, {
+      route: 'GET /api/tasks',
+    })
     if (
       error instanceof Error &&
       !isAppError(error) &&
@@ -160,8 +203,16 @@ export async function DELETE(req: Request) {
     const params = deleteTasksSchema.parse(body)
 
     const result = await deleteTasks(db, userId, params.ids)
+    log.info('Task delete request completed', {
+      userId,
+      requestedIds: params.ids.length,
+      deletedIds: result.deletedIds.length,
+    })
     return apiOk(result)
   } catch (error) {
+    log.error('Task delete request failed', error, {
+      route: 'DELETE /api/tasks',
+    })
     if (
       error instanceof Error &&
       !isAppError(error) &&

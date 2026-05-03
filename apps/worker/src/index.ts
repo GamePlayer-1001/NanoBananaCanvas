@@ -14,6 +14,7 @@ import { cleanupExpiredOutputs } from './cron/cleanup'
 import { markTimedOutTasks } from './cron/timeout'
 import { handleTaskQueueMessage } from './queue/process-task'
 import { ImageTaskWorkflow } from './workflows/image-task-workflow'
+import { createLogger } from '../../web/lib/logger'
 
 /* ─── Bindings 类型 ──────────────────────────────────── */
 
@@ -32,6 +33,7 @@ type Bindings = {
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
+const log = createLogger('worker:index')
 
 /* ─── 中间件 ────────────────────────────────────────────── */
 
@@ -67,11 +69,19 @@ export default {
 
   async queue(batch: MessageBatch<unknown>, env: Bindings) {
     for (const message of batch.messages) {
+      const taskMessage = message.body as TaskQueueMessage
       try {
-        await handleTaskQueueMessage(env, message.body as TaskQueueMessage)
+        log.info('Queue message received', {
+          taskId: taskMessage.taskId,
+          userId: taskMessage.userId,
+        })
+        await handleTaskQueueMessage(env, taskMessage)
         message.ack()
       } catch (error) {
-        console.error('[queue] task processing failed:', error)
+        log.error('Queue task processing failed', error, {
+          taskId: taskMessage.taskId,
+          userId: taskMessage.userId,
+        })
         message.retry()
       }
     }
@@ -92,16 +102,23 @@ export default {
         try {
           results.timedOut = await markTimedOutTasks(env.DB)
         } catch (err) {
-          console.error('[cron] timeout failed:', err)
+          log.error('Cron timeout scan failed', err, {
+            environment: env.ENVIRONMENT,
+          })
         }
 
         try {
           results.cleaned = await cleanupExpiredOutputs(env.DB, env.UPLOADS)
         } catch (err) {
-          console.error('[cron] cleanup failed:', err)
+          log.error('Cron cleanup failed', err, {
+            environment: env.ENVIRONMENT,
+          })
         }
 
-        console.log('[cron] completed:', JSON.stringify(results))
+        log.info('Cron cycle completed', {
+          environment: env.ENVIRONMENT,
+          results,
+        })
       })(),
     )
   },
