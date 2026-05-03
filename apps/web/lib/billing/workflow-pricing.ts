@@ -63,6 +63,13 @@ const WORKFLOW_IMAGE_PRICE_RULES: WorkflowImagePriceRule[] = [
   },
 ]
 
+const PLATFORM_TEXT_MODEL_CREDITS: Readonly<Record<string, number>> = {
+  'comfly:gpt-5.4': 1,
+  'comfly:gemini-3.1-pro-preview': 3,
+  'comfly:gemini-2.5-flash': 1,
+  'comfly:deepseek-v3': 1,
+}
+
 function normalizeAlias(value: string): string {
   return value.toLowerCase().replace(/[_/]+/g, ' ').replace(/\s+/g, ' ').trim()
 }
@@ -156,4 +163,14 @@ export function getWorkflowImageModelBadge(model: Pick<PlatformModelCatalogItem,
   }
 
   return rule.label
+}
+
+export function getPlatformTextExecutionCredits(input: {
+  provider: string
+  modelId: string
+}): number {
+  return (
+    PLATFORM_TEXT_MODEL_CREDITS[`${input.provider}:${input.modelId}`] ??
+    PLATFORM_TEXT_EXECUTION_CREDITS
+  )
 }

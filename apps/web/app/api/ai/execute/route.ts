@@ -21,7 +21,7 @@ import {
   estimateCreditsFromUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
-import { PLATFORM_TEXT_EXECUTION_CREDITS } from '@/lib/billing/workflow-pricing'
+import { getPlatformTextExecutionCredits } from '@/lib/billing/workflow-pricing'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -97,8 +97,10 @@ async function executeWithPlatformKey(
   const providerId = runtimeModel.supplierId
   const modelId = runtimeModel.modelId
   const executionReferenceId = `ai_exec_${nanoid()}`
-  const pricing = await getModelPricing(db, { provider: providerId, modelId, activeOnly: false })
-  const reservedCredits = PLATFORM_TEXT_EXECUTION_CREDITS
+  const reservedCredits = getPlatformTextExecutionCredits({
+    provider: providerId,
+    modelId,
+  })
 
   try {
     log.info('Platform execute start', {
@@ -159,7 +161,7 @@ async function executeWithPlatformKey(
       })
 
     const usageEstimate = estimateBillableUnits({
-      category: pricing?.category ?? 'text',
+      category: 'text',
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
       messages: params.messages,
@@ -183,7 +185,7 @@ async function executeWithPlatformKey(
       inputTokens: chatResult.usage?.promptTokens ?? null,
       outputTokens: chatResult.usage?.completionTokens ?? null,
       billableUnits: usageEstimate.billableUnits,
-      estimatedCredits: PLATFORM_TEXT_EXECUTION_CREDITS,
+      estimatedCredits: reservedCredits,
       durationMs: Date.now() - startTime,
       status: 'success',
     })

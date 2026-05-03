@@ -230,4 +230,41 @@ describe('POST /api/ai/execute', () => {
     })
     expect(refundFrozenCredits).toHaveBeenCalledTimes(1)
   })
+
+  it('does not require model_pricing for platform text execution', async () => {
+    vi.mocked(getModelPricing).mockRejectedValue(new Error('model_pricing missing'))
+    vi.mocked(createPlatformTextProvider).mockReturnValue({
+      chat: vi.fn().mockResolvedValue({
+        content: 'deep answer',
+        usage: {
+          promptTokens: 300,
+          completionTokens: 200,
+        },
+      }),
+    } as never)
+
+    const response = await POST(
+      new Request('http://localhost/api/ai/execute', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          executionMode: 'platform',
+          provider: 'comfly',
+          modelId: 'gemini-3.1-pro-preview',
+          messages: [{ role: 'user', content: 'hello' }],
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(freezeCredits).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestedCredits: 3,
+      }),
+    )
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: { result: 'deep answer' },
+    })
+  })
 })

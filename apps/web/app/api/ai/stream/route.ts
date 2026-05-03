@@ -23,7 +23,7 @@ import {
   estimateCreditsFromUsage,
   getModelPricing,
 } from '@/lib/billing/metering'
-import { PLATFORM_TEXT_EXECUTION_CREDITS } from '@/lib/billing/workflow-pricing'
+import { getPlatformTextExecutionCredits } from '@/lib/billing/workflow-pricing'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logger'
@@ -103,14 +103,19 @@ export async function POST(req: Request) {
     const executionReferenceId = `ai_stream_${nanoid()}`
     const pricing =
       params.executionMode === 'platform'
-        ? await getModelPricing(db, {
+        ? null
+        : await getModelPricing(db, {
             provider: providerId,
             modelId: resolvedModelId,
             activeOnly: false,
           })
-        : null
     const reservedCredits =
-      params.executionMode === 'platform' ? PLATFORM_TEXT_EXECUTION_CREDITS : 0
+      params.executionMode === 'platform'
+        ? getPlatformTextExecutionCredits({
+            provider: providerId,
+            modelId: resolvedModelId,
+          })
+        : 0
 
     if (params.executionMode === 'platform' && reservedCredits > 0) {
       await freezeCredits({
@@ -160,7 +165,7 @@ export async function POST(req: Request) {
         })
         const actualCredits =
           params.executionMode === 'platform'
-            ? PLATFORM_TEXT_EXECUTION_CREDITS
+            ? reservedCredits
             : pricing
               ? estimateCreditsFromUsage({
                   billableUnits: usageEstimate.billableUnits,
