@@ -53,8 +53,12 @@ export async function POST(req: Request) {
     const { userId } = await requireAuth()
 
     // 限流: 30 req/min per user
-    const rl = await checkRateLimit(`ai:${userId}`, 30, 60_000)
-    if (!rl.ok) return rateLimitResponse(rl.resetAt)
+    try {
+      const rl = await checkRateLimit(`ai:${userId}`, 30, 60_000)
+      if (!rl.ok) return rateLimitResponse(rl.resetAt)
+    } catch (error) {
+      log.error('AI execute rate limit degraded', error, { userId })
+    }
 
     const db = await getDb()
     let body: unknown
@@ -97,7 +101,21 @@ async function executeWithPlatformKey(
   const reservedCredits = PLATFORM_TEXT_EXECUTION_CREDITS
 
   try {
+    log.info('Platform execute start', {
+      userId,
+      providerId,
+      modelId,
+      workflowId: params.workflowId ?? null,
+      nodeId: params.nodeId ?? null,
+    })
+
     if (reservedCredits > 0) {
+      log.info('Platform execute freeze credits', {
+        userId,
+        providerId,
+        modelId,
+        requestedCredits: reservedCredits,
+      })
       await freezeCredits({
         userId,
         requestedCredits: reservedCredits,
@@ -107,11 +125,27 @@ async function executeWithPlatformKey(
       })
     }
 
+    log.info('Platform execute resolve api key', {
+      userId,
+      providerId,
+      modelId,
+    })
     const platformKey = await getPlatformSupplierApiKey(providerId).catch((error) => {
       throw normalizePlatformExecuteError(error, providerId, modelId)
     })
+
+    log.info('Platform execute create provider', {
+      userId,
+      providerId,
+      modelId,
+    })
     const provider = createPlatformTextProvider(providerId)
 
+    log.info('Platform execute provider chat', {
+      userId,
+      providerId,
+      modelId,
+    })
     const chatResult = await provider
       .chat({
         model: modelId,
@@ -132,6 +166,13 @@ async function executeWithPlatformKey(
       outputText: chatResult.content,
     })
 
+    log.info('Platform execute write usage log', {
+      userId,
+      providerId,
+      modelId,
+      usageBasis: usageEstimate.basis,
+      billableUnits: usageEstimate.billableUnits,
+    })
     await writeUsageLog(db, {
       userId,
       workflowId: params.workflowId,
@@ -148,6 +189,12 @@ async function executeWithPlatformKey(
     })
 
     if (reservedCredits > 0) {
+      log.info('Platform execute confirm credits', {
+        userId,
+        providerId,
+        modelId,
+        requestedCredits: reservedCredits,
+      })
       await confirmFrozenCredits({
         userId,
         referenceId: executionReferenceId,
@@ -159,6 +206,15 @@ async function executeWithPlatformKey(
 
     return apiOk({ result: chatResult.content })
   } catch (error) {
+    log.error('Platform execute failed', error, {
+      userId,
+      providerId,
+      modelId,
+      workflowId: params.workflowId ?? null,
+      nodeId: params.nodeId ?? null,
+      executionReferenceId,
+    })
+
     if (reservedCredits > 0) {
       try {
         await refundFrozenCredits({
