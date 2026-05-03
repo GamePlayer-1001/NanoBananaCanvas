@@ -2,7 +2,7 @@
 > L2 | 父级: /CLAUDE.md
 
 成员清单
-workflows/deploy.yml: GitHub Actions 生产流水线，先执行 lint/test/build；测试前显式安装 Playwright Chromium，并为测试阶段注入 Clerk `publishable/secret` 与 Stripe 运行时变量、Price IDs、Webhook secret；部署阶段先幂等创建 `nano-banana-tasks` Queue，并把 Cloudflare 已占用/已存在语义 (`already exists` / `already taken` / `11009`) 视为可继续，再用 OpenNext + Wrangler CLI 发布 Web 与 API Worker，并强制 JavaScript actions 运行在 Node 24。
+workflows/deploy.yml: GitHub Actions 生产流水线，先执行 lint/test/build；测试前显式安装 Playwright Chromium，并为测试阶段注入 Clerk `publishable/secret` 与 Stripe 运行时变量、Price IDs、Webhook secret；部署阶段先幂等创建 `nano-banana-tasks` Queue，再把 `COMFLY_API_KEY` / `DLAPI_API_KEY` 同步到 Web Worker 与 API Worker 的 Cloudflare secrets，最后用 OpenNext + Wrangler CLI 发布 Web 与 API Worker，并强制 JavaScript actions 运行在 Node 24。
 
 法则: 成员完整·一行一文件·父级链接·技术词前置
 

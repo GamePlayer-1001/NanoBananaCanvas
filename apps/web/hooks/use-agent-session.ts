@@ -123,10 +123,15 @@ export function useAgentSession({
     })
 
     if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: { message?: string } }
+        | null
+      const detail = payload?.error?.message?.trim()
       throw new Error(
-        assistantRuntime.executionMode === 'platform'
-          ? 'Agent 平台模型调用失败'
-          : 'Agent 用户模型调用失败',
+        detail ||
+          (assistantRuntime.executionMode === 'platform'
+            ? 'Agent 平台模型调用失败'
+            : 'Agent 用户模型调用失败'),
       )
     }
 

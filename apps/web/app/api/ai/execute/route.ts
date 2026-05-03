@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/rate-limit, @/lib/api/response, @/lib/db,
  *          @/lib/env, @/lib/nanoid, @/lib/platform-runtime, @/lib/user-model-config, @/services/ai, @/services/ai/openai-compatible,
- *          @/lib/validations/ai, @/lib/api-key-crypto
+ *          @/lib/validations/ai, @/lib/api-key-crypto, @/lib/errors
  * [OUTPUT]: 对外提供 POST /api/ai/execute (平台 Key / user_key 双模式 AI 执行)
  * [POS]: api/ai 的核心执行端点，统一免费平台执行与账号级模型槽位执行的入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -32,6 +32,7 @@ import {
   toRuntimeUserModelConfig,
   type UserModelRuntimeConfig,
 } from '@/lib/user-model-config'
+import { AIServiceError, ErrorCode } from '@/lib/errors'
 import {
   createPlatformTextProvider,
   getPlatformSupplierApiKey,
@@ -106,16 +107,22 @@ async function executeWithPlatformKey(
       })
     }
 
-    const platformKey = await getPlatformSupplierApiKey(providerId)
+    const platformKey = await getPlatformSupplierApiKey(providerId).catch((error) => {
+      throw normalizePlatformExecuteError(error, providerId, modelId)
+    })
     const provider = createPlatformTextProvider(providerId)
 
-    const chatResult = await provider.chat({
-      model: modelId,
-      messages: params.messages,
-      temperature: params.temperature ?? 0.7,
-      maxTokens: params.maxTokens ?? 1024,
-      apiKey: platformKey,
-    })
+    const chatResult = await provider
+      .chat({
+        model: modelId,
+        messages: params.messages,
+        temperature: params.temperature ?? 0.7,
+        maxTokens: params.maxTokens ?? 1024,
+        apiKey: platformKey,
+      })
+      .catch((error) => {
+        throw normalizePlatformExecuteError(error, providerId, modelId)
+      })
 
     const usageEstimate = estimateBillableUnits({
       category: pricing?.category ?? 'text',
@@ -341,6 +348,34 @@ async function findUserConfigRow(
   }
 
   return null
+}
+
+function normalizePlatformExecuteError(
+  error: unknown,
+  providerId: string,
+  modelId: string,
+) {
+  if (error instanceof AIServiceError) {
+    return error
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('Missing required environment variable:')) {
+    return new AIServiceError(
+      ErrorCode.AI_PROVIDER_ERROR,
+      `Platform provider "${providerId}" is not configured for model "${modelId}"`,
+      {
+        providerId,
+        modelId,
+        cause: message,
+      },
+    )
+  }
+
+  return new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, message, {
+    providerId,
+    modelId,
+  })
 }
 
 /* ─── Usage Log ──────────────────────────────────────── */

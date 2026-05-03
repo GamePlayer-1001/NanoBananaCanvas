@@ -190,7 +190,7 @@ describe('POST /api/ai/execute', () => {
       }),
     )
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(503)
     expect(freezeCredits).toHaveBeenCalledTimes(1)
     expect(confirmFrozenCredits).not.toHaveBeenCalled()
     expect(refundFrozenCredits).toHaveBeenCalledTimes(1)
@@ -200,5 +200,34 @@ describe('POST /api/ai/execute', () => {
         source: 'ai_execute_platform_failure_refund',
       }),
     )
+  })
+
+  it('returns 503 with a clear message when platform provider secret is missing', async () => {
+    vi.mocked(getPlatformSupplierApiKey).mockRejectedValue(
+      new Error('Missing required environment variable: COMFLY_API_KEY'),
+    )
+
+    const response = await POST(
+      new Request('http://localhost/api/ai/execute', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          executionMode: 'platform',
+          provider: 'comfly',
+          modelId: 'gpt-5.4',
+          messages: [{ role: 'user', content: 'hello' }],
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: {
+        code: 'AI_PROVIDER_ERROR',
+        message: 'Platform provider "comfly" is not configured for model "gpt-5.4"',
+      },
+    })
+    expect(refundFrozenCredits).toHaveBeenCalledTimes(1)
   })
 })

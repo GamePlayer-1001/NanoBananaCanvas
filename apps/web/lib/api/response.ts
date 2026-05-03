@@ -79,6 +79,11 @@ function errorCodeToStatus(code: string): number {
   if (code === 'AUTH_FORBIDDEN') return 403
   if (code.startsWith('AUTH_')) return 401
   if (code.startsWith('VALIDATION_')) return 400
+  if (code === 'AI_RATE_LIMITED') return 429
+  if (code === 'AI_QUOTA_EXCEEDED') return 402
+  if (code === 'AI_MODEL_UNAVAILABLE') return 503
+  if (code === 'AI_PROVIDER_ERROR') return 503
+  if (code.startsWith('AI_')) return 502
   if (code === 'UPLOAD_TOO_LARGE') return 413
   if (code.startsWith('UPLOAD_')) return 400
   if (code === 'TASK_CONCURRENCY_EXCEEDED') return 429

@@ -183,6 +183,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Sync platform secrets to Web Worker
+        working-directory: apps/web
+        shell: bash
+        run: |
+          printf '%s' "$COMFLY_API_KEY" | pnpm dlx wrangler@4 secret put COMFLY_API_KEY
+          printf '%s' "$DLAPI_API_KEY" | pnpm dlx wrangler@4 secret put DLAPI_API_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMFLY_API_KEY: ${{ secrets.COMFLY_API_KEY }}
+          DLAPI_API_KEY: ${{ secrets.DLAPI_API_KEY }}
+
       # ── 2. 部署前端 → Cloudflare Workers ──────
       - name: Deploy Web
         working-directory: apps/web
@@ -190,6 +202,18 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Sync platform secrets to API Worker
+        working-directory: apps/worker
+        shell: bash
+        run: |
+          printf '%s' "$COMFLY_API_KEY" | pnpm dlx wrangler@4 secret put COMFLY_API_KEY
+          printf '%s' "$DLAPI_API_KEY" | pnpm dlx wrangler@4 secret put DLAPI_API_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMFLY_API_KEY: ${{ secrets.COMFLY_API_KEY }}
+          DLAPI_API_KEY: ${{ secrets.DLAPI_API_KEY }}
 
       # ── 3. 部署 API Worker → Cloudflare Workers ──
       - name: Deploy API Worker
