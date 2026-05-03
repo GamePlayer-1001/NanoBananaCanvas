@@ -41,6 +41,7 @@ import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
   STATIC_PLATFORM_IMAGE_PRESETS,
+  toPlatformVisualOption,
   toPlatformVisualOptions,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -397,13 +398,15 @@ export function ImageGenNode(props: NodeProps) {
                     ? platformModelOptions
                     : [
                         {
-                          selectionValue: `${platformProviderId}:${platformModelId}`,
-                          value: platformModelId,
-                          label: displayModelLabel,
-                          provider: platformProviderId,
-                          providerLabel: platformProviderId,
-                          logoText: platformProviderId.slice(0, 2).toUpperCase(),
-                          logoClassName: 'bg-slate-200 text-slate-700',
+                          ...toPlatformVisualOption({
+                            id: `fallback-${platformProviderId}-${platformModelId}`,
+                            modelId: platformModelId,
+                            modelName: displayModelLabel,
+                            provider: platformProviderId,
+                            category: 'image',
+                            tier: 'premium',
+                            accessible: true,
+                          }),
                         },
                       ]
                 }

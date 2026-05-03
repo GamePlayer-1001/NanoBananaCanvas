@@ -29,6 +29,8 @@ export interface AgentComposerModelOption {
   provider?: string
   logoText?: string
   logoClassName?: string
+  logoImageUrl?: string
+  logoAlt?: string
   description?: string
   credits?: number
 }

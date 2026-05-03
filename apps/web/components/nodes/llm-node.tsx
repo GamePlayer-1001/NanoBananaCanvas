@@ -31,9 +31,12 @@ import {
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
   AGENT_PLATFORM_MODEL_PRESETS,
+  getAgentPlatformModelOptions,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
+
+import { PlatformModelSelect } from '@/components/shared/platform-model-select'
 
 import { BaseNode } from './base-node'
 
@@ -78,6 +81,7 @@ export function LLMNode(props: NodeProps) {
       })),
     [],
   )
+  const platformModelOptions = useMemo(() => getAgentPlatformModelOptions(), [])
   const selectedPlatformEntry = useMemo(
     () =>
       platformTextModels.find(
@@ -151,13 +155,13 @@ export function LLMNode(props: NodeProps) {
   ])
 
   const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
+    (value: string) => {
       const nextModel = platformTextModels.find(
-        (item) => item.modelId === e.target.value,
+        (item) => item.modelId === value,
       )
       updateConfig({
         platformProvider: nextModel?.provider ?? 'comfly',
-        platformModel: e.target.value,
+        platformModel: value,
       })
     },
     [platformTextModels, updateConfig],
@@ -227,22 +231,18 @@ export function LLMNode(props: NodeProps) {
         ) : null}
 
         <ConfigField label={t('model')}>
-          <select
-            value={executionMode === 'user_key' ? userKeyModelLabel : selectedPlatformModel}
-            onChange={onModelChange}
-            className={SELECT_CLASS}
-            disabled={executionMode === 'user_key'}
-          >
-            {executionMode === 'user_key' ? (
-              <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
-            ) : (
-              platformTextModels.map((item) => (
-                <option key={item.id} value={item.modelId}>
-                  {item.modelName}
-                </option>
-              ))
-            )}
-          </select>
+          {executionMode === 'user_key' ? (
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              {userKeyModelLabel}
+            </div>
+          ) : (
+            <PlatformModelSelect
+              value={selectedPlatformModel}
+              options={platformModelOptions}
+              onValueChange={onModelChange}
+              triggerClassName={SELECT_CLASS}
+            />
+          )}
         </ConfigField>
 
         <ConfigField label={t('executionMode')}>

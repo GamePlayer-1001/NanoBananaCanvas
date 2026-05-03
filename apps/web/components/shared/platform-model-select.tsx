@@ -7,15 +7,17 @@
 
 'use client'
 
+import { useState } from 'react'
+import { Check, ChevronDown } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 import type { PlatformModelVisualOption } from '@/lib/platform-models'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface PlatformModelSelectProps {
   value?: string
@@ -39,39 +41,50 @@ export function PlatformModelSelect({
   size = 'default',
 }: PlatformModelSelectProps) {
   const selected = options.find((option) => option.value === value) ?? options[0]
-  const selectedSelectionValue = selected?.selectionValue
+  const [open, setOpen] = useState(false)
 
   return (
-    <Select
-      value={selectedSelectionValue}
-      onValueChange={(selectionValue) => {
-        const nextOption = options.find((option) => option.selectionValue === selectionValue)
-        if (!nextOption) return
-        onValueChange?.(nextOption.value)
-      }}
-      disabled={disabled}
-    >
-      <SelectTrigger
-        size={size}
-        className={cn('w-full justify-between', triggerClassName)}
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <button
+          type="button"
+          className={cn(
+            'flex w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+            size === 'sm' ? 'h-8' : 'h-9',
+            triggerClassName,
+          )}
+        >
+          {selected ? (
+            <ModelOptionContent option={selected} compact />
+          ) : (
+            <span className="text-muted-foreground truncate">{placeholder}</span>
+          )}
+          <ChevronDown className="size-4 shrink-0 opacity-50" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={6}
+        className={cn('min-w-[240px]', contentClassName)}
       >
-        {selected ? (
-          <ModelOptionContent option={selected} compact />
-        ) : (
-          <SelectValue placeholder={placeholder} />
-        )}
-      </SelectTrigger>
-      <SelectContent align="start" className={contentClassName}>
-        {options.map((option) => (
-          <SelectItem
-            key={option.selectionValue}
-            value={option.selectionValue}
-          >
-            <ModelOptionContent option={option} />
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        {options.map((option) => {
+          const active = option.selectionValue === selected?.selectionValue
+          return (
+            <DropdownMenuItem
+              key={option.selectionValue}
+              onSelect={() => {
+                onValueChange?.(option.value)
+                setOpen(false)
+              }}
+              className="flex items-center justify-between gap-3"
+            >
+              <ModelOptionContent option={option} />
+              {active ? <Check className="size-4 text-[var(--brand-500)]" /> : null}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -84,14 +97,30 @@ function ModelOptionContent({
 }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <span
-        className={cn(
-          'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
-          option.logoClassName,
-        )}
-      >
-        {option.logoText}
-      </span>
+      {option.logoImageUrl ? (
+        <span
+          className={cn(
+            'inline-flex size-5 shrink-0 items-center justify-center rounded-full overflow-hidden',
+            option.logoClassName,
+          )}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={option.logoImageUrl}
+            alt={option.logoAlt ?? option.label}
+            className="size-3.5 object-contain"
+          />
+        </span>
+      ) : (
+        <span
+          className={cn(
+            'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+            option.logoClassName,
+          )}
+        >
+          {option.logoText}
+        </span>
+      )}
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-left">{option.label}</span>
         {!compact && option.description ? (

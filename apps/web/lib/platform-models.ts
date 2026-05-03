@@ -29,6 +29,8 @@ export interface PlatformModelVisualOption {
   providerLabel: string
   logoText: string
   logoClassName: string
+  logoImageUrl?: string
+  logoAlt?: string
   description?: string
   credits?: number
 }
@@ -57,45 +59,69 @@ const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
   jimeng: 'Jimeng',
 }
 
-const PLATFORM_PROVIDER_LOGOS: Record<
-  string,
-  {
-    text: string
-    className: string
+type PlatformModelBranding = {
+  text: string
+  className: string
+  imageUrl?: string
+  alt: string
+}
+
+function buildSimpleIconUrl(slug: string) {
+  return `https://cdn.jsdelivr.net/npm/simple-icons@v16/icons/${slug}.svg`
+}
+
+function resolvePlatformModelBranding(modelId: string, modelName?: string): PlatformModelBranding {
+  const normalized = `${modelId} ${modelName ?? ''}`.toLowerCase()
+
+  if (normalized.includes('gpt')) {
+    return {
+      text: 'AI',
+      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
+      imageUrl: buildSimpleIconUrl('openai'),
+      alt: 'OpenAI',
+    }
   }
-> = {
-  openrouter: {
-    text: 'OR',
-    className: 'bg-slate-900 text-white',
-  },
-  deepseek: {
-    text: 'DS',
-    className: 'bg-sky-500 text-white',
-  },
-  gemini: {
-    text: 'GM',
-    className: 'bg-emerald-500 text-white',
-  },
-  openai: {
+
+  if (normalized.includes('gemini')) {
+    return {
+      text: 'GM',
+      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
+      imageUrl: buildSimpleIconUrl('googlegemini'),
+      alt: 'Google Gemini',
+    }
+  }
+
+  if (normalized.includes('deepseek')) {
+    return {
+      text: 'DS',
+      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
+      imageUrl: buildSimpleIconUrl('deepseek'),
+      alt: 'DeepSeek',
+    }
+  }
+
+  if (normalized.includes('nano-banana')) {
+    return {
+      text: 'NB',
+      className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-200',
+      alt: 'Nano Banana',
+    }
+  }
+
+  if (normalized.includes('kling')) {
+    return {
+      text: 'KG',
+      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
+      imageUrl: buildSimpleIconUrl('kling'),
+      alt: 'Kling',
+    }
+  }
+
+  return {
     text: 'AI',
-    className: 'bg-emerald-950 text-white',
-  },
-  dlapi: {
-    text: 'DL',
-    className: 'bg-fuchsia-600 text-white',
-  },
-  comfly: {
-    text: 'CF',
-    className: 'bg-amber-500 text-slate-950',
-  },
-  kling: {
-    text: 'KG',
-    className: 'bg-rose-500 text-white',
-  },
-  jimeng: {
-    text: 'JM',
-    className: 'bg-violet-500 text-white',
-  },
+    className: 'bg-slate-200 text-slate-700',
+    alt: 'AI Model',
+  }
 }
 
 export const AGENT_PLATFORM_MODEL_PRESETS: readonly AgentPlatformModelPreset[] = [
@@ -157,18 +183,6 @@ export function getPlatformProviderLabel(provider: string): string {
   return PLATFORM_PROVIDER_LABELS[provider] ?? provider
 }
 
-export function getPlatformProviderLogo(provider: string): {
-  text: string
-  className: string
-} {
-  return (
-    PLATFORM_PROVIDER_LOGOS[provider] ?? {
-      text: provider.slice(0, 2).toUpperCase(),
-      className: 'bg-slate-200 text-slate-700',
-    }
-  )
-}
-
 export function groupPlatformModelsByProvider(
   models: readonly PlatformModelCatalogItem[],
 ): PlatformModelProviderGroup[] {
@@ -197,7 +211,7 @@ export function toPlatformVisualOption(
     credits?: number
   },
 ): PlatformModelVisualOption {
-  const logo = getPlatformProviderLogo(model.provider)
+  const logo = resolvePlatformModelBranding(model.modelId, model.modelName)
 
   return {
     selectionValue: `${model.provider}:${model.modelId}`,
@@ -207,6 +221,8 @@ export function toPlatformVisualOption(
     providerLabel: getPlatformProviderLabel(model.provider),
     logoText: logo.text,
     logoClassName: logo.className,
+    logoImageUrl: logo.imageUrl,
+    logoAlt: logo.alt,
     description: extra?.description,
     credits: extra?.credits,
   }
@@ -248,7 +264,7 @@ export function getAgentPlatformModelOptions(
   }
 
   return AGENT_PLATFORM_MODEL_PRESETS.map((preset) => {
-    const logo = getPlatformProviderLogo(preset.provider)
+    const logo = resolvePlatformModelBranding(preset.modelId, preset.modelName)
 
     return {
       selectionValue: `${preset.provider}:${preset.modelId}`,
@@ -258,6 +274,8 @@ export function getAgentPlatformModelOptions(
       providerLabel: getPlatformProviderLabel(preset.provider),
       logoText: logo.text,
       logoClassName: logo.className,
+      logoImageUrl: logo.imageUrl,
+      logoAlt: logo.alt,
       credits: preset.credits,
       description: `${preset.credits} 积分/次`,
     }
