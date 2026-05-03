@@ -40,6 +40,12 @@ export interface AgentPlatformModelPreset {
   credits: number
 }
 
+export interface StaticPlatformImagePreset {
+  provider: 'dlapi' | 'comfly'
+  modelId: string
+  modelName: string
+}
+
 const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
   openrouter: 'OpenRouter',
   deepseek: 'DeepSeek',
@@ -116,6 +122,34 @@ export const AGENT_PLATFORM_MODEL_PRESETS: readonly AgentPlatformModelPreset[] =
     modelId: 'deepseek-v3',
     modelName: 'deepseek-v3',
     credits: 1,
+  },
+] as const
+
+export const STATIC_PLATFORM_IMAGE_PRESETS: readonly StaticPlatformImagePreset[] = [
+  {
+    provider: 'dlapi',
+    modelId: 'gpt-image-2',
+    modelName: 'gpt-image-2',
+  },
+  {
+    provider: 'comfly',
+    modelId: 'gpt-image-2-all',
+    modelName: 'gpt-image-2-all',
+  },
+  {
+    provider: 'comfly',
+    modelId: 'gemini-3.1-flash-image-preview',
+    modelName: 'Nano Banana 2 pro',
+  },
+  {
+    provider: 'comfly',
+    modelId: 'nano-banana-pro',
+    modelName: 'nano-banana-pro',
+  },
+  {
+    provider: 'comfly',
+    modelId: 'nano-banana',
+    modelName: 'nano-banana',
   },
 ] as const
 

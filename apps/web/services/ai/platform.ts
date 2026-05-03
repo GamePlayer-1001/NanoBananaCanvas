@@ -13,7 +13,6 @@ import { getPlatformKey, getProvider } from './provider'
 import type { AIProvider } from './types'
 
 const PLATFORM_OPENAI_BASE_URLS: Partial<Record<PlatformSupplierId, string>> = {
-  openai: 'https://api.openai.com/v1',
   comfly: 'https://ai.comfly.chat/v1',
   dlapi: 'https://api.dlapi.xyz/v1',
 }
@@ -28,13 +27,6 @@ export async function getPlatformSupplierApiKey(
   supplierId: PlatformSupplierId,
 ): Promise<string> {
   switch (supplierId) {
-    case 'openai':
-      return requireEnv('OPENAI_API_KEY')
-    case 'kling': {
-      const accessKey = await requireEnv('KLING_ACCESS_KEY')
-      const secretKey = await requireEnv('KLING_SECRET_KEY')
-      return `${accessKey}:${secretKey}`
-    }
     default:
       return getPlatformKey(supplierId)
   }
@@ -45,7 +37,7 @@ export function createPlatformTextProvider(
 ): AIProvider {
   const baseUrl = getPlatformSupplierBaseUrl(supplierId)
 
-  if (baseUrl && (supplierId === 'openai' || supplierId === 'comfly')) {
+  if (baseUrl && supplierId === 'comfly') {
     return new OpenAICompatibleClient(baseUrl)
   }
 

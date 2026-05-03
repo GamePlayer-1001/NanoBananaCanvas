@@ -107,8 +107,8 @@ register({
     outputs: [{ id: 'text-out', label: 'Response', type: 'string' }],
   },
   defaults: {
-    platformProvider: 'openrouter',
-    platformModel: 'openai/gpt-4o-mini',
+    platformProvider: 'comfly',
+    platformModel: 'gpt-5.4',
     temperature: 0.7,
   },
   toolbar: { labelKey: 'llm' },
@@ -140,8 +140,8 @@ register({
     outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },
   defaults: {
-    platformProvider: 'openrouter',
-    platformModel: 'openai/dall-e-3',
+    platformProvider: 'dlapi',
+    platformModel: 'gpt-image-2',
     size: 'auto',
     aspectRatio: '1:1',
     showPreview: false,
@@ -183,7 +183,7 @@ register({
     outputs: [{ id: 'audio-out', label: 'Audio', type: 'audio' }],
   },
   defaults: {
-    platformProvider: 'openai',
+    platformProvider: 'comfly',
     platformModel: 'tts-1',
     voice: 'alloy',
     speed: 1.0,

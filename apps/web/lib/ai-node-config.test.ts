@@ -77,12 +77,12 @@ describe('ai-node-config', () => {
     expect(
       getNodeConfigMigrationPatch('llm', {
         executionMode: 'platform',
-        provider: 'openrouter',
-        model: 'openai/gpt-4o-mini',
+        provider: 'comfly',
+        model: 'gpt-5.4',
       }),
     ).toEqual({
-      platformProvider: 'openrouter',
-      platformModel: 'openai/gpt-4o-mini',
+      platformProvider: 'comfly',
+      platformModel: 'gpt-5.4',
     })
   })
 })

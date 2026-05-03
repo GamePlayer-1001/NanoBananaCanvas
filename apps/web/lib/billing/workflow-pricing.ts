@@ -20,10 +20,10 @@ export interface WorkflowImagePriceRule {
 export const PLATFORM_TEXT_EXECUTION_CREDITS = 1
 export const SIGNIN_TRIAL_CREDITS = 100
 export const WORKFLOW_IMAGE_FALLBACK_PRICES: Record<WorkflowImagePriceTier, number> = {
-  '1k': 10,
-  '2k': 15,
-  '4k': 20,
-  '8k': 30,
+  '1k': 20,
+  '2k': 25,
+  '4k': 30,
+  '8k': 40,
 }
 
 const WORKFLOW_IMAGE_PRICE_RULES: WorkflowImagePriceRule[] = [
@@ -31,25 +31,35 @@ const WORKFLOW_IMAGE_PRICE_RULES: WorkflowImagePriceRule[] = [
     key: 'gpt-image-2',
     label: 'GPT Image 2',
     aliases: ['gpt-image-2', 'gpt image 2'],
-    prices: { '1k': 10, '2k': 15, '4k': 20, '8k': 30 },
+    prices: { '1k': 20, '2k': 25, '4k': 30, '8k': 40 },
   },
   {
-    key: 'nano-banana-2',
-    label: 'Nano Banana 2',
-    aliases: ['nano-banana-2', 'nano banana 2'],
-    prices: { '1k': 15, '2k': 20, '4k': 30, '8k': 50 },
+    key: 'gpt-image-2-all',
+    label: 'gpt-image-2-all',
+    aliases: ['gpt-image-2-all', 'gpt image 2 all'],
+    prices: { '1k': 20, '2k': 25, '4k': 30, '8k': 40 },
   },
   {
-    key: 'nano-banana-pro-2',
-    label: 'Nano Banana Pro 2',
-    aliases: ['nano-banana-pro-2', 'nano banana pro 2'],
-    prices: { '1k': 20, '2k': 20, '4k': 40, '8k': 80 },
+    key: 'nano-banana-2-pro',
+    label: 'Nano Banana 2 pro',
+    aliases: [
+      'gemini-3.1-flash-image-preview',
+      'nano banana 2 pro',
+      'nano-banana-2-pro',
+    ],
+    prices: { '1k': 25, '2k': 30, '4k': 45, '8k': 50 },
   },
   {
     key: 'nano-banana',
     label: 'Nano Banana',
     aliases: ['nano-banana', 'nano banana'],
-    prices: { '1k': 10, '2k': 15, '4k': 20, '8k': 30 },
+    prices: { '1k': 20, '2k': 25, '4k': 30, '8k': 40 },
+  },
+  {
+    key: 'nano-banana-pro',
+    label: 'Nano Banana Pro',
+    aliases: ['nano-banana-pro', 'nano banana pro'],
+    prices: { '1k': 20, '2k': 25, '4k': 30, '8k': 40 },
   },
 ]
 
