@@ -156,15 +156,15 @@ export function LLMNode(props: NodeProps) {
 
   const onModelChange = useCallback(
     (value: string) => {
-      const nextModel = platformTextModels.find(
-        (item) => item.modelId === value,
+      const nextModel = platformModelOptions.find(
+        (item) => item.selectionValue === value,
       )
       updateConfig({
-        platformProvider: nextModel?.provider ?? 'comfly',
-        platformModel: value,
+        platformProvider: nextModel?.provider ?? selectedPlatformProvider,
+        platformModel: nextModel?.value ?? selectedPlatformModel,
       })
     },
-    [platformTextModels, updateConfig],
+    [platformModelOptions, selectedPlatformModel, selectedPlatformProvider, updateConfig],
   )
 
   const onTemperatureChange = useCallback(
@@ -198,17 +198,13 @@ export function LLMNode(props: NodeProps) {
       bodyClassName="min-h-0"
     >
       <div className="flex h-full min-h-0 flex-col gap-3">
-        <ConfigField label={t('provider')}>
-          {executionMode === 'user_key' ? (
+        {executionMode === 'user_key' ? (
+          <ConfigField label={t('provider')}>
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
               {userKeyProviderLabel}
             </div>
-          ) : (
-            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
-              Comfly
-            </div>
-          )}
-        </ConfigField>
+          </ConfigField>
+        ) : null}
 
         {executionMode === 'user_key' ? (
           <ConfigField label={t('accountConfigLabel')}>
@@ -237,7 +233,7 @@ export function LLMNode(props: NodeProps) {
             </div>
           ) : (
             <PlatformModelSelect
-              value={selectedPlatformModel}
+              value={`${selectedPlatformProvider}:${selectedPlatformModel}`}
               options={platformModelOptions}
               onValueChange={onModelChange}
               triggerClassName={SELECT_CLASS}

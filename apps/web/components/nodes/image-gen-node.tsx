@@ -289,8 +289,8 @@ export function ImageGenNode(props: NodeProps) {
 
   const onPlatformModelChange = useCallback(
     (value: string) => {
-      const nextModel = flatPlatformModels.find(
-        (item) => item.modelId === value,
+      const nextModel = platformModelOptions.find(
+        (item) => item.selectionValue === value,
       )
       if (!nextModel) {
         return
@@ -298,10 +298,10 @@ export function ImageGenNode(props: NodeProps) {
 
       updateConfig({
         platformProvider: nextModel.provider,
-        platformModel: nextModel.modelId,
+        platformModel: nextModel.value,
       })
     },
-    [flatPlatformModels, updateConfig],
+    [platformModelOptions, updateConfig],
   )
 
   return (
@@ -390,8 +390,8 @@ export function ImageGenNode(props: NodeProps) {
               <PlatformModelSelect
                 value={
                   selectedPlatformModel
-                    ? selectedPlatformModel.modelId
-                    : platformModelId
+                    ? `${selectedPlatformModel.provider}:${selectedPlatformModel.modelId}`
+                    : `${platformProviderId}:${platformModelId}`
                 }
                 options={
                   platformModelOptions.length > 0

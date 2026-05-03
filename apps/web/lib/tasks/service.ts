@@ -231,7 +231,8 @@ export interface TaskServiceRuntime {
   requireEnv: (key: string) => Promise<string>
   getR2: () => Promise<R2Bucket>
   invalidateStorageCache: (userId: string) => Promise<void>
-  getPlatformSupplierApiKey: (provider: PlatformSupplierId) => Promise<string>
+  getPlatformSupplierApiKey?: (provider: PlatformSupplierId) => Promise<string>
+  getPlatformKey?: (provider: string) => Promise<string>
   dispatchTask?: (message: TaskQueueMessage) => Promise<void>
   getWorkflowStatus?: (instanceId: string) => Promise<WorkflowRuntimeStatus | null>
 }
@@ -1912,7 +1913,8 @@ async function getTaskPlatformKey(
   }).supplierId
 
   try {
-    return await runtime.getPlatformSupplierApiKey(provider)
+    return await (runtime.getPlatformSupplierApiKey ??
+      defaultTaskRuntime.getPlatformSupplierApiKey!)(provider)
   } catch (error) {
     throw toTaskProviderError(error, { provider })
   }

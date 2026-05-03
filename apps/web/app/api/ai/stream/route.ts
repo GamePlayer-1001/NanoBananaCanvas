@@ -26,6 +26,7 @@ import {
 import { getPlatformTextExecutionCredits } from '@/lib/billing/workflow-pricing'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
+import { AIServiceError, ErrorCode } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
@@ -97,7 +98,9 @@ export async function POST(req: Request) {
       platformSupplierId = runtimeModel.supplierId
       providerId = platformSupplierId
       resolvedModelId = runtimeModel.modelId
-      apiKey = await getPlatformSupplierApiKey(platformSupplierId)
+      apiKey = await getPlatformSupplierApiKey(platformSupplierId).catch((error) => {
+        throw normalizePlatformStreamError(error, providerId, resolvedModelId)
+      })
     }
 
     const executionReferenceId = `ai_stream_${nanoid()}`
@@ -329,7 +332,7 @@ async function writeUsageLog(
       .prepare(
         `INSERT INTO ai_usage_logs (id, user_id, workflow_id, node_id, provider, model_id,
          execution_mode, billable_units, estimated_credits, duration_ms, status, error_message)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -351,4 +354,32 @@ async function writeUsageLog(
       error: err instanceof Error ? err.message : String(err),
     })
   }
+}
+
+function normalizePlatformStreamError(
+  error: unknown,
+  providerId: string,
+  modelId: string,
+) {
+  if (error instanceof AIServiceError) {
+    return error
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('Missing required environment variable:')) {
+    return new AIServiceError(
+      ErrorCode.AI_PROVIDER_ERROR,
+      `Platform provider "${providerId}" is not configured for model "${modelId}"`,
+      {
+        providerId,
+        modelId,
+        cause: message,
+      },
+    )
+  }
+
+  return new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, message, {
+    providerId,
+    modelId,
+  })
 }

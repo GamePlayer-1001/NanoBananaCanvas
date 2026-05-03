@@ -27,7 +27,7 @@ export interface PlatformModelVisualOption {
   label: string
   provider: string
   providerLabel: string
-  logoText: string
+  logoName: 'sparkles' | 'image' | 'bot' | 'brain' | 'audio'
   logoClassName: string
   description?: string
   credits?: number
@@ -58,7 +58,7 @@ const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
 }
 
 type PlatformModelBranding = {
-  text: string
+  icon: PlatformModelVisualOption['logoName']
   className: string
   alt: string
 }
@@ -68,7 +68,7 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
 
   if (normalized.includes('gpt')) {
     return {
-      text: 'OA',
+      icon: 'sparkles',
       className: 'bg-emerald-950 text-white',
       alt: 'OpenAI',
     }
@@ -76,7 +76,7 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
 
   if (normalized.includes('gemini')) {
     return {
-      text: 'GM',
+      icon: 'brain',
       className: 'bg-sky-500 text-white',
       alt: 'Google Gemini',
     }
@@ -84,7 +84,7 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
 
   if (normalized.includes('deepseek')) {
     return {
-      text: 'DS',
+      icon: 'bot',
       className: 'bg-blue-600 text-white',
       alt: 'DeepSeek',
     }
@@ -92,7 +92,7 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
 
   if (normalized.includes('nano-banana') || normalized.includes('banana')) {
     return {
-      text: 'NB',
+      icon: 'image',
       className: 'bg-amber-100 text-amber-900',
       alt: 'Nano Banana',
     }
@@ -100,14 +100,14 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
 
   if (normalized.includes('kling')) {
     return {
-      text: 'KG',
+      icon: 'image',
       className: 'bg-slate-900 text-white',
       alt: 'Kling',
     }
   }
 
   return {
-    text: 'AI',
+    icon: normalized.includes('tts') || normalized.includes('audio') ? 'audio' : 'sparkles',
     className: 'bg-slate-200 text-slate-700',
     alt: 'AI Model',
   }
@@ -141,11 +141,6 @@ export const AGENT_PLATFORM_MODEL_PRESETS: readonly AgentPlatformModelPreset[] =
 ] as const
 
 export const STATIC_PLATFORM_IMAGE_PRESETS: readonly StaticPlatformImagePreset[] = [
-  {
-    provider: 'dlapi',
-    modelId: 'gpt-image-2',
-    modelName: 'gpt-image-2',
-  },
   {
     provider: 'comfly',
     modelId: 'gpt-image-2-all',
@@ -208,7 +203,7 @@ export function toPlatformVisualOption(
     label: model.modelName,
     provider: model.provider,
     providerLabel: getPlatformProviderLabel(model.provider),
-    logoText: logo.text,
+    logoName: logo.icon,
     logoClassName: logo.className,
     description: extra?.description,
     credits: extra?.credits,
@@ -259,7 +254,7 @@ export function getAgentPlatformModelOptions(
       label: preset.modelName,
       provider: preset.provider,
       providerLabel: getPlatformProviderLabel(preset.provider),
-      logoText: logo.text,
+      logoName: logo.icon,
       logoClassName: logo.className,
       credits: preset.credits,
       description: `${preset.credits} 积分/次`,

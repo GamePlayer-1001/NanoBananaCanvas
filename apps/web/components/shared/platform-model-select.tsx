@@ -8,7 +8,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { AudioLines, Bot, BrainCircuit, Check, ChevronDown, ImageIcon, Sparkles } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { PlatformModelVisualOption } from '@/lib/platform-models'
@@ -18,6 +18,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+const PLATFORM_OPTION_ICONS = {
+  image: ImageIcon,
+  bot: Bot,
+  brain: BrainCircuit,
+  audio: AudioLines,
+  sparkles: Sparkles,
+} as const
 
 interface PlatformModelSelectProps {
   value?: string
@@ -95,6 +103,8 @@ function ModelOptionContent({
   option: PlatformModelVisualOption
   compact?: boolean
 }) {
+  const Icon = PLATFORM_OPTION_ICONS[option.logoName]
+
   return (
     <span className="flex min-w-0 items-center gap-2">
       <span
@@ -103,7 +113,7 @@ function ModelOptionContent({
           option.logoClassName,
         )}
       >
-        {option.logoText}
+        <Icon className="size-3" />
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-left">{option.label}</span>

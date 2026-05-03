@@ -53,13 +53,6 @@ const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
   },
 
   {
-    supplierId: 'dlapi',
-    modelId: 'gpt-image-2',
-    modelName: 'gpt-image-2',
-    category: 'image',
-    tier: 'premium',
-  },
-  {
     supplierId: 'comfly',
     modelId: 'gpt-image-2-all',
     modelName: 'gpt-image-2-all',
