@@ -5,7 +5,7 @@ P2 异步任务执行核心 — D1 真相源 + Queue/Workflow 双轨编排 + 客
 
 ## 成员清单
 
-- `service.ts`: 核心服务层，7 大函数 (checkConcurrency/submitTask/processTaskDispatch/checkTask/cancelTask/listTasks/deleteTasks)，平台模式显式读 provider/model 并接回 `freeze/confirm/refund`，user_key 模式显式读 capability/configId 且不再写平台 credits 语义；图片任务现为“submit 先返回最小 dispatch 指令 + R2 持久化执行快照 + 按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue + Worker 真后台执行 + 完成后回写 D1/R2”，并额外在 `executeTaskRequest` 做原子认领、在 `checkTask` 仅对 legacy queue 任务做节流补投递，不在当前 HTTP 请求里同步执行，避免轮询请求被上游出图阻塞成 524；`processTaskDispatch()` 现在会把快照缺失、配置恢复失败、运行时凭据缺失等 Worker 黑洞显式收敛为 `failed`，不再让任务永远卡在 `pending`
+- `service.ts`: 核心服务层，7 大函数 (checkConcurrency/submitTask/processTaskDispatch/checkTask/cancelTask/listTasks/deleteTasks)，平台模式显式读 provider/model 并接回 `freeze/confirm/refund`，user_key 模式显式读 capability/configId 且不再写平台 credits 语义；图片任务现为“submit 先返回最小 dispatch 指令 + R2 持久化执行快照 + 按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue + Worker 真后台执行 + 完成后回写 D1/R2”，并额外在 `executeTaskRequest` 做原子认领、在 `checkTask` 仅对 legacy queue 任务做节流补投递，不在当前 HTTP 请求里同步执行，避免轮询请求被上游出图阻塞成 524；`processTaskDispatch()` 现在会把快照缺失、配置恢复失败、运行时凭据缺失等 Worker 黑洞显式收敛为 `failed`，不再让任务永远卡在 `pending`；现补充 submit/dispatch/check/fail/timeout 的结构化诊断日志，统一带出 `taskId/userId/taskType/provider/modelId/executionMode/workflowId/nodeId/orchestrator`
 - `service.test.ts`: 服务层回归测试，验证平台前置失败会收敛为 TaskError，而不是漏成 UNKNOWN 500，并覆盖图片任务排队返回 / 后台完成回写 / data URL 清洗 / Queue 消费者从 R2+D1 重建执行上下文 / 轮询侧自愈补投递 / 分发黑洞失败收口
 - `index.ts`: 桶文件，统一导出 service + processors 的公共 API
 - `processors/`: Provider 处理器子模块，详见 processors/CLAUDE.md

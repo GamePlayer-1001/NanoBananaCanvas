@@ -81,7 +81,8 @@ export class WorkflowExecutor {
     const skippedNodes = new Set<string>()
 
     /* ── 按拓扑序逐节点执行 ────────────────────────── */
-    for (const nodeId of order) {
+    for (let orderIndex = 0; orderIndex < order.length; orderIndex++) {
+      const nodeId = order[orderIndex]
       if (signal.aborted) {
         callbacks.onError('Execution aborted')
         return
@@ -145,7 +146,13 @@ export class WorkflowExecutor {
         }
 
         const errorMsg = err instanceof Error ? err.message : String(err)
-        log.error('Node execution failed', err, { nodeId, error: errorMsg })
+        log.error('Node execution failed', err, {
+          nodeId,
+          nodeType: node.type ?? 'unknown',
+          workflowId: workflowId ?? null,
+          executionOrderIndex: orderIndex,
+          error: errorMsg,
+        })
 
         callbacks.onNodeError(nodeId, errorMsg)
         callbacks.updateNodeStatus(nodeId, 'error')

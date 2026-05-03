@@ -1174,6 +1174,19 @@ export async function submitTask(
   let persistedRuntimeMeta: PersistedTaskRuntimeMeta | undefined
   const taskId = nanoid()
   const taskOrchestrator = normalizeTaskOrchestrator(taskType, orchestrator)
+  log.info('Task submit started', {
+    taskId,
+    userId,
+    taskType,
+    provider: provider ?? null,
+    capability: capability ?? null,
+    modelId: modelId ?? null,
+    configId: configId ?? null,
+    executionMode,
+    workflowId: workflowId ?? null,
+    nodeId: nodeId ?? null,
+    orchestrator: taskOrchestrator,
+  })
 
   const activeTaskForNode = await findLatestActiveTaskForNode(db, {
     userId,
@@ -1430,10 +1443,15 @@ export async function submitTask(
 
   log.info('Task submitted', {
     taskId,
+    userId,
     taskType,
     provider: requestProvider,
     resolvedProvider: persistedProvider,
+    modelId: persistedModelId,
     executionMode,
+    workflowId: workflowId ?? null,
+    nodeId: nodeId ?? null,
+    orchestrator: taskOrchestrator,
     initialStatus,
   })
 
@@ -1507,6 +1525,10 @@ export async function processTaskDispatch(
   message: TaskQueueMessage,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
+  log.info('Task dispatch started', {
+    taskId: message.taskId,
+    userId: message.userId,
+  })
   const row = await loadTaskRow(db, message.taskId, message.userId)
 
   if (!row) {
@@ -1579,8 +1601,26 @@ export async function processTaskDispatch(
       },
       runtime,
     )
+    log.info('Task dispatch completed', {
+      taskId: row.id,
+      userId: row.user_id,
+      taskType: row.task_type,
+      executionMode: row.execution_mode,
+      workflowId: row.workflow_id,
+      nodeId: row.node_id,
+    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
+    log.error('Task dispatch failed', error, {
+      taskId: row.id,
+      userId: row.user_id,
+      taskType: row.task_type,
+      provider: row.provider,
+      modelId: row.model_id,
+      executionMode: row.execution_mode,
+      workflowId: row.workflow_id,
+      nodeId: row.node_id,
+    })
     await handleFailure(db, row, errorMessage, runtime)
   }
 }
@@ -1620,6 +1660,17 @@ async function executeTaskRequest(
     log.info('Task execution claim skipped', { taskId, userId, taskType })
     return
   }
+
+  log.info('Task execution claimed', {
+    taskId,
+    userId,
+    taskType,
+    provider: requestProvider,
+    resolvedProvider: initialResolvedProvider,
+    modelId: resolvedModelId,
+    executionMode,
+    orchestrator: deferred.orchestrator,
+  })
 
   try {
     const processor = getProcessor(taskType, initialResolvedProvider)
@@ -1708,8 +1759,13 @@ async function executeTaskRequest(
     await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
     log.info('Task execution handed off to provider', {
       taskId,
+      userId,
       taskType,
       provider: requestProvider,
+      resolvedProvider,
+      modelId: persistedModelId,
+      executionMode,
+      externalTaskId: submitResult.externalTaskId ?? null,
       status: submitResult.initialStatus,
     })
   } catch (error) {
@@ -1753,11 +1809,13 @@ async function executeTaskRequest(
     await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
     log.error('Task execution failed', error, {
       taskId,
+      userId,
       taskType,
       provider: requestProvider,
       resolvedProvider: initialResolvedProvider,
       modelId: resolvedModelId,
       executionMode,
+      orchestrator: deferred.orchestrator,
     })
   }
 }
@@ -1941,6 +1999,7 @@ export async function checkTask(
   userId: string,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<TaskDetail> {
+  log.debug('Task check requested', { taskId, userId })
   /* 读取 D1 当前状态 */
   const row = await loadTaskRow(db, taskId, userId)
 
@@ -1988,6 +2047,10 @@ export async function checkTask(
         log.warn('Deferred image task re-enqueue from poll failed', {
           taskId: row.id,
           userId: row.user_id,
+          taskType: row.task_type,
+          provider: row.provider,
+          modelId: row.model_id,
+          executionMode: row.execution_mode,
           error: error instanceof Error ? error.message : String(error),
         })
       }
@@ -2149,7 +2212,17 @@ export async function checkTask(
       startedAt: row.started_at ?? nowIso,
     }
   } catch (err) {
-    log.error('Provider check failed', err, { taskId, provider: row.provider })
+    log.error('Provider check failed', err, {
+      taskId,
+      userId,
+      taskType: row.task_type,
+      provider: row.provider,
+      modelId: row.model_id,
+      executionMode: row.execution_mode,
+      workflowId: row.workflow_id,
+      nodeId: row.node_id,
+      orchestrator: taskOrchestrator,
+    })
     /* Provider 查询失败不影响任务状态，仅更新 last_checked_at */
     await db
       .prepare('UPDATE async_tasks SET last_checked_at = ? WHERE id = ?')
@@ -2388,7 +2461,17 @@ async function handleFailure(
     .run()
 
   await deleteTaskExecutionSnapshot(row.id, row.user_id, runtime).catch(() => undefined)
-  log.error('Task failed', undefined, { taskId: row.id, errorMsg })
+  log.error('Task failed', undefined, {
+    taskId: row.id,
+    userId: row.user_id,
+    taskType: row.task_type,
+    provider: row.provider,
+    modelId: row.model_id,
+    executionMode: row.execution_mode,
+    workflowId: row.workflow_id,
+    nodeId: row.node_id,
+    errorMsg,
+  })
   return {
     ...rowToDetail(row),
     status: 'failed',
@@ -2428,5 +2511,15 @@ async function handleTimeout(
     .bind(JSON.stringify({ error: errorMessage }), nowIso, nowIso, row.id)
     .run()
 
-  log.warn('Task timed out', { taskId: row.id, taskType: row.task_type, errorMessage })
+  log.warn('Task timed out', {
+    taskId: row.id,
+    userId: row.user_id,
+    taskType: row.task_type,
+    provider: row.provider,
+    modelId: row.model_id,
+    executionMode: row.execution_mode,
+    workflowId: row.workflow_id,
+    nodeId: row.node_id,
+    errorMessage,
+  })
 }
