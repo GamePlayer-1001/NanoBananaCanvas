@@ -56,12 +56,28 @@ export abstract class BaseOpenAICompatible implements AIProvider {
     this.log.debug('Chat request', { model, messageCount: messages.length })
 
     const res = await this.fetchWithErrorHandling(body, apiKey, signal)
-    const data = (await res.json()) as ChatResponse
+    const rawText = await res.text()
+    let data: ChatResponse
+
+    try {
+      data = JSON.parse(rawText) as ChatResponse
+    } catch {
+      throw new AIServiceError(
+        ErrorCode.AI_PROVIDER_ERROR,
+        'Provider returned a non-JSON response',
+        {
+          model,
+          provider: this.id,
+          bodyPreview: rawText.slice(0, 300),
+        },
+      )
+    }
 
     if (!data.choices?.[0]?.message?.content) {
       throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Empty response from model', {
         model,
         provider: this.id,
+        bodyPreview: rawText.slice(0, 300),
       })
     }
 

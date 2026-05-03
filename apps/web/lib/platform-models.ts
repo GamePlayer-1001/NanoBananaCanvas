@@ -29,8 +29,6 @@ export interface PlatformModelVisualOption {
   providerLabel: string
   logoText: string
   logoClassName: string
-  logoImageUrl?: string
-  logoAlt?: string
   description?: string
   credits?: number
 }
@@ -62,12 +60,7 @@ const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
 type PlatformModelBranding = {
   text: string
   className: string
-  imageUrl?: string
   alt: string
-}
-
-function buildSimpleIconUrl(slug: string) {
-  return `https://cdn.jsdelivr.net/npm/simple-icons@v16/icons/${slug}.svg`
 }
 
 function resolvePlatformModelBranding(modelId: string, modelName?: string): PlatformModelBranding {
@@ -75,9 +68,8 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
 
   if (normalized.includes('gpt')) {
     return {
-      text: 'AI',
-      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
-      imageUrl: buildSimpleIconUrl('openai'),
+      text: 'OA',
+      className: 'bg-emerald-950 text-white',
       alt: 'OpenAI',
     }
   }
@@ -85,8 +77,7 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
   if (normalized.includes('gemini')) {
     return {
       text: 'GM',
-      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
-      imageUrl: buildSimpleIconUrl('googlegemini'),
+      className: 'bg-sky-500 text-white',
       alt: 'Google Gemini',
     }
   }
@@ -94,16 +85,15 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
   if (normalized.includes('deepseek')) {
     return {
       text: 'DS',
-      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
-      imageUrl: buildSimpleIconUrl('deepseek'),
+      className: 'bg-blue-600 text-white',
       alt: 'DeepSeek',
     }
   }
 
-  if (normalized.includes('nano-banana')) {
+  if (normalized.includes('nano-banana') || normalized.includes('banana')) {
     return {
       text: 'NB',
-      className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-200',
+      className: 'bg-amber-100 text-amber-900',
       alt: 'Nano Banana',
     }
   }
@@ -111,8 +101,7 @@ function resolvePlatformModelBranding(modelId: string, modelName?: string): Plat
   if (normalized.includes('kling')) {
     return {
       text: 'KG',
-      className: 'bg-white text-slate-900 ring-1 ring-slate-200',
-      imageUrl: buildSimpleIconUrl('kling'),
+      className: 'bg-slate-900 text-white',
       alt: 'Kling',
     }
   }
@@ -221,8 +210,6 @@ export function toPlatformVisualOption(
     providerLabel: getPlatformProviderLabel(model.provider),
     logoText: logo.text,
     logoClassName: logo.className,
-    logoImageUrl: logo.imageUrl,
-    logoAlt: logo.alt,
     description: extra?.description,
     credits: extra?.credits,
   }
@@ -274,8 +261,6 @@ export function getAgentPlatformModelOptions(
       providerLabel: getPlatformProviderLabel(preset.provider),
       logoText: logo.text,
       logoClassName: logo.className,
-      logoImageUrl: logo.imageUrl,
-      logoAlt: logo.alt,
       credits: preset.credits,
       description: `${preset.credits} 积分/次`,
     }

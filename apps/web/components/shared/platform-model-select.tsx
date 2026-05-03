@@ -97,30 +97,14 @@ function ModelOptionContent({
 }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      {option.logoImageUrl ? (
-        <span
-          className={cn(
-            'inline-flex size-5 shrink-0 items-center justify-center rounded-full overflow-hidden',
-            option.logoClassName,
-          )}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={option.logoImageUrl}
-            alt={option.logoAlt ?? option.label}
-            className="size-3.5 object-contain"
-          />
-        </span>
-      ) : (
-        <span
-          className={cn(
-            'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
-            option.logoClassName,
-          )}
-        >
-          {option.logoText}
-        </span>
-      )}
+      <span
+        className={cn(
+          'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+          option.logoClassName,
+        )}
+      >
+        {option.logoText}
+      </span>
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-left">{option.label}</span>
         {!compact && option.description ? (
