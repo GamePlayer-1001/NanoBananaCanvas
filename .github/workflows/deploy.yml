@@ -187,6 +187,16 @@ jobs:
         working-directory: apps/web
         shell: bash
         run: |
+          if [ -z "${COMFLY_API_KEY}" ]; then
+            echo "Missing required GitHub secret: COMFLY_API_KEY" >&2
+            exit 1
+          fi
+
+          if [ -z "${DLAPI_API_KEY}" ]; then
+            echo "Missing required GitHub secret: DLAPI_API_KEY" >&2
+            exit 1
+          fi
+
           printf '%s' "$COMFLY_API_KEY" | pnpm dlx wrangler@4 secret put COMFLY_API_KEY
           printf '%s' "$DLAPI_API_KEY" | pnpm dlx wrangler@4 secret put DLAPI_API_KEY
         env:
@@ -207,6 +217,16 @@ jobs:
         working-directory: apps/worker
         shell: bash
         run: |
+          if [ -z "${COMFLY_API_KEY}" ]; then
+            echo "Missing required GitHub secret: COMFLY_API_KEY" >&2
+            exit 1
+          fi
+
+          if [ -z "${DLAPI_API_KEY}" ]; then
+            echo "Missing required GitHub secret: DLAPI_API_KEY" >&2
+            exit 1
+          fi
+
           printf '%s' "$COMFLY_API_KEY" | pnpm dlx wrangler@4 secret put COMFLY_API_KEY
           printf '%s' "$DLAPI_API_KEY" | pnpm dlx wrangler@4 secret put DLAPI_API_KEY
         env:
