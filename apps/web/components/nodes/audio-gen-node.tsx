@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 @/hooks/use-ai-models，依赖 @/lib/platform-models 与共享下拉，依赖 next-intl 的 useTranslations
+ *          依赖 @/hooks/use-model-configs，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 AudioGenNode 音频生成节点组件
- * [POS]: components/nodes 的 TTS 节点，被 registry 注册并在画布中渲染，统一消费 /api/ai/models 作为平台模型目录
+ * [POS]: components/nodes 的 TTS 节点，被 registry 注册并在画布中渲染；当前平台模式已隐藏，只保留用户自配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -12,24 +12,16 @@ import { useCallback, useEffect, useMemo } from 'react'
 import type { ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
-import { Coins, KeyRound, Loader2, Music } from 'lucide-react'
-import { useAIModels } from '@/hooks/use-ai-models'
+import { Loader2, Music } from 'lucide-react'
 import { useModelConfigs } from '@/hooks/use-model-configs'
-import { useUserKeyOnboarding } from '@/hooks/use-user-key-onboarding'
 import {
   getNodeConfigMigrationPatch,
   resolveAvailableUserConfigId,
-  resolvePlatformModel,
-  resolvePlatformProvider,
   resolveUserConfigId,
 } from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
-import {
-  toPlatformVisualOptions,
-} from '@/lib/platform-models'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
-import { PlatformModelSelect } from '@/components/shared/platform-model-select'
 import { BaseNode } from './base-node'
 import { Switch } from '@/components/ui/switch'
 
@@ -61,31 +53,9 @@ export function AudioGenNode(props: NodeProps) {
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const t = useTranslations('nodes')
   const config = data.config
-  const { data: platformAudioModels = [] } = useAIModels('audio')
 
   /* ── Config values ─────────────────────────────────── */
-  const provider = resolvePlatformProvider('audio-gen', config)
-  const model = resolvePlatformModel('audio-gen', config)
-  const selectedPlatformEntry = useMemo(
-    () =>
-      platformAudioModels.find(
-        (item) => item.provider === provider && item.modelId === model,
-      ) ??
-      platformAudioModels.find((item) => item.modelId === model) ??
-      platformAudioModels[0],
-    [model, platformAudioModels, provider],
-  )
-  const selectedPlatformProvider = selectedPlatformEntry?.provider ?? provider
-  const selectedPlatformModel = selectedPlatformEntry?.modelId ?? model
-  const platformModelOptions = useMemo(
-    () =>
-      toPlatformVisualOptions(platformAudioModels).map((option) => ({
-        ...option,
-        description: option.providerLabel,
-      })),
-    [platformAudioModels],
-  )
-  const executionMode = (config.executionMode as string) ?? 'platform'
+  const executionMode = 'user_key'
   const voice = (config.voice as string) ?? DEFAULT_VOICE
   const speed = (config.speed as number) ?? DEFAULT_SPEED
   const resultUrl = (config.resultUrl as string) ?? ''
@@ -105,7 +75,6 @@ export function AudioGenNode(props: NodeProps) {
     ) ?? ''
   const savedAudioConfig =
     getConfigById(selectedUserConfigId) ?? getConfigByCapability('audio')
-  const { dialog, handleUserKeyIntent } = useUserKeyOnboarding()
   const userKeyProviderLabel = getProviderLabel('audio', savedAudioConfig?.providerId)
   const userKeyModelLabel =
     savedAudioConfig?.modelId?.trim() ||
@@ -121,45 +90,23 @@ export function AudioGenNode(props: NodeProps) {
 
   useEffect(() => {
     const patch = getNodeConfigMigrationPatch('audio-gen', config)
-    if (selectedPlatformProvider !== provider) {
-      patch.platformProvider = selectedPlatformProvider
-    }
-    if (selectedPlatformModel !== model) {
-      patch.platformModel = selectedPlatformModel
-    }
     if (
       selectedUserConfigId &&
-      executionMode === 'user_key' &&
       resolveUserConfigId(config) !== selectedUserConfigId
     ) {
       patch.userKeyConfigId = selectedUserConfigId
+    }
+    if (config.executionMode !== 'user_key') {
+      patch.executionMode = 'user_key'
     }
     if (Object.keys(patch).length > 0) {
       updateConfig(patch)
     }
   }, [
     config,
-    executionMode,
-    model,
-    provider,
-    selectedPlatformModel,
-    selectedPlatformProvider,
     selectedUserConfigId,
     updateConfig,
   ])
-
-  const onModelChange = useCallback(
-    (value: string) => {
-      const nextModel = platformAudioModels.find((item) => item.modelId === value)
-      if (!nextModel) return
-
-      updateConfig({
-        platformProvider: nextModel.provider,
-        platformModel: nextModel.modelId,
-      })
-    },
-    [platformAudioModels, updateConfig],
-  )
 
   const onVoiceChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ voice: e.target.value }),
@@ -183,76 +130,34 @@ export function AudioGenNode(props: NodeProps) {
       bodyClassName="min-h-0"
     >
       <div className="flex h-full min-h-0 flex-col gap-3">
-        <ConfigField label={t('executionMode')}>
-          <div className="nodrag flex gap-1">
-            <ModeButton
-              active={executionMode === 'platform'}
-              onClick={() =>
-                updateConfig({
-                  executionMode: 'platform',
-                  platformProvider: selectedPlatformProvider,
-                  platformModel: selectedPlatformModel,
-                })
-              }
-              icon={<Coins size={12} />}
-              label={t('platformMode')}
-            />
-            <ModeButton
-              active={executionMode === 'user_key'}
-              onClick={() => {
-                if (executionMode === 'user_key') return
-                handleUserKeyIntent('audio', () =>
-                  updateConfig({
-                    executionMode: 'user_key',
-                    userKeyConfigId: selectedUserConfigId,
-                  }),
-                )
-              }}
-              icon={<KeyRound size={12} />}
-              label={t('userKeyMode')}
-            />
+        <ConfigField label={t('provider')}>
+          <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+            {userKeyProviderLabel}
           </div>
         </ConfigField>
 
-        {executionMode === 'user_key' ? (
-          <ConfigField label={t('accountConfigLabel')}>
-            <select
-              value={selectedUserConfigId}
-              onChange={(e) => updateConfig({ userKeyConfigId: e.target.value })}
-              className={SELECT_CLASS}
-            >
-              {savedAudioConfigs.length === 0 ? (
-                <option value="">{t('noApiConfigs')}</option>
-              ) : (
-                savedAudioConfigs.map((item) => (
-                  <option key={item.configId} value={item.configId}>
-                    {item.label || item.configId}
-                  </option>
-                ))
-              )}
-            </select>
-          </ConfigField>
-        ) : null}
+        <ConfigField label={t('accountConfigLabel')}>
+          <select
+            value={selectedUserConfigId}
+            onChange={(e) => updateConfig({ userKeyConfigId: e.target.value })}
+            className={SELECT_CLASS}
+          >
+            {savedAudioConfigs.length === 0 ? (
+              <option value="">{t('noApiConfigs')}</option>
+            ) : (
+              savedAudioConfigs.map((item) => (
+                <option key={item.configId} value={item.configId}>
+                  {item.label || item.configId}
+                </option>
+              ))
+            )}
+          </select>
+        </ConfigField>
 
-        {/* ── Model selector ──────────────────────── */}
         <ConfigField label={t('model')}>
-          {executionMode === 'user_key' ? (
-            <div className="space-y-2">
-              <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
-                {userKeyProviderLabel}
-              </div>
-              <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
-                {userKeyModelLabel}
-              </div>
-            </div>
-          ) : (
-            <PlatformModelSelect
-              value={selectedPlatformModel}
-              options={platformModelOptions}
-              onValueChange={onModelChange}
-              triggerClassName={SELECT_CLASS}
-            />
-          )}
+          <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+            {userKeyModelLabel}
+          </div>
         </ConfigField>
 
         {/* ── Voice selector ─────────────────────── */}
@@ -315,7 +220,6 @@ export function AudioGenNode(props: NodeProps) {
           </div>
         )}
       </div>
-      {dialog}
     </BaseNode>
   )
 }
@@ -328,32 +232,5 @@ function ConfigField({ label, children }: { label: string; children: React.React
       <label className="text-muted-foreground mb-1 block text-xs">{label}</label>
       {children}
     </div>
-  )
-}
-
-function ModeButton({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean
-  onClick: () => void
-  icon: React.ReactNode
-  label: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
-        active
-          ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/10 text-[var(--brand-500)]'
-          : 'border-input text-muted-foreground hover:text-foreground'
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
   )
 }

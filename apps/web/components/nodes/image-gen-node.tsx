@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 next-intl 的 useTranslations，依赖平台模型目录/共享下拉与图片能力真相源
+ *          依赖 next-intl 的 useTranslations，依赖静态平台图片目录/共享下拉与图片能力真相源
  *          依赖 @/lib/billing/workflow-pricing 的平台积分规则
  * [OUTPUT]: 对外提供 ImageGenNode 图片生成节点组件
  * [POS]: components/nodes 的图片生成节点，被 registry 注册并在画布中渲染，负责平台模型选择、尺寸/比例配置、平台积分展示与前端能力护栏
@@ -16,7 +16,6 @@ import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { Coins, ImageIcon, KeyRound, Loader2 } from 'lucide-react'
 
-import { useAIModels } from '@/hooks/use-ai-models'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useUserKeyOnboarding } from '@/hooks/use-user-key-onboarding'
 import {
@@ -41,7 +40,7 @@ import {
 import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
-  groupPlatformModelsByProvider,
+  STATIC_PLATFORM_IMAGE_PRESETS,
   toPlatformVisualOptions,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -93,18 +92,23 @@ export function ImageGenNode(props: NodeProps) {
   const t = useTranslations('nodes')
   const config = data.config
 
-  const { data: platformImageModels = [], isLoading: isPlatformModelsLoading } =
-    useAIModels('image')
+  const platformImageModels = useMemo(
+    () =>
+      STATIC_PLATFORM_IMAGE_PRESETS.map((item, index) => ({
+        id: `static-image-${index + 1}`,
+        provider: item.provider,
+        modelId: item.modelId,
+        modelName: item.modelName,
+        category: 'image',
+        tier: 'premium',
+        accessible: true,
+      })),
+    [],
+  )
+  const isPlatformModelsLoading = false
   const platformModelId = resolvePlatformModel('image-gen', config)
   const platformProviderId = resolvePlatformProvider('image-gen', config)
-  const platformModelGroups = useMemo(
-    () => groupPlatformModelsByProvider(platformImageModels),
-    [platformImageModels],
-  )
-  const flatPlatformModels = useMemo(
-    () => platformModelGroups.flatMap((group) => group.models),
-    [platformModelGroups],
-  )
+  const flatPlatformModels = platformImageModels
   const platformModelOptions = useMemo(
     () =>
       toPlatformVisualOptions(flatPlatformModels).map((option) => ({

@@ -47,10 +47,12 @@ function matchesCapability(provider: string, modelId: string, capability: 'text'
   if (capability === 'image') {
     return (
       normalizedProvider === 'dlapi' ||
+      normalizedProvider === 'comfly' ||
       normalizedModel.includes('image') ||
       normalizedModel.includes('dall-e') ||
       normalizedModel.includes('imagen') ||
       normalizedModel.includes('flux') ||
+      normalizedModel.includes('banana') ||
       normalizedModel.includes('sd-')
     )
   }

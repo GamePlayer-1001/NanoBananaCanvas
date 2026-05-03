@@ -23,7 +23,6 @@ import { AgentConversation } from '@/components/agent/agent-conversation'
 import { AgentChangeLogSheet } from '@/components/agent/agent-change-log-sheet'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
-import { useAIModels } from '@/hooks/use-ai-models'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
@@ -32,7 +31,6 @@ import { useWorkflow } from '@/hooks/use-workflows'
 import { fetchLatestAgentReplay } from '@/lib/agent/agent-audit'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { getAgentPlatformModelOptions } from '@/lib/platform-models'
-import type { PlatformModelVisualOption } from '@/lib/platform-models'
 import type { AgentMessage } from '@/stores/use-agent-store'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -103,7 +101,6 @@ export default function CanvasPage({
   } = useAgentTaskSummary({
     workflowId: id,
   })
-  const { data: platformTextModels = [] } = useAIModels('text')
   const { getConfigsByCapability } = useModelConfigs()
   const resultAwareSummary = useMemo(
     () =>
@@ -117,10 +114,7 @@ export default function CanvasPage({
       }),
     [auditTrail, edges, id, nodes, template, workflowName],
   )
-  const platformModelOptions = useMemo<PlatformModelVisualOption[]>(
-    () => getAgentPlatformModelOptions(platformTextModels),
-    [platformTextModels],
-  )
+  const platformModelOptions = useMemo(() => getAgentPlatformModelOptions(), [])
   const modelOptions = useMemo(() => {
     if (composerExecutionMode === 'user_key') {
       return getConfigsByCapability('text').map((item) => ({

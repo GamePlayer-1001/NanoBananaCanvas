@@ -36,8 +36,8 @@ describe('createNode', () => {
     expect(node.data.label).toBe('LLM')
     expect(node.data.type).toBe('ai-model')
     expect(node.data.config).toEqual({
-      platformProvider: 'openrouter',
-      platformModel: 'openai/gpt-4o-mini',
+      platformProvider: 'comfly',
+      platformModel: 'gpt-5.4',
       temperature: 0.7,
     })
   })

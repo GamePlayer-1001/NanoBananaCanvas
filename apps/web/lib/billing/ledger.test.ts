@@ -487,7 +487,7 @@ describe('billing ledger', () => {
       createDbMock({
         balanceRow: {
           trial_balance: 40,
-          trial_expires_at: '2026-05-02T00:00:00.000Z',
+          trial_expires_at: '2099-05-02T00:00:00.000Z',
           monthly_balance: 0,
           permanent_balance: 0,
           frozen_credits: 0,
@@ -503,7 +503,7 @@ describe('billing ledger', () => {
       available: false,
       checkedInToday: false,
       trialBalance: 40,
-      trialExpiresAt: '2026-05-02T00:00:00.000Z',
+      trialExpiresAt: '2099-05-02T00:00:00.000Z',
     })
   })
 

@@ -71,9 +71,11 @@ export interface ImageConstraintViolation {
 }
 
 const STATIC_IMAGE_MODEL_CAPABILITIES: Record<string, ImageModelCapabilities> = {
-  // 平台已知模型从这里逐步补齐。当前先保留表结构，后续可以按 provider/model 增量扩展。
-  'openrouter:openai/dall-e-3': {},
-  'gemini:imagen-3.0-generate-002': {},
+  'dlapi:gpt-image-2': {},
+  'comfly:gpt-image-2-all': {},
+  'comfly:gemini-3.1-flash-image-preview': {},
+  'comfly:nano-banana-pro': {},
+  'comfly:nano-banana': {},
 }
 
 function roundToEven(value: number): number {

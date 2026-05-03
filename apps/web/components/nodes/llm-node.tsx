@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
- *          依赖 @/hooks/use-ai-models，依赖 @/lib/platform-models，依赖 next-intl 的 useTranslations
+ *          依赖 @/lib/platform-models 与静态平台目录，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 LLMNode 大语言模型节点组件
  * [POS]: components/nodes 的核心 AI 节点，被 registry 注册并在画布中渲染，统一消费 /api/ai/models 作为平台模型目录
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -20,7 +20,6 @@ import {
   Loader2,
 } from 'lucide-react'
 
-import { useAIModels } from '@/hooks/use-ai-models'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import {
   getNodeConfigMigrationPatch,
@@ -31,8 +30,7 @@ import {
 } from '@/lib/ai-node-config'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
-  groupPlatformModelsByProvider,
-  resolvePlatformModelSelection,
+  AGENT_PLATFORM_MODEL_PRESETS,
 } from '@/lib/platform-models'
 import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
@@ -63,7 +61,6 @@ export function LLMNode(props: NodeProps) {
   const output = (config.output as string) ?? ''
   const tokenCount = (config.tokenCount as number) ?? 0
   const status = data.status ?? 'idle'
-  const { data: platformTextModels = [] } = useAIModels('text')
   const {
     getConfigByCapability,
     getConfigById,
@@ -71,25 +68,29 @@ export function LLMNode(props: NodeProps) {
     isLoading: isModelConfigLoading,
   } = useModelConfigs()
 
-  const modelGroups = useMemo(
-    () => groupPlatformModelsByProvider(platformTextModels),
-    [platformTextModels],
-  )
-  const resolvedPlatformSelection = useMemo(
+  const platformTextModels = useMemo(
     () =>
-      resolvePlatformModelSelection(modelGroups, platformProvider, platformModel),
-    [modelGroups, platformModel, platformProvider],
+      AGENT_PLATFORM_MODEL_PRESETS.map((item, index) => ({
+        id: `agent-text-${index + 1}`,
+        provider: item.provider,
+        modelId: item.modelId,
+        modelName: item.modelName,
+      })),
+    [],
+  )
+  const selectedPlatformEntry = useMemo(
+    () =>
+      platformTextModels.find(
+        (item) => item.provider === platformProvider && item.modelId === platformModel,
+      ) ??
+      platformTextModels.find((item) => item.modelId === platformModel) ??
+      platformTextModels[0],
+    [platformModel, platformProvider, platformTextModels],
   )
   const selectedPlatformProvider =
-    resolvedPlatformSelection?.provider ?? platformProvider
+    selectedPlatformEntry?.provider ?? platformProvider
   const selectedPlatformModel =
-    resolvedPlatformSelection?.modelId ?? platformModel
-  const currentGroup = useMemo(
-    () =>
-      modelGroups.find((group) => group.provider === selectedPlatformProvider) ??
-      modelGroups[0],
-    [modelGroups, selectedPlatformProvider],
-  )
+    selectedPlatformEntry?.modelId ?? platformModel
 
   const [showSystemPrompt, setShowSystemPrompt] = useState(!!systemPrompt)
   const outputRef = useRef<HTMLDivElement>(null)
@@ -149,19 +150,17 @@ export function LLMNode(props: NodeProps) {
     updateConfig,
   ])
 
-  const onProviderChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const newProvider = e.target.value
-      const nextGroup = modelGroups.find((group) => group.provider === newProvider)
-      const firstModel = nextGroup?.models[0]?.modelId ?? ''
-      updateConfig({ platformProvider: newProvider, platformModel: firstModel })
-    },
-    [modelGroups, updateConfig],
-  )
-
   const onModelChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => updateConfig({ platformModel: e.target.value }),
-    [updateConfig],
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      const nextModel = platformTextModels.find(
+        (item) => item.modelId === e.target.value,
+      )
+      updateConfig({
+        platformProvider: nextModel?.provider ?? 'comfly',
+        platformModel: e.target.value,
+      })
+    },
+    [platformTextModels, updateConfig],
   )
 
   const onTemperatureChange = useCallback(
@@ -186,11 +185,6 @@ export function LLMNode(props: NodeProps) {
     [updateConfig],
   )
 
-  const providerOptions = modelGroups.map((group) => ({
-    value: group.provider,
-    label: group.providerLabel,
-  }))
-
   return (
     <BaseNode
       {...props}
@@ -206,17 +200,9 @@ export function LLMNode(props: NodeProps) {
               {userKeyProviderLabel}
             </div>
           ) : (
-            <select
-              value={selectedPlatformProvider}
-              onChange={onProviderChange}
-              className={SELECT_CLASS}
-            >
-              {providerOptions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+            <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
+              Comfly
+            </div>
           )}
         </ConfigField>
 
@@ -250,7 +236,7 @@ export function LLMNode(props: NodeProps) {
             {executionMode === 'user_key' ? (
               <option value={userKeyModelLabel}>{userKeyModelLabel}</option>
             ) : (
-              currentGroup?.models.map((item) => (
+              platformTextModels.map((item) => (
                 <option key={item.id} value={item.modelId}>
                   {item.modelName}
                 </option>
