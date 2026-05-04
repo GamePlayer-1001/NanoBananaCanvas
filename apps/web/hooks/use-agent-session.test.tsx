@@ -176,7 +176,7 @@ describe('useAgentSession', () => {
     expect(flowState.nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
       '生成一张以小猫为主角的高质量图片，主体清晰，毛发细节完整。',
     )
-    expect(executeFromNodeMock).toHaveBeenCalledWith('image-existing')
+    expect(executeFromNodeMock).toHaveBeenCalledWith('text-existing')
     expect(flowState.nodes.some((node) => node.id === 'draft-text-input')).toBe(false)
     expect(flowState.nodes.some((node) => node.id === 'draft-image-gen')).toBe(false)
   })
@@ -202,7 +202,7 @@ describe('useAgentSession', () => {
     expect(flowState.nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
       '生成一张以小猫为主角的高质量图片，主体清晰，毛发细节完整。',
     )
-    expect(executeFromNodeMock).toHaveBeenCalledWith('image-existing')
+    expect(executeFromNodeMock).toHaveBeenCalledWith('text-existing')
   })
 
   it('treats 我确定 as a conversational prompt confirmation', async () => {
@@ -224,6 +224,6 @@ describe('useAgentSession', () => {
     expect(flowState.nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
       '生成一张以小猫为主角的高质量图片，主体清晰，毛发细节完整。',
     )
-    expect(executeFromNodeMock).toHaveBeenCalledWith('image-existing')
+    expect(executeFromNodeMock).toHaveBeenCalledWith('text-existing')
   })
 })

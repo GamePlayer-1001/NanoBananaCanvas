@@ -876,21 +876,13 @@ function resolvePromptTargetNodeId(nodeId?: string) {
 }
 
 function resolveExecutionStartNodeId(targetNodeId: string) {
-  const { nodes, edges } = useFlowStore.getState()
+  const { nodes } = useFlowStore.getState()
   const targetNode = nodes.find((node) => node.id === targetNodeId)
   if (!targetNode) {
     return targetNodeId
   }
 
-  if (targetNode.type !== 'text-input') {
-    return targetNodeId
-  }
-
-  const downstreamImageNode = edges.find(
-    (edge) => edge.source === targetNodeId && edge.targetHandle === 'prompt-in',
-  )?.target
-
-  return downstreamImageNode ?? targetNodeId
+  return targetNodeId
 }
 
   function selectPendingPlanVariant(planId: string) {
