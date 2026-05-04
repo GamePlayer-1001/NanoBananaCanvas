@@ -16,6 +16,7 @@ import {
   inferIntentFromMessage,
   inferModeFromMessage,
   isSafeCreationPlan,
+  shouldBuildPromptConfirmation,
   shouldOptimizeSelectedNode,
   shouldPatchSelectedNodePrompt,
 } from '@/lib/agent/plan-rules'
@@ -103,11 +104,13 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
     requiresConfirmation,
     operations,
     promptConfirmation:
-      (await buildPromptConfirmationPayload(goal, workflowKind, input.attachments)) ??
-      operations.find(
-        (operation): operation is Extract<WorkflowOperation, { type: 'request_prompt_confirmation' }> =>
-          operation.type === 'request_prompt_confirmation',
-      )?.payload,
+      shouldBuildPromptConfirmation(normalized, intent, workflowKind, canvas.nodeCount)
+        ? (await buildPromptConfirmationPayload(goal, workflowKind, input.attachments)) ??
+          operations.find(
+            (operation): operation is Extract<WorkflowOperation, { type: 'request_prompt_confirmation' }> =>
+              operation.type === 'request_prompt_confirmation',
+          )?.payload
+        : undefined,
   }
 
   const alternatives = buildPlanAlternatives(plan, canvas)

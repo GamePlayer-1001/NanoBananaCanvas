@@ -25,6 +25,23 @@ function isImageToImageRequest(normalized: string) {
   )
 }
 
+function isStructureAdjustmentRequest(normalized: string) {
+  return (
+    normalized.includes('工作流不太对') ||
+    normalized.includes('流程不太对') ||
+    normalized.includes('节点不太对') ||
+    normalized.includes('还需要把图片输入进去') ||
+    normalized.includes('加一个图片输入') ||
+    normalized.includes('补一个图片输入') ||
+    normalized.includes('增加图片输入') ||
+    normalized.includes('接入图片输入') ||
+    normalized.includes('把图片输入进去') ||
+    normalized.includes('把图接进去') ||
+    normalized.includes('接一张图') ||
+    normalized.includes('补输入节点')
+  )
+}
+
 export function isSafeCreationPlan(
   mode: AgentPlan['mode'],
   canvasNodeCount: number,
@@ -90,6 +107,10 @@ export function inferIntentFromMessage(
     return 'repair_flow'
   }
 
+  if (isStructureAdjustmentRequest(normalized)) {
+    return 'add_step'
+  }
+
   if (mode === 'optimize') {
     return normalized.includes('快') ? 'optimize_speed' : 'optimize_cost'
   }
@@ -116,6 +137,31 @@ export function inferIntentFromMessage(
   }
 
   return 'add_step'
+}
+
+export function shouldBuildPromptConfirmation(
+  normalized: string,
+  intent: AgentPlanIntent,
+  workflowKind: 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | undefined,
+  canvasNodeCount: number,
+) {
+  if (workflowKind !== 'image' && workflowKind !== 'image_to_image') {
+    return false
+  }
+
+  if (intent !== 'create_workflow') {
+    return false
+  }
+
+  if (canvasNodeCount !== 0) {
+    return false
+  }
+
+  if (isStructureAdjustmentRequest(normalized)) {
+    return false
+  }
+
+  return true
 }
 
 export function buildCreationOperations(normalized: string): WorkflowOperation[] {

@@ -167,6 +167,67 @@ describe('POST /api/agent/*', () => {
     })
   })
 
+  it('treats missing image-input requests as structural workflow changes instead of prompt confirmation', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '工作流不太对，我还需要把图片输入进去',
+          mode: 'update',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary({
+            nodeCount: 3,
+            edgeCount: 2,
+            nodes: [
+              {
+                id: 'text-1',
+                type: 'text-input',
+                label: '文本输入',
+                inputs: [],
+                outputs: [{ id: 'text-out', label: 'Text', type: 'string' }],
+                configSummary: {},
+              },
+              {
+                id: 'image-1',
+                type: 'image-gen',
+                label: '图片生成',
+                inputs: [
+                  { id: 'prompt-in', label: 'Prompt', type: 'string' },
+                  { id: 'image-in', label: 'Image', type: 'image' },
+                ],
+                outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+                configSummary: {},
+              },
+              {
+                id: 'display-1',
+                type: 'display',
+                label: '结果展示',
+                inputs: [{ id: 'content-in', label: 'Content', type: 'any' }],
+                outputs: [],
+                configSummary: {},
+              },
+            ],
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    expect(payload).toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'update',
+          intent: 'add_step',
+          operations: expect.any(Array),
+        },
+      },
+    })
+    expect(payload.data.plan).not.toHaveProperty('promptConfirmation')
+  })
+
   it('returns an incremental replace-model plan for existing image workflows', async () => {
     const response = await planPost(
       new Request('http://localhost/api/agent/plan', {
