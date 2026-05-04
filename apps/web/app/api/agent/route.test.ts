@@ -221,7 +221,19 @@ describe('POST /api/agent/*', () => {
         plan: {
           mode: 'update',
           intent: 'add_step',
-          operations: expect.any(Array),
+          operations: expect.arrayContaining([
+            expect.objectContaining({
+              type: 'add_node',
+              nodeId: 'draft-image-input',
+              nodeType: 'image-input',
+            }),
+            expect.objectContaining({
+              type: 'connect',
+              source: 'draft-image-input',
+              target: 'image-1',
+              targetHandle: 'image-in',
+            }),
+          ]),
         },
       },
     })

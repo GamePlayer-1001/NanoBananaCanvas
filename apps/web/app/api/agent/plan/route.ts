@@ -322,6 +322,11 @@ function buildIncrementalOperations(
     return buildSelectedNodeOptimizationOperations(normalized, selectedNode)
   }
 
+  const missingImageInputPatch = buildMissingImageInputOperations(normalized, canvas)
+  if (missingImageInputPatch.length > 0) {
+    return missingImageInputPatch
+  }
+
   if (intent === 'add_step') {
     const insertTarget = selectedNode ?? findFirstNodeByType(canvas.nodes, 'image-gen') ?? canvas.nodes[0]
     const upstreamNode = insertTarget ? findSingleUpstreamNode(canvas, insertTarget.id) : null
@@ -841,6 +846,81 @@ function findFirstNodeByType(nodes: CanvasSummaryNode[], type: string) {
 
 function findFirstAIGenNode(nodes: CanvasSummaryNode[]) {
   return nodes.find((node) => ['image-gen', 'video-gen', 'audio-gen', 'llm'].includes(node.type)) ?? null
+}
+
+function buildMissingImageInputOperations(
+  normalized: string,
+  canvas: CanvasSummary,
+): WorkflowOperation[] {
+  if (!isMissingImageInputRequest(normalized)) {
+    return []
+  }
+
+  const targetNode = findImageGenNodeMissingImageInput(canvas)
+  if (!targetNode) {
+    return []
+  }
+
+  return [
+    {
+      type: 'add_node',
+      nodeId: 'draft-image-input',
+      nodeType: 'image-input',
+      initialData: {
+        label: '参考图输入',
+      },
+    },
+    {
+      type: 'connect',
+      source: 'draft-image-input',
+      sourceHandle: 'image-out',
+      target: targetNode.id,
+      targetHandle: 'image-in',
+    },
+    {
+      type: 'annotate_change',
+      nodeId: targetNode.id,
+      note: '已补上参考图输入节点，并接到图片生成节点的 image-in 入口。',
+    },
+    {
+      type: 'focus_nodes',
+      nodeIds: ['draft-image-input', targetNode.id],
+    },
+  ]
+}
+
+function isMissingImageInputRequest(normalized: string) {
+  return (
+    normalized.includes('图片输入') ||
+    normalized.includes('把图接进去') ||
+    normalized.includes('接一张图') ||
+    normalized.includes('参考图') ||
+    normalized.includes('图生图') ||
+    normalized.includes('输入图片') ||
+    normalized.includes('图片输进去')
+  )
+}
+
+function findImageGenNodeMissingImageInput(canvas: CanvasSummary) {
+  return (
+    canvas.nodes.find((node) => {
+      if (node.type !== 'image-gen') {
+        return false
+      }
+
+      const hasImageInputPort = node.inputs.some((input) => input.id === 'image-in' || input.type === 'image')
+      if (!hasImageInputPort) {
+        return false
+      }
+
+      const alreadyHasImageInputNode = canvas.nodes.some((candidate) => candidate.type === 'image-input')
+      if (alreadyHasImageInputNode) {
+        return false
+      }
+
+      return true
+    }) ?? null
+  )
 }
 
 function findSingleUpstreamNode(canvas: CanvasSummary, targetId: string) {
