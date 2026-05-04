@@ -180,4 +180,28 @@ describe('useAgentSession', () => {
     expect(flowState.nodes.some((node) => node.id === 'draft-text-input')).toBe(false)
     expect(flowState.nodes.some((node) => node.id === 'draft-image-gen')).toBe(false)
   })
+
+  it('continues prompt confirmation even when pendingPlan is missing but promptConfirmation remains', async () => {
+    useAgentStore.getState().clearPendingPlan()
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('我确认')
+    })
+
+    const flowState = useFlowStore.getState()
+    expect(flowState.nodes).toHaveLength(3)
+    expect(flowState.edges).toHaveLength(2)
+    expect(flowState.nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
+      '生成一张以小猫为主角的高质量图片，主体清晰，毛发细节完整。',
+    )
+    expect(executeFromNodeMock).toHaveBeenCalledWith('image-existing')
+  })
 })

@@ -60,6 +60,7 @@ export function useAgentSession({
   const setLastAppliedPlanId = useAgentStore((state) => state.setLastAppliedPlanId)
   const setPromptConfirmation = useAgentStore((state) => state.setPromptConfirmation)
   const clearPromptConfirmation = useAgentStore((state) => state.clearPromptConfirmation)
+  const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
   const selectionContext = useAgentStore((state) => state.selectionContext)
   const rememberConversationTurn = useAgentStore((state) => state.rememberConversationTurn)
 
@@ -732,10 +733,13 @@ export function useAgentSession({
   }
 
   async function confirmPromptAndRun(payloadId?: string) {
-    if (!pendingPlan?.promptConfirmation) return
-    if (payloadId && pendingPlan.promptConfirmation.id !== payloadId) return
+    const planForConfirmation = pendingPlan?.promptConfirmation
+      ? pendingPlan
+      : buildFallbackPromptConfirmationPlan(promptConfirmation)
+    if (!planForConfirmation?.promptConfirmation) return
+    if (payloadId && planForConfirmation.promptConfirmation.id !== payloadId) return
 
-    const currentPlan = buildPromptConfirmedPlan(pendingPlan)
+    const currentPlan = buildPromptConfirmedPlan(planForConfirmation)
     if (!currentPlan) {
       const message = tAgent('errorMissingPromptTarget')
       setStatus('error')
@@ -917,7 +921,7 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
   }
 
   function tryHandleConversationalConfirmation(value: string) {
-    if (!pendingPlan) return false
+    if (!pendingPlan && !promptConfirmation) return false
 
     const normalized = normalizeConfirmationText(value)
     const isConfirmed = CONFIRMATION_PATTERNS.some((pattern) => pattern.test(normalized))
@@ -937,12 +941,18 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
       return true
     }
 
-    if (pendingPlan.promptConfirmation) {
-      void confirmPromptAndRun(pendingPlan.promptConfirmation.id)
+    if (pendingPlan?.promptConfirmation ?? promptConfirmation) {
+      void confirmPromptAndRun(
+        pendingPlan?.promptConfirmation?.id ?? promptConfirmation?.id,
+      )
       return true
     }
 
-    void applyPendingPlan(pendingPlan)
+    if (pendingPlan) {
+      void applyPendingPlan(pendingPlan)
+      return true
+    }
+
     return true
   }
 
@@ -1017,6 +1027,24 @@ function shouldAutoApplyPlan(
   if (requestKind !== 'plan') return false
   if (plan.mode === 'create') return true
   return !plan.requiresConfirmation && !plan.promptConfirmation
+}
+
+function buildFallbackPromptConfirmationPlan(
+  payload: AgentPlan['promptConfirmation'] | null,
+): AgentPlan | null {
+  if (!payload) return null
+
+  return {
+    id: `plan_prompt_confirm_${payload.id}`,
+    goal: payload.originalIntent,
+    mode: 'create',
+    intent: 'create_workflow',
+    summary: '继续执行当前已确认的图片工作流。',
+    reasons: ['当前确认卡片仍然存在，只缺少待执行计划外壳。'],
+    requiresConfirmation: false,
+    operations: [],
+    promptConfirmation: payload,
+  }
 }
 
 function resolvePromptTargetWithNodeMap(
