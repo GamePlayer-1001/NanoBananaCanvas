@@ -1733,6 +1733,8 @@
     "composerModelFallback": "选择模型",
     "composerPlatformMode": "平台模式",
     "composerUserKeyMode": "API Key 模式",
+    "composerAddImage": "添加图片",
+    "composerImageAttachment": "图片附件",
     "promptCardTitle": "Prompt 确认",
     "promptOriginalIntent": "原始意图",
     "promptVisualProposal": "画面提案",

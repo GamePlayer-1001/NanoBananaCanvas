@@ -67,6 +67,7 @@ export default function CanvasPage({
   const canEdit = (data as Record<string, unknown> | undefined)?.canEdit === true
   const messages = useAgentStore((state) => state.messages)
   const setMode = useAgentStore((state) => state.setMode)
+  const resetSession = useAgentStore((state) => state.resetSession)
   const status = useAgentStore((state) => state.status)
   const pendingPlan = useAgentStore((state) => state.pendingPlan)
   const lastAppliedPlanId = useAgentStore((state) => state.lastAppliedPlanId)
@@ -143,6 +144,13 @@ export default function CanvasPage({
     workflowId: id,
     workflowName,
   })
+
+  useEffect(() => {
+    resetSession()
+    lastExecutionLabelRef.current = null
+    lastActiveTaskLabelRef.current = null
+    emittedTerminalTaskIdsRef.current = new Set()
+  }, [id, resetSession])
 
   useEffect(() => {
     let cancelled = false
@@ -230,6 +238,7 @@ export default function CanvasPage({
             type: 'message' as const,
             role: toConversationRole(message),
             text: message.text,
+            attachments: 'attachments' in message ? message.attachments : undefined,
             timestamp: new Date(message.createdAt).toLocaleTimeString(),
           }
         }
@@ -423,17 +432,21 @@ export default function CanvasPage({
                     if (actionId === 'diagnose') setMode('diagnose')
                     if (actionId === 'optimize') setMode('optimize')
                     if (actionId === 'explain') setMode('update')
-                    void sendMessage(actionMap[actionId] ?? actionId, {
-                      executionMode: composerExecutionMode,
-                      modelId:
-                        composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
-                      provider:
-                        composerExecutionMode === 'platform'
-                          ? resolvedPlatformOption?.provider
-                          : undefined,
-                      configId:
-                        composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
-                    })
+                    void sendMessage(
+                      actionMap[actionId] ?? actionId,
+                      {
+                        executionMode: composerExecutionMode,
+                        modelId:
+                          composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
+                        provider:
+                          composerExecutionMode === 'platform'
+                            ? resolvedPlatformOption?.provider
+                            : undefined,
+                        configId:
+                          composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
+                      },
+                      [],
+                    )
                   }}
                 />
               )}
@@ -453,18 +466,22 @@ export default function CanvasPage({
                       : tAgent('hintIdle')
                   }
                   submitLabel={t('run')}
-                  onSubmit={(value) =>
-                    void sendMessage(value, {
-                      executionMode: composerExecutionMode,
-                      modelId:
-                        composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
-                      provider:
-                        composerExecutionMode === 'platform'
-                          ? resolvedPlatformOption?.provider
-                          : undefined,
-                      configId:
-                        composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
-                    })
+                  onSubmit={(value, attachments) =>
+                    void sendMessage(
+                      value,
+                      {
+                        executionMode: composerExecutionMode,
+                        modelId:
+                          composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
+                        provider:
+                          composerExecutionMode === 'platform'
+                            ? resolvedPlatformOption?.provider
+                            : undefined,
+                        configId:
+                          composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
+                      },
+                      attachments,
+                    )
                   }
                 />
               )}

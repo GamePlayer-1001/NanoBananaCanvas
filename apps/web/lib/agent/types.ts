@@ -151,6 +151,7 @@ export interface PromptConfirmationPayload {
   originalIntent: string
   visualProposal: string
   executionPrompt: string
+  attachedImageUrls?: string[]
   targetNodeId?: string
   styleOptions?: AgentPromptStyleOption[]
 }
@@ -262,6 +263,11 @@ export type AgentMessage =
       id: string
       role: 'user'
       text: string
+      attachments?: Array<{
+        kind: 'image'
+        url: string
+        name?: string
+      }>
       createdAt: string
     }
   | {
@@ -368,6 +374,11 @@ export interface AgentPlanRequest {
   canvasSummary: CanvasSummary
   locale: string
   assistantRuntime?: AgentAssistantRuntime
+  attachments?: Array<{
+    kind: 'image'
+    url: string
+    name?: string
+  }>
 }
 
 export interface AgentPlanResponse {
@@ -380,6 +391,7 @@ export interface PromptConfirmationRequest {
   executionPrompt?: string
   styleDirection?: string
   regenerate?: boolean
+  attachedImageUrls?: string[]
 }
 
 export interface PromptConfirmationResponse {
@@ -434,6 +446,12 @@ export interface AgentAssistantRuntime {
   modelId?: string
   provider?: string
   configId?: string
+}
+
+export interface AgentComposerAttachment {
+  kind: 'image'
+  url: string
+  name?: string
 }
 
 export interface AgentExplainResponse {

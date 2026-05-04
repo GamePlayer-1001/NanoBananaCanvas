@@ -18,8 +18,15 @@ const promptConfirmationPayloadSchema = z.object({
   originalIntent: z.string().min(1),
   visualProposal: z.string().min(1),
   executionPrompt: z.string().min(1),
+  attachedImageUrls: z.array(z.string().min(1)).optional(),
   targetNodeId: z.string().min(1).optional(),
   styleOptions: z.array(promptStyleOptionSchema).optional(),
+})
+
+const agentAttachmentSchema = z.object({
+  kind: z.literal('image'),
+  url: z.string().min(1),
+  name: z.string().min(1).optional(),
 })
 
 const templateSummarySchema = z.object({
@@ -274,6 +281,7 @@ export const agentPlanRequestSchema = z.object({
   mode: z.enum(['create', 'update', 'repair', 'diagnose', 'optimize', 'extend', 'template']),
   locale: z.string().trim().min(1),
   assistantRuntime: agentAssistantRuntimeSchema.optional(),
+  attachments: z.array(agentAttachmentSchema).optional(),
   canvasSummary: z.object({
     workflowId: z.string().min(1),
     workflowName: z.string().optional(),
@@ -339,6 +347,7 @@ export const promptConfirmationRequestSchema = z.object({
   executionPrompt: z.string().trim().optional(),
   styleDirection: z.string().trim().optional(),
   regenerate: z.boolean().optional(),
+  attachedImageUrls: z.array(z.string().trim().min(1)).optional(),
 })
 
 export const promptConfirmationResponseSchema = z.object({

@@ -20,6 +20,11 @@ type ConversationItem =
       role: 'user' | 'assistant' | 'diagnosis'
       text: string
       timestamp?: string
+      attachments?: Array<{
+        kind: 'image'
+        url: string
+        name?: string
+      }>
     }
   | {
       id: string
@@ -174,6 +179,7 @@ export function AgentConversation({
                 role={item.role}
                 text={item.text}
                 timestamp={item.timestamp}
+                attachments={item.attachments}
               />
         )
       }

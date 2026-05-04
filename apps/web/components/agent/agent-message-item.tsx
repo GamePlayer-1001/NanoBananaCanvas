@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/utils 的 cn，依赖消息角色与时间文本
- * [OUTPUT]: 对外提供 AgentMessageItem 组件，渲染更轻量的用户/助手/诊断消息气泡
+ * [OUTPUT]: 对外提供 AgentMessageItem 组件，渲染更轻量的用户/助手/诊断消息气泡与图片附件
  * [POS]: components/agent 的基础消息渲染器，被 AgentConversation 复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -13,6 +13,11 @@ interface AgentMessageItemProps {
   role: AgentMessageTone
   text: string
   timestamp?: string
+  attachments?: Array<{
+    kind: 'image'
+    url: string
+    name?: string
+  }>
 }
 
 const ROLE_STYLES: Record<AgentMessageTone, string> = {
@@ -25,6 +30,7 @@ export function AgentMessageItem({
   role,
   text,
   timestamp,
+  attachments,
 }: AgentMessageItemProps) {
   return (
     <div
@@ -33,6 +39,22 @@ export function AgentMessageItem({
         ROLE_STYLES[role],
       )}
     >
+      {attachments?.length ? (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {attachments.map((attachment) => (
+            <a
+              key={`${attachment.url}-${attachment.name ?? ''}`}
+              href={attachment.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-black/8 bg-white/70 px-3 py-1 text-[11px] text-slate-600"
+            >
+              <span>图片</span>
+              <span className="max-w-[140px] truncate">{attachment.name ?? '未命名图片'}</span>
+            </a>
+          ))}
+        </div>
+      ) : null}
       <p className="whitespace-pre-wrap text-[13px] leading-6">{text}</p>
       {timestamp ? (
         <p

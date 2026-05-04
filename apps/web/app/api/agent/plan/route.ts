@@ -1,11 +1,12 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/nanoid, @/lib/validations/agent，与 Agent 常量/类型
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/agent/server-assistant, @/lib/nanoid, @/lib/validations/agent，与 Agent 常量/类型
  * [OUTPUT]: 对外提供 POST /api/agent/plan，返回严格结构化的 AgentPlan
  * [POS]: api/agent 的首个 planner 端点，为右侧 Agent 面板提供稳定提案，不直接改动左侧画布
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { requireAuth } from '@/lib/api/auth'
+import { callAgentAssistantJson } from '@/lib/agent/server-assistant'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
 import { AGENT_MAX_AUTO_OPERATIONS } from '@/lib/agent/constants'
 import {
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
     }
 
     const input = agentPlanRequestSchema.parse(body)
-    const response = buildPlannerResponse(input as AgentPlanRequest)
+    const response = await buildPlannerResponse(input as AgentPlanRequest)
     const plan = response.plan
     const parsedPlan = agentPlanSchema.parse(plan)
     const parsedAlternatives = response.alternatives?.map((item) => agentPlanSchema.parse(item))
@@ -56,17 +57,20 @@ export async function POST(req: Request) {
   }
 }
 
-function buildPlannerResponse(input: AgentPlanRequest): { plan: AgentPlan; alternatives?: AgentPlan[] } {
+async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: AgentPlan; alternatives?: AgentPlan[] }> {
   const goal = input.userMessage.trim()
   const normalized = goal.toLowerCase()
   const canvas = input.canvasSummary
-  const inferredMode = inferModeFromMessage(input.mode, normalized, canvas.nodeCount)
-  const intent = inferIntentFromMessage(normalized, canvas, inferredMode)
+  const aiIntent = await inferIntentWithAssistant(input).catch(() => null)
+  const inferredMode =
+    aiIntent?.mode ?? inferModeFromMessage(input.mode, normalized, canvas.nodeCount)
+  const intent =
+    aiIntent?.intent ?? inferIntentFromMessage(normalized, canvas, inferredMode)
   const operations =
     inferredMode === 'diagnose'
       ? buildDiagnoseOperations(canvas)
       : canvas.nodeCount === 0
-        ? buildCreationOperations(normalized)
+        ? buildCreationOperations(buildCreationMessage(normalized, aiIntent?.workflowKind))
         : buildIncrementalOperations(normalized, canvas, intent)
 
   const reasons = buildReasons(normalized, canvas, inferredMode, operations, intent)
@@ -91,14 +95,18 @@ function buildPlannerResponse(input: AgentPlanRequest): { plan: AgentPlan; alter
     goal,
     mode: inferredMode,
     intent,
-    summary: buildSummary(normalized, canvas, inferredMode, operations),
-    reasons,
+    summary:
+      aiIntent?.summary?.trim() ||
+      buildSummary(normalized, canvas, inferredMode, operations),
+    reasons: aiIntent?.reasons?.length ? aiIntent.reasons.slice(0, 3) : reasons,
     requiresConfirmation,
     operations,
-    promptConfirmation: operations.find(
-      (operation): operation is Extract<WorkflowOperation, { type: 'request_prompt_confirmation' }> =>
-        operation.type === 'request_prompt_confirmation',
-    )?.payload,
+    promptConfirmation:
+      buildPromptConfirmationPayload(goal, aiIntent?.workflowKind, input.attachments) ??
+      operations.find(
+        (operation): operation is Extract<WorkflowOperation, { type: 'request_prompt_confirmation' }> =>
+          operation.type === 'request_prompt_confirmation',
+      )?.payload,
   }
 
   const alternatives = buildPlanAlternatives(plan, canvas)
@@ -106,6 +114,77 @@ function buildPlannerResponse(input: AgentPlanRequest): { plan: AgentPlan; alter
   return {
     plan,
     alternatives,
+  }
+}
+
+async function inferIntentWithAssistant(input: AgentPlanRequest) {
+  return callAgentAssistantJson<{
+    mode?: AgentPlan['mode']
+    intent?: AgentPlanIntent
+    workflowKind?: 'image' | 'image_to_image' | 'video' | 'audio' | 'text'
+    summary?: string
+    reasons?: string[]
+  }>({
+    assistantRuntime: input.assistantRuntime,
+    prompt: [
+      '请根据用户输入和当前工作流上下文，判断这是哪一类 Agent 请求，并只返回 JSON。',
+      '可选 mode: create/update/repair/diagnose/optimize/extend/template',
+      '可选 intent: create_workflow/adapt_template/add_step/split_step/replace_model/change_output_count/add_branch/repair_flow/optimize_cost/optimize_speed/optimize_structure/explain_flow',
+      '可选 workflowKind: image/image_to_image/video/audio/text',
+      'JSON 格式：{"mode":"...","intent":"...","workflowKind":"...","summary":"...","reasons":["..."]}',
+      `用户输入：${input.userMessage}`,
+      `当前节点数：${input.canvasSummary.nodeCount}`,
+      `当前是否有成功图片结果：${input.canvasSummary.latestSuccessfulAsset?.kind === 'image' ? '是' : '否'}`,
+      `是否附带图片：${input.attachments?.length ? '是' : '否'}`,
+      `当前模式：${input.mode}`,
+    ].join('\n'),
+  })
+}
+
+function buildCreationMessage(
+  normalized: string,
+  workflowKind?: 'image' | 'image_to_image' | 'video' | 'audio' | 'text',
+) {
+  if (workflowKind === 'image_to_image') {
+    return `${normalized} 图生图`
+  }
+
+  if (workflowKind === 'image') {
+    return `${normalized} 图片`
+  }
+
+  if (workflowKind === 'video') {
+    return `${normalized} 视频`
+  }
+
+  if (workflowKind === 'audio') {
+    return `${normalized} 音频`
+  }
+
+  return normalized
+}
+
+function buildPromptConfirmationPayload(
+  goal: string,
+  workflowKind: 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | undefined,
+  attachments: AgentPlanRequest['attachments'],
+) {
+  if (workflowKind !== 'image' && workflowKind !== 'image_to_image') {
+    return undefined
+  }
+
+  return {
+    id: `prompt_${nanoid()}`,
+    originalIntent: goal,
+    visualProposal: goal,
+    executionPrompt: goal,
+    attachedImageUrls: attachments?.map((item) => item.url),
+    targetNodeId: 'draft-image-gen',
+    styleOptions: [
+      { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影、自然光和材质细节' },
+      { id: 'anime', label: '更动漫', promptDelta: '强调造型、线稿和色块关系' },
+      { id: 'commercial', label: '更商业', promptDelta: '强调广告感、主体突出和高级质感' },
+    ],
   }
 }
 

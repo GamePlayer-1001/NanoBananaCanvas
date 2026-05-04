@@ -1733,6 +1733,8 @@
     "composerModelFallback": "Choose a model",
     "composerPlatformMode": "Platform mode",
     "composerUserKeyMode": "API Key mode",
+    "composerAddImage": "Add image",
+    "composerImageAttachment": "Image attachment",
     "promptCardTitle": "Prompt Review",
     "promptOriginalIntent": "Original Intent",
     "promptVisualProposal": "Visual Direction",

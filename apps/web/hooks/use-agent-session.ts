@@ -27,6 +27,7 @@ import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 import { validateAgentPlan } from '@/lib/agent/validate-agent-plan'
 import type {
   AgentAssistantRuntime,
+  AgentComposerAttachment,
   AgentMode,
   AgentPlan,
 } from '@/lib/agent/types'
@@ -146,11 +147,12 @@ export function useAgentSession({
   async function sendMessage(
     rawValue: string,
     assistantRuntime?: AgentAssistantRuntime,
+    attachments: AgentComposerAttachment[] = [],
   ) {
     const value = rawValue.trim()
-    if (!value || isSubmitting) return
+    if ((!value && attachments.length === 0) || isSubmitting) return
 
-    if (tryHandleConversationalConfirmation(value)) {
+    if (value && tryHandleConversationalConfirmation(value)) {
       return
     }
 
@@ -163,6 +165,7 @@ export function useAgentSession({
       id: crypto.randomUUID(),
       role: 'user',
       text: value,
+      attachments,
       createdAt: new Date().toISOString(),
     })
 
@@ -197,6 +200,9 @@ export function useAgentSession({
         userMessage: value,
         canvasSummary,
         targetNodeId: canvasSummary.selectionContext?.nodeId,
+        metadata: {
+          attachmentCount: attachments.length,
+        },
       })
 
       const requestKind = resolveRequestKind(value, mode)
@@ -383,6 +389,7 @@ export function useAgentSession({
         canvasSummary,
         locale,
         assistantRuntime,
+        attachments,
       })
       const plan = 'plan' in planned ? planned.plan : planned
       const alternatives = 'alternatives' in planned && planned.alternatives ? planned.alternatives : []
@@ -691,6 +698,7 @@ export function useAgentSession({
         executionPrompt: pendingPlan.promptConfirmation.executionPrompt,
         styleDirection,
         regenerate: true,
+        attachedImageUrls: pendingPlan.promptConfirmation.attachedImageUrls,
       })
 
       const nextPayload = {
