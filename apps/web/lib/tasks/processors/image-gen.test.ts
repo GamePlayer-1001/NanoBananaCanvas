@@ -153,6 +153,9 @@ describe('ImageGenProcessor', () => {
             },
           ],
           modalities: ['image', 'text'],
+          image_config: {
+            aspect_ratio: '16:9',
+          },
         }),
       }),
     )
@@ -161,6 +164,70 @@ describe('ImageGenProcessor', () => {
       url: 'data:image/png;base64,b3BlbnJvdXRlci1pbWFnZQ==',
       contentType: 'image/png',
     })
+  })
+
+  it('passes reference image to OpenRouter chat image requests', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                images: [
+                  {
+                    image_url: {
+                      url: 'https://example.com/edited.png',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openrouter')
+    await processor.submit(
+      {
+        model: 'openai/dall-e-3',
+        params: {
+          prompt: '基于参考图增强光影',
+          size: '1k',
+          aspectRatio: '1:1',
+          imageUrl: 'https://example.com/reference.png',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://openrouter.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'openai/dall-e-3',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: '基于参考图增强光影' },
+                {
+                  type: 'image_url',
+                  image_url: { url: 'https://example.com/reference.png' },
+                },
+              ],
+            },
+          ],
+          modalities: ['image', 'text'],
+          image_config: {
+            aspect_ratio: '1:1',
+            image_size: '1k',
+          },
+        }),
+      }),
+    )
   })
 
   it('flattens formatted prompts before sending them to the image api', async () => {
@@ -197,6 +264,48 @@ describe('ImageGenProcessor', () => {
           prompt: '角色设定： - 男孩 - 背带裤 - 篮球场',
           size: '1920x1920',
           aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+  })
+
+  it('submits image edits when an OpenAI-compatible reference image is provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        data: [{ url: 'https://example.com/edited-openai-compatible.png' }],
+      }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/edited-openai-compatible.png' }],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('openai-compatible')
+    await processor.submit(
+      {
+        model: 'demo-model',
+        params: {
+          prompt: '保留主体，重绘背景',
+          baseUrl: 'https://example.com/v1',
+          size: '1024x1024',
+          imageUrl: 'https://example.com/source.png',
+        },
+      },
+      'test-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.com/v1/images/edits',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'demo-model',
+          prompt: '保留主体，重绘背景',
+          size: '1024x1024',
+          images: [{ image_url: 'https://example.com/source.png' }],
           n: 1,
         }),
       }),
@@ -308,6 +417,28 @@ describe('ImageGenProcessor', () => {
         url: 'https://example.com/comfly.png',
       },
     })
+  })
+
+  it('fails fast when dlapi receives a reference image it cannot actually use', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+
+    await expect(
+      processor.submit(
+        {
+          model: 'gpt-image-2',
+          params: {
+            prompt: '参考原图进行重绘',
+            imageUrl: 'https://example.com/reference.png',
+          },
+        },
+        'platform-key',
+      ),
+    ).rejects.toThrow(/DLAPI 图片生成链路当前还未接通参考图编辑协议/)
+
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('checks dlapi async task completion and returns image data', async () => {
@@ -438,5 +569,27 @@ describe('ImageGenProcessor', () => {
     expect(
       normalizeImagePromptForApi('第一段\n\n第二段\t第三段   第四段'),
     ).toBe('第一段 第二段 第三段 第四段')
+  })
+
+  it('fails fast when gemini receives a reference image it cannot actually use', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('gemini')
+
+    await expect(
+      processor.submit(
+        {
+          model: 'imagen-3.0-generate-002',
+          params: {
+            prompt: '参考原图做风格化重绘',
+            imageUrl: 'https://example.com/reference.png',
+          },
+        },
+        'test-key',
+      ),
+    ).rejects.toThrow(/尚未接通参考图编辑请求/)
+
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

@@ -102,6 +102,16 @@ function extractOpenRouterChatImageUrl(
   return typeof first === 'string' && first.trim() ? first.trim() : null
 }
 
+function readReferenceImageUrl(params: Record<string, unknown>): string | undefined {
+  const raw = params.imageUrl
+  if (typeof raw !== 'string') {
+    return undefined
+  }
+
+  const value = raw.trim()
+  return value ? value : undefined
+}
+
 function readImageCapabilities(params: Record<string, unknown>): ImageModelCapabilities | undefined {
   const raw = params.imageCapabilities
   return raw && typeof raw === 'object'
@@ -232,7 +242,14 @@ async function openRouterChatImageSubmit(
 ): Promise<{ url: string }> {
   const { model, params } = input
   const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
+  const referenceImageUrl = readReferenceImageUrl(params)
+  const sizePreset = (params.size as string) ?? '1k'
+  const aspectRatio = (params.aspectRatio as string) ?? '1:1'
   const baseUrl = resolveOpenAICompatibleBaseUrl('openrouter', params)
+  const imageConfig =
+    sizePreset === 'auto'
+      ? { aspect_ratio: aspectRatio }
+      : { aspect_ratio: aspectRatio, image_size: sizePreset }
 
   assertOpenAICompatiblePromptSafety(prompt, baseUrl)
 
@@ -247,10 +264,16 @@ async function openRouterChatImageSubmit(
       messages: [
         {
           role: 'user',
-          content: prompt,
+          content: referenceImageUrl
+            ? [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: referenceImageUrl } },
+              ]
+            : prompt,
         },
       ],
       modalities: ['image', 'text'],
+      image_config: imageConfig,
     }),
   })
 
@@ -288,6 +311,7 @@ async function openAICompatibleSubmit(
   const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
+  const referenceImageUrl = readReferenceImageUrl(params)
   const capabilities = readImageCapabilities(params)
   const violation = validateImageSelection(sizePreset, aspectRatio, capabilities)
 
@@ -304,23 +328,38 @@ async function openAICompatibleSubmit(
 
   assertOpenAICompatiblePromptSafety(prompt, baseUrl)
 
+  if (provider === 'openrouter' && referenceImageUrl) {
+    return openRouterChatImageSubmit(input, apiKey)
+  }
+
   if (shouldUseOpenRouterChatImageApi(provider, model)) {
     return openRouterChatImageSubmit(input, apiKey)
   }
 
-  const res = await fetch(`${baseUrl}/images/generations`, {
+  const requestPath = referenceImageUrl ? '/images/edits' : '/images/generations'
+  const requestBody = referenceImageUrl
+    ? {
+        model,
+        prompt,
+        size,
+        images: [{ image_url: referenceImageUrl }],
+        n: 1,
+      }
+    : { model, prompt, size, aspect_ratio: aspectRatio, n: 1 }
+
+  const res = await fetch(`${baseUrl}${requestPath}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, prompt, size, aspect_ratio: aspectRatio, n: 1 }),
+    body: JSON.stringify(requestBody),
   })
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     if (statusIsGatewayLikeFailure(res.status)) {
-      throw new Error(buildGatewayFailureMessage(res.status, provider, baseUrl, text))
+      throw new Error(buildGatewayFailureMessage(res.status, provider, `${baseUrl}${requestPath}`, text))
     }
     throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
@@ -371,11 +410,18 @@ async function dlapiSubmit(
   const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
+  const referenceImageUrl = readReferenceImageUrl(params)
   const capabilities = readImageCapabilities(params)
   const violation = validateImageSelection(sizePreset, aspectRatio, capabilities)
 
   if (violation) {
     throw new Error(violation.message)
+  }
+
+  if (referenceImageUrl) {
+    throw new Error(
+      'DLAPI 图片生成链路当前还未接通参考图编辑协议，已阻止静默忽略 image input；请先切换到 OpenAI/OpenRouter 兼容图片模型。',
+    )
   }
 
   const size = resolveOpenAICompatibleRequestSize('dlapi', sizePreset, aspectRatio)
@@ -521,11 +567,18 @@ async function googleImageSubmit(
   const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
+  const referenceImageUrl = readReferenceImageUrl(params)
   const capabilities = readImageCapabilities(params)
   const violation = validateImageSelection(sizePreset, aspectRatio, capabilities)
 
   if (violation) {
     throw new Error(violation.message)
+  }
+
+  if (referenceImageUrl) {
+    throw new Error(
+      '当前 Gemini/Imagen 提交实现仅接通了文生图接口，尚未接通参考图编辑请求；已阻止静默忽略 image input。',
+    )
   }
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`
