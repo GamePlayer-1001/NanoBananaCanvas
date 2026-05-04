@@ -151,6 +151,30 @@ async function fetchReferenceImageAsset(
   }
 }
 
+async function buildMultipartImageEditRequestInit(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  size: string,
+  referenceImageUrl: string,
+): Promise<RequestInit> {
+  const { blob, filename } = await fetchReferenceImageAsset(referenceImageUrl)
+  const formData = new FormData()
+  formData.append('model', model)
+  formData.append('prompt', prompt)
+  formData.append('size', size)
+  formData.append('n', '1')
+  formData.append('image', blob, filename)
+
+  return {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  }
+}
+
 function summarizeBaseUrl(baseUrl: string): string {
   try {
     const parsed = new URL(baseUrl)
@@ -369,24 +393,35 @@ async function openAICompatibleSubmit(
   }
 
   const requestPath = referenceImageUrl ? '/images/edits' : '/images/generations'
-  const requestBody = referenceImageUrl
-    ? {
-        model,
-        prompt,
-        size,
-        images: [{ image_url: referenceImageUrl }],
-        n: 1,
-      }
-    : { model, prompt, size, aspect_ratio: aspectRatio, n: 1 }
+  const requestInit =
+    provider === 'comfly' && referenceImageUrl
+      ? await buildMultipartImageEditRequestInit(
+          apiKey,
+          model,
+          prompt,
+          size,
+          referenceImageUrl,
+        )
+      : {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(
+            referenceImageUrl
+              ? {
+                  model,
+                  prompt,
+                  size,
+                  images: [{ image_url: referenceImageUrl }],
+                  n: 1,
+                }
+              : { model, prompt, size, aspect_ratio: aspectRatio, n: 1 },
+          ),
+        }
 
-  const res = await fetch(`${baseUrl}${requestPath}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(requestBody),
-  })
+  const res = await fetch(`${baseUrl}${requestPath}`, requestInit)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -457,22 +492,16 @@ async function dlapiSubmit(
 
   const requestInit: RequestInit = referenceImageUrl
     ? await (async () => {
-        const { blob, filename } = await fetchReferenceImageAsset(referenceImageUrl)
-        const formData = new FormData()
-        formData.append('model', model)
-        formData.append('prompt', prompt)
-        formData.append('size', size)
-        formData.append('n', '1')
+        const multipartRequest = await buildMultipartImageEditRequestInit(
+          apiKey,
+          model,
+          prompt,
+          size,
+          referenceImageUrl,
+        )
+        const formData = multipartRequest.body as FormData
         formData.append('async', 'true')
-        formData.append('image', blob, filename)
-
-        return {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: formData,
-        }
+        return multipartRequest
       })()
     : {
         method: 'POST',

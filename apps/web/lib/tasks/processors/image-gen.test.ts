@@ -312,6 +312,67 @@ describe('ImageGenProcessor', () => {
     )
   })
 
+  it('submits comfly image edits as multipart form data when a reference image is provided', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/comfly-edit.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('comfly')
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: '参考图增强质感',
+          imageUrl: 'https://example.com/reference.png',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://example.com/reference.png')
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/edits',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer platform-key',
+        }),
+        body: expect.any(FormData),
+      }),
+    )
+
+    const secondCall = fetchMock.mock.calls[1]
+    const requestInit = secondCall?.[1] as RequestInit
+    const formData = requestInit.body as FormData
+    expect(formData.get('model')).toBe('gpt-image-2')
+    expect(formData.get('prompt')).toBe('参考图增强质感')
+    expect(formData.get('size')).toBe('1024x1024')
+    expect(formData.get('n')).toBe('1')
+    expect(formData.get('image')).toBeInstanceOf(File)
+    expect(result).toMatchObject({
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: 'https://example.com/comfly-edit.png',
+      },
+    })
+  })
+
   it('resolves preset size and aspect ratio into concrete dimensions', () => {
     expect(resolveImageGenerationSize('auto', '16:9')).toBe('1920x1080')
     expect(resolveImageGenerationSize('1k', '9:16')).toBe('1080x1920')
