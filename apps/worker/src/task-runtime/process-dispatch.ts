@@ -17,6 +17,8 @@ export type WorkerTaskBindings = {
   OPENROUTER_API_KEY?: string
   DEEPSEEK_API_KEY?: string
   GEMINI_API_KEY?: string
+  DLAPI_API_KEY?: string
+  COMFLY_API_KEY?: string
   OPENAI_API_KEY?: string
   KLING_ACCESS_KEY?: string
   KLING_SECRET_KEY?: string
@@ -27,6 +29,8 @@ const PLATFORM_ENV_KEY_MAP: Record<string, keyof WorkerTaskBindings> = {
   openrouter: 'OPENROUTER_API_KEY',
   deepseek: 'DEEPSEEK_API_KEY',
   gemini: 'GEMINI_API_KEY',
+  dlapi: 'DLAPI_API_KEY',
+  comfly: 'COMFLY_API_KEY',
 }
 const log = createLogger('worker:task-runtime')
 
@@ -50,6 +54,14 @@ export function createWorkerTaskRuntime(env: WorkerTaskBindings): TaskServiceRun
       const envKey = PLATFORM_ENV_KEY_MAP[provider]
       if (!envKey) {
         log.error('Worker platform provider mapping missing', undefined, { provider })
+        throw new Error(`No platform key mapping for provider: ${provider}`)
+      }
+      return requireBinding(env, envKey)
+    },
+    getPlatformSupplierApiKey: async (provider) => {
+      const envKey = PLATFORM_ENV_KEY_MAP[provider]
+      if (!envKey) {
+        log.error('Worker platform supplier mapping missing', undefined, { provider })
         throw new Error(`No platform key mapping for provider: ${provider}`)
       }
       return requireBinding(env, envKey)

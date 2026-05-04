@@ -41,5 +41,6 @@ Browser → API Route → service.ts → D1 (状态持久化)
 - **同节点重跑复用**: submit 阶段若带上 `workflowId/nodeId`，会优先复用同一工作流同一节点仍在进行中的活跃任务；只有旧任务已过期或已被观察到终态，才会释放槽位并重新创建，避免用户重跑画板时被全局 `1/1` 并发门闸误伤
 - **并发闸门前自愈**: submit 在真正执行全局 `1/1` 并发检查前，会先扫描该用户全部活跃任务，把已超时、已坏死或已被 Workflow 观察到终态的旧槽位自动释放；并发门闸继续保留为最后一道保护，而不是让历史脏任务永久卡住新提交
 - **分发失败显式落库**: Worker/Workflow 在后台重建执行上下文时，若遇到快照缺失、凭据恢复失败或其他分发前异常，会直接把 D1 任务标记为 `failed` 并清理快照，避免前端长期看到 `pending + startedAt=null`
+- **平台密钥运行时隔离**: Worker runtime 现显式提供 `getPlatformSupplierApiKey` 给共享任务服务，确保 `comfly/dlapi` 这类平台图片任务在后台读取 Worker 绑定密钥，而不是错误回退到 Web 侧 `getCloudflareContext()`
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
