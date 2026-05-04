@@ -74,6 +74,10 @@ describe('POST /api/agent/*', () => {
           id: 'plan_plan-seed',
           mode: 'create',
           requiresConfirmation: false,
+          promptConfirmation: {
+            originalIntent: '帮我生成一张电商海报图片',
+            targetNodeId: 'draft-text-input',
+          },
           operations: expect.arrayContaining([
             expect.objectContaining({ type: 'add_node', nodeType: 'text-input' }),
             expect.objectContaining({ type: 'add_node', nodeType: 'image-gen' }),
@@ -90,6 +94,37 @@ describe('POST /api/agent/*', () => {
             variantTone: 'aggressive',
           }),
         ]),
+      },
+    })
+  })
+
+  it('returns a polished prompt confirmation payload for direct image generation requests', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '帮我生成一张小猫的图片',
+          mode: 'create',
+          locale: 'zh',
+          canvasSummary: createCanvasSummary(),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          promptConfirmation: {
+            originalIntent: '帮我生成一张小猫的图片',
+            targetNodeId: 'draft-text-input',
+            visualProposal: expect.stringContaining('我先把这次画面理解整理成一版更可执行的方向'),
+            executionPrompt: expect.stringContaining('请把这个想法扩展成一条完整可执行的出图描述'),
+          },
+        },
       },
     })
   })

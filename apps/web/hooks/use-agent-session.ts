@@ -769,10 +769,26 @@ export function useAgentSession({
     if (!payload?.targetNodeId) return null
 
     const executionPrompt = payload.executionPrompt
+    const appliedNodeIds = new Set(useFlowStore.getState().nodes.map((node) => node.id))
     let hasResolvedTarget = false
 
     const operations = plan.operations
       .filter((operation) => operation.type !== 'request_prompt_confirmation')
+      .filter((operation) => {
+        if (operation.type === 'add_node' && operation.nodeId && appliedNodeIds.has(operation.nodeId)) {
+          return false
+        }
+
+        if (
+          operation.type === 'connect' &&
+          appliedNodeIds.has(operation.source) &&
+          appliedNodeIds.has(operation.target)
+        ) {
+          return false
+        }
+
+        return true
+      })
       .map((operation) => {
         if (
           operation.type === 'add_node' &&
@@ -806,7 +822,7 @@ export function useAgentSession({
     operations.push({
       type: 'run_workflow',
       scope: 'from-node',
-      nodeId: payload.targetNodeId,
+      nodeId: resolveExecutionStartNodeId(payload.targetNodeId),
     })
 
     return {
@@ -817,16 +833,34 @@ export function useAgentSession({
     }
   }
 
-  function resolvePromptTargetNodeId(nodeId?: string) {
-    if (!nodeId) return null
+function resolvePromptTargetNodeId(nodeId?: string) {
+  if (!nodeId) return null
 
-    const currentNodes = useFlowStore.getState().nodes
-    if (currentNodes.some((node) => node.id === nodeId)) {
+  const currentNodes = useFlowStore.getState().nodes
+  if (currentNodes.some((node) => node.id === nodeId)) {
       return nodeId
     }
 
-    return null
+  return null
+}
+
+function resolveExecutionStartNodeId(targetNodeId: string) {
+  const { nodes, edges } = useFlowStore.getState()
+  const targetNode = nodes.find((node) => node.id === targetNodeId)
+  if (!targetNode) {
+    return targetNodeId
   }
+
+  if (targetNode.type !== 'text-input') {
+    return targetNodeId
+  }
+
+  const downstreamImageNode = edges.find(
+    (edge) => edge.source === targetNodeId && edge.targetHandle === 'prompt-in',
+  )?.target
+
+  return downstreamImageNode ?? targetNodeId
+}
 
   function selectPendingPlanVariant(planId: string) {
     const nextPlan = pendingPlanAlternatives.find((plan) => plan.id === planId)

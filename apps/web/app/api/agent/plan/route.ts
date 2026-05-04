@@ -62,6 +62,7 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
   const normalized = goal.toLowerCase()
   const canvas = input.canvasSummary
   const aiIntent = await inferIntentWithAssistant(input).catch(() => null)
+  const workflowKind = aiIntent?.workflowKind ?? inferWorkflowKind(goal, input.attachments)
   const inferredMode =
     aiIntent?.mode ?? inferModeFromMessage(input.mode, normalized, canvas.nodeCount)
   const intent =
@@ -70,7 +71,7 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
     inferredMode === 'diagnose'
       ? buildDiagnoseOperations(canvas)
       : canvas.nodeCount === 0
-        ? buildCreationOperations(buildCreationMessage(normalized, aiIntent?.workflowKind))
+        ? buildCreationOperations(buildCreationMessage(normalized, workflowKind))
         : buildIncrementalOperations(normalized, canvas, intent)
 
   const reasons = buildReasons(normalized, canvas, inferredMode, operations, intent)
@@ -102,7 +103,7 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
     requiresConfirmation,
     operations,
     promptConfirmation:
-      buildPromptConfirmationPayload(goal, aiIntent?.workflowKind, input.attachments) ??
+      (await buildPromptConfirmationPayload(goal, workflowKind, input.attachments)) ??
       operations.find(
         (operation): operation is Extract<WorkflowOperation, { type: 'request_prompt_confirmation' }> =>
           operation.type === 'request_prompt_confirmation',
@@ -164,7 +165,42 @@ function buildCreationMessage(
   return normalized
 }
 
-function buildPromptConfirmationPayload(
+function inferWorkflowKind(
+  userMessage: string,
+  attachments: AgentPlanRequest['attachments'],
+): 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | undefined {
+  const normalized = userMessage.trim().toLowerCase()
+
+  if (attachments?.length) {
+    return 'image_to_image'
+  }
+
+  if (
+    normalized.includes('图生图') ||
+    normalized.includes('以图生图') ||
+    normalized.includes('改图') ||
+    normalized.includes('图片修改') ||
+    (normalized.includes('修改') && normalized.includes('图片'))
+  ) {
+    return 'image_to_image'
+  }
+
+  if (normalized.includes('视频')) {
+    return 'video'
+  }
+
+  if (normalized.includes('音频') || normalized.includes('配音') || normalized.includes('语音')) {
+    return 'audio'
+  }
+
+  if (normalized.includes('图') || normalized.includes('图片') || normalized.includes('海报')) {
+    return 'image'
+  }
+
+  return 'text'
+}
+
+async function buildPromptConfirmationPayload(
   goal: string,
   workflowKind: 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | undefined,
   attachments: AgentPlanRequest['attachments'],
@@ -173,19 +209,76 @@ function buildPromptConfirmationPayload(
     return undefined
   }
 
+  const attachedImageUrls = attachments?.map((item) => item.url)
+  const fallbackVisualProposal = buildFallbackVisualProposal(goal, workflowKind)
+  const fallbackExecutionPrompt = buildFallbackExecutionPrompt(goal, workflowKind, attachedImageUrls)
+  const aiPayload = await callAgentAssistantJson<{
+    visualProposal?: string
+    executionPrompt?: string
+    styleOptions?: Array<{ id: string; label: string; promptDelta: string }>
+  }>({
+    prompt: [
+      '请把下面的图片需求整理成生成前确认卡片，并且只返回 JSON。',
+      'JSON 格式：{"visualProposal":"...","executionPrompt":"...","styleOptions":[{"id":"...","label":"...","promptDelta":"..."}]}',
+      '要求：',
+      '1. visualProposal 必须用中文重述画面理解，补足主体、场景、镜头、光线、氛围与风格方向。',
+      '2. executionPrompt 必须明显比原始需求更完整，不能只是重复原话。',
+      '3. 如果用户附带参考图，executionPrompt 里要写明保留主体、构图或关键元素。',
+      '4. styleOptions 给 3 个短风格方向，方便继续改写。',
+      `工作流类型：${workflowKind}`,
+      `原始意图：${goal}`,
+      `附图数量：${attachedImageUrls?.length ?? 0}`,
+    ].join('\n'),
+  }).catch(() => null)
+
   return {
     id: `prompt_${nanoid()}`,
     originalIntent: goal,
-    visualProposal: goal,
-    executionPrompt: goal,
-    attachedImageUrls: attachments?.map((item) => item.url),
-    targetNodeId: 'draft-image-gen',
-    styleOptions: [
-      { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影、自然光和材质细节' },
-      { id: 'anime', label: '更动漫', promptDelta: '强调造型、线稿和色块关系' },
-      { id: 'commercial', label: '更商业', promptDelta: '强调广告感、主体突出和高级质感' },
-    ],
+    visualProposal: ensurePromptText(aiPayload?.visualProposal, fallbackVisualProposal),
+    executionPrompt: ensurePromptText(aiPayload?.executionPrompt, fallbackExecutionPrompt),
+    attachedImageUrls,
+    targetNodeId: 'draft-text-input',
+    styleOptions: aiPayload?.styleOptions?.length
+      ? aiPayload.styleOptions
+      : [
+          { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影、自然光和材质细节' },
+          { id: 'anime', label: '更动漫', promptDelta: '强调造型、线稿和色块关系' },
+          { id: 'commercial', label: '更商业', promptDelta: '强调广告感、主体突出和高级质感' },
+        ],
   }
+}
+
+function buildFallbackVisualProposal(
+  goal: string,
+  workflowKind: 'image' | 'image_to_image',
+) {
+  const base = `我先把这次画面理解整理成一版更可执行的方向：${goal.trim()}。`
+  if (workflowKind === 'image_to_image') {
+    return `${base} 我会保留参考图里的主体关系和关键构图，同时补足新的风格、材质、光线与氛围表达。`
+  }
+
+  return `${base} 我会补足主体设定、场景环境、镜头构图、光线层次和整体风格，让生成目标更稳定。`
+}
+
+function buildFallbackExecutionPrompt(
+  goal: string,
+  workflowKind: 'image' | 'image_to_image',
+  attachedImageUrls?: string[],
+) {
+  const imageConstraint =
+    attachedImageUrls && attachedImageUrls.length > 0
+      ? ' 保留参考图中的主体关系、核心构图和关键视觉元素，在此基础上做风格化重绘或细节增强。'
+      : ''
+  const workflowConstraint =
+    workflowKind === 'image_to_image'
+      ? '请基于输入参考图进行改写，强化风格一致性、材质细节、光线层次和画面完成度。'
+      : '请把这个想法扩展成一条完整可执行的出图描述，明确主体、场景、构图、镜头、光线、氛围与质感。'
+
+  return `${goal.trim()}\n\n${workflowConstraint}${imageConstraint}`
+}
+
+function ensurePromptText(value: string | undefined, fallback: string) {
+  return value?.trim() ? value.trim() : fallback
 }
 
 function buildIncrementalOperations(
