@@ -564,6 +564,103 @@ describe('submitTask', () => {
     expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${task.id}.json`)
   })
 
+  it('replays reference image input from snapshot when dispatching queued comfly image tasks', async () => {
+    const submitMock = vi.fn().mockResolvedValue({
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: 'data:image/png;base64,ZmFrZS1jb21mbHktaW1hZ2U=',
+        contentType: 'image/png',
+      },
+    })
+
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'comfly',
+      submit: submitMock,
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const taskId = 'task-comfly-image-replay'
+    r2Mock.get.mockResolvedValue({
+      json: async () => ({
+        taskType: 'image_gen',
+        requestProvider: 'comfly',
+        resolvedProvider: 'comfly',
+        resolvedModelId: 'gpt-image-2',
+        executionMode: 'platform',
+        resolvedInput: {
+          prompt: '参考图增强质感',
+          size: '1024x1024',
+          aspectRatio: '1:1',
+          imageUrl: 'https://example.com/reference.png',
+        },
+        originalInput: {
+          prompt: '参考图增强质感',
+          imageUrl: 'https://example.com/reference.png',
+        },
+        apiKey: 'platform-key',
+        runtimeMeta: {
+          orchestrator: 'legacy_queue',
+        },
+      }),
+    })
+
+    const queuedDb = createDbMock(0, {
+      id: taskId,
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'comfly',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: JSON.stringify({
+        prompt: '参考图增强质感',
+        imageUrl: {
+          __type: 'omitted-data-url',
+          mediaType: 'image/png',
+          length: 1234,
+        },
+        __taskRuntime: {
+          orchestrator: 'legacy_queue',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: null,
+      node_id: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+
+    await processTaskDispatch(queuedDb, {
+      taskId,
+      userId: 'user-1',
+    })
+
+    expect(submitMock).toHaveBeenCalledWith(
+      {
+        model: 'gpt-image-2',
+        params: expect.objectContaining({
+          prompt: '参考图增强质感',
+          size: '1024x1024',
+          aspectRatio: '1:1',
+          imageUrl: 'https://example.com/reference.png',
+        }),
+      },
+      'platform-key',
+    )
+    expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${taskId}.json`)
+  })
+
   it('replays user_key runtime credentials from task execution snapshot without requiring ENCRYPTION_KEY in worker', async () => {
     vi.mocked(getProcessor).mockReturnValue({
       taskType: 'image_gen',
