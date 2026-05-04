@@ -769,6 +769,34 @@ export function useAgentSession({
     if (!payload?.targetNodeId) return null
 
     const executionPrompt = payload.executionPrompt
+    const existingTargetNodeId = resolvePromptTargetNodeId(payload.targetNodeId)
+
+    // 已经落图过的创建提案，在确认阶段只做 prompt 回填与执行；
+    // 不再重复重放 add/connect，避免生成第二套工作流。
+    if (existingTargetNodeId) {
+      return {
+        ...plan,
+        requiresConfirmation: false,
+        operations: [
+          {
+            type: 'update_node_data',
+            nodeId: existingTargetNodeId,
+            patch: {
+              config: {
+                text: executionPrompt,
+              },
+            },
+          },
+          {
+            type: 'run_workflow',
+            scope: 'from-node',
+            nodeId: resolveExecutionStartNodeId(existingTargetNodeId),
+          },
+        ],
+        promptConfirmation: undefined,
+      }
+    }
+
     const appliedNodeIds = new Set(useFlowStore.getState().nodes.map((node) => node.id))
     let hasResolvedTarget = false
 
@@ -805,12 +833,11 @@ export function useAgentSession({
       })
 
     if (!hasResolvedTarget) {
-      const targetNodeId = resolvePromptTargetNodeId(payload.targetNodeId)
-      if (!targetNodeId) return null
+      if (!existingTargetNodeId) return null
 
       operations.push({
         type: 'update_node_data',
-        nodeId: targetNodeId,
+        nodeId: existingTargetNodeId,
         patch: {
           config: {
             text: executionPrompt,
