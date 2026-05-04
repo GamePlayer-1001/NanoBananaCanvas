@@ -204,4 +204,26 @@ describe('useAgentSession', () => {
     )
     expect(executeFromNodeMock).toHaveBeenCalledWith('image-existing')
   })
+
+  it('treats 我确定 as a conversational prompt confirmation', async () => {
+    useAgentStore.getState().clearPendingPlan()
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('我确定')
+    })
+
+    const flowState = useFlowStore.getState()
+    expect(flowState.nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
+      '生成一张以小猫为主角的高质量图片，主体清晰，毛发细节完整。',
+    )
+    expect(executeFromNodeMock).toHaveBeenCalledWith('image-existing')
+  })
 })

@@ -1009,7 +1009,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const CONFIRMATION_PATTERNS = [
-  /^(我确认|确认|可以|可以执行|执行吧|开始吧|开始执行|是的|好的|好|ok|okay|yes|yep|继续)/i,
+  /^(我确认|我确定|确认|确定|可以|可以执行|执行吧|开始吧|开始执行|是的|好的|好|ok|okay|yes|yep|继续)/i,
 ]
 
 const REJECTION_PATTERNS = [
