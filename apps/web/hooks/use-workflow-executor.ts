@@ -149,8 +149,6 @@ export function useWorkflowExecutor(workflowId?: string) {
   const t = useTranslations('canvas')
   const tExec = useTranslations('executor')
 
-  const nodes = useFlowStore((s) => s.nodes)
-  const edges = useFlowStore((s) => s.edges)
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
 
   const isExecuting = useExecutionStore((s) => s.isExecuting)
@@ -164,6 +162,7 @@ export function useWorkflowExecutor(workflowId?: string) {
     if (isExecuting) return
     startTimeRef.current = Date.now()
     abortingRef.current = false
+    const { nodes, edges } = useFlowStore.getState()
 
     await executorRef.current.execute(nodes, edges, workflowId, {
       onStart: (order) => startExecution(order),
@@ -220,7 +219,7 @@ export function useWorkflowExecutor(workflowId?: string) {
       },
     }, startNodeId)
   }, [
-    nodes, edges, isExecuting, t, tExec, workflowId,
+    isExecuting, t, tExec, workflowId,
     startExecution, setCurrentNode, setNodeResult, finishExecution, failExecution,
     updateNodeData,
   ])
@@ -238,10 +237,11 @@ export function useWorkflowExecutor(workflowId?: string) {
     executorRef.current.abort()
     void cancelActiveTasks(collectAbortableTaskIds())
     failExecution('Execution aborted by user')
+    const { nodes } = useFlowStore.getState()
     if (workflowId) {
       recordHistory(workflowId, 'aborted', startTimeRef.current, nodes.length)
     }
-  }, [failExecution, workflowId, nodes.length])
+  }, [failExecution, workflowId])
 
   return { execute, executeFromNode, abort, isExecuting }
 }

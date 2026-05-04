@@ -117,4 +117,38 @@ describe('useWorkflowExecutor', () => {
       'running-node',
     )
   })
+
+  it('reads the latest flow snapshot at execution time instead of stale render state', async () => {
+    const { result } = renderHook(() => useWorkflowExecutor('workflow-1'))
+
+    useFlowStore.getState().setFlow(
+      [
+        createNode('fresh-text', 'idle'),
+        createNode('fresh-image', 'idle'),
+      ],
+      [],
+    )
+
+    await act(async () => {
+      await result.current.execute()
+    })
+
+    expect(executeMock).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'fresh-text' }),
+        expect.objectContaining({ id: 'fresh-image' }),
+      ]),
+      expect.any(Array),
+      'workflow-1',
+      expect.any(Object),
+      undefined,
+    )
+    expect(executeMock).not.toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'queued-node' })]),
+      expect.any(Array),
+      'workflow-1',
+      expect.any(Object),
+      undefined,
+    )
+  })
 })
