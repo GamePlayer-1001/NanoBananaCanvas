@@ -119,6 +119,38 @@ function readImageCapabilities(params: Record<string, unknown>): ImageModelCapab
     : undefined
 }
 
+function inferExtensionFromMimeType(mimeType: string | null): string {
+  switch ((mimeType ?? '').toLowerCase()) {
+    case 'image/jpeg':
+      return 'jpg'
+    case 'image/webp':
+      return 'webp'
+    case 'image/gif':
+      return 'gif'
+    default:
+      return 'png'
+  }
+}
+
+async function fetchReferenceImageAsset(
+  imageUrl: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const res = await fetch(imageUrl)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Failed to fetch reference image ${res.status}: ${text}`)
+  }
+
+  const blob = await res.blob()
+  const mimeType = blob.type || res.headers.get('content-type')
+  const extension = inferExtensionFromMimeType(mimeType)
+
+  return {
+    blob,
+    filename: `reference.${extension}`,
+  }
+}
+
 function summarizeBaseUrl(baseUrl: string): string {
   try {
     const parsed = new URL(baseUrl)
@@ -418,26 +450,45 @@ async function dlapiSubmit(
     throw new Error(violation.message)
   }
 
-  if (referenceImageUrl) {
-    throw new Error(
-      'DLAPI 图片生成链路当前还未接通参考图编辑协议，已阻止静默忽略 image input；请先切换到 OpenAI/OpenRouter 兼容图片模型。',
-    )
-  }
-
   const size = resolveOpenAICompatibleRequestSize('dlapi', sizePreset, aspectRatio)
-  const res = await fetch(`${DLAPI_IMAGE_BASE_URL}/images/generations`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      prompt,
-      size,
-      async: true,
-    }),
-  })
+  const endpoint = referenceImageUrl
+    ? `${DLAPI_IMAGE_BASE_URL}/images/edits`
+    : `${DLAPI_IMAGE_BASE_URL}/images/generations`
+
+  const requestInit: RequestInit = referenceImageUrl
+    ? await (async () => {
+        const { blob, filename } = await fetchReferenceImageAsset(referenceImageUrl)
+        const formData = new FormData()
+        formData.append('model', model)
+        formData.append('prompt', prompt)
+        formData.append('size', size)
+        formData.append('n', '1')
+        formData.append('async', 'true')
+        formData.append('image', blob, filename)
+
+        return {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: formData,
+        }
+      })()
+    : {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          size,
+          async: true,
+        }),
+      }
+
+  const res = await fetch(endpoint, requestInit)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')

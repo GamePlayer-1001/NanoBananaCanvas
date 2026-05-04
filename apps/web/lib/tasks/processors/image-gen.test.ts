@@ -419,26 +419,64 @@ describe('ImageGenProcessor', () => {
     })
   })
 
-  it('fails fast when dlapi receives a reference image it cannot actually use', async () => {
-    const fetchMock = vi.fn()
+  it('submits dlapi image edits as multipart form data when a reference image is provided', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            id: 'imgjob_edit_123',
+            status: 'running',
+          }),
+      } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
 
     const processor = new ImageGenProcessor('dlapi')
-
-    await expect(
-      processor.submit(
-        {
-          model: 'gpt-image-2',
-          params: {
-            prompt: '参考原图进行重绘',
-            imageUrl: 'https://example.com/reference.png',
-          },
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: '参考原图进行重绘',
+          imageUrl: 'https://example.com/reference.png',
+          size: '1024x1024',
         },
-        'platform-key',
-      ),
-    ).rejects.toThrow(/DLAPI 图片生成链路当前还未接通参考图编辑协议/)
+      },
+      'platform-key',
+    )
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://example.com/reference.png')
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://api.dlapi.xyz/v1/images/edits',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer platform-key',
+        }),
+        body: expect.any(FormData),
+      }),
+    )
+
+    const secondCall = fetchMock.mock.calls[1]
+    const requestInit = secondCall?.[1] as RequestInit
+    const formData = requestInit.body as FormData
+    expect(formData.get('model')).toBe('gpt-image-2')
+    expect(formData.get('prompt')).toBe('参考原图进行重绘')
+    expect(formData.get('size')).toBe('1024x1024')
+    expect(formData.get('n')).toBe('1')
+    expect(formData.get('async')).toBe('true')
+    expect(formData.get('image')).toBeInstanceOf(File)
+    expect(result).toMatchObject({
+      externalTaskId: 'imgjob_edit_123',
+      initialStatus: 'running',
+    })
   })
 
   it('checks dlapi async task completion and returns image data', async () => {
