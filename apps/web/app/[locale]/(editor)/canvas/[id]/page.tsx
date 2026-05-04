@@ -147,10 +147,11 @@ export default function CanvasPage({
 
   useEffect(() => {
     resetSession()
-    lastExecutionLabelRef.current = null
-    lastActiveTaskLabelRef.current = null
-    emittedTerminalTaskIdsRef.current = new Set()
-  }, [id, resetSession])
+    // 把进入页面时已经存在的执行/任务摘要当作基线，避免旧状态被重新灌回新会话。
+    lastExecutionLabelRef.current = executionLabel
+    lastActiveTaskLabelRef.current = activeTaskLabel
+    emittedTerminalTaskIdsRef.current = new Set(terminalEvents.map((event) => event.taskId))
+  }, [activeTaskLabel, executionLabel, id, resetSession, terminalEvents])
 
   useEffect(() => {
     let cancelled = false
