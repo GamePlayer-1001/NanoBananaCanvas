@@ -49,6 +49,8 @@ const Canvas = dynamic(
   },
 )
 
+const EMPTY_VIEWPORT = { x: 0, y: 0, zoom: 1 } as const
+
 /* ─── Page ────────────────────────────────────────────── */
 
 export default function CanvasPage({
@@ -60,7 +62,7 @@ export default function CanvasPage({
   const t = useTranslations('canvas')
   const tAgent = useTranslations('agentPanel')
   const { data, isLoading } = useWorkflow(id)
-  const hasLoaded = useRef(false)
+  const loadedWorkflowIdRef = useRef<string | null>(null)
   const lastSessionWorkflowIdRef = useRef<string | null>(null)
   const lastExecutionLabelRef = useRef<string | null>(null)
   const lastActiveTaskLabelRef = useRef<string | null>(null)
@@ -152,6 +154,10 @@ export default function CanvasPage({
     }
 
     lastSessionWorkflowIdRef.current = id
+    loadedWorkflowIdRef.current = null
+    useFlowStore.getState().setFlow([], [], EMPTY_VIEWPORT)
+    useWorkflowMetadataStore.getState().setTemplate(null)
+    useWorkflowMetadataStore.getState().setAuditTrail([])
     resetSession()
     // 把进入页面时已经存在的执行/任务摘要当作基线，避免旧状态被重新灌回新会话。
     lastExecutionLabelRef.current = executionLabel
@@ -286,12 +292,19 @@ export default function CanvasPage({
   ]
   /* ── 从 API 数据注入 FlowStore ──────────────────────── */
   useEffect(() => {
-    if (hasLoaded.current || isLoading) return
+    if (isLoading) return
     if (!data) return
-    hasLoaded.current = true
+    if (loadedWorkflowIdRef.current === id) return
+
+    loadedWorkflowIdRef.current = id
 
     const raw = (data as Record<string, unknown>).data as string | undefined
-    if (!raw || raw === '{}') return
+    if (!raw || raw === '{}') {
+      useFlowStore.getState().setFlow([], [], EMPTY_VIEWPORT)
+      useWorkflowMetadataStore.getState().setTemplate(null)
+      useWorkflowMetadataStore.getState().setAuditTrail([])
+      return
+    }
 
     try {
       const parsed = JSON.parse(raw)
@@ -300,9 +313,11 @@ export default function CanvasPage({
       useWorkflowMetadataStore.getState().setTemplate(template ?? null)
       useWorkflowMetadataStore.getState().setAuditTrail(auditTrail ?? [])
     } catch {
-      /* 解析失败时从空画布开始 */
+      useFlowStore.getState().setFlow([], [], EMPTY_VIEWPORT)
+      useWorkflowMetadataStore.getState().setTemplate(null)
+      useWorkflowMetadataStore.getState().setAuditTrail([])
     }
-  }, [data, isLoading])
+  }, [data, id, isLoading])
 
   useEffect(() => {
     if (!executionLabel) return
