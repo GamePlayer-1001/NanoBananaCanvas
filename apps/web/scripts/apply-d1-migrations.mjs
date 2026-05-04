@@ -26,6 +26,7 @@ const orderedMigrations = [
   'migration-013-video-analysis-history.sql',
   'migration-014-agent-audit.sql',
   'migration-015-model-pricing-credits-per-1k-units.sql',
+  'migration-016-credit-transactions-trial-pool.sql',
   'migration-async-tasks.sql',
   'migration-execution-history.sql',
 ]
