@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useState，依赖 @/lib/agent/* 的 plan/diagnose/explain/apply/prompt refine 链路，
  *          依赖 @/stores/use-agent-store 与 @/stores/use-flow-store 的会话/画布真相源
- * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan|diagnose|explain -> prompt confirm -> apply -> run 的高层动作，并支持节点级局部执行
+ * [OUTPUT]: 对外提供 useAgentSession()，把用户输入串成 summary -> plan|diagnose|explain -> workflow confirm -> prompt confirm -> apply -> run 的高层动作，并支持节点级局部执行
  * [POS]: hooks 的 Agent 会话编排层，被编辑器页消费，负责右侧提案、诊断与左侧落图之间的安全桥接
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -60,7 +60,6 @@ export function useAgentSession({
   const setLastAppliedPlanId = useAgentStore((state) => state.setLastAppliedPlanId)
   const setPromptConfirmation = useAgentStore((state) => state.setPromptConfirmation)
   const clearPromptConfirmation = useAgentStore((state) => state.clearPromptConfirmation)
-  const promptConfirmation = useAgentStore((state) => state.promptConfirmation)
   const selectionContext = useAgentStore((state) => state.selectionContext)
   const rememberConversationTurn = useAgentStore((state) => state.rememberConversationTurn)
 
@@ -153,8 +152,11 @@ export function useAgentSession({
     const value = rawValue.trim()
     if ((!value && attachments.length === 0) || isSubmitting) return
 
-    if (value && tryHandleConversationalConfirmation(value)) {
-      return
+    if (value) {
+      const handled = await tryHandleConversationalConfirmation(value)
+      if (handled) {
+        return
+      }
     }
 
     setIsSubmitting(true)
@@ -264,7 +266,7 @@ export function useAgentSession({
             planId: nextPlan.id,
             createdAt: new Date().toISOString(),
           })
-          setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+          setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
         } else {
           setStatus('idle')
         }
@@ -336,7 +338,7 @@ export function useAgentSession({
             planId: nextPlan.id,
             createdAt: new Date().toISOString(),
           })
-          setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+          setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
         } else {
           setStatus('idle')
         }
@@ -499,16 +501,6 @@ export function useAgentSession({
         })
       }
 
-      if (!shouldAutoApply && nextPlan.promptConfirmation) {
-        appendMessage({
-          id: crypto.randomUUID(),
-          role: 'prompt-confirmation',
-          payloadId: nextPlan.promptConfirmation.id,
-          payload: nextPlan.promptConfirmation,
-          createdAt: new Date().toISOString(),
-        })
-      }
-
       if (validation.warnings.length > 0) {
         appendProcessMessage(validation.warnings.join('；'))
       }
@@ -535,12 +527,12 @@ export function useAgentSession({
             payload: latestPlan.promptConfirmation,
             createdAt: new Date().toISOString(),
           })
-          setStatus('awaiting-confirmation')
+          setStatus('awaiting-prompt-confirmation')
         }
         return
       }
 
-      setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+      setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
     } catch (error) {
       const message =
         error instanceof Error && error.message
@@ -616,6 +608,7 @@ export function useAgentSession({
       if (nextPromptPlan) {
         setPendingPlan(nextPromptPlan)
         setPromptConfirmation(nextPromptPlan.promptConfirmation ?? null)
+        setStatus('awaiting-prompt-confirmation')
       }
 
       appendMessage({
@@ -712,7 +705,7 @@ export function useAgentSession({
         ...pendingPlan,
         promptConfirmation: nextPayload,
       })
-      setStatus('awaiting-confirmation')
+      setStatus('awaiting-prompt-confirmation')
     } catch (error) {
       const message =
         error instanceof Error && error.message
@@ -733,9 +726,12 @@ export function useAgentSession({
   }
 
   async function confirmPromptAndRun(payloadId?: string) {
-    const planForConfirmation = pendingPlan?.promptConfirmation
-      ? pendingPlan
-      : buildFallbackPromptConfirmationPlan(promptConfirmation)
+    const latestAgentState = useAgentStore.getState()
+    const latestPendingPlan = latestAgentState.pendingPlan
+    const latestPromptConfirmation = latestAgentState.promptConfirmation
+    const planForConfirmation = latestPendingPlan?.promptConfirmation
+      ? latestPendingPlan
+      : buildFallbackPromptConfirmationPlan(latestPromptConfirmation)
     if (!planForConfirmation?.promptConfirmation) return
     if (payloadId && planForConfirmation.promptConfirmation.id !== payloadId) return
 
@@ -953,7 +949,7 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
     if (!nextPlan) return
     setPendingPlan(nextPlan)
     setPromptConfirmation(nextPlan.promptConfirmation ?? null)
-    setStatus(nextPlan.requiresConfirmation ? 'awaiting-confirmation' : 'patch-ready')
+    setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
     void safeRecordAudit({
       eventType: 'plan_selected',
       mode: nextPlan.mode,
@@ -975,8 +971,13 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
     })
   }
 
-  function tryHandleConversationalConfirmation(value: string) {
-    if (!pendingPlan && !promptConfirmation) return false
+  async function tryHandleConversationalConfirmation(value: string) {
+    const latestAgentState = useAgentStore.getState()
+    const latestPendingPlan = latestAgentState.pendingPlan
+    const latestPromptConfirmation = latestAgentState.promptConfirmation
+    const latestStatus = latestAgentState.status
+
+    if (!latestPendingPlan && !latestPromptConfirmation) return false
 
     const normalized = normalizeConfirmationText(value)
     const isConfirmed = CONFIRMATION_PATTERNS.some((pattern) => pattern.test(normalized))
@@ -996,15 +997,20 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
       return true
     }
 
-    if (pendingPlan?.promptConfirmation ?? promptConfirmation) {
-      void confirmPromptAndRun(
-        pendingPlan?.promptConfirmation?.id ?? promptConfirmation?.id,
-      )
+    if (latestStatus === 'awaiting-workflow-confirmation' && latestPendingPlan) {
+      await applyPendingPlan(latestPendingPlan)
       return true
     }
 
-    if (pendingPlan) {
-      void applyPendingPlan(pendingPlan)
+    if (latestStatus === 'awaiting-prompt-confirmation' && latestPendingPlan?.promptConfirmation) {
+      await confirmPromptAndRun(latestPendingPlan.promptConfirmation.id)
+      return true
+    }
+
+    if (latestStatus === 'awaiting-prompt-confirmation' && latestPromptConfirmation) {
+      await confirmPromptAndRun(
+        latestPromptConfirmation.id,
+      )
       return true
     }
 
@@ -1080,7 +1086,7 @@ function shouldAutoApplyPlan(
   requestKind: 'plan' | 'diagnose' | 'explain' | 'optimize',
 ) {
   if (requestKind !== 'plan') return false
-  if (plan.mode === 'create') return true
+  if (plan.mode === 'create') return !plan.requiresConfirmation
   return !plan.requiresConfirmation && !plan.promptConfirmation
 }
 

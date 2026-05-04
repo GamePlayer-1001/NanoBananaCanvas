@@ -7,13 +7,14 @@
 
 // @vitest-environment jsdom
 
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import type { Node, Edge } from '@xyflow/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNodeData } from '@/types'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
 
 const executeMock = vi.fn(async () => undefined)
 const executeFromNodeMock = vi.fn(async () => undefined)
@@ -155,9 +156,83 @@ describe('useAgentSession', () => {
         targetNodeId: 'text-existing',
       },
     })
+    vi.mocked(buildAgentPlan).mockReset()
+  })
+
+  it('waits for workflow confirmation before showing prompt confirmation on create plans', async () => {
+    vi.mocked(buildAgentPlan).mockResolvedValue({
+      plan: {
+        id: 'plan-stage-1',
+        goal: '帮我生成一张小猫的图片',
+        mode: 'create',
+        intent: 'create_workflow',
+        summary: '先搭一个基础出图工作流',
+        reasons: ['空白画板先搭主链'],
+        requiresConfirmation: true,
+        operations: [
+          { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+          { type: 'add_node', nodeId: 'draft-image-gen', nodeType: 'image-gen' },
+          { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+        ],
+        promptConfirmation: {
+          id: 'prompt-stage-1',
+          originalIntent: '帮我生成一张小猫的图片',
+          visualProposal: '一只可爱的小猫',
+          executionPrompt: '生成一张以小猫为主角的高质量图片。',
+          targetNodeId: 'draft-text-input',
+        },
+      },
+      alternatives: [],
+    })
+    useAgentStore.getState().resetSession()
+    useFlowStore.getState().setFlow([], [])
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('帮我生成一张小猫的图片')
+    })
+
+    const storeState = useAgentStore.getState()
+    expect(storeState.status).toBe('awaiting-workflow-confirmation')
+    expect(
+      storeState.messages.some((message) => message.role === 'prompt-confirmation'),
+    ).toBe(false)
+    expect(storeState.promptConfirmation?.id).toBe('prompt-stage-1')
+  })
+
+  it('shows prompt confirmation only after the workflow plan is confirmed and applied', async () => {
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    useAgentStore.getState().setStatus('awaiting-workflow-confirmation')
+
+    await act(async () => {
+      await result.current.sendMessage('我确认')
+    })
+
+    await waitFor(() => {
+      const storeState = useAgentStore.getState()
+      expect(storeState.status).toBe('awaiting-prompt-confirmation')
+      expect(storeState.promptConfirmation?.id).toBe('prompt-1')
+    })
+    expect(executeFromNodeMock).not.toHaveBeenCalled()
   })
 
   it('confirms prompt without creating a duplicate workflow branch', async () => {
+    useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
+
     const { result } = renderHook(() =>
       useAgentSession({
         workflowId: 'workflow-1',
@@ -218,6 +293,7 @@ describe('useAgentSession', () => {
         targetNodeId: 'text-existing',
       },
     })
+    useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
 
     const { result } = renderHook(() =>
       useAgentSession({
@@ -243,6 +319,7 @@ describe('useAgentSession', () => {
 
   it('continues prompt confirmation even when pendingPlan is missing but promptConfirmation remains', async () => {
     useAgentStore.getState().clearPendingPlan()
+    useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
 
     const { result } = renderHook(() =>
       useAgentSession({
@@ -267,6 +344,7 @@ describe('useAgentSession', () => {
 
   it('treats 我确定 as a conversational prompt confirmation', async () => {
     useAgentStore.getState().clearPendingPlan()
+    useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
 
     const { result } = renderHook(() =>
       useAgentSession({

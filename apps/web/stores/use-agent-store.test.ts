@@ -135,7 +135,7 @@ describe('useAgentStore', () => {
 
     useAgentStore.getState().appendMessage(message)
     useAgentStore.getState().setMode('optimize')
-    useAgentStore.getState().setStatus('awaiting-confirmation')
+    useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
     useAgentStore.getState().setPromptConfirmation(payload)
     useAgentStore.getState().setSelectionContext({
       nodeId: 'text-1',
