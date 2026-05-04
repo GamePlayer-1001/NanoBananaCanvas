@@ -530,6 +530,7 @@ async function refundTaskCredits(input: {
   source: string
   description: string
   requestedCredits?: number
+  db?: D1Database
 }) {
   await refundFrozenCredits({
     userId: input.userId,
@@ -537,6 +538,7 @@ async function refundTaskCredits(input: {
     requestedCredits: input.requestedCredits,
     source: input.source,
     description: input.description,
+    db: input.db,
   })
 }
 
@@ -602,6 +604,7 @@ async function settleCompletedPlatformImageTask(input: {
         requestedCredits: reservedCredits,
         source: 'task_platform_confirm',
         description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
+        db: input.db,
       })
     }
     return
@@ -614,6 +617,7 @@ async function settleCompletedPlatformImageTask(input: {
       referenceId: input.taskId,
       source: 'task_platform_adjust',
       description: `Freeze additional credits for completed image task ${input.provider}/${input.modelId}`,
+      db: input.db,
     })
   }
 
@@ -623,6 +627,7 @@ async function settleCompletedPlatformImageTask(input: {
     requestedCredits: actualCredits,
     source: 'task_platform_confirm',
     description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
+    db: input.db,
   })
 
   if (actualCredits < reservedCredits) {
@@ -632,6 +637,7 @@ async function settleCompletedPlatformImageTask(input: {
       requestedCredits: reservedCredits - actualCredits,
       source: 'task_platform_refund',
       description: `Refund unused reserved credits for completed image task ${input.provider}/${input.modelId}`,
+      db: input.db,
     })
   }
 }
@@ -1261,6 +1267,7 @@ export async function submitTask(
           referenceId: taskId,
           source: 'task_submit_platform_freeze',
           description: `Freeze credits for async task ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+          db,
         })
       }
     } else {
@@ -1355,6 +1362,7 @@ export async function submitTask(
         referenceId: taskId,
         source: 'task_submit_platform_failure_refund',
         description: `Refund failed async task submission ${taskType} ${resolvedProvider}/${resolvedModelId}`,
+        db,
       })
     }
 
@@ -1421,6 +1429,7 @@ export async function submitTask(
           requestedCredits: reservedPlatformCredits,
           source: 'task_platform_confirm',
           description: `Confirm async task billing ${taskType} ${persistedProvider}/${persistedModelId}`,
+          db,
         })
       }
     }
@@ -1431,6 +1440,7 @@ export async function submitTask(
         referenceId: taskId,
         source: 'task_submit_platform_insert_refund',
         description: `Refund async task credits after persistence failure ${taskType} ${persistedProvider}/${persistedModelId}`,
+        db,
       })
     }
 
@@ -1707,6 +1717,7 @@ async function executeTaskRequest(
             requestedCredits: reservedPlatformCredits,
             source: 'task_platform_confirm',
             description: `Confirm async task billing ${taskType} ${resolvedProvider}/${persistedModelId}`,
+            db,
           })
         }
       }
@@ -1786,6 +1797,7 @@ async function executeTaskRequest(
         referenceId: taskId,
         source: 'task_submit_platform_failure_refund',
         description: `Refund failed async task submission ${taskType} ${initialResolvedProvider}/${resolvedModelId}`,
+        db,
       })
     }
 
@@ -2154,6 +2166,7 @@ export async function checkTask(
               requestedCredits: reservedCredits,
               source: 'task_platform_confirm',
               description: `Confirm async task billing ${row.task_type} ${processorProvider}/${row.model_id}`,
+              db,
             })
           }
         }
@@ -2297,6 +2310,7 @@ export async function cancelTask(
         referenceId: row.id,
         source: 'task_platform_cancel_refund',
         description: `Refund cancelled async task ${row.task_type} ${row.provider}/${row.model_id}`,
+        db,
       })
     }
   }
@@ -2446,6 +2460,7 @@ async function handleFailure(
         referenceId: row.id,
         source: 'task_platform_failure_refund',
         description: `Refund failed async task ${row.task_type} ${row.provider}/${row.model_id}`,
+        db,
       })
     }
   }
@@ -2497,6 +2512,7 @@ async function handleTimeout(
         referenceId: row.id,
         source: 'task_platform_timeout_refund',
         description: `Refund timed out async task ${row.task_type} ${row.provider}/${row.model_id}`,
+        db,
       })
     }
   }

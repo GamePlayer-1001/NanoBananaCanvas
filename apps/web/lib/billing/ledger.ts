@@ -1,12 +1,13 @@
 /**
- * [INPUT]: 依赖 @/lib/db、@/lib/errors、@/lib/nanoid，消费 credit_balances / credit_transactions 真相源
- * [OUTPUT]: 对外提供 freezeCredits()、confirmFrozenCredits()、refundFrozenCredits()、getReferenceCreditSummary()、getDailySigninStatus()、awardDailySigninCredits()
+ * [INPUT]: 依赖 @/lib/db、@/lib/errors、@/lib/nanoid、@/lib/logger，消费 credit_balances / credit_transactions 真相源
+ * [OUTPUT]: 对外提供 freezeCredits()、confirmFrozenCredits()、refundFrozenCredits()、getReferenceCreditSummary()、getDailySigninStatus()、awardDailySigninCredits()，并支持显式注入 D1 运行时
  * [POS]: lib/billing 的积分事务真相源，统一三阶段扣费与签到试用/订阅/永久三池扣减顺序，被 AI 执行链、异步任务链与签到入口复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { getDb } from '@/lib/db'
 import { BillingError, ErrorCode } from '@/lib/errors'
+import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 import {
   assertCreditBalanceWritable,
@@ -15,6 +16,8 @@ import {
   type BillingCapabilities,
 } from './capabilities'
 import { SIGNIN_TRIAL_CREDITS } from './workflow-pricing'
+
+const log = createLogger('billing:ledger')
 
 type CreditBalanceRow = {
   trial_balance: number | null
@@ -73,6 +76,11 @@ export interface CreditFinalizeResult {
 
 type LedgerOperationType = 'spend' | 'refund'
 
+interface LedgerRuntimeOptions {
+  db?: D1Database
+  capabilities?: BillingCapabilities
+}
+
 interface CreditTransactionStatement {
   type: 'freeze' | 'spend' | 'refund'
   pool: 'trial' | 'monthly' | 'permanent'
@@ -91,6 +99,17 @@ const EMPTY_CREDIT_BALANCE_SNAPSHOT: CreditBalanceSnapshot = {
   frozen_credits: 0,
   total_earned: 0,
   total_spent: 0,
+}
+
+async function resolveLedgerDb(options?: LedgerRuntimeOptions): Promise<D1Database> {
+  return options?.db ?? getDb()
+}
+
+async function resolveLedgerCapabilities(
+  db: D1Database,
+  options?: LedgerRuntimeOptions,
+): Promise<BillingCapabilities> {
+  return options?.capabilities ?? getBillingCapabilities({ db })
 }
 
 function clampCredits(value: number): number {
@@ -331,8 +350,9 @@ function createInsufficientCreditsError(input: {
 export async function getReferenceCreditSummary(
   userId: string,
   referenceId: string,
+  options?: LedgerRuntimeOptions,
 ): Promise<CreditLedgerSummary> {
-  const db = await getDb()
+  const db = await resolveLedgerDb(options)
   const rows = await db
     .prepare(
       `SELECT
@@ -389,9 +409,10 @@ export async function freezeCredits(input: {
   referenceId: string
   source: string
   description: string
+  db?: D1Database
 }): Promise<CreditFreezeResult> {
-  const db = await getDb()
-  const capabilities = await getBillingCapabilities()
+  const db = await resolveLedgerDb(input)
+  const capabilities = await resolveLedgerCapabilities(db, input)
   assertCreditBalanceWritable(capabilities, { userId: input.userId })
   const requestedCredits = clampCredits(input.requestedCredits)
   const balance = await readCreditBalanceRow(db, input.userId, capabilities, {
@@ -506,16 +527,20 @@ async function finalizeFrozenCredits(
     source: string
     description: string
     requestedCredits?: number
+    db?: D1Database
   },
   operation: LedgerOperationType,
 ): Promise<CreditFinalizeResult> {
-  const db = await getDb()
-  const capabilities = await getBillingCapabilities()
+  const db = await resolveLedgerDb(input)
+  const capabilities = await resolveLedgerCapabilities(db, input)
   assertCreditBalanceWritable(capabilities, { userId: input.userId })
   const balance = await readCreditBalanceRow(db, input.userId, capabilities, {
     requireWritable: true,
   })
-  const summary = await getReferenceCreditSummary(input.userId, input.referenceId)
+  const summary = await getReferenceCreditSummary(input.userId, input.referenceId, {
+    db,
+    capabilities,
+  })
   const requestedCredits = clampCredits(input.requestedCredits ?? summary.remaining.total)
   const remaining =
     requestedCredits > 0
@@ -668,6 +693,7 @@ export async function confirmFrozenCredits(input: {
   source: string
   description: string
   requestedCredits?: number
+  db?: D1Database
 }): Promise<CreditFinalizeResult> {
   return finalizeFrozenCredits(input, 'spend')
 }
@@ -678,19 +704,23 @@ export async function refundFrozenCredits(input: {
   source: string
   description: string
   requestedCredits?: number
+  db?: D1Database
 }): Promise<CreditFinalizeResult> {
   return finalizeFrozenCredits(input, 'refund')
 }
 
-export async function getDailySigninStatus(userId: string): Promise<{
+export async function getDailySigninStatus(
+  userId: string,
+  options?: LedgerRuntimeOptions,
+): Promise<{
   status: 'available' | 'claimed' | 'unavailable'
   available: boolean
   checkedInToday: boolean
   trialBalance: number
   trialExpiresAt: string | null
 }> {
-  const db = await getDb()
-  const capabilities = await getBillingCapabilities()
+  const db = await resolveLedgerDb(options)
+  const capabilities = await resolveLedgerCapabilities(db, options)
   const balance = await readCreditBalanceRow(db, userId, capabilities, {
     allowFallback: true,
   })
@@ -729,13 +759,16 @@ export async function getDailySigninStatus(userId: string): Promise<{
   }
 }
 
-export async function awardDailySigninCredits(userId: string): Promise<{
+export async function awardDailySigninCredits(
+  userId: string,
+  options?: LedgerRuntimeOptions,
+): Promise<{
   creditsAwarded: number
   expiresAt: string
   trialBalance: number
 }> {
-  const db = await getDb()
-  const capabilities = await getBillingCapabilities()
+  const db = await resolveLedgerDb(options)
+  const capabilities = await resolveLedgerCapabilities(db, options)
   assertCreditBalanceWritable(capabilities, { userId })
   assertDailySigninWritable(capabilities, { userId })
 
@@ -799,8 +832,18 @@ export async function awardDailySigninCredits(userId: string): Promise<{
       ]),
     )
   } catch (error) {
-    if (!isLegacyTrialPoolConstraintError(error)) {
-      throw error
+    if (isLegacyTrialPoolConstraintError(error)) {
+      log.warn('Daily sign-in transaction log skipped due to legacy pool constraint', {
+        userId,
+        today,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    } else {
+      log.error('Daily sign-in transaction log failed after balance update', error, {
+        userId,
+        today,
+        creditsAwarded: SIGNIN_TRIAL_CREDITS,
+      })
     }
   }
 

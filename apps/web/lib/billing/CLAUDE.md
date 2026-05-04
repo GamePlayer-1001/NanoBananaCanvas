@@ -2,13 +2,13 @@
 > L2 | 父级: apps/web/lib/CLAUDE.md
 
 成员清单
-capabilities.ts: 账本基础设施契约层，统一探测 credit ledger / daily signin 的读写能力并把生产库缺口翻译成显式 BillingError
+capabilities.ts: 账本基础设施契约层，统一探测 credit ledger / daily signin 的读写能力并把生产库缺口翻译成显式 BillingError，支持显式注入 Worker/Web 共享 D1 运行时
 config.ts: Stripe 计费配置真相源，兼容“单 Price 多币种”“按币种拆 Price”与 `lookup_key` 动态回退，并复用 Worker 友好的 Stripe client 解析 Price ID
 config.test.ts: 计费配置单元测试，覆盖币种推断、共享 Price 回退、`lookup_key` 回退、Price 解析与统一错误码
 credits.ts: 积分余额读取层，统一汇总双池余额、冻结积分与当前套餐额度镜像，并在用户镜像/生产表缺失时安全降级为 Free
 credits.test.ts: 积分读取测试，覆盖余额摘要、历史列漂移、交易流水与 usage 聚合查询口径
-schema.ts: 计费 schema 探测层，统一探测 users 与 billing 相关表/列信息，吸收历史库结构漂移
-ledger.ts: 积分事务真相源，统一 freeze / confirm / refund 三阶段事务与“订阅池优先、永久池补位”的双池扣减顺序
+schema.ts: 计费 schema 探测层，统一探测 users 与 billing 相关表/列信息，吸收历史库结构漂移，并支持显式注入 D1 避免后台 Worker 误走 Web runtime
+ledger.ts: 积分事务真相源，统一 freeze / confirm / refund 三阶段事务与“订阅池优先、永久池补位”的双池扣减顺序；后台任务与签到可显式复用当前 D1 runtime，避免写成功后再被后置账本日志打成失败
 ledger.test.ts: 积分事务测试，覆盖双池冻结顺序、确认消费、失败退款与 reference 级剩余冻结汇总
 metering.ts: 计量真相源，统一模型定价查询、billable units 预估与 credits 预估口径
 metering.test.ts: 计量测试，覆盖 model_pricing 查询、文本/图片/视频/音频 billable units 与 credits 换算

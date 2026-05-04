@@ -23,7 +23,7 @@ Browser → API Route → service.ts → D1 (状态持久化)
 ## 关键设计
 
 - **懒评估**: checkTask 仅在客户端 poll 时查询 Provider，节流间隔由 TASK_CONFIG 控制
-- **平台任务扣费**: 平台模式异步任务会在 submit 阶段先冻结，完成时确认，失败/取消/超时时退款
+- **平台任务扣费**: 平台模式异步任务会在 submit 阶段先冻结，完成时确认，失败/取消/超时时退款；后台 Worker/Workflow 结算显式复用当前 D1 runtime，不再回退到 Web 侧 `getCloudflareContext()`
 - **user_key 去平台账本化**: `user_key` 模式不再写平台 credits 预估，不参与平台账本冻结/确认/退款
 - **语义隔离**: API 请求体中 `provider` 只表达平台供应商，`capability` 只表达用户配置能力，避免两套密钥体系互相污染
 - **失败即终态**: handleFailure 直接标记 failed，不做自动重试

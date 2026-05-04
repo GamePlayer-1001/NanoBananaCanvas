@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/errors，依赖 ./schema 的 BillingSchemaInfo/getBillingSchemaInfo
- * [OUTPUT]: 对外提供 billing 能力快照、credit ledger / daily signin 可用性断言与缺口诊断
- * [POS]: lib/billing 的基础设施契约层，被 credits/ledger 等账本模块复用，负责把“生产库是否具备计费能力”从隐式前提提升为显式真相源
+ * [OUTPUT]: 对外提供 billing 能力快照、credit ledger / daily signin 可用性断言与缺口诊断，并支持显式注入 D1 运行时
+ * [POS]: lib/billing 的基础设施契约层，被 credits/ledger/worker task 账本链路复用，负责把“生产库是否具备计费能力”从隐式前提提升为显式真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -113,8 +113,14 @@ export function getBillingCapabilitiesFromSchema(
   }
 }
 
-export async function getBillingCapabilities(): Promise<BillingCapabilities> {
-  const schema = await getBillingSchemaInfo()
+interface BillingCapabilitiesOptions {
+  db?: D1Database
+}
+
+export async function getBillingCapabilities(
+  options?: BillingCapabilitiesOptions,
+): Promise<BillingCapabilities> {
+  const schema = await getBillingSchemaInfo(options)
   return getBillingCapabilitiesFromSchema(schema)
 }
 
