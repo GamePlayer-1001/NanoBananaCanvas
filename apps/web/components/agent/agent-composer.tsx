@@ -8,7 +8,7 @@
 'use client'
 
 import { useRef, useState, type ClipboardEvent, type DragEvent } from 'react'
-import { ArrowUp, Bot, Coins, ImagePlus, KeyRound, Sparkles, X } from 'lucide-react'
+import { ArrowUp, Bot, Coins, ExternalLink, ImagePlus, KeyRound, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { PlatformModelSelect } from '@/components/shared/platform-model-select'
@@ -201,20 +201,47 @@ export function AgentComposer({
               {attachments.map((attachment) => (
                 <div
                   key={`${attachment.url}-${attachment.name ?? ''}`}
-                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600"
+                  className="group w-[96px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm"
                 >
-                  <span className="truncate max-w-[180px]">{attachment.name ?? t('composerImageAttachment')}</span>
                   <button
                     type="button"
-                    className="text-slate-400 transition hover:text-slate-700"
-                    onClick={() =>
-                      setAttachments((current) =>
-                        current.filter((item) => item.url !== attachment.url),
-                      )
-                    }
+                    className="block h-[72px] w-full overflow-hidden bg-slate-100"
+                    onDoubleClick={() => window.open(attachment.url, '_blank', 'noopener,noreferrer')}
+                    title={t('composerOpenImage')}
                   >
-                    <X size={12} />
+                    <img
+                      src={attachment.url}
+                      alt={attachment.name ?? t('composerImageAttachment')}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
+                    />
                   </button>
+                  <div className="space-y-1 px-2 py-2">
+                    <p className="truncate text-[11px] font-medium text-slate-600">
+                      {attachment.name ?? t('composerImageAttachment')}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                        onClick={() => window.open(attachment.url, '_blank', 'noopener,noreferrer')}
+                        title={t('composerOpenImage')}
+                      >
+                        <ExternalLink size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-500 transition hover:border-rose-200 hover:text-rose-600"
+                        onClick={() =>
+                          setAttachments((current) =>
+                            current.filter((item) => item.url !== attachment.url),
+                          )
+                        }
+                        title={t('composerRemoveImage')}
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

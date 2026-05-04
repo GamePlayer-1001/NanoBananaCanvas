@@ -1735,6 +1735,8 @@
     "composerUserKeyMode": "API Key mode",
     "composerAddImage": "Add image",
     "composerImageAttachment": "Image attachment",
+    "composerOpenImage": "Open image",
+    "composerRemoveImage": "Remove image",
     "promptCardTitle": "Prompt Review",
     "promptOriginalIntent": "Original Intent",
     "promptVisualProposal": "Visual Direction",

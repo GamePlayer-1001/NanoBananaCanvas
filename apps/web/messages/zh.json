@@ -1735,6 +1735,8 @@
     "composerUserKeyMode": "API Key 模式",
     "composerAddImage": "添加图片",
     "composerImageAttachment": "图片附件",
+    "composerOpenImage": "打开图片",
+    "composerRemoveImage": "移除图片",
     "promptCardTitle": "Prompt 确认",
     "promptOriginalIntent": "原始意图",
     "promptVisualProposal": "画面提案",

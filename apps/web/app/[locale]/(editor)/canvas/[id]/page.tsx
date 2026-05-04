@@ -61,6 +61,7 @@ export default function CanvasPage({
   const tAgent = useTranslations('agentPanel')
   const { data, isLoading } = useWorkflow(id)
   const hasLoaded = useRef(false)
+  const lastSessionWorkflowIdRef = useRef<string | null>(null)
   const lastExecutionLabelRef = useRef<string | null>(null)
   const lastActiveTaskLabelRef = useRef<string | null>(null)
   const emittedTerminalTaskIdsRef = useRef<Set<string>>(new Set())
@@ -146,6 +147,11 @@ export default function CanvasPage({
   })
 
   useEffect(() => {
+    if (lastSessionWorkflowIdRef.current === id) {
+      return
+    }
+
+    lastSessionWorkflowIdRef.current = id
     resetSession()
     // 把进入页面时已经存在的执行/任务摘要当作基线，避免旧状态被重新灌回新会话。
     lastExecutionLabelRef.current = executionLabel

@@ -47,10 +47,13 @@ export function AgentMessageItem({
               href={attachment.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-black/8 bg-white/70 px-3 py-1 text-[11px] text-slate-600"
+              className="block overflow-hidden rounded-2xl border border-black/8 bg-white/70"
             >
-              <span>图片</span>
-              <span className="max-w-[140px] truncate">{attachment.name ?? '未命名图片'}</span>
+              <img
+                src={attachment.url}
+                alt={attachment.name ?? '未命名图片'}
+                className="h-20 w-20 object-cover"
+              />
             </a>
           ))}
         </div>
