@@ -181,6 +181,66 @@ describe('useAgentSession', () => {
     expect(flowState.nodes.some((node) => node.id === 'draft-image-gen')).toBe(false)
   })
 
+  it('hydrates the connected image-input node with the attached reference image on confirmation', async () => {
+    useFlowStore.getState().setFlow(
+      [
+        createNode('image-input-existing', 'image-input', { imageUrl: '' }),
+        createNode('text-existing', 'text-input', { text: '' }),
+        createNode('image-existing', 'image-gen'),
+        createNode('display-existing', 'display'),
+      ],
+      [
+        createEdge('image-input-existing', 'image-existing', 'image-out', 'image-in'),
+        createEdge('text-existing', 'image-existing', 'text-out', 'prompt-in'),
+        createEdge('image-existing', 'display-existing', 'image-out', 'content-in'),
+      ],
+    )
+    useAgentStore.getState().setPendingPlan({
+      id: 'plan-image-to-image',
+      goal: '帮我参考这张图生成新图',
+      mode: 'create',
+      intent: 'create_workflow',
+      summary: '先搭工作流，再确认提示词',
+      reasons: ['空白画板先搭主链'],
+      requiresConfirmation: false,
+      operations: [
+        { type: 'add_node', nodeId: 'draft-image-input', nodeType: 'image-input' },
+        { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
+        { type: 'add_node', nodeId: 'draft-image-gen', nodeType: 'image-gen' },
+        { type: 'add_node', nodeId: 'draft-display', nodeType: 'display' },
+      ],
+      promptConfirmation: {
+        id: 'prompt-image',
+        originalIntent: '帮我参考这张图生成新图',
+        visualProposal: '保留主体关系并调整风格',
+        executionPrompt: '保留参考图主体与构图，强化材质、光线与整体氛围，输出一张完成度更高的新图。',
+        attachedImageUrls: ['https://example.com/ref.png'],
+        targetNodeId: 'text-existing',
+      },
+    })
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.confirmPromptAndRun('prompt-image')
+    })
+
+    const flowState = useFlowStore.getState()
+    expect(flowState.nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
+      '保留参考图主体与构图，强化材质、光线与整体氛围，输出一张完成度更高的新图。',
+    )
+    expect(
+      flowState.nodes.find((node) => node.id === 'image-input-existing')?.data.config.imageUrl,
+    ).toBe('https://example.com/ref.png')
+    expect(executeFromNodeMock).toHaveBeenCalledWith('text-existing')
+  })
+
   it('continues prompt confirmation even when pendingPlan is missing but promptConfirmation remains', async () => {
     useAgentStore.getState().clearPendingPlan()
 

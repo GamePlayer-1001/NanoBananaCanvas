@@ -774,29 +774,49 @@ export function useAgentSession({
 
     const executionPrompt = payload.executionPrompt
     const existingTargetNodeId = resolvePromptTargetNodeId(payload.targetNodeId)
+    const attachedImageUrl = payload.attachedImageUrls?.[0]
 
     // 已经落图过的创建提案，在确认阶段只做 prompt 回填与执行；
     // 不再重复重放 add/connect，避免生成第二套工作流。
     if (existingTargetNodeId) {
+      const operations: AgentPlan['operations'] = [
+        {
+          type: 'update_node_data',
+          nodeId: existingTargetNodeId,
+          patch: {
+            config: {
+              text: executionPrompt,
+            },
+          },
+        },
+      ]
+
+      const imageInputNodeId = attachedImageUrl
+        ? findConnectedImageInputNodeId(existingTargetNodeId)
+        : null
+
+      if (imageInputNodeId && attachedImageUrl) {
+        operations.push({
+          type: 'update_node_data',
+          nodeId: imageInputNodeId,
+          patch: {
+            config: {
+              imageUrl: attachedImageUrl,
+            },
+          },
+        })
+      }
+
+      operations.push({
+        type: 'run_workflow',
+        scope: 'from-node',
+        nodeId: resolveExecutionStartNodeId(existingTargetNodeId),
+      })
+
       return {
         ...plan,
         requiresConfirmation: false,
-        operations: [
-          {
-            type: 'update_node_data',
-            nodeId: existingTargetNodeId,
-            patch: {
-              config: {
-                text: executionPrompt,
-              },
-            },
-          },
-          {
-            type: 'run_workflow',
-            scope: 'from-node',
-            nodeId: resolveExecutionStartNodeId(existingTargetNodeId),
-          },
-        ],
+        operations,
         promptConfirmation: undefined,
       }
     }
@@ -830,6 +850,17 @@ export function useAgentSession({
           return {
             ...operation,
             initialData: mergeNodeTextIntoInitialData(operation.initialData, executionPrompt),
+          }
+        }
+
+        if (
+          attachedImageUrl &&
+          operation.type === 'add_node' &&
+          operation.nodeType === 'image-input'
+        ) {
+          return {
+            ...operation,
+            initialData: mergeNodeImageIntoInitialData(operation.initialData, attachedImageUrl),
           }
         }
 
@@ -873,6 +904,38 @@ function resolvePromptTargetNodeId(nodeId?: string) {
     }
 
   return null
+}
+
+function findConnectedImageInputNodeId(targetNodeId: string) {
+  const { nodes, edges } = useFlowStore.getState()
+  const targetNode = nodes.find((node) => node.id === targetNodeId)
+  if (!targetNode) return null
+
+  const generationNodeId =
+    targetNode.type === 'image-gen'
+      ? targetNode.id
+      : edges.find(
+          (edge) =>
+            edge.source === targetNodeId &&
+            normalizeHandleId(edge.targetHandle) === 'prompt-in',
+        )?.target
+
+  if (!generationNodeId) return null
+
+  const incomingImageEdge = edges.find(
+    (edge) =>
+      edge.target === generationNodeId &&
+      normalizeHandleId(edge.targetHandle) === 'image-in',
+  )
+
+  if (!incomingImageEdge) return null
+
+  const sourceNode = nodes.find((node) => node.id === incomingImageEdge.source)
+  if (!sourceNode || sourceNode.type !== 'image-input') {
+    return null
+  }
+
+  return sourceNode.id
 }
 
 function resolveExecutionStartNodeId(targetNodeId: string) {
@@ -1037,6 +1100,26 @@ function buildFallbackPromptConfirmationPlan(
     operations: [],
     promptConfirmation: payload,
   }
+}
+
+function mergeNodeImageIntoInitialData(
+  initialData: Record<string, unknown> | undefined,
+  imageUrl: string,
+): Record<string, unknown> {
+  const nextInitialData = isRecord(initialData) ? { ...initialData } : {}
+  const currentConfig = isRecord(nextInitialData.config) ? nextInitialData.config : {}
+
+  return {
+    ...nextInitialData,
+    config: {
+      ...currentConfig,
+      imageUrl,
+    },
+  }
+}
+
+function normalizeHandleId(handleId: string | null | undefined) {
+  return handleId ?? null
 }
 
 function resolvePromptTargetWithNodeMap(

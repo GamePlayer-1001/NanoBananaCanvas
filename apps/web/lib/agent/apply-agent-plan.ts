@@ -101,7 +101,10 @@ export async function applyAgentPlan(
 
     for (const operation of queuedRunOperations) {
       if (runWorkflow) {
-        await runWorkflow(operation.scope, operation.nodeId)
+        await runWorkflow(
+          operation.scope,
+          operation.nodeId ? resolveNodeId(operation.nodeId, working.idMap) : undefined,
+        )
       }
     }
 
