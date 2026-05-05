@@ -15,9 +15,18 @@ import {
   resolveOpenAICompatibleRequestSize,
 } from './image-gen'
 
+const { getR2Mock } = vi.hoisted(() => ({
+  getR2Mock: vi.fn(),
+}))
+
+vi.mock('@/lib/r2', () => ({
+  getR2: getR2Mock,
+}))
+
 describe('ImageGenProcessor', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    getR2Mock.mockReset()
   })
 
   it('accepts OpenAI-compatible url responses', async () => {
@@ -374,13 +383,16 @@ describe('ImageGenProcessor', () => {
   })
 
   it('normalizes internal relative reference images before comfly fetches them', async () => {
+    const r2GetMock = vi.fn().mockResolvedValue({
+      httpMetadata: { contentType: 'image/png' },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    })
+    getR2Mock.mockResolvedValue({
+      get: r2GetMock,
+    })
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'image/png' }),
-        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
-      } satisfies Partial<Response>)
       .mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
@@ -404,9 +416,57 @@ describe('ImageGenProcessor', () => {
       'platform-key',
     )
 
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://nanobananacanvas.com/api/files/uploads/demo/reference.png',
+    expect(r2GetMock).toHaveBeenCalledWith('uploads/demo/reference.png')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ai.comfly.chat/v1/images/edits',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(FormData),
+      }),
+    )
+  })
+
+  it('loads internal absolute reference images from R2 instead of the private file api', async () => {
+    const r2GetMock = vi.fn().mockResolvedValue({
+      httpMetadata: { contentType: 'image/png' },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    })
+    getR2Mock.mockResolvedValue({
+      get: r2GetMock,
+    })
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/comfly-edit.png' }],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('comfly')
+    await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: '参考图增强质感',
+          imageUrl: 'https://nanobananacanvas.com/api/files/uploads/demo/reference.png',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(r2GetMock).toHaveBeenCalledWith('uploads/demo/reference.png')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ai.comfly.chat/v1/images/edits',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(FormData),
+      }),
     )
   })
 
@@ -578,13 +638,16 @@ describe('ImageGenProcessor', () => {
   })
 
   it('normalizes internal relative reference images before dlapi fetches them', async () => {
+    const r2GetMock = vi.fn().mockResolvedValue({
+      httpMetadata: { contentType: 'image/png' },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    })
+    getR2Mock.mockResolvedValue({
+      get: r2GetMock,
+    })
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'image/png' }),
-        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
-      } satisfies Partial<Response>)
       .mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
@@ -609,9 +672,14 @@ describe('ImageGenProcessor', () => {
       'platform-key',
     )
 
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://nanobananacanvas.com/api/files/uploads/demo/reference.png',
+    expect(r2GetMock).toHaveBeenCalledWith('uploads/demo/reference.png')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.dlapi.xyz/v1/images/edits',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(FormData),
+      }),
     )
   })
 

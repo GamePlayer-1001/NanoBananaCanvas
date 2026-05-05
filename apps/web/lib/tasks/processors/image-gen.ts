@@ -11,7 +11,9 @@ import {
   type ImageModelCapabilities,
 } from '@/lib/image-model-capabilities'
 import { createLogger } from '@/lib/logger'
+import { getR2 } from '@/lib/r2'
 import { BASE_URL } from '@/lib/seo'
+import { extractR2KeyFromFileUrl } from '@/lib/storage'
 
 import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './types'
 
@@ -149,9 +151,52 @@ function inferExtensionFromMimeType(mimeType: string | null): string {
   }
 }
 
+function resolveInternalReferenceImageR2Key(imageUrl: string): string | null {
+  const directKey = extractR2KeyFromFileUrl(imageUrl)
+  if (directKey) {
+    return directKey
+  }
+
+  try {
+    const parsed = new URL(imageUrl)
+    if (parsed.origin !== new URL(BASE_URL).origin) {
+      return null
+    }
+
+    return extractR2KeyFromFileUrl(parsed.pathname)
+  } catch {
+    return null
+  }
+}
+
+async function loadInternalReferenceImageAsset(
+  r2Key: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const r2 = await getR2()
+  const object = await r2.get(r2Key)
+
+  if (!object) {
+    throw new Error(`Reference image not found in internal storage: ${r2Key}`)
+  }
+
+  const buffer = await object.arrayBuffer()
+  const mimeType = object.httpMetadata?.contentType ?? 'image/png'
+  const extension = inferExtensionFromMimeType(mimeType)
+
+  return {
+    blob: new Blob([buffer], { type: mimeType }),
+    filename: `reference.${extension}`,
+  }
+}
+
 async function fetchReferenceImageAsset(
   imageUrl: string,
 ): Promise<{ blob: Blob; filename: string }> {
+  const internalR2Key = resolveInternalReferenceImageR2Key(imageUrl)
+  if (internalR2Key) {
+    return loadInternalReferenceImageAsset(internalR2Key)
+  }
+
   const res = await fetch(imageUrl)
   if (!res.ok) {
     const text = await res.text().catch(() => '')

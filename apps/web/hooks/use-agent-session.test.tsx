@@ -364,4 +364,43 @@ describe('useAgentSession', () => {
     )
     expect(executeFromNodeMock).toHaveBeenCalledWith('text-existing')
   })
+
+  it('does not mistake normal follow-up chat for a confirmation command', async () => {
+    useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
+    const previousMessageCount = useAgentStore.getState().messages.length
+    vi.mocked(buildAgentPlan).mockResolvedValue({
+      plan: {
+        id: 'plan-follow-up-chat',
+        goal: '好了，现在你再给我看看你润色的文案？',
+        mode: 'update',
+        intent: 'add_step',
+        summary: '我先把注意力聚焦到最相关的节点范围，再给你一个可检查的修改方向。',
+        reasons: ['这是继续追问润色结果，不是确认执行。'],
+        requiresConfirmation: false,
+        operations: [{ type: 'focus_nodes', nodeIds: ['text-existing'] }],
+      },
+      alternatives: [],
+    })
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('好了，现在你再给我看看你润色的文案？')
+    })
+
+    expect(executeFromNodeMock).not.toHaveBeenCalled()
+    expect(buildAgentPlan).toHaveBeenCalled()
+    expect(useAgentStore.getState().messages.length).toBeGreaterThan(previousMessageCount)
+    expect(
+      useAgentStore
+        .getState()
+        .messages.some((message) => message.role === 'assistant' || message.role === 'proposal'),
+    ).toBe(true)
+  })
 })

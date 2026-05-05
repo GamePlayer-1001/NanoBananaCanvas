@@ -980,8 +980,8 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
     if (!latestPendingPlan && !latestPromptConfirmation) return false
 
     const normalized = normalizeConfirmationText(value)
-    const isConfirmed = CONFIRMATION_PATTERNS.some((pattern) => pattern.test(normalized))
-    const isRejected = REJECTION_PATTERNS.some((pattern) => pattern.test(normalized))
+    const isConfirmed = CONFIRMATION_PHRASES.has(normalized)
+    const isRejected = REJECTION_PHRASES.has(normalized)
 
     if (!isConfirmed && !isRejected) return false
 
@@ -1069,13 +1069,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-const CONFIRMATION_PATTERNS = [
-  /^(我确认|我确定|确认|确定|可以|可以执行|执行吧|开始吧|开始执行|是的|好的|好|ok|okay|yes|yep|继续)/i,
-]
+const CONFIRMATION_PHRASES = new Set([
+  '我确认',
+  '我确定',
+  '确认',
+  '确定',
+  '可以',
+  '可以执行',
+  '执行吧',
+  '开始吧',
+  '开始执行',
+  '是的',
+  '好的',
+  '好',
+  'ok',
+  'okay',
+  'yes',
+  'yep',
+  '继续',
+  '继续吧',
+])
 
-const REJECTION_PATTERNS = [
-  /^(不|不用|先不要|取消|算了|先等等|先别执行|不要这样)/i,
-]
+const REJECTION_PHRASES = new Set([
+  '不',
+  '不用',
+  '先不要',
+  '取消',
+  '算了',
+  '先等等',
+  '先别执行',
+  '不要这样',
+])
 
 function normalizeConfirmationText(value: string) {
   return value.replace(/[。！!？，,\s]/g, '').trim().toLowerCase()
