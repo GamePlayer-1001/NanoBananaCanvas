@@ -11,6 +11,7 @@ import {
   type ImageModelCapabilities,
 } from '@/lib/image-model-capabilities'
 import { createLogger } from '@/lib/logger'
+import { BASE_URL } from '@/lib/seo'
 
 import type { CheckResult, SubmitInput, SubmitResult, TaskProcessor } from './types'
 
@@ -109,7 +110,23 @@ function readReferenceImageUrl(params: Record<string, unknown>): string | undefi
   }
 
   const value = raw.trim()
-  return value ? value : undefined
+  if (!value) {
+    return undefined
+  }
+
+  if (value.startsWith('data:')) {
+    return value
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value
+  }
+
+  if (value.startsWith('/')) {
+    return new URL(value, BASE_URL).toString()
+  }
+
+  return value
 }
 
 function readImageCapabilities(params: Record<string, unknown>): ImageModelCapabilities | undefined {

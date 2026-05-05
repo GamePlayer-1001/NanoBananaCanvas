@@ -373,6 +373,43 @@ describe('ImageGenProcessor', () => {
     })
   })
 
+  it('normalizes internal relative reference images before comfly fetches them', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/comfly-edit.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('comfly')
+    await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: '参考图增强质感',
+          imageUrl: '/api/files/uploads/demo/reference.png',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://nanobananacanvas.com/api/files/uploads/demo/reference.png',
+    )
+  })
+
   it('resolves preset size and aspect ratio into concrete dimensions', () => {
     expect(resolveImageGenerationSize('auto', '16:9')).toBe('1920x1080')
     expect(resolveImageGenerationSize('1k', '9:16')).toBe('1080x1920')
@@ -538,6 +575,44 @@ describe('ImageGenProcessor', () => {
       externalTaskId: 'imgjob_edit_123',
       initialStatus: 'running',
     })
+  })
+
+  it('normalizes internal relative reference images before dlapi fetches them', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            id: 'imgjob_edit_123',
+            status: 'running',
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: '参考原图进行重绘',
+          imageUrl: '/api/files/uploads/demo/reference.png',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://nanobananacanvas.com/api/files/uploads/demo/reference.png',
+    )
   })
 
   it('checks dlapi async task completion and returns image data', async () => {
