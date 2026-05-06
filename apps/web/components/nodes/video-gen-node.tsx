@@ -137,6 +137,7 @@ export function VideoGenNode(props: NodeProps) {
       icon={<Video size={14} />}
       minHeight={240}
       bodyClassName="min-h-0"
+      heightMode="content"
     >
       <div className="flex h-full min-h-0 flex-col gap-3">
         <ConfigField label={t('provider')}>

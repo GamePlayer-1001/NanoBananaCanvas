@@ -66,7 +66,7 @@ export function ConditionalNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<GitBranch size={14} />}>
+    <BaseNode {...props} data={data} icon={<GitBranch size={14} />} heightMode="content">
       <div className="space-y-3">
         {/* ── Operator ────────────────────────────── */}
         <div>

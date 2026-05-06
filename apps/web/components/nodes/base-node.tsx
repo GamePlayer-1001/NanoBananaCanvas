@@ -27,6 +27,7 @@ export interface BaseNodeProps extends NodeProps {
   minWidth?: number
   minHeight?: number
   bodyClassName?: string
+  heightMode?: 'fixed' | 'content'
 }
 
 /* ─── Status Indicator ────────────────────────────────── */
@@ -111,6 +112,7 @@ export function BaseNode({
   minWidth = 280,
   minHeight = 100,
   bodyClassName,
+  heightMode = 'fixed',
 }: BaseNodeProps) {
   const status = data.status ?? 'idle'
   const registryPorts = getNodePorts(type)
@@ -141,13 +143,17 @@ export function BaseNode({
 
   const resolvedWidth = typeof width === 'number' ? width : minWidth
   const resolvedHeight = typeof height === 'number' ? height : minHeight
+  const containerStyle =
+    heightMode === 'content' && typeof height !== 'number'
+      ? { width: resolvedWidth, minWidth, minHeight }
+      : { width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }
 
   return (
     <div
       ref={containerRef}
       onMouseMove={updateResizeHover}
       onMouseLeave={hideResizer}
-      style={{ width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }}
+      style={containerStyle}
       className="relative"
     >
       {resizable ? (

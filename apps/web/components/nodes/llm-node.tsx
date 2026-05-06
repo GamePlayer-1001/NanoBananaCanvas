@@ -196,6 +196,7 @@ export function LLMNode(props: NodeProps) {
       icon={<BrainCircuit size={14} />}
       minHeight={220}
       bodyClassName="min-h-0"
+      heightMode="content"
     >
       <div className="flex h-full min-h-0 flex-col gap-3">
         {executionMode === 'user_key' ? (

@@ -57,7 +57,7 @@ export function LoopNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<Repeat size={14} />}>
+    <BaseNode {...props} data={data} icon={<Repeat size={14} />} heightMode="content">
       <div className="space-y-3">
         {/* ── Mode ────────────────────────────────── */}
         <div>

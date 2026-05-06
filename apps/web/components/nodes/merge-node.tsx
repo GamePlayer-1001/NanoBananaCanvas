@@ -35,7 +35,7 @@ export function TextMergeNode(props: NodeProps) {
   )
 
   return (
-    <BaseNode {...props} data={data} icon={<Combine size={14} />}>
+    <BaseNode {...props} data={data} icon={<Combine size={14} />} heightMode="content">
       <div className="space-y-2">
         <p className="text-muted-foreground text-xs">{t('textMergeHint')}</p>
         <label className="text-muted-foreground block text-xs">
@@ -58,7 +58,7 @@ export function ImageMergeNode(props: NodeProps) {
   const t = useTranslations('nodes')
 
   return (
-    <BaseNode {...props} data={data} icon={<Images size={14} />}>
+    <BaseNode {...props} data={data} icon={<Images size={14} />} heightMode="content">
       <p className="text-muted-foreground text-xs">{t('imageMergeHint')}</p>
     </BaseNode>
   )
