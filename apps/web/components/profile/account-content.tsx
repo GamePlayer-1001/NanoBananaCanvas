@@ -91,6 +91,7 @@ export function AccountContent({
     ),
     dashboard: (
       <AccountDashboardTab
+        isAuthenticated={currentUser.isAuthenticated}
         subscription={subscription}
         balance={balance}
         transactions={transactions}

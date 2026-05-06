@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/lib/billing/credits 与 @/lib/billing/subscription 类型，
  *          依赖 @/components/billing 的流水表与用量图，依赖 @/components/ui/button / progress
  * [OUTPUT]: 对外提供 AccountDashboardTab 仪表盘页签
- * [POS]: profile 的账户仪表盘，被账户页消费，负责展示套餐摘要、积分分布、升级入口与账本详情
+ * [POS]: profile 的账户仪表盘，被账户页消费，负责展示套餐摘要、积分分布、签到积分、升级入口与账本详情
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -20,6 +20,7 @@ import { PaymentHistoryTable } from '@/components/billing/payment-history-table'
 import { UsageChart } from '@/components/billing/usage-chart'
 
 interface AccountDashboardTabProps {
+  isAuthenticated: boolean
   subscription: BillingSubscriptionSummary
   balance: CreditBalanceSummary
   transactions: CreditTransactionsResult
@@ -62,6 +63,7 @@ function buildCreditDonut(slices: CreditSlice[]) {
 }
 
 export function AccountDashboardTab({
+  isAuthenticated,
   subscription,
   balance,
   transactions,
@@ -73,6 +75,13 @@ export function AccountDashboardTab({
   const [isOpeningPortal, setIsOpeningPortal] = useState(false)
 
   const creditSlices: CreditSlice[] = [
+    {
+      key: 'signin',
+      label: t('dashboardSigninCredits'),
+      value: balance.trialBalance,
+      color: '#22c55e',
+      tone: 'text-emerald-600',
+    },
     {
       key: 'monthly',
       label: t('dashboardMonthlyPool'),
@@ -86,13 +95,6 @@ export function AccountDashboardTab({
       value: balance.permanentBalance,
       color: '#8b5cf6',
       tone: 'text-violet-600',
-    },
-    {
-      key: 'frozen',
-      label: t('dashboardFrozenPool'),
-      value: balance.frozenCredits,
-      color: '#f59e0b',
-      tone: 'text-amber-600',
     },
   ]
   const donut = buildCreditDonut(creditSlices)
@@ -249,9 +251,9 @@ export function AccountDashboardTab({
               </p>
             </div>
             <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-              <p className="text-sm text-violet-700">{t('dashboardFrozenPool')}</p>
+              <p className="text-sm text-violet-700">{t('dashboardSigninCreditsLabel')}</p>
               <p className="mt-2 text-3xl font-semibold text-violet-950">
-                {balance.frozenCredits.toLocaleString()}
+                {balance.trialBalance.toLocaleString()}
               </p>
             </div>
           </div>
@@ -281,7 +283,7 @@ export function AccountDashboardTab({
         </article>
       </section>
 
-      <PaymentHistoryTable transactions={transactions} />
+      <PaymentHistoryTable isAuthenticated={isAuthenticated} transactions={transactions} />
       <UsageChart usage={usage} />
     </div>
   )

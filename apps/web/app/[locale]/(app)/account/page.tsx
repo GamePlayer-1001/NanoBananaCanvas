@@ -173,7 +173,7 @@ export default async function AccountPage({
     authUser
       ? loadOptionalAccountData(
           'credit transactions',
-          () => getCreditTransactions(authUser.userId, { fetchAll: true }),
+          () => getCreditTransactions(authUser.userId, { page: 1, pageSize: 10 }),
           guestTransactions,
         )
       : Promise.resolve(guestTransactions),
