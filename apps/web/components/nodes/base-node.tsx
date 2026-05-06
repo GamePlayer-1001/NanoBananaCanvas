@@ -143,8 +143,9 @@ export function BaseNode({
 
   const resolvedWidth = typeof width === 'number' ? width : minWidth
   const resolvedHeight = typeof height === 'number' ? height : minHeight
+  const isContentHeight = heightMode === 'content' && typeof height !== 'number'
   const containerStyle =
-    heightMode === 'content' && typeof height !== 'number'
+    isContentHeight
       ? { width: resolvedWidth, minWidth, minHeight }
       : { width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }
 
@@ -168,7 +169,8 @@ export function BaseNode({
 
       <div
         className={cn(
-          'bg-card relative flex h-full w-full flex-col overflow-hidden rounded-lg border shadow-sm',
+          'bg-card relative flex w-full flex-col overflow-hidden rounded-lg border shadow-sm',
+          isContentHeight ? 'h-auto' : 'h-full',
           'transition-shadow duration-150',
           selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
         )}
@@ -182,7 +184,15 @@ export function BaseNode({
         </div>
 
         {/* ── Body ─────────────────────────────────────── */}
-        <div className={cn('flex min-h-0 flex-1 flex-col p-3', bodyClassName)}>{children}</div>
+        <div
+          className={cn(
+            'flex flex-col p-3',
+            isContentHeight ? 'h-auto' : 'min-h-0 flex-1',
+            bodyClassName,
+          )}
+        >
+          {children}
+        </div>
       </div>
 
       {/* ── Input Handles ────────────────────────────── */}

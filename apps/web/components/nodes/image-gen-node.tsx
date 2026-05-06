@@ -324,7 +324,7 @@ export function ImageGenNode(props: NodeProps) {
       bodyClassName="min-h-0"
       heightMode="content"
     >
-      <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <ConfigField label={t('executionMode')}>
           <div className="nodrag flex gap-1">
             <ModeButton
