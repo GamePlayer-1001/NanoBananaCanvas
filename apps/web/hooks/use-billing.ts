@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query，依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useCreditBalance 当前用户积分余额数据
+ * [OUTPUT]: 对外提供 useCreditBalance 当前用户积分余额数据与 useDailySigninStatus 每日签到状态
  * [POS]: hooks 的账单数据层，被 sidebar/billing 等界面消费，负责读取本地账本余额摘要
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -27,5 +27,24 @@ export function useCreditBalance(enabled = true) {
     queryKey: queryKeys.billing.balance(),
     queryFn: () => fetchJson<CreditBalanceSummary>('/api/credits/balance'),
     enabled,
+  })
+}
+
+export interface DailySigninStatus {
+  status: 'available' | 'claimed' | 'unavailable'
+  available: boolean
+  checkedInToday: boolean
+  trialBalance: number
+  trialExpiresAt: string | null
+}
+
+export function useDailySigninStatus(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.billing.signinStatus(),
+    queryFn: () => fetchJson<DailySigninStatus>('/api/credits/signin'),
+    enabled,
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 60_000,
   })
 }
