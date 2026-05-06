@@ -5,7 +5,7 @@
  *          useImportLocalWorkflow / useDeleteWorkflow，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/lib/query/keys，依赖 @/services/storage/local-storage 与 serializer，
  *          依赖 @/components/ui/progress，依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 WorksTab 我的作品面板，含工作流/生成作品/已发布/收藏四主页签、多选删除与容量进度
+ * [OUTPUT]: 对外提供 WorksTab 我的作品面板，含工作流/生成作品/已发布/收藏四主页签、多选删除与本地草稿导入
  * [POS]: profile 的作品管理 Tab，被账户页消费，负责收口个人作品检索、生成结果管理与本地草稿导入
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -20,7 +20,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckSquare,
   Globe,
-  HardDrive,
   ImageIcon,
   Import,
   Loader2,
@@ -39,10 +38,8 @@ import {
   useWorkflows,
 } from '@/hooks/use-workflows'
 import { queryKeys } from '@/lib/query/keys'
-import type { StorageUsage } from '@/lib/storage'
 import { clearLocal, loadFromLocal } from '@/services/storage/local-storage'
 import { serializeWorkflow } from '@/services/storage/serializer'
-import { Progress } from '@/components/ui/progress'
 
 type WorksView = 'workflow' | 'generated' | 'published' | 'favorites'
 type GeneratedView = 'image' | 'video'
@@ -73,17 +70,6 @@ interface GeneratedTaskItem {
   createdAt: string
   completedAt: string | null
   output: GeneratedOutputPayload | null
-}
-
-function formatBytes(value: number): string {
-  if (value < 1024) return `${value} B`
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
-  if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`
-  return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`
-}
-
-function formatStorageLimitLabel(storageGB: number): string {
-  return `${storageGB} GB`
 }
 
 function useFavorites(enabled: boolean) {
@@ -244,12 +230,8 @@ function GeneratedWorkItem({
 
 export function WorksTab({
   isAuthenticated,
-  storageUsage,
-  storageGB,
 }: {
   isAuthenticated: boolean
-  storageUsage: StorageUsage
-  storageGB: number
 }) {
   const t = useTranslations('profileWorks')
   const queryClient = useQueryClient()
@@ -306,8 +288,6 @@ export function WorksTab({
 
   const visibleCount = visibleIds.length
   const selectedCount = selectedIds.filter((id) => visibleIds.includes(id)).length
-  const limitLabel = formatStorageLimitLabel(storageGB)
-
   const invalidateWorks = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all }),
@@ -432,34 +412,6 @@ export function WorksTab({
         <h3 className="text-lg font-semibold text-foreground">{t('title')}</h3>
         <p className="text-sm leading-6 text-muted-foreground">{t('description')}</p>
       </div>
-
-      <section className="rounded-2xl border border-border bg-muted/20 p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <HardDrive size={16} className="text-brand-600" />
-              {t('storageTitle')}
-            </div>
-            <p className="text-sm leading-6 text-muted-foreground">{t('storageBody')}</p>
-          </div>
-
-          <div className="min-w-0 rounded-2xl border border-border/70 bg-background px-4 py-3 lg:min-w-[340px]">
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <span className="font-medium text-foreground">
-                {t('storageUsageValue', {
-                  used: formatBytes(storageUsage.usedBytes),
-                  limit: limitLabel,
-                })}
-              </span>
-              <span className="text-muted-foreground">{storageUsage.usedPercent}%</span>
-            </div>
-            <Progress value={storageUsage.usedPercent} className="mt-3 h-2.5" />
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {t('storageHint', { limit: limitLabel })}
-            </p>
-          </div>
-        </div>
-      </section>
 
       {localDraft && localDraft.nodes.length > 0 ? (
         <div className="rounded-2xl border border-brand-200 bg-brand-50/60 p-4">

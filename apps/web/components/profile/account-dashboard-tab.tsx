@@ -242,16 +242,16 @@ export function AccountDashboardTab({
                 {balance.currentPlanMonthlyCredits.toLocaleString()}
               </p>
             </div>
-            <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-              <p className="text-sm text-violet-700">{t('dashboardStorageLabel')}</p>
-              <p className="mt-2 text-3xl font-semibold text-violet-950">
-                {t('dashboardStorageValue', { value: balance.storageGB })}
-              </p>
-            </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-sm text-slate-600">{t('dashboardLifetimeSpentLabel')}</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">
                 {balance.totalSpent.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+              <p className="text-sm text-violet-700">{t('dashboardFrozenPool')}</p>
+              <p className="mt-2 text-3xl font-semibold text-violet-950">
+                {balance.frozenCredits.toLocaleString()}
               </p>
             </div>
           </div>

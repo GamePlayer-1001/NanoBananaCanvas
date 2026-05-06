@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next/headers 的 headers，依赖 next-intl/server 的 setRequestLocale，
  *          依赖 @/components/profile/account-content，依赖 @/lib/api/auth，
- *          依赖 @/lib/billing/credits / subscription / pricing，依赖 @/lib/storage
+ *          依赖 @/lib/billing/credits / subscription / pricing
  * [OUTPUT]: 对外提供账户页面
  * [POS]: (app) 路由组的账户页，承载个人资料/仪表盘/订阅/作品/通知/API 接入配置
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -19,7 +19,6 @@ import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
 import { getBillingSubscription } from '@/lib/billing/subscription'
 import { NO_INDEX_METADATA } from '@/lib/seo'
-import { getStorageUsage } from '@/lib/storage'
 import type { UserProfile } from '@/hooks/use-user'
 
 export const metadata: Metadata = NO_INDEX_METADATA
@@ -89,15 +88,6 @@ function createGuestUsage() {
     },
     byModel: [],
     daily: [],
-  }
-}
-
-function createGuestStorageUsage() {
-  return {
-    usedBytes: 0,
-    limitBytes: FREE_PLAN_SNAPSHOT.storageGB * 1024 * 1024 * 1024,
-    usedPercent: 0,
-    isOverQuota: false,
   }
 }
 
@@ -173,9 +163,7 @@ export default async function AccountPage({
   const guestBalance = createGuestBalance()
   const guestTransactions = createGuestTransactions()
   const guestUsage = createGuestUsage()
-  const guestStorageUsage = createGuestStorageUsage()
-
-  const [subscription, balance, transactions, usage, pricing, storageUsage] = await Promise.all([
+  const [subscription, balance, transactions, usage, pricing] = await Promise.all([
     authUser
       ? loadOptionalAccountData('billing subscription', () => getBillingSubscription(authUser.userId), guestSubscription)
       : Promise.resolve(guestSubscription),
@@ -198,9 +186,6 @@ export default async function AccountPage({
       console.error('[account] Failed to load Stripe prices', error)
       return null
     }),
-    authUser
-      ? loadOptionalAccountData('storage usage', () => getStorageUsage(authUser.userId), guestStorageUsage)
-      : Promise.resolve(guestStorageUsage),
   ])
 
   return (
@@ -210,7 +195,6 @@ export default async function AccountPage({
       balance={balance}
       transactions={transactions}
       usage={usage}
-      storageUsage={storageUsage}
       isPricingReady={Boolean(pricing)}
       plans={pricing?.plans ?? []}
       creditPacks={pricing?.creditPacks ?? []}

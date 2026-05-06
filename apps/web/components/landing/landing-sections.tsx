@@ -424,9 +424,7 @@ export function PricingSection({
                   ]
                 : [
                     `${billingT('monthlyCredits')} · ${snapshot?.monthlyCredits.toLocaleString()}`,
-                    `${billingT('storageIncluded')} · ${billingT('storageValue', {
-                      value: snapshot?.storageGB ?? 0,
-                    })}`,
+                    billingT('deliveryRecurring'),
                     pricingT(`plans.${planKey}.supportNote`),
                   ]
 

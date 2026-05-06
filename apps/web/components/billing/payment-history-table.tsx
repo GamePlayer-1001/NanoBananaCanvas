@@ -20,6 +20,10 @@ function getAmountTone(item: CreditTransactionItem) {
   return item.type === 'freeze' ? 'text-amber-600' : 'text-rose-600'
 }
 
+function getPoolLabelKey(pool: CreditTransactionItem['pool']) {
+  return pool === 'trial' ? 'monthlyPool' : `pool_${pool}`
+}
+
 export function PaymentHistoryTable({ transactions }: { transactions: CreditTransactionsResult }) {
   const t = useTranslations('billing')
 
@@ -61,7 +65,7 @@ export function PaymentHistoryTable({ transactions }: { transactions: CreditTran
                       {t('historyMeta', { source: item.source, time: item.createdAt })}
                     </p>
                   </div>
-                  <div className="text-muted-foreground">{t(`pool_${item.pool}`)}</div>
+                  <div className="text-muted-foreground">{t(getPoolLabelKey(item.pool))}</div>
                   <div className={`text-right font-semibold ${getAmountTone(item)}`}>
                     {item.amount > 0 ? '+' : ''}
                     {item.amount.toLocaleString()}

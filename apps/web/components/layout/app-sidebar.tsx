@@ -15,7 +15,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -27,7 +26,6 @@ import {
   MessageCircle,
   LogOut,
   Coins,
-  Sparkles,
   ChevronRight,
   Pencil,
   Trash2,
@@ -54,10 +52,9 @@ import {
   useUpdateFolder,
   useDeleteFolder,
 } from '@/hooks/use-folders'
-import { useCreditBalance, useDailySigninStatus } from '@/hooks/use-billing'
+import { useCreditBalance } from '@/hooks/use-billing'
 import { useCurrentUser } from '@/hooks/use-user'
 import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
-import { queryKeys } from '@/lib/query/keys'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -293,13 +290,11 @@ function DeleteFolderDialog({
 
 export function AppSidebar() {
   const t = useTranslations('sidebar')
-  const queryClient = useQueryClient()
   const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
   const { data: user } = useCurrentUser()
   const { data: balance } = useCreditBalance(Boolean(user?.isAuthenticated))
-  const { data: signinStatus } = useDailySigninStatus(Boolean(user?.isAuthenticated))
   const searchParams = useSearchParams()
   const activeFolderId = searchParams.get('folder')
   const { data: folders } = useFolders()
@@ -313,46 +308,6 @@ export function AppSidebar() {
   const activeAccountTab = searchParams.get('tab')
   const isDashboardEntryActive = pathname === '/account' && activeAccountTab === 'dashboard'
   const isSubscriptionEntryActive = pathname === '/account' && activeAccountTab === 'subscription'
-  const claimSignin = useMutation({
-    mutationFn: async () => {
-      const res = await fetch('/api/credits/signin', { method: 'POST' })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(body.error?.message ?? `Request failed: ${res.status}`)
-      }
-      return body.data as { creditsAwarded: number }
-    },
-    onSuccess: async (result) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.billing.balance() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.billing.signinStatus() }),
-      ])
-      toast.success(t('signinSuccess', { count: result.creditsAwarded }))
-    },
-    onError: (error: Error) => {
-      toast.error(error.message)
-    },
-  })
-  const signinState = signinStatus?.status ?? 'available'
-  const signinButtonDisabled =
-    !user?.isAuthenticated ||
-    signinState === 'claimed' ||
-    signinState === 'unavailable' ||
-    claimSignin.isPending
-  const signinButtonLabel =
-    signinState === 'claimed'
-      ? t('signedInToday')
-      : signinState === 'unavailable'
-        ? t('signinUnavailable')
-        : t('signinAction')
-  const signinButtonVariant =
-    signinState === 'available' ? 'default' : 'outline'
-  const signinButtonClassName =
-    signinState === 'claimed'
-      ? 'border-amber-300 bg-white text-amber-700'
-      : signinState === 'unavailable'
-        ? 'border-amber-200 bg-amber-100 text-amber-500'
-        : 'bg-amber-600 text-white hover:bg-amber-700'
 
   const handleCreateFolder = () => {
     setCreateDialogOpen(true)
@@ -497,25 +452,12 @@ export function AppSidebar() {
         {/* ── Footer ────────────────────────────────────── */}
         <div className="border-border space-y-2 border-t px-3 py-3">
           <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium text-amber-800">{t('creditsTitle')}</p>
-                <div className="mt-1 flex items-center gap-2 text-amber-700">
-                  <Coins size={16} />
-                  <span className="text-lg font-semibold">
-                    {balance?.availableCredits ?? 0}
-                  </span>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant={signinButtonVariant}
-                disabled={signinButtonDisabled}
-                onClick={() => claimSignin.mutate()}
-                className={signinButtonClassName}
-              >
-                {signinButtonLabel}
-              </Button>
+            <p className="text-[11px] font-medium text-amber-800">{t('creditsTitle')}</p>
+            <div className="mt-1 flex items-center gap-2 text-amber-700">
+              <Coins size={16} />
+              <span className="text-lg font-semibold">
+                {balance?.availableCredits ?? 0}
+              </span>
             </div>
           </div>
 
@@ -578,7 +520,7 @@ export function AppSidebar() {
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
-                      <Sparkles size={12} />
+                      <ChevronRight size={12} />
                       {t('upgradeEntry')}
                     </span>
                     <span className="font-medium text-brand-600">

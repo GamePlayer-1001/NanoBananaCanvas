@@ -307,10 +307,7 @@ export function SubscriptionTab({
               <div className="mt-6 flex flex-1 flex-col">
                 <div className="space-y-3">
                   <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
-                  <SubscriptionStat
-                    label={t('subscriptionStorageIncluded')}
-                    value={t('subscriptionStorageValue', { value: 1 })}
-                  />
+                  <SubscriptionStat label={t('subscriptionEntryPointLabel')} value={t('subscriptionFreeEntryValue')} />
                 </div>
               </div>
 
@@ -393,8 +390,8 @@ export function SubscriptionTab({
                       value={plan.monthlyCredits.toLocaleString(locale)}
                     />
                     <SubscriptionStat
-                      label={t('subscriptionStorageIncluded')}
-                      value={t('subscriptionStorageValue', { value: plan.storageGB })}
+                      label={t('subscriptionDeliveryLabel')}
+                      value={selectedMode === 'plan_auto_monthly' ? t('subscriptionDeliveryRecurring') : t('subscriptionDeliveryOneTime')}
                     />
                   </div>
                 </div>

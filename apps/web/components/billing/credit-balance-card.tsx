@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/billing/credits 的 CreditBalanceSummary，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 CreditBalanceCard 余额摘要卡片
- * [POS]: billing 的资产概览组件，被 BillingContent 消费，负责展示双池积分与套餐镜像
+ * [POS]: billing 的资产概览组件，被 BillingContent 消费，负责展示可用积分、月度/永久余额、冻结积分与套餐镜像
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -70,24 +70,23 @@ export function CreditBalanceCard({ balance }: { balance: CreditBalanceSummary }
           </div>
           <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3">
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-              {t('storageAllowance')}
-            </p>
-            <p className="mt-1 text-lg font-semibold text-foreground">
-              {t('storageValue', { value: balance.storageGB })}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
               {t('lifetimeEarned')}
             </p>
             <p className="mt-1 text-lg font-semibold text-foreground">
               {balance.totalEarned.toLocaleString()}
             </p>
           </div>
+          <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              {t('totalSpentLabel')}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-foreground">
+              {balance.totalSpent.toLocaleString()}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span>{t('totalSpent', { value: balance.totalSpent.toLocaleString() })}</span>
           <span>{t('lastUpdated', { value: balance.updatedAt ?? t('notAvailable') })}</span>
         </div>
       </CardContent>
