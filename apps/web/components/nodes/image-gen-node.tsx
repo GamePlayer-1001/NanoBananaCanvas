@@ -321,7 +321,7 @@ export function ImageGenNode(props: NodeProps) {
         ) : null
       }
       minHeight={220}
-      bodyClassName="min-h-0"
+      bodyClassName="min-h-0 overflow-y-auto"
     >
       <div className="flex h-full min-h-0 flex-col gap-3">
         <ConfigField label={t('executionMode')}>
