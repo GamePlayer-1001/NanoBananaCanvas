@@ -22,10 +22,12 @@ import { BaseNode } from './base-node'
 export function ImageInputNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
+  const nodes = useFlowStore((s) => s.nodes)
   const updateNodeInternals = useUpdateNodeInternals()
   const t = useTranslations('nodes')
   const imageUrl = (data.config.imageUrl as string | undefined) ?? undefined
   const hasImage = Boolean(imageUrl)
+  const minNodeHeight = hasImage ? 240 : 250
 
   const onChange = useCallback(
     (url: string | undefined) => {
@@ -44,12 +46,42 @@ export function ImageInputNode(props: NodeProps) {
     return () => cancelAnimationFrame(rafId)
   }, [imageUrl, props.id, updateNodeInternals])
 
+  useEffect(() => {
+    const currentNode = nodes.find((node) => node.id === props.id)
+    const currentHeight = currentNode?.height
+    const currentStyleHeight =
+      typeof currentNode?.style?.height === 'number' ? currentNode.style.height : undefined
+    const effectiveHeight = currentHeight ?? currentStyleHeight
+
+    if (typeof effectiveHeight === 'number' && effectiveHeight >= minNodeHeight) {
+      return
+    }
+
+    const nextStyle = {
+      ...(currentNode?.style ?? {}),
+      height: minNodeHeight,
+    }
+
+    updateNodeData(props.id, {})
+    useFlowStore.setState((state) => ({
+      nodes: state.nodes.map((node) =>
+        node.id === props.id ? { ...node, style: nextStyle } : node,
+      ),
+    }))
+
+    const rafId = requestAnimationFrame(() => {
+      updateNodeInternals(props.id)
+    })
+
+    return () => cancelAnimationFrame(rafId)
+  }, [minNodeHeight, nodes, props.id, updateNodeData, updateNodeInternals])
+
   return (
     <BaseNode
       {...props}
       data={data}
       icon={<ImagePlus size={14} />}
-      minHeight={hasImage ? 240 : 250}
+      minHeight={minNodeHeight}
       bodyClassName="min-h-0"
     >
       <div className="flex h-full min-h-0 flex-col gap-2">

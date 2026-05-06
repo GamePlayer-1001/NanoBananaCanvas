@@ -139,8 +139,8 @@ export function BaseNode({
     setShowResizer(false)
   }, [])
 
-  const resolvedWidth = typeof width === 'number' ? Math.max(width, minWidth) : minWidth
-  const resolvedHeight = typeof height === 'number' ? Math.max(height, minHeight) : minHeight
+  const resolvedWidth = typeof width === 'number' ? width : minWidth
+  const resolvedHeight = typeof height === 'number' ? height : minHeight
 
   return (
     <div
