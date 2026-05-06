@@ -30,7 +30,7 @@ export function AgentHeader({
 }: AgentHeaderProps) {
   return (
     <div className="space-y-2">
-      {showIdentity || (historyLabel && onHistoryClick) ? (
+      {showIdentity || historyControl || (historyLabel && onHistoryClick) ? (
         <div className="flex items-start justify-between gap-3">
           {showIdentity ? (
             <div className="min-w-0 space-y-1">
