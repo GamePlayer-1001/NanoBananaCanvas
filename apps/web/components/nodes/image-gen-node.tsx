@@ -493,7 +493,7 @@ export function ImageGenNode(props: NodeProps) {
               ) : null}
             </div>
 
-            <div className="flex min-h-[120px] flex-1 items-center justify-center p-2">
+            <div className="bg-muted/30 flex min-h-[120px] flex-1 items-center justify-center overflow-hidden p-2">
               {resultUrl ? (
                 <img
                   src={resultUrl}

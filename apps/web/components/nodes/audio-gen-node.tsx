@@ -55,7 +55,6 @@ export function AudioGenNode(props: NodeProps) {
   const config = data.config
 
   /* ── Config values ─────────────────────────────────── */
-  const executionMode = 'user_key'
   const voice = (config.voice as string) ?? DEFAULT_VOICE
   const speed = (config.speed as number) ?? DEFAULT_SPEED
   const resultUrl = (config.resultUrl as string) ?? ''
@@ -208,9 +207,9 @@ export function AudioGenNode(props: NodeProps) {
                 <Loader2 size={10} className="animate-spin text-[var(--brand-500)]" />
               )}
             </div>
-            <div className="flex min-h-[88px] flex-1 items-center justify-center p-2">
+            <div className="bg-muted/30 flex min-h-[88px] flex-1 items-center justify-center overflow-hidden p-2">
               {resultUrl ? (
-                <audio src={resultUrl} controls className="nodrag nowheel w-full" />
+                <audio src={resultUrl} controls className="nodrag nowheel w-full max-w-full" />
               ) : (
                 <span className="text-muted-foreground text-xs italic">
                   {t('generating')}
