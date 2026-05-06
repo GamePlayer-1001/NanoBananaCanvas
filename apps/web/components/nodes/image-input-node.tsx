@@ -48,7 +48,7 @@ export function ImageInputNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<ImagePlus size={14} />}
-      minHeight={220}
+      minHeight={270}
       bodyClassName="min-h-0"
     >
       <div className="flex h-full min-h-0 flex-col gap-2">

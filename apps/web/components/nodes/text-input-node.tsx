@@ -35,7 +35,7 @@ export function TextInputNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<Type size={14} />}
-      minHeight={140}
+      minHeight={170}
       bodyClassName="min-h-0"
     >
       <textarea
