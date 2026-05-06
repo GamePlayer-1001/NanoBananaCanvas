@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
@@ -61,7 +61,6 @@ export function VideoGenNode(props: NodeProps) {
   const config = data.config
 
   /* ── Config values ─────────────────────────────────── */
-  const executionMode = 'user_key'
   const duration = (config.duration as string) ?? DEFAULT_DURATION
   const aspectRatio = (config.aspectRatio as string) ?? DEFAULT_ASPECT
   const mode = (config.mode as string) ?? DEFAULT_MODE
@@ -232,7 +231,7 @@ export function VideoGenNode(props: NodeProps) {
                 </div>
               )}
             </div>
-            <div className="flex min-h-[132px] flex-1 items-center justify-center p-2">
+            <div className="bg-muted/30 flex min-h-[132px] flex-1 items-center justify-center overflow-hidden p-2">
               {resultUrl ? (
                 <video
                   src={resultUrl}

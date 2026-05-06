@@ -23,6 +23,9 @@ import type { WorkflowNodeData } from '@/types'
 import { renderSimpleMarkdown } from '@/lib/utils/simple-markdown'
 import { BaseNode } from './base-node'
 
+const CONTENT_FRAME_CLASS =
+  'bg-muted/30 flex h-full min-h-0 w-full items-center justify-center overflow-hidden rounded-md border'
+
 /* ─── Copy Button ─────────────────────────────────────── */
 
 function CopyButton({ text }: { text: string }) {
@@ -137,7 +140,7 @@ export function DisplayNode(props: NodeProps) {
       }
     >
       {content != null && content !== '' ? (
-        <div className="nodrag nowheel flex h-full min-h-0 flex-col overflow-auto text-sm">
+        <div className="nodrag nowheel flex h-full min-h-0 flex-col overflow-hidden text-sm">
           <ContentRenderer content={content} />
         </div>
       ) : (
@@ -397,7 +400,7 @@ function getDownloadPayload(content: unknown): DownloadPayload | undefined {
 
 function JsonBlock({ value }: { value: unknown }) {
   return (
-    <pre className="overflow-auto rounded-md bg-slate-950/95 px-3 py-2 text-xs leading-5 text-slate-100">
+    <pre className="h-full min-h-0 overflow-auto rounded-md bg-slate-950/95 px-3 py-2 text-xs leading-5 text-slate-100">
       {JSON.stringify(value, null, 2)}
     </pre>
   )
@@ -412,7 +415,7 @@ function ContentRenderer({ content }: { content: unknown }) {
     }
 
     return (
-      <div className="space-y-3">
+      <div className="h-full min-h-0 space-y-3 overflow-auto pr-1">
         {content.map((item, index) => (
           <div key={index} className="space-y-1">
             <div className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase">
@@ -432,7 +435,7 @@ function ContentRenderer({ content }: { content: unknown }) {
 
     if (type === 'text') {
       return (
-        <div className="prose prose-sm max-w-none break-words text-sm">
+        <div className="prose prose-sm h-full max-w-none overflow-auto break-words pr-1 text-sm">
           {renderSimpleMarkdown(primitive)}
         </div>
       )
@@ -460,7 +463,7 @@ function ContentRenderer({ content }: { content: unknown }) {
     }
 
     return (
-      <div className="space-y-3">
+      <div className="h-full min-h-0 space-y-3 overflow-auto pr-1">
         {Object.entries(content).map(([key, value]) => (
           <div key={key} className="space-y-1">
             <div className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase">
@@ -492,27 +495,41 @@ function MediaRenderer({
   switch (type) {
     case 'image':
       return content ? (
-        <img
-          src={content}
-          alt="Generated"
-          className="h-full max-h-full w-full object-contain"
-        />
+        <div className={CONTENT_FRAME_CLASS}>
+          <img
+            src={content}
+            alt="Generated"
+            className="h-full max-h-full w-full object-contain"
+          />
+        </div>
       ) : (
         <JsonBlock value={fallback} />
       )
     case 'video':
       return content ? (
-        <video src={content} controls className="h-full max-h-full w-full bg-black object-contain" />
+        <div className={CONTENT_FRAME_CLASS}>
+          <video
+            src={content}
+            controls
+            className="h-full max-h-full w-full bg-black object-contain"
+          />
+        </div>
       ) : (
         <JsonBlock value={fallback} />
       )
     case 'audio':
-      return content ? <audio src={content} controls className="w-full" /> : <JsonBlock value={fallback} />
+      return content ? (
+        <div className={CONTENT_FRAME_CLASS}>
+          <audio src={content} controls className="w-full max-w-full" />
+        </div>
+      ) : (
+        <JsonBlock value={fallback} />
+      )
     case 'json':
       return <JsonBlock value={fallback} />
     default:
       return typeof content === 'string' ? (
-        <div className="prose prose-sm max-w-none break-words text-sm">
+        <div className="prose prose-sm h-full max-w-none overflow-auto break-words pr-1 text-sm">
           {renderSimpleMarkdown(content)}
         </div>
       ) : (

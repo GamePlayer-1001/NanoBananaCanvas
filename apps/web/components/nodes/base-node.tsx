@@ -149,7 +149,7 @@ export function BaseNode({
       onMouseLeave={hideResizer}
       style={{ width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }}
       className={cn(
-        'bg-card relative flex h-full w-full flex-col rounded-lg border shadow-sm',
+        'bg-card relative flex h-full w-full flex-col overflow-hidden rounded-lg border shadow-sm',
         'transition-shadow duration-150',
         selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
       )}
