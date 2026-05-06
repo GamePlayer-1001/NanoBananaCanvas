@@ -540,6 +540,7 @@ export default function CanvasPage({
                       : undefined
                   }
                   historyControl={historyControl}
+                  showIdentity={false}
                 />
               )}
               conversation={(
