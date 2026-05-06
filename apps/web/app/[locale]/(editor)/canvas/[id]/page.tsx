@@ -15,14 +15,24 @@
 
 import { use, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Loader2, Monitor } from 'lucide-react'
+import { CheckCircle2, ChevronDown, History, Loader2, Monitor, Sparkles, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ReactFlowProvider } from '@xyflow/react'
 import { AgentComposer } from '@/components/agent/agent-composer'
 import { AgentConversation } from '@/components/agent/agent-conversation'
 import { AgentChangeLogSheet } from '@/components/agent/agent-change-log-sheet'
+import { AgentHeader } from '@/components/agent/agent-header'
 import { AgentPanel } from '@/components/agent/agent-panel'
 import { AgentQuickActions } from '@/components/agent/agent-quick-actions'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
@@ -50,6 +60,21 @@ const Canvas = dynamic(
 )
 
 const EMPTY_VIEWPORT = { x: 0, y: 0, zoom: 1 } as const
+const AGENT_HISTORY_STORAGE_KEY = 'nbc:agent-history:v1'
+const AGENT_HISTORY_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000
+const AGENT_HISTORY_MAX_ITEMS_PER_WORKFLOW = 12
+
+type AgentHistoryStatus = 'completed' | 'failed' | 'in_progress'
+
+interface AgentHistoryItem {
+  id: string
+  workflowId: string
+  workflowName?: string
+  userMessage: string
+  assistantSummary: string
+  status: AgentHistoryStatus
+  createdAt: string
+}
 
 /* ─── Page ────────────────────────────────────────────── */
 
@@ -84,6 +109,8 @@ export default function CanvasPage({
   const [changeLogItems, setChangeLogItems] = useState<string[]>([])
   const [composerExecutionMode, setComposerExecutionMode] = useState<'platform' | 'user_key'>('platform')
   const [composerModel, setComposerModel] = useState<string>('instant')
+  const [historyItems, setHistoryItems] = useState<AgentHistoryItem[]>([])
+  const [activeHistoryItemId, setActiveHistoryItemId] = useState<string | null>(null)
   const workflowName =
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
       ? String((data as Record<string, unknown>).name)
@@ -159,11 +186,17 @@ export default function CanvasPage({
     useWorkflowMetadataStore.getState().setTemplate(null)
     useWorkflowMetadataStore.getState().setAuditTrail([])
     resetSession()
+    setActiveHistoryItemId(null)
+    setHistoryItems(readAgentHistory(id))
     // 把进入页面时已经存在的执行/任务摘要当作基线，避免旧状态被重新灌回新会话。
     lastExecutionLabelRef.current = executionLabel
     lastActiveTaskLabelRef.current = activeTaskLabel
     emittedTerminalTaskIdsRef.current = new Set(terminalEvents.map((event) => event.taskId))
   }, [activeTaskLabel, executionLabel, id, resetSession, terminalEvents])
+
+  useEffect(() => {
+    setHistoryItems(readAgentHistory(id))
+  }, [id])
 
   useEffect(() => {
     let cancelled = false
@@ -324,25 +357,31 @@ export default function CanvasPage({
     if (lastExecutionLabelRef.current === executionLabel) return
     lastExecutionLabelRef.current = executionLabel
 
+    if (messages.length === 0) {
+      return
+    }
+
     appendMessage({
       id: crypto.randomUUID(),
       role: 'process',
       text: executionLabel,
       createdAt: new Date().toISOString(),
     })
-  }, [appendMessage, executionLabel])
+  }, [appendMessage, executionLabel, messages.length])
 
   useEffect(() => {
     if (!activeTaskLabel) return
     if (lastActiveTaskLabelRef.current === activeTaskLabel) return
     lastActiveTaskLabelRef.current = activeTaskLabel
 
-    appendMessage({
-      id: crypto.randomUUID(),
-      role: 'process',
-      text: activeTaskLabel,
-      createdAt: new Date().toISOString(),
-    })
+    if (messages.length > 0) {
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'process',
+        text: activeTaskLabel,
+        createdAt: new Date().toISOString(),
+      })
+    }
   }, [activeTaskLabel, appendMessage])
 
   useEffect(() => {
@@ -351,6 +390,9 @@ export default function CanvasPage({
     for (const event of terminalEvents) {
       if (emittedTerminalTaskIdsRef.current.has(event.taskId)) continue
       emittedTerminalTaskIdsRef.current.add(event.taskId)
+      if (messages.length === 0) {
+        continue
+      }
       if (event.tone === 'diagnosis') {
         appendMessage({
           id: crypto.randomUUID(),
@@ -368,7 +410,105 @@ export default function CanvasPage({
         })
       }
     }
-  }, [appendMessage, terminalEvents])
+  }, [appendMessage, messages.length, terminalEvents])
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      return
+    }
+
+    const snapshot = buildAgentHistorySnapshot({
+      workflowId: id,
+      workflowName,
+      messages,
+      status,
+    })
+
+    if (!snapshot) {
+      return
+    }
+
+    const nextItems = writeAgentHistory(snapshot)
+    setHistoryItems(nextItems.filter((item) => item.workflowId === id))
+  }, [id, messages, status, workflowName])
+
+  const activeHistoryItem = useMemo(
+    () => historyItems.find((item) => item.id === activeHistoryItemId) ?? null,
+    [activeHistoryItemId, historyItems],
+  )
+
+  const historyControl = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="rounded-full px-3 text-xs text-slate-500 hover:text-slate-900"
+        >
+          <History size={14} />
+          {tAgent('historyMenuLabel')}
+          <ChevronDown size={14} />
+        </Button>
+      </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[320px] rounded-2xl p-2">
+        <DropdownMenuLabel className="px-2 text-xs text-slate-500">
+          {tAgent('historyMenuDescription')}
+        </DropdownMenuLabel>
+        <DropdownMenuItem
+          className="rounded-xl px-3 py-2.5"
+          onClick={() => setActiveHistoryItemId(null)}
+        >
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-indigo-500" />
+              <p className="truncate text-xs font-medium text-slate-900">
+                {tAgent('historyMenuCurrentSession')}
+              </p>
+            </div>
+            <p className="text-[11px] leading-5 text-slate-500">
+              {tAgent('historyMenuCurrentSessionDescription')}
+            </p>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {historyItems.length === 0 ? (
+          <div className="px-3 py-5 text-xs leading-6 text-slate-500">
+            {tAgent('historyMenuEmpty')}
+          </div>
+        ) : (
+          historyItems.map((item) => (
+            <DropdownMenuItem
+              key={item.id}
+              className="items-start rounded-xl px-3 py-2.5"
+              onClick={() => setActiveHistoryItemId(item.id)}
+            >
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  {item.status === 'completed' ? (
+                    <CheckCircle2 size={14} className="text-emerald-500" />
+                  ) : item.status === 'failed' ? (
+                    <XCircle size={14} className="text-amber-500" />
+                  ) : (
+                    <Sparkles size={14} className="text-indigo-500" />
+                  )}
+                  <p className="truncate text-xs font-medium text-slate-900">
+                    {item.userMessage}
+                  </p>
+                </div>
+                <p className="line-clamp-2 text-[11px] leading-5 text-slate-500">
+                  {item.assistantSummary}
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  {formatHistoryTimestamp(item.createdAt)}
+                </p>
+              </div>
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 
   if (isLoading) {
     return (
@@ -390,9 +530,25 @@ export default function CanvasPage({
             <Canvas workflowId={id} canEdit={canEdit} />
             <AgentPanel
               className="w-[400px]"
+              header={(
+                <AgentHeader
+                  contextLabel={
+                    activeHistoryItem
+                      ? tAgent('historyViewingContext', {
+                          time: formatHistoryTimestamp(activeHistoryItem.createdAt),
+                        })
+                      : undefined
+                  }
+                  historyControl={historyControl}
+                />
+              )}
               conversation={(
                 <AgentConversation
-                  items={conversationItems}
+                  items={
+                    activeHistoryItem
+                      ? buildConversationItemsFromHistory(activeHistoryItem)
+                      : conversationItems
+                  }
                   emptyState={tAgent('emptyState')}
                   hero={(
                     <div className="flex h-full min-h-[320px] w-full items-center justify-center px-8 text-center">
@@ -415,10 +571,16 @@ export default function CanvasPage({
               )}
               quickActions={(
                 <AgentQuickActions
-                  title={messages.length > 0 ? tAgent('quickActionsTitle') : undefined}
+                  title={
+                    !activeHistoryItem && messages.length > 0
+                      ? tAgent('quickActionsTitle')
+                      : undefined
+                  }
                   compact
                   actions={
-                    pendingPlan
+                    activeHistoryItem
+                      ? []
+                      : pendingPlan
                       ? []
                       : messages.length === 0
                         ? heroActions
@@ -474,7 +636,7 @@ export default function CanvasPage({
               )}
               composer={(
                 <AgentComposer
-                  disabled={isSubmitting || isApplying}
+                  disabled={isSubmitting || isApplying || Boolean(activeHistoryItem)}
                   modelOptions={modelOptions}
                   modelValue={resolvedComposerModel}
                   onModelChange={setComposerModel}
@@ -485,6 +647,8 @@ export default function CanvasPage({
                       ? tAgent('hintApplying')
                       : isSubmitting
                       ? tAgent('hintSubmitting')
+                      : activeHistoryItem
+                      ? tAgent('historyViewingHint')
                       : tAgent('hintIdle')
                   }
                   submitLabel={t('run')}
@@ -529,6 +693,142 @@ function toConversationRole(
   >,
 ): 'user' | 'assistant' | 'diagnosis' {
   return message.role
+}
+
+function readAgentHistory(workflowId: string): AgentHistoryItem[] {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    const raw = window.localStorage.getItem(AGENT_HISTORY_STORAGE_KEY)
+    if (!raw) {
+      return []
+    }
+
+    const parsed = JSON.parse(raw) as AgentHistoryItem[]
+    const now = Date.now()
+    const filtered = parsed
+      .filter((item) => now - new Date(item.createdAt).getTime() <= AGENT_HISTORY_MAX_AGE_MS)
+      .filter((item) => item.workflowId === workflowId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    return filtered
+  } catch {
+    return []
+  }
+}
+
+function writeAgentHistory(nextItem: AgentHistoryItem): AgentHistoryItem[] {
+  if (typeof window === 'undefined') {
+    return [nextItem]
+  }
+
+  const existing = readAllAgentHistory()
+  const deduped = existing.filter((item) => item.id !== nextItem.id)
+  const nextItems = [nextItem, ...deduped]
+    .filter((item) => Date.now() - new Date(item.createdAt).getTime() <= AGENT_HISTORY_MAX_AGE_MS)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const byWorkflow = new Map<string, AgentHistoryItem[]>()
+  for (const item of nextItems) {
+    const bucket = byWorkflow.get(item.workflowId) ?? []
+    if (bucket.length < AGENT_HISTORY_MAX_ITEMS_PER_WORKFLOW) {
+      bucket.push(item)
+      byWorkflow.set(item.workflowId, bucket)
+    }
+  }
+
+  const flattened = Array.from(byWorkflow.values()).flat()
+  window.localStorage.setItem(AGENT_HISTORY_STORAGE_KEY, JSON.stringify(flattened))
+  return flattened
+}
+
+function readAllAgentHistory(): AgentHistoryItem[] {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    const raw = window.localStorage.getItem(AGENT_HISTORY_STORAGE_KEY)
+    if (!raw) {
+      return []
+    }
+
+    return JSON.parse(raw) as AgentHistoryItem[]
+  } catch {
+    return []
+  }
+}
+
+function buildAgentHistorySnapshot(input: {
+  workflowId: string
+  workflowName?: string
+  messages: AgentMessage[]
+  status: string
+}): AgentHistoryItem | null {
+  const meaningfulMessages = input.messages.filter(
+    (message) => message.role === 'user' || message.role === 'assistant' || message.role === 'diagnosis',
+  )
+
+  const firstUserMessage = meaningfulMessages.find((message) => message.role === 'user')
+  const latestAssistantLikeMessage = [...meaningfulMessages]
+    .reverse()
+    .find((message) => message.role === 'assistant' || message.role === 'diagnosis')
+
+  if (!firstUserMessage || !latestAssistantLikeMessage) {
+    return null
+  }
+
+  const status: AgentHistoryStatus =
+    input.status === 'error'
+      ? 'failed'
+      : input.status === 'idle'
+        ? 'completed'
+        : 'in_progress'
+
+  return {
+    id: `${input.workflowId}:${firstUserMessage.createdAt}`,
+    workflowId: input.workflowId,
+    workflowName: input.workflowName,
+    userMessage: firstUserMessage.text,
+    assistantSummary: latestAssistantLikeMessage.text,
+    status,
+    createdAt: latestAssistantLikeMessage.createdAt,
+  }
+}
+
+function buildConversationItemsFromHistory(item: AgentHistoryItem) {
+  return [
+    {
+      id: `${item.id}:user`,
+      type: 'message' as const,
+      role: 'user' as const,
+      text: item.userMessage,
+      timestamp: formatHistoryTimestamp(item.createdAt),
+    },
+    {
+      id: `${item.id}:assistant`,
+      type: 'message' as const,
+      role: item.status === 'failed' ? ('diagnosis' as const) : ('assistant' as const),
+      text: item.assistantSummary,
+      timestamp: formatHistoryTimestamp(item.createdAt),
+    },
+  ]
+}
+
+function formatHistoryTimestamp(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 /* ─── Mobile Guard ──────────────────────────────────── */

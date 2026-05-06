@@ -5,6 +5,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import type { ReactNode } from 'react'
 import { History, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -14,6 +15,7 @@ interface AgentHeaderProps {
   contextLabel?: string
   historyLabel?: string
   onHistoryClick?: () => void
+  historyControl?: ReactNode
   showIdentity?: boolean
 }
 
@@ -23,6 +25,7 @@ export function AgentHeader({
   contextLabel,
   historyLabel,
   onHistoryClick,
+  historyControl,
   showIdentity = true,
 }: AgentHeaderProps) {
   return (
@@ -45,7 +48,7 @@ export function AgentHeader({
             <div />
           )}
 
-          {historyLabel && onHistoryClick ? (
+          {historyControl ? historyControl : historyLabel && onHistoryClick ? (
             <Button
               type="button"
               size="sm"
