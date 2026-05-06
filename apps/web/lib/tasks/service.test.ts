@@ -584,29 +584,34 @@ describe('submitTask', () => {
     })
 
     const taskId = 'task-comfly-image-replay'
-    r2Mock.get.mockResolvedValue({
-      json: async () => ({
-        taskType: 'image_gen',
-        requestProvider: 'comfly',
-        resolvedProvider: 'comfly',
-        resolvedModelId: 'gpt-image-2',
-        executionMode: 'platform',
-        resolvedInput: {
-          prompt: '参考图增强质感',
-          size: '1024x1024',
-          aspectRatio: '1:1',
-          imageUrl: 'https://example.com/reference.png',
-        },
-        originalInput: {
-          prompt: '参考图增强质感',
-          imageUrl: 'https://example.com/reference.png',
-        },
-        apiKey: 'platform-key',
-        runtimeMeta: {
-          orchestrator: 'legacy_queue',
-        },
-      }),
-    })
+    r2Mock.get
+      .mockResolvedValueOnce({
+        json: async () => ({
+          taskType: 'image_gen',
+          requestProvider: 'comfly',
+          resolvedProvider: 'comfly',
+          resolvedModelId: 'gpt-image-2',
+          executionMode: 'platform',
+          resolvedInput: {
+            prompt: '参考图增强质感',
+            size: '1024x1024',
+            aspectRatio: '1:1',
+            imageUrl: 'https://example.com/reference.png',
+          },
+          originalInput: {
+            prompt: '参考图增强质感',
+            imageUrl: 'https://example.com/reference.png',
+          },
+          apiKey: 'platform-key',
+          runtimeMeta: {
+            orchestrator: 'legacy_queue',
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        httpMetadata: { contentType: 'image/png' },
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+      })
 
     const queuedDb = createDbMock(0, {
       id: taskId,
@@ -655,9 +660,19 @@ describe('submitTask', () => {
           aspectRatio: '1:1',
           imageUrl: 'https://example.com/reference.png',
         }),
+        loadInternalReferenceImageAsset: expect.any(Function),
       },
       'platform-key',
     )
+
+    const submitCall = submitMock.mock.calls[0]?.[0] as {
+      loadInternalReferenceImageAsset?: (r2Key: string) => Promise<{ filename: string; blob: Blob }>
+    }
+    const loadedAsset = await submitCall.loadInternalReferenceImageAsset?.('uploads/demo/reference.png')
+    expect(r2Mock.get).toHaveBeenCalledWith('uploads/demo/reference.png')
+    expect(loadedAsset?.filename).toBe('reference.png')
+    expect(loadedAsset?.blob.type).toBe('image/png')
+
     expect(r2Mock.delete).toHaveBeenCalledWith(`task-inputs/user-1/${taskId}.json`)
   })
 

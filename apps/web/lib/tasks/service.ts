@@ -1683,8 +1683,37 @@ async function executeTaskRequest(
 
   try {
     const processor = getProcessor(taskType, initialResolvedProvider)
+    const loadInternalReferenceImageAsset = async (r2Key: string) => {
+      const r2 = await runtime.getR2()
+      const object = await r2.get(r2Key)
+
+      if (!object) {
+        throw new Error(`Reference image not found in internal storage: ${r2Key}`)
+      }
+
+      const buffer = await object.arrayBuffer()
+      const mimeType = object.httpMetadata?.contentType ?? 'image/png'
+      const extension =
+        mimeType === 'image/jpeg'
+          ? 'jpg'
+          : mimeType === 'image/webp'
+            ? 'webp'
+            : mimeType === 'image/gif'
+              ? 'gif'
+              : 'png'
+
+      return {
+        blob: new Blob([buffer], { type: mimeType }),
+        filename: `reference.${extension}`,
+      }
+    }
+
     const submitResult = await processor.submit(
-      { model: resolvedModelId, params: resolvedInput },
+      {
+        model: resolvedModelId,
+        params: resolvedInput,
+        loadInternalReferenceImageAsset,
+      },
       apiKey,
     )
     const resolvedProvider = submitResult.providerOverride ?? initialResolvedProvider

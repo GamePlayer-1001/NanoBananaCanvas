@@ -11,7 +11,6 @@ import {
   type ImageModelCapabilities,
 } from '@/lib/image-model-capabilities'
 import { createLogger } from '@/lib/logger'
-import { getR2 } from '@/lib/r2'
 import { BASE_URL } from '@/lib/seo'
 import { extractR2KeyFromFileUrl } from '@/lib/storage'
 
@@ -169,9 +168,10 @@ function resolveInternalReferenceImageR2Key(imageUrl: string): string | null {
   }
 }
 
-async function loadInternalReferenceImageAsset(
+async function loadInternalReferenceImageAssetViaWebRuntime(
   r2Key: string,
 ): Promise<{ blob: Blob; filename: string }> {
+  const { getR2 } = await import('@/lib/r2')
   const r2 = await getR2()
   const object = await r2.get(r2Key)
 
@@ -191,10 +191,14 @@ async function loadInternalReferenceImageAsset(
 
 async function fetchReferenceImageAsset(
   imageUrl: string,
+  loadInternalReferenceImageAsset?: (
+    r2Key: string,
+  ) => Promise<{ blob: Blob; filename: string }>,
 ): Promise<{ blob: Blob; filename: string }> {
   const internalR2Key = resolveInternalReferenceImageR2Key(imageUrl)
   if (internalR2Key) {
-    return loadInternalReferenceImageAsset(internalR2Key)
+    const loader = loadInternalReferenceImageAsset ?? loadInternalReferenceImageAssetViaWebRuntime
+    return loader(internalR2Key)
   }
 
   const res = await fetch(imageUrl)
@@ -219,8 +223,14 @@ async function buildMultipartImageEditRequestInit(
   prompt: string,
   size: string,
   referenceImageUrl: string,
+  loadInternalReferenceImageAsset?: (
+    r2Key: string,
+  ) => Promise<{ blob: Blob; filename: string }>,
 ): Promise<RequestInit> {
-  const { blob, filename } = await fetchReferenceImageAsset(referenceImageUrl)
+  const { blob, filename } = await fetchReferenceImageAsset(
+    referenceImageUrl,
+    loadInternalReferenceImageAsset,
+  )
   const formData = new FormData()
   formData.append('model', model)
   formData.append('prompt', prompt)
@@ -463,6 +473,7 @@ async function openAICompatibleSubmit(
           prompt,
           size,
           referenceImageUrl,
+          input.loadInternalReferenceImageAsset,
         )
       : {
           method: 'POST',
@@ -560,6 +571,7 @@ async function dlapiSubmit(
           prompt,
           size,
           referenceImageUrl,
+          input.loadInternalReferenceImageAsset,
         )
         const formData = multipartRequest.body as FormData
         formData.append('async', 'true')
