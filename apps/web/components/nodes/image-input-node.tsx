@@ -25,6 +25,7 @@ export function ImageInputNode(props: NodeProps) {
   const updateNodeInternals = useUpdateNodeInternals()
   const t = useTranslations('nodes')
   const imageUrl = (data.config.imageUrl as string | undefined) ?? undefined
+  const hasImage = Boolean(imageUrl)
 
   const onChange = useCallback(
     (url: string | undefined) => {
@@ -48,12 +49,20 @@ export function ImageInputNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<ImagePlus size={14} />}
-      minHeight={270}
+      minHeight={hasImage ? 240 : 220}
       bodyClassName="min-h-0"
     >
       <div className="flex h-full min-h-0 flex-col gap-2">
-        <div className="text-muted-foreground text-xs">{t('imageInputHint')}</div>
-        <div className="h-[160px] max-h-[160px] min-h-[160px] overflow-hidden rounded-lg">
+        {!hasImage ? (
+          <div className="text-muted-foreground text-xs">{t('imageInputHint')}</div>
+        ) : null}
+        <div
+          className={
+            hasImage
+              ? 'min-h-0 flex-1 overflow-hidden rounded-lg'
+              : 'h-[160px] max-h-[160px] min-h-[160px] overflow-hidden rounded-lg'
+          }
+        >
           <ImageUpload value={imageUrl} onChange={onChange} className="h-full w-full" />
         </div>
       </div>
