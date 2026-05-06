@@ -479,11 +479,10 @@ async function observeWorkflowTaskState(
     await db
       .prepare(
         `UPDATE async_tasks
-         SET status = 'running', progress = ?,
-             started_at = COALESCE(started_at, ?), last_checked_at = ?, updated_at = ?
+         SET last_checked_at = ?, updated_at = ?
          WHERE id = ? AND user_id = ? AND status = 'pending'`,
       )
-      .bind(5, nowIso, nowIso, nowIso, row.id, row.user_id)
+      .bind(nowIso, nowIso, row.id, row.user_id)
       .run()
 
     const refreshedRow = await loadTaskRow(db, row.id, row.user_id)

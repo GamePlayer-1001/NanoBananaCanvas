@@ -337,7 +337,7 @@ describe('submitTask', () => {
     })
 
     expect(task.id).toBe('active-task-1')
-    expect(task.status).toBe('running')
+    expect(task.status).toBe('pending')
     expect(
       db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks')),
     ).toBe(false)
@@ -1054,6 +1054,60 @@ describe('submitTask', () => {
         (call) =>
           call.sql.includes('SET last_checked_at = ?, updated_at = ?') &&
           call.args[2] === 'task-workflow-queued-stale',
+      ),
+    ).toBe(true)
+  })
+
+  it('does not promote pending workflow tasks to running while only observing workflow progress', async () => {
+    const createdAt = new Date().toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-workflow-running-observe-only',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'user_key',
+      input_data: JSON.stringify({
+        prompt: '一个女孩',
+        size: 'auto',
+        aspectRatio: '16:9',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+          userConfigId: 'image-config',
+        },
+      }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: null,
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: createdAt,
+      started_at: null,
+      completed_at: null,
+      updated_at: createdAt,
+    })
+
+    const detail = await checkTask(pollingDb, 'task-workflow-running-observe-only', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'running',
+      }),
+    })
+
+    expect(detail.status).toBe('pending')
+    expect(
+      pollingDb.__calls.some(
+        (call) =>
+          call.sql.includes('SET last_checked_at = ?, updated_at = ?') &&
+          !call.sql.includes("SET status = 'running'") &&
+          call.args[2] === 'task-workflow-running-observe-only',
       ),
     ).toBe(true)
   })
