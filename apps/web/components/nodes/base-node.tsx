@@ -143,7 +143,7 @@ export function BaseNode({
 
   const resolvedWidth = typeof width === 'number' ? width : minWidth
   const resolvedHeight = typeof height === 'number' ? height : minHeight
-  const isContentHeight = heightMode === 'content' && typeof height !== 'number'
+  const isContentHeight = heightMode === 'content'
   const containerStyle =
     isContentHeight
       ? { width: resolvedWidth, minWidth, minHeight }
