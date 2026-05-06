@@ -148,11 +148,7 @@ export function BaseNode({
       onMouseMove={updateResizeHover}
       onMouseLeave={hideResizer}
       style={{ width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }}
-      className={cn(
-        'bg-card relative flex h-full w-full flex-col overflow-hidden rounded-lg border shadow-sm',
-        'transition-shadow duration-150',
-        selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
-      )}
+      className="relative"
     >
       {resizable ? (
         <NodeResizer
@@ -164,16 +160,24 @@ export function BaseNode({
         />
       ) : null}
 
-      {/* ── Header ───────────────────────────────────── */}
-      <div className="border-border flex items-center gap-2 border-b px-3 py-2">
-        <div className={cn('h-2 w-2 rounded-full', STATUS_COLORS[status])} />
-        {icon && <span className="text-muted-foreground">{icon}</span>}
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">{data.label}</span>
-        {headerRight}
-      </div>
+      <div
+        className={cn(
+          'bg-card relative flex h-full w-full flex-col overflow-hidden rounded-lg border shadow-sm',
+          'transition-shadow duration-150',
+          selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
+        )}
+      >
+        {/* ── Header ───────────────────────────────────── */}
+        <div className="border-border flex items-center gap-2 border-b px-3 py-2">
+          <div className={cn('h-2 w-2 rounded-full', STATUS_COLORS[status])} />
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">{data.label}</span>
+          {headerRight}
+        </div>
 
-      {/* ── Body ─────────────────────────────────────── */}
-      <div className={cn('flex min-h-0 flex-1 flex-col p-3', bodyClassName)}>{children}</div>
+        {/* ── Body ─────────────────────────────────────── */}
+        <div className={cn('flex min-h-0 flex-1 flex-col p-3', bodyClassName)}>{children}</div>
+      </div>
 
       {/* ── Input Handles ────────────────────────────── */}
       {inputPorts.map((port, i) => (

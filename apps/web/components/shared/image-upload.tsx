@@ -87,8 +87,8 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   /* ── Render ────────────────────────────────────── */
   if (value) {
     return (
-      <div className={`bg-muted relative flex min-h-0 items-center justify-center overflow-hidden rounded-lg border border-border ${className ?? ''}`}>
-        <img src={value} alt="" className="h-full max-h-full w-full max-w-full object-contain" />
+      <div className={`bg-muted relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg border border-border ${className ?? ''}`}>
+        <img src={value} alt="" className="h-full w-full object-contain" />
         <button
           type="button"
           onClick={onRemove}

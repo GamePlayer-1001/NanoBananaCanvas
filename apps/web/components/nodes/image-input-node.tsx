@@ -8,8 +8,8 @@
 
 'use client'
 
-import { useCallback } from 'react'
-import type { NodeProps } from '@xyflow/react'
+import { useCallback, useEffect } from 'react'
+import { useUpdateNodeInternals, type NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { ImagePlus } from 'lucide-react'
 
@@ -22,6 +22,7 @@ import { BaseNode } from './base-node'
 export function ImageInputNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
+  const updateNodeInternals = useUpdateNodeInternals()
   const t = useTranslations('nodes')
   const imageUrl = (data.config.imageUrl as string | undefined) ?? undefined
 
@@ -34,6 +35,14 @@ export function ImageInputNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      updateNodeInternals(props.id)
+    })
+
+    return () => cancelAnimationFrame(rafId)
+  }, [imageUrl, props.id, updateNodeInternals])
+
   return (
     <BaseNode
       {...props}
@@ -44,8 +53,8 @@ export function ImageInputNode(props: NodeProps) {
     >
       <div className="flex h-full min-h-0 flex-col gap-2">
         <div className="text-muted-foreground text-xs">{t('imageInputHint')}</div>
-        <div className="min-h-0 flex-1 overflow-hidden rounded-lg">
-          <ImageUpload value={imageUrl} onChange={onChange} className="h-full min-h-[128px] w-full" />
+        <div className="h-[160px] max-h-[160px] min-h-[160px] overflow-hidden rounded-lg">
+          <ImageUpload value={imageUrl} onChange={onChange} className="h-full w-full" />
         </div>
       </div>
     </BaseNode>
