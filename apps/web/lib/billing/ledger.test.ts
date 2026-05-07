@@ -47,6 +47,7 @@ function createDbMock(options: {
   balanceRow?: Record<string, unknown> | null
   referenceRows?: Record<string, unknown>[]
   dailySigninRow?: Record<string, unknown> | null
+  userRow?: Record<string, unknown> | null
   hasDailySigninsTable?: boolean
   dailySigninsColumns?: string[]
   tableColumns?: Record<string, string[]>
@@ -55,7 +56,7 @@ function createDbMock(options: {
 }) {
   const recordedBatches = options.recordedBatches ?? []
   const defaultColumnsByTable: Record<string, string[]> = {
-    users: ['id'],
+    users: ['id', 'timezone'],
     subscriptions: ['user_id'],
     credit_balances: [
       'user_id',
@@ -145,6 +146,14 @@ function createDbMock(options: {
         return {
           bind: vi.fn(() => ({
             first: vi.fn().mockResolvedValue(options.dailySigninRow ?? null),
+          })),
+        }
+      }
+
+      if (sql.includes('SELECT timezone FROM users WHERE id = ?')) {
+        return {
+          bind: vi.fn(() => ({
+            first: vi.fn().mockResolvedValue(options.userRow ?? null),
           })),
         }
       }
@@ -630,5 +639,87 @@ describe('billing ledger', () => {
     expect(recordedBatches).toHaveLength(1)
     expect(recordedBatches[0]?.[0]?.sql).toContain('UPDATE credit_balances')
     expect(recordedBatches[0]?.[1]?.sql).toContain('INSERT INTO daily_signins')
+  })
+
+  it('uses the stored account timezone before the reported browser timezone', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-08T03:30:00.000Z'))
+
+    try {
+      vi.mocked(getDb).mockResolvedValue(
+        createDbMock({
+          userRow: {
+            timezone: 'Asia/Shanghai',
+          },
+          dailySigninRow: { id: 'signin_1' },
+        }),
+      )
+
+      await expect(
+        getDailySigninStatus('user-1', {
+          reportedTimezone: 'America/Los_Angeles',
+        }),
+      ).resolves.toEqual({
+        status: 'claimed',
+        available: true,
+        checkedInToday: true,
+        trialBalance: 0,
+        trialExpiresAt: null,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('persists the reported browser timezone and computes expiry with the account-local midnight', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-08T03:30:00.000Z'))
+
+    try {
+      const recordedBatches: Array<Array<{ sql: string; args: unknown[] }>> = []
+      vi.mocked(getDb).mockResolvedValue(
+        createDbMock({
+          userRow: {
+            timezone: null,
+          },
+          balanceRow: {
+            trial_balance: 0,
+            trial_expires_at: null,
+            monthly_balance: 10,
+            permanent_balance: 20,
+            frozen_credits: 0,
+            total_earned: 30,
+            total_spent: 0,
+          },
+          recordedBatches,
+        }),
+      )
+
+      await expect(
+        awardDailySigninCredits('user-1', {
+          reportedTimezone: 'Asia/Shanghai',
+        }),
+      ).resolves.toMatchObject({
+        creditsAwarded: 100,
+        expiresAt: '2026-05-08T16:00:00.000Z',
+        trialBalance: 100,
+      })
+
+      expect(recordedBatches[0]?.[0]?.args).toEqual([
+        100,
+        '2026-05-08T16:00:00.000Z',
+        130,
+        'user-1',
+      ])
+      expect(recordedBatches[0]?.[1]?.args).toEqual([
+        'txn_test_id',
+        'user-1',
+        '2026-05-08',
+        100,
+        '2026-05-08T16:00:00.000Z',
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

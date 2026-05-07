@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   last_name     TEXT NOT NULL DEFAULT '',
   name          TEXT NOT NULL DEFAULT '',
   avatar_url    TEXT DEFAULT '',
+  timezone      TEXT,
   plan          TEXT NOT NULL DEFAULT 'free',
   membership_status TEXT NOT NULL DEFAULT 'free',
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),

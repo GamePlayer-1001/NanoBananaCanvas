@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query，依赖 @/lib/query/keys 的 queryKeys
  * [OUTPUT]: 对外提供 useCreditBalance 当前用户积分余额数据与 useDailySigninStatus 每日签到状态
- * [POS]: hooks 的账单数据层，被 sidebar/billing 等界面消费，负责读取本地账本余额摘要
+ * [POS]: hooks 的账单数据层，被 sidebar/billing 等界面消费，负责读取本地账本余额摘要，并在查询签到状态时附带浏览器时区
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -38,10 +38,23 @@ export interface DailySigninStatus {
   trialExpiresAt: string | null
 }
 
+function getBrowserTimeZone() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  return timeZone || null
+}
+
 export function useDailySigninStatus(enabled = true) {
   return useQuery({
     queryKey: queryKeys.billing.signinStatus(),
-    queryFn: () => fetchJson<DailySigninStatus>('/api/credits/signin'),
+    queryFn: () => {
+      const timeZone = getBrowserTimeZone()
+      const search = timeZone ? `?timezone=${encodeURIComponent(timeZone)}` : ''
+      return fetchJson<DailySigninStatus>(`/api/credits/signin${search}`)
+    },
     enabled,
     retry: false,
     refetchOnWindowFocus: false,

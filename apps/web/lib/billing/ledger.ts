@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 @/lib/db、@/lib/errors、@/lib/nanoid、@/lib/logger，消费 credit_balances / credit_transactions 真相源
+ * [INPUT]: 依赖 @/lib/db、@/lib/errors、@/lib/nanoid、@/lib/logger，依赖 billing schema 探测，消费 credit_balances / credit_transactions 真相源
  * [OUTPUT]: 对外提供 freezeCredits()、confirmFrozenCredits()、refundFrozenCredits()、getReferenceCreditSummary()、getDailySigninStatus()、awardDailySigninCredits()，并支持显式注入 D1 运行时
  * [POS]: lib/billing 的积分事务真相源，统一三阶段扣费与签到试用/订阅/永久三池扣减顺序，被 AI 执行链、异步任务链与签到入口复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -15,6 +15,7 @@ import {
   getBillingCapabilities,
   type BillingCapabilities,
 } from './capabilities'
+import { getBillingSchemaInfo } from './schema'
 import { SIGNIN_TRIAL_CREDITS } from './workflow-pricing'
 
 const log = createLogger('billing:ledger')
@@ -79,6 +80,7 @@ type LedgerOperationType = 'spend' | 'refund'
 interface LedgerRuntimeOptions {
   db?: D1Database
   capabilities?: BillingCapabilities
+  reportedTimezone?: string | null
 }
 
 interface CreditTransactionStatement {
@@ -133,16 +135,122 @@ function createBreakdown(
   }
 }
 
-function getTodayBounds() {
-  const now = new Date()
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 1)
+type TimeZoneDateParts = {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+}
+
+const DEFAULT_SIGNIN_TIMEZONE = 'UTC'
+
+function isValidTimeZone(timeZone: string | null | undefined): timeZone is string {
+  if (!timeZone) {
+    return false
+  }
+
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone }).format(new Date())
+    return true
+  } catch {
+    return false
+  }
+}
+
+function getTimeZoneDateParts(date: Date, timeZone: string): TimeZoneDateParts {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  const values = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  )
 
   return {
-    today: start.toISOString().slice(0, 10),
-    expiresAt: end.toISOString(),
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    minute: Number(values.minute),
+    second: Number(values.second),
+  }
+}
+
+function toComparableUtc(parts: TimeZoneDateParts) {
+  return Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  )
+}
+
+function resolveUtcFromTimeZoneParts(parts: TimeZoneDateParts, timeZone: string) {
+  let utcMillis = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  )
+
+  for (let index = 0; index < 3; index += 1) {
+    const actual = getTimeZoneDateParts(new Date(utcMillis), timeZone)
+    const delta = toComparableUtc(parts) - toComparableUtc(actual)
+    if (delta === 0) {
+      break
+    }
+    utcMillis += delta
+  }
+
+  return utcMillis
+}
+
+function getNextDayParts(parts: Pick<TimeZoneDateParts, 'year' | 'month' | 'day'>) {
+  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1))
+
+  return {
+    year: nextDay.getUTCFullYear(),
+    month: nextDay.getUTCMonth() + 1,
+    day: nextDay.getUTCDate(),
+  }
+}
+
+function getTodayBounds(timeZone: string) {
+  const now = new Date()
+  const todayParts = getTimeZoneDateParts(now, timeZone)
+  const nextDayParts = getNextDayParts(todayParts)
+  const expiresAt = new Date(
+    resolveUtcFromTimeZoneParts(
+      {
+        ...nextDayParts,
+        hour: 0,
+        minute: 0,
+        second: 0,
+      },
+      timeZone,
+    ),
+  ).toISOString()
+
+  return {
+    today: `${todayParts.year.toString().padStart(4, '0')}-${todayParts.month
+      .toString()
+      .padStart(2, '0')}-${todayParts.day.toString().padStart(2, '0')}`,
+    expiresAt,
   }
 }
 
@@ -202,6 +310,48 @@ async function clearExpiredTrialBalance(
     trial_balance: 0,
     trial_expires_at: null,
   }
+}
+
+async function resolveSigninTimeZone(
+  db: D1Database,
+  userId: string,
+  reportedTimezone?: string | null,
+) {
+  const schema = await getBillingSchemaInfo({ db })
+  const canPersistUserTimezone = schema.usersColumns.has('timezone')
+  const normalizedReportedTimezone = isValidTimeZone(reportedTimezone)
+    ? reportedTimezone
+    : null
+
+  if (!canPersistUserTimezone) {
+    return normalizedReportedTimezone ?? DEFAULT_SIGNIN_TIMEZONE
+  }
+
+  const row = await db
+    .prepare('SELECT timezone FROM users WHERE id = ?')
+    .bind(userId)
+    .first<{ timezone?: string | null }>()
+  const storedTimezone = isValidTimeZone(row?.timezone) ? row.timezone : null
+
+  if (storedTimezone) {
+    return storedTimezone
+  }
+
+  if (normalizedReportedTimezone) {
+    await db
+      .prepare(
+        `UPDATE users
+         SET timezone = ?,
+             updated_at = datetime('now')
+         WHERE id = ?`,
+      )
+      .bind(normalizedReportedTimezone, userId)
+      .run()
+
+    return normalizedReportedTimezone
+  }
+
+  return DEFAULT_SIGNIN_TIMEZONE
 }
 
 async function readCreditBalanceRow(
@@ -724,6 +874,7 @@ export async function getDailySigninStatus(
   const balance = await readCreditBalanceRow(db, userId, capabilities, {
     allowFallback: true,
   })
+  const timeZone = await resolveSigninTimeZone(db, userId, options?.reportedTimezone)
 
   if (!capabilities.creditBalanceReadable || !capabilities.dailySigninReadable) {
     const checkedInToday =
@@ -740,7 +891,7 @@ export async function getDailySigninStatus(
     }
   }
 
-  const { today } = getTodayBounds()
+  const { today } = getTodayBounds(timeZone)
   const row = await db
     .prepare(
       `SELECT id FROM daily_signins
@@ -775,7 +926,8 @@ export async function awardDailySigninCredits(
   const balance = await readCreditBalanceRow(db, userId, capabilities, {
     requireWritable: true,
   })
-  const { today, expiresAt } = getTodayBounds()
+  const timeZone = await resolveSigninTimeZone(db, userId, options?.reportedTimezone)
+  const { today, expiresAt } = getTodayBounds(timeZone)
   const existing = await db
     .prepare(
       `SELECT id FROM daily_signins
