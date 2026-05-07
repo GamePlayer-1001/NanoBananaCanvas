@@ -31,6 +31,7 @@ export type SessionActor =
       hasPassword: boolean
       plan: string
       membershipStatus: string
+      timezone: string | null
       createdAt: string
     }
   | {
@@ -49,6 +50,7 @@ export type SessionActor =
       hasPassword: boolean
       plan: string
       membershipStatus: string
+      timezone: string | null
       createdAt: string
     }
 
@@ -83,6 +85,7 @@ async function ensureAnonymousActor(identity: Extract<Awaited<ReturnType<typeof 
     hasPassword: false,
     plan: user.plan,
     membershipStatus: user.membership_status,
+    timezone: user.timezone ?? null,
     createdAt: user.created_at,
   }
 }
@@ -132,6 +135,7 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
     hasPassword: identity.profile.hasPassword,
     plan: user.plan,
     membershipStatus: user.membership_status,
+    timezone: user.timezone ?? null,
     createdAt: user.created_at,
   }
 }

@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的状态与副作用，依赖 @/lib/billing/credits 的 CreditTransactionsResult，
- *          依赖 next-intl 的翻译，依赖账本分页 API 与 select/button/ui/card
+ *          依赖 next-intl 的翻译，依赖账本分页 API 与 select/button/ui/card，
+ *          依赖 @/lib/timezones 的时区归一化
  * [OUTPUT]: 对外提供 PaymentHistoryTable 流水列表组件
  * [POS]: billing 的账本历史组件，被 BillingContent 与账户仪表盘消费，负责展示积分变化审计记录、分页与事件本地化
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DEFAULT_SIGNIN_TIMEZONE, normalizeTimeZone } from '@/lib/timezones'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const
 const TASK_CONFIRM_SOURCES = new Set(['task_platform_confirm'])
@@ -204,21 +206,38 @@ function buildEventLabel(
   }
 }
 
-function formatTransactionTimestamp(createdAt: string) {
-  const match = createdAt.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/)
-  if (match) {
-    return `${match[1]} ${match[2]}`
+function formatTransactionTimestamp(createdAt: string, timezone: string | null | undefined) {
+  const date = new Date(createdAt)
+  if (Number.isNaN(date.getTime())) {
+    const match = createdAt.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/)
+    if (match) {
+      return `${match[1]} ${match[2]}`
+    }
+
+    return createdAt.replace('T', ' ').slice(0, 16)
   }
 
-  return createdAt.replace('T', ' ').slice(0, 16)
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: normalizeTimeZone(timezone) ?? DEFAULT_SIGNIN_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+
+  return formatter.format(date).replace(' ', ' ')
 }
 
 export function PaymentHistoryTable({
   transactions,
   isAuthenticated,
+  timezone,
 }: {
   transactions: CreditTransactionsResult
   isAuthenticated?: boolean
+  timezone?: string | null
 }) {
   const t = useTranslations('billing')
   const initialPageSize = PAGE_SIZE_OPTIONS.includes(transactions.pageSize as 10 | 20 | 50)
@@ -358,7 +377,7 @@ export function PaymentHistoryTable({
                       <p className="mt-1 truncate text-xs text-muted-foreground">
                         {t('historyMeta', {
                           source: buildSourceLabel(t, item),
-                          time: formatTransactionTimestamp(item.createdAt),
+                          time: formatTransactionTimestamp(item.createdAt, timezone),
                         })}
                       </p>
                     </div>

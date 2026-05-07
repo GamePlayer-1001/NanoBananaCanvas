@@ -3,7 +3,7 @@
  *          依赖 @/components/locale-switcher，依赖 @/components/ui/select / switch / button，
  *          依赖 @/hooks/use-user-preferences 与 @/hooks/use-user
  * [OUTPUT]: 对外提供 SettingsTab 账户系统设置面板
- * [POS]: profile 的设置页签，被账户页消费，负责语言切换与新手提示控制
+ * [POS]: profile 的设置页签，被账户页消费，负责语言切换、时区矫正与新手提示控制
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -24,13 +24,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { useCurrentUser, useUpdateUserTimezone } from '@/hooks/use-user'
+import { useUpdateUserTimezone } from '@/hooks/use-user'
 import { useUserPreferences } from '@/hooks/use-user-preferences'
 import { TIMEZONE_OPTIONS } from '@/lib/timezones'
 
-export function SettingsTab() {
+export function SettingsTab({ currentTimezone }: { currentTimezone: string | null }) {
   const t = useTranslations('profile')
-  const { data: user } = useCurrentUser()
   const updateTimezone = useUpdateUserTimezone()
   const {
     preferences,
@@ -47,7 +46,7 @@ export function SettingsTab() {
     typeof window === 'undefined'
       ? 'UTC'
       : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  const effectiveTimezone = user?.timezone ?? selectedTimezone ?? browserTimeZone
+  const effectiveTimezone = currentTimezone ?? selectedTimezone ?? browserTimeZone
 
   const handleReset = () => {
     resetOnboardingProgress()
@@ -124,7 +123,7 @@ export function SettingsTab() {
               onClick={() => {
                 void handleTimezoneSave()
               }}
-              disabled={!user?.isAuthenticated || updateTimezone.isPending}
+              disabled={updateTimezone.isPending}
             >
               {updateTimezone.isPending ? t('timezoneSaving') : t('timezoneSaveAction')}
             </Button>

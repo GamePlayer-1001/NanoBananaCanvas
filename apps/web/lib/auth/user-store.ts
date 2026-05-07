@@ -28,6 +28,7 @@ export type DbUserRow = {
   avatar_url: string
   plan: string
   membership_status: string
+  timezone: string | null
   created_at: string
 }
 
@@ -60,6 +61,7 @@ function buildSelectList(columns: Set<string>) {
     hasColumn(columns, 'avatar_url') ? 'avatar_url' : "'' AS avatar_url",
     planExpr,
     membershipExpr,
+    hasColumn(columns, 'timezone') ? 'timezone' : 'NULL AS timezone',
     'created_at',
   ].join(', ')
 }

@@ -22,6 +22,7 @@ import { PaymentHistoryTable } from './payment-history-table'
 import { hasUsageData, UsageChart } from './usage-chart'
 
 export interface BillingContentProps {
+  timezone: string | null
   subscription: BillingSubscriptionSummary
   balance: CreditBalanceSummary
   transactions: CreditTransactionsResult
@@ -29,6 +30,7 @@ export interface BillingContentProps {
 }
 
 export function BillingContent({
+  timezone,
   subscription,
   balance,
   transactions,
@@ -104,7 +106,7 @@ export function BillingContent({
 
         <CreditBalanceCard balance={balance} />
         <div className={`grid gap-6 ${showUsage ? 'xl:grid-cols-[1.05fr_0.95fr]' : ''}`}>
-          <PaymentHistoryTable isAuthenticated transactions={transactions} />
+          <PaymentHistoryTable isAuthenticated transactions={transactions} timezone={timezone} />
           {showUsage ? <UsageChart usage={usage} /> : null}
         </div>
       </div>

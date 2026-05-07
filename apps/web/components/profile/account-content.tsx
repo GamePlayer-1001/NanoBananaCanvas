@@ -92,6 +92,7 @@ export function AccountContent({
     dashboard: (
       <AccountDashboardTab
         isAuthenticated={currentUser.isAuthenticated}
+        timezone={currentUser.timezone}
         subscription={subscription}
         balance={balance}
         transactions={transactions}
@@ -118,7 +119,7 @@ export function AccountContent({
     ),
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
-    settings: <SettingsTab />,
+    settings: <SettingsTab currentTimezone={currentUser.timezone} />,
   } satisfies Record<TabId, ReactNode>
 
   return (

@@ -29,6 +29,7 @@ export interface AuthUser {
   hasPassword: boolean
   plan: string
   membershipStatus: string
+  timezone: string | null
   createdAt: string
   clerkUserId?: string
 }
@@ -49,6 +50,7 @@ function toAuthUser(actor: SessionActor): AuthUser {
     hasPassword: actor.hasPassword,
     plan: actor.plan,
     membershipStatus: actor.membershipStatus,
+    timezone: actor.timezone,
     createdAt: actor.createdAt,
     clerkUserId: actor.kind === 'clerk' ? actor.clerkUserId : undefined,
   }

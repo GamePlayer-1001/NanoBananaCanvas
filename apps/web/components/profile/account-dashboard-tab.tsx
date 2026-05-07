@@ -21,6 +21,7 @@ import { hasUsageData, UsageChart } from '@/components/billing/usage-chart'
 
 interface AccountDashboardTabProps {
   isAuthenticated: boolean
+  timezone: string | null
   subscription: BillingSubscriptionSummary
   balance: CreditBalanceSummary
   transactions: CreditTransactionsResult
@@ -64,6 +65,7 @@ function buildCreditDonut(slices: CreditSlice[]) {
 
 export function AccountDashboardTab({
   isAuthenticated,
+  timezone,
   subscription,
   balance,
   transactions,
@@ -284,7 +286,11 @@ export function AccountDashboardTab({
         </article>
       </section>
 
-      <PaymentHistoryTable isAuthenticated={isAuthenticated} transactions={transactions} />
+      <PaymentHistoryTable
+        isAuthenticated={isAuthenticated}
+        transactions={transactions}
+        timezone={timezone}
+      />
       {showUsage ? <UsageChart usage={usage} /> : null}
     </div>
   )

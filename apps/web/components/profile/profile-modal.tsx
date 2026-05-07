@@ -3,8 +3,8 @@
  *          依赖 @/components/profile 的各 Tab 组件 (5 个)，
  *          依赖 @/hooks/use-user，
  *          依赖 lucide-react 图标
- * [OUTPUT]: 对外提供 ProfileModal 个人中心弹窗 (含个人信息、作品、通知、模型偏好)
- * [POS]: profile 的入口容器，由 sidebar footer avatar 触发
+ * [OUTPUT]: 对外提供 ProfileModal 个人中心弹窗 (含个人信息、作品、通知、模型偏好、设置)
+ * [POS]: profile 的旧入口容器，由 sidebar footer avatar 触发，并向设置页透传当前账号时区
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -55,7 +55,7 @@ export function ProfileModal({
     works: <WorksTab isAuthenticated={Boolean(user?.isAuthenticated)} />,
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
-    settings: <SettingsTab />,
+    settings: <SettingsTab currentTimezone={user?.timezone ?? null} />,
   } satisfies Record<TabId, ReactNode>
 
   return (

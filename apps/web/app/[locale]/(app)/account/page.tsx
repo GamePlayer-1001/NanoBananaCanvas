@@ -137,7 +137,7 @@ export default async function AccountPage({
         tier: authUser.plan,
         plan: authUser.plan,
         membershipStatus: authUser.membershipStatus,
-        timezone: null,
+        timezone: authUser.timezone,
         createdAt: authUser.createdAt,
       }
     : {

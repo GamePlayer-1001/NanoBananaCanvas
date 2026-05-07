@@ -27,7 +27,7 @@ export default async function BillingPage({
   setRequestLocale(locale)
   await getTranslations({ locale, namespace: 'billing' })
 
-  const { userId } = await requireAuthenticatedAuth()
+  const { userId, timezone } = await requireAuthenticatedAuth()
   const [subscription, balance, transactions, usage] = await Promise.all([
     getBillingSubscription(userId),
     getCreditBalanceSummary(userId),
@@ -37,6 +37,7 @@ export default async function BillingPage({
 
   return (
     <BillingContent
+      timezone={timezone}
       subscription={subscription}
       balance={balance}
       transactions={transactions}
