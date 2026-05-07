@@ -19,6 +19,31 @@ vi.mock('@/lib/nanoid', () => ({
   nanoid: vi.fn(() => 'audit-seed'),
 }))
 
+vi.mock('@/lib/agent/audit-storage', () => ({
+  buildAgentAuditPayloadPointer: vi.fn(() => ({
+    payloadR2Key: 'agent-audit/user-1/wf-1/audit-seed.json',
+    payloadSummaryJson: '{"planSummary":"replace model"}',
+    hasCanvasSummary: 1,
+    hasPlan: 1,
+    hasAlternatives: 1,
+    hasResult: 0,
+    hasReplaySnapshot: 1,
+    hasMetadata: 1,
+  })),
+  writeAgentAuditPayload: vi.fn(async () => undefined),
+  resolveAgentAuditPayload: vi.fn(async (row: Record<string, unknown>) => ({
+    canvasSummary:
+      typeof row.canvas_summary === 'string' ? JSON.parse(row.canvas_summary) : undefined,
+    plan: typeof row.plan_json === 'string' ? JSON.parse(row.plan_json) : undefined,
+    alternatives:
+      typeof row.alternatives_json === 'string' ? JSON.parse(row.alternatives_json) : undefined,
+    result: typeof row.result_json === 'string' ? JSON.parse(row.result_json) : undefined,
+    replaySnapshot:
+      typeof row.replay_snapshot === 'string' ? JSON.parse(row.replay_snapshot) : undefined,
+    metadata: typeof row.metadata_json === 'string' ? JSON.parse(row.metadata_json) : undefined,
+  })),
+}))
+
 import { requireAuth } from '@/lib/api/auth'
 import { getDb } from '@/lib/db'
 
@@ -41,6 +66,7 @@ function createDbMock() {
               id: 'audit-1',
               event_type: 'plan_applied',
               proposal_id: 'plan-1',
+              payload_r2_key: 'agent-audit/user-1/wf-1/audit-1.json',
               replay_snapshot: JSON.stringify({
                 focusNodeIds: ['image-1'],
                 changeSummary: '最近一次 Agent 已把主图节点替换成更省钱的模型。',
@@ -59,6 +85,7 @@ function createDbMock() {
               event_type: 'plan_generated',
               mode: 'update',
               user_message: '帮我改便宜一点',
+              payload_r2_key: 'agent-audit/user-1/wf-1/audit-1.json',
               canvas_summary: JSON.stringify({ workflowId: 'wf-1' }),
               plan_json: JSON.stringify({ id: 'plan-1', summary: 'replace model' }),
               alternatives_json: JSON.stringify([{ id: 'plan-2', summary: 'higher quality' }]),

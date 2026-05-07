@@ -411,6 +411,14 @@ CREATE TABLE IF NOT EXISTS agent_audit_logs (
   target_node_id    TEXT,
   proposal_id       TEXT,
   confirmed         INTEGER NOT NULL DEFAULT 0,
+  payload_r2_key    TEXT,
+  payload_summary_json TEXT NOT NULL DEFAULT '{}',
+  has_canvas_summary INTEGER NOT NULL DEFAULT 0,
+  has_plan         INTEGER NOT NULL DEFAULT 0,
+  has_alternatives INTEGER NOT NULL DEFAULT 0,
+  has_result       INTEGER NOT NULL DEFAULT 0,
+  has_replay_snapshot INTEGER NOT NULL DEFAULT 0,
+  has_metadata     INTEGER NOT NULL DEFAULT 0,
   metadata_json     TEXT,
   created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );

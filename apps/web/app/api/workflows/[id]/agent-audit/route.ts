@@ -1,13 +1,18 @@
 /**
- * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors, @/lib/nanoid
+ * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors, @/lib/nanoid, @/lib/agent/audit-storage
  * [OUTPUT]: 对外提供 GET/POST /api/workflows/:id/agent-audit
- * [POS]: api/workflows/[id] 的 Agent 审计端点，负责持久化提案/确认/执行/结果/回放索引并返回最近记录
+ * [POS]: api/workflows/[id] 的 Agent 审计端点，负责持久化提案/确认/执行/结果/回放索引，并把大 JSON 下沉到 R2
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { apiError, apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import {
+  buildAgentAuditPayloadPointer,
+  resolveAgentAuditPayload,
+  writeAgentAuditPayload,
+} from '@/lib/agent/audit-storage'
 import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
@@ -29,8 +34,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     const { results } = await db
       .prepare(
-        `SELECT id, event_type, mode, user_message, canvas_summary, plan_json, alternatives_json,
-                result_json, replay_snapshot, target_node_id, proposal_id, confirmed, metadata_json, created_at
+        `SELECT id, event_type, mode, user_message, target_node_id, proposal_id, confirmed, created_at,
+                payload_r2_key, payload_summary_json,
+                has_canvas_summary, has_plan, has_alternatives, has_result, has_replay_snapshot, has_metadata,
+                canvas_summary, plan_json, alternatives_json, result_json, replay_snapshot, metadata_json
          FROM agent_audit_logs
          WHERE workflow_id = ?
          ORDER BY created_at DESC
@@ -39,7 +46,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .bind(id)
       .all()
 
-    return apiOk(results.map(parseAuditRow))
+    const parsed = await Promise.all((results ?? []).map(parseAuditRow))
+    return apiOk(parsed)
   } catch (error) {
     return handleApiError(error)
   }
@@ -67,13 +75,26 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     const auditId = nanoid()
+    const payload = {
+      canvasSummary: body.canvasSummary,
+      plan: body.plan,
+      alternatives: body.alternatives,
+      result: body.result,
+      replaySnapshot: body.replaySnapshot,
+      metadata: body.metadata,
+    }
+    const pointer = buildAgentAuditPayloadPointer(userId, id, auditId, payload)
+
+    await writeAgentAuditPayload(pointer.payloadR2Key, payload)
+
     await db
       .prepare(
         `INSERT INTO agent_audit_logs (
-          id, user_id, workflow_id, event_type, mode, user_message, canvas_summary,
-          plan_json, alternatives_json, result_json, replay_snapshot, target_node_id,
-          proposal_id, confirmed, metadata_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, user_id, workflow_id, event_type, mode, user_message, target_node_id,
+          proposal_id, confirmed, payload_r2_key, payload_summary_json,
+          has_canvas_summary, has_plan, has_alternatives, has_result, has_replay_snapshot, has_metadata,
+          canvas_summary, plan_json, alternatives_json, result_json, replay_snapshot, metadata_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       )
       .bind(
         auditId,
@@ -82,15 +103,23 @@ export async function POST(req: NextRequest, { params }: Params) {
         body.eventType,
         typeof body.mode === 'string' ? body.mode : null,
         typeof body.userMessage === 'string' ? body.userMessage : null,
-        stringifyNullable(body.canvasSummary),
-        stringifyNullable(body.plan),
-        stringifyNullable(body.alternatives),
-        stringifyNullable(body.result),
-        stringifyNullable(body.replaySnapshot),
         typeof body.targetNodeId === 'string' ? body.targetNodeId : null,
         typeof body.proposalId === 'string' ? body.proposalId : null,
         body.confirmed === true ? 1 : 0,
-        stringifyNullable(body.metadata),
+        pointer.payloadR2Key,
+        pointer.payloadSummaryJson,
+        pointer.hasCanvasSummary,
+        pointer.hasPlan,
+        pointer.hasAlternatives,
+        pointer.hasResult,
+        pointer.hasReplaySnapshot,
+        pointer.hasMetadata,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
       )
       .run()
 
@@ -100,35 +129,22 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 }
 
-function stringifyNullable(value: unknown) {
-  if (value === undefined) return null
-  return JSON.stringify(value)
-}
-
-function parseAuditRow(row: Record<string, unknown>) {
+async function parseAuditRow(row: Record<string, unknown>) {
+  const payload = await resolveAgentAuditPayload(row)
   return {
     id: row.id,
     eventType: row.event_type,
     mode: row.mode,
     userMessage: row.user_message,
-    canvasSummary: parseJsonField(row.canvas_summary),
-    plan: parseJsonField(row.plan_json),
-    alternatives: parseJsonField(row.alternatives_json),
-    result: parseJsonField(row.result_json),
-    replaySnapshot: parseJsonField(row.replay_snapshot),
+    canvasSummary: payload.canvasSummary,
+    plan: payload.plan,
+    alternatives: payload.alternatives,
+    result: payload.result,
+    replaySnapshot: payload.replaySnapshot,
     targetNodeId: row.target_node_id,
     proposalId: row.proposal_id,
     confirmed: Number(row.confirmed ?? 0) === 1,
-    metadata: parseJsonField(row.metadata_json),
+    metadata: payload.metadata,
     createdAt: row.created_at,
-  }
-}
-
-function parseJsonField(value: unknown) {
-  if (typeof value !== 'string' || value.length === 0) return undefined
-  try {
-    return JSON.parse(value)
-  } catch {
-    return undefined
   }
 }
