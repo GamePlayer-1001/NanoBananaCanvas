@@ -44,20 +44,22 @@ const DEBOUNCE_CLOUD_MS = 1200
 function getSerializedWorkflowSnapshot() {
   const { nodes, edges, viewport } = useFlowStore.getState()
   const { template, auditTrail } = useWorkflowMetadataStore.getState()
+  const serialized = serializeWorkflow(nodes, edges, viewport, 'Untitled Workflow', {
+    template: template ?? undefined,
+    auditTrail,
+  })
   return {
     nodes,
     edges,
     viewport,
-    serialized: serializeWorkflow(nodes, edges, viewport, 'Untitled Workflow', {
-      template: template ?? undefined,
-      auditTrail,
-    }),
+    serialized,
+    serializedJson: JSON.stringify(serialized),
   }
 }
 
 export async function triggerCloudSave(
   workflowId: string,
-  options?: { keepalive?: boolean },
+  options?: { keepalive?: boolean; onSaved?: (serializedJson: string) => void },
 ): Promise<void> {
   const snapshot = getSerializedWorkflowSnapshot()
   saveToLocal(snapshot.nodes, snapshot.edges, snapshot.viewport)
@@ -72,6 +74,7 @@ export async function triggerCloudSave(
       body: JSON.stringify({ data: JSON.stringify(snapshot.serialized) }),
     })
     if (!res.ok) throw new Error(`Save failed: ${res.status}`)
+    options?.onSaved?.(snapshot.serializedJson)
     useCloudSaveStatus.setState({ status: 'saved' })
   } catch (error) {
     useCloudSaveStatus.setState({ status: 'error' })
@@ -84,6 +87,7 @@ export async function triggerCloudSave(
 export function useAutoSave(workflowId?: string, enableCloud = true) {
   const hasLoaded = useRef(false)
   const lastChangeAtRef = useRef(0)
+  const lastPersistedSnapshotRef = useRef<string>('')
 
   /* ── 页面加载时恢复 (仅无 workflowId 时从 localStorage) ── */
   useEffect(() => {
@@ -122,9 +126,17 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
 
       /* 云端保存 (2s 防抖，仅 workflowId 存在时) */
       if (workflowId && enableCloud) {
+        const snapshot = getSerializedWorkflowSnapshot()
+        if (snapshot.serializedJson === lastPersistedSnapshotRef.current) {
+          return
+        }
         if (cloudTimer) clearTimeout(cloudTimer)
         cloudTimer = setTimeout(() => {
-          void triggerCloudSave(workflowId)
+          void triggerCloudSave(workflowId, {
+            onSaved: (serializedJson) => {
+              lastPersistedSnapshotRef.current = serializedJson
+            },
+          })
         }, DEBOUNCE_CLOUD_MS)
       }
     })
@@ -147,7 +159,14 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
         cloudTimer = null
       }
 
-      void triggerCloudSave(workflowId, { keepalive: true })
+      const snapshot = getSerializedWorkflowSnapshot()
+      if (snapshot.serializedJson === lastPersistedSnapshotRef.current) return
+      void triggerCloudSave(workflowId, {
+        keepalive: true,
+        onSaved: (serializedJson) => {
+          lastPersistedSnapshotRef.current = serializedJson
+        },
+      })
     }
 
     const handleVisibilityChange = () => {
