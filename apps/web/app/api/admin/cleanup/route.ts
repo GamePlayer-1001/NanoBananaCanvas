@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/storage 的 cleanupExpiredOutputs，依赖 @/lib/env 的 getEnv
- * [OUTPUT]: 对外提供 POST /api/admin/cleanup (手动触发过期文件清理)
- * [POS]: api/admin 的运维端点，配合 R2 Lifecycle Rules 兜底清理
+ * [OUTPUT]: 对外提供 POST /api/admin/cleanup (手动触发过期文件清理与终态任务修剪)
+ * [POS]: api/admin 的运维端点，配合 R2 Lifecycle Rules 与 D1 冷数据保留策略兜底清理
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       message: 'Cleanup completed',
       deleted: result.deleted,
       errors: result.errors,
+      prunedTasks: result.prunedTasks,
     })
   } catch (error) {
     return handleApiError(error)

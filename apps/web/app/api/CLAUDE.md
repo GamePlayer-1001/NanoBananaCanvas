@@ -60,7 +60,7 @@ files/                  — 文件上传与读取 (见子 CLAUDE.md)
   [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开, uploads/outputs 按用户隔离)
 
 admin/                  — 运维管理 (1 端点)
-  cleanup/route.ts      — POST 手动触发过期文件清理 (Bearer token 认证)
+  cleanup/route.ts      — POST 手动触发过期文件清理与终态任务修剪 (Bearer token 认证)
 og/route.tsx            — GET  Open Graph 动态图片生成
 health/route.ts         — GET  健康检查端点
 webhooks/               — 外部账户与计费事件同步 (2 端点)

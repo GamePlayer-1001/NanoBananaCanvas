@@ -62,9 +62,16 @@ export interface StorageUsage {
   isOverQuota: boolean
 }
 
+export interface CleanupExpiredOutputsResult {
+  deleted: number
+  errors: number
+  prunedTasks: number
+}
+
 const STORAGE_CACHE_TTL = 300 // 5 分钟 KV 缓存
 const FREE_STORAGE_LIMIT_BYTES = 1 * 1024 * 1024 * 1024
 const OUTPUT_RETENTION_DAYS = 7
+const TERMINAL_TASK_RETENTION_DAYS = 14
 
 /**
  * 计算用户存储使用量 (KV 缓存 5min → R2 list fallback)
@@ -119,7 +126,7 @@ export async function invalidateStorageCache(userId: string): Promise<void> {
  * 清理过期的 AI 输出文件
  * 当前统一采用单一免费保留期，避免商业化套餐耦合
  */
-export async function cleanupExpiredOutputs(): Promise<{ deleted: number; errors: number }> {
+export async function cleanupExpiredOutputs(): Promise<CleanupExpiredOutputsResult> {
   const r2 = await getR2()
   const db = await getDb()
 
@@ -153,5 +160,31 @@ export async function cleanupExpiredOutputs(): Promise<{ deleted: number; errors
     }
   }
 
-  return { deleted, errors }
+  const staleTasks = await db
+    .prepare(
+      `SELECT id
+       FROM async_tasks
+       WHERE status IN ('completed', 'failed', 'cancelled')
+         AND COALESCE(completed_at, updated_at, created_at) < datetime('now', ?)
+       ORDER BY COALESCE(completed_at, updated_at, created_at) ASC
+       LIMIT 200`,
+    )
+    .bind(`-${TERMINAL_TASK_RETENTION_DAYS} days`)
+    .all<{ id: string }>()
+
+  const staleTaskIds = (staleTasks.results ?? []).map((row) => row.id).filter(Boolean)
+
+  if (staleTaskIds.length > 0) {
+    const placeholders = staleTaskIds.map(() => '?').join(', ')
+    await db
+      .prepare(`DELETE FROM async_tasks WHERE id IN (${placeholders})`)
+      .bind(...staleTaskIds)
+      .run()
+  }
+
+  return {
+    deleted,
+    errors,
+    prunedTasks: staleTaskIds.length,
+  }
 }
