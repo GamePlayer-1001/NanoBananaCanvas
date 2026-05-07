@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 react 的状态与副作用，依赖 @/lib/billing/credits 的 CreditTransactionsResult，
- *          依赖 next-intl 的翻译与格式化，依赖账本分页 API 与 select/button/ui/card
+ *          依赖 next-intl 的翻译，依赖账本分页 API 与 select/button/ui/card
  * [OUTPUT]: 对外提供 PaymentHistoryTable 流水列表组件
  * [POS]: billing 的账本历史组件，被 BillingContent 与账户仪表盘消费，负责展示积分变化审计记录、分页与事件本地化
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -9,7 +9,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useFormatter, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 
 import type { CreditTransactionsResult, CreditTransactionItem } from '@/lib/billing/credits'
 import { Button } from '@/components/ui/button'
@@ -204,6 +204,15 @@ function buildEventLabel(
   }
 }
 
+function formatTransactionTimestamp(createdAt: string) {
+  const match = createdAt.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/)
+  if (match) {
+    return `${match[1]} ${match[2]}`
+  }
+
+  return createdAt.replace('T', ' ').slice(0, 16)
+}
+
 export function PaymentHistoryTable({
   transactions,
   isAuthenticated,
@@ -212,7 +221,6 @@ export function PaymentHistoryTable({
   isAuthenticated?: boolean
 }) {
   const t = useTranslations('billing')
-  const format = useFormatter()
   const initialPageSize = PAGE_SIZE_OPTIONS.includes(transactions.pageSize as 10 | 20 | 50)
     ? transactions.pageSize
     : 10
@@ -350,13 +358,7 @@ export function PaymentHistoryTable({
                       <p className="mt-1 truncate text-xs text-muted-foreground">
                         {t('historyMeta', {
                           source: buildSourceLabel(t, item),
-                          time: format.dateTime(new Date(item.createdAt), {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }),
+                          time: formatTransactionTimestamp(item.createdAt),
                         })}
                       </p>
                     </div>
