@@ -332,9 +332,9 @@ export function PricingSection({
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1240px]">
         <div className="mx-auto max-w-[980px] text-center">
-          <h2 className="text-[2.8rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.4rem]">
-            {pricingT('title')}
-          </h2>
+            <h2 className="text-3xl font-semibold text-white md:text-5xl">
+              {pricingT('title')}
+            </h2>
           <p className="mx-auto mt-6 max-w-[48rem] text-base leading-8 text-white/62 md:text-[1.12rem]">
             {pricingT('body')}
           </p>
