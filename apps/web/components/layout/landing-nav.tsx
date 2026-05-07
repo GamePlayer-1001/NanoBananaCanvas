@@ -36,7 +36,7 @@ export function LandingNav() {
 
         <div className="hidden items-center gap-8 md:flex">
           <Link
-            href="/features"
+            href="/#features"
             className="text-sm text-white/70 transition-colors hover:text-white"
           >
             {t('nav.features')}

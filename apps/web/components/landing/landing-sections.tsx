@@ -4,7 +4,7 @@
  *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；功能区已收口为首页锚点，不再导向独立 `/features` 子页
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -215,10 +215,10 @@ export function FeaturesSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1440px]">
         <div
-          className="hidden items-start gap-14 xl:grid xl:grid-cols-[minmax(0,0.39fr)_minmax(0,0.61fr)]"
+          className="hidden items-start gap-20 xl:grid xl:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)] 2xl:gap-24"
           onWheel={handleFeatureWheel}
         >
-          <div className="sticky top-24 min-w-0 self-start pt-4">
+          <div className="sticky top-24 min-w-0 self-start pt-4 pr-8 2xl:pr-12">
             <div className="space-y-5">
               {featureItems.map((item) => {
                 const isActive = item.key === activeFeature
@@ -241,8 +241,8 @@ export function FeaturesSection() {
                       <span
                         className={`block font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
                           isActive
-                            ? 'text-[3.35rem] leading-[0.92] 2xl:text-[3.75rem]'
-                            : 'text-[2.35rem] leading-none 2xl:text-[2.7rem]'
+                            ? 'max-w-[15ch] text-[3.1rem] leading-[0.94] 2xl:text-[3.45rem]'
+                            : 'max-w-[15ch] text-[2.15rem] leading-[1.02] 2xl:text-[2.45rem]'
                         }`}
                       >
                         {item.title}
@@ -269,12 +269,6 @@ export function FeaturesSection() {
                   />
                 ))}
               </div>
-              <Link
-                href="/features"
-                className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-              >
-                {featuresT('exploreCta')}
-              </Link>
             </div>
           </div>
 
@@ -363,12 +357,6 @@ export function FeaturesSection() {
             )
           })}
 
-          <Link
-            href="/features"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-          >
-            {featuresT('exploreCta')}
-          </Link>
         </div>
       </div>
     </section>

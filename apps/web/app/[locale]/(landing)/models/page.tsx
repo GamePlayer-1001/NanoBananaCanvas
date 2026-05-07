@@ -84,7 +84,7 @@ export default async function ModelsPage({
         title={t('heroTitle')}
         body={t('heroBody')}
         links={[
-          { label: t('primaryCta'), href: '/features' },
+          { label: t('primaryCta'), href: '/#features' },
           { label: t('secondaryCta'), href: '/pricing', variant: 'secondary' },
         ]}
         facts={heroFacts}

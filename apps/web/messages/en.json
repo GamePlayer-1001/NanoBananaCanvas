@@ -130,21 +130,20 @@
         "eyebrow": "Workflow-first",
         "title": "Keep generation, editing, and handoff logic on one canvas.",
         "body": "Nano Banana Canvas is valuable not just because it generates outputs, but because it keeps the whole AI production chain readable, reusable, and shareable.",
-        "items": {
+      "items": {
           "canvas": {
-            "title": "See the full workflow at a glance",
-            "body": "Lay out prompts, references, branching logic, outputs, and delivery steps on one canvas so the team can stop guessing what happened where."
+            "title": "See the whole chain, keep the spark",
+            "body": "Prompts, references, branching logic, outputs, and delivery nodes stay on one canvas, so you switch less, focus more, and keep the creative path readable from start to finish."
           },
           "models": {
-            "title": "Compare multiple models around one direction",
-            "body": "Use the same creative direction across GPT Image 2 and other image models, then compare style, consistency, and downstream fit without losing context."
+            "title": "Twin the models, pair the style",
+            "body": "Work from one creative direction while switching freely between GPT Image 2 and other image models, comparing texture, consistency, and handoff potential side by side."
           },
           "outputs": {
-            "title": "Keep stills, video, and next steps connected",
-            "body": "Push approved stills, character setups, and shot ideas into video generation and downstream edits without breaking the chain."
+            "title": "Still frames roll into moving scenes",
+            "body": "Approved stills, character setups, and shot sketches flow straight into video generation and downstream edits, so every output naturally becomes the next source of momentum."
           }
-        },
-        "exploreCta": "Explore feature details"
+        }
       },
       "pricing": {
         "eyebrow": "Pricing",

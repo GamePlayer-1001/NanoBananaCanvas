@@ -27,7 +27,7 @@ const SITE_TREE_GROUPS: SiteTreeGroup[] = [
   {
     key: 'product',
     items: [
-      { key: 'features', href: '/features' },
+      { key: 'features', href: '/#features' },
       { key: 'models', href: '/models' },
       { key: 'pricing', href: '/pricing' },
     ],
