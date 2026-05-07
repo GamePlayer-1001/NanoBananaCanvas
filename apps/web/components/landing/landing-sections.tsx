@@ -215,10 +215,10 @@ export function FeaturesSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1440px]">
         <div
-          className="hidden items-start gap-44 xl:grid xl:grid-cols-[minmax(0,0.3fr)_minmax(0,0.7fr)] 2xl:gap-52"
+          className="hidden items-start gap-60 xl:grid xl:grid-cols-[minmax(0,0.3fr)_minmax(0,0.7fr)] 2xl:gap-72"
           onWheel={handleFeatureWheel}
         >
-          <div className="sticky top-24 min-w-0 self-start pt-4 pr-28 2xl:pr-36">
+          <div className="sticky top-24 min-w-0 self-start pt-4">
             <div className="space-y-5">
               {featureItems.map((item) => {
                 const isActive = item.key === activeFeature
