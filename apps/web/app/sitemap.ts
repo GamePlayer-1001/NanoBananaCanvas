@@ -15,7 +15,6 @@ import { buildLanguageAlternates, buildLocalizedUrl } from '@/lib/seo'
 const STATIC_LAST_MODIFIED_AT = '2026-04-27T00:00:00.000Z'
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
-  { path: '/features', changeFrequency: 'weekly' as const, priority: 0.88 },
   { path: '/models', changeFrequency: 'weekly' as const, priority: 0.88 },
   { path: '/explore', changeFrequency: 'daily' as const, priority: 0.9 },
   { path: '/workflows', changeFrequency: 'daily' as const, priority: 0.8 },

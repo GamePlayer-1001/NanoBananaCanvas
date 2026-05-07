@@ -74,74 +74,69 @@ export function useAgentSession({
       return null
     }
 
-    const body =
-      assistantRuntime.executionMode === 'platform'
-        ? {
-            executionMode: 'platform' as const,
-            provider: assistantRuntime.provider,
-            modelId: assistantRuntime.modelId,
-            messages: [
-              {
-                role: 'system' as const,
-                content:
-                  '你是 Nano Banana Canvas 的 Agent 助手。请基于给定上下文输出简洁、专业、可执行的中文回答，不要虚构未提供的事实。',
-              },
-              {
-                role: 'user' as const,
-                content: prompt,
-              },
-            ],
-            temperature: 0.4,
-            maxTokens: 900,
-            workflowId,
-          }
-        : {
-            executionMode: 'user_key' as const,
-            capability: 'text' as const,
-            configId: assistantRuntime.configId,
-            messages: [
-              {
-                role: 'system' as const,
-                content:
-                  '你是 Nano Banana Canvas 的 Agent 助手。请基于给定上下文输出简洁、专业、可执行的中文回答，不要虚构未提供的事实。',
-              },
-              {
-                role: 'user' as const,
-                content: prompt,
-              },
-            ],
-            temperature: 0.4,
-            maxTokens: 900,
-            workflowId,
-          }
+    try {
+      const body =
+        assistantRuntime.executionMode === 'platform'
+          ? {
+              executionMode: 'platform' as const,
+              provider: assistantRuntime.provider,
+              modelId: assistantRuntime.modelId,
+              messages: [
+                {
+                  role: 'system' as const,
+                  content:
+                    '你是 Nano Banana Canvas 的 Agent 助手。请基于给定上下文输出简洁、专业、可执行的中文回答，不要虚构未提供的事实。',
+                },
+                {
+                  role: 'user' as const,
+                  content: prompt,
+                },
+              ],
+              temperature: 0.4,
+              maxTokens: 900,
+              workflowId,
+            }
+          : {
+              executionMode: 'user_key' as const,
+              capability: 'text' as const,
+              configId: assistantRuntime.configId,
+              messages: [
+                {
+                  role: 'system' as const,
+                  content:
+                    '你是 Nano Banana Canvas 的 Agent 助手。请基于给定上下文输出简洁、专业、可执行的中文回答，不要虚构未提供的事实。',
+                },
+                {
+                  role: 'user' as const,
+                  content: prompt,
+                },
+              ],
+              temperature: 0.4,
+              maxTokens: 900,
+              workflowId,
+            }
 
-    const response = await fetch('/api/ai/execute', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
+      const response = await fetch('/api/ai/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
 
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: { message?: string } }
-        | null
-      const detail = payload?.error?.message?.trim()
-      throw new Error(
-        detail ||
-          (assistantRuntime.executionMode === 'platform'
-            ? 'Agent 平台模型调用失败'
-            : 'Agent 用户模型调用失败'),
-      )
+      if (!response.ok) {
+        return null
+      }
+
+      const payload = (await response.json()) as {
+        ok?: boolean
+        data?: { result?: string }
+      }
+
+      return payload.data?.result?.trim() || null
+    } catch {
+      return null
     }
-
-    const payload = (await response.json()) as {
-      ok?: boolean
-      data?: { result?: string }
-    }
-
-    return payload.data?.result?.trim() || null
   }
 
   async function sendMessage(

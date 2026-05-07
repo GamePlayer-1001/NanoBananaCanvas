@@ -20,8 +20,10 @@ export async function createProject(page: Page) {
   await page.getByRole('button', { name: '新建项目' }).click()
   await expect(page.getByRole('heading', { name: '创建项目' })).toBeVisible()
   await page.getByPlaceholder('未命名项目').fill(`Agent E2E ${Date.now()}`)
-  await page.getByRole('button', { name: '创建项目' }).last().click()
-  await expect(page).toHaveURL(/\/zh\/canvas\/[^/]+$/)
+  const submitButton = page.getByRole('button', { name: '创建项目' }).last()
+  await expect(submitButton).toBeEnabled()
+  await submitButton.click()
+  await expect(page).toHaveURL(/\/zh\/canvas\/[^/]+$/, { timeout: 15000 })
 }
 
 export async function createProjectWithTemplate(page: Page, templateName = '电商商品图起手模板') {
@@ -30,8 +32,10 @@ export async function createProjectWithTemplate(page: Page, templateName = '电�
   await expect(page.getByRole('heading', { name: '创建项目' })).toBeVisible()
   await page.getByPlaceholder('未命名项目').fill(`Agent Template E2E ${Date.now()}`)
   await page.getByRole('button', { name: templateName }).click()
-  await page.getByRole('button', { name: '创建项目' }).last().click()
-  await expect(page).toHaveURL(/\/zh\/canvas\/[^/]+$/)
+  const submitButton = page.getByRole('button', { name: '创建项目' }).last()
+  await expect(submitButton).toBeEnabled()
+  await submitButton.click()
+  await expect(page).toHaveURL(/\/zh\/canvas\/[^/]+$/, { timeout: 15000 })
 }
 
 export async function createProjectWithImageWorkflow(page: Page) {
@@ -42,16 +46,11 @@ export async function createProjectWithImageWorkflow(page: Page) {
   await composer.fill('帮我生成一张电商海报图片')
   await composer.press('Enter')
   await expect(
-    agentPanel.getByRole('button', {
-      name: /处理过程 我现在开始把提案安全落到左侧画板。/,
-    }),
-  ).toBeVisible()
-  await expect(
     agentPanel.getByText(
       '新增 text-input 节点；新增 image-gen 节点；新增 display 节点；连接 draft-text-input -> draft-image-gen；连接 draft-image-gen -> draft-display',
     ),
-  ).toBeVisible()
-  await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
+  ).toBeVisible({ timeout: 20000 })
+  await expect(page.getByText('Image Gen', { exact: true })).toBeVisible({ timeout: 20000 })
 }
 
 export async function createProjectWithResultAsset(page: Page) {

@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，
- *          依赖 lucide-react 的 Sparkles/ShieldCheck/Workflow/Zap，依赖 @/i18n/navigation 的 Link
+ *          依赖 lucide-react 的 Sparkles/ShieldCheck/Workflow/Zap
  * [OUTPUT]: 对外提供 ModelMindMapSection 模型生态云图展示区
- * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用
+ * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用；独立 `/models` 内容页已下线，模型入口统一回落到首页锚点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -12,8 +12,6 @@ import Image from 'next/image'
 import { Sparkles, ShieldCheck, Workflow, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
-
-import { Link } from '@/i18n/navigation'
 
 type ProviderTone = 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
 type ProviderSize = 'sm' | 'md' | 'lg'
@@ -559,12 +557,6 @@ export function ModelMindMapSection() {
             <p className="mt-4 max-w-[27rem] text-[0.98rem] leading-7 text-white/56 md:text-[1.02rem] md:leading-8">
               {modelT('body')}
             </p>
-            <Link
-              href="/models"
-              className="mt-6 inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white px-5 text-sm font-semibold text-black transition hover:bg-white/92 md:px-6"
-            >
-              {modelT('cta')}
-            </Link>
           </div>
 
           <div

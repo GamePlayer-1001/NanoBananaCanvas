@@ -18,15 +18,11 @@ test.describe('Agent Workflow Creation', () => {
     await composer.press('Enter')
 
     await expect(
-      agentPanel.getByRole('button', {
-        name: /处理过程 我现在开始把提案安全落到左侧画板。/,
-      }),
-    ).toBeVisible()
-    await expect(
       agentPanel.getByText(
         '新增 text-input 节点；新增 image-gen 节点；新增 display 节点；连接 draft-text-input -> draft-image-gen；连接 draft-image-gen -> draft-display',
       ),
     ).toBeVisible()
+    await expect(agentPanel.getByText('Prompt 确认')).toBeVisible()
     await expect(page.getByText('Text Input', { exact: true })).toBeVisible()
     await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
     await expect(page.getByText('Display', { exact: true })).toBeVisible()
@@ -42,9 +38,12 @@ test.describe('Agent Workflow Creation', () => {
 
     await expect(agentPanel.getByText('帮我生成一张电商海报图片')).toBeVisible()
     await expect(agentPanel.getByText('我现在开始把提案安全落到左侧画板。')).toBeVisible()
-    await expect(agentPanel.getByRole('button', { name: '为什么跑不通' })).toBeVisible()
-    await expect(agentPanel.getByRole('button', { name: '解释这条链' })).toBeVisible()
-    await expect(agentPanel.getByRole('button', { name: '帮我优化成本' })).toBeVisible()
+    await expect(agentPanel.getByText('Prompt 确认')).toBeVisible()
+    await expect(
+      agentPanel.getByText('工作流已经先搭好了。接下来这一步我把画面理解和执行提示词整理给你看，等你用对话确认后再继续执行。'),
+    ).toBeVisible()
+    await expect(agentPanel.getByRole('button', { name: '更写实' })).toBeVisible()
+    await expect(agentPanel.getByRole('button', { name: '再来一版' })).toBeVisible()
     await expect(page.getByText('Text Input', { exact: true })).toBeVisible()
     await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
     await expect(page.getByText('Display', { exact: true })).toBeVisible()
@@ -57,7 +56,12 @@ test.describe('Agent Workflow Creation', () => {
     const composer = getAgentComposer(page)
     await composer.fill('帮我生成一张电商海报图片')
     await composer.press('Enter')
-    await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
+    await expect(
+      agentPanel.getByText(
+        '新增 text-input 节点；新增 image-gen 节点；新增 display 节点；连接 draft-text-input -> draft-image-gen；连接 draft-image-gen -> draft-display',
+      ),
+    ).toBeVisible()
+    await expect(agentPanel.getByText('Prompt 确认')).toBeVisible()
 
     const textInputNode = page.getByPlaceholder('输入文本...')
     await expect(textInputNode).toBeVisible()
@@ -73,10 +77,14 @@ test.describe('Agent Workflow Creation', () => {
         .first(),
     ).toBeVisible()
 
-    await agentPanel.getByRole('button', { name: '为什么跑不通' }).click()
+    await composer.fill('为什么跑不通')
+    await composer.press('Enter')
 
-    await expect(agentPanel.getByText(/我定位到最近一次失败主要卡在/)).toBeVisible()
-    await expect(agentPanel.getByText(/现象：.*Image gen node received empty prompt/)).toBeVisible()
+    await expect(agentPanel.getByText(/我正在结合最近一次执行状态做诊断/)).toBeVisible()
+    await expect(agentPanel.getByText(/现象：/)).toBeVisible()
+    await expect(
+      agentPanel.getByText(/我定位到最近一次失败主要卡在[\s\S]*Image gen node received empty prompt/).first(),
+    ).toBeVisible()
     await expect(agentPanel.getByText(/根因：/)).toBeVisible()
     await expect(agentPanel.getByText(/建议：/)).toBeVisible()
   })

@@ -35,11 +35,8 @@ export function LandingNav() {
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
-          <Link href="/models" className="text-sm text-white/70 transition-colors hover:text-white">
-            {t('nav.models')}
-          </Link>
           <Link
-            href="/features"
+            href="/#features"
             className="text-sm text-white/70 transition-colors hover:text-white"
           >
             {t('nav.features')}
@@ -49,6 +46,12 @@ export function LandingNav() {
             className="text-sm text-white/70 transition-colors hover:text-white"
           >
             {t('nav.pricing')}
+          </Link>
+          <Link
+            href="/#models"
+            className="text-sm text-white/70 transition-colors hover:text-white"
+          >
+            {t('nav.models')}
           </Link>
           <div className="group relative">
             <button

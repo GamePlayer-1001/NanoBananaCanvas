@@ -125,7 +125,7 @@ export default async function DocsPage({
         title={t('heroTitle')}
         body={t('heroBody')}
         links={[
-          { label: t('primaryCta'), href: '/features' },
+          { label: t('primaryCta'), href: '/#features' },
           { label: t('secondaryCta'), href: '/contact', variant: 'secondary' },
         ]}
         facts={heroFacts}

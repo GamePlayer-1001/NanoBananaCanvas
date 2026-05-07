@@ -4,7 +4,7 @@
  *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；功能区已收口为首页锚点，不再导向独立 `/features` 子页
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -100,56 +100,6 @@ function formatLandingMoney(locale: string, currency: string, amount: number) {
   }).format(amount / 100)
 }
 
-function SectionHeader({
-  eyebrow,
-  title,
-  body,
-  size = 'default',
-}: {
-  eyebrow: string
-  title: string
-  body: string
-  size?: 'default' | 'featured'
-}) {
-  const isFeatured = size === 'featured'
-
-  return (
-    <div
-      className={`grid w-full text-left lg:items-end ${
-        isFeatured
-          ? 'gap-8 lg:grid-cols-[0.96fr_1.04fr]'
-          : 'gap-6 lg:grid-cols-[0.92fr_1.08fr]'
-      }`}
-    >
-      <div>
-        {eyebrow ? (
-          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h2
-          className={`${eyebrow ? 'mt-4' : ''} font-semibold text-white ${
-            isFeatured
-              ? 'max-w-[13ch] text-[2.75rem] leading-[0.95] tracking-tight md:text-[4.6rem] lg:text-[5.3rem]'
-              : 'text-3xl md:text-5xl'
-          }`}
-        >
-          {title}
-        </h2>
-      </div>
-      <p
-        className={`text-white/62 ${
-          isFeatured
-            ? 'max-w-[44rem] text-lg leading-8 md:text-[1.3rem] md:leading-9 lg:pb-2'
-            : 'text-base leading-7 md:text-lg lg:pb-1'
-        }`}
-      >
-        {body}
-      </p>
-    </div>
-  )
-}
-
 export function FeaturesSection() {
   const featuresT = useTranslations('landing.sections.features')
   const featureItems = FEATURE_KEYS.map((key, index) => ({
@@ -215,7 +165,7 @@ export function FeaturesSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1440px]">
         <div
-          className="hidden items-start gap-14 xl:grid xl:grid-cols-[minmax(0,0.39fr)_minmax(0,0.61fr)]"
+          className="hidden items-start gap-72 xl:grid xl:grid-cols-[minmax(0,0.3fr)_minmax(0,0.7fr)] 2xl:gap-88"
           onWheel={handleFeatureWheel}
         >
           <div className="sticky top-24 min-w-0 self-start pt-4">
@@ -239,10 +189,10 @@ export function FeaturesSection() {
                         }`}
                       />
                       <span
-                        className={`block font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
+                        className={`block whitespace-nowrap font-semibold tracking-tight transition-all duration-300 ${
                           isActive
-                            ? 'text-[3.35rem] leading-[0.92] 2xl:text-[3.75rem]'
-                            : 'text-[2.35rem] leading-none 2xl:text-[2.7rem]'
+                            ? 'max-w-[13ch] text-[2.9rem] leading-[0.95] 2xl:text-[3.2rem]'
+                            : 'max-w-[13ch] text-[2rem] leading-[1.04] 2xl:text-[2.25rem]'
                         }`}
                       >
                         {item.title}
@@ -269,16 +219,10 @@ export function FeaturesSection() {
                   />
                 ))}
               </div>
-              <Link
-                href="/features"
-                className="mt-8 inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-              >
-                {featuresT('exploreCta')}
-              </Link>
             </div>
           </div>
 
-          <div className="sticky top-24 min-w-0 self-start w-full">
+          <div className="sticky top-24 ml-8 min-w-0 self-start w-full 2xl:ml-12">
             <article
               key={`feature-panel-${activeFeatureItem.key}`}
               className="w-full overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,17,24,0.98),rgba(10,10,14,0.98))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)]"
@@ -363,12 +307,6 @@ export function FeaturesSection() {
             )
           })}
 
-          <Link
-            href="/features"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 bg-white px-6 text-sm font-semibold text-black transition hover:bg-white/90"
-          >
-            {featuresT('exploreCta')}
-          </Link>
         </div>
       </div>
     </section>
@@ -394,9 +332,9 @@ export function PricingSection({
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1240px]">
         <div className="mx-auto max-w-[980px] text-center">
-          <h2 className="text-[2.8rem] leading-[0.95] font-semibold tracking-tight text-white md:text-[4.4rem]">
-            {pricingT('title')}
-          </h2>
+            <h2 className="text-3xl font-semibold text-white md:text-5xl">
+              {pricingT('title')}
+            </h2>
           <p className="mx-auto mt-6 max-w-[48rem] text-base leading-8 text-white/62 md:text-[1.12rem]">
             {pricingT('body')}
           </p>
@@ -512,11 +450,11 @@ export function TestimonialsSection() {
     <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-22 sm:px-6 lg:px-8 lg:py-24 xl:px-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.07),transparent_20%),radial-gradient(circle_at_82%_74%,rgba(110,124,255,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
       <div className="relative mx-auto w-full max-w-[1240px]">
-        <SectionHeader
-          eyebrow=""
-          title={testimonialsT('title')}
-          body={testimonialsT('body')}
-        />
+        <div className="mx-auto max-w-[48rem] text-center">
+          <h2 className="text-3xl font-semibold text-white md:text-5xl">
+            {testimonialsT('title')}
+          </h2>
+        </div>
 
         <div className="mt-14 gap-5 md:columns-2 xl:columns-4 [&>*]:mb-5">
           {TESTIMONIAL_ITEMS.map((key, index) => (

@@ -1,141 +1,19 @@
 /**
- * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
- *          依赖 @/components/landing/public-pages，依赖 @/components/landing/marketing-site-tree，
- *          依赖 @/lib/seo 的 buildPageMetadata
- * [OUTPUT]: 对外提供 `/models` 公开模型罗列页
- * [POS]: (landing) 路由组的模型支持页，为导航、SEO 与模型云图区提供落地承接
+ * [INPUT]: 依赖 next/navigation 的 redirect，依赖 @/lib/seo 的 buildLocalizedPath
+ * [OUTPUT]: 对外提供 `/models` 兼容重定向页
+ * [POS]: (landing) 路由组的历史模型详情路由壳层；真实详情内容已下线，旧链接统一回落到首页 `#models` 锚点
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import type { Metadata } from 'next'
-import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { redirect } from 'next/navigation'
 
-import {
-  MarketingActionStrip,
-  MarketingCard,
-  MarketingCardGrid,
-  MarketingHero,
-  MarketingSection,
-  MarketingShell,
-} from '@/components/landing/public-pages'
-import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
-import { buildPageMetadata, buildPriorityKeywords } from '@/lib/seo'
+import { buildLocalizedPath } from '@/lib/seo'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}): Promise<Metadata> {
-  const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'sitePages.models' })
-
-  return buildPageMetadata({
-    title: t('metaTitle'),
-    description: t('metaDescription'),
-    path: '/models',
-    locale,
-    keywords: buildPriorityKeywords(locale, [
-      'AI model directory',
-      'OpenAI image workflow',
-      'multimodal AI',
-    ]),
-  })
-}
-
-export default async function ModelsPage({
+export default async function ModelsPageRedirect({
   params,
 }: {
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  setRequestLocale(locale)
-
-  const t = await getTranslations({ locale, namespace: 'sitePages.models' })
-  const navT = await getTranslations({ locale, namespace: 'landing.nav' })
-
-  const heroFacts = [1, 2, 3].map((index) => ({
-    title: t(`heroFacts.${index}.title`),
-    body: t(`heroFacts.${index}.body`),
-  }))
-
-  const imageCards = ['gptImage', 'flux', 'qwen'].map((key) => ({
-    eyebrow: t(`sections.images.cards.${key}.eyebrow`),
-    title: t(`sections.images.cards.${key}.title`),
-    body: t(`sections.images.cards.${key}.body`),
-    bullets: [1, 2, 3].map((index) => t(`sections.images.cards.${key}.bullets.${index}`)),
-  }))
-
-  const videoCards = ['runway', 'kling', 'wan'].map((key) => ({
-    eyebrow: t(`sections.video.cards.${key}.eyebrow`),
-    title: t(`sections.video.cards.${key}.title`),
-    body: t(`sections.video.cards.${key}.body`),
-  }))
-
-  const platformCards = ['llm', 'routing', 'ops', 'vision'].map((key) => ({
-    eyebrow: t(`sections.platform.cards.${key}.eyebrow`),
-    title: t(`sections.platform.cards.${key}.title`),
-    body: t(`sections.platform.cards.${key}.body`),
-  }))
-
-  return (
-    <MarketingShell backHomeLabel={navT('backHome')}>
-      <MarketingHero
-        eyebrow={t('heroEyebrow')}
-        title={t('heroTitle')}
-        body={t('heroBody')}
-        links={[
-          { label: t('primaryCta'), href: '/features' },
-          { label: t('secondaryCta'), href: '/pricing', variant: 'secondary' },
-        ]}
-        facts={heroFacts}
-      />
-
-      <MarketingSection
-        eyebrow={t('sections.images.eyebrow')}
-        title={t('sections.images.title')}
-        body={t('sections.images.body')}
-      >
-        <MarketingCardGrid>
-          {imageCards.map((card) => (
-            <MarketingCard key={card.title} {...card} />
-          ))}
-        </MarketingCardGrid>
-      </MarketingSection>
-
-      <MarketingSection
-        eyebrow={t('sections.video.eyebrow')}
-        title={t('sections.video.title')}
-        body={t('sections.video.body')}
-      >
-        <MarketingCardGrid>
-          {videoCards.map((card) => (
-            <MarketingCard key={card.title} {...card} />
-          ))}
-        </MarketingCardGrid>
-      </MarketingSection>
-
-      <MarketingSection
-        eyebrow={t('sections.platform.eyebrow')}
-        title={t('sections.platform.title')}
-        body={t('sections.platform.body')}
-      >
-        <MarketingCardGrid columns={4}>
-          {platformCards.map((card) => (
-            <MarketingCard key={card.title} {...card} />
-          ))}
-        </MarketingCardGrid>
-      </MarketingSection>
-
-      <MarketingActionStrip
-        title={t('footerCta.title')}
-        body={t('footerCta.body')}
-        links={[
-          { label: t('footerCta.primary'), href: '/sign-in' },
-          { label: t('footerCta.secondary'), href: '/community', variant: 'secondary' },
-        ]}
-      />
-
-      <MarketingSiteTree activeHref="/models" />
-    </MarketingShell>
-  )
+  redirect(`${buildLocalizedPath('/', locale)}#models`)
 }

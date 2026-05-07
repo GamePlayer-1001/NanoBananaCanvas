@@ -50,8 +50,8 @@ export function LandingFooter() {
     {
       title: t('product'),
       links: [
-        { label: t('features'), href: '/features' },
-        { label: t('models'), href: '/models' },
+        { label: t('features'), href: '/#features' },
+        { label: t('models'), href: '/#models' },
         { label: t('pricing'), href: '/pricing' },
         { label: t('docs'), href: '/docs' },
       ],
