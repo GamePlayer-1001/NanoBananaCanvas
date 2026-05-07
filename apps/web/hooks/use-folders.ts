@@ -10,6 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
+import { useSidebarBootstrap } from '@/hooks/use-user'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -43,9 +44,12 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 /* ─── Hooks ──────────────────────────────────────────── */
 
 export function useFolders() {
+  const bootstrap = useSidebarBootstrap()
+
   return useQuery<Folder[]>({
     queryKey: queryKeys.folders.list(),
     queryFn: () => fetchJson<Folder[]>('/api/folders'),
+    initialData: bootstrap.data?.folders as Folder[] | undefined,
   })
 }
 
@@ -61,6 +65,7 @@ export function useCreateFolder() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.folders.all })
+      qc.invalidateQueries({ queryKey: queryKeys.bootstrap.all })
     },
   })
 }
@@ -77,6 +82,7 @@ export function useUpdateFolder() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.folders.all })
+      qc.invalidateQueries({ queryKey: queryKeys.bootstrap.all })
     },
   })
 }
@@ -90,6 +96,7 @@ export function useDeleteFolder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.folders.all })
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
+      qc.invalidateQueries({ queryKey: queryKeys.bootstrap.all })
     },
   })
 }

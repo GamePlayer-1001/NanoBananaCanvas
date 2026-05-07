@@ -18,8 +18,8 @@ favorites/route.ts        — GET 当前用户收藏的工作流列表
 [id]/report/route.ts      — POST 提交举报 (reason + description)
 [id]/thumbnail/route.ts   — PUT 上传画布截图缩略图 (FormData → R2 thumbnails/{id}.webp + 版本戳 URL)
 [id]/history/route.ts     — GET 执行历史列表 / POST 记录执行结果
-[id]/agent-audit/route.ts — GET/POST Agent 共创审计日志 (用户原话 / CanvasSummary / plan / alternatives / 结果 / replay snapshot)
-[id]/agent-replay/route.ts — GET 最近一次可回放 Agent 改图记录 (供“回看上次改动/查看改动”入口消费)
+[id]/agent-audit/route.ts — GET/POST Agent 共创审计日志 (D1 仅保留索引/摘要，CanvasSummary / plan / alternatives / 结果 / replay snapshot 正文下沉到 R2)
+[id]/agent-replay/route.ts — GET 最近一次可回放 Agent 改图记录 (优先从 R2 回填正文，兼容旧 D1 正文)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

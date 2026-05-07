@@ -12,11 +12,12 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import type { CreditBalanceSummary, CreditTransactionsResult, CreditUsageResult } from '@/lib/billing/credits'
+import type { CreditBalanceSummary } from '@/lib/billing/credits'
 import type { BillingSubscriptionSummary } from '@/lib/billing/subscription'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { PaymentHistoryTable } from '@/components/billing/payment-history-table'
+import { useBillingTransactions, useBillingUsage } from '@/hooks/use-account-billing'
 import { hasUsageData, UsageChart } from '@/components/billing/usage-chart'
 
 interface AccountDashboardTabProps {
@@ -24,8 +25,6 @@ interface AccountDashboardTabProps {
   timezone: string | null
   subscription: BillingSubscriptionSummary
   balance: CreditBalanceSummary
-  transactions: CreditTransactionsResult
-  usage: CreditUsageResult
   onUpgrade: () => void
   onTopUp: () => void
 }
@@ -68,13 +67,13 @@ export function AccountDashboardTab({
   timezone,
   subscription,
   balance,
-  transactions,
-  usage,
   onUpgrade,
   onTopUp,
 }: AccountDashboardTabProps) {
   const t = useTranslations('profile')
   const [isOpeningPortal, setIsOpeningPortal] = useState(false)
+  const transactions = useBillingTransactions(isAuthenticated)
+  const usage = useBillingUsage(isAuthenticated)
   const showUsage = hasUsageData(usage)
 
   const creditSlices: CreditSlice[] = [

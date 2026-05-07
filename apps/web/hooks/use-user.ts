@@ -46,12 +46,45 @@ export interface UserProfile {
   createdAt: string
 }
 
+export interface SidebarBootstrapPayload {
+  user: UserProfile
+  balance: {
+    availableCredits: number
+    trialBalance: number
+    trialExpiresAt: string | null
+    checkedInToday: boolean
+  } | null
+  signinStatus: {
+    status: 'available' | 'claimed' | 'unavailable'
+    available: boolean
+    checkedInToday: boolean
+    trialBalance: number
+    trialExpiresAt: string | null
+  } | null
+  folders: Array<{
+    id: string
+    name: string
+    sort_order: number
+    created_at: string
+    updated_at: string
+    project_count: number
+  }>
+}
+
 /* ─── Hooks ──────────────────────────────────────────── */
 
 export function useCurrentUser() {
   return useQuery({
     queryKey: queryKeys.user.profile(),
     queryFn: () => fetchJson<UserProfile>('/api/users/me'),
+  })
+}
+
+export function useSidebarBootstrap() {
+  return useQuery({
+    queryKey: queryKeys.bootstrap.sidebar(),
+    queryFn: () => fetchJson<SidebarBootstrapPayload>('/api/bootstrap/sidebar'),
+    staleTime: 60_000,
   })
 }
 

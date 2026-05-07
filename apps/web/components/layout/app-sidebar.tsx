@@ -55,7 +55,7 @@ import {
   useDeleteFolder,
 } from '@/hooks/use-folders'
 import { useCreditBalance, useDailySigninStatus } from '@/hooks/use-billing'
-import { useCurrentUser } from '@/hooks/use-user'
+import { useSidebarBootstrap } from '@/hooks/use-user'
 import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
 import { queryKeys } from '@/lib/query/keys'
 
@@ -303,7 +303,8 @@ export function AppSidebar() {
   const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
-  const { data: user } = useCurrentUser()
+  const { data: bootstrap } = useSidebarBootstrap()
+  const user = bootstrap?.user
   const { data: balance } = useCreditBalance(Boolean(user?.isAuthenticated))
   const { data: signinStatus } = useDailySigninStatus(Boolean(user?.isAuthenticated))
   const searchParams = useSearchParams()
@@ -342,6 +343,7 @@ export function AppSidebar() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.billing.balance() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.billing.signinStatus() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap.all }),
       ])
       toast.success(t('signinSuccess', { count: result.creditsAwarded }))
     },

@@ -23,6 +23,7 @@ prompt-confirmation.ts  — Prompt 确认语义层，请求 refine-prompt API，
 server-assistant.ts     — Agent 服务端 AI 助手适配层，为 plan/refine-prompt 等 route 提供统一文本/JSON 推理入口
 plan-rules.ts           — Planner 规则拆分层，承载创建链路、节点级改动、结果续写与多提案规则 helper，并统一复用平台默认模型建议，避免 plan route 继续膨胀
 agent-audit.ts          — Agent 审计语义层，负责记录共创事件、拉取审计日志与读取最近一次回放
+audit-storage.ts        — Agent 审计存储适配层，把大 JSON 下沉到 R2，并为 D1 保留摘要/存在性索引/兼容回填
 ```
 
 ## 职责边界

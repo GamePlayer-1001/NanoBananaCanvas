@@ -49,6 +49,10 @@ export const queryKeys = {
     all: ['settings'] as const,
     apiKeys: () => [...queryKeys.settings.all, 'api-keys'] as const,
   },
+  bootstrap: {
+    all: ['bootstrap'] as const,
+    sidebar: () => [...queryKeys.bootstrap.all, 'sidebar'] as const,
+  },
   tasks: {
     all: ['tasks'] as const,
     list: (filters?: object) => [...queryKeys.tasks.all, 'list', filters] as const,

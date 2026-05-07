@@ -20,6 +20,9 @@ credits/                — 积分账本读取入口 (4 端点)
   transactions/route.ts — GET 当前用户积分流水分页结果 (登录必需)
   usage/route.ts        — GET 当前用户 usage 聚合摘要 (登录必需)
 
+bootstrap/              — 常驻布局聚合读取入口 (1 端点)
+  sidebar/route.ts      — GET 侧边栏 bootstrap 聚合数据 (用户/积分/签到/文件夹一次返回，替代 4 条常驻请求)
+
 pricing/                — 公开定价目录 (1 端点)
   plans/route.ts        — GET 动态套餐目录 (Stripe 拉价 + IP/currency 解析)
 
@@ -57,7 +60,7 @@ files/                  — 文件上传与读取 (见子 CLAUDE.md)
   [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开, uploads/outputs 按用户隔离)
 
 admin/                  — 运维管理 (1 端点)
-  cleanup/route.ts      — POST 手动触发过期文件清理 (Bearer token 认证)
+  cleanup/route.ts      — POST 手动触发过期文件清理与终态任务修剪 (Bearer token 认证)
 og/route.tsx            — GET  Open Graph 动态图片生成
 health/route.ts         — GET  健康检查端点
 webhooks/               — 外部账户与计费事件同步 (2 端点)

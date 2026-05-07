@@ -14,7 +14,7 @@ import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { Bell, BookOpen, CreditCard, LayoutDashboard, Settings2, SlidersHorizontal, User } from 'lucide-react'
 
-import type { CreditBalanceSummary, CreditTransactionsResult, CreditUsageResult } from '@/lib/billing/credits'
+import type { CreditBalanceSummary } from '@/lib/billing/credits'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 import type { BillingSubscriptionSummary } from '@/lib/billing/subscription'
 import type { UserProfile } from '@/hooks/use-user'
@@ -44,8 +44,6 @@ export interface AccountContentProps {
   currentUser: UserProfile
   subscription: BillingSubscriptionSummary
   balance: CreditBalanceSummary
-  transactions: CreditTransactionsResult
-  usage: CreditUsageResult
   isPricingReady: boolean
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
@@ -66,8 +64,6 @@ export function AccountContent({
   currentUser,
   subscription,
   balance,
-  transactions,
-  usage,
   isPricingReady,
   plans,
   creditPacks,
@@ -95,8 +91,6 @@ export function AccountContent({
         timezone={currentUser.timezone}
         subscription={subscription}
         balance={balance}
-        transactions={transactions}
-        usage={usage}
         onUpgrade={() => handleOpenSubscription('plan_auto_monthly')}
         onTopUp={() => handleOpenSubscription('credit_pack')}
       />

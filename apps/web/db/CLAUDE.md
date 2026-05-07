@@ -20,6 +20,7 @@ migration-014-agent-audit.sql — Agent 共创审计迁移 (用户原话 / plan 
 migration-015-model-pricing-credits-per-1k-units.sql — model_pricing 历史兼容迁移 (为旧生产库补齐 credits_per_1k_units，并用 credits_per_call 回填)
 migration-016-credit-transactions-trial-pool.sql — credit_transactions 约束兼容迁移 (把历史生产库的 pool 检查条件从 monthly/permanent 升级为 trial/monthly/permanent)
 migration-017-user-timezone.sql — users 时区迁移 (新增 timezone，用于按账号本地日界线判定签到状态)
+migration-018-agent-audit-r2.sql — Agent 审计瘦身迁移 (新增 R2 指针/摘要/存在性索引列，把大 JSON 从 D1 正文降为对象存储正文)
 seed.sql                 — 分类种子数据 (8 个 AI 工作流分类，name_i18n JSON 真相源 + 历史兼容列)
 seed-models.sql          — 模型目录种子 (23 模型: 13 text + 6 image + 2 video + 2 audio，覆盖 openrouter/deepseek/gemini/openai/kling 的平台目录)
 seed-pricing.sql         — 商业化种子数据 (4 个积分包 + token 计费版 model_pricing)
