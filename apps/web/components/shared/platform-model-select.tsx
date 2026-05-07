@@ -48,7 +48,8 @@ export function PlatformModelSelect({
   contentClassName,
   size = 'default',
 }: PlatformModelSelectProps) {
-  const selected = options.find((option) => option.value === value) ?? options[0]
+  const selected =
+    options.find((option) => option.selectionValue === value) ?? options[0]
   const [open, setOpen] = useState(false)
 
   return (
@@ -81,7 +82,7 @@ export function PlatformModelSelect({
             <DropdownMenuItem
               key={option.selectionValue}
               onSelect={() => {
-                onValueChange?.(option.value)
+                onValueChange?.(option.selectionValue)
                 setOpen(false)
               }}
               className="flex items-center justify-between gap-3"

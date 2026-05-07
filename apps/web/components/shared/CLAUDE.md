@@ -15,6 +15,7 @@ category-badge.tsx  — CategoryBadge 分类标签 + CategoryBar 水平滚动栏
 search-command.tsx  — SearchCommand 探索搜索弹窗 (Cmd+K) + useSearchShortcut hook
 image-upload.tsx    — ImageUpload 拖拽上传组件 (R2 上传 + 固定容器 contain 预览 + 删除)
 platform-model-select.tsx — PlatformModelSelect 平台模型下拉组件 (图标徽标 + 模型名 + 可选描述，供 Agent 与生成节点复用；选中态按 provider:model 复合值避免同名模型串位)
+platform-model-select.test.tsx — PlatformModelSelect 回归测试 (锁定 provider:model 复合值作为显示态与回调态的统一契约，防止模型切换点击无效)
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
