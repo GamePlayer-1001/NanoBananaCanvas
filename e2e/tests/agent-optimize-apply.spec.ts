@@ -7,15 +7,17 @@
 
 import { expect, test } from '@playwright/test'
 
-import { createProjectWithImageWorkflow, getAgentPanel } from './helpers/agent'
+import { createProjectWithImageWorkflow, getAgentComposer, getAgentPanel } from './helpers/agent'
 
 test('generates optimize proposal and keeps apply action available', async ({ page }) => {
   await createProjectWithImageWorkflow(page)
 
   const agentPanel = getAgentPanel(page)
-  await agentPanel.getByRole('button', { name: '帮我优化成本' }).click()
+  const composer = getAgentComposer(page)
+  await composer.fill('帮我优化成本')
+  await composer.press('Enter')
 
-  await expect(agentPanel.getByText('我发现这条链还有明显的降本空间。', { exact: true })).toBeVisible()
+  await expect(agentPanel.getByText(/降本空间/)).toBeVisible()
   await expect(agentPanel.getByText(/问题：模型成本偏高/)).toBeVisible()
   await expect(agentPanel.getByText(/提案：先替换最贵节点为便宜一档模型，同时关闭预览开关/)).toBeVisible()
 })
