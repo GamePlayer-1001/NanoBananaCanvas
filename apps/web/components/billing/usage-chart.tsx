@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/billing/credits 的 CreditUsageResult，依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 UsageChart 用量图表组件
- * [POS]: billing 的统计组件，被 BillingContent 消费，负责展示 summary、日维度用量和模型维度消耗
+ * [OUTPUT]: 对外提供 UsageChart 用量图表组件与 hasUsageData 判定器
+ * [POS]: billing 的统计组件，被 BillingContent 与账户仪表盘消费，负责在存在真实 usage 数据时展示 summary、日维度用量和模型维度消耗
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -18,6 +18,19 @@ function calcBarWidth(value: number, max: number) {
   }
 
   return `${Math.max((value / max) * 100, value > 0 ? 8 : 0)}%`
+}
+
+export function hasUsageData(usage: CreditUsageResult) {
+  return (
+    usage.summary.totalRequests > 0 ||
+    usage.summary.successCount > 0 ||
+    usage.summary.failedCount > 0 ||
+    usage.summary.totalInputTokens > 0 ||
+    usage.summary.totalOutputTokens > 0 ||
+    usage.summary.estimatedCreditsSpent > 0 ||
+    usage.daily.length > 0 ||
+    usage.byModel.length > 0
+  )
 }
 
 export function UsageChart({ usage }: { usage: CreditUsageResult }) {

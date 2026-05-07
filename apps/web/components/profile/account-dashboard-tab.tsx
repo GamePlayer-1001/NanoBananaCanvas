@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/lib/billing/credits 与 @/lib/billing/subscription 类型，
  *          依赖 @/components/billing 的流水表与用量图，依赖 @/components/ui/button / progress
  * [OUTPUT]: 对外提供 AccountDashboardTab 仪表盘页签
- * [POS]: profile 的账户仪表盘，被账户页消费，负责展示套餐摘要、积分分布、签到积分、升级入口与账本详情
+ * [POS]: profile 的账户仪表盘，被账户页消费，负责展示套餐摘要、积分分布、签到积分、升级入口、账本详情，以及仅在存在真实数据时展示的用量趋势
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -17,7 +17,7 @@ import type { BillingSubscriptionSummary } from '@/lib/billing/subscription'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { PaymentHistoryTable } from '@/components/billing/payment-history-table'
-import { UsageChart } from '@/components/billing/usage-chart'
+import { hasUsageData, UsageChart } from '@/components/billing/usage-chart'
 
 interface AccountDashboardTabProps {
   isAuthenticated: boolean
@@ -73,6 +73,7 @@ export function AccountDashboardTab({
 }: AccountDashboardTabProps) {
   const t = useTranslations('profile')
   const [isOpeningPortal, setIsOpeningPortal] = useState(false)
+  const showUsage = hasUsageData(usage)
 
   const creditSlices: CreditSlice[] = [
     {
@@ -284,7 +285,7 @@ export function AccountDashboardTab({
       </section>
 
       <PaymentHistoryTable isAuthenticated={isAuthenticated} transactions={transactions} />
-      <UsageChart usage={usage} />
+      {showUsage ? <UsageChart usage={usage} /> : null}
     </div>
   )
 }
