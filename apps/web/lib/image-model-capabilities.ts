@@ -72,6 +72,7 @@ export interface ImageConstraintViolation {
 
 const STATIC_IMAGE_MODEL_CAPABILITIES: Record<string, ImageModelCapabilities> = {
   'dlapi:gpt-image-2': {},
+  'dlapi:gpt-image-2-all': {},
   'comfly:gpt-image-2-all': {},
   'comfly:gemini-3.1-flash-image-preview': {},
   'comfly:nano-banana-pro': {},

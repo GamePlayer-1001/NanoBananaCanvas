@@ -142,6 +142,11 @@ export const AGENT_PLATFORM_MODEL_PRESETS: readonly AgentPlatformModelPreset[] =
 
 export const STATIC_PLATFORM_IMAGE_PRESETS: readonly StaticPlatformImagePreset[] = [
   {
+    provider: 'dlapi',
+    modelId: 'gpt-image-2',
+    modelName: 'GPT Image 2',
+  },
+  {
     provider: 'comfly',
     modelId: 'gpt-image-2-all',
     modelName: 'gpt-image-2-all',

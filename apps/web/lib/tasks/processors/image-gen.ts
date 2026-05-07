@@ -68,6 +68,12 @@ interface OpenRouterChatImageResponse {
   }>
 }
 
+const IMAGE_PROVIDER_FALLBACK_MODEL_MAP: Record<string, Record<string, string>> = {
+  dlapi: {
+    'gpt-image-2': 'gpt-image-2-all',
+  },
+}
+
 function summarizeResponseBody(body: string, maxLength = 160): string {
   const normalized = body.replace(/\s+/g, ' ').trim()
   if (!normalized) return '(empty response body)'
@@ -696,7 +702,16 @@ async function submitWithComflyFallback(
       model: input.model,
     })
 
-    const result = await openAICompatibleSubmit(input, apiKey, 'comfly')
+    const fallbackModel =
+      IMAGE_PROVIDER_FALLBACK_MODEL_MAP.dlapi[input.model] ?? input.model
+    const result = await openAICompatibleSubmit(
+      {
+        ...input,
+        model: fallbackModel,
+      },
+      apiKey,
+      'comfly',
+    )
     return {
       externalTaskId: null,
       initialStatus: 'completed',
@@ -706,7 +721,7 @@ async function submitWithComflyFallback(
         contentType: inferImageContentType(result.url),
       },
       providerOverride: 'comfly',
-      modelOverride: input.model,
+      modelOverride: fallbackModel,
     }
   }
 }

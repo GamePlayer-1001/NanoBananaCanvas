@@ -564,12 +564,19 @@ describe('ImageGenProcessor', () => {
       'https://ai.comfly.chat/v1/images/generations',
       expect.objectContaining({
         method: 'POST',
+        body: JSON.stringify({
+          model: 'gpt-image-2-all',
+          prompt: 'draw a fallback cat',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
       }),
     )
     expect(result).toMatchObject({
       initialStatus: 'completed',
       providerOverride: 'comfly',
-      modelOverride: 'gpt-image-2',
+      modelOverride: 'gpt-image-2-all',
       result: {
         type: 'url',
         url: 'https://example.com/comfly.png',
