@@ -147,6 +147,21 @@ export const STATIC_PLATFORM_IMAGE_PRESETS: readonly StaticPlatformImagePreset[]
     modelName: 'GPT Image 2',
   },
   {
+    provider: 'dlapi',
+    modelId: 'gemini-3.1-flash-image-preview',
+    modelName: 'Nano Banana 2 Pro',
+  },
+  {
+    provider: 'dlapi',
+    modelId: 'gemini-3-pro-image-preview',
+    modelName: 'Nano Banana Pro',
+  },
+  {
+    provider: 'dlapi',
+    modelId: 'nano-banana',
+    modelName: 'Nano Banana',
+  },
+  {
     provider: 'comfly',
     modelId: 'gpt-image-2-all',
     modelName: 'gpt-image-2-all',
@@ -154,17 +169,17 @@ export const STATIC_PLATFORM_IMAGE_PRESETS: readonly StaticPlatformImagePreset[]
   {
     provider: 'comfly',
     modelId: 'gemini-3.1-flash-image-preview',
-    modelName: 'Nano Banana 2 pro',
+    modelName: 'Nano Banana 2 Pro',
   },
   {
     provider: 'comfly',
     modelId: 'nano-banana-pro',
-    modelName: 'nano-banana-pro',
+    modelName: 'Nano Banana Pro',
   },
   {
     provider: 'comfly',
     modelId: 'nano-banana',
-    modelName: 'nano-banana',
+    modelName: 'Nano Banana',
   },
 ] as const
 

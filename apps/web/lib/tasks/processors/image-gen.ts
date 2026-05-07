@@ -71,6 +71,9 @@ interface OpenRouterChatImageResponse {
 const IMAGE_PROVIDER_FALLBACK_MODEL_MAP: Record<string, Record<string, string>> = {
   dlapi: {
     'gpt-image-2': 'gpt-image-2-all',
+    'gemini-3.1-flash-image-preview': 'gemini-3.1-flash-image-preview',
+    'gemini-3-pro-image-preview': 'nano-banana-pro',
+    'nano-banana': 'nano-banana',
   },
 }
 

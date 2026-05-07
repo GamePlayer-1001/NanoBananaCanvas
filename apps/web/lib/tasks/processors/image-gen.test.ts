@@ -584,6 +584,153 @@ describe('ImageGenProcessor', () => {
     })
   })
 
+  it('falls back Nano Banana 2 Pro to comfly gemini-3.1-flash-image-preview', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 524,
+        text: async () => 'upstream timed out',
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/nano-banana-2-pro.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gemini-3.1-flash-image-preview',
+        params: {
+          prompt: 'draw a cinematic portrait',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/generations',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'gemini-3.1-flash-image-preview',
+          prompt: 'draw a cinematic portrait',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+    expect(result).toMatchObject({
+      providerOverride: 'comfly',
+      modelOverride: 'gemini-3.1-flash-image-preview',
+    })
+  })
+
+  it('falls back Nano Banana Pro to comfly nano-banana-pro', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 524,
+        text: async () => 'upstream timed out',
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/nano-banana-pro.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gemini-3-pro-image-preview',
+        params: {
+          prompt: 'draw a premium fashion portrait',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/generations',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'nano-banana-pro',
+          prompt: 'draw a premium fashion portrait',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+    expect(result).toMatchObject({
+      providerOverride: 'comfly',
+      modelOverride: 'nano-banana-pro',
+    })
+  })
+
+  it('falls back Nano Banana to comfly nano-banana', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 524,
+        text: async () => 'upstream timed out',
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/nano-banana.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'nano-banana',
+        params: {
+          prompt: 'draw a playful character',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/generations',
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: 'nano-banana',
+          prompt: 'draw a playful character',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+    expect(result).toMatchObject({
+      providerOverride: 'comfly',
+      modelOverride: 'nano-banana',
+    })
+  })
+
   it('submits dlapi image edits as multipart form data when a reference image is provided', async () => {
     const fetchMock = vi
       .fn()

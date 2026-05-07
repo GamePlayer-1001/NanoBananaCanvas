@@ -20,6 +20,7 @@ export interface PlatformRuntimeModel {
   category: PlatformModelCategory
   tier: string
   aliases?: string[]
+  logicalKey?: string
 }
 
 const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
@@ -58,6 +59,7 @@ const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
     modelName: 'GPT Image 2',
     category: 'image',
     tier: 'premium',
+    logicalKey: 'gpt-image-2',
     aliases: ['gpt-image-2-all', 'gpt image 2', 'gpt image 2 all'],
   },
   {
@@ -66,28 +68,61 @@ const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
     modelName: 'gpt-image-2-all',
     category: 'image',
     tier: 'premium',
+    logicalKey: 'gpt-image-2',
   },
   {
-    supplierId: 'comfly',
+    supplierId: 'dlapi',
     modelId: 'gemini-3.1-flash-image-preview',
-    modelName: 'Nano Banana 2 pro',
+    modelName: 'Nano Banana 2 Pro',
     category: 'image',
     tier: 'flagship',
+    logicalKey: 'nano-banana-2-pro',
     aliases: ['nano-banana-2-pro', 'nano banana 2 pro'],
   },
   {
     supplierId: 'comfly',
-    modelId: 'nano-banana-pro',
-    modelName: 'nano-banana-pro',
+    modelId: 'gemini-3.1-flash-image-preview',
+    modelName: 'Nano Banana 2 Pro',
+    category: 'image',
+    tier: 'flagship',
+    logicalKey: 'nano-banana-2-pro',
+    aliases: ['nano-banana-2-pro', 'nano banana 2 pro'],
+  },
+  {
+    supplierId: 'dlapi',
+    modelId: 'gemini-3-pro-image-preview',
+    modelName: 'Nano Banana Pro',
     category: 'image',
     tier: 'premium',
+    logicalKey: 'nano-banana-pro',
+    aliases: ['nano-banana-pro', 'nano banana pro'],
+  },
+  {
+    supplierId: 'comfly',
+    modelId: 'nano-banana-pro',
+    modelName: 'Nano Banana Pro',
+    category: 'image',
+    tier: 'premium',
+    logicalKey: 'nano-banana-pro',
+    aliases: ['nano-banana-pro', 'nano banana pro'],
+  },
+  {
+    supplierId: 'dlapi',
+    modelId: 'nano-banana',
+    modelName: 'Nano Banana',
+    category: 'image',
+    tier: 'premium',
+    logicalKey: 'nano-banana',
+    aliases: ['nano-banana', 'nano banana'],
   },
   {
     supplierId: 'comfly',
     modelId: 'nano-banana',
-    modelName: 'nano-banana',
+    modelName: 'Nano Banana',
     category: 'image',
     tier: 'premium',
+    logicalKey: 'nano-banana',
+    aliases: ['nano-banana', 'nano banana'],
   },
 
   {
