@@ -155,7 +155,7 @@ function createDbMock(options: {
         }
       }
 
-      if (sql.includes('FROM credit_transactions') && sql.includes('ORDER BY created_at DESC')) {
+      if (sql.includes('FROM credit_transactions ct') && sql.includes('ORDER BY ct.created_at DESC')) {
         return {
           bind: vi.fn().mockReturnValue({
             all: vi.fn().mockResolvedValue({ results: options.transactionRows ?? [] }),
@@ -362,25 +362,27 @@ describe('getCreditBalanceSummary', () => {
             pool: 'permanent',
             amount: 200,
             balance_after: 1400,
-            source: 'stripe_credit_pack',
-            reference_id: 'cs_test_2',
-            description: 'Refunded credit pack',
-            created_at: '2026-04-22 16:00:00',
-          },
-          {
-            id: 'txn_1',
-            type: 'earn',
+          source: 'stripe_credit_pack',
+          reference_id: 'cs_test_2',
+          description: 'Refunded credit pack',
+          created_at: '2026-04-22 16:00:00',
+          task_type: null,
+        },
+        {
+          id: 'txn_1',
+          type: 'earn',
             pool: 'monthly',
             amount: 1200,
             balance_after: 1200,
-            source: 'stripe_subscription_renewal',
-            reference_id: 'in_test_1',
-            description: 'Renewal credits',
-            created_at: '2026-04-22 15:00:00',
-          },
-        ],
-      }),
-    )
+          source: 'stripe_subscription_renewal',
+          reference_id: 'in_test_1',
+          description: 'Renewal credits',
+          created_at: '2026-04-22 15:00:00',
+          task_type: null,
+        },
+      ],
+    }),
+  )
 
     await expect(getCreditTransactions('user-1', { page: 1, pageSize: 2 })).resolves.toEqual({
       items: [
@@ -394,6 +396,7 @@ describe('getCreditBalanceSummary', () => {
           referenceId: 'cs_test_2',
           description: 'Refunded credit pack',
           createdAt: '2026-04-22 16:00:00',
+          taskType: null,
         },
         {
           id: 'txn_1',
@@ -405,6 +408,7 @@ describe('getCreditBalanceSummary', () => {
           referenceId: 'in_test_1',
           description: 'Renewal credits',
           createdAt: '2026-04-22 15:00:00',
+          taskType: null,
         },
       ],
       total: 3,
