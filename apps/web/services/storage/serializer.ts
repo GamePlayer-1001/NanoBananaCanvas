@@ -21,6 +21,11 @@ export interface SerializedWorkflow {
   savedAt: string
 }
 
+const RUNTIME_ONLY_CONFIG_KEYS = new Set([
+  'taskId',
+  'progress',
+])
+
 interface SerializedNode {
   id: string
   type: string
@@ -133,8 +138,7 @@ function stripRuntimeState(data: WorkflowNodeData): WorkflowNodeData {
 }
 
 function stripOutputFromConfig(config: Record<string, unknown>): Record<string, unknown> {
-  const cleaned = { ...config }
-  delete cleaned.output
-  delete cleaned.content
-  return cleaned
+  return Object.fromEntries(
+    Object.entries(config).filter(([key]) => !RUNTIME_ONLY_CONFIG_KEYS.has(key)),
+  )
 }
