@@ -39,6 +39,7 @@ describe('createNode', () => {
       platformProvider: 'comfly',
       platformModel: 'gpt-5.4',
       temperature: 0.7,
+      showPreview: false,
     })
   })
 
