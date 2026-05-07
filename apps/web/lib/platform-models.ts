@@ -46,6 +46,15 @@ export interface StaticPlatformImagePreset {
   modelName: string
 }
 
+export interface LogicalPlatformImageModel {
+  logicalKey: string
+  provider: 'dlapi'
+  modelId: string
+  modelName: string
+  fallbackProvider: 'comfly'
+  fallbackModelId: string
+}
+
 const PLATFORM_PROVIDER_LABELS: Record<string, string> = {
   openrouter: 'OpenRouter',
   deepseek: 'DeepSeek',
@@ -182,6 +191,75 @@ export const STATIC_PLATFORM_IMAGE_PRESETS: readonly StaticPlatformImagePreset[]
     modelName: 'Nano Banana',
   },
 ] as const
+
+export const LOGICAL_PLATFORM_IMAGE_MODELS: readonly LogicalPlatformImageModel[] = [
+  {
+    logicalKey: 'gpt-image-2',
+    provider: 'dlapi',
+    modelId: 'gpt-image-2',
+    modelName: 'GPT Image 2',
+    fallbackProvider: 'comfly',
+    fallbackModelId: 'gpt-image-2-all',
+  },
+  {
+    logicalKey: 'nano-banana-2-pro',
+    provider: 'dlapi',
+    modelId: 'gemini-3.1-flash-image-preview',
+    modelName: 'Nano Banana 2 Pro',
+    fallbackProvider: 'comfly',
+    fallbackModelId: 'gemini-3.1-flash-image-preview',
+  },
+  {
+    logicalKey: 'nano-banana-pro',
+    provider: 'dlapi',
+    modelId: 'gemini-3-pro-image-preview',
+    modelName: 'Nano Banana Pro',
+    fallbackProvider: 'comfly',
+    fallbackModelId: 'nano-banana-pro',
+  },
+  {
+    logicalKey: 'nano-banana',
+    provider: 'dlapi',
+    modelId: 'nano-banana',
+    modelName: 'Nano Banana',
+    fallbackProvider: 'comfly',
+    fallbackModelId: 'nano-banana',
+  },
+] as const
+
+export function findLogicalPlatformImageModel(input: {
+  provider?: string | null
+  modelId?: string | null
+}): LogicalPlatformImageModel | null {
+  const provider = input.provider?.trim().toLowerCase() ?? ''
+  const modelId = input.modelId?.trim().toLowerCase() ?? ''
+  if (!modelId) {
+    return null
+  }
+
+  return (
+    LOGICAL_PLATFORM_IMAGE_MODELS.find((item) => {
+      const isPrimary =
+        provider === item.provider && modelId === item.modelId.toLowerCase()
+      const isFallback =
+        provider === item.fallbackProvider &&
+        modelId === item.fallbackModelId.toLowerCase()
+
+      if (isPrimary || isFallback) {
+        return true
+      }
+
+      if (!provider) {
+        return (
+          modelId === item.modelId.toLowerCase() ||
+          modelId === item.fallbackModelId.toLowerCase()
+        )
+      }
+
+      return false
+    }) ?? null
+  )
+}
 
 export function getPlatformProviderLabel(provider: string): string {
   return PLATFORM_PROVIDER_LABELS[provider] ?? provider

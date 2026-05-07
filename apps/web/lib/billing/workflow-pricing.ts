@@ -35,7 +35,7 @@ const WORKFLOW_IMAGE_PRICE_RULES: WorkflowImagePriceRule[] = [
   },
   {
     key: 'gpt-image-2-all',
-    label: 'gpt-image-2-all',
+    label: 'GPT Image 2',
     aliases: ['gpt-image-2-all', 'gpt image 2 all'],
     prices: { '1k': 20, '2k': 25, '4k': 30, '8k': 40 },
   },
