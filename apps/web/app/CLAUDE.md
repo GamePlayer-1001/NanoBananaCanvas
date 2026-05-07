@@ -25,6 +25,7 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer，CTA 召回区已移除)
+[locale]/(landing)/features/page.tsx       — 历史功能页兼容重定向 (旧 `/features` 链接统一回落到首页 `#features` 锚点，独立详情内容已下线)
 [locale]/(landing)/models/page.tsx         — 模型目录页 (图像/视频/语言/视觉/路由模型说明，承接 `gpt image` / GPT Image 2 等搜索意图)
 [locale]/(landing)/docs/page.tsx           — 公开文档导航页 (快速开始 + 产品地图 + 资源入口)
 [locale]/(landing)/community/page.tsx      — 社区说明页 (解释 Explore/Workflows 与公开分享层)
