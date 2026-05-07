@@ -40,7 +40,8 @@ import {
 import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
-  STATIC_PLATFORM_IMAGE_PRESETS,
+  findLogicalPlatformImageModel,
+  LOGICAL_PLATFORM_IMAGE_MODELS,
   toPlatformVisualOption,
   toPlatformVisualOptions,
 } from '@/lib/platform-models'
@@ -95,7 +96,7 @@ export function ImageGenNode(props: NodeProps) {
 
   const platformImageModels = useMemo(
     () =>
-      STATIC_PLATFORM_IMAGE_PRESETS.map((item, index) => ({
+      LOGICAL_PLATFORM_IMAGE_MODELS.map((item, index) => ({
         id: `static-image-${index + 1}`,
         provider: item.provider,
         modelId: item.modelId,
@@ -110,15 +111,33 @@ export function ImageGenNode(props: NodeProps) {
   const platformModelId = resolvePlatformModel('image-gen', config)
   const platformProviderId = resolvePlatformProvider('image-gen', config)
   const flatPlatformModels = platformImageModels
+  const normalizedPlatformSelection = useMemo(
+    () =>
+      findLogicalPlatformImageModel({
+        provider: platformProviderId,
+        modelId: platformModelId,
+      }),
+    [platformModelId, platformProviderId],
+  )
   const platformModelOptions = useMemo(
     () =>
       toPlatformVisualOptions(flatPlatformModels).map((option) => ({
         ...option,
-        description: option.providerLabel,
+        description: undefined,
       })),
     [flatPlatformModels],
   )
   const selectedPlatformModel = useMemo(() => {
+    if (normalizedPlatformSelection) {
+      return (
+        flatPlatformModels.find(
+          (item) =>
+            item.provider === normalizedPlatformSelection.provider &&
+            item.modelId === normalizedPlatformSelection.modelId,
+        ) ?? flatPlatformModels[0]
+      )
+    }
+
     const exactMatch = flatPlatformModels.find(
       (item) =>
         item.provider === platformProviderId && item.modelId === platformModelId,
@@ -133,7 +152,12 @@ export function ImageGenNode(props: NodeProps) {
     )
 
     return firstModelWithSameId ?? flatPlatformModels[0]
-  }, [flatPlatformModels, platformModelId, platformProviderId])
+  }, [
+    flatPlatformModels,
+    normalizedPlatformSelection,
+    platformModelId,
+    platformProviderId,
+  ])
 
   const sizeValue = typeof config.size === 'string' ? config.size : DEFAULT_SIZE
   const migratedLegacySize = useMemo(() => migrateLegacySize(sizeValue), [sizeValue])
@@ -401,9 +425,12 @@ export function ImageGenNode(props: NodeProps) {
                         {
                           ...toPlatformVisualOption({
                             id: `fallback-${platformProviderId}-${platformModelId}`,
-                            modelId: platformModelId,
+                            modelId:
+                              normalizedPlatformSelection?.modelId ?? platformModelId,
                             modelName: displayModelLabel,
-                            provider: platformProviderId,
+                            provider:
+                              normalizedPlatformSelection?.provider ??
+                              platformProviderId,
                             category: 'image',
                             tier: 'premium',
                             accessible: true,
@@ -415,7 +442,6 @@ export function ImageGenNode(props: NodeProps) {
                 disabled={isPlatformModelsLoading || flatPlatformModels.length === 0}
                 triggerClassName={SELECT_CLASS}
               />
-
             </div>
           ) : (
             <div className="text-foreground bg-muted rounded-md border px-2 py-1 text-sm">
