@@ -54,6 +54,7 @@ type CreditTransactionRow = {
   reference_id: string | null
   description: string
   created_at: string
+  task_type: 'image_gen' | 'video_gen' | 'audio_gen' | null
 }
 
 export interface CreditTransactionItem {
@@ -66,6 +67,7 @@ export interface CreditTransactionItem {
   referenceId: string | null
   description: string
   createdAt: string
+  taskType: 'image_gen' | 'video_gen' | 'audio_gen' | null
 }
 
 export interface CreditTransactionsResult {
@@ -176,6 +178,13 @@ function hasAiUsageLogColumn(
   column: string,
 ): boolean {
   return schema.aiUsageLogsColumns.has(column)
+}
+
+function hasAsyncTaskColumn(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+  column: string,
+): boolean {
+  return schema.asyncTasksColumns.has(column)
 }
 
 function hasModelPricingColumn(
@@ -376,6 +385,7 @@ function toCreditTransactionItem(row: CreditTransactionRow): CreditTransactionIt
     referenceId: row.reference_id,
     description: row.description,
     createdAt: row.created_at,
+    taskType: row.task_type,
   }
 }
 
@@ -400,12 +410,17 @@ export async function getCreditTransactions(
   }
 
   const db = await getDb()
+  const canJoinAsyncTasks =
+    schema.hasAsyncTasks &&
+    hasAsyncTaskColumn(schema, 'id') &&
+    hasAsyncTaskColumn(schema, 'task_type')
 
   const countRow = await db
     .prepare(
       `SELECT COUNT(*) AS total
        FROM credit_transactions
-       WHERE user_id = ?`,
+       WHERE user_id = ?
+         AND type <> 'freeze'`,
     )
     .bind(userId)
     .first<{ total: number | null }>()
@@ -417,35 +432,41 @@ export async function getCreditTransactions(
     ? db
         .prepare(
           `SELECT
-             id,
-             type,
-             pool,
-             amount,
-             balance_after,
-             source,
-             reference_id,
-             description,
-             created_at
-           FROM credit_transactions
-           WHERE user_id = ?
-           ORDER BY created_at DESC`,
+             ct.id,
+             ct.type,
+             ct.pool,
+             ct.amount,
+             ct.balance_after,
+             ct.source,
+             ct.reference_id,
+             ct.description,
+             ct.created_at,
+             ${canJoinAsyncTasks ? 'at.task_type' : 'NULL AS task_type'}
+           FROM credit_transactions ct
+           ${canJoinAsyncTasks ? 'LEFT JOIN async_tasks at ON at.id = ct.reference_id' : ''}
+           WHERE ct.user_id = ?
+             AND ct.type <> 'freeze'
+           ORDER BY ct.created_at DESC`,
         )
         .bind(userId)
     : db
         .prepare(
           `SELECT
-             id,
-             type,
-             pool,
-             amount,
-             balance_after,
-             source,
-             reference_id,
-             description,
-             created_at
-           FROM credit_transactions
-           WHERE user_id = ?
-           ORDER BY created_at DESC
+             ct.id,
+             ct.type,
+             ct.pool,
+             ct.amount,
+             ct.balance_after,
+             ct.source,
+             ct.reference_id,
+             ct.description,
+             ct.created_at,
+             ${canJoinAsyncTasks ? 'at.task_type' : 'NULL AS task_type'}
+           FROM credit_transactions ct
+           ${canJoinAsyncTasks ? 'LEFT JOIN async_tasks at ON at.id = ct.reference_id' : ''}
+           WHERE ct.user_id = ?
+             AND ct.type <> 'freeze'
+           ORDER BY ct.created_at DESC
            LIMIT ? OFFSET ?`,
         )
         .bind(userId, resolvedPageSize, offset)

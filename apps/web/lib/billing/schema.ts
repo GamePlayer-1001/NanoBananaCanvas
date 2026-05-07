@@ -16,6 +16,7 @@ type BillingTableName =
   | 'subscriptions'
   | 'credit_balances'
   | 'credit_transactions'
+  | 'async_tasks'
   | 'daily_signins'
   | 'ai_usage_logs'
   | 'model_pricing'
@@ -25,12 +26,14 @@ export interface BillingSchemaInfo {
   subscriptionsColumns: Set<string>
   creditBalancesColumns: Set<string>
   creditTransactionsColumns: Set<string>
+  asyncTasksColumns: Set<string>
   dailySigninsColumns: Set<string>
   aiUsageLogsColumns: Set<string>
   modelPricingColumns: Set<string>
   hasSubscriptions: boolean
   hasCreditBalances: boolean
   hasCreditTransactions: boolean
+  hasAsyncTasks: boolean
   hasDailySignins: boolean
   hasAiUsageLogs: boolean
   hasModelPricing: boolean
@@ -82,12 +85,14 @@ async function loadBillingSchemaInfo(
     subscriptionsColumns,
     creditBalancesColumns,
     creditTransactionsColumns,
+    asyncTasksColumns,
     dailySigninsColumns,
     aiUsageLogsColumns,
     modelPricingColumns,
     hasSubscriptions,
     hasCreditBalances,
     hasCreditTransactions,
+    hasAsyncTasks,
     hasDailySignins,
     hasAiUsageLogs,
     hasModelPricing,
@@ -96,12 +101,14 @@ async function loadBillingSchemaInfo(
     readTableColumns('subscriptions', schemaOptions),
     readTableColumns('credit_balances', schemaOptions),
     readTableColumns('credit_transactions', schemaOptions),
+    readTableColumns('async_tasks', schemaOptions),
     readTableColumns('daily_signins', schemaOptions),
     readTableColumns('ai_usage_logs', schemaOptions),
     readTableColumns('model_pricing', schemaOptions),
     readTableExists('subscriptions', schemaOptions),
     readTableExists('credit_balances', schemaOptions),
     readTableExists('credit_transactions', schemaOptions),
+    readTableExists('async_tasks', schemaOptions),
     readTableExists('daily_signins', schemaOptions),
     readTableExists('ai_usage_logs', schemaOptions),
     readTableExists('model_pricing', schemaOptions),
@@ -112,12 +119,14 @@ async function loadBillingSchemaInfo(
     subscriptionsColumns,
     creditBalancesColumns,
     creditTransactionsColumns,
+    asyncTasksColumns,
     dailySigninsColumns,
     aiUsageLogsColumns,
     modelPricingColumns,
     hasSubscriptions,
     hasCreditBalances,
     hasCreditTransactions,
+    hasAsyncTasks,
     hasDailySignins,
     hasAiUsageLogs,
     hasModelPricing,
