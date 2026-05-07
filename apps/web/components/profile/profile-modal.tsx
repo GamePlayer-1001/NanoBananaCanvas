@@ -10,12 +10,11 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { X, User, Settings2, BookOpen, Bell, SlidersHorizontal } from 'lucide-react'
 
 import { useCurrentUser } from '@/hooks/use-user'
-import type { StorageUsage } from '@/lib/storage'
 import { ProfileTab } from './profile-tab'
 import { ModelPreferencesTab } from './model-preferences-tab'
 import { WorksTab } from './works-tab'
@@ -33,13 +32,6 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
-
-const EMPTY_STORAGE_USAGE: StorageUsage = {
-  usedBytes: 0,
-  limitBytes: 1024 * 1024 * 1024,
-  usedPercent: 0,
-  isOverQuota: false,
-}
 
 /* ─── Tab Content Map ────────────────────────────────── */
 
@@ -60,17 +52,11 @@ export function ProfileModal({
 
   const content = {
     profile: user ? <ProfileTab user={user} onManageSubscription={() => undefined} /> : null,
-    works: (
-      <WorksTab
-        isAuthenticated={Boolean(user?.isAuthenticated)}
-        storageUsage={EMPTY_STORAGE_USAGE}
-        storageGB={1}
-      />
-    ),
+    works: <WorksTab isAuthenticated={Boolean(user?.isAuthenticated)} />,
     notifications: <NotificationsTab />,
     modelPreferences: <ModelPreferencesTab />,
     settings: <SettingsTab />,
-  } satisfies Record<TabId, React.ReactNode>
+  } satisfies Record<TabId, ReactNode>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

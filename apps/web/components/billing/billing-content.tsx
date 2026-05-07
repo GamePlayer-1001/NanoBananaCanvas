@@ -103,7 +103,7 @@ export function BillingContent({
 
         <CreditBalanceCard balance={balance} />
         <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <PaymentHistoryTable transactions={transactions} />
+          <PaymentHistoryTable isAuthenticated transactions={transactions} />
           <UsageChart usage={usage} />
         </div>
       </div>

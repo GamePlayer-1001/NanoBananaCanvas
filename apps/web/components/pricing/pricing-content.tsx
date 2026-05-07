@@ -403,8 +403,12 @@ export function PricingContent({
                       value={plan.monthlyCredits.toLocaleString(locale)}
                     />
                     <PricingStat
-                      label={t('storageIncluded')}
-                      value={t('storageValue', { value: plan.storageGB })}
+                      label={t('deliveryLabel')}
+                      value={
+                        plan.purchaseMode === 'plan_auto_monthly'
+                          ? t('deliveryRecurring')
+                          : t('deliveryOneTime')
+                      }
                     />
                     <PricingMeta value={t('currencyResolved', { currency: plan.currency.toUpperCase() })} />
                   </div>

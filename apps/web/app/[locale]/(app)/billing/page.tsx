@@ -31,7 +31,7 @@ export default async function BillingPage({
   const [subscription, balance, transactions, usage] = await Promise.all([
     getBillingSubscription(userId),
     getCreditBalanceSummary(userId),
-    getCreditTransactions(userId, { page: 1, pageSize: 12 }),
+    getCreditTransactions(userId, { page: 1, pageSize: 10 }),
     getCreditUsage(userId, { windowDays: 30 }),
   ])
 
