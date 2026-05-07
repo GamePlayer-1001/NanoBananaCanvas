@@ -141,8 +141,8 @@ register({
     outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },
   defaults: {
-    platformProvider: 'comfly',
-    platformModel: 'gpt-image-2-all',
+    platformProvider: 'dlapi',
+    platformModel: 'gpt-image-2',
     size: 'auto',
     aspectRatio: '1:1',
     showPreview: false,
