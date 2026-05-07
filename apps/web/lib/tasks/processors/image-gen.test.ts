@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 vitest，依赖 ./image-gen 的 ImageGenProcessor
- * [OUTPUT]: 对外提供图片任务处理器测试（OpenAI 兼容 / DLAPI 异步 / Comfly 托底）
+ * [OUTPUT]: 对外提供图片任务处理器测试（OpenAI 兼容 / DLAPI 直出图 / Comfly 托底）
  * [POS]: lib/tasks/processors 的回归保护，覆盖平台图片主链的关键协议分支
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -487,14 +487,13 @@ describe('ImageGenProcessor', () => {
     expect(resolveOpenAICompatibleRequestSize('openai-compatible', '1k', '16:9')).toBe('1920x1080')
   })
 
-  it('submits dlapi image tasks in async mode', async () => {
+  it('submits dlapi image tasks without relying on supplier task ids', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       headers: new Headers({ 'content-type': 'application/json' }),
       text: async () =>
         JSON.stringify({
-          id: 'imgjob_123',
-          status: 'running',
+          data: [{ url: 'https://example.com/dlapi-direct.png' }],
         }),
     } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
@@ -519,13 +518,18 @@ describe('ImageGenProcessor', () => {
           model: 'gpt-image-2',
           prompt: 'draw a white cat',
           size: '1024x1024',
-          async: true,
+          aspect_ratio: '1:1',
+          n: 1,
         }),
       }),
     )
     expect(result).toMatchObject({
-      externalTaskId: 'imgjob_123',
-      initialStatus: 'running',
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: 'https://example.com/dlapi-direct.png',
+      },
     })
   })
 
@@ -580,6 +584,101 @@ describe('ImageGenProcessor', () => {
       result: {
         type: 'url',
         url: 'https://example.com/comfly.png',
+      },
+    })
+  })
+
+  it('accepts direct dlapi base64 image payloads as the primary result', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            created: 1778144035,
+            data: [{ b64_json: 'ZmFrZS1zeW5jLWRsYXBpLWltYWdl' }],
+          }),
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: 'draw an async-only cat',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(result).toMatchObject({
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: 'data:image/png;base64,ZmFrZS1zeW5jLWRsYXBpLWltYWdl',
+      },
+    })
+  })
+
+  it('falls back from dlapi when direct submit returns no usable image payload', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            created: 1778144035,
+            data: [{}],
+          }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/comfly-sync-fallback.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: 'draw an async-only cat',
+          size: '1024x1024',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/generations',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'gpt-image-2-all',
+          prompt: 'draw an async-only cat',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+    expect(result).toMatchObject({
+      initialStatus: 'completed',
+      providerOverride: 'comfly',
+      modelOverride: 'gpt-image-2-all',
+      result: {
+        type: 'url',
+        url: 'https://example.com/comfly-sync-fallback.png',
       },
     })
   })
@@ -744,8 +843,7 @@ describe('ImageGenProcessor', () => {
         headers: new Headers({ 'content-type': 'application/json' }),
         text: async () =>
           JSON.stringify({
-            id: 'imgjob_edit_123',
-            status: 'running',
+            data: [{ url: 'https://example.com/dlapi-edit.png' }],
           }),
       } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
@@ -783,11 +881,14 @@ describe('ImageGenProcessor', () => {
     expect(formData.get('prompt')).toBe('参考原图进行重绘')
     expect(formData.get('size')).toBe('1024x1024')
     expect(formData.get('n')).toBe('1')
-    expect(formData.get('async')).toBe('true')
     expect(formData.get('image')).toBeInstanceOf(File)
     expect(result).toMatchObject({
-      externalTaskId: 'imgjob_edit_123',
-      initialStatus: 'running',
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: 'https://example.com/dlapi-edit.png',
+      },
     })
   })
 
@@ -807,8 +908,7 @@ describe('ImageGenProcessor', () => {
         headers: new Headers({ 'content-type': 'application/json' }),
         text: async () =>
           JSON.stringify({
-            id: 'imgjob_edit_123',
-            status: 'running',
+            data: [{ url: 'https://example.com/dlapi-edit-relative.png' }],
           }),
       } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
