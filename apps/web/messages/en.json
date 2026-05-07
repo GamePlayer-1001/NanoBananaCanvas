@@ -78,10 +78,10 @@
     },
     "hero": {
       "heading": "Nano Banana Canvas",
-      "tagline": "From idea to image,\nwithout breaking flow.",
+      "tagline": "Shape it in one stroke,\nkeep every idea in motion.",
       "description": "Use Nano Banana Canvas to organize prompts, reference images, GPT Image 2 experiments, image generation, video generation, and delivery steps on one infinite canvas. You are not just getting outputs. You are keeping the whole workflow reusable, collaborative, and ready for the next iteration.",
       "cta": "Start Creating Free",
-      "models": "Generate, edit and refine visuals in one creative canvas.",
+      "models": "On a single creative canvas, move from the first spark of an idea to image generation and fine-grained editing in one uninterrupted flow. No tool switching, no broken train of thought. Every adjustment and experiment stays visible, so the pace of making feels natural and ideas land the moment they appear.",
       "nodes": {
         "feature": "Eye feature",
         "portrait": "Base portrait",
