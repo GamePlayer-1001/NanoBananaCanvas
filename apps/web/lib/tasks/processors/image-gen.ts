@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 ./types 的 TaskProcessor 接口，依赖 @/lib/logger，依赖 @/lib/image-model-capabilities
- * [OUTPUT]: 对外提供 ImageGenProcessor 类（OpenAI 兼容 + Google 图片生成 + DLAPI 异步出图）
+ * [OUTPUT]: 对外提供 ImageGenProcessor 类（OpenAI 兼容 + Google 图片生成 + DLAPI 直出图）
  * [POS]: lib/tasks/processors 的图片生成处理器，负责平台图片主链、托底切流与统一图片能力护栏
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -24,17 +24,9 @@ const DLAPI_IMAGE_BASE_URL = 'https://api.dlapi.xyz/v1'
 const OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_CHARS = 3500
 const OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_BYTES = 10_000
 
-type DlapiTaskStatus = 'queued' | 'running' | 'completed' | 'failed'
-
-interface DlapiImageTaskCreateResponse {
-  id?: string
-  status?: DlapiTaskStatus
-  model?: string
-}
-
 interface DlapiImageTaskCheckResponse {
+  status?: 'queued' | 'running' | 'completed' | 'failed'
   id?: string
-  status?: DlapiTaskStatus
   model?: string
   progress?: number
   message?: string
@@ -294,6 +286,25 @@ function buildGatewayFailureMessage(
     `OpenAI-compatible image API ${status} from ${endpoint}: ${preview}. ` +
     `This usually means the upstream compatible gateway timed out or failed before returning image data, ` +
     `not that the local workflow worker timed out. Provider=${provider}.`
+  )
+}
+
+function isDlapiAsyncProtocolError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  return (
+    message.includes('dlapi async image protocol') ||
+    message.includes('dlapi image api returned no task id')
+  )
+}
+
+function isDlapiDirectResponseError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  return (
+    message.includes('dlapi image api') ||
+    message.includes('check that baseurl points to an openai-compatible image endpoint') ||
+    message.includes('returned neither url nor b64_json image data') ||
+    message.includes('returned invalid json') ||
+    message.includes('returned non-json content')
   )
 }
 
@@ -574,7 +585,7 @@ async function dlapiSubmit(
 
   const requestInit: RequestInit = referenceImageUrl
     ? await (async () => {
-        const multipartRequest = await buildMultipartImageEditRequestInit(
+        return buildMultipartImageEditRequestInit(
           apiKey,
           model,
           prompt,
@@ -582,9 +593,6 @@ async function dlapiSubmit(
           referenceImageUrl,
           input.loadInternalReferenceImageAsset,
         )
-        const formData = multipartRequest.body as FormData
-        formData.append('async', 'true')
-        return multipartRequest
       })()
     : {
         method: 'POST',
@@ -596,7 +604,8 @@ async function dlapiSubmit(
           model,
           prompt,
           size,
-          async: true,
+          aspect_ratio: aspectRatio,
+          n: 1,
         }),
       }
 
@@ -604,21 +613,30 @@ async function dlapiSubmit(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    if (statusIsGatewayLikeFailure(res.status)) {
+      throw new Error(buildGatewayFailureMessage(res.status, 'dlapi', endpoint, text))
+    }
     throw new Error(`DLAPI image API ${res.status}: ${text}`)
   }
 
-  const data = await parseJsonResponse<DlapiImageTaskCreateResponse>(
+  const data = await parseJsonResponse<OpenAICompatibleImageResponse>(
     res,
     'DLAPI image API',
   )
 
-  if (!data.id) {
-    throw new Error('DLAPI image API returned no task id')
+  const url = extractOpenAICompatibleImageUrl(data)
+  if (!url) {
+    throw new Error('DLAPI image API returned neither url nor b64_json image data')
   }
 
   return {
-    externalTaskId: data.id,
-    initialStatus: data.status === 'completed' ? 'completed' : 'running',
+    externalTaskId: null,
+    initialStatus: 'completed',
+    result: {
+      type: 'url',
+      url,
+      contentType: inferImageContentType(url),
+    },
   }
 }
 
@@ -696,7 +714,11 @@ async function submitWithComflyFallback(
   try {
     return await dlapiSubmit(input, apiKey)
   } catch (error) {
-    if (!isRetriableImageProviderError(error)) {
+    if (
+      !isRetriableImageProviderError(error) &&
+      !isDlapiAsyncProtocolError(error) &&
+      !isDlapiDirectResponseError(error)
+    ) {
       throw error
     }
 
