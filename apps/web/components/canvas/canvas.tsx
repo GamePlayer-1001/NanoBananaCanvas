@@ -6,7 +6,7 @@
  *          依赖 @/lib/utils/validate-connection 的连接验证，依赖 @/lib/utils/filter-node-entry-groups 的候选节点筛选，
  *          依赖 @/types 的 WorkflowNode/WorkflowEdge
  * [OUTPUT]: 对外提供 Canvas 主画布组件 (含右键菜单 + 拖拽连线创建节点 + 按端口类型筛选有效候选 + 辅助线 + MiniMap + 顶部/底部工具栏)
- * [POS]: components/canvas 的核心渲染器，被 workspace/[id] 页面消费，接收 workflowId 驱动云端保存
+ * [POS]: components/canvas 的核心渲染器，被 workspace/[id] 页面消费，接收 workflowId 驱动云端保存，并在运行态统一禁删节点与连线
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import {
   Background,
   BackgroundVariant,
@@ -43,6 +44,7 @@ import { useAutoSave, useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
 import { useThumbnailCapture } from '@/hooks/use-thumbnail-capture'
 import { useUserPreferences, CANVAS_SHORTCUT_HINT_MARKER_KEY, CANVAS_SHORTCUT_HINT_STORAGE_KEY } from '@/hooks/use-user-preferences'
+import { useExecutionStore } from '@/stores/use-execution-store'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { CanvasControls } from './canvas-controls'
 import { CANVAS_CONTEXT_MENU_GROUPS } from './node-entry-config'
@@ -96,8 +98,10 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const rfInstance = useRef<FlowInstance | null>(null)
   const connectingFrom = useRef<PendingConnection | null>(null)
   const t = useTranslations('canvas.shortcutsHint')
+  const tCanvas = useTranslations('canvas')
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setViewport, addNode, removeNode } =
     useFlowStore()
+  const isExecuting = useExecutionStore((state) => state.isExecuting)
   const activeTool = useCanvasToolStore((s) => s.activeTool)
   const resetTool = useCanvasToolStore((s) => s.resetTool)
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
@@ -227,6 +231,10 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     [nodes, edges],
   )
 
+  const notifyDeleteBlocked = useCallback(() => {
+    toast.info(tCanvas('deleteBlockedWhileRunning'))
+  }, [tCanvas])
+
   /* ── 画布空白区右键 → 打开 Pane 菜单 ──────────────── */
   const handlePaneContextMenu = useCallback(
     (event: React.MouseEvent | MouseEvent) => {
@@ -266,8 +274,13 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
 
   /* ── Node 菜单: 删除节点 ───────────────────────────── */
   const handleDeleteNode = useCallback(() => {
+    if (isExecuting) {
+      notifyDeleteBlocked()
+      return
+    }
+
     if (menu.nodeId) removeNode(menu.nodeId)
-  }, [menu.nodeId, removeNode])
+  }, [isExecuting, menu.nodeId, notifyDeleteBlocked, removeNode])
 
   /* ── MENU-005: 拖拽连线到空白区 → 创建节点并自动连接 ─ */
   const handleConnectStart = useCallback(
@@ -328,6 +341,12 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
 
   const handleNodesChange = useCallback(
     (changes: WfNodeChange[]) => {
+      const hasRemove = changes.some((change) => change.type === 'remove')
+      if (hasRemove && isExecuting) {
+        notifyDeleteBlocked()
+        return
+      }
+
       const positionChange = changes.find(
         (c): c is Extract<WfNodeChange, { type: 'position' }> =>
           c.type === 'position' && 'dragging' in c && c.dragging === true,
@@ -364,7 +383,20 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
 
       onNodesChange(changes)
     },
-    [nodes, onNodesChange],
+    [isExecuting, nodes, notifyDeleteBlocked, onNodesChange],
+  )
+
+  const handleEdgesChange = useCallback(
+    (changes: Parameters<typeof onEdgesChange>[0]) => {
+      const hasRemove = changes.some((change) => change.type === 'remove')
+      if (hasRemove && isExecuting) {
+        notifyDeleteBlocked()
+        return
+      }
+
+      onEdgesChange(changes)
+    },
+    [isExecuting, notifyDeleteBlocked, onEdgesChange],
   )
 
   /* ── CANVAS-012: Toolbar drag & drop to create node ── */
@@ -483,7 +515,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
         isValidConnection={validateConnection}
         onInit={onInit}
@@ -513,7 +545,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         maxZoom={MAX_ZOOM}
         fitView
         fitViewOptions={{ padding: 0.2 }}
-        deleteKeyCode={['Backspace', 'Delete']}
+        deleteKeyCode={isExecuting ? null : ['Backspace', 'Delete']}
         /* ── 连线默认 ──────────────────────────────── */
         defaultEdgeOptions={{ type: 'custom', animated: false }}
         connectionLineStyle={{ stroke: 'var(--brand-400)', strokeWidth: 2 }}
@@ -549,6 +581,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
           y={menu.y}
           onDuplicate={handleDuplicateNode}
           onDelete={handleDeleteNode}
+          disableDelete={isExecuting}
           onClose={closeMenu}
         />
       )}

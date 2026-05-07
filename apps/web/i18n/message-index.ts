@@ -1244,6 +1244,7 @@ export const MESSAGE_NAMESPACE_INDEX = {
   "canvas": [
     "addNodesFirst",
     "backToWorkspace",
+    "deleteBlockedWhileRunning",
     "desktopOnly",
     "desktopOnlyDesc",
     "executionAborted",
@@ -1763,6 +1764,7 @@ export const MESSAGE_LEAF_KEYS = [
   "billing.usageTokens",
   "canvas.addNodesFirst",
   "canvas.backToWorkspace",
+  "canvas.deleteBlockedWhileRunning",
   "canvas.desktopOnly",
   "canvas.desktopOnlyDesc",
   "canvas.executionAborted",

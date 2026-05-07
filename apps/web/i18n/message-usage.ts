@@ -405,6 +405,7 @@ export const MESSAGE_USAGE_INDEX = {
     "canvas.workflowExported"
   ],
   "components/canvas/canvas.tsx": [
+    "canvas.deleteBlockedWhileRunning",
     "canvas.shortcutsHint.delete",
     "canvas.shortcutsHint.export",
     "canvas.shortcutsHint.import",
@@ -1404,6 +1405,7 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "billing.usageTokens",
   "canvas.addNodesFirst",
   "canvas.backToWorkspace",
+  "canvas.deleteBlockedWhileRunning",
   "canvas.desktopOnly",
   "canvas.desktopOnlyDesc",
   "canvas.executionAborted",

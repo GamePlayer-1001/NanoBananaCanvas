@@ -1643,6 +1643,7 @@
     "undo": "Undo",
     "redo": "Redo",
     "executionAborted": "Execution aborted",
+    "deleteBlockedWhileRunning": "Deletion is disabled while the workflow is running",
     "addNodesFirst": "Add some nodes first",
     "runningWorkflow": "Running workflow...",
     "nothingToExport": "Nothing to export",

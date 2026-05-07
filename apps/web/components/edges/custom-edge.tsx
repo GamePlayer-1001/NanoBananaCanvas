@@ -1,7 +1,8 @@
 /**
- * [INPUT]: 依赖 @xyflow/react 的 BaseEdge/EdgeLabelRenderer/getBezierPath/EdgeProps/useStore，依赖 @/stores/use-flow-store 的删边能力，依赖 @/types 的 WorkflowNodeData
+ * [INPUT]: 依赖 @xyflow/react 的 BaseEdge/EdgeLabelRenderer/getBezierPath/EdgeProps/useStore，依赖 @/stores/use-flow-store 的删边能力，
+ *          依赖 @/stores/use-execution-store 的运行态，依赖 @/types 的 WorkflowNodeData
  * [OUTPUT]: 对外提供 CustomEdge 自定义连线组件 (含执行动画与选中态删除按钮)
- * [POS]: components/edges 的默认连线渲染器，被 Canvas 通过 edgeTypes 消费
+ * [POS]: components/edges 的默认连线渲染器，被 Canvas 通过 edgeTypes 消费，并在运行态隐藏删边入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -10,6 +11,7 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps, useStore } from '@xyflow/react'
 import { X } from 'lucide-react'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { useExecutionStore } from '@/stores/use-execution-store'
 import type { WorkflowNodeData } from '@/types'
 
 /* ─── Component ───────────────────────────────────────── */
@@ -27,6 +29,7 @@ export function CustomEdge({
   markerEnd,
 }: EdgeProps) {
   const removeEdge = useFlowStore((state) => state.removeEdge)
+  const isExecuting = useExecutionStore((state) => state.isExecuting)
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -67,7 +70,7 @@ export function CustomEdge({
         </circle>
       )}
 
-      {selected && (
+      {selected && !isExecuting && (
         <EdgeLabelRenderer>
           <button
             type="button"

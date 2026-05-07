@@ -19,6 +19,7 @@ interface NodeContextMenuProps {
   y: number
   onDuplicate: () => void
   onDelete: () => void
+  disableDelete?: boolean
   onClose: () => void
 }
 
@@ -29,6 +30,7 @@ export function NodeContextMenu({
   y,
   onDuplicate,
   onDelete,
+  disableDelete = false,
   onClose,
 }: NodeContextMenuProps) {
   const t = useTranslations('contextMenu')
@@ -82,9 +84,11 @@ export function NodeContextMenu({
       <button
         className={cn(
           'flex w-full items-center gap-3 px-3 py-2 text-sm',
-          'text-destructive hover:bg-destructive/10',
-          'cursor-pointer transition-colors',
+          disableDelete
+            ? 'cursor-not-allowed text-muted-foreground opacity-50'
+            : 'text-destructive hover:bg-destructive/10 cursor-pointer transition-colors',
         )}
+        disabled={disableDelete}
         onClick={() => {
           onDelete()
           onClose()

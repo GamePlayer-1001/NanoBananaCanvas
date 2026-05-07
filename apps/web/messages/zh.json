@@ -1643,6 +1643,7 @@
     "undo": "撤销",
     "redo": "重做",
     "executionAborted": "执行已中断",
+    "deleteBlockedWhileRunning": "工作流运行中，暂时不能删除节点或连接线",
     "addNodesFirst": "请先添加节点",
     "runningWorkflow": "正在运行工作流...",
     "nothingToExport": "没有可导出的内容",
