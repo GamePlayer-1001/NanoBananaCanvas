@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
 import type { CreditBalanceSummary } from '@/lib/billing/credits'
+import { useSidebarBootstrap } from '@/hooks/use-user'
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
@@ -23,10 +24,13 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export function useCreditBalance(enabled = true) {
+  const bootstrap = useSidebarBootstrap()
+
   return useQuery({
     queryKey: queryKeys.billing.balance(),
     queryFn: () => fetchJson<CreditBalanceSummary>('/api/credits/balance'),
     enabled,
+    initialData: bootstrap.data?.balance as CreditBalanceSummary | undefined,
   })
 }
 
@@ -48,6 +52,8 @@ function getBrowserTimeZone() {
 }
 
 export function useDailySigninStatus(enabled = true) {
+  const bootstrap = useSidebarBootstrap()
+
   return useQuery({
     queryKey: queryKeys.billing.signinStatus(),
     queryFn: () => {
@@ -56,6 +62,7 @@ export function useDailySigninStatus(enabled = true) {
       return fetchJson<DailySigninStatus>(`/api/credits/signin${search}`)
     },
     enabled,
+    initialData: bootstrap.data?.signinStatus as DailySigninStatus | undefined,
     retry: false,
     refetchOnWindowFocus: false,
     staleTime: 60_000,

@@ -14,7 +14,7 @@ import { setRequestLocale } from 'next-intl/server'
 
 import { AccountContent } from '@/components/profile/account-content'
 import { requireAuth } from '@/lib/api/auth'
-import { getCreditBalanceSummary, getCreditTransactions, getCreditUsage } from '@/lib/billing/credits'
+import { getCreditBalanceSummary } from '@/lib/billing/credits'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
 import { getBillingSubscription } from '@/lib/billing/subscription'
@@ -62,32 +62,6 @@ function createGuestBalance() {
     currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
     storageGB: FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: null,
-  }
-}
-
-function createGuestTransactions() {
-  return {
-    items: [],
-    total: 0,
-    page: 1,
-    pageSize: 0,
-    hasMore: false,
-  }
-}
-
-function createGuestUsage() {
-  return {
-    windowDays: 30,
-    summary: {
-      totalRequests: 0,
-      successCount: 0,
-      failedCount: 0,
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      estimatedCreditsSpent: 0,
-    },
-    byModel: [],
-    daily: [],
   }
 }
 
@@ -163,25 +137,13 @@ export default async function AccountPage({
 
   const guestSubscription = createGuestSubscription()
   const guestBalance = createGuestBalance()
-  const guestTransactions = createGuestTransactions()
-  const guestUsage = createGuestUsage()
-  const [subscription, balance, transactions, usage, pricing] = await Promise.all([
+  const [subscription, balance, pricing] = await Promise.all([
     authUser
       ? loadOptionalAccountData('billing subscription', () => getBillingSubscription(authUser.userId), guestSubscription)
       : Promise.resolve(guestSubscription),
     authUser
       ? loadOptionalAccountData('credit balance', () => getCreditBalanceSummary(authUser.userId), guestBalance)
       : Promise.resolve(guestBalance),
-    authUser
-      ? loadOptionalAccountData(
-          'credit transactions',
-          () => getCreditTransactions(authUser.userId, { page: 1, pageSize: 10 }),
-          guestTransactions,
-        )
-      : Promise.resolve(guestTransactions),
-    authUser
-      ? loadOptionalAccountData('credit usage', () => getCreditUsage(authUser.userId, { windowDays: 30 }), guestUsage)
-      : Promise.resolve(guestUsage),
     getPublicPricingPlans({
       countryCode: requestHeaders.get('cf-ipcountry'),
     }).catch((error: unknown) => {
@@ -195,8 +157,6 @@ export default async function AccountPage({
       currentUser={currentUser}
       subscription={subscription}
       balance={balance}
-      transactions={transactions}
-      usage={usage}
       isPricingReady={Boolean(pricing)}
       plans={pricing?.plans ?? []}
       creditPacks={pricing?.creditPacks ?? []}

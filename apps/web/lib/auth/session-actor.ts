@@ -7,6 +7,7 @@
  */
 
 import { AppError, AuthError, ErrorCode } from '@/lib/errors'
+import { cache } from 'react'
 
 import { resolveRequestIdentity } from './identity-adapter'
 import {
@@ -140,7 +141,7 @@ async function ensureClerkActor(identity: Extract<Awaited<ReturnType<typeof reso
   }
 }
 
-export async function getSessionActor(): Promise<SessionActor> {
+export const getSessionActor = cache(async (): Promise<SessionActor> => {
   const identity = await resolveRequestIdentity()
 
   if (identity.kind === 'clerk') {
@@ -148,7 +149,7 @@ export async function getSessionActor(): Promise<SessionActor> {
   }
 
   return ensureAnonymousActor(identity)
-}
+})
 
 export async function requireAuthenticatedActor(): Promise<AuthenticatedActor> {
   const actor = await getSessionActor()
