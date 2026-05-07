@@ -319,9 +319,19 @@ export function AppSidebar() {
   const activeAccountTab = searchParams.get('tab')
   const isDashboardEntryActive = pathname === '/account' && activeAccountTab === 'dashboard'
   const isSubscriptionEntryActive = pathname === '/account' && activeAccountTab === 'subscription'
+  const browserTimeZone =
+    typeof window === 'undefined'
+      ? null
+      : Intl.DateTimeFormat().resolvedOptions().timeZone || null
   const claimSignin = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/credits/signin', { method: 'POST' })
+      const res = await fetch('/api/credits/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(browserTimeZone ? { timezone: browserTimeZone } : {}),
+      })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {
         throw new Error(body.error?.message ?? `Request failed: ${res.status}`)

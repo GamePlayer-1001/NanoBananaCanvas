@@ -14,8 +14,9 @@ billing/                — Stripe 计费入口 (6 端点)
   cancel/route.ts       — POST 自动月付到期取消 (登录必需)
   topup/route.ts        — POST 积分包充值 (登录必需，只接 packageId/currency)
 
-credits/                — 积分账本读取入口 (3 端点)
+credits/                — 积分账本读取入口 (4 端点)
   balance/route.ts      — GET 当前用户双池积分余额摘要 (登录必需)
+  signin/route.ts       — GET+POST 每日签到状态/领取入口 (登录必需，接收浏览器 timezone 并静默固化到账户)
   transactions/route.ts — GET 当前用户积分流水分页结果 (登录必需)
   usage/route.ts        — GET 当前用户 usage 聚合摘要 (登录必需)
 

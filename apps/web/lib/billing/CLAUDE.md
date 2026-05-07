@@ -8,7 +8,7 @@ config.test.ts: 计费配置单元测试，覆盖币种推断、共享 Price 回
 credits.ts: 积分余额读取层，统一汇总双池余额、冻结积分与当前套餐额度镜像，并在用户镜像/生产表缺失时安全降级为 Free
 credits.test.ts: 积分读取测试，覆盖余额摘要、历史列漂移、交易流水与 usage 聚合查询口径
 schema.ts: 计费 schema 探测层，统一探测 users 与 billing 相关表/列信息，吸收历史库结构漂移，并支持显式注入 D1 避免后台 Worker 误走 Web runtime
-ledger.ts: 积分事务真相源，统一 freeze / confirm / refund 三阶段事务与“订阅池优先、永久池补位”的双池扣减顺序；后台任务与签到可显式复用当前 D1 runtime，避免写成功后再被后置账本日志打成失败
+ledger.ts: 积分事务真相源，统一 freeze / confirm / refund 三阶段事务与“订阅池优先、永久池补位”的双池扣减顺序；签到按账号保存时区计算本地 00:00，并在首次收到浏览器时区时静默写回 users.timezone
 ledger.test.ts: 积分事务测试，覆盖双池冻结顺序、确认消费、失败退款与 reference 级剩余冻结汇总
 metering.ts: 计量真相源，统一模型定价查询、billable units 预估与 credits 预估口径
 metering.test.ts: 计量测试，覆盖 model_pricing 查询、文本/图片/视频/音频 billable units 与 credits 换算
