@@ -137,6 +137,7 @@ export default async function AccountPage({
         tier: authUser.plan,
         plan: authUser.plan,
         membershipStatus: authUser.membershipStatus,
+        timezone: null,
         createdAt: authUser.createdAt,
       }
     : {
@@ -156,6 +157,7 @@ export default async function AccountPage({
         tier: FREE_PLAN_SNAPSHOT.plan,
         plan: FREE_PLAN_SNAPSHOT.plan,
         membershipStatus: FREE_PLAN_SNAPSHOT.plan,
+        timezone: null,
         createdAt: '',
       }
 
