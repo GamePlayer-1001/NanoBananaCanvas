@@ -23,6 +23,25 @@ import {
 } from '@/components/ui/select'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const
+const TASK_CONFIRM_SOURCES = new Set(['task_platform_confirm'])
+const TASK_REFUND_SOURCES = new Set([
+  'task_platform_refund',
+  'task_platform_adjust',
+  'task_submit_platform_failure_refund',
+  'task_submit_platform_insert_refund',
+  'task_platform_cancel_refund',
+  'task_platform_failure_refund',
+  'task_platform_timeout_refund',
+])
+
+type ExecutionChannel =
+  | 'text'
+  | 'agent'
+  | 'video-analysis'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'generic'
 
 function getAmountTone(item: CreditTransactionItem) {
   if (item.amount > 0) {
@@ -46,6 +65,71 @@ function extractSigninDate(item: CreditTransactionItem) {
   return descriptionMatch?.[1] ?? null
 }
 
+function getExecutionChannel(item: CreditTransactionItem): ExecutionChannel {
+  switch (item.source) {
+    case 'ai_execute_platform_confirm':
+    case 'ai_execute_platform_failure_refund':
+      return 'text'
+    case 'ai_stream_platform_confirm':
+    case 'ai_stream_platform_failure_refund':
+      return 'agent'
+    case 'video_analysis_platform_confirm':
+    case 'video_analysis_platform_refund':
+      return 'video-analysis'
+    default:
+      break
+  }
+
+  if (TASK_CONFIRM_SOURCES.has(item.source) || TASK_REFUND_SOURCES.has(item.source)) {
+    switch (item.taskType) {
+      case 'image_gen':
+        return 'image'
+      case 'video_gen':
+        return 'video'
+      case 'audio_gen':
+        return 'audio'
+      default:
+        return 'generic'
+    }
+  }
+
+  return 'generic'
+}
+
+function buildExecutionLabelKey(
+  item: CreditTransactionItem,
+  kind: 'event' | 'source',
+): string {
+  const prefix = kind === 'event' ? 'historyEvent' : 'historySource'
+  const suffix =
+    item.type === 'refund'
+      ? 'Refund'
+      : item.type === 'spend'
+        ? 'Charge'
+        : null
+
+  if (!suffix) {
+    return `${prefix}GenericCharge`
+  }
+
+  switch (getExecutionChannel(item)) {
+    case 'text':
+      return `${prefix}Text${suffix}`
+    case 'agent':
+      return `${prefix}Agent${suffix}`
+    case 'video-analysis':
+      return `${prefix}VideoAnalysis${suffix}`
+    case 'image':
+      return `${prefix}Image${suffix}`
+    case 'video':
+      return `${prefix}Video${suffix}`
+    case 'audio':
+      return `${prefix}Audio${suffix}`
+    default:
+      return `${prefix}Generic${suffix}`
+  }
+}
+
 function buildSourceLabel(
   t: ReturnType<typeof useTranslations>,
   item: CreditTransactionItem,
@@ -61,16 +145,10 @@ function buildSourceLabel(
       return t('historySourceStripeCreditPack')
     case 'stripe_subscription_downgrade':
       return t('historySourceStripeSubscriptionDowngrade')
-    case 'ai_execute_platform_freeze':
-    case 'ai_stream_platform_freeze':
-    case 'video_analysis_platform_freeze':
-    case 'task_submit_platform_freeze':
-      return t('historySourceExecutionFreeze')
     case 'ai_execute_platform_confirm':
     case 'ai_stream_platform_confirm':
     case 'video_analysis_platform_confirm':
     case 'task_platform_confirm':
-      return t('historySourceExecutionConfirm')
     case 'ai_execute_platform_failure_refund':
     case 'ai_stream_platform_failure_refund':
     case 'video_analysis_platform_refund':
@@ -81,7 +159,7 @@ function buildSourceLabel(
     case 'task_platform_cancel_refund':
     case 'task_platform_failure_refund':
     case 'task_platform_timeout_refund':
-      return t('historySourceExecutionRefund')
+      return t(buildExecutionLabelKey(item, 'source'))
     default:
       return item.source
   }
@@ -106,16 +184,10 @@ function buildEventLabel(
       return t('historyEventStripeCreditPack')
     case 'stripe_subscription_downgrade':
       return t('historyEventStripeSubscriptionDowngrade')
-    case 'ai_execute_platform_freeze':
-    case 'ai_stream_platform_freeze':
-    case 'video_analysis_platform_freeze':
-    case 'task_submit_platform_freeze':
-      return t('historyEventExecutionFreeze')
     case 'ai_execute_platform_confirm':
     case 'ai_stream_platform_confirm':
     case 'video_analysis_platform_confirm':
     case 'task_platform_confirm':
-      return t('historyEventExecutionConfirm')
     case 'ai_execute_platform_failure_refund':
     case 'ai_stream_platform_failure_refund':
     case 'video_analysis_platform_refund':
@@ -126,7 +198,7 @@ function buildEventLabel(
     case 'task_platform_cancel_refund':
     case 'task_platform_failure_refund':
     case 'task_platform_timeout_refund':
-      return t('historyEventExecutionRefund')
+      return t(buildExecutionLabelKey(item, 'event'))
     default:
       return item.description || buildSourceLabel(t, item)
   }
