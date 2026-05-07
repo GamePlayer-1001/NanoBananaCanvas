@@ -47,7 +47,10 @@ export function LandingNav() {
           >
             {t('nav.pricing')}
           </Link>
-          <Link href="/models" className="text-sm text-white/70 transition-colors hover:text-white">
+          <Link
+            href="/#models"
+            className="text-sm text-white/70 transition-colors hover:text-white"
+          >
             {t('nav.models')}
           </Link>
           <div className="group relative">

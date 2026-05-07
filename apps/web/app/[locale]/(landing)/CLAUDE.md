@@ -5,7 +5,7 @@
 layout.tsx: Landing 深色布局壳层，负责 `landing-dark` 风格边界
 page.tsx: Landing 首页，服务端读取 Stripe 动态月付价格后承载 Hero、Features、人格分层 Pricing、Testimonials、模型动态图、FAQ 与页脚
 features/page.tsx: `/features` 历史兼容重定向页，旧链接统一回落到首页 `#features` 锚点，独立详情内容已下线
-models/page.tsx: `/models` 公开模型罗列页，承接 GPT Image 2 / OpenAI / Kling / Runway / Wan / Qwen 等模型检索
+models/page.tsx: `/models` 历史兼容重定向页，旧链接统一回落到首页 `#models` 锚点，独立详情内容已下线
 docs/page.tsx: `/docs` 公开文档导航页，承接资源菜单中的文档入口
 community/page.tsx: `/community` 公开社区说明页，引导到 Explore / Workflows / Contact
 about/page.tsx: `/about` 公开关于我们页面，说明产品定位、设计原则与适用人群

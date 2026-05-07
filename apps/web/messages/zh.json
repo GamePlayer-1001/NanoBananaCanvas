@@ -98,10 +98,9 @@
     "sections": {
       "models": {
         "eyebrow": "",
-        "title": "Works with the models you already love",
+        "title": "模型",
         "highlight": "",
-        "body": "Switch between top models inside one workflow.",
-        "cta": "了解更多模型能力",
+        "body": "把图像、视频、语言、视觉与路由能力收进同一张画布，在同一条工作流里自由切换、比较与接力。",
         "centerBody": "多模型统一调度",
         "stats": {
           "vendors": {
@@ -208,8 +207,8 @@
       },
       "testimonials": {
         "eyebrow": "真实评价",
-        "title": "用户真正记住的，不是模型数量，而是流程终于变清楚了。",
-        "body": "下面这些反馈更接近 Nano Banana Canvas 的真实价值：不是又一个生成入口，而是一层让 AI 生产流程变得可见、可复用、可协作的操作界面。",
+        "title": "用户评价",
+        "body": "",
         "pixel": {
           "handle": "@StoryboardSurfer",
           "role": "分镜动画创作者",
