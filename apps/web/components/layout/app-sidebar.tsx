@@ -180,6 +180,8 @@ function FolderNameDialog({
   title,
   description,
   initialName,
+  placeholder,
+  fallbackName,
   confirmLabel,
   pending,
   onOpenChange,
@@ -189,6 +191,8 @@ function FolderNameDialog({
   title: string
   description: string
   initialName: string
+  placeholder?: string
+  fallbackName?: string
   confirmLabel: string
   pending: boolean
   onOpenChange: (open: boolean) => void
@@ -206,8 +210,9 @@ function FolderNameDialog({
 
   const handleConfirm = () => {
     const trimmed = name.trim()
-    if (!trimmed) return
-    onConfirm(trimmed)
+    const resolvedName = trimmed || fallbackName?.trim()
+    if (!resolvedName) return
+    onConfirm(resolvedName)
   }
 
   return (
@@ -222,6 +227,7 @@ function FolderNameDialog({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder={placeholder}
             maxLength={50}
             autoFocus
             onKeyDown={(e) => {
@@ -236,7 +242,7 @@ function FolderNameDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {tc('cancel')}
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim() || pending}>
+          <Button onClick={handleConfirm} disabled={pending}>
             {confirmLabel}
           </Button>
         </DialogFooter>
@@ -611,7 +617,9 @@ export function AppSidebar() {
         open={createDialogOpen}
         title={t('createFolderTitle')}
         description={t('createFolderDescription')}
-        initialName={t('newFolder')}
+        initialName=""
+        placeholder={t('newFolder')}
+        fallbackName={t('newFolder')}
         confirmLabel={t('createFolderConfirm')}
         pending={createFolder.isPending}
         onOpenChange={setCreateDialogOpen}
@@ -624,6 +632,7 @@ export function AppSidebar() {
         title={t('renameFolderTitle')}
         description={t('renameFolderDescription')}
         initialName={renameTarget?.name ?? ''}
+        placeholder={t('renameFolderTitle')}
         confirmLabel={t('renameFolderConfirm')}
         pending={updateFolder.isPending}
         onOpenChange={(open) => {
