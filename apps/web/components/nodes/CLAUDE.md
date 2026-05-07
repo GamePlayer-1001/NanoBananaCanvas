@@ -12,7 +12,7 @@ registry.ts              — NODE_TYPES 节点类型→组件映射 (ReactFlow �
 base-node.tsx       — BaseNode 节点基础框架 (从 plugin-registry 读取端口，渲染状态指示/Handle/端口标签/选中样式，并统一提供稳定默认尺寸、内容裁切与边缘缩放)
 text-input-node.tsx — TextInputNode 文本输入节点
 image-input-node.tsx — ImageInputNode 图片输入节点 (R2 上传 + 固定内容区图片预览 + image-out 输出)
-llm-node.tsx        — LLMNode 大语言模型节点 (platformProvider/platformModel 与 userKeyConfigId 分离；平台模式只暴露 4 个 comfly 静态文本模型且不再单独显示供应商字段，用户模式保留多协议自配置，支持温度/MaxTokens/SystemPrompt/流式输出)
+llm-node.tsx        — LLMNode 大语言模型节点 (platformProvider/platformModel 与 userKeyConfigId 分离；平台模式只暴露 4 个 comfly 静态文本模型且不再单独显示供应商字段，用户模式保留多协议自配置，支持温度/MaxTokens/SystemPrompt/流式输出，并通过 showPreview 开关控制节点内结果预览)
 display-node.tsx    — DisplayNode 结果展示节点 (递归渲染文本/图片/视频/音频/JSON/数组对象/裸 base64，以固定节点框体承载滚动文本与 contain 媒体预览，并支持浏览器下载)
 image-gen-node.tsx  — ImageGenNode 图片生成节点 (平台模式只暴露当前静态平台图片目录并以 provider:model 复合值选中，默认链已收口到 comfly 可用模型，展示为图标 + 模型名 + 手动积分价签；用户模式绑定 userKeyConfigId，并按能力表动态禁用非法尺寸与比例，节点内预览固定在内容区内缩放)
 video-gen-node.tsx  — VideoGenNode 视频生成节点 (当前已隐藏平台模式，仅保留用户自配置执行链；支持时长/画面比例/模式/视频播放/进度条，并把视频预览固定收口在节点内容区内)

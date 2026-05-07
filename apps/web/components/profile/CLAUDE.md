@@ -4,7 +4,7 @@
 ## 成员清单
 
 account-content.tsx: AccountContent 账户页主内容，左侧二级导航 sticky + 右侧内容面板，支持通过 query 初始化目标页签
-account-dashboard-tab.tsx: AccountDashboardTab 账户仪表盘页签，展示套餐摘要、积分分布、签到积分、升级入口、账本流水与用量趋势，不再展示存储额度语义
+account-dashboard-tab.tsx: AccountDashboardTab 账户仪表盘页签，展示套餐摘要、积分分布、签到积分、升级入口、账本流水，并只在存在真实数据时展示用量趋势，不再展示存储额度语义
 profile-modal.tsx: ProfileModal 旧个人中心弹窗，已不再作为主入口
 profile-tab.tsx: ProfileTab 个人资料面板，展示昵称/邮箱/真实密码状态 + 退出登录 + Clerk 安全中心入口
 subscription-tab.tsx: SubscriptionTab 订阅页签，承接月付/一次性/积分包切换、权益展示与真实 Stripe 结账动作，并把套餐卖点收口为积分补给与交付节奏

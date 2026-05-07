@@ -3,7 +3,7 @@
  *          依赖 @/lib/billing/credits 与 @/lib/billing/subscription 的摘要类型，
  *          依赖本目录下的余额卡片/流水表/usage 图表
  * [OUTPUT]: 对外提供 BillingContent 账单页主内容组件
- * [POS]: billing 的页面主渲染器，被 /billing 路由消费，负责组合本地账单概览与 Stripe Portal 操作入口
+ * [POS]: billing 的页面主渲染器，被 /billing 路由消费，负责组合本地账单概览、真实存在时才展示的 usage 区块与 Stripe Portal 操作入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 
 import { CreditBalanceCard } from './credit-balance-card'
 import { PaymentHistoryTable } from './payment-history-table'
-import { UsageChart } from './usage-chart'
+import { hasUsageData, UsageChart } from './usage-chart'
 
 export interface BillingContentProps {
   subscription: BillingSubscriptionSummary
@@ -36,6 +36,7 @@ export function BillingContent({
 }: BillingContentProps) {
   const t = useTranslations('billing')
   const [isOpeningPortal, setIsOpeningPortal] = useState(false)
+  const showUsage = hasUsageData(usage)
 
   async function handleOpenPortal() {
     setIsOpeningPortal(true)
@@ -102,9 +103,9 @@ export function BillingContent({
         </section>
 
         <CreditBalanceCard balance={balance} />
-        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className={`grid gap-6 ${showUsage ? 'xl:grid-cols-[1.05fr_0.95fr]' : ''}`}>
           <PaymentHistoryTable isAuthenticated transactions={transactions} />
-          <UsageChart usage={usage} />
+          {showUsage ? <UsageChart usage={usage} /> : null}
         </div>
       </div>
     </div>

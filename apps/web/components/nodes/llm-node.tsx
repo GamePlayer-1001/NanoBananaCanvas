@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @xyflow/react 的 NodeProps，依赖 ./base-node，依赖 @/stores/use-flow-store，
  *          依赖 @/lib/platform-models 与静态平台目录，依赖 next-intl 的 useTranslations
  * [OUTPUT]: 对外提供 LLMNode 大语言模型节点组件
- * [POS]: components/nodes 的核心 AI 节点，被 registry 注册并在画布中渲染，统一消费 /api/ai/models 作为平台模型目录
+ * [POS]: components/nodes 的核心 AI 节点，被 registry 注册并在画布中渲染，统一消费 /api/ai/models 作为平台模型目录，并按 showPreview 决定是否展开结果预览
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -37,6 +37,7 @@ import { useFlowStore } from '@/stores/use-flow-store'
 import type { WorkflowNodeData } from '@/types'
 
 import { PlatformModelSelect } from '@/components/shared/platform-model-select'
+import { Switch } from '@/components/ui/switch'
 
 import { BaseNode } from './base-node'
 
@@ -63,6 +64,7 @@ export function LLMNode(props: NodeProps) {
   const systemPrompt = (config.systemPrompt as string) ?? ''
   const output = (config.output as string) ?? ''
   const tokenCount = (config.tokenCount as number) ?? 0
+  const showPreview = config.showPreview === true
   const status = data.status ?? 'idle'
   const {
     getConfigByCapability,
@@ -297,6 +299,19 @@ export function LLMNode(props: NodeProps) {
           />
         </ConfigField>
 
+        <ConfigField label={t('preview')}>
+          <div className="flex items-center justify-between gap-3 rounded-md border px-2 py-1.5">
+            <span className="text-muted-foreground text-xs">
+              {t('previewDescription')}
+            </span>
+            <Switch
+              checked={showPreview}
+              onCheckedChange={(checked) => updateConfig({ showPreview: checked })}
+              size="sm"
+            />
+          </div>
+        </ConfigField>
+
         <div>
           <button
             type="button"
@@ -318,7 +333,7 @@ export function LLMNode(props: NodeProps) {
           ) : null}
         </div>
 
-        {status === 'running' || output ? (
+        {showPreview && (status === 'running' || output) ? (
           <div className="border-border flex min-h-0 flex-1 flex-col rounded-md border">
             <div className="border-border flex items-center justify-between border-b px-2 py-1">
               <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
