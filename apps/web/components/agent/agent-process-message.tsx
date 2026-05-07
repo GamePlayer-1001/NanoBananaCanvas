@@ -18,7 +18,7 @@ export function AgentProcessMessage({
   active = false,
 }: AgentProcessMessageProps) {
   return (
-    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/75 px-3.5 py-3 text-[12px] text-slate-600 shadow-sm">
+    <div className="w-full rounded-2xl border border-indigo-100 bg-indigo-50/75 px-4 py-3 text-[12px] text-slate-600 shadow-sm">
       <div className="flex items-center gap-2.5">
         <Loader2
           size={13}
@@ -28,7 +28,7 @@ export function AgentProcessMessage({
               : 'text-slate-400',
           )}
         />
-        <span className="leading-5">{text}</span>
+        <span className="break-words leading-6">{text}</span>
       </div>
     </div>
   )

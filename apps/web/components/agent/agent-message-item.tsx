@@ -35,7 +35,7 @@ export function AgentMessageItem({
   return (
     <div
       className={cn(
-        'max-w-[92%] rounded-[22px] px-4 py-3 shadow-[0_10px_28px_rgba(15,23,42,0.06)]',
+        'w-[calc(100%-20px)] rounded-[22px] px-5 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]',
         ROLE_STYLES[role],
       )}
     >
@@ -58,7 +58,7 @@ export function AgentMessageItem({
           ))}
         </div>
       ) : null}
-      <p className="whitespace-pre-wrap text-[13px] leading-6">{text}</p>
+      <p className="whitespace-pre-wrap break-words text-[13px] leading-7">{text}</p>
       {timestamp ? (
         <p
           className={cn(

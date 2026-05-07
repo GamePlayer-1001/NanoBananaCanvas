@@ -1,11 +1,11 @@
 /**
- * [INPUT]: 依赖 react 的 useMemo/useState，依赖 @/components/ui/scroll-area，依赖同目录消息组件与轻量 prompt 展示组件
+ * [INPUT]: 依赖 react 的 useEffect/useMemo/useRef/useState，依赖 @/components/ui/scroll-area，依赖同目录消息组件与轻量 prompt 展示组件
  * [OUTPUT]: 对外提供 AgentConversation 组件，渲染轻量消息流、自动折叠的过程记录与纯文本 prompt 确认结构
  * [POS]: components/agent 的对话承载层，被 AgentPanel 组合使用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
@@ -74,6 +74,26 @@ export function AgentConversation({
   onPromptStyleSelect,
 }: AgentConversationProps) {
   const [expandedProcessGroupIds, setExpandedProcessGroupIds] = useState<string[]>([])
+  const [showScrollbars, setShowScrollbars] = useState(false)
+  const hideScrollbarTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (hideScrollbarTimerRef.current) {
+        window.clearTimeout(hideScrollbarTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleViewportScroll = () => {
+    setShowScrollbars(true)
+    if (hideScrollbarTimerRef.current) {
+      window.clearTimeout(hideScrollbarTimerRef.current)
+    }
+    hideScrollbarTimerRef.current = window.setTimeout(() => {
+      setShowScrollbars(false)
+    }, 900)
+  }
 
   const displayItems = useMemo<DisplayItem[]>(() => {
     const nextItems: DisplayItem[] = []
@@ -115,8 +135,18 @@ export function AgentConversation({
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="space-y-4 pb-2 pr-2">
+    <ScrollArea
+      className="h-full"
+      viewportClassName="pr-2"
+      scrollbarClassName={cn(
+        'opacity-0 transition-opacity duration-200',
+        showScrollbars && 'opacity-100',
+      )}
+      viewportProps={{
+        onScroll: handleViewportScroll,
+      }}
+    >
+      <div className="space-y-4 pb-2 pr-4">
         {displayItems.map((item) => {
           if (item.type === 'process-group') {
             const expanded = expandedProcessGroupIds.includes(item.id)
@@ -127,7 +157,7 @@ export function AgentConversation({
             return (
               <div
                 key={item.id}
-                className="overflow-hidden rounded-[20px] border border-black/6 bg-white/82 shadow-[0_10px_28px_rgba(15,23,42,0.05)]"
+                className="w-full overflow-hidden rounded-[20px] border border-black/6 bg-white/82 shadow-[0_10px_28px_rgba(15,23,42,0.05)]"
               >
                 <button
                   type="button"
@@ -172,8 +202,8 @@ export function AgentConversation({
             )
           }
 
-      if (item.type === 'message') {
-        return (
+          if (item.type === 'message') {
+            return (
               <AgentMessageItem
                 key={item.id}
                 role={item.role}
@@ -181,26 +211,26 @@ export function AgentConversation({
                 timestamp={item.timestamp}
                 attachments={item.attachments}
               />
-        )
-      }
+            )
+          }
 
-      const promptItem = item as PromptConversationItem
-      return (
-        <AgentPromptCompareCard
-          key={promptItem.id}
-          payloadId={promptItem.payloadId}
-          originalIntent={promptItem.originalIntent}
-          visualProposal={promptItem.visualProposal}
-          executionPrompt={promptItem.executionPrompt}
-          styleOptions={promptItem.styleOptions}
-          expanded={promptItem.expanded}
-          onRegenerate={() => onPromptRegenerate?.(promptItem.payloadId)}
-          onManualEdit={() => onPromptManualEdit?.(promptItem.payloadId)}
-          onToggleExpand={() => onPromptToggleExpand?.(promptItem.payloadId)}
-          onStyleSelect={(styleLabel) => onPromptStyleSelect?.(promptItem.payloadId, styleLabel)}
-        />
-      )
-    })}
+          const promptItem = item as PromptConversationItem
+          return (
+            <AgentPromptCompareCard
+              key={promptItem.id}
+              payloadId={promptItem.payloadId}
+              originalIntent={promptItem.originalIntent}
+              visualProposal={promptItem.visualProposal}
+              executionPrompt={promptItem.executionPrompt}
+              styleOptions={promptItem.styleOptions}
+              expanded={promptItem.expanded}
+              onRegenerate={() => onPromptRegenerate?.(promptItem.payloadId)}
+              onManualEdit={() => onPromptManualEdit?.(promptItem.payloadId)}
+              onToggleExpand={() => onPromptToggleExpand?.(promptItem.payloadId)}
+              onStyleSelect={(styleLabel) => onPromptStyleSelect?.(promptItem.payloadId, styleLabel)}
+            />
+          )
+        })}
       </div>
     </ScrollArea>
   )
