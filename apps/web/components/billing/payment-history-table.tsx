@@ -206,17 +206,61 @@ function buildEventLabel(
   }
 }
 
-function formatTransactionTimestamp(createdAt: string, timezone: string | null | undefined) {
-  const date = new Date(createdAt)
-  if (Number.isNaN(date.getTime())) {
-    const match = createdAt.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/)
-    if (match) {
-      return `${match[1]} ${match[2]}`
-    }
+type ParsedLedgerTimestamp = {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+}
 
-    return createdAt.replace('T', ' ').slice(0, 16)
+function parseLedgerTimestamp(createdAt: string): ParsedLedgerTimestamp | null {
+  const match = createdAt.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/,
+  )
+
+  if (!match) {
+    return null
   }
 
+  const [, year, month, day, hour = '00', minute = '00', second = '00'] = match
+
+  return {
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+    hour: Number(hour),
+    minute: Number(minute),
+    second: Number(second),
+  }
+}
+
+function formatLedgerTimestampFallback(createdAt: string) {
+  const match = createdAt.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?/)
+  if (match) {
+    return `${match[1]} ${match[2] ?? '00:00'}`
+  }
+
+  return createdAt.replace('T', ' ').slice(0, 16)
+}
+
+function formatTransactionTimestamp(createdAt: string, timezone: string | null | undefined) {
+  const parsed = parseLedgerTimestamp(createdAt)
+  if (!parsed) {
+    return formatLedgerTimestampFallback(createdAt)
+  }
+
+  const date = new Date(
+    Date.UTC(
+      parsed.year,
+      parsed.month - 1,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+    ),
+  )
   const formatter = new Intl.DateTimeFormat('sv-SE', {
     timeZone: normalizeTimeZone(timezone) ?? DEFAULT_SIGNIN_TIMEZONE,
     year: 'numeric',
@@ -227,7 +271,7 @@ function formatTransactionTimestamp(createdAt: string, timezone: string | null |
     hour12: false,
   })
 
-  return formatter.format(date).replace(' ', ' ')
+  return formatter.format(date)
 }
 
 export function PaymentHistoryTable({
