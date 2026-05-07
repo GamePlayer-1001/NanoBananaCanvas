@@ -100,56 +100,6 @@ function formatLandingMoney(locale: string, currency: string, amount: number) {
   }).format(amount / 100)
 }
 
-function SectionHeader({
-  eyebrow,
-  title,
-  body,
-  size = 'default',
-}: {
-  eyebrow: string
-  title: string
-  body: string
-  size?: 'default' | 'featured'
-}) {
-  const isFeatured = size === 'featured'
-
-  return (
-    <div
-      className={`grid w-full text-left lg:items-end ${
-        isFeatured
-          ? 'gap-8 lg:grid-cols-[0.96fr_1.04fr]'
-          : 'gap-6 lg:grid-cols-[0.92fr_1.08fr]'
-      }`}
-    >
-      <div>
-        {eyebrow ? (
-          <p className="text-sm font-medium tracking-[0.24em] text-white/45 uppercase">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h2
-          className={`${eyebrow ? 'mt-4' : ''} font-semibold text-white ${
-            isFeatured
-              ? 'max-w-[13ch] text-[2.75rem] leading-[0.95] tracking-tight md:text-[4.6rem] lg:text-[5.3rem]'
-              : 'text-3xl md:text-5xl'
-          }`}
-        >
-          {title}
-        </h2>
-      </div>
-      <p
-        className={`text-white/62 ${
-          isFeatured
-            ? 'max-w-[44rem] text-lg leading-8 md:text-[1.3rem] md:leading-9 lg:pb-2'
-            : 'text-base leading-7 md:text-lg lg:pb-1'
-        }`}
-      >
-        {body}
-      </p>
-    </div>
-  )
-}
-
 export function FeaturesSection() {
   const featuresT = useTranslations('landing.sections.features')
   const featureItems = FEATURE_KEYS.map((key, index) => ({
@@ -500,11 +450,11 @@ export function TestimonialsSection() {
     <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-22 sm:px-6 lg:px-8 lg:py-24 xl:px-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.07),transparent_20%),radial-gradient(circle_at_82%_74%,rgba(110,124,255,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
       <div className="relative mx-auto w-full max-w-[1240px]">
-        <SectionHeader
-          eyebrow=""
-          title={testimonialsT('title')}
-          body={testimonialsT('body')}
-        />
+        <div className="mx-auto max-w-[48rem] text-center">
+          <h2 className="text-3xl font-semibold text-white md:text-5xl">
+            {testimonialsT('title')}
+          </h2>
+        </div>
 
         <div className="mt-14 gap-5 md:columns-2 xl:columns-4 [&>*]:mb-5">
           {TESTIMONIAL_ITEMS.map((key, index) => (
