@@ -17,6 +17,7 @@ env.ts       — 统一环境变量获取入口 (getEnv/requireEnv → getCloudf
 r2.ts        — R2 对象存储访问入口 (getR2 → getCloudflareContext；任务快照/输出由共享 service 注入 runtime 后跨 web+worker 复用)
 storage.ts   — 存储路径/私有文件 URL 解析/配额缓存/输出清理与失效工具（任务系统额外使用内部 `task-inputs/` 快照，不计入用户配额）
 nanoid.ts    — 零依赖 ID 生成器 (CF Workers 兼容)
+timezones.ts — IANA 时区真相源 (白名单 + 校验 + 常用选项)，被签到账本与设置页复用
 api-key-crypto.ts   — API Key 服务端 AES-256-GCM 加密层 (encrypt/decrypt/mask)
 user-model-config.ts — 账号级模型配置契约层 (兼容旧槽位 + 多配置能力标记 + 加密负载 JSON 编解码 + URL 规范化)
 guest-model-config.ts — 访客本地临时模型配置层 (localStorage 真相源 + 多配置读写 + 脱敏公开视图 + 运行时配置转换)

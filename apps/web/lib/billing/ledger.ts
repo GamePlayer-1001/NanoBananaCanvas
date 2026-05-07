@@ -16,6 +16,7 @@ import {
   type BillingCapabilities,
 } from './capabilities'
 import { getBillingSchemaInfo } from './schema'
+import { DEFAULT_SIGNIN_TIMEZONE, normalizeTimeZone } from '@/lib/timezones'
 import { SIGNIN_TRIAL_CREDITS } from './workflow-pricing'
 
 const log = createLogger('billing:ledger')
@@ -142,21 +143,6 @@ type TimeZoneDateParts = {
   hour: number
   minute: number
   second: number
-}
-
-const DEFAULT_SIGNIN_TIMEZONE = 'UTC'
-
-function isValidTimeZone(timeZone: string | null | undefined): timeZone is string {
-  if (!timeZone) {
-    return false
-  }
-
-  try {
-    Intl.DateTimeFormat('en-US', { timeZone }).format(new Date())
-    return true
-  } catch {
-    return false
-  }
 }
 
 function getTimeZoneDateParts(date: Date, timeZone: string): TimeZoneDateParts {
@@ -319,9 +305,7 @@ async function resolveSigninTimeZone(
 ) {
   const schema = await getBillingSchemaInfo({ db })
   const canPersistUserTimezone = schema.usersColumns.has('timezone')
-  const normalizedReportedTimezone = isValidTimeZone(reportedTimezone)
-    ? reportedTimezone
-    : null
+  const normalizedReportedTimezone = normalizeTimeZone(reportedTimezone)
 
   if (!canPersistUserTimezone) {
     return normalizedReportedTimezone ?? DEFAULT_SIGNIN_TIMEZONE
@@ -331,7 +315,7 @@ async function resolveSigninTimeZone(
     .prepare('SELECT timezone FROM users WHERE id = ?')
     .bind(userId)
     .first<{ timezone?: string | null }>()
-  const storedTimezone = isValidTimeZone(row?.timezone) ? row.timezone : null
+  const storedTimezone = normalizeTimeZone(row?.timezone)
 
   if (storedTimezone) {
     return storedTimezone

@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
 
@@ -42,6 +42,7 @@ export interface UserProfile {
   tier: string
   plan: string
   membershipStatus: string
+  timezone: string | null
   createdAt: string
 }
 
@@ -51,5 +52,32 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: queryKeys.user.profile(),
     queryFn: () => fetchJson<UserProfile>('/api/users/me'),
+  })
+}
+
+export function useUpdateUserTimezone() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (timezone: string) => {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ timezone }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error?.message ?? `Request failed: ${res.status}`)
+      }
+
+      const json = await res.json()
+      return json.data as { timezone: string }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.user.profile() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.billing.signinStatus() })
+    },
   })
 }
