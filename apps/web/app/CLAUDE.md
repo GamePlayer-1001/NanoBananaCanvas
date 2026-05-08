@@ -38,8 +38,8 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/(landing)/acceptable-use/page.tsx — 合理使用政策页面
 [locale]/(landing)/cookies/page.tsx        — Cookie 设置说明页
 [locale]/(auth)/layout.tsx                  — 认证布局 (品牌双栏认证壳层，承载 Clerk 登录/注册页)
-[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx — 登录页 (Landing 主 CTA 入口 + 真实 Clerk SignIn 卡片，对外暴露 /sign-in)
-[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx — 注册页 (复用认证壳层 + 真实 Clerk SignUp 卡片，对外暴露 /sign-up)
+[locale]/(auth)/sign-in/[[...sign-in]]/page.tsx — 登录页 (Landing 主 CTA 入口 + 真实 Clerk SignIn 卡片，对外暴露 /sign-in；已登录访问时服务端直跳目标页)
+[locale]/(auth)/sign-up/[[...sign-up]]/page.tsx — 注册页 (复用认证壳层 + 真实 Clerk SignUp 卡片，对外暴露 /sign-up；已登录访问时服务端直跳目标页)
 [locale]/(app)/layout.tsx                   — 应用动态布局 (AppSidebar 200px + main flex-1)
 [locale]/(app)/account/page.tsx             — 账户页 (AccountContent: 个人资料/作品/通知/多条 API 接入配置)
 [locale]/(app)/billing/page.tsx             — 账单页 (BillingContent: 余额/流水/usage + Stripe Portal 入口)
