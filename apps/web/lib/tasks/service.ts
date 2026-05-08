@@ -1220,10 +1220,19 @@ export async function submitTask(
   await checkConcurrency(db, userId)
 
   let apiKey = ''
+  let fallbackApiKey: string | undefined
   let submitResult: Awaited<ReturnType<TaskProcessor['submit']>> | null = null
   let persistedOutput: TaskOutput | null = null
   let persistedProvider = requestProvider as string
   let persistedModelId = resolvedModelId
+
+  function fingerprintKey(value: string | undefined): string | null {
+    if (!value) return null
+    if (value.length <= 10) {
+      return `${value.slice(0, 2)}***${value.slice(-2)}`
+    }
+    return `${value.slice(0, 6)}***${value.slice(-4)}`
+  }
 
   try {
     if (executionMode === 'platform') {
@@ -1240,6 +1249,10 @@ export async function submitTask(
         resolvedModelId,
         runtime,
       )
+      fallbackApiKey =
+        taskType === 'image_gen' && runtimeModel.supplierId === 'dlapi'
+          ? await runtime.getPlatformSupplierApiKey?.('comfly').catch(() => undefined)
+          : undefined
       imageCapabilities =
         taskType === 'image_gen'
           ? mergeImageModelCapabilities(
@@ -1305,8 +1318,24 @@ export async function submitTask(
     }
 
     if (!shouldDeferTaskExecution(taskType)) {
+      if (taskType === 'image_gen') {
+        log.info('Image task provider auth context', {
+          taskId,
+          executionMode,
+          provider: resolvedProvider,
+          modelId: resolvedModelId,
+          keyFingerprint: fingerprintKey(apiKey),
+          fallbackProvider:
+            resolvedProvider === 'dlapi' && fallbackApiKey ? 'comfly' : null,
+          fallbackKeyFingerprint: fingerprintKey(fallbackApiKey),
+        })
+      }
       submitResult = await getProcessor(taskType, resolvedProvider).submit(
-        { model: resolvedModelId, params: resolvedInput },
+        {
+          model: resolvedModelId,
+          params: resolvedInput,
+          fallbackApiKey,
+        },
         apiKey,
       )
       persistedProvider = submitResult.providerOverride ?? requestProvider ?? resolvedProvider
@@ -1337,6 +1366,7 @@ export async function submitTask(
           resolvedInput,
           originalInput: input,
           apiKey,
+          fallbackApiKey,
           runtimeConfig,
           runtimeMeta: persistedRuntimeMeta,
         },

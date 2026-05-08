@@ -559,6 +559,7 @@ describe('ImageGenProcessor', () => {
           prompt: 'draw a fallback cat',
           size: '1024x1024',
         },
+        fallbackApiKey: 'comfly-key',
       },
       'platform-key',
     )
@@ -568,6 +569,10 @@ describe('ImageGenProcessor', () => {
       'https://ai.comfly.chat/v1/images/generations',
       expect.objectContaining({
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer comfly-key',
+        },
         body: JSON.stringify({
           model: 'gpt-image-2-all',
           prompt: 'draw a fallback cat',
@@ -654,6 +659,7 @@ describe('ImageGenProcessor', () => {
           prompt: 'draw an async-only cat',
           size: '1024x1024',
         },
+        fallbackApiKey: 'comfly-key',
       },
       'platform-key',
     )
@@ -662,6 +668,10 @@ describe('ImageGenProcessor', () => {
       2,
       'https://ai.comfly.chat/v1/images/generations',
       expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer comfly-key',
+        },
         method: 'POST',
         body: JSON.stringify({
           model: 'gpt-image-2-all',

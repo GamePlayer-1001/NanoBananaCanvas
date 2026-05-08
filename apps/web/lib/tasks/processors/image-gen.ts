@@ -725,16 +725,18 @@ async function submitWithComflyFallback(
     log.warn('DLAPI image submit failed, fallback to Comfly', {
       error: error instanceof Error ? error.message : String(error),
       model: input.model,
+      hasDedicatedFallbackKey: Boolean(input.fallbackApiKey),
     })
 
     const fallbackModel =
       IMAGE_PROVIDER_FALLBACK_MODEL_MAP.dlapi[input.model] ?? input.model
+    const fallbackApiKey = input.fallbackApiKey ?? apiKey
     const result = await openAICompatibleSubmit(
       {
         ...input,
         model: fallbackModel,
       },
-      apiKey,
+      fallbackApiKey,
       'comfly',
     )
     return {
