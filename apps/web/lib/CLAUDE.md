@@ -30,6 +30,7 @@ image-model-capabilities.ts — 图片模型能力真相源 (显示分辨率预�
 ai-node-config.test.ts — AI 节点配置语义测试 (验证新字段优先级、旧字段迁移兼容、平台/用户模式隔离)
 l10n.test.ts — L10N 语义测试 (业务字段 locale 回退链 + 多语言值映射)
 image-model-capabilities.test.ts — 图片能力测试 (尺寸解析 + 动态护栏 + 错误学习回归)
+legal-documents.ts — 公开法律文档读取与解析层，服务端读取 `.md` 协议真相源并输出统一段落/列表/表格结构
 api/                 — API 路由公共基础设施 (auth 守卫 + response 统一响应，详见子 CLAUDE.md)
 billing/     — Stripe 计费服务层 (配置解析 + 套餐权益 + Stripe client + Checkout/公开价格目录，详见子 CLAUDE.md)
 auth/        — 身份桥接层 (Clerk/匿名 identity adapter + SessionActor 门面 + route guard + redirect 策略，详见子 CLAUDE.md)

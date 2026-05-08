@@ -1,75 +1,24 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations
+ * [INPUT]: 依赖 @/lib/legal-documents 的 readLegalDocument/parseLegalDocument，依赖 ./legal-document-renderer
  * [OUTPUT]: 对外提供 TermsContent 服务条款内容组件
- * [POS]: legal 的条款页面，被 terms/page.tsx 消费
+ * [POS]: legal 的条款页面真相源，被 terms/page.tsx 消费并承接 landing footer 的 /terms 链接
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-'use client'
+import { LegalDocumentRenderer } from './legal-document-renderer'
 
-import { useTranslations } from 'next-intl'
+import { parseLegalDocument, readLegalDocument } from '@/lib/legal-documents'
 
-/* ─── Component ──────────────────────────────────────── */
-
-export function TermsContent() {
-  const t = useTranslations('legal')
+export async function TermsContent() {
+  const source = await readLegalDocument('服务条款Terms of Service')
+  const { intro, sections } = parseLegalDocument(source)
 
   return (
-    <div className="mx-auto max-w-[800px] px-6 pb-20 pt-28">
-      <h1 className="text-3xl font-bold text-white">{t('termsTitle')}</h1>
-      <p className="mt-2 text-sm text-white/50">{t('lastUpdated', { date: '2026-04-22' })}</p>
-
-      <div className="mt-10 space-y-8 text-sm leading-relaxed text-white/70">
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_acceptance')}</h2>
-          <p>{t('terms_acceptance_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_services')}</h2>
-          <p>{t('terms_services_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_accounts')}</h2>
-          <p>{t('terms_accounts_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_content')}</h2>
-          <p>{t('terms_content_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_access')}</h2>
-          <p>{t('terms_access_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_billing')}</h2>
-          <p>{t('terms_billing_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_refunds')}</h2>
-          <p>{t('terms_refunds_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_currency')}</h2>
-          <p>{t('terms_currency_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_termination')}</h2>
-          <p>{t('terms_termination_body')}</p>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-white">{t('terms_liability')}</h2>
-          <p>{t('terms_liability_body')}</p>
-        </section>
-      </div>
-    </div>
+    <LegalDocumentRenderer
+      title="Terms of Service"
+      updatedAt="May 8, 2026"
+      intro={intro}
+      sections={sections}
+    />
   )
 }

@@ -3,7 +3,8 @@
 
 ## 成员清单
 
-terms-content.tsx: TermsContent 服务条款页面内容，10 个法律条款章节（含订阅/退款/多币种说明）
-privacy-content.tsx: PrivacyContent 隐私政策页面内容，8 个隐私条款章节（含 Stripe 账单数据说明）
+terms-content.tsx: TermsContent 服务条款页面真相源，服务端读取 `.md/服务条款Terms of Service` 并承接 landing footer 的 `/terms` 路由  
+privacy-content.tsx: PrivacyContent 隐私政策页面真相源，服务端读取 `.md/隐私政策Privacy Policy` 并承接 landing footer 的 `/privacy` 路由  
+legal-document-renderer.tsx: 通用法律文档渲染器，负责段落、列表与表格呈现
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
