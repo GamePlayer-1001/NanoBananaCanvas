@@ -1,14 +1,17 @@
 /**
- * [INPUT]: 依赖 @clerk/nextjs 的 SignIn，依赖 next-intl/server 的 getTranslations / setRequestLocale，
+ * [INPUT]: 依赖 @clerk/nextjs 的 SignIn，依赖 @clerk/nextjs/server 的 auth，
+ *          依赖 next/navigation 的 redirect，依赖 next-intl/server 的 getTranslations / setRequestLocale，
  *          依赖 @/components/auth/auth-shell，依赖 @/lib/auth/redirect
- * [OUTPUT]: 对外提供登录页路由
- * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与无说明标题区的品牌认证壳层
+ * [OUTPUT]: 对外提供登录页路由，并在已登录时服务端直跳目标页
+ * [POS]: (auth) 路由组的登录页入口，承载真实 Clerk 登录卡片与无说明标题区的品牌认证壳层，同时拦截已登录访问避免客户端慢跳
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
 import { SignIn } from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { redirect } from 'next/navigation'
 
 import { AuthShell } from '@/components/auth/auth-shell'
 import { resolveSafeAuthRedirect } from '@/lib/auth/redirect'
@@ -54,9 +57,14 @@ export default async function SignInPage({
   const { locale } = await params
   const resolvedSearchParams = searchParams ? await searchParams : undefined
   const redirectUrl = resolveSafeAuthRedirect(locale, resolvedSearchParams?.redirect_url)
+  const { userId } = await auth()
   const signInPath = buildLocalizedPath('/sign-in', locale)
   const signUpPath = buildLocalizedPath('/sign-up', locale)
   setRequestLocale(locale)
+
+  if (userId) {
+    redirect(redirectUrl)
+  }
 
   const t = await getTranslations('auth')
 
