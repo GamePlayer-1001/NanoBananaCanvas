@@ -150,6 +150,7 @@ interface TaskExecutionSnapshot {
   resolvedInput: Record<string, unknown>
   originalInput: Record<string, unknown>
   apiKey?: string
+  fallbackApiKey?: string
   runtimeConfig?: UserModelRuntimeConfig | null
   runtimeMeta?: PersistedTaskRuntimeMeta
 }
