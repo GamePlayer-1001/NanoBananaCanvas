@@ -5,6 +5,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 type AgentMessageTone = 'user' | 'assistant' | 'diagnosis'
@@ -49,9 +50,11 @@ export function AgentMessageItem({
               rel="noreferrer"
               className="block overflow-hidden rounded-2xl border border-black/8 bg-white/70"
             >
-              <img
+              <Image
                 src={attachment.url}
                 alt={attachment.name ?? '未命名图片'}
+                width={80}
+                height={80}
                 className="h-20 w-20 object-cover"
               />
             </a>

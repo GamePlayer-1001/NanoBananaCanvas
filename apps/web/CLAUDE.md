@@ -27,7 +27,7 @@ scripts/            — 项目级脚本 (Cloudflare 部署包装 + D1 迁移编�
 ```
 next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + next-intl 插件)
 middleware.ts       — Edge 路由中间件 (Clerk 会话注入 + 可开关 Frontend API 代理 + 裸域规范化 + next-intl locale 检测/重写，外部 URL 隐藏语言前缀)
-package.json        — 前端脚本入口 (`dev:e2e` 先执行 `db:reset-local -> db:init` 再启动 Next dev；`db:migrate:local` / `db:migrate:remote` 统一编排 D1 运行时迁移；`build` 默认保留 Next/Turbo 增量缓存，`build:clean` 才显式冷构建；显式声明 `@swc/helpers` / `styled-jsx` 作为 OpenNext 打包期所需运行时依赖；所有 D1/Cloudflare 相关脚本统一走项目内 `pnpm exec wrangler`，确保 Playwright 与 CI 不依赖机器全局环境)
+package.json        — 前端脚本入口 (`dev:e2e` 先执行 `db:reset-local -> db:init` 再启动 Next dev；`db:reset-local` 对本地 `.wrangler/state/v3/d1` 采用带重试删除，避免 Windows 文件锁把 Playwright 启动链直接打断；`db:migrate:local` / `db:migrate:remote` 统一编排 D1 运行时迁移；`build` 默认保留 Next/Turbo 增量缓存，`build:clean` 才显式冷构建；显式声明 `@swc/helpers` / `styled-jsx` 作为 OpenNext 打包期所需运行时依赖；所有 D1/Cloudflare 相关脚本统一走项目内 `pnpm exec wrangler`，确保 Playwright 与 CI 不依赖机器全局环境)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
 postcss.config.mjs  — PostCSS (@tailwindcss/postcss)
@@ -38,5 +38,11 @@ open-next.config.ts — @opennextjs/cloudflare 适配 (声明 middleware 与独�
 scripts/cloudflare-deploy.mjs — Cloudflare 生产构建/部署包装器 (修复 Windows 下 OpenNext edge config 丢失)
 wrangler.jsonc      — Cloudflare Pages 部署描述 (routes/bindings + Queue producer + 生产运行时 vars)
 ```
+
+## 布局约束
+
+- `app/layout.tsx` 必须输出唯一的 `html/body` 文档骨架，并挂全局字体变量与 `globals.css`
+- `app/[locale]/layout.tsx` 只承接 locale 校验、Clerk / next-intl / Query Provider 与局部脚本副作用，不再重复输出 `html/body`
+- 如继续把文档骨架下放到子布局，Next dev 在冷缓存下会直接报 `Missing <html> and <body> tags`，E2E 会退化成 404 + runtime overlay
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

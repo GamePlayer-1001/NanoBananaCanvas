@@ -52,7 +52,6 @@ import {
   createPlatformTextProvider,
   getPlatformKey,
   getPlatformSupplierApiKey,
-  getProvider,
 } from '@/services/ai'
 
 import { POST } from './route'
