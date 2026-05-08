@@ -14,7 +14,7 @@ apple-icon.tsx              — Apple 触屏图标路由 (iOS 收藏与主屏入
 not-found.tsx               — 全局 404 页面
 globals.css                 — Tailwind v4 + Lux 主题 + 品牌色 Indigo + landing-dark
 robots.ts                   — robots.txt 动态生成 (SEO)
-sitemap.ts                  — 根 sitemap.xml 动态生成器 (默认英文入口 + 共享公开 sitemap 构造逻辑)
+sitemap.ts                  — 根 sitemap.xml 动态生成器 (仅输出真实可索引公开页，默认英文入口 + 共享公开 sitemap 构造逻辑)
 manifest.ts                 — site.webmanifest 动态生成器 (品牌名/图标/主题色/安装入口)
 api/                        — RESTful API 路由层 (见 api/CLAUDE.md，32 端点: pricing/billing/ai/files/tasks/workflows/explore/settings/webhooks...)
 zh/CLAUDE.md               — 中文 sitemap 分区说明，记录 `/zh/*` 搜索入口职责
@@ -25,8 +25,8 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer，CTA 召回区已移除)
-[locale]/(landing)/features/page.tsx       — 历史功能页兼容重定向 (旧 `/features` 链接统一回落到首页 `#features` 锚点，独立详情内容已下线)
-[locale]/(landing)/models/page.tsx         — 历史模型页兼容重定向 (旧 `/models` 链接统一回落到首页 `#models` 锚点，独立详情内容已下线)
+[locale]/(landing)/features/page.tsx       — 历史功能页兼容重定向 (旧 `/features` 链接统一回落到首页 `#features` 锚点，不再进入 sitemap)
+[locale]/(landing)/models/page.tsx         — 历史模型页兼容重定向 (旧 `/models` 链接统一回落到首页 `#models` 锚点，不再进入 sitemap)
 [locale]/(landing)/docs/page.tsx           — 公开文档导航页 (快速开始 + 产品地图 + 资源入口)
 [locale]/(landing)/community/page.tsx      — 社区说明页 (解释 Explore/Workflows 与公开分享层)
 [locale]/(landing)/about/page.tsx          — 关于我们页面 (产品原则/适用对象/品牌定位)
@@ -49,7 +49,7 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/(app)/video-analysis/page.tsx      — 视频分析工具页 (上传 + AI 模型 + 历史，可访问但不参与搜索索引)
 [locale]/(app)/elements/page.tsx            — 元素库 (Coming Soon 占位)
 [locale]/(app)/workspace/page.tsx           — 工作区 (WorkspaceContent: 项目卡片网格 + 新建弹窗)
-[locale]/(app)/workspace/[id]/page.tsx      — 旧画布兼容重定向页 (301/307 风格路由跳转到 /canvas/[id]，附带 noindex)
+[locale]/(app)/workspace/[id]/page.tsx      — 旧画布兼容重定向页 (301/307 风格路由跳转到真实 locale 的 /canvas/[id]，默认语言不再暴露 `/en` 变体，附带 noindex)
 [locale]/(editor)/layout.tsx                — 全屏动态编辑器布局 (最小化容器)
 [locale]/(editor)/canvas/[id]/layout.tsx    — 画布详情 SEO 布局 (对编辑器详情路由输出 noindex)
 [locale]/(editor)/canvas/[id]/page.tsx      — 画布编辑器页面，CSR，从 D1 加载工作流数据注入 FlowStore + ReactFlow

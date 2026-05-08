@@ -6,6 +6,6 @@
 
 ## 成员清单
 
-sitemap.ts: 中文专属 sitemap.xml，复用 app/sitemap 的共享构造逻辑，只输出 `/zh/*` 可索引 URL
+sitemap.ts: 中文专属 sitemap.xml，复用 app/sitemap 的共享构造逻辑，只输出 `/zh/*` 真实可索引 URL，并避免把英文默认入口误写进中文 alternates
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
