@@ -14,6 +14,8 @@ export interface SubmitInput {
   model: string
   /** Provider 特定参数 (各处理器自行解析) */
   params: Record<string, unknown>
+  /** 可选的托底供应商 API Key，仅在处理器内部切流时使用 */
+  fallbackApiKey?: string
   /** 可选的内部参考图加载器，供 Worker 显式注入 R2 读取能力 */
   loadInternalReferenceImageAsset?: (
     r2Key: string,
