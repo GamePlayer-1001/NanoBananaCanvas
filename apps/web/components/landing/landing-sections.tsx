@@ -356,7 +356,13 @@ export function PricingSection({
                 ? billingT('freePriceValue')
                 : livePlan
                   ? formatLandingMoney(locale, livePlan.currency, livePlan.unitAmount)
-                  : pricingT('pricePending')
+                  : snapshot?.marketingPrice
+                    ? formatLandingMoney(
+                        locale,
+                        snapshot.marketingPrice.currency,
+                        snapshot.marketingPrice.unitAmount,
+                      )
+                    : pricingT('pricePending')
             const highlights =
               planKey === 'free'
                 ? [
