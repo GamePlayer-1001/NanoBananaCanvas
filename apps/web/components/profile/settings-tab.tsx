@@ -10,7 +10,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Clock3, Globe, RotateCcw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -37,16 +37,16 @@ export function SettingsTab({ currentTimezone }: { currentTimezone: string | nul
     setShowOnboardingTips,
     resetOnboardingProgress,
   } = useUserPreferences()
-  const [selectedTimezone, setSelectedTimezone] = useState(() =>
-    typeof window === 'undefined'
-      ? 'UTC'
-      : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-  )
   const browserTimeZone =
     typeof window === 'undefined'
       ? 'UTC'
       : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  const effectiveTimezone = currentTimezone ?? selectedTimezone ?? browserTimeZone
+  const effectiveTimezone = currentTimezone ?? browserTimeZone
+  const [selectedTimezone, setSelectedTimezone] = useState(effectiveTimezone)
+
+  useEffect(() => {
+    setSelectedTimezone(effectiveTimezone)
+  }, [effectiveTimezone])
 
   const handleReset = () => {
     resetOnboardingProgress()
@@ -105,7 +105,7 @@ export function SettingsTab({ currentTimezone }: { currentTimezone: string | nul
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Select value={effectiveTimezone} onValueChange={setSelectedTimezone}>
+            <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
               <SelectTrigger className="w-full min-w-[220px] bg-background">
                 <SelectValue />
               </SelectTrigger>

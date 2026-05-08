@@ -9,7 +9,7 @@ profile-modal.tsx: ProfileModal 旧个人中心弹窗，已不再作为主入口
 profile-tab.tsx: ProfileTab 个人资料面板，展示昵称/邮箱/真实密码状态 + 退出登录 + Clerk 安全中心入口
 subscription-tab.tsx: SubscriptionTab 订阅页签，承接月付/一次性/积分包切换、权益展示与真实 Stripe 结账动作，并把套餐卖点收口为积分补给与交付节奏
 model-preferences-tab.tsx: ModelPreferencesTab API 接入配置面板，仅登录用户维护账户级配置；访客态只展示登录后可配置的账户级说明
-settings-tab.tsx: SettingsTab 账户设置页签，承载语言切换、签到时区矫正、新手提示显隐与引导重置，并展示当前账号生效时区
+settings-tab.tsx: SettingsTab 账户设置页签，承载语言切换、签到时区矫正、新手提示显隐与引导重置；时区选择已拆分“当前生效值”和“待保存草稿值”，避免下拉框被账号旧值立即顶回
 works-tab.tsx: WorksTab 我的作品 Tab，工作流/生成作品/已发布/收藏四主页签 + 图片/视频子页签 + 多选删除 + 本地草稿导入
 notifications-tab.tsx: NotificationsTab 通知 Tab，通知列表 + 分页 + 标记已读
 

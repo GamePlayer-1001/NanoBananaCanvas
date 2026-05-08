@@ -37,6 +37,7 @@ import { useModelConfigs } from '@/hooks/use-model-configs'
 import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
 import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
+import { primeCloudSaveBaseline } from '@/hooks/use-auto-save'
 import { useWorkflow } from '@/hooks/use-workflows'
 import { fetchLatestAgentReplay } from '@/lib/agent/agent-audit'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
@@ -63,6 +64,28 @@ const EMPTY_VIEWPORT = { x: 0, y: 0, zoom: 1 } as const
 const AGENT_HISTORY_STORAGE_KEY = 'nbc:agent-history:v1'
 const AGENT_HISTORY_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000
 const AGENT_HISTORY_MAX_ITEMS_PER_WORKFLOW = 12
+
+function buildStableWorkflowBaseline(input: {
+  name?: string
+  nodes?: unknown[]
+  edges?: unknown[]
+  viewport?: unknown
+  template?: unknown
+  auditTrail?: unknown
+}) {
+  return JSON.stringify(
+    {
+      version: 1,
+      name: input.name ?? 'Untitled Workflow',
+      nodes: input.nodes ?? [],
+      edges: input.edges ?? [],
+      viewport: input.viewport ?? EMPTY_VIEWPORT,
+      template: input.template,
+      auditTrail: input.auditTrail,
+    },
+    (key, value) => (key === 'savedAt' ? undefined : value),
+  )
+}
 
 type AgentHistoryStatus = 'completed' | 'failed' | 'in_progress'
 
@@ -336,6 +359,14 @@ export default function CanvasPage({
       useFlowStore.getState().setFlow([], [], EMPTY_VIEWPORT)
       useWorkflowMetadataStore.getState().setTemplate(null)
       useWorkflowMetadataStore.getState().setAuditTrail([])
+      primeCloudSaveBaseline(
+        buildStableWorkflowBaseline({
+          name: workflowName,
+          nodes: [],
+          edges: [],
+          viewport: EMPTY_VIEWPORT,
+        }),
+      )
       return
     }
 
@@ -345,12 +376,30 @@ export default function CanvasPage({
       useFlowStore.getState().setFlow(nodes, edges, viewport)
       useWorkflowMetadataStore.getState().setTemplate(template ?? null)
       useWorkflowMetadataStore.getState().setAuditTrail(auditTrail ?? [])
+      primeCloudSaveBaseline(
+        buildStableWorkflowBaseline({
+          name: workflowName,
+          nodes,
+          edges,
+          viewport,
+          template,
+          auditTrail,
+        }),
+      )
     } catch {
       useFlowStore.getState().setFlow([], [], EMPTY_VIEWPORT)
       useWorkflowMetadataStore.getState().setTemplate(null)
       useWorkflowMetadataStore.getState().setAuditTrail([])
+      primeCloudSaveBaseline(
+        buildStableWorkflowBaseline({
+          name: workflowName,
+          nodes: [],
+          edges: [],
+          viewport: EMPTY_VIEWPORT,
+        }),
+      )
     }
-  }, [data, id, isLoading])
+  }, [data, id, isLoading, workflowName])
 
   useEffect(() => {
     if (!executionLabel) return
