@@ -431,7 +431,7 @@ export default function CanvasPage({
         createdAt: new Date().toISOString(),
       })
     }
-  }, [activeTaskLabel, appendMessage])
+  }, [activeTaskLabel, appendMessage, messages.length])
 
   useEffect(() => {
     if (terminalEvents.length === 0) return

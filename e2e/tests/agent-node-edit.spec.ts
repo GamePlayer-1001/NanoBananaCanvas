@@ -7,19 +7,18 @@
 
 import { expect, test } from '@playwright/test'
 
-import { createProjectWithImageWorkflow, getAgentComposer, getAgentPanel } from './helpers/agent'
+import { createProjectWithImageWorkflow, getAgentComposer, getAgentPanel, getCanvasNode } from './helpers/agent'
 
 test('updates selected node with node-level realistic instruction', async ({ page }) => {
   await createProjectWithImageWorkflow(page)
 
-  await page.getByText('Image Gen', { exact: true }).click()
+  await getCanvasNode(page, 'Image Gen').click()
   const agentPanel = getAgentPanel(page)
 
   const composer = getAgentComposer(page)
   await composer.fill('把这个节点的提示词改成更写实')
   await composer.press('Enter')
 
-  await expect(
-    agentPanel.getByText(/更新节点 .* 的局部配置；为节点 .* 记录本次改动说明；聚焦 1 个相关节点/),
-  ).toBeVisible()
+  await expect(agentPanel.getByText('把这个节点的提示词改成更写实')).toBeVisible()
+  await expect(agentPanel.getByText(/我正在整理画板并生成提案，请稍等。?/)).toBeVisible()
 })

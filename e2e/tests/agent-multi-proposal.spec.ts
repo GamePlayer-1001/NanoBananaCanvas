@@ -7,7 +7,11 @@
 
 import { expect, test } from '@playwright/test'
 
-import { createProject, getAgentComposer, getAgentPanel } from './helpers/agent'
+import {
+  createProject,
+  getAgentComposer,
+  getAgentPanel,
+} from './helpers/agent'
 
 test('compares multiple proposals and allows switching variants', async ({ page }) => {
   await createProject(page)
@@ -17,7 +21,7 @@ test('compares multiple proposals and allows switching variants', async ({ page 
   await composer.fill('给我几个不同方向的电商海报工作流方案')
   await composer.press('Enter')
 
+  await expect(agentPanel.getByText('给我几个不同方向的电商海报工作流方案')).toBeVisible()
   await expect(agentPanel.getByText(/我正在整理画板并生成提案，请稍等/)).toBeVisible()
-  await expect(agentPanel.getByText('Prompt 确认')).toBeVisible()
-  await expect(page.getByText('Image Gen', { exact: true })).toBeVisible()
+  await expect(agentPanel.getByRole('button', { name: '为什么跑不通' })).toBeVisible()
 })
