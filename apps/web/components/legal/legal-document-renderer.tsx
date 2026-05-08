@@ -16,18 +16,18 @@ type Props = {
 
 export function LegalDocumentRenderer({ title, updatedAt, intro, sections }: Props) {
   return (
-    <div className="bg-[#09090d] px-4 pb-20 pt-28 sm:px-6 lg:px-8 xl:px-10">
+    <div className="bg-[#09090d] px-4 pb-24 pt-8 sm:px-6 sm:pt-10 lg:px-8 xl:px-10">
       <div className="mx-auto max-w-[880px]">
         <h1 className="text-3xl font-bold text-white sm:text-4xl">{title}</h1>
         <p className="mt-2 text-sm text-white/50">Last updated: {updatedAt}</p>
 
-        <div className="mt-10 space-y-5 text-sm leading-7 text-white/72 sm:text-[15px]">
+        <div className="mt-6 space-y-4 text-sm leading-7 text-white/72 sm:text-[15px]">
           {intro.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
         </div>
 
-        <div className="mt-12 space-y-10 text-sm leading-7 text-white/72 sm:text-[15px]">
+        <div className="mt-10 space-y-8 text-sm leading-7 text-white/72 sm:text-[15px]">
           {sections.map((section) => (
             <section key={section.heading} className="space-y-4">
               <h2 className="text-xl font-semibold text-white sm:text-2xl">{section.heading}</h2>
