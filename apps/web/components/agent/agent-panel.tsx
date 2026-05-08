@@ -21,6 +21,34 @@ const DEFAULT_HEIGHT = 1140
 const MIN_HEIGHT = 520
 const MAX_HEIGHT = 1280
 const DEFAULT_POSITION = { x: -220, y: 0 }
+const COLLAPSED_WIDTH = 260
+const COLLAPSED_HEIGHT = 80
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function getPanelBounds(width: number, height: number) {
+  if (typeof window === 'undefined') {
+    return { minX: DEFAULT_POSITION.x, maxX: DEFAULT_POSITION.x, minY: DEFAULT_POSITION.y, maxY: DEFAULT_POSITION.y }
+  }
+
+  const margin = 24
+  return {
+    minX: -(window.innerWidth - width - margin * 2),
+    maxX: 0,
+    minY: -(window.innerHeight - height - margin * 2),
+    maxY: 0,
+  }
+}
+
+function clampPosition(position: { x: number; y: number }, width: number, height: number) {
+  const bounds = getPanelBounds(width, height)
+  return {
+    x: clamp(position.x, Math.min(bounds.minX, bounds.maxX), Math.max(bounds.minX, bounds.maxX)),
+    y: clamp(position.y, Math.min(bounds.minY, bounds.maxY), Math.max(bounds.minY, bounds.maxY)),
+  }
+}
 
 interface AgentPanelProps {
   header?: ReactNode
@@ -65,10 +93,16 @@ export function AgentPanel({
       if (dragRef.current) {
         const deltaX = event.clientX - dragRef.current.startX
         const deltaY = event.clientY - dragRef.current.startY
-        setPosition({
-          x: dragRef.current.originX + deltaX,
-          y: dragRef.current.originY + deltaY,
-        })
+        setPosition(
+          clampPosition(
+            {
+              x: dragRef.current.originX + deltaX,
+              y: dragRef.current.originY + deltaY,
+            },
+            isCollapsed ? COLLAPSED_WIDTH : width,
+            isCollapsed ? COLLAPSED_HEIGHT : height,
+          ),
+        )
       }
 
       if (resizeRef.current) {
@@ -91,6 +125,9 @@ export function AgentPanel({
 
         setWidth(nextWidth)
         setHeight(nextHeight)
+        setPosition((current) =>
+          clampPosition(current, nextWidth, nextHeight),
+        )
       }
     }
 
@@ -110,7 +147,26 @@ export function AgentPanel({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [])
+  }, [height, isCollapsed, width])
+
+  useEffect(() => {
+    function handleWindowResize() {
+      setPosition((current) =>
+        clampPosition(
+          current,
+          isCollapsed ? COLLAPSED_WIDTH : width,
+          isCollapsed ? COLLAPSED_HEIGHT : height,
+        ),
+      )
+    }
+
+    handleWindowResize()
+    window.addEventListener('resize', handleWindowResize)
+
+    return () => {
+      window.removeEventListener('resize', handleWindowResize)
+    }
+  }, [height, isCollapsed, width])
 
   function startDrag(event: ReactPointerEvent<HTMLDivElement>) {
     if (!(event.target instanceof HTMLElement)) return
@@ -141,8 +197,7 @@ export function AgentPanel({
     }
   }
 
-  const collapsedWidth = 260
-  const panelWidth = isCollapsed ? collapsedWidth : width
+  const panelWidth = isCollapsed ? COLLAPSED_WIDTH : width
 
   return (
     <div
@@ -161,8 +216,8 @@ export function AgentPanel({
           'pointer-events-auto relative overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow,transform] duration-200 motion-reduce:transition-none',
         )}
         style={{
-          width: isCollapsed ? collapsedWidth : `min(${panelWidth}px, calc(100vw - 48px))`,
-          height: isCollapsed ? 80 : `min(${height}px, calc(100vh - 48px))`,
+          width: isCollapsed ? COLLAPSED_WIDTH : `min(${panelWidth}px, calc(100vw - 48px))`,
+          height: isCollapsed ? COLLAPSED_HEIGHT : `min(${height}px, calc(100vh - 48px))`,
         }}
       >
         <button

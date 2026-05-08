@@ -39,6 +39,10 @@ export const useCloudSaveStatus = create<{ status: SaveStatus }>(() => ({
 const DEBOUNCE_LOCAL_MS = 400
 const DEBOUNCE_CLOUD_MS = 1200
 
+function getStableSerializedJson(serialized: ReturnType<typeof serializeWorkflow>) {
+  return JSON.stringify(serialized, (key, value) => (key === 'savedAt' ? undefined : value))
+}
+
 /* ─── Cloud Save ──────────────────────────────────────── */
 
 function getSerializedWorkflowSnapshot() {
@@ -48,12 +52,14 @@ function getSerializedWorkflowSnapshot() {
     template: template ?? undefined,
     auditTrail,
   })
+  const stableSerializedJson = getStableSerializedJson(serialized)
   return {
     nodes,
     edges,
     viewport,
     serialized,
     serializedJson: JSON.stringify(serialized),
+    stableSerializedJson,
   }
 }
 
@@ -127,14 +133,14 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
       /* 云端保存 (2s 防抖，仅 workflowId 存在时) */
       if (workflowId && enableCloud) {
         const snapshot = getSerializedWorkflowSnapshot()
-        if (snapshot.serializedJson === lastPersistedSnapshotRef.current) {
+        if (snapshot.stableSerializedJson === lastPersistedSnapshotRef.current) {
           return
         }
         if (cloudTimer) clearTimeout(cloudTimer)
         cloudTimer = setTimeout(() => {
           void triggerCloudSave(workflowId, {
-            onSaved: (serializedJson) => {
-              lastPersistedSnapshotRef.current = serializedJson
+            onSaved: () => {
+              lastPersistedSnapshotRef.current = snapshot.stableSerializedJson
             },
           })
         }, DEBOUNCE_CLOUD_MS)
@@ -160,11 +166,11 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
       }
 
       const snapshot = getSerializedWorkflowSnapshot()
-      if (snapshot.serializedJson === lastPersistedSnapshotRef.current) return
+      if (snapshot.stableSerializedJson === lastPersistedSnapshotRef.current) return
       void triggerCloudSave(workflowId, {
         keepalive: true,
-        onSaved: (serializedJson) => {
-          lastPersistedSnapshotRef.current = serializedJson
+        onSaved: () => {
+          lastPersistedSnapshotRef.current = snapshot.stableSerializedJson
         },
       })
     }
