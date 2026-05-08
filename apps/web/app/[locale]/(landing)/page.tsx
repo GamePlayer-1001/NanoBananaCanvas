@@ -1,15 +1,16 @@
 /**
- * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
+ * [INPUT]: 依赖 next/headers 的 headers，依赖 next-intl/server 的 getTranslations/setRequestLocale，
  *          依赖 @/components/landing/hero-section，
  *          依赖 @/components/landing/deferred-model-mind-map，
  *          依赖 @/components/landing/landing-sections，
- *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/plans
+ *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/plans 与 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载
+ * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载；首页定价卡片优先读取 Stripe 月付价格，失败时仅回退本地权益快照
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { DeferredModelMindMap } from '@/components/landing/deferred-model-mind-map'
@@ -21,6 +22,7 @@ import {
   TestimonialsSection,
 } from '@/components/landing/landing-sections'
 import { LandingFooter } from '@/components/layout/landing-footer'
+import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import { BILLING_PLAN_SNAPSHOTS } from '@/lib/billing/plans'
 import {
@@ -58,9 +60,16 @@ export default async function LandingPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  const requestHeaders = await headers()
   setRequestLocale(locale)
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
+  const pricing = await getPublicPricingPlans({
+    countryCode: requestHeaders.get('cf-ipcountry'),
+  }).catch((error: unknown) => {
+    console.error('[landing] Failed to load Stripe prices', error)
+    return null
+  })
 
   const faqItems = [
     'what',
@@ -147,7 +156,7 @@ export default async function LandingPage({
       <HeroSection />
       <FeaturesSection />
       <PricingSection
-        plans={[]}
+        plans={pricing?.plans ?? []}
         snapshotPlans={{
           standard: BILLING_PLAN_SNAPSHOTS.standard,
           pro: BILLING_PLAN_SNAPSHOTS.pro,

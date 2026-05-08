@@ -356,13 +356,7 @@ export function PricingSection({
                 ? billingT('freePriceValue')
                 : livePlan
                   ? formatLandingMoney(locale, livePlan.currency, livePlan.unitAmount)
-                  : snapshot?.marketingPrice
-                    ? formatLandingMoney(
-                        locale,
-                        snapshot.marketingPrice.currency,
-                        snapshot.marketingPrice.unitAmount,
-                      )
-                    : pricingT('pricePending')
+                  : pricingT('pricePending')
             const highlights =
               planKey === 'free'
                 ? [
@@ -463,7 +457,7 @@ export function TestimonialsSection() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.07),transparent_20%),radial-gradient(circle_at_82%_74%,rgba(110,124,255,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#08090e_100%)]" />
       <div className="relative mx-auto w-full max-w-[1240px]">
         <div className="mx-auto max-w-[48rem] text-center">
-          <h2 className="text-3xl font-semibold text-white md:text-5xl">
+          <h2 className="text-[2.7rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[3.9rem]">
             {testimonialsT('title')}
           </h2>
         </div>
