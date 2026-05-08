@@ -44,10 +44,8 @@ import { useCurrentUser } from '@/hooks/use-user'
 
 function CloudSaveIndicator() {
   const t = useTranslations('canvas')
-  const { status, hasUnsavedChanges } = useCloudSaveStatus((s) => ({
-    status: s.status,
-    hasUnsavedChanges: s.hasUnsavedChanges,
-  }))
+  const status = useCloudSaveStatus((s) => s.status)
+  const hasUnsavedChanges = useCloudSaveStatus((s) => s.hasUnsavedChanges)
 
   if (status === 'idle' && !hasUnsavedChanges) return null
 
@@ -171,10 +169,8 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const router = useRouter()
   const { data: user } = useCurrentUser()
   const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
-  const { status, hasUnsavedChanges } = useCloudSaveStatus((s) => ({
-    status: s.status,
-    hasUnsavedChanges: s.hasUnsavedChanges,
-  }))
+  const status = useCloudSaveStatus((s) => s.status)
+  const hasUnsavedChanges = useCloudSaveStatus((s) => s.hasUnsavedChanges)
   const nodes = useFlowStore((s) => s.nodes)
   const edges = useFlowStore((s) => s.edges)
   const viewport = useFlowStore((s) => s.viewport)

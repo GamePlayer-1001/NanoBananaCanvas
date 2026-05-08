@@ -35,7 +35,7 @@ test.describe('Landing Page', () => {
   })
 
   test('pricing link navigates correctly', async ({ page }) => {
-    const pricingLink = page.getByRole('link', { name: /pricing|定价/i }).first()
+    const pricingLink = page.locator('a[href="/pricing"], a[href$="/pricing"]').first()
 
     if (await pricingLink.isVisible()) {
       await pricingLink.click()

@@ -72,6 +72,9 @@ tasks/                  — P2 异步任务队列 (3 端点)
   [id]/route.ts         — GET  任务状态查询 + 懒评估
   [id]/cancel/route.ts  — POST 取消任务
 
+test/                   — dev/e2e 受限测试入口 (1 端点)
+  credits/route.ts      — POST 为当前会话发放测试用永久积分，仅在非 production 运行时开放，给 Playwright Agent 场景补账本前置
+
 settings/               — 用户设置 (2 端点)
   api-keys/route.ts             — GET+PUT 账号级 API 配置列表管理 (多条配置 + 名称 + 加密存储 API Key/baseUrl/modelId)
   api-keys/[provider]/route.ts  — DELETE+POST 配置删除/连通测试 (按配置 ID)

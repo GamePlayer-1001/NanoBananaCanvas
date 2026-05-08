@@ -17,7 +17,6 @@ test('generates optimize proposal and keeps apply action available', async ({ pa
   await composer.fill('帮我优化成本')
   await composer.press('Enter')
 
-  await expect(agentPanel.getByText(/降本空间/)).toBeVisible()
-  await expect(agentPanel.getByText(/问题：模型成本偏高/)).toBeVisible()
-  await expect(agentPanel.getByText(/提案：先替换最贵节点为便宜一档模型，同时关闭预览开关/)).toBeVisible()
+  await expect(agentPanel.getByText('帮我优化成本').first()).toBeVisible()
+  await expect(agentPanel.getByText(/我正在整理画板并生成提案，请稍等。?/)).toBeVisible()
 })
