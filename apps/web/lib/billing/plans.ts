@@ -1,16 +1,20 @@
 /**
- * [INPUT]: 依赖 ./config 的 BillingPlan / CreditPackId 类型
- * [OUTPUT]: 对外提供套餐与积分包权益真相源、默认 Free 权益与 snapshot 查询器
+ * [INPUT]: 依赖 ./config 的 BillingPlan / BillingCurrency / CreditPackId 类型
+ * [OUTPUT]: 对外提供套餐与积分包权益真相源、首页营销价格快照、默认 Free 权益与 snapshot 查询器
  * [POS]: lib/billing 的权益语义层，把 Standard/Pro/Ultimate 与 credit_pack 的本地镜像收口在一处
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import type { BillingPlan, CreditPackId } from './config'
+import type { BillingPlan, BillingCurrency, CreditPackId } from './config'
 
 export interface BillingPlanSnapshot {
   plan: BillingPlan | 'free'
   monthlyCredits: number
   storageGB: number
+  marketingPrice: {
+    currency: BillingCurrency
+    unitAmount: number
+  } | null
 }
 
 export interface CreditPackSnapshot {
@@ -24,6 +28,7 @@ export const FREE_PLAN_SNAPSHOT: BillingPlanSnapshot = {
   plan: 'free',
   monthlyCredits: 0,
   storageGB: 1,
+  marketingPrice: null,
 }
 
 export const BILLING_PLAN_SNAPSHOTS: Record<BillingPlan, BillingPlanSnapshot> = {
@@ -31,16 +36,28 @@ export const BILLING_PLAN_SNAPSHOTS: Record<BillingPlan, BillingPlanSnapshot> = 
     plan: 'standard',
     monthlyCredits: 1600,
     storageGB: 10,
+    marketingPrice: {
+      currency: 'usd',
+      unitAmount: 2000,
+    },
   },
   pro: {
     plan: 'pro',
     monthlyCredits: 5400,
     storageGB: 50,
+    marketingPrice: {
+      currency: 'usd',
+      unitAmount: 5000,
+    },
   },
   ultimate: {
     plan: 'ultimate',
     monthlyCredits: 17000,
     storageGB: 200,
+    marketingPrice: {
+      currency: 'usd',
+      unitAmount: 15000,
+    },
   },
 }
 

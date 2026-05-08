@@ -147,31 +147,31 @@
       },
       "pricing": {
         "eyebrow": "Pricing",
-        "title": "Plans for every stage of creating",
-        "body": "Three simple tiers for testing ideas, creating every day, and running team production workflows without forcing the homepage to explain every billing edge case.",
+        "title": "Pricing",
+        "body": "",
         "popular": "Recommended",
         "credits": "{value} monthly credits",
         "storage": "{value} storage",
         "cta": "View pricing",
-        "pricePending": "Live price on /pricing",
+        "pricePending": "See pricing page for live pricing",
         "plans": {
           "free": {
-            "name": "For Explorers",
+            "name": "Explorer",
             "body": "For trying ideas and building momentum.",
             "planLabel": "Free",
             "period": "Start here",
             "note": "Jump into the canvas immediately.",
-            "storageNote": "Test visual workflows before you spend.",
-            "supportNote": "Upgrade only when creating becomes a daily habit.",
+            "storageNote": "Validate the workflow first, then decide whether to pay.",
+            "supportNote": "Upgrade after creation becomes part of your daily rhythm.",
             "cta": "Start Free"
           },
           "standard": {
-            "name": "For Daily Creators",
+            "name": "Daily Creator",
             "body": "For people creating every day.",
             "planLabel": "Standard",
             "period": "Per month",
             "note": "For ongoing output",
-            "supportNote": "Built for solo creators shipping every day.",
+            "supportNote": "Built for solo creators producing steadily every day.",
             "cta": "Start subscription"
           },
           "pro": {
@@ -181,12 +181,12 @@
             "note": "Best balance for working teams"
           },
           "ultimate": {
-            "name": "For Studios",
-            "body": "For teams and production workflows.",
+            "name": "Studio Team",
+            "body": "For team collaboration and formal production workflows.",
             "planLabel": "Ultimate",
             "period": "Per month",
             "note": "For high-load teams",
-            "supportNote": "Built for teams, reviews, and production-scale output.",
+            "supportNote": "Built for multi-person collaboration, review flows, and formal production environments.",
             "cta": "Start subscription"
           }
         },
