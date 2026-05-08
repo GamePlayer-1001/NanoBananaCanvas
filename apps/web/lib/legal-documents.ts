@@ -1,12 +1,11 @@
 /**
- * [INPUT]: 依赖 node:fs/promises 读取仓库根目录 .md 下的法律源文件，依赖 node:path 解析绝对路径
- * [OUTPUT]: 对外提供 readLegalDocument 读取器、parseLegalDocument 文本解析器、LegalSection 类型
- * [POS]: lib 的法律文档真相源适配层，供公开 /terms 与 /privacy 页面读取本地协议原文
+ * [INPUT]: 依赖 ./legal-document-sources.generated 的静态文本常量
+ * [OUTPUT]: 对外提供 getLegalDocumentSource 读取器、parseLegalDocument 文本解析器、LegalSection 类型
+ * [POS]: lib 的法律文档真相源适配层，供公开 /terms 与 /privacy 页面读取打包进产物的协议原文
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
+import { PRIVACY_SOURCE, TERMS_SOURCE } from './legal-document-sources.generated'
 
 export type LegalSection = {
   heading: string
@@ -17,8 +16,6 @@ export type LegalSection = {
     rows: string[][]
   }
 }
-
-const DOC_ROOT = path.resolve(process.cwd(), '..', '..', '.md')
 
 function isTableLine(line: string) {
   return line.trim().startsWith('|') && line.trim().endsWith('|')
@@ -42,9 +39,16 @@ function normalizeHeading(line: string) {
   return trimmed
 }
 
-export async function readLegalDocument(filename: string) {
-  const filePath = path.join(DOC_ROOT, filename)
-  return readFile(filePath, 'utf8')
+export function getLegalDocumentSource(filename: string) {
+  if (filename === '服务条款Terms of Service') {
+    return TERMS_SOURCE
+  }
+
+  if (filename === '隐私政策Privacy Policy') {
+    return PRIVACY_SOURCE
+  }
+
+  throw new Error(`Unknown legal document source: ${filename}`)
 }
 
 export function parseLegalDocument(source: string) {
