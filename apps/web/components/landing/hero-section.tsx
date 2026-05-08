@@ -362,6 +362,7 @@ function DemoNodeCard({
 
 export function HeroSection() {
   const t = useTranslations('landing.hero')
+  const taglineLines = t('tagline').split('\n')
   const containerRef = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<DemoNode[]>(INITIAL_NODES)
   const [stageSize, setStageSize] = useState<StageSize>({
@@ -514,8 +515,12 @@ export function HeroSection() {
               </BrandMark>
             </p>
 
-            <h1 className="from-brand-300 mx-auto mb-4 max-w-[12ch] whitespace-pre-line bg-gradient-to-r to-white bg-clip-text text-[2.1rem] leading-[1.08] font-bold tracking-[-0.05em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[2.7rem] md:mb-6 md:text-[3.4rem] lg:text-[4rem]">
-              {t('tagline')}
+            <h1 className="from-brand-300 mx-auto mb-4 max-w-[18ch] bg-gradient-to-r to-white bg-clip-text text-[2.1rem] leading-[1.08] font-bold tracking-[-0.05em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[2.7rem] md:mb-6 md:text-[3.4rem] lg:max-w-[22ch] lg:text-[4rem]">
+              {taglineLines.map((line, index) => (
+                <span key={`${line}-${index}`} className="block whitespace-nowrap">
+                  {line}
+                </span>
+              ))}
             </h1>
 
             <p className="mx-auto mb-9 max-w-[46rem] whitespace-pre-line px-4 text-[0.92rem] leading-[1.95] text-white/82 md:mb-10 md:text-[1rem] lg:max-w-[52rem]">
