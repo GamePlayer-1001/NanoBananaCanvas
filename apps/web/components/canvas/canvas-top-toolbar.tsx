@@ -8,7 +8,7 @@
  *          依赖 @/hooks/use-user 的 useCurrentUser，
  *          依赖 @/components/ui/avatar，
  *          依赖 @/components/locale-switcher 的语言切换，
- *          依赖 @/i18n/navigation 的 Link
+ *          依赖 @/i18n/navigation 的 useRouter
  * [OUTPUT]: 对外提供 CanvasTopToolbar 顶部工具栏组件
  * [POS]: components/canvas 的顶部操作栏，被 Canvas 组件内嵌，支持返回导航和云端保存状态
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -25,7 +25,7 @@ import { useHistoryStore } from '@/stores/use-history-store'
 import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
 import { triggerCloudSave, useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { exportWorkflow, importWorkflow } from '@/services/storage'
-import { Link } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -168,6 +168,7 @@ interface CanvasTopToolbarProps {
 
 export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const t = useTranslations('canvas')
+  const router = useRouter()
   const { data: user } = useCurrentUser()
   const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
   const { status, hasUnsavedChanges } = useCloudSaveStatus((s) => ({
@@ -251,6 +252,17 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
     }
   }, [t, workflowId])
 
+  const handleBackToWorkspace = useCallback(() => {
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm(t('backWithUnsavedConfirm'))
+      if (!confirmed) {
+        return
+      }
+    }
+
+    router.push('/workspace')
+  }, [hasUnsavedChanges, router, t])
+
   return (
     <TooltipProvider>
       <div
@@ -264,10 +276,13 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
           <>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className="rounded-full" asChild>
-                  <Link href="/workspace">
-                    <ArrowLeft size={14} />
-                  </Link>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={handleBackToWorkspace}
+                >
+                  <ArrowLeft size={14} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={8}>
