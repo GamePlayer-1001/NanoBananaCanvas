@@ -9,5 +9,6 @@ grant-user-entitlements.mjs: 账户授权运维脚本，按 email 向 D1 本地�
 i18n-tools.mjs: i18n/L10N 运维脚本，负责生成 message-index/message-usage、自动抽取声明式动态 key、合并 manifest 兜底 key、校验 locale key 对称性与代码引用、同步缺失 key、清理未使用 key、创建新 locale 脚手架。
 backfill-agent-audit-r2.mjs: Agent 审计历史瘦身脚本，扫描远端/本地 D1 中尚未迁移的大 JSON，上传到 R2 后把 D1 回写成索引/摘要形态
 test-dlapi-key.mjs: DLAPI 本地联调脚本，读取 `apps/web/.env.local` 的 `DLAPI_API_KEY` 发起直出图请求并输出去除 `base64` 字段后的完整响应，供手工验 key / 验网 / 验协议。
+diagnose-image-provider-keys.mjs: 图片供应商鉴权诊断脚本，分别验证 DLAPI/Comfly 正常链路与错 key 场景，输出耗时、状态码与脱敏响应摘要，供排查 key 是否真可用、供应商是否识别、网络是否超时。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
