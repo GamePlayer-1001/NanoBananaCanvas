@@ -10,18 +10,6 @@ import { z } from 'zod'
 /* ─── Submit Task ───────────────────────────────────── */
 
 const capabilitySchema = z.enum(['text', 'image', 'video', 'audio'])
-const imageSizePresetSchema = z.enum(['1k', '2k', '4k', '8k'])
-const imageAspectRatioSchema = z.enum(['1:1', '2:3', '3:2', '9:16', '16:9'])
-
-const imageCapabilitiesSchema = z
-  .object({
-    minPixels: z.coerce.number().int().positive().optional(),
-    maxPixels: z.coerce.number().int().positive().optional(),
-    maxLongEdge: z.coerce.number().int().positive().optional(),
-    allowedSizes: z.array(imageSizePresetSchema).optional(),
-    allowedAspectRatios: z.array(imageAspectRatioSchema).optional(),
-  })
-  .optional()
 
 function matchesTaskType(provider: string, modelId: string, taskType: 'image_gen' | 'video_gen' | 'audio_gen') {
   const normalizedProvider = provider.toLowerCase()

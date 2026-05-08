@@ -23,14 +23,42 @@ export function getPromptConfirmationCard(page: Page) {
   return getAgentPanel(page).getByText('Prompt 确认')
 }
 
+async function ensureBrowserSession(page: Page, path = '/zh/workspace') {
+  await page.goto(path)
+  await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}(?:\\?.*)?$`))
+}
+
+async function postJsonInPage<T>(page: Page, url: string, body?: unknown): Promise<T> {
+  const response = await page.evaluate(
+    async ({ inputUrl, inputBody }) => {
+      const res = await fetch(inputUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: inputBody === undefined ? undefined : JSON.stringify(inputBody),
+      })
+
+      const json = await res.json().catch(() => null)
+
+      return {
+        ok: res.ok,
+        status: res.status,
+        json,
+      }
+    },
+    { inputUrl: url, inputBody: body },
+  )
+
+  expect(response.ok, `POST ${url} failed with status ${response.status}`).toBeTruthy()
+  return response.json as T
+}
+
 export async function ensureAgentCredits(page: Page) {
-  const response = await page.request.post('/api/test/credits')
-  expect(response.ok()).toBeTruthy()
+  await ensureBrowserSession(page)
+  await postJsonInPage(page, '/api/test/credits')
 }
 
 export async function createProject(page: Page) {
   await ensureAgentCredits(page)
-  await page.goto('/zh/workspace')
   await page.getByRole('button', { name: '新建项目' }).click()
   await expect(page.getByRole('heading', { name: '创建项目' })).toBeVisible()
   await page.getByPlaceholder('未命名项目').fill(`Agent E2E ${Date.now()}`)
@@ -41,7 +69,7 @@ export async function createProject(page: Page) {
 }
 
 export async function createProjectWithTemplate(page: Page, templateName = '电商商品图起手模板') {
-  await page.goto('/zh/workspace')
+  await ensureBrowserSession(page)
   await page.getByRole('button', { name: '新建项目' }).click()
   await expect(page.getByRole('heading', { name: '创建项目' })).toBeVisible()
   await page.getByPlaceholder('未命名项目').fill(`Agent Template E2E ${Date.now()}`)
@@ -122,14 +150,10 @@ export async function createProjectWithImageWorkflow(page: Page) {
     savedAt: new Date().toISOString(),
   })
 
-  const createResponse = await page.request.post('/api/workflows', {
-    data: {
-      name: `Agent Image Workflow E2E ${Date.now()}`,
-      data: workflowData,
-    },
+  const createPayload = await postJsonInPage<{ data?: { id?: string } }>(page, '/api/workflows', {
+    name: `Agent Image Workflow E2E ${Date.now()}`,
+    data: workflowData,
   })
-  expect(createResponse.ok()).toBeTruthy()
-  const createPayload = await createResponse.json()
   const workflowId = createPayload?.data?.id as string | undefined
   if (!workflowId) {
     throw new Error('Create workflow response is missing id')
@@ -210,14 +234,10 @@ export async function createProjectWithResultAsset(page: Page) {
     savedAt: new Date().toISOString(),
   })
 
-  const createResponse = await page.request.post('/api/workflows', {
-    data: {
-      name: `Agent Result E2E ${Date.now()}`,
-      data: workflowData,
-    },
+  const createPayload = await postJsonInPage<{ data?: { id?: string } }>(page, '/api/workflows', {
+    name: `Agent Result E2E ${Date.now()}`,
+    data: workflowData,
   })
-  expect(createResponse.ok()).toBeTruthy()
-  const createPayload = await createResponse.json()
   const workflowId = createPayload?.data?.id as string | undefined
   if (!workflowId) {
     throw new Error('Create workflow response is missing id')

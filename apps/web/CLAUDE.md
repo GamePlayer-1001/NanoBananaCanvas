@@ -39,4 +39,10 @@ scripts/cloudflare-deploy.mjs — Cloudflare 生产构建/部署包装器 (修�
 wrangler.jsonc      — Cloudflare Pages 部署描述 (routes/bindings + Queue producer + 生产运行时 vars)
 ```
 
+## 布局约束
+
+- `app/layout.tsx` 必须输出唯一的 `html/body` 文档骨架，并挂全局字体变量与 `globals.css`
+- `app/[locale]/layout.tsx` 只承接 locale 校验、Clerk / next-intl / Query Provider 与局部脚本副作用，不再重复输出 `html/body`
+- 如继续把文档骨架下放到子布局，Next dev 在冷缓存下会直接报 `Missing <html> and <body> tags`，E2E 会退化成 404 + runtime overlay
+
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

@@ -1,12 +1,31 @@
 /**
- * [INPUT]: 无外部依赖 (html/body 委托给 [locale]/layout.tsx)
- * [OUTPUT]: 对外提供应用根布局（透传容器 + fallback metadata）
- * [POS]: App Router 的最顶层布局，将渲染职责委托给 [locale]/layout.tsx
+ * [INPUT]: 依赖 next/font/google 的 Geist / Geist_Mono / Kaushan_Script 字体，
+ *          依赖全局样式 '@/app/globals.css'
+ * [OUTPUT]: 对外提供应用根布局 (html/body + fallback metadata + 全局字体变量)
+ * [POS]: App Router 的最顶层布局，负责输出合法文档骨架；[locale]/layout.tsx 只承接 locale provider 与运行时上下文
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
+import { Geist, Geist_Mono, Kaushan_Script } from 'next/font/google'
 import { BASE_URL, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo'
+import '@/app/globals.css'
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+})
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+})
+
+const brandScript = Kaushan_Script({
+  variable: '--font-brand-script',
+  subsets: ['latin'],
+  weight: '400',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -55,5 +74,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return children
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${brandScript.variable} antialiased`}
+      >
+        {children}
+      </body>
+    </html>
+  )
 }

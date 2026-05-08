@@ -5,7 +5,6 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { requireEnv } from '@/lib/env'
 import type { PlatformSupplierId } from '@/lib/platform-runtime'
 
 import { OpenAICompatibleClient } from './openai-compatible'

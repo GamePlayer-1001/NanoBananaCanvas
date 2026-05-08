@@ -9,6 +9,7 @@
 
 import { useRef, useState, type ClipboardEvent, type DragEvent } from 'react'
 import { ArrowUp, Bot, Coins, ExternalLink, ImagePlus, KeyRound, Sparkles, X } from 'lucide-react'
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { PlatformModelSelect } from '@/components/shared/platform-model-select'
@@ -209,9 +210,11 @@ export function AgentComposer({
                     onDoubleClick={() => window.open(attachment.url, '_blank', 'noopener,noreferrer')}
                     title={t('composerOpenImage')}
                   >
-                    <img
+                    <Image
                       src={attachment.url}
                       alt={attachment.name ?? t('composerImageAttachment')}
+                      width={96}
+                      height={72}
                       className="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
                     />
                   </button>

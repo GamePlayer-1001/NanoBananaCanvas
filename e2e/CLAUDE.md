@@ -18,7 +18,7 @@ tests/agent-node-edit.spec.ts — Agent 节点级修改链路 E2E
 tests/agent-result-followup.spec.ts — Agent 基于结果建议下一步 E2E
 tests/agent-multi-proposal.spec.ts — Agent 多提案比较与切换 E2E
 tests/agent-optimize-apply.spec.ts — Agent 优化建议生成与应用入口 E2E
-tests/helpers/agent.ts  — Agent E2E helper，负责测试补积分、创建空白项目、图片工作流与带结果资产场景
+tests/helpers/agent.ts  — Agent E2E helper，负责先建立浏览器匿名会话，再在同一页面上下文里补测试积分、创建空白项目、图片工作流与带结果资产场景，避免 APIRequestContext 与页面访客身份漂移
 playwright.config.ts     — Playwright 配置 (chromium, 固定 3000 端口, 串行稳定运行，启动时调用 `apps/web` 的自重置 + 自初始化 `dev:e2e`)
 tsconfig.json            — TypeScript 配置
 package.json             — 包描述与脚本
