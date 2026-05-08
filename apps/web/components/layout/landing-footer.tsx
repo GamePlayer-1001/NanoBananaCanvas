@@ -30,7 +30,7 @@ function FooterColumn({
           <li key={link.label}>
             <Link
               href={link.href}
-              className="text-sm text-white/40 transition-colors hover:text-white/70"
+              className="inline-flex min-h-11 items-center text-sm text-white/66 transition-colors hover:text-white/86"
             >
               {link.label}
             </Link>
@@ -94,18 +94,18 @@ export function LandingFooter() {
             <div className="mb-3">
               <BrandMark withLogo className="text-xl text-white" />
             </div>
-            <p className="mb-4 text-sm text-white/40">{t('tagline')}</p>
-            <div className="flex flex-wrap gap-3 text-sm text-white/35">
-              <Link href="/contact" className="transition-colors hover:text-white/70">
+            <p className="mb-4 text-sm text-white/64">{t('tagline')}</p>
+            <div className="flex flex-wrap gap-3 text-sm text-white/58">
+              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
                 Telegram
               </Link>
-              <Link href="/contact" className="transition-colors hover:text-white/70">
+              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
                 Discord
               </Link>
-              <Link href="/contact" className="transition-colors hover:text-white/70">
+              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
                 X
               </Link>
-              <Link href="/contact" className="transition-colors hover:text-white/70">
+              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
                 Instagram
               </Link>
             </div>
@@ -121,8 +121,8 @@ export function LandingFooter() {
 
         {/* ── Bottom Bar ─────────────────────────── */}
         <div className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-white/5 pt-6 md:flex-row">
-          <p className="text-xs text-white/30">{t('copyright')}</p>
-          <p className="text-xs text-white/30">{t('builtFor')}</p>
+          <p className="text-xs text-white/48">{t('copyright')}</p>
+          <p className="text-xs text-white/48">{t('builtFor')}</p>
         </div>
       </div>
     </footer>

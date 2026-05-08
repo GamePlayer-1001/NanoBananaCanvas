@@ -6,7 +6,7 @@
 
 ## 成员清单
 
-layout.tsx: 语言布局真相源，注入 ClerkProvider、NextIntlClientProvider、QueryProvider、字体与全局 Script，并输出 locale 级 html lang
+layout.tsx: 语言布局真相源，注入 NextIntlClientProvider、QueryProvider 与全局 Script；ClerkProvider 已下沉到 `(auth)/(app)/(editor)`，公开 landing 不再预载认证脚本
 not-found.tsx: locale 感知 404 页面，复用翻译文案为不同语言输出一致的错误引导
 (landing)/: 公开营销与法务路由组，承接首页、功能、模型、定价、文档及法务页 SEO 信号
 (auth)/: 认证路由组，承接登录与注册壳层并与 Clerk URL 保持对齐

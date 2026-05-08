@@ -8,7 +8,6 @@
 
 'use client'
 
-import Image from 'next/image'
 import { Sparkles, ShieldCheck, Workflow, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
@@ -36,10 +35,6 @@ type ModelMotionState = {
   progress: number
   reveal: number
   drift: number
-}
-
-function buildSimpleIconUrl(slug: string) {
-  return `https://cdn.jsdelivr.net/npm/simple-icons@v16/icons/${slug}.svg`
 }
 
 const MODEL_STAGE = {
@@ -76,7 +71,6 @@ const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
 const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'Google',
-    iconUrl: buildSimpleIconUrl('google'),
     fallback: 'G',
     orbit: 'outer',
     angle: 236,
@@ -87,7 +81,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'OpenAI',
-    iconUrl: buildSimpleIconUrl('openai'),
     fallback: 'O',
     orbit: 'outer',
     angle: 272,
@@ -101,7 +94,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   {
     name: 'GPT Image',
     vendor: 'OpenAI',
-    iconUrl: buildSimpleIconUrl('openai'),
     fallback: 'GI',
     orbit: 'inner',
     angle: 306,
@@ -115,7 +107,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Black Forest',
-    iconUrl: buildSimpleIconUrl('blackforestlabs'),
     fallback: 'BF',
     orbit: 'outer',
     angle: 334,
@@ -129,7 +120,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'OpenRouter',
-    iconUrl: buildSimpleIconUrl('openrouter'),
     fallback: 'OR',
     orbit: 'middle',
     angle: 22,
@@ -143,7 +133,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'ByteDance',
-    iconUrl: buildSimpleIconUrl('bytedance'),
     fallback: 'BD',
     orbit: 'middle',
     angle: 344,
@@ -154,7 +143,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Anthropic',
-    iconUrl: buildSimpleIconUrl('anthropic'),
     fallback: 'AI',
     orbit: 'outer',
     angle: 32,
@@ -167,7 +155,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Gemini',
-    iconUrl: buildSimpleIconUrl('googlegemini'),
     fallback: '✦',
     orbit: 'outer',
     angle: 124,
@@ -178,7 +165,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Alibaba Wan',
-    iconUrl: buildSimpleIconUrl('alibabacloud'),
     fallback: 'AW',
     orbit: 'outer',
     angle: 98,
@@ -190,7 +176,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Kling',
-    iconUrl: buildSimpleIconUrl('kling'),
     fallback: 'KL',
     orbit: 'outer',
     angle: 160,
@@ -201,7 +186,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Runway',
-    iconUrl: buildSimpleIconUrl('runway'),
     fallback: 'RW',
     orbit: 'middle',
     angle: 150,
@@ -212,7 +196,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Luma',
-    iconUrl: buildSimpleIconUrl('luma'),
     fallback: 'LU',
     orbit: 'outer',
     angle: 206,
@@ -233,7 +216,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'MiniMax',
-    iconUrl: buildSimpleIconUrl('minimax'),
     fallback: 'MM',
     orbit: 'middle',
     angle: 228,
@@ -244,7 +226,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Groq',
-    iconUrl: buildSimpleIconUrl('groq'),
     fallback: 'GQ',
     orbit: 'inner',
     angle: 26,
@@ -257,7 +238,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'xAI',
-    iconUrl: buildSimpleIconUrl('xai'),
     fallback: 'xI',
     orbit: 'inner',
     angle: 164,
@@ -270,7 +250,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Qwen',
-    iconUrl: buildSimpleIconUrl('qwen'),
     fallback: 'Q',
     orbit: 'middle',
     angle: 88,
@@ -283,7 +262,6 @@ const MODEL_PROVIDERS: ModelProvider[] = [
   },
   {
     name: 'Midjourney',
-    iconUrl: buildSimpleIconUrl('midjourney'),
     fallback: 'MJ',
     orbit: 'outer',
     angle: 8,
@@ -378,53 +356,28 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function ProviderIcon({ provider }: { provider: ModelProvider }) {
-  const [failed, setFailed] = useState(false)
   const tone = MODEL_TONE_STYLES[provider.tone]
   const dimension = MODEL_NODE_DIMENSIONS[provider.size]
 
-  if (!provider.iconUrl || failed) {
-    return (
-      <span
-        aria-hidden="true"
-        className="flex items-center justify-center rounded-full font-semibold tracking-[0.08em]"
-        style={{
-          height: `${dimension.icon}px`,
-          width: `${dimension.icon}px`,
-          background: tone.fallbackBg,
-          color: tone.text,
-          fontSize:
-            provider.size === 'lg'
-              ? '0.98rem'
-              : provider.size === 'md'
-                ? '0.85rem'
-                : '0.74rem',
-        }}
-      >
-        {provider.fallback}
-      </span>
-    )
-  }
-
   return (
-    <Image
-      src={provider.iconUrl}
-      alt=""
+    <span
       aria-hidden="true"
-      width={dimension.icon}
-      height={dimension.icon}
-      unoptimized
-      className="object-contain"
+      className="flex items-center justify-center rounded-full font-semibold tracking-[0.08em]"
       style={{
         height: `${dimension.icon}px`,
         width: `${dimension.icon}px`,
-        transform: `scale(${provider.iconScale ?? 1})`,
-        filter:
-          provider.iconFilter ??
-          'brightness(0) saturate(100%) invert(99%) sepia(7%) saturate(222%) hue-rotate(183deg) brightness(105%) contrast(99%)',
+        background: tone.fallbackBg,
+        color: tone.text,
+        fontSize:
+          provider.size === 'lg'
+            ? '0.98rem'
+            : provider.size === 'md'
+              ? '0.85rem'
+              : '0.74rem',
       }}
-      onError={() => setFailed(true)}
-      referrerPolicy="no-referrer"
-    />
+    >
+      {provider.fallback}
+    </span>
   )
 }
 

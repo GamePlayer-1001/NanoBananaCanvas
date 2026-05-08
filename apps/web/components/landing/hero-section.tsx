@@ -263,8 +263,20 @@ function ConnectionLine({
 
 function HeroMedia({ artwork, label }: { artwork: HeroArtwork; label: string }) {
   const media = HERO_MEDIA[artwork]
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
-  if (media.kind === 'video') {
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches)
+    syncPreference()
+    mediaQuery.addEventListener('change', syncPreference)
+
+    return () => mediaQuery.removeEventListener('change', syncPreference)
+  }, [])
+
+  if (media.kind === 'video' && !prefersReducedMotion) {
     return (
       <video
         className="pointer-events-none h-full w-full object-cover select-none"
@@ -272,7 +284,7 @@ function HeroMedia({ artwork, label }: { artwork: HeroArtwork; label: string }) 
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="none"
         poster={media.poster}
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
@@ -493,20 +505,20 @@ export function HeroSection() {
           style={{ transform: `translateY(${HERO_COPY_VERTICAL_OFFSET}px)` }}
         >
           <div className="pointer-events-none mx-auto flex flex-col items-center text-center">
-            <h2 className="mb-3 md:mb-4">
+            <p className="mb-3 md:mb-4">
               <BrandMark
                 withLogo
                 className="text-2xl text-white/84 drop-shadow-[0_8px_28px_rgba(255,255,255,0.16)] md:text-3xl lg:text-4xl"
               >
                 {t('heading')}
               </BrandMark>
-            </h2>
+            </p>
 
             <h1 className="from-brand-300 mx-auto mb-4 max-w-[12ch] whitespace-nowrap bg-gradient-to-r to-white bg-clip-text text-[2.1rem] leading-[1.08] font-bold tracking-[-0.05em] text-transparent drop-shadow-[0_18px_46px_rgba(169,180,255,0.2)] sm:text-[2.7rem] md:mb-6 md:text-[3.4rem] lg:max-w-none lg:text-[4rem]">
               {t('tagline')}
             </h1>
 
-            <p className="mx-auto mb-9 max-w-[46rem] whitespace-pre-line px-4 text-[0.92rem] leading-[1.95] text-white/72 md:mb-10 md:text-[1rem] lg:max-w-[52rem]">
+            <p className="mx-auto mb-9 max-w-[46rem] whitespace-pre-line px-4 text-[0.92rem] leading-[1.95] text-white/82 md:mb-10 md:text-[1rem] lg:max-w-[52rem]">
               {t('models')}
             </p>
 

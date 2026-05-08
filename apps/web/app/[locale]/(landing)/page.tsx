@@ -1,28 +1,28 @@
 /**
- * [INPUT]: 依赖 next/headers 的 headers，依赖 next-intl/server 的 getTranslations/setRequestLocale，
+ * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，
  *          依赖 @/components/landing/hero-section，
+ *          依赖 @/components/landing/deferred-model-mind-map，
  *          依赖 @/components/landing/landing-sections，
- *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
+ *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/plans
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，动态注入 Stripe 定价后按 Hero/功能/人格分层定价/评价/模型/FAQ/Footer 承载公开转化叙事
+ * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { DeferredModelMindMap } from '@/components/landing/deferred-model-mind-map'
 import { HeroSection } from '@/components/landing/hero-section'
 import {
   FaqSection,
   FeaturesSection,
-  ModelMindMapSection,
   PricingSection,
   TestimonialsSection,
 } from '@/components/landing/landing-sections'
 import { LandingFooter } from '@/components/layout/landing-footer'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
-import { getPublicPricingPlans } from '@/lib/billing/pricing'
+import { BILLING_PLAN_SNAPSHOTS } from '@/lib/billing/plans'
 import {
   BASE_URL,
   SITE_NAME,
@@ -30,8 +30,6 @@ import {
   buildPriorityKeywords,
   buildPageMetadata,
 } from '@/lib/seo'
-
-export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({
   params,
@@ -61,15 +59,8 @@ export default async function LandingPage({
 }) {
   const { locale } = await params
   setRequestLocale(locale)
-  const requestHeaders = await headers()
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
-  const pricing = await getPublicPricingPlans({
-    countryCode: requestHeaders.get('cf-ipcountry'),
-  }).catch((error: unknown) => {
-    console.error('[landing] Failed to load Stripe prices', error)
-    return null
-  })
 
   const faqItems = [
     'what',
@@ -155,9 +146,16 @@ export default async function LandingPage({
       />
       <HeroSection />
       <FeaturesSection />
-      <PricingSection plans={pricing?.plans ?? []} />
+      <PricingSection
+        plans={[]}
+        snapshotPlans={{
+          standard: BILLING_PLAN_SNAPSHOTS.standard,
+          pro: BILLING_PLAN_SNAPSHOTS.pro,
+          ultimate: BILLING_PLAN_SNAPSHOTS.ultimate,
+        }}
+      />
       <TestimonialsSection />
-      <ModelMindMapSection />
+      <DeferredModelMindMap />
       <FaqSection />
       <LandingFooter />
     </main>

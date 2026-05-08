@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/components/layout/landing-nav 的 LandingNav
- * [OUTPUT]: 对外提供 Landing Page 专用布局（深色科技风 + 导航栏）
+ * [OUTPUT]: 对外提供 Landing Page 专用布局（深色科技风 + 导航栏），公开页不注入认证运行时
  * [POS]: (landing) 路由组布局，包裹 Landing/Pricing/Terms/Privacy
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */

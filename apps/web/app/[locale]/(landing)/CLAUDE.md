@@ -2,8 +2,8 @@
 > L2 | 父级: apps/web/app/CLAUDE.md
 
 成员清单
-layout.tsx: Landing 深色布局壳层，负责 `landing-dark` 风格边界
-page.tsx: Landing 首页，服务端读取 Stripe 动态月付价格后承载 Hero、Features、人格分层 Pricing、Testimonials、模型动态图、FAQ 与页脚
+layout.tsx: Landing 深色布局壳层，负责 `landing-dark` 风格边界，并保持公开页不注入认证运行时
+page.tsx: Landing 首页，默认静态输出 Hero、Features、人格分层 Pricing、Testimonials、FAQ 与页脚，并把模型动态图延后到客户端加载以换取更稳的首屏性能
 features/page.tsx: `/features` 历史兼容重定向页，旧链接统一回落到首页 `#features` 锚点，独立详情内容已下线
 models/page.tsx: `/models` 历史兼容重定向页，旧链接统一回落到首页 `#models` 锚点，独立详情内容已下线
 docs/page.tsx: `/docs` 公开文档导航页，承接资源菜单中的文档入口

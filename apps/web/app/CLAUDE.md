@@ -21,7 +21,7 @@ zh/CLAUDE.md               — 中文 sitemap 分区说明，记录 `/zh/*` 搜�
 zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 可索引入口
 
 [locale]/CLAUDE.md                         — locale 外壳层说明 (Provider、404、路由分组职责与边界)
-[locale]/layout.tsx                         — 语言布局 (ClerkProvider + next-intl + QueryProvider + Clerk proxyUrl 透传，认证组件始终处在 ClerkProvider 内；公开页支持默认语言无前缀、中文显式前缀索引)
+[locale]/layout.tsx                         — 语言布局 (next-intl + QueryProvider + 全局脚本；公开页不再预载 Clerk，认证上下文下沉到受保护路由组)
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
 [locale]/(landing)/page.tsx                 — Landing 首页 (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer，CTA 召回区已移除)
@@ -37,10 +37,10 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/(landing)/refund-policy/page.tsx  — 退款政策页面
 [locale]/(landing)/acceptable-use/page.tsx — 合理使用政策页面
 [locale]/(landing)/cookies/page.tsx        — Cookie 设置说明页
-[locale]/(auth)/layout.tsx                  — 认证布局 (品牌双栏认证壳层，承载 Clerk 登录/注册页)
+[locale]/(auth)/layout.tsx                  — 认证布局 (品牌双栏认证壳层 + ClerkShell，承载 Clerk 登录/注册页)
 [locale]/(auth)/sign-in/[[...sign-in]]/page.tsx — 登录页 (Landing 主 CTA 入口 + 真实 Clerk SignIn 卡片，对外暴露 /sign-in；已登录访问时服务端直跳目标页)
 [locale]/(auth)/sign-up/[[...sign-up]]/page.tsx — 注册页 (复用认证壳层 + 真实 Clerk SignUp 卡片，对外暴露 /sign-up；已登录访问时服务端直跳目标页)
-[locale]/(app)/layout.tsx                   — 应用动态布局 (AppSidebar 200px + main flex-1)
+[locale]/(app)/layout.tsx                   — 应用动态布局 (ClerkShell + AppSidebar 200px + main flex-1)
 [locale]/(app)/account/page.tsx             — 账户页 (AccountContent: 个人资料/作品/通知/多条 API 接入配置)
 [locale]/(app)/billing/page.tsx             — 账单页 (BillingContent: 余额/流水/usage + Stripe Portal 入口)
 [locale]/(app)/explore/page.tsx             — 社区广场 (ExploreContent: tabs + 视频卡片网格 + CollectionPage/BreadcrumbList 结构化数据)
@@ -50,7 +50,7 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/(app)/elements/page.tsx            — 元素库 (Coming Soon 占位)
 [locale]/(app)/workspace/page.tsx           — 工作区 (WorkspaceContent: 项目卡片网格 + 新建弹窗)
 [locale]/(app)/workspace/[id]/page.tsx      — 旧画布兼容重定向页 (301/307 风格路由跳转到真实 locale 的 /canvas/[id]，默认语言不再暴露 `/en` 变体，附带 noindex)
-[locale]/(editor)/layout.tsx                — 全屏动态编辑器布局 (最小化容器)
+[locale]/(editor)/layout.tsx                — 全屏动态编辑器布局 (ClerkShell + 最小化容器)
 [locale]/(editor)/canvas/[id]/layout.tsx    — 画布详情 SEO 布局 (对编辑器详情路由输出 noindex)
 [locale]/(editor)/canvas/[id]/page.tsx      — 画布编辑器页面，CSR，从 D1 加载工作流数据注入 FlowStore + ReactFlow
 ```

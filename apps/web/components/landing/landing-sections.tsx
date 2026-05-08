@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import type { BillingPlanSnapshot } from '@/lib/billing/plans'
 import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
 import { BILLING_PLAN_SNAPSHOTS } from '@/lib/billing/plans'
 import { Link } from '@/i18n/navigation'
@@ -61,20 +62,6 @@ const TESTIMONIAL_ITEMS = [
   'lena',
   'workflow',
 ] as const
-const TESTIMONIAL_AVATARS: Record<(typeof TESTIMONIAL_ITEMS)[number], string> = {
-  pixel: 'https://randomuser.me/api/portraits/women/68.jpg',
-  lena: 'https://randomuser.me/api/portraits/women/44.jpg',
-  prompt: 'https://randomuser.me/api/portraits/men/32.jpg',
-  frame: 'https://randomuser.me/api/portraits/men/52.jpg',
-  neo: 'https://randomuser.me/api/portraits/women/33.jpg',
-  moodboard: 'https://randomuser.me/api/portraits/women/63.jpg',
-  indie: 'https://randomuser.me/api/portraits/men/75.jpg',
-  workflow: 'https://randomuser.me/api/portraits/men/22.jpg',
-  cyber: 'https://randomuser.me/api/portraits/women/90.jpg',
-  canvas: 'https://randomuser.me/api/portraits/women/17.jpg',
-  vfx: 'https://randomuser.me/api/portraits/men/41.jpg',
-  dream: 'https://randomuser.me/api/portraits/women/12.jpg',
-}
 const FAQ_KEYS = [
   'what',
   'models',
@@ -315,8 +302,10 @@ export function FeaturesSection() {
 
 export function PricingSection({
   plans,
+  snapshotPlans,
 }: {
   plans: PublicBillingPlanPrice[]
+  snapshotPlans?: Partial<Record<'standard' | 'pro' | 'ultimate', BillingPlanSnapshot>>
 }) {
   const pricingT = useTranslations('landing.sections.pricing')
   const billingT = useTranslations('pricing')
@@ -344,7 +333,9 @@ export function PricingSection({
         <div className="mt-14 grid gap-4 xl:grid-cols-3">
           {LANDING_PERSONA_ITEMS.map((planKey) => {
             const snapshot =
-              planKey === 'free' ? null : BILLING_PLAN_SNAPSHOTS[planKey]
+              planKey === 'free'
+                ? null
+                : snapshotPlans?.[planKey] ?? BILLING_PLAN_SNAPSHOTS[planKey]
             const livePlan =
               planKey === 'free' ? null : monthlyPlanMap[planKey]
             const priceLabel =
@@ -428,7 +419,7 @@ export function PricingSection({
                   <div className="mt-auto pt-7">
                     <Link
                       href="/pricing"
-                      className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-white/10 bg-white text-sm font-semibold text-black transition hover:bg-white/90"
+                      className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-black transition hover:bg-white/90"
                     >
                       {pricingT(`plans.${planKey}.cta`)}
                     </Link>
@@ -445,6 +436,8 @@ export function PricingSection({
 
 export function TestimonialsSection() {
   const testimonialsT = useTranslations('landing.sections.testimonials')
+  const getAvatarSeed = (handle: string) =>
+    handle.replace(/^@/, '').slice(0, 2).toUpperCase()
 
   return (
     <section className="relative overflow-hidden bg-[#0b0b0f] px-4 py-22 sm:px-6 lg:px-8 lg:py-24 xl:px-10">
@@ -471,26 +464,23 @@ export function TestimonialsSection() {
               }`}
             >
               <div className="flex items-center gap-3.5">
-                <Image
-                  src={TESTIMONIAL_AVATARS[key]}
-                  alt={`${testimonialsT(`${key}.handle`)} avatar`}
-                  width={48}
-                  height={48}
-                  unoptimized
-                  className="h-12 w-12 rounded-full border border-white/12 bg-white/8 object-cover"
-                  referrerPolicy="no-referrer"
-                />
+                <div
+                  aria-hidden="true"
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-sm font-semibold tracking-[0.08em] text-white/90"
+                >
+                  {getAvatarSeed(testimonialsT(`${key}.handle`))}
+                </div>
                 <div>
                   <p className="text-[0.98rem] font-semibold text-white">
                     {testimonialsT(`${key}.handle`)}
                   </p>
-                  <p className="mt-0.5 text-xs tracking-[0.16em] text-white/38 uppercase">
+                  <p className="mt-0.5 text-xs tracking-[0.16em] text-white/55 uppercase">
                     {testimonialsT(`${key}.role`)}
                   </p>
                 </div>
               </div>
 
-              <p className="mt-5 text-[0.94rem] leading-7 text-white/74">
+              <p className="mt-5 text-[0.94rem] leading-7 text-white/82">
                 “{testimonialsT(`${key}.quote`)}”
               </p>
             </article>
@@ -520,14 +510,14 @@ export function FaqSection() {
         <div className="mx-auto mt-18 max-w-[880px]">
           {FAQ_KEYS.map((key) => (
             <details key={key} className="group border-b border-white/8 first:border-t">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-7 text-left text-[1.18rem] font-semibold tracking-tight text-white marker:content-none">
+              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-6 py-7 pr-1 text-left text-[1.18rem] font-semibold tracking-tight text-white marker:content-none">
                 <span>{faqT(`${key}.question`)}</span>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/58 transition-colors duration-200 group-open:text-white group-hover:text-white">
                   <ChevronDown className="h-4.5 w-4.5 transition-transform duration-200 group-open:rotate-180" />
                 </span>
               </summary>
               <div className="pb-7">
-                <p className="max-w-[48rem] text-[1rem] leading-8 text-white/62 md:text-[1.05rem]">
+                <p className="max-w-[48rem] text-[1rem] leading-8 text-white/78 md:text-[1.05rem]">
                   {faqT(`${key}.answer`)}
                 </p>
               </div>

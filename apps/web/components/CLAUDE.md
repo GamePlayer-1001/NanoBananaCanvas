@@ -15,7 +15,7 @@ agent/             — Agent 面板组件 (Panel + Conversation + Proposal/Promp
 nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合并工具节点)
 edges/             — 连线组件 (CustomEdge 贝塞尔曲线)
 layout/            — 布局组件 (LandingNav + LandingFooter + AppSidebar)
-auth/              — 认证组件 (AuthShell 双栏认证壳，承载登录/注册视觉骨架)
+auth/              — 认证组件 (AuthShell 双栏认证壳 + ClerkShell 运行时认证壳，避免公开 landing 预载登录脚本)
 landing/           — Landing 页面组件 (HeroSection + 首页面叙事区块 + 公开子页面构件)
 explore/           — 探索页组件 (ExploreContent + ExploreTabs + ExploreGrid)
 workflows/         — 工作流分享组件 (WorkflowsContent)

@@ -37,26 +37,26 @@ export function LandingNav() {
         <div className="hidden items-center gap-8 md:flex">
           <Link
             href="/#features"
-            className="text-sm text-white/70 transition-colors hover:text-white"
+            className="inline-flex min-h-11 items-center text-sm text-white/82 transition-colors hover:text-white"
           >
             {t('nav.features')}
           </Link>
           <Link
             href="/pricing"
-            className="text-sm text-white/70 transition-colors hover:text-white"
+            className="inline-flex min-h-11 items-center text-sm text-white/82 transition-colors hover:text-white"
           >
             {t('nav.pricing')}
           </Link>
           <Link
             href="/#models"
-            className="text-sm text-white/70 transition-colors hover:text-white"
+            className="inline-flex min-h-11 items-center text-sm text-white/82 transition-colors hover:text-white"
           >
             {t('nav.models')}
           </Link>
           <div className="group relative">
             <button
               type="button"
-              className="inline-flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
+              className="inline-flex min-h-11 items-center gap-2 text-sm text-white/82 transition-colors hover:text-white"
             >
               <span>{t('nav.resources')}</span>
               <ChevronDown className="h-4 w-4" />
@@ -73,7 +73,7 @@ export function LandingNav() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">{item.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-white/54">{item.body}</p>
+                    <p className="mt-1 text-sm leading-6 text-white/70">{item.body}</p>
                   </div>
                 </Link>
               ))}
@@ -84,7 +84,7 @@ export function LandingNav() {
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
           <Link href="/sign-in">
-            <Button size="sm" className="bg-white text-sm text-black hover:bg-white/88">
+            <Button size="sm" className="min-h-11 bg-white px-4 text-sm text-black hover:bg-white/88">
               {t('nav.startCreating')}
             </Button>
           </Link>
