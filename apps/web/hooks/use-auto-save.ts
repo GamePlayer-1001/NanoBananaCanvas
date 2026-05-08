@@ -3,10 +3,10 @@
  *          依赖 @/services/storage/local-storage 的持久化能力，
  *          依赖 @/services/storage/serializer 的序列化能力，
  *          依赖 zustand 的 create (保存状态原子)
- * [OUTPUT]: 对外提供 useAutoSave hook (防抖自动保存: localStorage + 云端)，
+ * [OUTPUT]: 对外提供 useAutoSave hook (防抖自动保存: localStorage + 离场兜底云保存)，
  *           对外提供 useCloudSaveStatus 状态原子，
- *           对外提供 triggerCloudSave 显式云保存方法
- * [POS]: hooks 的持久化桥梁，在画布页面挂载时激活，负责短防抖保存与离场冲刷
+ *           对外提供 triggerCloudSave / primeCloudSaveBaseline / markCloudSaveError 等保存控制方法
+ * [POS]: hooks 的持久化桥梁，在画布页面挂载时激活，负责本地草稿持久化、未保存标记与离场补写
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  *
  * [CONFLICT STRATEGY]: Last-Write-Wins (LWW)
@@ -28,19 +28,55 @@ import { serializeWorkflow } from '@/services/storage/serializer'
 
 /* ─── Cloud Save Status Atom ──────────────────────────── */
 
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'unsaved'
 
-export const useCloudSaveStatus = create<{ status: SaveStatus }>(() => ({
+type CloudSaveState = {
+  status: SaveStatus
+  hasUnsavedChanges: boolean
+  lastPersistedSnapshot: string
+}
+
+export const useCloudSaveStatus = create<CloudSaveState>(() => ({
   status: 'idle',
+  hasUnsavedChanges: false,
+  lastPersistedSnapshot: '',
 }))
 
 /* ─── Constants ───────────────────────────────────────── */
 
 const DEBOUNCE_LOCAL_MS = 400
-const DEBOUNCE_CLOUD_MS = 1200
 
 function getStableSerializedJson(serialized: ReturnType<typeof serializeWorkflow>) {
   return JSON.stringify(serialized, (key, value) => (key === 'savedAt' ? undefined : value))
+}
+
+function setCloudSaveSaved(stableSerializedJson: string) {
+  useCloudSaveStatus.setState({
+    status: 'saved',
+    hasUnsavedChanges: false,
+    lastPersistedSnapshot: stableSerializedJson,
+  })
+}
+
+function setCloudSaveUnsaved() {
+  useCloudSaveStatus.setState((state) => ({
+    ...state,
+    status: 'unsaved',
+    hasUnsavedChanges: true,
+  }))
+}
+
+export function markCloudSaveError() {
+  useCloudSaveStatus.setState((state) => ({
+    ...state,
+    status: 'error',
+  }))
+}
+
+export function primeCloudSaveBaseline(stableSerializedJson?: string) {
+  const snapshot =
+    stableSerializedJson ?? getSerializedWorkflowSnapshot().stableSerializedJson
+  setCloudSaveSaved(snapshot)
 }
 
 /* ─── Cloud Save ──────────────────────────────────────── */
@@ -69,7 +105,10 @@ export async function triggerCloudSave(
 ): Promise<void> {
   const snapshot = getSerializedWorkflowSnapshot()
   saveToLocal(snapshot.nodes, snapshot.edges, snapshot.viewport)
-  useCloudSaveStatus.setState({ status: 'saving' })
+  useCloudSaveStatus.setState((state) => ({
+    ...state,
+    status: 'saving',
+  }))
 
   try {
     const res = await fetch(`/api/workflows/${workflowId}`, {
@@ -81,9 +120,9 @@ export async function triggerCloudSave(
     })
     if (!res.ok) throw new Error(`Save failed: ${res.status}`)
     options?.onSaved?.(snapshot.serializedJson)
-    useCloudSaveStatus.setState({ status: 'saved' })
+    setCloudSaveSaved(snapshot.stableSerializedJson)
   } catch (error) {
-    useCloudSaveStatus.setState({ status: 'error' })
+    markCloudSaveError()
     throw error
   }
 }
@@ -93,7 +132,6 @@ export async function triggerCloudSave(
 export function useAutoSave(workflowId?: string, enableCloud = true) {
   const hasLoaded = useRef(false)
   const lastChangeAtRef = useRef(0)
-  const lastPersistedSnapshotRef = useRef<string>('')
 
   /* ── 页面加载时恢复 (仅无 workflowId 时从 localStorage) ── */
   useEffect(() => {
@@ -112,8 +150,6 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
   /* ── 防抖自动保存 (subscribe 模式) ─────────────────── */
   useEffect(() => {
     let localTimer: ReturnType<typeof setTimeout> | null = null
-    let cloudTimer: ReturnType<typeof setTimeout> | null = null
-
     const unsubscribe = useFlowStore.subscribe((state, prev) => {
       if (
         state.nodes === prev.nodes &&
@@ -130,48 +166,33 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
         saveToLocal(state.nodes, state.edges, state.viewport)
       }, DEBOUNCE_LOCAL_MS)
 
-      /* 云端保存 (2s 防抖，仅 workflowId 存在时) */
+      /* 云端不再常驻自动保存，只在本地标脏 */
       if (workflowId && enableCloud) {
         const snapshot = getSerializedWorkflowSnapshot()
-        if (snapshot.stableSerializedJson === lastPersistedSnapshotRef.current) {
-          return
+        const { lastPersistedSnapshot } = useCloudSaveStatus.getState()
+        if (snapshot.stableSerializedJson !== lastPersistedSnapshot) {
+          setCloudSaveUnsaved()
+        } else {
+          setCloudSaveSaved(lastPersistedSnapshot)
         }
-        if (cloudTimer) clearTimeout(cloudTimer)
-        cloudTimer = setTimeout(() => {
-          void triggerCloudSave(workflowId, {
-            onSaved: () => {
-              lastPersistedSnapshotRef.current = snapshot.stableSerializedJson
-            },
-          })
-        }, DEBOUNCE_CLOUD_MS)
       }
     })
 
     const flushPendingSave = () => {
       if (!workflowId || !enableCloud) return
-      if (!lastChangeAtRef.current) return
-
-      const recentlyChanged =
-        Date.now() - lastChangeAtRef.current < Math.max(DEBOUNCE_LOCAL_MS, DEBOUNCE_CLOUD_MS)
-
-      if (!recentlyChanged) return
+      const { hasUnsavedChanges, lastPersistedSnapshot } = useCloudSaveStatus.getState()
+      if (!hasUnsavedChanges) return
 
       if (localTimer) {
         clearTimeout(localTimer)
         localTimer = null
       }
-      if (cloudTimer) {
-        clearTimeout(cloudTimer)
-        cloudTimer = null
-      }
 
       const snapshot = getSerializedWorkflowSnapshot()
-      if (snapshot.stableSerializedJson === lastPersistedSnapshotRef.current) return
+      if (snapshot.stableSerializedJson === lastPersistedSnapshot) return
+      saveToLocal(snapshot.nodes, snapshot.edges, snapshot.viewport)
       void triggerCloudSave(workflowId, {
         keepalive: true,
-        onSaved: () => {
-          lastPersistedSnapshotRef.current = snapshot.stableSerializedJson
-        },
       })
     }
 
@@ -188,7 +209,6 @@ export function useAutoSave(workflowId?: string, enableCloud = true) {
       flushPendingSave()
       unsubscribe()
       if (localTimer) clearTimeout(localTimer)
-      if (cloudTimer) clearTimeout(cloudTimer)
       window.removeEventListener('pagehide', flushPendingSave)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }

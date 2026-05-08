@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @/hooks/use-workflow-executor 的执行控制，
  *          依赖 @/stores/use-flow-store 的节点/边/视口数据，
  *          依赖 @/services/storage 的导入导出，
- *          依赖 @/hooks/use-auto-save 的 useCloudSaveStatus 保存状态，
+ *          依赖 @/hooks/use-auto-save 的 useCloudSaveStatus / triggerCloudSave 保存状态与手动保存动作，
  *          依赖 sonner 的 toast 通知，
  *          依赖 next-intl 的 useTranslations，
  *          依赖 @/hooks/use-user 的 useCurrentUser，
@@ -18,12 +18,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { ArrowLeft, Check, Cloud, CloudOff, Download, History, Loader2, Play, Redo2, Undo2, Upload } from 'lucide-react'
+import { ArrowLeft, Check, Cloud, CloudOff, Download, History, Loader2, Play, Redo2, Save, Undo2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { useHistoryStore } from '@/stores/use-history-store'
 import { useWorkflowExecutor } from '@/hooks/use-workflow-executor'
-import { useCloudSaveStatus } from '@/hooks/use-auto-save'
+import { triggerCloudSave, useCloudSaveStatus } from '@/hooks/use-auto-save'
 import { exportWorkflow, importWorkflow } from '@/services/storage'
 import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
@@ -44,18 +44,23 @@ import { useCurrentUser } from '@/hooks/use-user'
 
 function CloudSaveIndicator() {
   const t = useTranslations('canvas')
-  const status = useCloudSaveStatus((s) => s.status)
+  const { status, hasUnsavedChanges } = useCloudSaveStatus((s) => ({
+    status: s.status,
+    hasUnsavedChanges: s.hasUnsavedChanges,
+  }))
 
-  if (status === 'idle') return null
+  if (status === 'idle' && !hasUnsavedChanges) return null
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div className="flex items-center gap-1 px-1.5">
+          {status === 'unsaved' && <Cloud size={13} className="text-amber-500" />}
           {status === 'saving' && <Cloud size={13} className="text-muted-foreground animate-pulse" />}
           {status === 'saved' && <Check size={13} className="text-emerald-500" />}
           {status === 'error' && <CloudOff size={13} className="text-destructive" />}
           <span className="text-muted-foreground text-[11px]">
+            {status === 'unsaved' && t('unsaved')}
             {status === 'saving' && t('saving')}
             {status === 'saved' && t('saved')}
             {status === 'error' && t('saveFailed')}
@@ -63,6 +68,7 @@ function CloudSaveIndicator() {
         </div>
       </TooltipTrigger>
       <TooltipContent side="bottom" sideOffset={8}>
+        {status === 'unsaved' && t('unsaved')}
         {status === 'saving' && t('saving')}
         {status === 'saved' && t('saved')}
         {status === 'error' && t('saveFailed')}
@@ -164,6 +170,10 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const t = useTranslations('canvas')
   const { data: user } = useCurrentUser()
   const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
+  const { status, hasUnsavedChanges } = useCloudSaveStatus((s) => ({
+    status: s.status,
+    hasUnsavedChanges: s.hasUnsavedChanges,
+  }))
   const nodes = useFlowStore((s) => s.nodes)
   const edges = useFlowStore((s) => s.edges)
   const viewport = useFlowStore((s) => s.viewport)
@@ -230,6 +240,17 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
     }
   }, [setFlow, t])
 
+  const handleManualSave = useCallback(async () => {
+    if (!workflowId) return
+
+    try {
+      await triggerCloudSave(workflowId)
+      toast.success(t('saved'))
+    } catch {
+      toast.error(t('saveFailed'))
+    }
+  }, [t, workflowId])
+
   return (
     <TooltipProvider>
       <div
@@ -284,6 +305,36 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
             {isExecuting ? t('stopTooltip') : t('runTooltip')}
           </TooltipContent>
         </Tooltip>
+
+        {workflowId && (
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={hasUnsavedChanges || status === 'error' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="gap-1.5 rounded-full"
+                  onClick={() => {
+                    void handleManualSave()
+                  }}
+                  disabled={status === 'saving'}
+                >
+                  {status === 'saving' ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  <span className="hidden sm:inline">{t('saveAction')}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={8}>
+                {hasUnsavedChanges ? t('savePendingTooltip') : t('saveTooltip')}
+              </TooltipContent>
+            </Tooltip>
+
+            <Separator orientation="vertical" className="mx-1 !h-6" />
+          </>
+        )}
 
         <Separator orientation="vertical" className="mx-1 !h-6" />
 
