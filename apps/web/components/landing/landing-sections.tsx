@@ -151,6 +151,12 @@ export function FeaturesSection() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_22%,rgba(99,92,255,0.12),transparent_18%),radial-gradient(circle_at_83%_68%,rgba(89,214,183,0.08),transparent_18%),linear-gradient(180deg,#0b0b0f_0%,#09090d_100%)]" />
       <div className="mx-auto w-full max-w-[1440px]">
+        <div className="sr-only">
+          <p>{featuresT('eyebrow')}</p>
+          <h2>{featuresT('title')}</h2>
+          <p>{featuresT('body')}</p>
+        </div>
+
         <div
           className="hidden items-start gap-72 xl:grid xl:grid-cols-[minmax(0,0.3fr)_minmax(0,0.7fr)] 2xl:gap-88"
           onWheel={handleFeatureWheel}
@@ -197,13 +203,20 @@ export function FeaturesSection() {
                     key={`feature-dot-${item.key}`}
                     type="button"
                     onClick={() => activateFeature(item.index)}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${
-                      item.key === activeFeature
-                        ? 'w-10 bg-white'
-                        : 'w-2.5 bg-white/18 hover:bg-white/34'
+                    className={`inline-flex h-11 items-center rounded-full px-2.5 transition-all duration-300 ${
+                      item.key === activeFeature ? 'justify-start' : 'justify-center'
                     }`}
                     aria-label={item.title}
-                  />
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`block rounded-full transition-all duration-300 ${
+                        item.key === activeFeature
+                          ? 'h-2.5 w-10 bg-white'
+                          : 'h-2.5 w-2.5 bg-white/18 hover:bg-white/34'
+                      }`}
+                    />
+                  </button>
                 ))}
               </div>
             </div>
@@ -250,9 +263,9 @@ export function FeaturesSection() {
                     <p className="text-xs font-medium tracking-[0.24em] text-white/34 uppercase">
                       Feature Detail
                     </p>
-                    <h3 className="mt-2 text-[2rem] leading-[1.02] font-semibold tracking-tight text-white">
+                    <p className="mt-2 text-[2rem] leading-[1.02] font-semibold tracking-tight text-white">
                       {activeFeatureItem.title}
-                    </h3>
+                    </p>
                   </div>
                 </div>
                 <p className="mt-5 max-w-[48rem] text-base leading-8 text-white/62">
