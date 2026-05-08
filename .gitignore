@@ -52,6 +52,9 @@ NUL
 # Debug logs
 tail_err.txt
 .codex-logs/
+apps/worker/.e2e-web-*.txt
+apps/worker/.probe-run.*.txt
+apps/worker/.wrangler-dev-*.txt
 
 # Misc
 *.tsbuildinfo
