@@ -8,6 +8,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
+import { buildLocalizedPath } from '@/lib/seo'
 import { NO_INDEX_METADATA } from '@/lib/seo'
 
 export const metadata: Metadata = NO_INDEX_METADATA
@@ -20,5 +21,5 @@ export default async function LegacyCanvasRedirect({
   params: Promise<{ locale: string; id: string }>
 }) {
   const { locale, id } = await params
-  redirect(`/${locale}/canvas/${id}`)
+  redirect(buildLocalizedPath(`/canvas/${id}`, locale))
 }

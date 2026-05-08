@@ -15,7 +15,6 @@ import { buildLanguageAlternates, buildLocalizedUrl } from '@/lib/seo'
 const STATIC_LAST_MODIFIED_AT = '2026-04-27T00:00:00.000Z'
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
-  { path: '/models', changeFrequency: 'weekly' as const, priority: 0.88 },
   { path: '/explore', changeFrequency: 'daily' as const, priority: 0.9 },
   { path: '/workflows', changeFrequency: 'daily' as const, priority: 0.8 },
   { path: '/about', changeFrequency: 'monthly' as const, priority: 0.68 },
@@ -37,7 +36,7 @@ function buildStaticEntries(locales: readonly AppLocale[]): MetadataRoute.Sitema
       changeFrequency: route.changeFrequency,
       priority: route.priority,
       alternates: {
-        languages: buildLanguageAlternates(route.path),
+        languages: buildLanguageAlternates(route.path, locales),
       },
     })),
   )
@@ -64,7 +63,7 @@ async function buildDynamicEntries(
         changeFrequency: 'weekly' as const,
         priority: 0.6,
         alternates: {
-          languages: buildLanguageAlternates(`/explore/${row.id}`),
+          languages: buildLanguageAlternates(`/explore/${row.id}`, locales),
         },
       })),
     )
