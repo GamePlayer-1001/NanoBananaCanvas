@@ -777,6 +777,17 @@ function getTaskPollingPlan(taskType: ExecuteTaskOutputApiParams['taskType']) {
   return { intervalMs }
 }
 
+function didTaskUseFallbackProvider(
+  requestedProvider: string | undefined,
+  resolvedProvider: string | undefined,
+): boolean {
+  if (!requestedProvider || !resolvedProvider) {
+    return false
+  }
+
+  return requestedProvider !== resolvedProvider
+}
+
 async function executeTaskOutputViaApi(
   params: ExecuteTaskOutputApiParams,
 ): Promise<string> {
@@ -917,6 +928,19 @@ async function executeTaskOutputViaApi(
         status: 'finalizing',
         configPatch: { progress: 100, taskId },
       })
+      if (didTaskUseFallbackProvider(params.provider, resolvedProvider)) {
+        log.warn('Async task completed via fallback provider', {
+          taskId,
+          taskType: params.taskType,
+          workflowId: params.workflowId ?? null,
+          nodeId: params.nodeId ?? null,
+          requestedProvider: params.provider ?? null,
+          requestedModelId: params.modelId ?? null,
+          resolvedProvider: resolvedProvider ?? null,
+          resolvedModelId: resolvedModelId ?? null,
+          outputType: params.outputType,
+        })
+      }
       log.info('Async task completed', {
         taskId,
         taskType: params.taskType,
