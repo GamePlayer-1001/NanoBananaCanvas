@@ -8,8 +8,8 @@ Provider 处理器层 — TaskProcessor 接口的具体实现
 - `types.ts`: TaskProcessor 接口 + SubmitInput/SubmitResult/CheckResult/TaskOutput 类型定义；`SubmitResult/CheckResult` 现支持回写真实执行 provider/model，用于 fallback 后账本与任务真相收口
 - `registry.ts`: getProcessor(taskType, provider) 工厂函数，路由到对应 Processor 实例
 - `video-gen.ts`: VideoGenProcessor (可灵完整实现 + 即梦骨架)
-- `image-gen.ts`: ImageGenProcessor（平台图片供应商处理器，支持 OpenAI/OpenRouter 参考图输入链路、Google Imagen 文生图、DLAPI 直出图与基于 `multipart/form-data` 的参考图编辑，并在 DLAPI 网关/协议异常、401 鉴权失败或空图片负载时自动切到 comfly 对应兼容模型；fallback 现显式改用 `COMFLY_API_KEY` 而非复用失败的 `DLAPI_API_KEY`，缺少托底 key 时返回可操作的运维提示）
-- `image-gen.test.ts`: ImageGenProcessor 回归测试（OpenAI 兼容 url/base64、OpenRouter/兼容层参考图透传、DLAPI 直出图 submit/check、DLAPI/Comfly 参考图 multipart 提交、DLAPI→Comfly fallback 模型映射、DLAPI 401 鉴权失败托底、未支持参考图时快速失败）
+- `image-gen.ts`: ImageGenProcessor（平台图片供应商处理器，支持 OpenAI/OpenRouter 参考图输入链路、Google Imagen 文生图、DLAPI 直出图与基于 `multipart/form-data` 的参考图编辑，并在 DLAPI 网关/协议异常、401 鉴权失败或空图片负载时自动切到 comfly 对应兼容模型；fallback 现显式改用 `COMFLY_API_KEY` 而非复用失败的 `DLAPI_API_KEY`，缺少托底 key 时返回可操作的运维提示；现补充 DLAPI 主链的结构化诊断日志，记录 `sizePreset/resolvedSize/aspectRatio/elapsedMs` 与失败预览，便于判断是超时、空 payload 还是参数映射问题）
+- `image-gen.test.ts`: ImageGenProcessor 回归测试（OpenAI 兼容 url/base64、OpenRouter/兼容层参考图透传、DLAPI 直出图 submit/check、DLAPI/Comfly 参考图 multipart 提交、DLAPI→Comfly fallback 模型映射、DLAPI 401 鉴权失败托底、`1k -> 1920x1920` 尺寸映射、未支持参考图时快速失败）
 - `audio-gen.ts`: AudioGenProcessor (OpenAI TTS 同步生成 + data URL 输出)
 - `index.ts`: 桶文件，导出 getProcessor + 所有类型
 
