@@ -15,8 +15,6 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 
-type PurchaseMode = 'plan_auto_monthly' | 'plan_one_time' | 'credit_pack'
-
 export interface PricingContentProps {
   isAuthenticated: boolean
   isPricingReady?: boolean
@@ -35,12 +33,10 @@ function formatMoney(locale: string, currency: string, amount: number): string {
 export function PricingContent({
   isAuthenticated,
   plans,
-  creditPacks,
 }: PricingContentProps) {
   const t = useTranslations('pricing')
   const locale = useLocale()
   const router = useRouter()
-  const [selectedMode, setSelectedMode] = useState<PurchaseMode>('plan_auto_monthly')
   const [pendingKey, setPendingKey] = useState<string | null>(null)
 
   const planLabels = {
@@ -76,36 +72,7 @@ export function PricingContent({
     },
   } as const
 
-  const creditPackCardStyles = {
-    '500': {
-      shell:
-        'border-white/10 bg-[linear-gradient(180deg,rgba(23,23,28,0.98),rgba(16,16,20,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
-      button: 'bg-[#5d55d6] text-white hover:bg-[#6a63e2]',
-    },
-    '1200': {
-      shell:
-        'border-white/10 bg-[linear-gradient(180deg,rgba(23,23,28,0.98),rgba(16,16,20,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
-      button: 'bg-[#5d55d6] text-white hover:bg-[#6a63e2]',
-    },
-    '3500': {
-      shell:
-        'border-[#6b5cff]/45 bg-[linear-gradient(180deg,rgba(20,18,31,0.98),rgba(13,13,22,0.98))] shadow-[0_24px_68px_rgba(88,76,214,0.16)]',
-      button: 'bg-[#7b65ff] text-white hover:bg-[#8a76ff]',
-    },
-    '8000': {
-      shell:
-        'border-white/10 bg-[linear-gradient(180deg,rgba(28,28,26,0.98),rgba(20,20,19,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]',
-      button: 'bg-[#4c4c50] text-white hover:bg-[#5a5a60]',
-    },
-  } as const
-
-  const visiblePlans = plans.filter((plan) => plan.purchaseMode === selectedMode)
-  const visibleCreditPacks = selectedMode === 'credit_pack' ? creditPacks : []
-  const modeNotes = {
-    plan_auto_monthly: t('billingNoticeBody'),
-    plan_one_time: t('refundNoticeBody'),
-    credit_pack: t('currencyNoticeBody'),
-  } as const
+  const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
 
   async function handlePlanCheckout(plan: PublicBillingPlanPrice) {
     if (!isAuthenticated) {
@@ -123,40 +90,6 @@ export function PricingContent({
           plan: plan.plan,
           purchaseMode: plan.purchaseMode,
           currency: plan.currency,
-        }),
-      })
-      const payload = (await response.json()) as {
-        ok: boolean
-        data?: { checkoutUrl: string }
-        error?: { message?: string }
-      }
-
-      if (!response.ok || !payload.ok || !payload.data?.checkoutUrl) {
-        throw new Error(payload.error?.message ?? 'Checkout failed')
-      }
-
-      window.location.href = payload.data.checkoutUrl
-    } finally {
-      setPendingKey(null)
-    }
-  }
-
-  async function handleCreditPackCheckout(creditPack: PublicCreditPackPrice) {
-    if (!isAuthenticated) {
-      router.push('/sign-in?redirect_url=/pricing')
-      return
-    }
-
-    setPendingKey(`${creditPack.packageId}:${creditPack.purchaseMode}`)
-
-    try {
-      const response = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          packageId: creditPack.packageId,
-          purchaseMode: creditPack.purchaseMode,
-          currency: creditPack.currency,
         }),
       })
       const payload = (await response.json()) as {
@@ -198,101 +131,13 @@ export function PricingContent({
 
         <div className="mx-auto mt-10 flex max-w-4xl flex-col items-center gap-4">
           <div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] p-1.5">
-            <PricingModeButton
-              active={selectedMode === 'plan_auto_monthly'}
-              label={t('toggleMonthly')}
-              onClick={() => setSelectedMode('plan_auto_monthly')}
-            />
-            <PricingModeButton
-              active={selectedMode === 'plan_one_time'}
-              label={t('toggleOneTime')}
-              onClick={() => setSelectedMode('plan_one_time')}
-            />
-            <PricingModeButton
-              active={selectedMode === 'credit_pack'}
-              label={t('toggleCredits')}
-              onClick={() => setSelectedMode('credit_pack')}
-            />
+            <PricingModeButton active label={t('toggleMonthly')} onClick={() => {}} />
           </div>
           <p className="max-w-3xl text-center text-sm leading-6 text-white/50">
-            {modeNotes[selectedMode]}
+            {t('billingNoticeBody')}
           </p>
         </div>
-
-        {selectedMode === 'credit_pack' ? (
-          <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {visibleCreditPacks.map((creditPack) => {
-              const isPending = pendingKey === `${creditPack.packageId}:${creditPack.purchaseMode}`
-
-              return (
-                <article
-                  key={creditPack.packageId}
-                  className={`relative flex h-full flex-col overflow-hidden rounded-[30px] border p-7 ${creditPackCardStyles[creditPack.packageId].shell}`}
-                >
-                  <div className="absolute inset-x-6 top-0 h-px bg-white/12" />
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] text-white/72 uppercase">
-                      {t('toggleCredits')}
-                    </span>
-                    {creditPack.bonusCredits > 0 ? (
-                      <span className="rounded-full border border-[#6b5cff]/25 bg-[#6b5cff]/12 px-3 py-1 text-xs font-medium text-[#d3ccff]">
-                        +{creditPack.bonusCredits.toLocaleString(locale)}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-8">
-                    <h2 className="text-2xl font-semibold">
-                      {t('creditsValue', { value: creditPack.totalCredits.toLocaleString(locale) })}
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-white/58">
-                      {creditPack.bonusCredits > 0
-                        ? t('creditsBonus', {
-                            base: creditPack.credits.toLocaleString(locale),
-                            bonus: creditPack.bonusCredits.toLocaleString(locale),
-                          })
-                        : t('creditsBaseOnly', {
-                            base: creditPack.credits.toLocaleString(locale),
-                          })}
-                    </p>
-                  </div>
-
-                  <div className="mt-8 border-t border-white/8 pt-6">
-                    <p className="text-[3rem] font-semibold tracking-tight">
-                      {formatMoney(locale, creditPack.currency, creditPack.unitAmount)}
-                    </p>
-                    <p className="mt-2 text-sm text-white/45">{t('billedOneTime')}</p>
-                  </div>
-
-                  <div className="mt-8 space-y-3 text-sm text-white/78">
-                    <PricingStat
-                      label={t('creditsIncluded')}
-                      value={creditPack.credits.toLocaleString(locale)}
-                    />
-                    <PricingStat
-                      label={t('creditsBonusLabel')}
-                      value={`+${creditPack.bonusCredits.toLocaleString(locale)}`}
-                    />
-                    <PricingMeta value={t('currencyResolved', { currency: creditPack.currency.toUpperCase() })} />
-                  </div>
-
-                  <Button
-                    className={`mt-8 h-12 w-full rounded-xl border-0 text-sm font-semibold ${creditPackCardStyles[creditPack.packageId].button}`}
-                    onClick={() => handleCreditPackCheckout(creditPack)}
-                    disabled={isPending}
-                  >
-                    {isPending
-                      ? t('redirecting')
-                      : isAuthenticated
-                        ? t('buyCredits')
-                        : t('signInToSubscribe')}
-                  </Button>
-                </article>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="mt-14 grid gap-6 lg:grid-cols-4">
+        <div className="mt-14 grid gap-6 lg:grid-cols-4">
             <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(27,27,31,0.98),rgba(18,18,22,0.98))] p-7 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
               <div className="absolute inset-x-6 top-0 h-px bg-white/12" />
               <div className="flex items-start justify-between gap-4">
@@ -360,9 +205,7 @@ export function PricingContent({
                     <span
                       className={`inline-flex rounded-full border px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] uppercase ${planCardStyles[plan.plan].badge}`}
                     >
-                      {plan.purchaseMode === 'plan_auto_monthly'
-                        ? t('toggleMonthly')
-                        : t('toggleOneTime')}
+                      {t('toggleMonthly')}
                     </span>
                     {plan.plan === 'pro' ? (
                       <span className="rounded-full border border-[#6b5cff]/35 bg-[#6b5cff]/12 px-3 py-1 text-xs font-medium text-[#d3ccff]">
@@ -387,28 +230,18 @@ export function PricingContent({
                       {formatMoney(locale, plan.currency, plan.unitAmount)}
                     </p>
                     <p className="mt-2 text-sm text-white/45">
-                      {plan.purchaseMode === 'plan_auto_monthly'
-                        ? t('billedMonthly')
-                        : t('billedOneTime')}
+                      {t('billedMonthly')}
                     </p>
                   </div>
 
                   <div className="mt-8 space-y-3 text-sm text-white/78">
                     <PricingStat
-                      label={
-                        plan.purchaseMode === 'plan_auto_monthly'
-                          ? t('monthlyCredits')
-                          : t('permanentCredits')
-                      }
+                      label={t('monthlyCredits')}
                       value={plan.monthlyCredits.toLocaleString(locale)}
                     />
                     <PricingStat
                       label={t('deliveryLabel')}
-                      value={
-                        plan.purchaseMode === 'plan_auto_monthly'
-                          ? t('deliveryRecurring')
-                          : t('deliveryOneTime')
-                      }
+                      value={t('deliveryRecurring')}
                     />
                     <PricingMeta value={t('currencyResolved', { currency: plan.currency.toUpperCase() })} />
                   </div>
@@ -421,16 +254,13 @@ export function PricingContent({
                     {isPending
                       ? t('redirecting')
                       : isAuthenticated
-                        ? plan.purchaseMode === 'plan_auto_monthly'
-                          ? t('startSubscription')
-                          : t('buyOneTime')
+                        ? t('startSubscription')
                         : t('signInToSubscribe')}
                   </Button>
                 </article>
               )
             })}
-          </div>
-        )}
+        </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           <PricingNotice title={t('billingNoticeTitle')} body={t('billingNoticeBody')} />

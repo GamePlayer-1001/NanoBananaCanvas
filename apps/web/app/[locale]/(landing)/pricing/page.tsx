@@ -85,29 +85,18 @@ export default async function PricingPage({
     description: t('freeDescription'),
   }
   const paidPlanOffers =
-    pricing?.plans.map((plan) => ({
+    pricing?.plans
+      .filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
+      .map((plan) => ({
       '@type': 'Offer',
       url: pricingUrl,
       sku: plan.stripePriceId,
-      name: `${t(`${plan.plan}Name`)} ${plan.purchaseMode === 'plan_auto_monthly' ? t('toggleMonthly') : t('toggleOneTime')}`,
+      name: `${t(`${plan.plan}Name`)} ${t('toggleMonthly')}`,
       description: `${t(`${plan.plan}Description`)} ${pricingKeywords[0]} and ${pricingKeywords[1]} support.`,
       price: (plan.unitAmount / 100).toFixed(2),
       priceCurrency: plan.currency.toUpperCase(),
       availability: 'https://schema.org/InStock',
-      category:
-        plan.purchaseMode === 'plan_auto_monthly' ? 'Subscription plan' : 'One-time plan',
-    })) ?? []
-  const creditPackOffers =
-    pricing?.creditPacks.map((creditPack) => ({
-      '@type': 'Offer',
-      url: pricingUrl,
-      sku: creditPack.stripePriceId,
-      name: `${creditPack.totalCredits.toLocaleString(locale)} ${t('toggleCredits')}`,
-      description: `${pricingKeywords[0]} capacity pack for ${pricingKeywords[1]} and creator workflow production.`,
-      price: (creditPack.unitAmount / 100).toFixed(2),
-      priceCurrency: creditPack.currency.toUpperCase(),
-      availability: 'https://schema.org/InStock',
-      category: 'Credit pack',
+      category: 'Subscription plan',
     })) ?? []
   const jsonLd = [
     {
@@ -123,7 +112,7 @@ export default async function PricingPage({
       url: pricingUrl,
       image: `${BASE_URL}/brand/logo-1024.png`,
       keywords: pricingKeywords.join(', '),
-      offers: [freeOffer, ...paidPlanOffers, ...creditPackOffers],
+      offers: [freeOffer, ...paidPlanOffers],
       additionalProperty: [
         {
           '@type': 'PropertyValue',
