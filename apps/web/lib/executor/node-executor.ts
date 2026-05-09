@@ -877,12 +877,16 @@ async function executeTaskOutputViaApi(
       data?: {
         status?: string
         progress?: number
+        provider?: string
+        modelId?: string
         output?: { url?: string; error?: string } | null
       }
     }
 
     const status = taskPayload.data?.status
     const progress = typeof taskPayload.data?.progress === 'number' ? taskPayload.data.progress : 0
+    const resolvedProvider = taskPayload.data?.provider
+    const resolvedModelId = taskPayload.data?.modelId
     const output = taskPayload.data?.output
 
     log.debug('Async task poll tick', {
@@ -918,6 +922,10 @@ async function executeTaskOutputViaApi(
         taskType: params.taskType,
         workflowId: params.workflowId ?? null,
         nodeId: params.nodeId ?? null,
+        provider: params.provider ?? null,
+        modelId: params.modelId ?? null,
+        resolvedProvider: resolvedProvider ?? null,
+        resolvedModelId: resolvedModelId ?? null,
         outputType: params.outputType,
       })
       return output.url
