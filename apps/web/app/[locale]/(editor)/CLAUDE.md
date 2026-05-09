@@ -8,7 +8,7 @@
 
 ## 成员清单
 
-layout.tsx: 极简全屏容器 `h-screen w-screen`，不包含 AppSidebar
+layout.tsx: 极简全屏容器 `h-screen w-screen`，不包含 AppSidebar，并显式关闭 Clerk UI 预取以减少编辑器页无效 preload
 canvas/[id]/layout.tsx: 画布详情 SEO 布局，对编辑器路由输出 `noindex`
 canvas/[id]/page.tsx: 画布编辑器页面，CSR，从 D1 加载工作流数据注入 FlowStore + ReactFlow
 
