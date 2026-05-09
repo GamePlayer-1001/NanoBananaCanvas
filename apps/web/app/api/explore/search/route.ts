@@ -11,6 +11,23 @@ import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { searchQuerySchema } from '@/lib/validations/explore'
 
+const AUTHOR_NAME_SQL = `COALESCE(
+  NULLIF(TRIM(u.name), ''),
+  NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+  NULLIF(TRIM(u.username), ''),
+  NULLIF(
+    TRIM(
+      CASE
+        WHEN INSTR(COALESCE(u.email, ''), '@') > 1
+          THEN SUBSTR(u.email, 1, INSTR(u.email, '@') - 1)
+        ELSE COALESCE(u.email, '')
+      END
+    ),
+    ''
+  ),
+  'Unknown Creator'
+)`
+
 /* ─── GET /api/explore/search ───────────────────────── */
 
 export async function GET(req: NextRequest) {
@@ -46,7 +63,7 @@ export async function GET(req: NextRequest) {
       .prepare(
         `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
                 w.view_count, w.published_at, w.category_id,
-                u.name as author_name, u.avatar_url as author_avatar
+                ${AUTHOR_NAME_SQL} as author_name, u.avatar_url as author_avatar
          FROM workflows w
          JOIN users u ON u.id = w.user_id
          WHERE w.is_public = 1 AND (w.name LIKE ? OR w.description LIKE ?)

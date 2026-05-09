@@ -16,6 +16,23 @@ import { updateWorkflowSchema } from '@/lib/validations/workflow'
 
 const log = createLogger('api:workflows:[id]')
 
+const AUTHOR_NAME_SQL = `COALESCE(
+  NULLIF(TRIM(u.name), ''),
+  NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+  NULLIF(TRIM(u.username), ''),
+  NULLIF(
+    TRIM(
+      CASE
+        WHEN INSTR(COALESCE(u.email, ''), '@') > 1
+          THEN SUBSTR(u.email, 1, INSTR(u.email, '@') - 1)
+        ELSE COALESCE(u.email, '')
+      END
+    ),
+    ''
+  ),
+  'Unknown Creator'
+)`
+
 /* ─── Params ─────────────────────────────────────────── */
 
 type Params = { params: Promise<{ id: string }> }
@@ -42,7 +59,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const pub = await db
       .prepare(
         `SELECT w.*,
-                COALESCE(NULLIF(TRIM(u.name), ''), 'Unknown Creator') AS author_name,
+                ${AUTHOR_NAME_SQL} AS author_name,
                 u.avatar_url AS author_avatar
          FROM workflows w JOIN users u ON u.id = w.user_id
          WHERE w.id = ? AND w.is_public = 1`,
