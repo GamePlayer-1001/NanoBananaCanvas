@@ -25,7 +25,7 @@ interface WorkflowDetail {
   name: string
   description?: string
   data?: string
-  author_name: string
+  author_name?: string | null
   author_avatar?: string
   published_at?: string
   view_count: number
@@ -67,9 +67,10 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   }
 
   const workflow = data as WorkflowDetail
+  const authorName = workflow.author_name?.trim() || 'Unknown Creator'
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-5">
+    <div className="mx-auto w-full max-w-[1380px] px-6 py-8 lg:px-8 lg:py-10">
       {/* 返回链接 */}
       <Link
         href="/explore"
@@ -80,37 +81,48 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
       </Link>
 
       {/* 标题区 */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">
+      <div className="mb-10 max-w-3xl">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
           {workflow.name}
         </h1>
         {workflow.description && (
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-4 text-base leading-7 text-muted-foreground">
             {workflow.description}
           </p>
         )}
       </div>
 
       {/* 主内容区: 预览 + 侧栏 */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* 左: 只读画布预览 */}
-        <div className="aspect-[16/10] overflow-hidden rounded-xl border border-border bg-muted">
+        <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-border/70 bg-muted shadow-[0_18px_48px_-32px_rgba(15,23,42,0.4)]">
           <WorkflowPreview data={workflow.data} />
         </div>
 
         {/* 右: 作者 + 统计 + 操作 */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           <AuthorInfo
-            name={workflow.author_name}
+            name={authorName}
             avatar={workflow.author_avatar}
             publishedAt={workflow.published_at}
           />
 
           {/* 统计数据 */}
-          <div className="flex gap-4 text-sm text-muted-foreground">
-            <span>{t('views', { count: workflow.view_count ?? 0 })}</span>
-            <span>{t('likes', { count: workflow.like_count ?? 0 })}</span>
-            <span>{t('clones', { count: workflow.clone_count ?? 0 })}</span>
+          <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-lg font-semibold text-foreground">{workflow.view_count ?? 0}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('views', { count: 0 })}</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-foreground">{workflow.like_count ?? 0}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('likes', { count: 0 })}</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-foreground">{workflow.clone_count ?? 0}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('clones', { count: 0 })}</p>
+              </div>
+            </div>
           </div>
 
           <ActionButtons

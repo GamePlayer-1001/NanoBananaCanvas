@@ -32,30 +32,59 @@ export interface VideoCardData {
 
 /* ─── Helpers ────────────────────────────────────────── */
 
+function getDisplayName(name?: string): string {
+  return name?.trim() || 'Unknown Creator'
+}
+
+function getInitial(name?: string): string {
+  return getDisplayName(name).charAt(0).toUpperCase()
+}
+
 function formatViews(n?: number): string {
   if (!n) return ''
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
   return String(n)
 }
 
+function formatCreatedAt(value?: string): string {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function VideoCard({ data }: { data: VideoCardData }) {
   const t = useTranslations('explore')
+  const authorName = getDisplayName(data.author.name)
+  const meta = [data.views !== undefined ? `${formatViews(data.views)} views` : '', formatCreatedAt(data.createdAt)]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <Link href={`/explore/${data.id}`} className="group block">
       {/* 缩略图 */}
-      <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
         {data.thumbnailUrl ? (
           <img
             src={data.thumbnailUrl}
             alt={data.title}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted-foreground/10">
-            <span className="text-xs text-muted-foreground">No Preview</span>
+          <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
+            <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">
+              No Preview
+            </span>
           </div>
         )}
 
@@ -67,18 +96,18 @@ export function VideoCard({ data }: { data: VideoCardData }) {
         )}
 
         {data.contentType && (
-          <span className="absolute right-1.5 top-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white/95 backdrop-blur-sm">
+          <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white/95 backdrop-blur-sm">
             {t(`type_${data.contentType}`)}
           </span>
         )}
 
         {/* 节点类型标签 */}
         {data.nodeTypes && data.nodeTypes.length > 0 && (
-          <div className="absolute bottom-1.5 left-1.5 flex flex-wrap gap-1">
+          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {data.nodeTypes.slice(0, 3).map((t) => (
               <span
                 key={t}
-                className="rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white/90 backdrop-blur-sm"
+                className="rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm"
               >
                 {t}
               </span>
@@ -88,37 +117,31 @@ export function VideoCard({ data }: { data: VideoCardData }) {
       </div>
 
       {/* 信息区 */}
-      <div className="mt-2 flex gap-2">
+      <div className="mt-4 flex gap-3 px-1">
         {/* 头像 */}
-        <div className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border/50 bg-muted">
           {data.author.avatarUrl ? (
             <img
               src={data.author.avatarUrl}
-              alt={data.author.name}
+              alt={authorName}
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-brand-100 text-[10px] font-medium text-brand-600">
-              {data.author.name.charAt(0).toUpperCase()}
+            <div className="flex h-full w-full items-center justify-center bg-brand-100 text-sm font-medium text-brand-600">
+              {getInitial(authorName)}
             </div>
           )}
         </div>
 
         {/* 文字 */}
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-foreground group-hover:text-brand-600">
+        <div className="min-w-0 flex-1 space-y-1">
+          <h3 className="line-clamp-2 text-[15px] font-medium leading-6 text-foreground transition-colors group-hover:text-brand-600">
             {data.title}
           </h3>
-          <p className="truncate text-xs text-muted-foreground">
-            {data.author.name}
+          <p className="truncate text-sm text-muted-foreground">
+            {authorName}
           </p>
-          {(data.views !== undefined || data.createdAt) && (
-            <p className="text-xs text-muted-foreground/70">
-              {data.views !== undefined && `${formatViews(data.views)} views`}
-              {data.views !== undefined && data.createdAt && ' • '}
-              {data.createdAt}
-            </p>
-          )}
+          {meta ? <p className="text-xs text-muted-foreground/75">{meta}</p> : null}
         </div>
       </div>
     </Link>

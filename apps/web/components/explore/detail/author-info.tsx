@@ -15,7 +15,7 @@ import { Calendar } from 'lucide-react'
 /* ─── Types ──────────────────────────────────────────── */
 
 interface AuthorInfoProps {
-  name: string
+  name?: string | null
   avatar?: string
   publishedAt?: string
 }
@@ -24,24 +24,25 @@ interface AuthorInfoProps {
 
 export function AuthorInfo({ name, avatar, publishedAt }: AuthorInfoProps) {
   const t = useTranslations('exploreDetail')
+  const displayName = name?.trim() || 'Unknown Creator'
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
       <div className="flex items-center gap-3">
         {/* 头像 */}
         <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted">
           {avatar ? (
-            <img src={avatar} alt={name} className="h-full w-full object-cover" />
+            <img src={avatar} alt={displayName} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-brand-100 text-sm font-medium text-brand-600">
-              {name.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
 
         {/* 信息 */}
         <div>
-          <p className="text-sm font-medium text-foreground">{name}</p>
+          <p className="text-sm font-medium text-foreground">{displayName}</p>
           <p className="text-xs text-muted-foreground">{t('author')}</p>
         </div>
       </div>

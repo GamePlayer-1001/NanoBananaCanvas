@@ -18,18 +18,22 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function VideoCardSkeleton() {
   return (
-    <div>
-      <Skeleton className="aspect-video w-full rounded-lg" />
-      <div className="mt-2 flex gap-2">
-        <Skeleton className="h-7 w-7 rounded-full" />
-        <div className="flex-1 space-y-1.5">
-          <Skeleton className="h-3.5 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
+    <div className="space-y-4">
+      <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+      <div className="flex gap-3">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-3.5 w-3/5" />
+          <Skeleton className="h-3.5 w-2/5" />
         </div>
       </div>
     </div>
   )
 }
+
+const GRID_CLASS =
+  'grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -44,7 +48,7 @@ export function ExploreGrid({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      <div className={GRID_CLASS}>
         {Array.from({ length: 12 }).map((_, i) => (
           <VideoCardSkeleton key={i} />
         ))}
@@ -61,7 +65,7 @@ export function ExploreGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+    <div className={GRID_CLASS}>
       {videos.map((video) => (
         <VideoCard key={video.id} data={video} />
       ))}
