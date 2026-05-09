@@ -9,6 +9,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNodeData } from '@/types'
 
+const { warnLogger } = vi.hoisted(() => ({
+  warnLogger: vi.fn(),
+}))
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: warnLogger,
+    error: vi.fn(),
+  }),
+}))
+
 import { executeNode } from './node-executor'
 
 function createContext(
@@ -36,6 +49,7 @@ describe('executeNode', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+    warnLogger.mockReset()
   })
 
   it('returns text input as text-out', async () => {
@@ -217,5 +231,59 @@ describe('executeNode', () => {
       { status: 'running', configPatch: { progress: 62, taskId: 'task-image-1' } },
       { status: 'finalizing', configPatch: { progress: 100, taskId: 'task-image-1' } },
     ])
+  })
+
+  it('logs a fallback warning when async image task resolves through another provider', async () => {
+    vi.useFakeTimers()
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { id: 'task-image-fallback' } }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            status: 'completed',
+            progress: 100,
+            provider: 'comfly',
+            modelId: 'gpt-image-2-all',
+            output: { url: '/api/files/outputs/demo/fallback.png' },
+          },
+        }),
+      } satisfies Partial<Response>)
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const execution = executeNode(
+      createContext(
+        'image-gen',
+        {
+          executionMode: 'platform',
+          platformProvider: 'dlapi',
+          platformModel: 'gpt-image-2',
+          size: '1k',
+          aspectRatio: '1:1',
+        },
+        { 'prompt-in': 'draw a lighthouse in fog' },
+      ),
+    )
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    await execution
+
+    expect(warnLogger).toHaveBeenCalledWith('Async task completed via fallback provider', {
+      taskId: 'task-image-fallback',
+      taskType: 'image_gen',
+      workflowId: null,
+      nodeId: 'image-gen-1',
+      requestedProvider: 'dlapi',
+      requestedModelId: 'gpt-image-2',
+      resolvedProvider: 'comfly',
+      resolvedModelId: 'gpt-image-2-all',
+      outputType: 'image',
+    })
   })
 })
