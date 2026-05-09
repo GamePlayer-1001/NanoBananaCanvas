@@ -308,6 +308,24 @@ function isDlapiDirectResponseError(error: unknown): boolean {
   )
 }
 
+function isDlapiAuthError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  return (
+    message.includes('dlapi image api 401') ||
+    (message.includes('invalid token') && message.includes('dlapi')) ||
+    (message.includes('无效的令牌') && message.includes('dlapi'))
+  )
+}
+
+function buildDlapiAuthFallbackFailureMessage(error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error)
+  return (
+    `DLAPI image provider authentication failed and no Comfly fallback key was available. ` +
+    `Check DLAPI_API_KEY or configure COMFLY_API_KEY as the platform image fallback. ` +
+    `Upstream detail: ${detail}`
+  )
+}
+
 function measurePromptSize(prompt: string): { chars: number; bytes: number } {
   return {
     chars: prompt.length,
@@ -716,10 +734,15 @@ async function submitWithComflyFallback(
   } catch (error) {
     if (
       !isRetriableImageProviderError(error) &&
+      !isDlapiAuthError(error) &&
       !isDlapiAsyncProtocolError(error) &&
       !isDlapiDirectResponseError(error)
     ) {
       throw error
+    }
+
+    if (isDlapiAuthError(error) && !input.fallbackApiKey) {
+      throw new Error(buildDlapiAuthFallbackFailureMessage(error))
     }
 
     log.warn('DLAPI image submit failed, fallback to Comfly', {
