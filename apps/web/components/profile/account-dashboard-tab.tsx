@@ -26,7 +26,6 @@ interface AccountDashboardTabProps {
   subscription: BillingSubscriptionSummary
   balance: CreditBalanceSummary
   onUpgrade: () => void
-  onTopUp: () => void
 }
 
 type CreditSlice = {
@@ -68,7 +67,6 @@ export function AccountDashboardTab({
   subscription,
   balance,
   onUpgrade,
-  onTopUp,
 }: AccountDashboardTabProps) {
   const t = useTranslations('profile')
   const [isOpeningPortal, setIsOpeningPortal] = useState(false)
@@ -147,9 +145,6 @@ export function AccountDashboardTab({
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" className="h-11 rounded-xl px-5" onClick={onUpgrade}>
               {t('dashboardUpgradeAction')}
-            </Button>
-            <Button type="button" variant="outline" className="h-11 rounded-xl px-5" onClick={onTopUp}>
-              {t('dashboardTopUpAction')}
             </Button>
             <Button
               type="button"

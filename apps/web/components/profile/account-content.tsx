@@ -38,7 +38,7 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
-type PurchaseMode = 'plan_auto_monthly' | 'plan_one_time' | 'credit_pack'
+type PurchaseMode = 'plan_auto_monthly'
 
 export interface AccountContentProps {
   currentUser: UserProfile
@@ -92,7 +92,6 @@ export function AccountContent({
         subscription={subscription}
         balance={balance}
         onUpgrade={() => handleOpenSubscription('plan_auto_monthly')}
-        onTopUp={() => handleOpenSubscription('credit_pack')}
       />
     ),
     subscription: (
