@@ -533,6 +533,45 @@ describe('ImageGenProcessor', () => {
     })
   })
 
+  it('maps 1k presets to resolved dlapi request sizes', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/dlapi-1k.png' }],
+        }),
+    } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: 'draw a square cat',
+          size: '1k',
+          aspectRatio: '1:1',
+        },
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.dlapi.xyz/v1/images/generations',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'gpt-image-2',
+          prompt: 'draw a square cat',
+          size: '1920x1920',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+  })
+
   it('falls back from dlapi to comfly on gateway-like failures', async () => {
     const fetchMock = vi
       .fn()

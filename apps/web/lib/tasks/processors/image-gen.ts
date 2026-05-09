@@ -600,6 +600,7 @@ async function dlapiSubmit(
   const endpoint = referenceImageUrl
     ? `${DLAPI_IMAGE_BASE_URL}/images/edits`
     : `${DLAPI_IMAGE_BASE_URL}/images/generations`
+  const startedAt = Date.now()
 
   const requestInit: RequestInit = referenceImageUrl
     ? await (async () => {
@@ -628,9 +629,21 @@ async function dlapiSubmit(
       }
 
   const res = await fetch(endpoint, requestInit)
+  const elapsedMs = Date.now() - startedAt
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    log.warn('DLAPI image submit failed', {
+      model,
+      endpoint,
+      sizePreset,
+      resolvedSize: size,
+      aspectRatio,
+      hasReferenceImage: Boolean(referenceImageUrl),
+      elapsedMs,
+      status: res.status,
+      responsePreview: summarizeResponseBody(text),
+    })
     if (statusIsGatewayLikeFailure(res.status)) {
       throw new Error(buildGatewayFailureMessage(res.status, 'dlapi', endpoint, text))
     }
@@ -644,8 +657,28 @@ async function dlapiSubmit(
 
   const url = extractOpenAICompatibleImageUrl(data)
   if (!url) {
+    log.warn('DLAPI image submit returned no usable image payload', {
+      model,
+      endpoint,
+      sizePreset,
+      resolvedSize: size,
+      aspectRatio,
+      hasReferenceImage: Boolean(referenceImageUrl),
+      elapsedMs,
+    })
     throw new Error('DLAPI image API returned neither url nor b64_json image data')
   }
+
+  log.info('DLAPI image submit succeeded', {
+    model,
+    endpoint,
+    sizePreset,
+    resolvedSize: size,
+    aspectRatio,
+    hasReferenceImage: Boolean(referenceImageUrl),
+    elapsedMs,
+    outputKind: url.startsWith('data:') ? 'base64' : 'url',
+  })
 
   return {
     externalTaskId: null,
@@ -749,6 +782,8 @@ async function submitWithComflyFallback(
       error: error instanceof Error ? error.message : String(error),
       model: input.model,
       hasDedicatedFallbackKey: Boolean(input.fallbackApiKey),
+      sizePreset: typeof input.params.size === 'string' ? input.params.size : null,
+      aspectRatio: typeof input.params.aspectRatio === 'string' ? input.params.aspectRatio : null,
     })
 
     const fallbackModel =
