@@ -84,7 +84,8 @@ export async function GET(req: NextRequest) {
       .prepare(
         `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
                 w.view_count, w.published_at, w.category_id,
-                u.name as author_name, u.avatar_url as author_avatar,
+                COALESCE(NULLIF(TRIM(u.name), ''), 'Unknown Creator') as author_name,
+                u.avatar_url as author_avatar,
                 ${CONTENT_TYPE_SQL} as content_type,
                 (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
                  FROM json_each(json_extract(w.data, '$.nodes')) j) as node_types

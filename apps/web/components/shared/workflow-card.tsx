@@ -29,9 +29,15 @@ export interface WorkflowCardData {
   uses?: number
 }
 
+function getDisplayName(name?: string): string {
+  return name?.trim() || 'Unknown Creator'
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function WorkflowCard({ data }: { data: WorkflowCardData }) {
+  const authorName = getDisplayName(data.author.name)
+
   return (
     <Link
       href={`/workflows/${data.id}`}
@@ -77,16 +83,16 @@ export function WorkflowCard({ data }: { data: WorkflowCardData }) {
               {data.author.avatarUrl ? (
                 <img
                   src={data.author.avatarUrl}
-                  alt={data.author.name}
+                  alt={authorName}
                   className="h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-brand-100 text-[8px] font-medium text-brand-600">
-                  {data.author.name.charAt(0).toUpperCase()}
+                  {authorName.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
-            <span className="text-xs text-muted-foreground">{data.author.name}</span>
+            <span className="text-xs text-muted-foreground">{authorName}</span>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

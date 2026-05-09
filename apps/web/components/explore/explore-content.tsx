@@ -46,7 +46,7 @@ interface ExploreApiItem {
   view_count: number
   published_at?: string
   category_id?: string
-  author_name: string
+  author_name?: string | null
   author_avatar?: string
   content_type?: 'video' | 'image' | 'workflow'
   node_types?: string
@@ -58,13 +58,15 @@ interface ExploreApiResponse {
 }
 
 function toVideoCard(item: ExploreApiItem): VideoCardData {
+  const authorName = item.author_name?.trim() || 'Unknown Creator'
+
   return {
     id: item.id,
     title: item.name,
     thumbnailUrl: item.thumbnail,
     contentType: item.content_type,
     author: {
-      name: item.author_name,
+      name: authorName,
       avatarUrl: item.author_avatar,
     },
     views: item.view_count,
@@ -107,7 +109,7 @@ export function ExploreContent() {
   const pagination = response?.pagination
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-5">
+    <div className="mx-auto w-full max-w-[1380px] px-6 py-8 lg:px-8 lg:py-10">
       {/* 标签栏 */}
       <ExploreTabs
         active={activeTab}
@@ -119,13 +121,13 @@ export function ExploreContent() {
       />
 
       {/* 视频网格 */}
-      <div className="mt-4">
+      <div className="mt-8">
         <ExploreGrid videos={videos} isLoading={isLoading} />
       </div>
 
       {/* 分页 */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="mt-10 flex items-center justify-center gap-3">
           <Button
             variant="outline"
             size="sm"

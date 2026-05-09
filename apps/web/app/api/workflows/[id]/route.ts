@@ -41,7 +41,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     /* 非 owner → 仅允许公开作品，附带作者信息 */
     const pub = await db
       .prepare(
-        `SELECT w.*, u.name AS author_name, u.avatar_url AS author_avatar
+        `SELECT w.*,
+                COALESCE(NULLIF(TRIM(u.name), ''), 'Unknown Creator') AS author_name,
+                u.avatar_url AS author_avatar
          FROM workflows w JOIN users u ON u.id = w.user_id
          WHERE w.id = ? AND w.is_public = 1`,
       )
