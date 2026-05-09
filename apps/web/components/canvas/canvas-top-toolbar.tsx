@@ -39,6 +39,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { useCurrentUser } from '@/hooks/use-user'
+import { useCreditBalance } from '@/hooks/use-billing'
+import { estimateWorkflowExecution } from '@/lib/billing/workflow-execution-guard'
 
 /* ─── Save Status Indicator ───────────────────────────── */
 
@@ -168,6 +170,7 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const t = useTranslations('canvas')
   const router = useRouter()
   const { data: user } = useCurrentUser()
+  const { data: balance } = useCreditBalance(Boolean(user))
   const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
   const status = useCloudSaveStatus((s) => s.status)
   const hasUnsavedChanges = useCloudSaveStatus((s) => s.hasUnsavedChanges)
@@ -191,9 +194,34 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
       return
     }
 
+    const estimate = estimateWorkflowExecution(nodes)
+    if (estimate.textLengthViolations.length > 0) {
+      const firstViolation = estimate.textLengthViolations[0]
+      toast.warning(
+        t('textTooLongBeforeRun', {
+          label: firstViolation.label,
+          actual: firstViolation.actualLength,
+          max: firstViolation.maxLength,
+        }),
+      )
+      return
+    }
+
+    if (estimate.billableNodeCount > 0 && balance) {
+      if (balance.availableCredits < estimate.estimatedCredits) {
+        toast.warning(
+          t('insufficientCreditsBeforeRun', {
+            required: estimate.estimatedCredits,
+            available: balance.availableCredits,
+          }),
+        )
+        return
+      }
+    }
+
     toast.info(t('runningWorkflow'))
     await execute()
-  }, [isExecuting, nodes.length, execute, abort, t])
+  }, [isExecuting, nodes, execute, abort, t, balance])
 
   /* ── Export ──────────────────────────────────────────── */
   const handleExport = useCallback(() => {
