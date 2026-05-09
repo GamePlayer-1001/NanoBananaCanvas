@@ -195,6 +195,7 @@ interface TaskExecutionRequest {
   resolvedInput: Record<string, unknown>
   originalInput: Record<string, unknown>
   apiKey: string
+  fallbackApiKey?: string
   reservedPlatformCredits: number
   runtimeConfig: UserModelRuntimeConfig | null
   orchestrator: TaskOrchestrator
@@ -1632,6 +1633,7 @@ export async function processTaskDispatch(
         resolvedInput: executionSnapshot.resolvedInput,
         originalInput: executionSnapshot.originalInput,
         apiKey,
+        fallbackApiKey: executionSnapshot.fallbackApiKey,
         reservedPlatformCredits: getReservedTaskCredits(persistedInput),
         runtimeConfig,
         orchestrator:
@@ -1681,6 +1683,7 @@ async function executeTaskRequest(
     resolvedInput,
     originalInput,
     apiKey,
+    fallbackApiKey,
     reservedPlatformCredits,
     runtimeConfig,
   } = deferred
@@ -1743,6 +1746,7 @@ async function executeTaskRequest(
       {
         model: resolvedModelId,
         params: resolvedInput,
+        fallbackApiKey,
         loadInternalReferenceImageAsset,
       },
       apiKey,
