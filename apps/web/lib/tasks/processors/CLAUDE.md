@@ -8,8 +8,8 @@ Provider 处理器层 — TaskProcessor 接口的具体实现
 - `types.ts`: TaskProcessor 接口 + SubmitInput/SubmitResult/CheckResult/TaskOutput 类型定义；`SubmitResult/CheckResult` 现支持回写真实执行 provider/model，用于 fallback 后账本与任务真相收口
 - `registry.ts`: getProcessor(taskType, provider) 工厂函数，路由到对应 Processor 实例
 - `video-gen.ts`: VideoGenProcessor (可灵完整实现 + 即梦骨架)
-- `image-gen.ts`: ImageGenProcessor（平台图片供应商处理器，支持 OpenAI/OpenRouter 参考图输入链路、Google Imagen 文生图、DLAPI 直出图与基于 `multipart/form-data` 的参考图编辑，并在 DLAPI 网关/协议异常或空图片负载时自动切到 comfly 对应兼容模型；fallback 现显式改用 `COMFLY_API_KEY` 而非复用失败的 `DLAPI_API_KEY`）
-- `image-gen.test.ts`: ImageGenProcessor 回归测试（OpenAI 兼容 url/base64、OpenRouter/兼容层参考图透传、DLAPI 直出图 submit/check、DLAPI/Comfly 参考图 multipart 提交、DLAPI→Comfly fallback 模型映射、未支持参考图时快速失败）
+- `image-gen.ts`: ImageGenProcessor（平台图片供应商处理器，支持 OpenAI/OpenRouter 参考图输入链路、Google Imagen 文生图、DLAPI 直出图与基于 `multipart/form-data` 的参考图编辑，并在 DLAPI 网关/协议异常、401 鉴权失败或空图片负载时自动切到 comfly 对应兼容模型；fallback 现显式改用 `COMFLY_API_KEY` 而非复用失败的 `DLAPI_API_KEY`，缺少托底 key 时返回可操作的运维提示）
+- `image-gen.test.ts`: ImageGenProcessor 回归测试（OpenAI 兼容 url/base64、OpenRouter/兼容层参考图透传、DLAPI 直出图 submit/check、DLAPI/Comfly 参考图 multipart 提交、DLAPI→Comfly fallback 模型映射、DLAPI 401 鉴权失败托底、未支持参考图时快速失败）
 - `audio-gen.ts`: AudioGenProcessor (OpenAI TTS 同步生成 + data URL 输出)
 - `index.ts`: 桶文件，导出 getProcessor + 所有类型
 
@@ -24,7 +24,7 @@ cancel(externalTaskId, apiKey) → void
 ## 契约补充
 
 - **同步 Provider**: image/audio 仍可在 `submit()` 阶段直接返回 `initialStatus: 'completed'` 与 `result`，但 image 现由 service 层先落 pending，再在后台执行 `submit()` 并回写 D1/R2，避免提交请求长时间阻塞
-- **DLAPI 直出图主链**: `dlapi` 提交不再依赖供应商任务 ID；只要上游直接返回 `url/b64_json` 图片结果就立即收口为 completed，只有网关级失败、非 JSON/坏 JSON 或空图片负载时才触发 comfly fallback
+- **DLAPI 直出图主链**: `dlapi` 提交不再依赖供应商任务 ID；只要上游直接返回 `url/b64_json` 图片结果就立即收口为 completed，网关级失败、401 鉴权失败、非 JSON/坏 JSON 或空图片负载时都会优先触发 comfly fallback；若缺少 fallback key，则直接返回可操作的环境变量修复提示
 - **参考图语义真实化**: `imageUrl` 只有在处理器已接通供应商参考图协议时才会发给上游；当前 OpenAI/OpenRouter 兼容链路已透传，DLAPI 已按文档确认的 `multipart/form-data` 提交参考图编辑，Comfly 因文档站仅显式暴露 `images/edits` 路由名而未吐出字段详情，当前按 OpenAI 兼容编辑协议推断为 multipart 文件上传，Gemini 未接通时会直接报错，不再假装支持
 - **异步 Provider**: video 仍通过 `externalTaskId` + `checkStatus()` 懒评估推进
 

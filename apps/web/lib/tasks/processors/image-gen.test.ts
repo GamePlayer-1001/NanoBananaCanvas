@@ -593,6 +593,96 @@ describe('ImageGenProcessor', () => {
     })
   })
 
+  it('falls back from dlapi to comfly on auth failures', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () =>
+          '{"error":{"code":"invalid_request","message":"无效的令牌 [sk-test]","type":"new_api_error"}}',
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            data: [{ url: 'https://example.com/comfly-auth-fallback.png' }],
+          }),
+      } satisfies Partial<Response>)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const processor = new ImageGenProcessor('dlapi')
+    const result = await processor.submit(
+      {
+        model: 'gpt-image-2',
+        params: {
+          prompt: 'draw an auth fallback cat',
+          size: '1024x1024',
+        },
+        fallbackApiKey: 'comfly-key',
+      },
+      'platform-key',
+    )
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://ai.comfly.chat/v1/images/generations',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer comfly-key',
+        },
+        body: JSON.stringify({
+          model: 'gpt-image-2-all',
+          prompt: 'draw an auth fallback cat',
+          size: '1024x1024',
+          aspect_ratio: '1:1',
+          n: 1,
+        }),
+      }),
+    )
+    expect(result).toMatchObject({
+      initialStatus: 'completed',
+      providerOverride: 'comfly',
+      modelOverride: 'gpt-image-2-all',
+      result: {
+        type: 'url',
+        url: 'https://example.com/comfly-auth-fallback.png',
+      },
+    })
+  })
+
+  it('surfaces an actionable error when dlapi auth fails without comfly fallback', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () =>
+          '{"error":{"code":"invalid_request","message":"无效的令牌 [sk-test]","type":"new_api_error"}}',
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('dlapi')
+
+    await expect(
+      processor.submit(
+        {
+          model: 'gpt-image-2',
+          params: {
+            prompt: 'draw a missing fallback cat',
+            size: '1024x1024',
+          },
+        },
+        'platform-key',
+      ),
+    ).rejects.toThrow(
+      'DLAPI image provider authentication failed and no Comfly fallback key was available.',
+    )
+  })
+
   it('accepts direct dlapi base64 image payloads as the primary result', async () => {
     vi.stubGlobal(
       'fetch',
