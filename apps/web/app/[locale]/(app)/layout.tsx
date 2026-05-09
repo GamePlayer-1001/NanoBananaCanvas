@@ -28,7 +28,7 @@ export default async function AppLayout({
   const { locale } = await params
 
   return (
-    <ClerkShell locale={locale}>
+    <ClerkShell locale={locale} prefetchUI={false}>
       <div className="flex h-screen">
         {/* 桌面侧边栏 (lg+) */}
         <Suspense>

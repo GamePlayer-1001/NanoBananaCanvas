@@ -21,7 +21,7 @@ export default async function EditorLayout({
   const { locale } = await params
 
   return (
-    <ClerkShell locale={locale}>
+    <ClerkShell locale={locale} prefetchUI={false}>
       <div className="h-screen w-screen overflow-hidden">{children}</div>
     </ClerkShell>
   )

@@ -20,6 +20,23 @@ const SORT_MAP: Record<string, string> = {
   'most-liked': 'w.like_count DESC',
 }
 
+const AUTHOR_NAME_SQL = `COALESCE(
+  NULLIF(TRIM(u.name), ''),
+  NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+  NULLIF(TRIM(u.username), ''),
+  NULLIF(
+    TRIM(
+      CASE
+        WHEN INSTR(COALESCE(u.email, ''), '@') > 1
+          THEN SUBSTR(u.email, 1, INSTR(u.email, '@') - 1)
+        ELSE COALESCE(u.email, '')
+      END
+    ),
+    ''
+  ),
+  'Unknown Creator'
+)`
+
 const CONTENT_TYPE_SQL = `CASE
   WHEN EXISTS (
     SELECT 1
@@ -84,7 +101,7 @@ export async function GET(req: NextRequest) {
       .prepare(
         `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
                 w.view_count, w.published_at, w.category_id,
-                COALESCE(NULLIF(TRIM(u.name), ''), 'Unknown Creator') as author_name,
+                ${AUTHOR_NAME_SQL} as author_name,
                 u.avatar_url as author_avatar,
                 ${CONTENT_TYPE_SQL} as content_type,
                 (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
