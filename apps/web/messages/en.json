@@ -1675,6 +1675,8 @@
     "deleteBlockedWhileRunning": "Deletion is disabled while the workflow is running",
     "addNodesFirst": "Add some nodes first",
     "runningWorkflow": "Running workflow...",
+    "insufficientCreditsBeforeRun": "Not enough credits to run this workflow. Estimated {required} credits, but only {available} are available.",
+    "textTooLongBeforeRun": "Node \"{label}\" is too long ({actual}/{max}). Please shorten the prompt before running.",
     "nothingToExport": "Nothing to export",
     "workflowExported": "Workflow exported",
     "importedName": "Imported \"{name}\"",
@@ -1859,6 +1861,8 @@
   },
   "nodes": {
     "enterText": "Enter text...",
+    "textLengthCounter": "{current}/{max} chars",
+    "textLengthRemaining": "{count} left",
     "imageInputHint": "Upload an image to use as an input source for downstream nodes",
     "model": "Model",
     "temperature": "Temperature: {value}",

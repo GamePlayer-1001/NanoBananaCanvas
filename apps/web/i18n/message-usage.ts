@@ -366,7 +366,9 @@ export const MESSAGE_USAGE_INDEX = {
     "canvas.redo",
     "canvas.run",
     "canvas.runTooltip",
+    "canvas.insufficientCreditsBeforeRun",
     "canvas.runningWorkflow",
+    "canvas.textTooLongBeforeRun",
     "canvas.saveFailed",
     "canvas.saved",
     "canvas.saving",
@@ -672,7 +674,9 @@ export const MESSAGE_USAGE_INDEX = {
     "nodes.textMergeHint"
   ],
   "components/nodes/text-input-node.tsx": [
-    "nodes.enterText"
+    "nodes.enterText",
+    "nodes.textLengthCounter",
+    "nodes.textLengthRemaining"
   ],
   "components/nodes/video-gen-node.tsx": [
     "nodes.accountConfigLabel",
@@ -1394,7 +1398,9 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "canvas.redo",
   "canvas.run",
   "canvas.runTooltip",
+  "canvas.insufficientCreditsBeforeRun",
   "canvas.runningWorkflow",
+  "canvas.textTooLongBeforeRun",
   "canvas.saveFailed",
   "canvas.saved",
   "canvas.saving",
@@ -1599,6 +1605,8 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "nodes.creditsAutoPending",
   "nodes.downloadResult",
   "nodes.enterText",
+  "nodes.textLengthCounter",
+  "nodes.textLengthRemaining",
   "nodes.executionMode",
   "nodes.finalizing",
   "nodes.generating",

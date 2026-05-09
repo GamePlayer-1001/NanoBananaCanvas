@@ -1674,6 +1674,8 @@
     "deleteBlockedWhileRunning": "工作流运行中，暂时不能删除节点或连接线",
     "addNodesFirst": "请先添加节点",
     "runningWorkflow": "正在运行工作流...",
+    "insufficientCreditsBeforeRun": "当前账户积分不足，预计需要 {required} 积分，当前仅剩 {available} 积分。",
+    "textTooLongBeforeRun": "节点“{label}”的文本过长（{actual}/{max}），请先压缩提示词后再运行。",
     "nothingToExport": "没有可导出的内容",
     "workflowExported": "工作流已导出",
     "importedName": "已导入「{name}」",
@@ -1858,6 +1860,8 @@
   },
   "nodes": {
     "enterText": "输入文本...",
+    "textLengthCounter": "{current}/{max} 字",
+    "textLengthRemaining": "剩余 {count} 字",
     "imageInputHint": "上传一张图片，作为后续节点的输入源",
     "model": "模型",
     "temperature": "温度: {value}",
