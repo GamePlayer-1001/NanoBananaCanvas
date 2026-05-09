@@ -286,6 +286,86 @@ describe('submitTask', () => {
     })
   })
 
+  it('replays fallbackApiKey during background image task execution', async () => {
+    const submit = vi.fn().mockResolvedValue({
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: 'https://example.com/fallback-success.png',
+        contentType: 'image/png',
+      },
+    })
+
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'dlapi',
+      submit,
+      checkStatus: vi.fn(),
+      cancel: vi.fn(),
+    })
+
+    const taskRow = {
+      id: 'task-1',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'image',
+      model_id: 'gpt-image-2',
+      external_task_id: null,
+      execution_mode: 'platform',
+      input_data: JSON.stringify({ prompt: 'draw cat' }),
+      output_data: null,
+      status: 'pending',
+      progress: 0,
+      retry_count: 0,
+      max_retries: 0,
+      last_checked_at: null,
+      workflow_id: 'wf-1',
+      node_id: 'node-1',
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const db = createDbMock(1, taskRow)
+    r2Mock.get.mockResolvedValueOnce({
+      json: vi.fn().mockResolvedValue({
+        taskType: 'image_gen',
+        requestProvider: 'image',
+        resolvedProvider: 'dlapi',
+        resolvedModelId: 'gpt-image-2',
+        executionMode: 'platform',
+        resolvedInput: { prompt: 'draw cat' },
+        originalInput: { prompt: 'draw cat' },
+        apiKey: 'dlapi-key',
+        fallbackApiKey: 'comfly-key',
+      }),
+    } as never)
+
+    await processTaskDispatch(
+      db,
+      {
+        taskId: 'task-1',
+        userId: 'user-1',
+        orchestrator: 'workflow',
+      },
+      {
+        requireEnv: vi.fn(),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
+      },
+    )
+
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'gpt-image-2',
+        fallbackApiKey: 'comfly-key',
+      }),
+      'dlapi-key',
+    )
+  })
+
   it('reuses the latest active task when the same workflow node is rerun', async () => {
     const activeRow = {
       id: 'active-task-1',
