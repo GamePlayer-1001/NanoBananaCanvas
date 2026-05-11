@@ -386,7 +386,7 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                       : 'border-white/10 bg-[linear-gradient(180deg,rgba(19,20,24,0.96),rgba(11,12,15,0.98))]'
                 }`}
               >
-                <div className="min-h-[9.5rem]">
+                <div className="min-h-[7.2rem]">
                   <span
                     className={`inline-flex rounded-full border px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase ${
                       planKey === 'free'
@@ -400,11 +400,11 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                   >
                     {pricingT(getLandingPricingKey(planKey, 'planLabel'))}
                   </span>
-                  <div className="mt-5 max-w-[17rem]">
-                    <p className="text-[2.05rem] leading-[0.98] font-semibold tracking-tight text-white md:text-[2.25rem]">
+                  <div className="mt-4 max-w-[17rem]">
+                    <p className="text-[1.9rem] leading-none font-semibold tracking-tight text-white md:text-[2.05rem]">
                       {pricingT(`plans.${planKey}.name`)}
                     </p>
-                    <p className="mt-2 text-[1.02rem] leading-6 font-medium text-white/58 md:text-[1.08rem]">
+                    <p className="mt-1.5 text-[0.98rem] leading-5 font-medium text-white/58 md:text-[1.02rem]">
                       {pricingT(getLandingPricingKey(planKey, 'subtitle'))}
                     </p>
                     {pricingT(`plans.${planKey}.body`) ? (
@@ -415,13 +415,13 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                   </div>
                 </div>
 
-                <div className="mt-8 min-h-[6.75rem] border-t border-white/8 pt-6">
-                  <p className="break-words text-[2.55rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[2.75rem]">
+                <div className="mt-4 min-h-[4.4rem] border-t border-white/8 pt-4">
+                  <p className="whitespace-nowrap text-[2.05rem] leading-none font-semibold tracking-tight text-white md:text-[2.25rem]">
                     {priceLabel}
                   </p>
                 </div>
 
-                <div className="mt-6 flex flex-1 flex-col">
+                <div className="mt-4 flex flex-1 flex-col">
                   <div className="space-y-3">
                     {highlights.map((highlight) => (
                       <div

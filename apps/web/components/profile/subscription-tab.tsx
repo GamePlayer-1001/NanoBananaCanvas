@@ -178,7 +178,7 @@ export function SubscriptionTab({
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                     {pricingT('plans.free.planLabel')}
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-foreground">
+                  <h3 className="mt-2.5 text-2xl font-semibold text-foreground">
                     {pricingT('plans.free.name')}
                   </h3>
                   <p className="mt-1 text-sm font-medium text-muted-foreground">
@@ -190,13 +190,13 @@ export function SubscriptionTab({
                 </span>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
-                <p className="text-3xl font-semibold text-foreground">
+              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                <p className="whitespace-nowrap text-2xl font-semibold text-foreground">
                   {pricingT('plans.free.period')}
                 </p>
               </div>
 
-              <div className="mt-6 flex flex-1 flex-col">
+              <div className="mt-5 flex flex-1 flex-col">
                 <div className="space-y-3">
                   <SubscriptionFeature value={pricingT('plans.free.note')} />
                   <SubscriptionFeature value={pricingT('plans.free.storageNote')} />
@@ -236,7 +236,7 @@ export function SubscriptionTab({
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                     {pricingT(`plans.${plan.plan}.planLabel`)}
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-foreground">
+                  <h3 className="mt-2.5 text-2xl font-semibold text-foreground">
                     {pricingT(`plans.${plan.plan}.name`)}
                   </h3>
                   <p className="mt-1 text-sm font-medium text-muted-foreground">
@@ -250,14 +250,14 @@ export function SubscriptionTab({
                 ) : null}
               </div>
 
-              <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
-                <p className="text-3xl font-semibold text-foreground">
+              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                <p className="whitespace-nowrap text-2xl font-semibold text-foreground">
                   {formatMoney(plan.unitAmount)}{' '}
                   {pricingT(`plans.${plan.plan}.period`)}
                 </p>
               </div>
 
-              <div className="mt-6 flex flex-1 flex-col">
+              <div className="mt-5 flex flex-1 flex-col">
                 <div className="space-y-3">
                   <SubscriptionFeature value={pricingT(`plans.${plan.plan}.note`)} />
                   <SubscriptionFeature value={pricingT(`plans.${plan.plan}.supportNote`)} />
