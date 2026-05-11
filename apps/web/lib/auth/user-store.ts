@@ -8,6 +8,8 @@
 import { getDb } from '@/lib/db'
 import { nanoid } from '@/lib/nanoid'
 
+const CLERK_IDENTITY_PREFIX = 'clerk:'
+
 export type UserProfileInput = {
   email: string
   username: string
@@ -40,6 +42,15 @@ let usersColumnsPromise: Promise<Set<string>> | null = null
 
 function hasColumn(columns: Set<string>, column: string) {
   return columns.has(column)
+}
+
+function getIdentityLookupCandidates(identityKey: string) {
+  if (!identityKey.startsWith(CLERK_IDENTITY_PREFIX)) {
+    return [identityKey]
+  }
+
+  const legacyClerkUserId = identityKey.slice(CLERK_IDENTITY_PREFIX.length).trim()
+  return legacyClerkUserId ? [identityKey, legacyClerkUserId] : [identityKey]
 }
 
 function buildSelectList(columns: Set<string>) {
@@ -175,14 +186,62 @@ export async function getUsersColumns() {
   return usersColumnsPromise
 }
 
+export function resetUsersColumnsCache() {
+  usersColumnsPromise = null
+}
+
 export async function findUserByIdentityKey(identityKey: string) {
   const db = await getDb()
   const columns = await getUsersColumns()
+  const candidates = getIdentityLookupCandidates(identityKey)
+  const selectSql =
+    candidates.length > 1
+      ? `SELECT ${buildSelectList(columns)}
+         FROM users
+         WHERE clerk_id IN (?, ?)
+         ORDER BY CASE WHEN clerk_id = ? THEN 0 ELSE 1 END
+         LIMIT 1`
+      : `SELECT ${buildSelectList(columns)} FROM users WHERE clerk_id = ?`
+  const row =
+    candidates.length > 1
+      ? await db
+          .prepare(selectSql)
+          .bind(candidates[0], candidates[1], identityKey)
+          .first<DbUserRow>()
+      : await db
+          .prepare(selectSql)
+          .bind(identityKey)
+          .first<DbUserRow>()
 
-  return db
-    .prepare(`SELECT ${buildSelectList(columns)} FROM users WHERE clerk_id = ?`)
-    .bind(identityKey)
-    .first<DbUserRow>()
+  if (!row) {
+    return null
+  }
+
+  if (row.clerk_id !== identityKey && candidates.includes(row.clerk_id)) {
+    try {
+      const sets = ['clerk_id = ?']
+      if (hasColumn(columns, 'updated_at')) {
+        sets.push("updated_at = datetime('now')")
+      }
+
+      await db
+        .prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ? AND clerk_id = ?`)
+        .bind(identityKey, row.id, row.clerk_id)
+        .run()
+
+      return {
+        ...row,
+        clerk_id: identityKey,
+      }
+    } catch {
+      return db
+        .prepare(`SELECT ${buildSelectList(columns)} FROM users WHERE clerk_id = ?`)
+        .bind(identityKey)
+        .first<DbUserRow>()
+    }
+  }
+
+  return row
 }
 
 export async function insertUserByIdentityKey(identityKey: string, profile: UserProfileInput) {

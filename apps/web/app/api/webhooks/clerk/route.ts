@@ -99,8 +99,8 @@ async function deleteClerkUser(payload: ClerkUserPayload) {
 
   const db = await getDb()
   await db
-    .prepare('DELETE FROM users WHERE clerk_id = ?')
-    .bind(toIdentityKey(payload.id))
+    .prepare('DELETE FROM users WHERE clerk_id IN (?, ?)')
+    .bind(toIdentityKey(payload.id), payload.id)
     .run()
 }
 
