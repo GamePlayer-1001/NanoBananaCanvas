@@ -53,6 +53,13 @@ const PORT_TYPE_LABELS: Record<PortDefinition['type'], string> = {
   any: 'any',
 }
 
+const RESIZER_LINE_CLASS =
+  '!border-[var(--brand-500)]/80 !border-[1.5px] !shadow-[0_0_0_1px_rgba(99,102,241,0.08)]'
+const RESIZER_HANDLE_CLASS =
+  '!h-4 !w-4 !rounded-full !border-0 !bg-transparent !opacity-0'
+const SELECTED_NODE_CLASS =
+  'border-[var(--brand-500)] shadow-[0_0_0_1px_rgba(99,102,241,0.92),0_10px_24px_rgba(99,102,241,0.12)]'
+
 /* ─── Port Handle ───────────────────────────────────── */
 
 function PortHandle({
@@ -162,8 +169,8 @@ export function BaseNode({
           isVisible={selected || showResizer}
           minWidth={minWidth}
           minHeight={minHeight}
-          lineClassName="!border-[var(--brand-500)]/70"
-          handleClassName="!bg-[var(--brand-500)] !w-2 !h-2 !rounded-sm"
+          lineClassName={RESIZER_LINE_CLASS}
+          handleClassName={RESIZER_HANDLE_CLASS}
         />
       ) : null}
 
@@ -172,7 +179,7 @@ export function BaseNode({
           'bg-card relative flex w-full flex-col overflow-hidden rounded-lg border shadow-sm',
           isContentHeight ? 'h-auto' : 'h-full',
           'transition-shadow duration-150',
-          selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
+          selected ? SELECTED_NODE_CLASS : 'border-border',
         )}
       >
         {/* ── Header ───────────────────────────────────── */}

@@ -26,6 +26,13 @@ const BG_COLORS = [
   { value: '#fed7aa', label: 'Orange' },
 ] as const
 
+const RESIZER_LINE_CLASS =
+  '!border-[var(--brand-500)]/80 !border-[1.5px] !shadow-[0_0_0_1px_rgba(99,102,241,0.08)]'
+const RESIZER_HANDLE_CLASS =
+  '!h-4 !w-4 !rounded-full !border-0 !bg-transparent !opacity-0'
+const SELECTED_NODE_CLASS =
+  'border-[var(--brand-500)] shadow-[0_0_0_1px_rgba(99,102,241,0.92),0_10px_24px_rgba(99,102,241,0.12)]'
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function NoteNode(props: NodeProps) {
@@ -73,7 +80,7 @@ export function NoteNode(props: NodeProps) {
       className={cn(
         'relative h-full min-h-[120px] w-full min-w-[240px] rounded-lg border shadow-sm',
         'transition-shadow duration-150',
-        props.selected ? 'border-[var(--brand-500)] shadow-md' : 'border-border',
+        props.selected ? SELECTED_NODE_CLASS : 'border-border',
       )}
       style={{ backgroundColor: bgColor }}
     >
@@ -81,8 +88,8 @@ export function NoteNode(props: NodeProps) {
         isVisible={!!props.selected || showResizer}
         minWidth={240}
         minHeight={120}
-        lineClassName="!border-[var(--brand-500)]/70"
-        handleClassName="!bg-[var(--brand-500)] !w-2 !h-2 !rounded-sm"
+        lineClassName={RESIZER_LINE_CLASS}
+        handleClassName={RESIZER_HANDLE_CLASS}
       />
 
       {/* ── Header ─────────────────────────────────── */}
