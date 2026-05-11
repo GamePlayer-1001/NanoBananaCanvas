@@ -46,7 +46,7 @@ describe('createNode', () => {
   it('creates display with correct defaults', () => {
     const node = createNode('display', { x: 0, y: 0 })
     expect(node.type).toBe('display')
-    expect(node.data.label).toBe('Display')
+    expect(node.data.label).toBe('output')
     expect(node.data.type).toBe('output')
     expect(node.data.config).toEqual({})
   })

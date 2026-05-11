@@ -118,7 +118,7 @@ register({
 register({
   type: 'display',
   category: 'output',
-  label: 'Display',
+  label: 'output',
   icon: MonitorPlay,
   ports: {
     inputs: [{ id: 'content-in', label: 'Content', type: 'any', required: true }],

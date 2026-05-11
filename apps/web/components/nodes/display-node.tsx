@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { renderSimpleMarkdown } from '@/lib/utils/simple-markdown'
+import { useFlowStore } from '@/stores/use-flow-store'
 import { BaseNode } from './base-node'
 
 const CONTENT_FRAME_CLASS =
@@ -119,9 +120,18 @@ function DownloadButton({ payload }: { payload: DownloadPayload }) {
 export function DisplayNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const t = useTranslations('nodes')
+  const updateNodeData = useFlowStore((s) => s.updateNodeData)
   const content = data.config.content
   const copyText = getCopyText(content)
   const downloadPayload = getDownloadPayload(content)
+
+  useEffect(() => {
+    if (data.label !== 'Display' && data.label !== '显示') {
+      return
+    }
+
+    updateNodeData(props.id, { label: 'output' })
+  }, [data.label, props.id, updateNodeData])
 
   return (
     <BaseNode

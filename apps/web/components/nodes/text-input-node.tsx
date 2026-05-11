@@ -41,8 +41,8 @@ export function TextInputNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<Type size={14} />}
-      minHeight={170}
-      bodyClassName="min-h-0"
+      minHeight={196}
+      bodyClassName="min-h-0 gap-2 pb-4"
     >
       <textarea
         value={textValue}
@@ -50,9 +50,9 @@ export function TextInputNode(props: NodeProps) {
         placeholder={t('enterText')}
         rows={3}
         maxLength={TEXT_INPUT_MAX_LENGTH}
-        className="nodrag nowheel border-input bg-background h-full min-h-[92px] w-full resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
+        className="nodrag nowheel border-input bg-background h-full min-h-[112px] w-full resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />
-      <div className="text-muted-foreground mt-1 text-right text-[10px]">
+      <div className="text-muted-foreground text-right text-[11px] leading-none">
         {t('textLengthCounter', { current: textValue.length, max: TEXT_INPUT_MAX_LENGTH })}
         {remaining <= 20 ? ` · ${t('textLengthRemaining', { count: remaining })}` : ''}
       </div>
