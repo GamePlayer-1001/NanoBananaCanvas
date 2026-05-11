@@ -3,9 +3,9 @@
  *          依赖 @/components/landing/hero-section，
  *          依赖 @/components/landing/deferred-model-mind-map，
  *          依赖 @/components/landing/landing-sections，
- *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/plans 与 @/lib/billing/pricing
+ *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载；首页定价卡片优先读取 Stripe 月付价格，失败时仅回退本地权益快照
+ * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载；首页定价卡片由 Stripe 月付价格驱动
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -24,7 +24,6 @@ import {
 import { LandingFooter } from '@/components/layout/landing-footer'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
-import { BILLING_PLAN_SNAPSHOTS } from '@/lib/billing/plans'
 import {
   BASE_URL,
   SITE_NAME,
@@ -155,14 +154,7 @@ export default async function LandingPage({
       />
       <HeroSection />
       <FeaturesSection />
-      <PricingSection
-        plans={pricing?.plans ?? []}
-        snapshotPlans={{
-          standard: BILLING_PLAN_SNAPSHOTS.standard,
-          pro: BILLING_PLAN_SNAPSHOTS.pro,
-          ultimate: BILLING_PLAN_SNAPSHOTS.ultimate,
-        }}
-      />
+      <PricingSection plans={pricing?.plans ?? []} />
       <TestimonialsSection />
       <DeferredModelMindMap />
       <FaqSection />

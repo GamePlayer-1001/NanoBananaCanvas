@@ -15,9 +15,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import type { BillingPlanSnapshot } from '@/lib/billing/plans'
 import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
-import { BILLING_PLAN_SNAPSHOTS } from '@/lib/billing/plans'
 import { Link } from '@/i18n/navigation'
 export { ModelMindMapSection } from './model-mind-map-section'
 
@@ -89,11 +87,9 @@ function formatLandingMoney(locale: string, currency: string, amount: number) {
 
 function getLandingPricingKey(
   planKey: (typeof LANDING_PERSONA_ITEMS)[number],
-  field: 'planLabel' | 'supportNote' | 'cta',
+  field: 'planLabel' | 'supportNote' | 'cta' | 'period' | 'useCase' | 'extra',
 ) {
   if (planKey === 'pro' && field === 'planLabel') return 'popular'
-  if (planKey === 'pro' && field === 'supportNote') return 'plans.pro.note'
-  if (planKey === 'pro' && field === 'cta') return 'cta'
   return `plans.${planKey}.${field}`
 }
 
@@ -323,13 +319,7 @@ export function FeaturesSection() {
   )
 }
 
-export function PricingSection({
-  plans,
-  snapshotPlans,
-}: {
-  plans: PublicBillingPlanPrice[]
-  snapshotPlans?: Partial<Record<'standard' | 'pro' | 'ultimate', BillingPlanSnapshot>>
-}) {
+export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
   const pricingT = useTranslations('landing.sections.pricing')
   const billingT = useTranslations('pricing')
   const locale = useLocale()
@@ -355,17 +345,13 @@ export function PricingSection({
 
         <div className="mt-14 grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
           {LANDING_PERSONA_ITEMS.map((planKey) => {
-            const snapshot =
-              planKey === 'free'
-                ? null
-                : snapshotPlans?.[planKey] ?? BILLING_PLAN_SNAPSHOTS[planKey]
             const livePlan =
               planKey === 'free' ? null : monthlyPlanMap[planKey]
             const priceLabel =
               planKey === 'free'
-                ? billingT('freePriceValue')
+                ? pricingT('plans.free.period')
                 : livePlan
-                  ? formatLandingMoney(locale, livePlan.currency, livePlan.unitAmount)
+                  ? `${formatLandingMoney(locale, livePlan.currency, livePlan.unitAmount)} ${pricingT(getLandingPricingKey(planKey, 'period'))}`
                   : pricingT('pricePending')
             const highlights =
               planKey === 'free'
@@ -375,9 +361,12 @@ export function PricingSection({
                     pricingT('plans.free.supportNote'),
                   ]
                 : [
-                    `${billingT('monthlyCredits')} · ${snapshot?.monthlyCredits.toLocaleString()}`,
-                    billingT('deliveryRecurring'),
+                    pricingT(`plans.${planKey}.note`),
                     pricingT(getLandingPricingKey(planKey, 'supportNote')),
+                    pricingT(getLandingPricingKey(planKey, 'useCase')),
+                    ...(planKey === 'ultimate'
+                      ? [pricingT(getLandingPricingKey(planKey, 'extra'))]
+                      : []),
                   ]
 
             return (
@@ -411,9 +400,11 @@ export function PricingSection({
                     <p className="text-[1.9rem] leading-[1.02] font-semibold tracking-tight text-white md:text-[2.05rem]">
                       {pricingT(`plans.${planKey}.name`)}
                     </p>
-                    <p className="mt-4 text-[1.02rem] leading-8 text-white/60">
-                      {pricingT(`plans.${planKey}.body`)}
-                    </p>
+                    {pricingT(`plans.${planKey}.body`) ? (
+                      <p className="mt-4 text-[1.02rem] leading-8 text-white/60">
+                        {pricingT(`plans.${planKey}.body`)}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -422,9 +413,7 @@ export function PricingSection({
                     {priceLabel}
                   </p>
                   <p className="mt-3 text-sm tracking-[0.08em] text-white/42 uppercase">
-                    {planKey === 'free'
-                      ? billingT('freePriceLabel')
-                      : billingT('billedMonthly')}
+                    {planKey === 'free' ? pricingT('plans.free.body') : billingT('billedMonthly')}
                   </p>
                 </div>
 

@@ -48,6 +48,7 @@ export function SubscriptionTab({
   onModeChange,
 }: SubscriptionTabProps) {
   const t = useTranslations('profile')
+  const pricingT = useTranslations('landing.sections.pricing')
   const locale = useLocale()
   const router = useRouter()
   const [selectedMode, setSelectedMode] = useState<PurchaseMode>(initialMode)
@@ -178,14 +179,16 @@ export function SubscriptionTab({
         </div>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-4">
+      <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
         <article className="flex h-full flex-col rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                    {t('subscriptionFreeLabel')}
+                    {pricingT('plans.free.planLabel')}
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-foreground">Free</h3>
+                  <h3 className="mt-3 text-2xl font-semibold text-foreground">
+                    {pricingT('plans.free.name')}
+                  </h3>
                 </div>
                 {subscription.status === 'trialing' ? (
                   <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
@@ -194,28 +197,17 @@ export function SubscriptionTab({
                 ) : null}
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {t('subscriptionFreeBody')}
-              </p>
-
               <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
                 <p className="text-3xl font-semibold text-foreground">
-                  {t('subscriptionFreePrice')}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {standardPlan
-                    ? `${t('subscriptionMonthlyCharge')} · ${formatMoney(locale, standardPlan.currency, standardPlan.unitAmount)}`
-                    : t('subscriptionFreePriceBody')}
+                  {pricingT('plans.free.period')}
                 </p>
               </div>
 
               <div className="mt-6 flex flex-1 flex-col">
                 <div className="space-y-3">
-                  <SubscriptionStat
-                    label={t('subscriptionCreditsIncluded')}
-                    value={standardPlan?.monthlyCredits.toLocaleString(locale) ?? '0'}
-                  />
-                  <SubscriptionStat label={t('subscriptionEntryPointLabel')} value={t('subscriptionFreeEntryValue')} />
+                  <SubscriptionFeature value={pricingT('plans.free.note')} />
+                  <SubscriptionFeature value={pricingT('plans.free.storageNote')} />
+                  <SubscriptionFeature value={pricingT('plans.free.supportNote')} />
                 </div>
               </div>
 
@@ -231,7 +223,7 @@ export function SubscriptionTab({
                   {pendingKey === 'trial:standard'
                     ? t('subscriptionRedirecting')
                     : isAuthenticated
-                      ? t('subscriptionStartMonthly')
+                      ? pricingT('plans.free.cta')
                       : t('subscriptionSignInFirst')}
                 </Button>
               </div>
@@ -255,10 +247,10 @@ export function SubscriptionTab({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                    {t('subscriptionToggleMonthly')}
+                    {pricingT(`plans.${plan.plan}.planLabel`)}
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold capitalize text-foreground">
-                    {plan.plan}
+                  <h3 className="mt-3 text-2xl font-semibold text-foreground">
+                    {pricingT(`plans.${plan.plan}.name`)}
                   </h3>
                 </div>
                 {featured ? (
@@ -272,29 +264,21 @@ export function SubscriptionTab({
                 ) : null}
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {t(`subscriptionPlanBody_${plan.plan}`)}
-              </p>
-
               <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
                 <p className="text-3xl font-semibold text-foreground">
-                  {formatMoney(locale, plan.currency, plan.unitAmount)}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t('subscriptionMonthlyCharge')}
+                  {formatMoney(locale, plan.currency, plan.unitAmount)}{' '}
+                  {pricingT(`plans.${plan.plan}.period`)}
                 </p>
               </div>
 
               <div className="mt-6 flex flex-1 flex-col">
                 <div className="space-y-3">
-                  <SubscriptionStat
-                    label={t('subscriptionMonthlyCreditsLabel')}
-                    value={plan.monthlyCredits.toLocaleString(locale)}
-                  />
-                  <SubscriptionStat
-                    label={t('subscriptionDeliveryLabel')}
-                    value={t('subscriptionDeliveryRecurring')}
-                  />
+                  <SubscriptionFeature value={pricingT(`plans.${plan.plan}.note`)} />
+                  <SubscriptionFeature value={pricingT(`plans.${plan.plan}.supportNote`)} />
+                  <SubscriptionFeature value={pricingT(`plans.${plan.plan}.useCase`)} />
+                  {plan.plan === 'ultimate' ? (
+                    <SubscriptionFeature value={pricingT('plans.ultimate.extra')} />
+                  ) : null}
                 </div>
               </div>
 
@@ -316,7 +300,7 @@ export function SubscriptionTab({
                     : isPending
                       ? t('subscriptionRedirecting')
                       : isAuthenticated
-                        ? t('subscriptionStartMonthly')
+                        ? pricingT(`plans.${plan.plan}.cta`)
                         : t('subscriptionSignInFirst')}
                 </Button>
               </div>
@@ -328,11 +312,11 @@ export function SubscriptionTab({
   )
 }
 
-function SubscriptionStat({ label, value }: { label: string; value: string }) {
+function SubscriptionFeature({ value }: { value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-foreground">{value}</span>
+    <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 text-sm leading-6">
+      <span className="mt-0.5 text-emerald-600">✓</span>
+      <span className="text-foreground">{value}</span>
     </div>
   )
 }

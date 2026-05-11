@@ -156,38 +156,44 @@
         "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "Free Trial",
-            "body": "Free for 30 days, then renews automatically.",
+            "name": "Free Trial · Official model trial",
+            "body": "",
             "planLabel": "Free",
-            "period": "Start here",
-            "note": "Jump into the canvas immediately.",
-            "storageNote": "Bind a card to start the trial.",
-            "supportNote": "Upgrade after creation becomes part of your daily rhythm.",
-            "cta": "Start Free"
+            "period": "$0 / first month",
+            "note": "$0 access to GPT 5.4 / 5.5 and other flagship models",
+            "storageNote": "1,600 credits/month, use until depleted",
+            "supportNote": "Renews to Standard after 30 days, cancel anytime",
+            "cta": "Start free trial"
           },
           "standard": {
-            "name": "Standard",
-            "body": "For people creating every day.",
+            "name": "Standard · Best value",
+            "body": "",
             "planLabel": "Standard",
-            "period": "Per month",
-            "note": "For ongoing output",
-            "supportNote": "Built for solo creators producing steadily every day.",
-            "cta": "Start subscription"
+            "period": "/ month",
+            "note": "1,600 credits every month",
+            "supportNote": "All model families available: GPT 5.4, GPT image 2, nano banana, GPT 5.5, Gemini, and more",
+            "cta": "Subscribe now",
+            "useCase": "For daily work and creation"
           },
           "pro": {
-            "name": "Pro",
-            "body": "Fits teams that need stronger model throughput, more collaboration room, and a steadier production rhythm.",
-            "period": "Per month",
-            "note": "Best balance for working teams"
+            "name": "Pro · Productivity upgrade",
+            "body": "",
+            "period": "/ month",
+            "note": "5,400 credits/month (about 3.4x Standard)",
+            "supportNote": "Unlimited access across all model families",
+            "cta": "Subscribe now",
+            "useCase": "For high-frequency users and teams"
           },
           "ultimate": {
-            "name": "Ultimate",
-            "body": "For team collaboration and formal production workflows.",
+            "name": "Ultimate · Call without holding back",
+            "body": "",
             "planLabel": "Ultimate",
-            "period": "Per month",
-            "note": "For high-load teams",
-            "supportNote": "Built for multi-person collaboration, review flows, and formal production environments.",
-            "cta": "Start subscription"
+            "period": "/ month",
+            "note": "17,000 credits/month (about 10x Standard)",
+            "supportNote": "All model families + priority response",
+            "cta": "Subscribe now",
+            "useCase": "For heavy AI users and commercial workflows",
+            "extra": "The most efficient AI workstation"
           }
         },
         "summaryNote": "Auto monthly plans fit steady production, one-time plans fit project-based buying, and credit packs fit fast top-ups during busy runs.",
@@ -383,7 +389,7 @@
     "deliveryRecurring": "Monthly credits refresh continuously",
     "deliveryOneTime": "Buy once and keep the credits",
     "currencyResolved": "Checkout currency: {currency}",
-    "startSubscription": "Start subscription",
+    "startSubscription": "Subscribe now",
     "buyOneTime": "Buy one-time plan",
     "buyCredits": "Buy credits",
     "signInToSubscribe": "Sign in to subscribe",
@@ -1426,7 +1432,7 @@
     "subscriptionCurrentPlan": "Current plan",
     "subscriptionRedirecting": "Redirecting to checkout...",
     "subscriptionSignInFirst": "Sign in to buy",
-    "subscriptionStartMonthly": "Start subscription",
+    "subscriptionStartMonthly": "Subscribe now",
     "subscriptionBuyOneTime": "Buy one-time",
     "subscriptionBuyCredits": "Buy credits",
     "subscriptionCreditsLabel": "Credit pack",

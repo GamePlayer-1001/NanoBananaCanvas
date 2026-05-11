@@ -156,38 +156,44 @@
         "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "Free Trial",
-            "body": "免费试用30 天，到期后自动续订。",
+            "name": "Free Trial · 官方模型免费试用",
+            "body": "",
             "planLabel": "免费版",
-            "period": "从这里开始",
-            "note": "立即进入画布开始创作。",
-            "storageNote": "绑定信用卡后开始试用。",
-            "supportNote": "当创作进入日常节奏后再升级。",
-            "cta": "免费开始"
+            "period": "$0 / 首月",
+            "note": "0 元解锁 GPT 5.4 / 5.5 等主力模型",
+            "storageNote": "1600 积分/月，用完即止",
+            "supportNote": "30 天后自动续订 Standard，随时可取消",
+            "cta": "免费试用"
           },
           "standard": {
-            "name": "Standard",
-            "body": "适合每天都在稳定创作的人。",
+            "name": "Standard · 超高性价比",
+            "body": "",
             "planLabel": "标准版",
-            "period": "按月",
-            "note": "适合持续产出",
-            "supportNote": "适合每天都在稳定产出的个人创作者。",
-            "cta": "开始订阅"
+            "period": "/ 月",
+            "note": "每月 1,600 积分",
+            "supportNote": "全系模型可用：GPT 5.4、GPT image 2、nano banana、GPT 5.5、Gemini 等",
+            "cta": "立即订阅",
+            "useCase": "适合日常办公 & 创作"
           },
           "pro": {
-            "name": "Pro",
-            "body": "适合需要更强模型吞吐、协作空间和更稳定生产节奏的团队。",
-            "period": "按月",
-            "note": "最适合真实生产的平衡档"
+            "name": "Pro · 生产力进阶",
+            "body": "",
+            "period": "/ 月",
+            "note": "每月 5,400 积分（≈ 3.4 倍 Standard）",
+            "supportNote": "全系模型无限制使用",
+            "cta": "立即订阅",
+            "useCase": "适合高频使用者 & 团队"
           },
           "ultimate": {
-            "name": "Ultimate",
-            "body": "适合团队协作与正式生产流程。",
+            "name": "Ultimate · 尽情调用",
+            "body": "",
             "planLabel": "旗舰版",
-            "period": "按月",
-            "note": "面向高负载团队",
-            "supportNote": "适合多人协作、审核流和正式生产环境。",
-            "cta": "开始订阅"
+            "period": "/ 月",
+            "note": "每月 17,000 积分（≈ 10 倍 Standard）",
+            "supportNote": "全系模型 + 优先响应",
+            "cta": "立即订阅",
+            "useCase": "适合重度 AI 用户 & 商用场景",
+            "extra": "最高效 AI 工作站"
           }
         },
         "summaryNote": "月付适合稳定生产，一次性套餐适合项目制购买，积分充值适合高峰期快速补能。",
@@ -383,7 +389,7 @@
     "deliveryRecurring": "每月持续补充积分",
     "deliveryOneTime": "一次购买，长期持有",
     "currencyResolved": "结账币种：{currency}",
-    "startSubscription": "开始订阅",
+    "startSubscription": "立即订阅",
     "buyOneTime": "购买一次性套餐",
     "buyCredits": "购买积分包",
     "signInToSubscribe": "登录后订阅",
@@ -1426,7 +1432,7 @@
     "subscriptionCurrentPlan": "当前方案",
     "subscriptionRedirecting": "正在跳转结账...",
     "subscriptionSignInFirst": "登录后购买",
-    "subscriptionStartMonthly": "开始订阅",
+    "subscriptionStartMonthly": "立即订阅",
     "subscriptionBuyOneTime": "立即买断",
     "subscriptionBuyCredits": "充值积分",
     "subscriptionCreditsLabel": "积分包",
