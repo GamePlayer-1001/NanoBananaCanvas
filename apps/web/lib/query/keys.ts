@@ -32,6 +32,7 @@ export const queryKeys = {
     search: (q: string, page?: number) =>
       [...queryKeys.explore.all, 'search', q, page] as const,
     detail: (id: string) => [...queryKeys.explore.all, 'detail', id] as const,
+    outputs: () => [...queryKeys.explore.all, 'outputs'] as const,
   },
   categories: {
     all: ['categories'] as const,

@@ -46,9 +46,15 @@ folders/                — 文件夹 CRUD (2+2 端点)
 
 workflows/              — 工作流 CRUD + 社交 (见子 CLAUDE.md, 支持 folder 筛选/移动)
 
-explore/                — 社区广场 (2 端点)
-  route.ts              — GET  公开列表 (分类/排序/分页/互动标记 + 视频/图片/工作流类型过滤)
-  search/route.ts       — GET  模糊搜索 (标题/描述/标签)
+explore/                — 社区广场 (7 端点)
+  route.ts              — GET  混合公开列表 (工作流模板 + 公开生成作品，分类/排序/分页/互动标记 + 类型过滤)
+  [id]/route.ts         — GET  统一详情 (工作流/公开生成作品按 id 分流并递增浏览量)
+  search/route.ts       — GET  模糊搜索 (标题/描述，覆盖工作流与公开生成作品)
+  outputs/route.ts      — POST 公开生成作品 (completed task -> published_outputs)
+  outputs/[id]/like/route.ts     — POST 公开生成作品点赞切换
+  outputs/[id]/favorite/route.ts — POST 公开生成作品收藏切换
+  outputs/[id]/report/route.ts   — POST 公开生成作品举报
+  outputs/[id]/clone/route.ts    — POST 公开生成作品克隆来源工作流到当前工作区“全部”
 
 categories/route.ts     — GET  分类列表 (i18n 本地化)
 notifications/route.ts  — GET+PATCH 通知列表 + 标记已读

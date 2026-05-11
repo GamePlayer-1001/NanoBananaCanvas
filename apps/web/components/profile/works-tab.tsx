@@ -41,6 +41,7 @@ import {
 import { queryKeys } from '@/lib/query/keys'
 import { clearLocal, loadFromLocal } from '@/services/storage/local-storage'
 import { serializeWorkflow } from '@/services/storage/serializer'
+import { PublishOutputDialog } from './publish-output-dialog'
 
 type WorksView = 'workflow' | 'generated' | 'published' | 'favorites'
 type GeneratedView = 'image' | 'video'
@@ -70,6 +71,7 @@ interface GeneratedTaskItem {
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
   createdAt: string
   completedAt: string | null
+  input?: Record<string, unknown>
   output: GeneratedOutputPayload | null
 }
 
@@ -183,11 +185,13 @@ function GeneratedWorkItem({
   selected,
   onToggle,
   title,
+  onPublish,
 }: {
   item: GeneratedTaskItem
   selected: boolean
   onToggle: (id: string) => void
   title: string
+  onPublish: (item: GeneratedTaskItem) => void
 }) {
   const mediaUrl = item.output?.url
   const isVideo = item.taskType === 'video_gen'
@@ -228,6 +232,13 @@ function GeneratedWorkItem({
         <p className="truncate text-xs text-muted-foreground">
           {item.provider} · {item.modelId}
         </p>
+        <button
+          type="button"
+          onClick={() => onPublish(item)}
+          className="mt-3 inline-flex items-center rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+        >
+          公开到广场
+        </button>
       </div>
     </article>
   )
@@ -243,6 +254,7 @@ export function WorksTab({
   const [view, setView] = useState<WorksView>('workflow')
   const [generatedView, setGeneratedView] = useState<GeneratedView>('image')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [publishingItem, setPublishingItem] = useState<GeneratedTaskItem | null>(null)
   const [localDraft, setLocalDraft] = useState<ReturnType<typeof loadFromLocal> | null>(() => {
     if (typeof window === 'undefined') {
       return null
@@ -598,6 +610,7 @@ export function WorksTab({
                 selected={selectedIds.includes(item.id)}
                 onToggle={handleToggleSelection}
                 title={t(item.taskType === 'image_gen' ? 'generated_image' : 'generated_video')}
+                onPublish={setPublishingItem}
               />
             ))}
           </div>
@@ -656,6 +669,19 @@ export function WorksTab({
           )}
         </div>
       )}
+
+      {publishingItem ? (
+        <PublishOutputDialog
+          taskId={publishingItem.id}
+          defaultTitle={publishingItem.output?.fileName || publishingItem.modelId}
+          defaultPrompt={String(publishingItem.input?.prompt ?? '')}
+          defaultThumbnail={publishingItem.output?.url}
+          open={!!publishingItem}
+          onOpenChange={(open) => {
+            if (!open) setPublishingItem(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

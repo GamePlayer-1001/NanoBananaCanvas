@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @/lib/query/keys 的 queryKeys
- * [OUTPUT]: 对外提供 useExplore / useExploreDetail / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow / useReportWorkflow
+ * [OUTPUT]: 对外提供 useExplore / useExploreDetail / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow / useReportWorkflow / usePublishOutput
  * [POS]: hooks 的社区广场数据层，被 explore 页面 + explore 详情页消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -72,8 +72,13 @@ export function useToggleLike() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      fetchJson(`/api/workflows/${id}/like`, { method: 'POST' }),
+    mutationFn: (input: { id: string; entityType?: 'workflow' | 'output' }) =>
+      fetchJson(
+        input.entityType === 'output'
+          ? `/api/explore/outputs/${input.id}/like`
+          : `/api/workflows/${input.id}/like`,
+        { method: 'POST' },
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.explore.all })
     },
@@ -84,8 +89,13 @@ export function useToggleFavorite() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      fetchJson(`/api/workflows/${id}/favorite`, { method: 'POST' }),
+    mutationFn: (input: { id: string; entityType?: 'workflow' | 'output' }) =>
+      fetchJson(
+        input.entityType === 'output'
+          ? `/api/explore/outputs/${input.id}/favorite`
+          : `/api/workflows/${input.id}/favorite`,
+        { method: 'POST' },
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.explore.all })
     },
@@ -95,7 +105,7 @@ export function useToggleFavorite() {
 export function useExploreDetail(id: string) {
   return useQuery({
     queryKey: queryKeys.explore.detail(id),
-    queryFn: () => fetchJson(`/api/workflows/${id}`),
+    queryFn: () => fetchJson(`/api/explore/${id}`),
     enabled: !!id,
     staleTime: 5_000,
     refetchOnMount: true,
@@ -106,8 +116,13 @@ export function useCloneWorkflow() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      fetchJson<{ id: string; clonedFrom: string }>(`/api/workflows/${id}/clone`, { method: 'POST' }),
+    mutationFn: (input: { id: string; entityType?: 'workflow' | 'output' }) =>
+      fetchJson<{ id: string; clonedFrom: string }>(
+        input.entityType === 'output'
+          ? `/api/explore/outputs/${input.id}/clone`
+          : `/api/workflows/${input.id}/clone`,
+        { method: 'POST' },
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
     },
@@ -116,11 +131,45 @@ export function useCloneWorkflow() {
 
 export function useReportWorkflow() {
   return useMutation({
-    mutationFn: (input: { id: string; reason: string; description?: string }) =>
-      fetchJson(`/api/workflows/${input.id}/report`, {
+    mutationFn: (input: {
+      id: string
+      reason: string
+      description?: string
+      entityType?: 'workflow' | 'output'
+    }) =>
+      fetchJson(
+        input.entityType === 'output'
+          ? `/api/explore/outputs/${input.id}/report`
+          : `/api/workflows/${input.id}/report`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: input.reason, description: input.description }),
+        },
+      ),
+  })
+}
+
+export function usePublishOutput() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: {
+      taskId: string
+      title: string
+      description?: string
+      prompt?: string
+      sourceUrl?: string
+      thumbnail?: string
+    }) =>
+      fetchJson<{ id: string; published: boolean }>('/api/explore/outputs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: input.reason, description: input.description }),
+        body: JSON.stringify(input),
       }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.explore.all })
+      qc.invalidateQueries({ queryKey: queryKeys.tasks.all })
+    },
   })
 }

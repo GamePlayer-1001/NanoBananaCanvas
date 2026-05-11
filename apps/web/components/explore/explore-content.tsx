@@ -37,10 +37,12 @@ const TAB_SORT: Record<ExploreTab, ExploreQuery['sort']> = {
 /* ─── D1 → VideoCardData 映射 ────────────────────────── */
 
 interface ExploreApiItem {
+  entity_type?: 'workflow' | 'output'
   id: string
   name: string
   description?: string
   thumbnail?: string
+  media_url?: string
   like_count: number
   clone_count: number
   view_count: number
@@ -64,7 +66,9 @@ function toVideoCard(item: ExploreApiItem): VideoCardData {
     id: item.id,
     title: item.name,
     thumbnailUrl: item.thumbnail,
+    mediaUrl: item.media_url,
     contentType: item.content_type,
+    entityType: item.entity_type,
     author: {
       name: authorName,
       avatarUrl: item.author_avatar,

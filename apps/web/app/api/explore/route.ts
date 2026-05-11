@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/validations/explore
- * [OUTPUT]: 对外提供 GET /api/explore (含 node_types/content_type 字段)
- * [POS]: api/explore 的广场列表端点，查询公开工作流并标记互动状态，提取节点类型与作品类型
+ * [OUTPUT]: 对外提供 GET /api/explore (混合返回公开工作流 + 公开生成作品)
+ * [POS]: api/explore 的广场列表端点，统一查询公开工作流与公开生成作品并标记互动状态
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -15,9 +15,9 @@ import { exploreQuerySchema } from '@/lib/validations/explore'
 /* ─── Sort Mapping ──────────────────────────────────── */
 
 const SORT_MAP: Record<string, string> = {
-  latest: 'w.published_at DESC',
-  popular: 'w.view_count DESC',
-  'most-liked': 'w.like_count DESC',
+  latest: 'published_at DESC',
+  popular: 'view_count DESC',
+  'most-liked': 'like_count DESC',
 }
 
 const AUTHOR_NAME_SQL = `COALESCE(
@@ -37,20 +37,6 @@ const AUTHOR_NAME_SQL = `COALESCE(
   'Unknown Creator'
 )`
 
-const CONTENT_TYPE_SQL = `CASE
-  WHEN EXISTS (
-    SELECT 1
-    FROM json_each(json_extract(w.data, '$.nodes')) node
-    WHERE json_extract(node.value, '$.type') = 'video-gen'
-  ) THEN 'video'
-  WHEN EXISTS (
-    SELECT 1
-    FROM json_each(json_extract(w.data, '$.nodes')) node
-    WHERE json_extract(node.value, '$.type') IN ('image-gen', 'image-input', 'image-merge')
-  ) THEN 'image'
-  ELSE 'workflow'
-END`
-
 /* ─── GET /api/explore ──────────────────────────────── */
 
 export async function GET(req: NextRequest) {
@@ -69,29 +55,69 @@ export async function GET(req: NextRequest) {
       : { page: 1, limit: 20, category: undefined, sort: 'latest' as const, type: 'all' as const }
 
     const offset = (page - 1) * limit
-    const orderBy = SORT_MAP[sort] ?? 'w.published_at DESC'
+    const orderBy = SORT_MAP[sort] ?? 'published_at DESC'
     const auth = await optionalAuth()
     const db = await getDb()
 
     // 构建查询
-    const conditions = ['w.is_public = 1']
+    const conditions = ['is_public = 1']
     const binds: (string | number)[] = []
 
     if (category) {
-      conditions.push('w.category_id = ?')
+      conditions.push('category_id = ?')
       binds.push(category)
     }
 
     if (type !== 'all') {
-      conditions.push(`${CONTENT_TYPE_SQL} = ?`)
+      conditions.push('content_type = ?')
       binds.push(type)
     }
 
     const where = conditions.join(' AND ')
+    const publicItemsSql = `
+      SELECT 'workflow' AS entity_type,
+             w.id,
+             w.name,
+             w.description,
+             w.thumbnail,
+             w.like_count,
+             w.clone_count,
+             w.view_count,
+             w.published_at,
+             w.category_id,
+             ${AUTHOR_NAME_SQL} as author_name,
+             u.avatar_url as author_avatar,
+             'workflow' as content_type,
+             (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
+              FROM json_each(json_extract(w.data, '$.nodes')) j) as node_types
+      FROM workflows w
+      JOIN users u ON u.id = w.user_id
+      WHERE w.is_public = 1
+
+      UNION ALL
+
+      SELECT 'output' AS entity_type,
+             po.id,
+             po.title AS name,
+             po.description,
+             po.thumbnail,
+             po.like_count,
+             po.clone_count,
+             po.view_count,
+             po.published_at,
+             NULL AS category_id,
+             ${AUTHOR_NAME_SQL} as author_name,
+             u.avatar_url as author_avatar,
+             po.media_type as content_type,
+             NULL as node_types
+      FROM published_outputs po
+      JOIN users u ON u.id = po.user_id
+      WHERE po.is_public = 1
+    `
 
     // 总数
     const countRow = await db
-      .prepare(`SELECT COUNT(*) as total FROM workflows w WHERE ${where}`)
+      .prepare(`SELECT COUNT(*) as total FROM (${publicItemsSql}) items WHERE ${where}`)
       .bind(...binds)
       .first<{ total: number }>()
     const total = countRow?.total ?? 0
@@ -99,16 +125,8 @@ export async function GET(req: NextRequest) {
     // 列表
     const rows = await db
       .prepare(
-        `SELECT w.id, w.name, w.description, w.thumbnail, w.like_count, w.clone_count,
-                w.view_count, w.published_at, w.category_id,
-                ${AUTHOR_NAME_SQL} as author_name,
-                u.avatar_url as author_avatar,
-                ${CONTENT_TYPE_SQL} as content_type,
-                (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
-                 FROM json_each(json_extract(w.data, '$.nodes')) j) as node_types
-         FROM workflows w
-         JOIN users u ON u.id = w.user_id
-         LEFT JOIN categories c ON c.id = w.category_id
+        `SELECT *
+         FROM (${publicItemsSql}) items
          WHERE ${where}
          ORDER BY ${orderBy}
          LIMIT ? OFFSET ?`,
@@ -121,28 +139,56 @@ export async function GET(req: NextRequest) {
     if (auth) {
       const ids = items.map((r: Record<string, unknown>) => r.id as string)
       if (ids.length > 0) {
-        const placeholders = ids.map(() => '?').join(',')
+        const workflowIds = items
+          .filter((r: Record<string, unknown>) => r.entity_type === 'workflow')
+          .map((r: Record<string, unknown>) => r.id as string)
+        const outputIds = items
+          .filter((r: Record<string, unknown>) => r.entity_type === 'output')
+          .map((r: Record<string, unknown>) => r.id as string)
 
-        const [liked, favorited] = await Promise.all([
-          db
-            .prepare(
-              `SELECT workflow_id FROM likes WHERE user_id = ? AND workflow_id IN (${placeholders})`,
-            )
-            .bind(auth.userId, ...ids)
-            .all(),
-          db
-            .prepare(
-              `SELECT workflow_id FROM favorites WHERE user_id = ? AND workflow_id IN (${placeholders})`,
-            )
-            .bind(auth.userId, ...ids)
-            .all(),
+        const likedWorkflowPromise = workflowIds.length > 0
+          ? db.prepare(
+            `SELECT workflow_id AS target_id FROM likes WHERE user_id = ? AND workflow_id IN (${workflowIds.map(() => '?').join(',')})`,
+          ).bind(auth.userId, ...workflowIds).all()
+          : Promise.resolve({ results: [] as Record<string, unknown>[] })
+        const favoritedWorkflowPromise = workflowIds.length > 0
+          ? db.prepare(
+            `SELECT workflow_id AS target_id FROM favorites WHERE user_id = ? AND workflow_id IN (${workflowIds.map(() => '?').join(',')})`,
+          ).bind(auth.userId, ...workflowIds).all()
+          : Promise.resolve({ results: [] as Record<string, unknown>[] })
+        const likedOutputPromise = outputIds.length > 0
+          ? db.prepare(
+            `SELECT published_output_id AS target_id
+             FROM published_output_likes
+             WHERE user_id = ? AND published_output_id IN (${outputIds.map(() => '?').join(',')})`,
+          ).bind(auth.userId, ...outputIds).all()
+          : Promise.resolve({ results: [] as Record<string, unknown>[] })
+        const favoritedOutputPromise = outputIds.length > 0
+          ? db.prepare(
+            `SELECT published_output_id AS target_id
+             FROM published_output_favorites
+             WHERE user_id = ? AND published_output_id IN (${outputIds.map(() => '?').join(',')})`,
+          ).bind(auth.userId, ...outputIds).all()
+          : Promise.resolve({ results: [] as Record<string, unknown>[] })
+
+        const [likedWorkflow, favoritedWorkflow, likedOutput, favoritedOutput] = await Promise.all([
+          likedWorkflowPromise,
+          favoritedWorkflowPromise,
+          likedOutputPromise,
+          favoritedOutputPromise,
         ])
 
         const likedSet = new Set(
-          (liked.results ?? []).map((r: Record<string, unknown>) => r.workflow_id),
+          [
+            ...(likedWorkflow.results ?? []).map((r: Record<string, unknown>) => r.target_id),
+            ...(likedOutput.results ?? []).map((r: Record<string, unknown>) => r.target_id),
+          ],
         )
         const favoritedSet = new Set(
-          (favorited.results ?? []).map((r: Record<string, unknown>) => r.workflow_id),
+          [
+            ...(favoritedWorkflow.results ?? []).map((r: Record<string, unknown>) => r.target_id),
+            ...(favoritedOutput.results ?? []).map((r: Record<string, unknown>) => r.target_id),
+          ],
         )
 
         items = items.map((item: Record<string, unknown>) => ({

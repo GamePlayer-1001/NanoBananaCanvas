@@ -11,7 +11,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Copy, Flag, Heart, Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,44 +19,93 @@ import { toast } from 'sonner'
 import { useRouter } from '@/i18n/navigation'
 import { useToggleLike, useToggleFavorite, useCloneWorkflow } from '@/hooks/use-explore'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { ReportDialog } from './report-dialog'
 
 /* ─── Types ──────────────────────────────────────────── */
 
 interface ActionButtonsProps {
   workflowId: string
+  entityType?: 'workflow' | 'output'
   liked: boolean
   favorited: boolean
+  likeCount: number
+  cloneCount: number
 }
 
 /* ─── Component ──────────────────────────────────────── */
 
-export function ActionButtons({ workflowId, liked, favorited }: ActionButtonsProps) {
+export function ActionButtons({
+  workflowId,
+  entityType = 'workflow',
+  liked,
+  favorited,
+  likeCount,
+  cloneCount,
+}: ActionButtonsProps) {
   const t = useTranslations('exploreDetail')
   const router = useRouter()
   const [reportOpen, setReportOpen] = useState(false)
+  const [likedState, setLikedState] = useState(liked)
+  const [favoritedState, setFavoritedState] = useState(favorited)
+  const [likeCountState, setLikeCountState] = useState(likeCount)
+  const [heartBurst, setHeartBurst] = useState(false)
+  const [starBurst, setStarBurst] = useState(false)
 
   const { mutate: toggleLike } = useToggleLike()
   const { mutate: toggleFavorite } = useToggleFavorite()
   const { mutate: clone, isPending: cloning } = useCloneWorkflow()
 
+  useEffect(() => {
+    setLikedState(liked)
+  }, [liked])
+
+  useEffect(() => {
+    setFavoritedState(favorited)
+  }, [favorited])
+
+  useEffect(() => {
+    setLikeCountState(likeCount)
+  }, [likeCount])
+
   const handleLike = () => {
-    toggleLike(workflowId, {
+    const nextLiked = !likedState
+    const nextCount = Math.max(likeCountState + (nextLiked ? 1 : -1), 0)
+    setLikedState(nextLiked)
+    setLikeCountState(nextCount)
+    setHeartBurst(nextLiked)
+    toggleLike({ id: workflowId, entityType }, {
+      onSuccess: (data) => {
+        const likedFromServer = Boolean((data as { liked?: boolean }).liked)
+        setLikedState(likedFromServer)
+      },
       onError: () => toast.error(t('actionFailed')),
+      onSettled: () => {
+        window.setTimeout(() => setHeartBurst(false), 320)
+      },
     })
   }
 
   const handleFavorite = () => {
-    toggleFavorite(workflowId, {
+    const nextFavorited = !favoritedState
+    setFavoritedState(nextFavorited)
+    setStarBurst(nextFavorited)
+    toggleFavorite({ id: workflowId, entityType }, {
+      onSuccess: (data) => {
+        setFavoritedState(Boolean((data as { favorited?: boolean }).favorited))
+      },
       onError: () => toast.error(t('actionFailed')),
+      onSettled: () => {
+        window.setTimeout(() => setStarBurst(false), 320)
+      },
     })
   }
 
   const handleClone = () => {
-    clone(workflowId, {
+    clone({ id: workflowId, entityType }, {
       onSuccess: (data) => {
         toast.success(t('cloneSuccess'))
-        router.push(`/workspace/${data.id}`)
+        router.push(`/canvas/${data.id}`)
       },
       onError: () => toast.error(t('cloneFailed')),
     })
@@ -64,25 +113,54 @@ export function ActionButtons({ workflowId, liked, favorited }: ActionButtonsPro
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+            <p className="text-xs text-muted-foreground">{t('likes', { count: likeCountState })}</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">{likeCountState}</p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+            <p className="text-xs text-muted-foreground">{t('clones', { count: cloneCount })}</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">{cloneCount}</p>
+          </div>
+        </div>
+
         {/* 点赞 */}
         <Button
-          variant={liked ? 'default' : 'outline'}
-          className="w-full justify-start gap-2"
+          variant={likedState ? 'default' : 'outline'}
+          className={cn(
+            'w-full justify-start gap-2 transition-transform duration-200',
+            heartBurst && 'scale-[1.02]',
+          )}
           onClick={handleLike}
         >
-          <Heart size={16} className={liked ? 'fill-current' : ''} />
-          {liked ? t('liked') : t('like')}
+          <Heart
+            size={16}
+            className={cn(
+              likedState ? 'fill-current text-current' : '',
+              heartBurst && 'animate-[pulse_0.32s_ease-out]',
+            )}
+          />
+          {likedState ? t('liked') : t('like')}
         </Button>
 
         {/* 收藏 */}
         <Button
-          variant={favorited ? 'default' : 'outline'}
-          className="w-full justify-start gap-2"
+          variant={favoritedState ? 'default' : 'outline'}
+          className={cn(
+            'w-full justify-start gap-2 transition-transform duration-200',
+            starBurst && 'scale-[1.02]',
+          )}
           onClick={handleFavorite}
         >
-          <Star size={16} className={favorited ? 'fill-current' : ''} />
-          {favorited ? t('favorited') : t('favorite')}
+          <Star
+            size={16}
+            className={cn(
+              favoritedState ? 'fill-current text-current' : '',
+              starBurst && 'animate-[pulse_0.32s_ease-out]',
+            )}
+          />
+          {favoritedState ? t('favorited') : t('favorite')}
         </Button>
 
         {/* 克隆并打开 */}
@@ -109,6 +187,7 @@ export function ActionButtons({ workflowId, liked, favorited }: ActionButtonsPro
 
       <ReportDialog
         workflowId={workflowId}
+        entityType={entityType}
         open={reportOpen}
         onOpenChange={setReportOpen}
       />

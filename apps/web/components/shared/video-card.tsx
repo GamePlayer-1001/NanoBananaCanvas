@@ -19,8 +19,10 @@ export interface VideoCardData {
   id: string
   title: string
   thumbnailUrl?: string
+  mediaUrl?: string
   duration?: string
   contentType?: 'video' | 'image' | 'workflow'
+  entityType?: 'workflow' | 'output'
   author: {
     name: string
     avatarUrl?: string
@@ -74,7 +76,15 @@ export function VideoCard({ data }: { data: VideoCardData }) {
     <Link href={`/explore/${data.id}`} className="group block">
       {/* 缩略图 */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
-        {data.thumbnailUrl ? (
+        {data.contentType === 'video' && data.mediaUrl ? (
+          <video
+            src={data.mediaUrl}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : data.thumbnailUrl ? (
           <img
             src={data.thumbnailUrl}
             alt={data.title}
@@ -102,7 +112,7 @@ export function VideoCard({ data }: { data: VideoCardData }) {
         )}
 
         {/* 节点类型标签 */}
-        {data.nodeTypes && data.nodeTypes.length > 0 && (
+        {data.entityType === 'workflow' && data.nodeTypes && data.nodeTypes.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {data.nodeTypes.slice(0, 3).map((t) => (
               <span
