@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
   timezone      TEXT,
   plan          TEXT NOT NULL DEFAULT 'free',
   membership_status TEXT NOT NULL DEFAULT 'free',
+  standard_trial_used_at TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

@@ -147,6 +147,8 @@ describe('getBillingSubscription', () => {
       cancelAtPeriodEnd: false,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
+      standardTrialUsedAt: null,
+      standardTrialEligible: true,
       portalEligible: false,
       cancelEligible: false,
     })
@@ -171,6 +173,8 @@ describe('getBillingSubscription', () => {
       cancelAtPeriodEnd: false,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
+      standardTrialUsedAt: null,
+      standardTrialEligible: true,
       portalEligible: false,
       cancelEligible: false,
     })

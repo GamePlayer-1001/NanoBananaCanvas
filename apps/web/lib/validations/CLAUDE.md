@@ -13,7 +13,7 @@ report.ts   — reportSchema 举报表单验证 (reason enum: spam/nsfw/copyrigh
 explore.ts  — exploreQuerySchema / exploreTypeSchema / searchQuerySchema 广场查询验证
 ai.ts       — aiExecuteSchema / apiKeySchema / modelsQuerySchema AI 执行验证 (含平台模型能力校验，防止图片/视频/音频模型串用)
 agent.ts    — agentPlanRequestSchema / agentPlanResponseSchema / agentPlanSchema Agent 提案/诊断/优化链路结构化验证 (含模板上下文、优化信号与助手运行时选择)
-billing.ts  — checkoutSchema / topupSchema Stripe 结账请求验证 (plan/packageId + currency)
+billing.ts  — checkoutSchema / topupSchema Stripe 结账请求验证 (plan/packageId/standard trial + currency)
 upload.ts   — SHARE_UPLOAD_ACCEPT / UPLOAD_LIMITS / detectUploadKind / validateUpload 文件上传校验 (图片/视频/工作流)
 task.ts     — submitTaskSchema / listTasksSchema / deleteTasksSchema 异步任务请求验证 (P2)
 ```

@@ -49,6 +49,8 @@ export interface BillingSubscriptionSummary {
   cancelAtPeriodEnd: boolean
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
+  standardTrialUsedAt: string | null
+  standardTrialEligible: boolean
   portalEligible: boolean
   cancelEligible: boolean
 }
@@ -119,6 +121,8 @@ function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary
     cancelAtPeriodEnd: Boolean(row.cancel_at_period_end),
     stripeCustomerId: row.stripe_customer_id,
     stripeSubscriptionId: row.stripe_subscription_id,
+    standardTrialUsedAt: null,
+    standardTrialEligible: plan === 'free' && !row.stripe_subscription_id,
     portalEligible: Boolean(row.stripe_customer_id),
     cancelEligible: canCancelSubscription(row) && !Boolean(row.cancel_at_period_end),
   }
@@ -250,7 +254,28 @@ async function getSubscriptionRow(userId: string): Promise<SubscriptionRow> {
 
 export async function getBillingSubscription(userId: string): Promise<BillingSubscriptionSummary> {
   const row = await getSubscriptionRow(userId)
-  return toSubscriptionSummary(row)
+  const summary = toSubscriptionSummary(row)
+  const schema = await getBillingSchemaInfo()
+
+  if (!hasUserColumn(schema, 'standard_trial_used_at')) {
+    return summary
+  }
+
+  const db = await getDb()
+  const user = await db
+    .prepare('SELECT standard_trial_used_at FROM users WHERE id = ?')
+    .bind(userId)
+    .first<{ standard_trial_used_at: string | null }>()
+  const standardTrialUsedAt = user?.standard_trial_used_at ?? null
+
+  return {
+    ...summary,
+    standardTrialUsedAt,
+    standardTrialEligible:
+      !standardTrialUsedAt &&
+      summary.plan === 'free' &&
+      !summary.stripeSubscriptionId,
+  }
 }
 
 export async function cancelBillingSubscription(userId: string): Promise<BillingSubscriptionSummary> {

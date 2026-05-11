@@ -58,6 +58,7 @@ export function SubscriptionTab({
   }, [initialMode])
 
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
+  const standardPlan = visiblePlans.find((plan) => plan.plan === 'standard')
 
   const setMode = (mode: PurchaseMode) => {
     setSelectedMode(mode)
@@ -79,6 +80,50 @@ export function SubscriptionTab({
         body: JSON.stringify({
           plan: plan.plan,
           purchaseMode: plan.purchaseMode,
+          currency: plan.currency,
+        }),
+      })
+      const payload = (await response.json()) as {
+        ok: boolean
+        data?: { checkoutUrl: string }
+        error?: { message?: string }
+      }
+
+      if (!response.ok || !payload.ok || !payload.data?.checkoutUrl) {
+        throw new Error(payload.error?.message ?? t('subscriptionCheckoutFailed'))
+      }
+
+      window.location.assign(payload.data.checkoutUrl)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('subscriptionCheckoutFailed'))
+      setPendingKey(null)
+    }
+  }
+
+  async function handleTrialCheckout(plan: PublicBillingPlanPrice | undefined) {
+    if (!isAuthenticated) {
+      router.push('/sign-in?redirect_url=/account')
+      return
+    }
+
+    if (!plan) {
+      toast.error(t('subscriptionCheckoutFailed'))
+      return
+    }
+
+    if (!subscription.standardTrialEligible) {
+      await handlePlanCheckout(plan)
+      return
+    }
+
+    setPendingKey('trial:standard')
+
+    try {
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchaseMode: 'plan_trial_standard',
           currency: plan.currency,
         }),
       })
@@ -142,7 +187,7 @@ export function SubscriptionTab({
                   </p>
                   <h3 className="mt-3 text-2xl font-semibold text-foreground">Free</h3>
                 </div>
-                {subscription.plan === 'free' ? (
+                {subscription.status === 'trialing' ? (
                   <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
                     {t('subscriptionCurrentPlan')}
                   </span>
@@ -158,13 +203,18 @@ export function SubscriptionTab({
                   {t('subscriptionFreePrice')}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {t('subscriptionFreePriceBody')}
+                  {standardPlan
+                    ? `${t('subscriptionMonthlyCharge')} · ${formatMoney(locale, standardPlan.currency, standardPlan.unitAmount)}`
+                    : t('subscriptionFreePriceBody')}
                 </p>
               </div>
 
               <div className="mt-6 flex flex-1 flex-col">
                 <div className="space-y-3">
-                  <SubscriptionStat label={t('subscriptionCreditsIncluded')} value="0" />
+                  <SubscriptionStat
+                    label={t('subscriptionCreditsIncluded')}
+                    value={standardPlan?.monthlyCredits.toLocaleString(locale) ?? '0'}
+                  />
                   <SubscriptionStat label={t('subscriptionEntryPointLabel')} value={t('subscriptionFreeEntryValue')} />
                 </div>
               </div>
@@ -172,14 +222,17 @@ export function SubscriptionTab({
               <div className="mt-auto pt-16">
                 <Button
                   type="button"
-                  variant="outline"
                   className="h-12 w-full rounded-xl"
-                  disabled={subscription.plan === 'free'}
-                  onClick={() => router.push('/workspace')}
+                  disabled={pendingKey === 'trial:standard' || !standardPlan}
+                  onClick={() => {
+                    void handleTrialCheckout(standardPlan)
+                  }}
                 >
-                  {subscription.plan === 'free'
-                    ? t('subscriptionCurrentPlan')
-                    : t('subscriptionContinueFree')}
+                  {pendingKey === 'trial:standard'
+                    ? t('subscriptionRedirecting')
+                    : isAuthenticated
+                      ? t('subscriptionStartMonthly')
+                      : t('subscriptionSignInFirst')}
                 </Button>
               </div>
         </article>

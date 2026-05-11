@@ -37,6 +37,12 @@ export async function POST(req: Request) {
             packageId: params.packageId,
             preferredCurrency,
           })
+        : params.purchaseMode === 'plan_trial_standard'
+          ? await createCheckoutSession({
+              userId,
+              purchaseMode: 'plan_trial_standard',
+              preferredCurrency,
+            })
         : await createCheckoutSession({
             userId,
             purchaseMode: params.purchaseMode,

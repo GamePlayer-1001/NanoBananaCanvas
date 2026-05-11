@@ -21,12 +21,12 @@ stripe-client.ts: Stripe SDK 门面，统一用 Worker 友好的 fetch httpClien
 stripe-client.test.ts: Stripe Customer 绑定兼容测试，覆盖 subscriptions 缺失时受控失败而非制造孤儿 Customer
 stripe-error.ts: Stripe 异常映射层，把 Stripe 原生错误统一翻译成 BillingError
 stripe-error.test.ts: Stripe 异常映射测试，覆盖支付拒绝、限流、配置拒绝、网络异常与通用异常
-checkout.ts: Checkout 编排层，将登录用户的套餐购买语义翻译成 Stripe Checkout Session
+checkout.ts: Checkout 编排层，将登录用户的套餐购买语义翻译成 Stripe Checkout Session，并把 Standard 30 天试用映射为带 trial_period_days 的月付订阅
 portal.ts: Customer Portal 编排层，将登录用户翻译成 Stripe Customer Portal Session
 pricing.ts: 公开价格读取层，服务端从 Stripe 拉取套餐与积分包价格并整理成 UI 可消费目录
 subscription.ts: 订阅镜像层，读取本地 subscriptions 摘要，在用户镜像缺失时回退 Free，并执行自动月付到期取消
 subscription.test.ts: 订阅摘要兼容测试，覆盖 subscriptions 或用户镜像缺失时的 Free 回退口径
-webhook.ts: Stripe Webhook 处理层，负责验签后的幂等落账，并调用 entitlements 同步订单对应权益
+webhook.ts: Stripe Webhook 处理层，负责验签后的幂等落账、Standard 试用账号锁写入，并调用 entitlements 同步订单对应权益
 webhook.test.ts: Stripe Webhook 幂等测试，覆盖重复事件只处理一次与不支持事件安全忽略
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

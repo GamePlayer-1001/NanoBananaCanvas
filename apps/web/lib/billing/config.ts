@@ -11,14 +11,21 @@ import { createStripeClient } from './stripe-client'
 
 export const BILLING_PLANS = ['standard', 'pro', 'ultimate'] as const
 export const PLAN_PURCHASE_MODES = ['plan_auto_monthly', 'plan_one_time'] as const
-export const BILLING_PURCHASE_MODES = [...PLAN_PURCHASE_MODES, 'credit_pack'] as const
+export const STANDARD_TRIAL_PURCHASE_MODE = 'plan_trial_standard' as const
+export const BILLING_PURCHASE_MODES = [
+  ...PLAN_PURCHASE_MODES,
+  STANDARD_TRIAL_PURCHASE_MODE,
+  'credit_pack',
+] as const
 export const CREDIT_PACK_IDS = ['500', '1200', '3500', '8000'] as const
 export const BILLING_CURRENCIES = ['usd', 'cny'] as const
 export const DEFAULT_BILLING_CURRENCY = 'usd' as const
+export const STANDARD_TRIAL_DAYS = 30 as const
 
 export type BillingPlan = (typeof BILLING_PLANS)[number]
 export type PlanPurchaseMode = (typeof PLAN_PURCHASE_MODES)[number]
 export type BillingPurchaseMode = (typeof BILLING_PURCHASE_MODES)[number]
+export type StandardTrialPurchaseMode = typeof STANDARD_TRIAL_PURCHASE_MODE
 export type CreditPackId = (typeof CREDIT_PACK_IDS)[number]
 export type BillingCurrency = (typeof BILLING_CURRENCIES)[number]
 
@@ -267,6 +274,10 @@ async function resolveStripePriceIdByLookupKey(lookupKey: string): Promise<strin
 }
 
 function assertPlanPurchaseMode(purchaseMode: BillingPurchaseMode): PlanPurchaseMode {
+  if (purchaseMode === STANDARD_TRIAL_PURCHASE_MODE) {
+    return 'plan_auto_monthly'
+  }
+
   if (!isPlanPurchaseMode(purchaseMode)) {
     throw new BillingError(
       ErrorCode.BILLING_PURCHASE_MODE_INVALID,

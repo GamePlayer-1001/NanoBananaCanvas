@@ -17,6 +17,7 @@ import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { PricingContent } from '@/components/pricing/pricing-content'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
 import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
+import { getBillingSubscription } from '@/lib/billing/subscription'
 import {
   BASE_URL,
   SITE_NAME,
@@ -67,6 +68,12 @@ export default async function PricingPage({
     console.error('[pricing] Failed to load Stripe prices', error)
     return null
   })
+  const subscription = userId
+    ? await getBillingSubscription(userId).catch((error: unknown) => {
+        console.error('[pricing] Failed to load subscription summary', error)
+        return null
+      })
+    : null
 
   const pricingKeywords = buildPriorityKeywords(locale, [
     'AI workflow pricing',
@@ -157,6 +164,7 @@ export default async function PricingPage({
         isPricingReady={Boolean(pricing)}
         plans={pricing?.plans ?? []}
         creditPacks={pricing?.creditPacks ?? []}
+        standardTrialEligible={subscription?.standardTrialEligible ?? true}
       />
       <div className="bg-[#09090d] px-4 pb-24 sm:px-6 lg:px-8 xl:px-10">
         <div className="mx-auto w-full max-w-[1380px]">

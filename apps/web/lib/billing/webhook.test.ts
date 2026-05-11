@@ -19,9 +19,19 @@ vi.mock('./entitlements', () => ({
   syncUserPlanEntitlement: vi.fn(),
 }))
 
+vi.mock('./schema', () => ({
+  getBillingSchemaInfo: vi.fn(),
+}))
+
+vi.mock('./stripe-client', () => ({
+  getStripe: vi.fn(),
+}))
+
 import { getDb } from '@/lib/db'
 
 import { applyFreePlanDowngrade } from './entitlements'
+import { getBillingSchemaInfo } from './schema'
+import { getStripe } from './stripe-client'
 import { processStripeWebhookEvent } from './webhook'
 
 function createDbMock(changeQueue: number[]): D1Database {
@@ -47,6 +57,23 @@ function createDbMock(changeQueue: number[]): D1Database {
 describe('processStripeWebhookEvent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getBillingSchemaInfo).mockResolvedValue({
+      usersColumns: new Set(['id', 'standard_trial_used_at']),
+      subscriptionsColumns: new Set(['user_id']),
+      creditBalancesColumns: new Set(),
+      creditTransactionsColumns: new Set(),
+      asyncTasksColumns: new Set(),
+      dailySigninsColumns: new Set(),
+      aiUsageLogsColumns: new Set(),
+      modelPricingColumns: new Set(),
+      hasSubscriptions: true,
+      hasCreditBalances: false,
+      hasCreditTransactions: false,
+      hasAsyncTasks: false,
+      hasDailySignins: false,
+      hasAiUsageLogs: false,
+      hasModelPricing: false,
+    })
   })
 
   it('should ignore unsupported webhook events without touching the idempotency table', async () => {
@@ -104,5 +131,72 @@ describe('processStripeWebhookEvent', () => {
       status: 'canceled',
       referenceId: 'evt_subscription_deleted_1',
     })
+  })
+
+  it('should mark the account after a standard trial checkout completes', async () => {
+    const updateTrialUsed = vi.fn().mockResolvedValue({ meta: { changes: 1 } })
+    vi.mocked(getDb).mockResolvedValue({
+      prepare: vi.fn((sql: string) => {
+        if (sql.includes('INSERT OR IGNORE INTO processed_stripe_events')) {
+          return {
+            bind: vi.fn().mockReturnValue({
+              run: vi.fn().mockResolvedValue({ meta: { changes: 1 } }),
+            }),
+          }
+        }
+
+        if (sql.includes('UPDATE users')) {
+          return {
+            bind: vi.fn().mockReturnValue({
+              run: updateTrialUsed,
+            }),
+          }
+        }
+
+        throw new Error(`Unexpected SQL in webhook trial test: ${sql}`)
+      }),
+    } as unknown as D1Database)
+    vi.mocked(getStripe).mockResolvedValue({
+      subscriptions: {
+        retrieve: vi.fn().mockResolvedValue({
+          id: 'sub_trial_123',
+          customer: 'cus_trial_123',
+          status: 'trialing',
+          cancel_at_period_end: false,
+          items: {
+            data: [
+              {
+                current_period_start: 1_700_000_000,
+                current_period_end: 1_702_592_000,
+              },
+            ],
+          },
+        }),
+      },
+    } as never)
+
+    await expect(
+      processStripeWebhookEvent({
+        id: 'evt_trial_checkout',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_trial_123',
+            subscription: 'sub_trial_123',
+            customer: 'cus_trial_123',
+            metadata: {
+              userId: 'user_123',
+              plan: 'standard',
+              purchaseMode: 'plan_trial_standard',
+            },
+          },
+        },
+      } as never),
+    ).resolves.toEqual({
+      received: true,
+      processed: true,
+    })
+
+    expect(updateTrialUsed).toHaveBeenCalledTimes(1)
   })
 })

@@ -92,6 +92,19 @@ describe('billing config', () => {
     )
   })
 
+  it('should resolve the standard trial through the standard monthly price', async () => {
+    await expect(
+      resolveStripePriceId(
+        {
+          plan: 'standard',
+          purchaseMode: 'plan_trial_standard',
+          currency: 'usd',
+        },
+        createConfig(),
+      ),
+    ).resolves.toBe('price_std_sub_usd')
+  })
+
   it('should build credit pack lookup keys with canonical naming', () => {
     expect(getCreditPackPriceLookupKey('1200')).toBe('credit_pack.1200')
   })

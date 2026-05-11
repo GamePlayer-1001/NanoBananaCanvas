@@ -148,6 +148,43 @@ describe('POST /api/billing/checkout', () => {
     })
   })
 
+  it('should create a standard trial checkout session without requiring a plan field', async () => {
+    vi.mocked(createCheckoutSession).mockResolvedValue({
+      checkoutUrl: 'https://checkout.stripe.test/session_trial_standard',
+      sessionId: 'cs_test_trial_standard',
+      preferredCurrency: 'usd',
+      plan: 'standard',
+      purchaseMode: 'plan_trial_standard',
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/billing/checkout', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'cf-ipcountry': 'US',
+        },
+        body: JSON.stringify({
+          purchaseMode: 'plan_trial_standard',
+        }),
+      }),
+    )
+
+    expect(createCheckoutSession).toHaveBeenCalledWith({
+      userId: 'user_123',
+      purchaseMode: 'plan_trial_standard',
+      preferredCurrency: 'usd',
+    })
+    expect(response.status).toBe(201)
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: 'standard',
+        purchaseMode: 'plan_trial_standard',
+      },
+    })
+  })
+
   it('should map billing errors through handleApiError', async () => {
     vi.mocked(createCheckoutSession).mockRejectedValue(
       new BillingError(ErrorCode.BILLING_PRICE_NOT_CONFIGURED, 'Missing Stripe price'),

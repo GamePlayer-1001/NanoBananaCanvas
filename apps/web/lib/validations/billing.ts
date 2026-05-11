@@ -16,6 +16,10 @@ export const checkoutSchema = z.discriminatedUnion('purchaseMode', [
     currency: z.enum(BILLING_CURRENCIES).optional(),
   }),
   z.object({
+    purchaseMode: z.literal('plan_trial_standard'),
+    currency: z.enum(BILLING_CURRENCIES).optional(),
+  }),
+  z.object({
     purchaseMode: z.literal('plan_one_time'),
     plan: z.enum(BILLING_PLANS),
     currency: z.enum(BILLING_CURRENCIES).optional(),

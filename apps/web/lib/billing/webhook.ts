@@ -12,7 +12,7 @@ import { BillingError, ErrorCode } from '@/lib/errors'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
 
-import { type BillingPlan, type CreditPackId, getStripeBillingConfig } from './config'
+import { type BillingPlan, type BillingPurchaseMode, type CreditPackId, getStripeBillingConfig } from './config'
 import {
   applyFreePlanDowngrade,
   awardCreditPackCredits,
@@ -21,6 +21,7 @@ import {
   syncUserPlanEntitlement,
 } from './entitlements'
 import { getBillingPlanSnapshot, getCreditPackSnapshot } from './plans'
+import { getBillingSchemaInfo } from './schema'
 import { getStripe } from './stripe-client'
 
 const log = createLogger('billing:webhook')
@@ -48,6 +49,10 @@ function toIsoOrNull(value: number | null | undefined): string | null {
 
 function toPlanPurchaseMode(value: string | null | undefined): 'auto_monthly' | 'one_time' {
   return value === 'plan_one_time' ? 'one_time' : 'auto_monthly'
+}
+
+function isStandardTrialPurchase(value: string | null | undefined): boolean {
+  return value === 'plan_trial_standard'
 }
 
 function toSubscriptionStatus(value: string | null | undefined): string {
@@ -141,11 +146,11 @@ async function retrieveSubscriptionOrThrow(id: string): Promise<Stripe.Subscript
 async function handlePlanCheckoutCompleted(
   event: Stripe.Event,
   session: Stripe.Checkout.Session,
-  purchaseMode: 'plan_auto_monthly' | 'plan_one_time',
+  purchaseMode: Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time' | 'plan_trial_standard'>,
   plan: BillingPlan,
   userId: string,
 ) {
-  if (purchaseMode === 'plan_auto_monthly') {
+  if (purchaseMode === 'plan_auto_monthly' || isStandardTrialPurchase(purchaseMode)) {
     const subscriptionId = typeof session.subscription === 'string'
       ? session.subscription
       : session.subscription?.id
@@ -173,6 +178,9 @@ async function handlePlanCheckoutCompleted(
       currentPeriodEnd: period.currentPeriodEnd,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     })
+    if (isStandardTrialPurchase(purchaseMode)) {
+      await markStandardTrialUsed(userId)
+    }
     return
   }
 
@@ -210,6 +218,24 @@ async function handlePlanCheckoutCompleted(
     plan,
     referenceId: session.id,
   })
+}
+
+async function markStandardTrialUsed(userId: string) {
+  const schema = await getBillingSchemaInfo()
+  if (!schema.usersColumns.has('standard_trial_used_at')) {
+    return
+  }
+
+  const db = await getDb()
+  await db
+    .prepare(
+      `UPDATE users
+       SET standard_trial_used_at = COALESCE(standard_trial_used_at, datetime('now')),
+           updated_at = datetime('now')
+       WHERE id = ?`,
+    )
+    .bind(userId)
+    .run()
 }
 
 async function handleCreditPackCheckoutCompleted(
@@ -282,7 +308,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   await handlePlanCheckoutCompleted(
     event,
     session,
-    purchaseMode as 'plan_auto_monthly' | 'plan_one_time',
+    purchaseMode as Extract<BillingPurchaseMode, 'plan_auto_monthly' | 'plan_one_time' | 'plan_trial_standard'>,
     plan,
     userId,
   )

@@ -46,7 +46,7 @@ const FEATURE_VISUALS = {
   },
 } as const
 
-const LANDING_PERSONA_ITEMS = ['free', 'standard', 'ultimate'] as const
+const LANDING_PERSONA_ITEMS = ['free', 'standard', 'pro', 'ultimate'] as const
 
 const TESTIMONIAL_ITEMS = [
   'pixel',
@@ -85,6 +85,16 @@ function formatLandingMoney(locale: string, currency: string, amount: number) {
     currency: currency.toUpperCase(),
     maximumFractionDigits: 2,
   }).format(amount / 100)
+}
+
+function getLandingPricingKey(
+  planKey: (typeof LANDING_PERSONA_ITEMS)[number],
+  field: 'planLabel' | 'supportNote' | 'cta',
+) {
+  if (planKey === 'pro' && field === 'planLabel') return 'popular'
+  if (planKey === 'pro' && field === 'supportNote') return 'plans.pro.note'
+  if (planKey === 'pro' && field === 'cta') return 'cta'
+  return `plans.${planKey}.${field}`
 }
 
 export function FeaturesSection() {
@@ -343,7 +353,7 @@ export function PricingSection({
 
         </div>
 
-        <div className="mt-14 grid gap-4 xl:grid-cols-3">
+        <div className="mt-14 grid gap-4 xl:grid-cols-4">
           {LANDING_PERSONA_ITEMS.map((planKey) => {
             const snapshot =
               planKey === 'free'
@@ -367,7 +377,7 @@ export function PricingSection({
                 : [
                     `${billingT('monthlyCredits')} · ${snapshot?.monthlyCredits.toLocaleString()}`,
                     billingT('deliveryRecurring'),
-                    pricingT(`plans.${planKey}.supportNote`),
+                    pricingT(getLandingPricingKey(planKey, 'supportNote')),
                   ]
 
             return (
@@ -376,6 +386,8 @@ export function PricingSection({
                 className={`flex h-full flex-col rounded-[30px] border p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-7 ${
                   planKey === 'standard'
                     ? 'border-[#6b5cff]/30 bg-[linear-gradient(180deg,rgba(20,18,35,0.98),rgba(12,11,21,0.98))]'
+                    : planKey === 'pro'
+                      ? 'border-[#3f8f76]/30 bg-[linear-gradient(180deg,rgba(17,30,27,0.96),rgba(9,17,16,0.98))]'
                     : planKey === 'ultimate'
                       ? 'border-[#3a342d] bg-[linear-gradient(180deg,rgba(28,24,19,0.94),rgba(13,12,10,0.98))]'
                       : 'border-white/10 bg-[linear-gradient(180deg,rgba(19,20,24,0.96),rgba(11,12,15,0.98))]'
@@ -386,12 +398,14 @@ export function PricingSection({
                     className={`inline-flex rounded-full border px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase ${
                       planKey === 'standard'
                         ? 'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d3ccff]'
+                        : planKey === 'pro'
+                          ? 'border-[#68b89b]/22 bg-[#68b89b]/10 text-[#bde9d8]'
                         : planKey === 'ultimate'
                           ? 'border-[#8c7a54]/18 bg-[#8c7a54]/10 text-[#ece0c5]'
                           : 'border-white/10 bg-white/[0.06] text-white/72'
                     }`}
                   >
-                    {pricingT(`plans.${planKey}.planLabel`)}
+                    {pricingT(getLandingPricingKey(planKey, 'planLabel'))}
                   </span>
                   <div className="mt-5 max-w-[14rem]">
                     <p className="text-[1.9rem] leading-[1.02] font-semibold tracking-tight text-white md:text-[2.15rem]">
@@ -434,7 +448,7 @@ export function PricingSection({
                       href="/pricing"
                       className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-black transition hover:bg-white/90"
                     >
-                      {pricingT(`plans.${planKey}.cta`)}
+                      {pricingT(getLandingPricingKey(planKey, 'cta'))}
                     </Link>
                   </div>
                 </div>

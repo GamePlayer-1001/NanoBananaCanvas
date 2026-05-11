@@ -1,8 +1,8 @@
 /**
- * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useLocale/useTranslations，依赖 @/i18n/navigation 的 Link/useRouter，
+ * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useLocale/useTranslations，依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/components/ui/button
  * [OUTPUT]: 对外提供 PricingContent 动态定价组件
- * [POS]: components/pricing 的主渲染器，被 /pricing 页面消费，负责展示 Stripe 动态价格目录与 Checkout 入口
+ * [POS]: components/pricing 的主渲染器，被 /pricing 页面消费，负责展示 Stripe 动态价格目录、Standard 试用与 Checkout 入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -11,7 +11,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { Link, useRouter } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
 
@@ -20,6 +20,7 @@ export interface PricingContentProps {
   isPricingReady?: boolean
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
+  standardTrialEligible?: boolean
 }
 
 function formatMoney(locale: string, currency: string, amount: number): string {
@@ -33,6 +34,7 @@ function formatMoney(locale: string, currency: string, amount: number): string {
 export function PricingContent({
   isAuthenticated,
   plans,
+  standardTrialEligible = true,
 }: PricingContentProps) {
   const t = useTranslations('pricing')
   const locale = useLocale()
@@ -73,6 +75,7 @@ export function PricingContent({
   } as const
 
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
+  const standardPlan = visiblePlans.find((plan) => plan.plan === 'standard')
 
   async function handlePlanCheckout(plan: PublicBillingPlanPrice) {
     if (!isAuthenticated) {
@@ -90,6 +93,46 @@ export function PricingContent({
           plan: plan.plan,
           purchaseMode: plan.purchaseMode,
           currency: plan.currency,
+        }),
+      })
+      const payload = (await response.json()) as {
+        ok: boolean
+        data?: { checkoutUrl: string }
+        error?: { message?: string }
+      }
+
+      if (!response.ok || !payload.ok || !payload.data?.checkoutUrl) {
+        throw new Error(payload.error?.message ?? 'Checkout failed')
+      }
+
+      window.location.href = payload.data.checkoutUrl
+    } finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function handleTrialCheckout() {
+    if (!isAuthenticated) {
+      router.push('/sign-in?redirect_url=/pricing')
+      return
+    }
+
+    if (!standardTrialEligible) {
+      if (standardPlan) {
+        await handlePlanCheckout(standardPlan)
+      }
+      return
+    }
+
+    setPendingKey('trial:standard')
+
+    try {
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchaseMode: 'plan_trial_standard',
+          currency: standardPlan?.currency,
         }),
       })
       const payload = (await response.json()) as {
@@ -145,7 +188,7 @@ export function PricingContent({
                   {t('freeEyebrow')}
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-medium text-white/82">
-                  {t('freeBadge')}
+                  {standardTrialEligible ? t('freeBadge') : t('toggleMonthly')}
                 </span>
               </div>
 
@@ -158,7 +201,11 @@ export function PricingContent({
                 <p className="text-[3rem] font-semibold tracking-tight text-white">
                   {t('freePriceValue')}
                 </p>
-                <p className="mt-2 text-sm text-white/45">{t('freePriceLabel')}</p>
+                <p className="mt-2 text-sm text-white/45">
+                  {standardPlan
+                    ? `${t('billedMonthly')} ${formatMoney(locale, standardPlan.currency, standardPlan.unitAmount)}`
+                    : t('freePriceLabel')}
+                </p>
               </div>
 
               <div className="mt-8 space-y-3 text-sm text-white/78">
@@ -170,22 +217,20 @@ export function PricingContent({
                 <PricingMeta value={t('freeFeatureUpgradeBody')} />
               </div>
 
-              {isAuthenticated ? (
-                <Link
-                  href="/workspace"
-                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#5d55d6] text-sm font-semibold text-white transition hover:bg-[#6a63e2]"
-                >
-                  {t('freePrimaryAuthenticated')}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => router.push('/sign-in?redirect_url=/workspace')}
-                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#5d55d6] text-sm font-semibold text-white transition hover:bg-[#6a63e2]"
-                >
-                  {t('freePrimaryGuest')}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  void handleTrialCheckout()
+                }}
+                disabled={pendingKey === 'trial:standard' || !standardPlan}
+                className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#5d55d6] text-sm font-semibold text-white transition hover:bg-[#6a63e2] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pendingKey === 'trial:standard'
+                  ? t('redirecting')
+                  : isAuthenticated
+                    ? t('startSubscription')
+                    : t('signInToSubscribe')}
+              </button>
             </article>
 
             {visiblePlans.map((plan) => {
