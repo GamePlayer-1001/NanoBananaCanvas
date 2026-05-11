@@ -31,7 +31,8 @@ const BASE_GAP = 20
 const MIN_SCREEN_GAP = 14
 const MAX_SCREEN_GAP = 28
 const INTERACTION_RADIUS = 148
-const HOVER_EASE = 0.14
+const HOVER_EASE_IN = 0.11
+const HOVER_EASE_OUT = 0.045
 const SETTLE_EPSILON = 0.02
 
 function clamp(value: number, min: number, max: number) {
@@ -95,7 +96,8 @@ export function EditorParticleField({ hostRef }: EditorParticleFieldProps) {
 
       const target = hoverTargetRef.current
       const current = hoverStrengthRef.current
-      const nextStrength = current + (target - current) * HOVER_EASE
+      const easing = target > current ? HOVER_EASE_IN : HOVER_EASE_OUT
+      const nextStrength = current + (target - current) * easing
       hoverStrengthRef.current = nextStrength
 
       const { x: viewportX, y: viewportY, zoom } = viewportRef.current
@@ -126,22 +128,14 @@ export function EditorParticleField({ hostRef }: EditorParticleFieldProps) {
               ? 0
               : Math.sin(time * 0.007 + screenX * 0.045 + screenY * 0.03) * 0.5 + 0.5
 
-          const lift = influence * (5 + pulse * 7)
-          const radius = baseRadius + influence * (1.8 + pulse * 1.5)
-          const alpha = 0.16 + influence * 0.42
+          const lift = influence * (2.6 + pulse * 3.8)
+          const radius = baseRadius + influence * (0.7 + pulse * 0.55)
+          const alpha = 0.16 + influence * 0.24
 
           context.beginPath()
           context.fillStyle = `rgba(15, 23, 42, ${alpha})`
           context.arc(screenX, screenY - lift, radius, 0, Math.PI * 2)
           context.fill()
-
-          if (influence > 0.12) {
-            context.beginPath()
-            context.lineWidth = 0.7 + influence * 1.4
-            context.strokeStyle = `rgba(99, 102, 241, ${0.14 + influence * 0.34})`
-            context.arc(screenX, screenY - lift, radius + 1.4 + influence * 1.6, 0, Math.PI * 2)
-            context.stroke()
-          }
         }
       }
 
