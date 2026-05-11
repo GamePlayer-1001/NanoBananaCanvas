@@ -48,7 +48,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     /* 优先匹配 owner (私有+公开均可) */
     if (authUser) {
       const owned = await db
-        .prepare('SELECT * FROM workflows WHERE id = ? AND user_id = ?')
+        .prepare(
+          `SELECT w.*,
+                  ${AUTHOR_NAME_SQL} AS author_name,
+                  u.avatar_url AS author_avatar
+           FROM workflows w
+           JOIN users u ON u.id = w.user_id
+           WHERE w.id = ? AND w.user_id = ?`,
+        )
         .bind(id, authUser.userId)
         .first()
 

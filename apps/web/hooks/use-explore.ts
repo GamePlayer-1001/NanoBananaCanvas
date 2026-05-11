@@ -49,6 +49,8 @@ export function useExplore(params?: ExploreParams) {
     queryKey: queryKeys.explore.list(params as Record<string, unknown>),
     queryFn: () => fetchJson(`/api/explore${query ? `?${query}` : ''}`),
     placeholderData: keepPreviousData,
+    staleTime: 5_000,
+    refetchOnMount: true,
   })
 }
 
@@ -61,6 +63,8 @@ export function useExploreSearch(q: string, page?: number) {
       return fetchJson(`/api/explore/search?${qs}`)
     },
     enabled: q.length > 0,
+    staleTime: 5_000,
+    refetchOnMount: true,
   })
 }
 
@@ -93,6 +97,8 @@ export function useExploreDetail(id: string) {
     queryKey: queryKeys.explore.detail(id),
     queryFn: () => fetchJson(`/api/workflows/${id}`),
     enabled: !!id,
+    staleTime: 5_000,
+    refetchOnMount: true,
   })
 }
 
