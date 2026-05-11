@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors, @/lib/nanoid, @/lib/validations/published-output
- * [OUTPUT]: 对外提供 POST /api/explore/outputs (发布生成作品)
- * [POS]: api/explore/outputs 的生成作品发布端点，把 completed task 落为公开社区作品
+ * [OUTPUT]: 对外提供 GET/POST /api/explore/outputs (当前用户已发布生成作品列表 + 发布生成作品)
+ * [POS]: api/explore/outputs 的生成作品入口，支持当前用户管理与 completed task 发布为公开社区作品
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -21,6 +21,28 @@ interface TaskRow {
   input_data: string
   output_data: string | null
   status: string
+}
+
+export async function GET() {
+  try {
+    const { userId } = await requireAuth()
+    const db = await getDb()
+
+    const rows = await db
+      .prepare(
+        `SELECT id, title, description, prompt, source_url, thumbnail, media_url, media_type,
+                like_count, clone_count, view_count, published_at, created_at
+         FROM published_outputs
+         WHERE user_id = ? AND is_public = 1
+         ORDER BY published_at DESC, created_at DESC`,
+      )
+      .bind(userId)
+      .all()
+
+    return apiOk({ items: rows.results ?? [] })
+  } catch (error) {
+    return handleApiError(error)
+  }
 }
 
 export async function POST(req: Request) {

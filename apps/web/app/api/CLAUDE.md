@@ -50,11 +50,12 @@ explore/                — 社区广场 (7 端点)
   route.ts              — GET  混合公开列表 (工作流模板 + 公开生成作品，分类/排序/分页/互动标记 + 类型过滤)
   [id]/route.ts         — GET  统一详情 (工作流/公开生成作品按 id 分流并递增浏览量)
   search/route.ts       — GET  模糊搜索 (标题/描述，覆盖工作流与公开生成作品)
-  outputs/route.ts      — POST 公开生成作品 (completed task -> published_outputs；批量导入作品不走这里，改由导入脚本直写 import-compatible published_outputs)
+  outputs/route.ts      — GET 当前用户已发布生成作品列表 / POST 公开生成作品 (completed task -> published_outputs；批量导入作品不走这里，改由导入脚本直写 import-compatible published_outputs)
   outputs/[id]/like/route.ts     — POST 公开生成作品点赞切换
   outputs/[id]/favorite/route.ts — POST 公开生成作品收藏切换
   outputs/[id]/report/route.ts   — POST 公开生成作品举报
   outputs/[id]/clone/route.ts    — POST 公开生成作品克隆来源工作流到当前工作区“全部”
+  outputs/[id]/route.ts          — DELETE 撤回公开生成作品
 
 categories/route.ts     — GET  分类列表 (i18n 本地化)
 notifications/route.ts  — GET+PATCH 通知列表 + 标记已读
