@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   findLogicalPlatformImageModel,
+  getVisibleLogicalPlatformImageModels,
   LOGICAL_PLATFORM_IMAGE_MODELS,
 } from './platform-models'
 
@@ -20,6 +21,12 @@ describe('platform logical image models', () => {
       'Nano Banana 2 Pro',
       'Nano Banana Pro',
       'Nano Banana',
+    ])
+  })
+
+  it('keeps Nano Banana variants in the logical catalog but hides them from the image node dropdown', () => {
+    expect(getVisibleLogicalPlatformImageModels().map((item) => item.modelName)).toEqual([
+      'GPT Image 2',
     ])
   })
 

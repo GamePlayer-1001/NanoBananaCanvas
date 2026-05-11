@@ -227,6 +227,18 @@ export const LOGICAL_PLATFORM_IMAGE_MODELS: readonly LogicalPlatformImageModel[]
   },
 ] as const
 
+const HIDDEN_PLATFORM_IMAGE_MODEL_KEYS = new Set([
+  'nano-banana-2-pro',
+  'nano-banana-pro',
+  'nano-banana',
+])
+
+export function getVisibleLogicalPlatformImageModels(): readonly LogicalPlatformImageModel[] {
+  return LOGICAL_PLATFORM_IMAGE_MODELS.filter(
+    (item) => !HIDDEN_PLATFORM_IMAGE_MODEL_KEYS.has(item.logicalKey),
+  )
+}
+
 export function findLogicalPlatformImageModel(input: {
   provider?: string | null
   modelId?: string | null

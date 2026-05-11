@@ -22,7 +22,7 @@ api-key-crypto.ts   — API Key 服务端 AES-256-GCM 加密层 (encrypt/decrypt
 user-model-config.ts — 账号级模型配置契约层 (兼容旧槽位 + 多配置能力标记 + 加密负载 JSON 编解码 + URL 规范化)
 guest-model-config.ts — 访客本地临时模型配置层 (localStorage 真相源 + 多配置读写 + 脱敏公开视图 + 运行时配置转换)
 model-config-catalog.ts — API 接入配置目录 (四类能力卡片 + provider 选项 + 标签查找)
-platform-models.ts — 平台模型目录语义层 (/api/ai/models 单一真相源的共享类型、Provider 分组、图标展示元数据与 Agent 平台模型预设；图片平台目录现区分“4 个业务逻辑模型”与“dlapi/comfly 供应商执行模型”，前端下拉只暴露逻辑模型，旧的 comfly fallback 选择会归一回 dlapi 直出图主链)
+platform-models.ts — 平台模型目录语义层 (/api/ai/models 单一真相源的共享类型、Provider 分组、图标展示元数据与 Agent 平台模型预设；图片平台目录现区分“4 个业务逻辑模型”与“dlapi/comfly 供应商执行模型”，并额外提供图片节点展示过滤，当前下拉仅暴露 GPT Image 2，旧的 comfly fallback 选择会归一回 dlapi 直出图主链)
 platform-models.test.ts — 平台图片逻辑模型测试（4 个业务模型展示 + comfly fallback 回显归一）
 platform-runtime.ts — 平台运行时真相源 (平台模型ID -> 内部供应商/API 路由 + 默认平台模型；平台模式不再暴露协议概念，图片默认链恢复为 dlapi:gpt-image-2 直出图，并保留 comfly 作为托底目录)
 ai-node-config.ts — AI 节点配置语义层 (platformProvider/platformModel 与 capability/userKeyConfigId 分离 + 旧工作流兼容解析 + 失效用户配置自动回退)

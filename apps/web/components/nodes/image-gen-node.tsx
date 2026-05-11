@@ -41,6 +41,7 @@ import { describeWorkflowImagePrice } from '@/lib/billing/workflow-pricing'
 import { getProviderLabel } from '@/lib/model-config-catalog'
 import {
   findLogicalPlatformImageModel,
+  getVisibleLogicalPlatformImageModels,
   LOGICAL_PLATFORM_IMAGE_MODELS,
   toPlatformVisualOption,
   toPlatformVisualOptions,
@@ -107,10 +108,24 @@ export function ImageGenNode(props: NodeProps) {
       })),
     [],
   )
+  const visiblePlatformImageModels = useMemo(
+    () =>
+      getVisibleLogicalPlatformImageModels().map((item, index) => ({
+        id: `visible-static-image-${index + 1}`,
+        provider: item.provider,
+        modelId: item.modelId,
+        modelName: item.modelName,
+        category: 'image',
+        tier: 'premium',
+        accessible: true,
+      })),
+    [],
+  )
   const isPlatformModelsLoading = false
   const platformModelId = resolvePlatformModel('image-gen', config)
   const platformProviderId = resolvePlatformProvider('image-gen', config)
   const flatPlatformModels = platformImageModels
+  const flatVisiblePlatformModels = visiblePlatformImageModels
   const normalizedPlatformSelection = useMemo(
     () =>
       findLogicalPlatformImageModel({
@@ -121,11 +136,11 @@ export function ImageGenNode(props: NodeProps) {
   )
   const platformModelOptions = useMemo(
     () =>
-      toPlatformVisualOptions(flatPlatformModels).map((option) => ({
+      toPlatformVisualOptions(flatVisiblePlatformModels).map((option) => ({
         ...option,
         description: undefined,
       })),
-    [flatPlatformModels],
+    [flatVisiblePlatformModels],
   )
   const selectedPlatformModel = useMemo(() => {
     if (normalizedPlatformSelection) {
@@ -439,7 +454,7 @@ export function ImageGenNode(props: NodeProps) {
                       ]
                 }
                 onValueChange={onPlatformModelChange}
-                disabled={isPlatformModelsLoading || flatPlatformModels.length === 0}
+                disabled={isPlatformModelsLoading || flatVisiblePlatformModels.length === 0}
                 triggerClassName={SELECT_CLASS}
               />
             </div>
