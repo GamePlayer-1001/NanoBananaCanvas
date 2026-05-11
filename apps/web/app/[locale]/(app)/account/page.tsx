@@ -41,6 +41,8 @@ function createGuestSubscription() {
     stripeSubscriptionId: null,
     portalEligible: false,
     cancelEligible: false,
+    standardTrialUsedAt: null,
+    standardTrialEligible: false,
   }
 }
 
@@ -139,7 +141,11 @@ export default async function AccountPage({
   const guestBalance = createGuestBalance()
   const [subscription, balance, pricing] = await Promise.all([
     authUser
-      ? loadOptionalAccountData('billing subscription', () => getBillingSubscription(authUser.userId), guestSubscription)
+      ? loadOptionalAccountData(
+          'billing subscription',
+          () => getBillingSubscription(authUser.userId),
+          guestSubscription,
+        )
       : Promise.resolve(guestSubscription),
     authUser
       ? loadOptionalAccountData('credit balance', () => getCreditBalanceSummary(authUser.userId), guestBalance)
