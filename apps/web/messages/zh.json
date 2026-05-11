@@ -153,10 +153,10 @@
         "credits": "每月 {value} 积分",
         "storage": "{value} 可用额度",
         "cta": "查看定价",
-        "pricePending": "实时价格请见定价页",
+        "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "探索者",
+            "name": "Free Trial",
             "body": "免费试用30 天，到期后自动续订。",
             "planLabel": "免费版",
             "period": "从这里开始",
@@ -166,7 +166,7 @@
             "cta": "免费开始"
           },
           "standard": {
-            "name": "日更创作者",
+            "name": "Standard",
             "body": "适合每天都在稳定创作的人。",
             "planLabel": "标准版",
             "period": "按月",
@@ -181,7 +181,7 @@
             "note": "最适合真实生产的平衡档"
           },
           "ultimate": {
-            "name": "工作室团队",
+            "name": "Ultimate",
             "body": "适合团队协作与正式生产流程。",
             "planLabel": "旗舰版",
             "period": "按月",

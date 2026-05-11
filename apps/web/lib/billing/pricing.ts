@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 stripe SDK 类型，依赖 ./config、./plans、./stripe-client，依赖 @/lib/errors
  * [OUTPUT]: 对外提供 getPublicPricingPlans()/getPublicBillingPackages()，返回面向 UI 的动态套餐与积分包目录
- * [POS]: lib/billing 的公开价格读取层，把 Stripe Price 真相源收口为前端可消费的套餐/积分包视图
+ * [POS]: lib/billing 的公开价格读取层，把 Stripe Price 真相源收口为前端可消费的月付套餐视图
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -22,7 +22,7 @@ import { getStripe } from './stripe-client'
 
 export interface PublicBillingPlanPrice {
   plan: (typeof BILLING_PLANS)[number]
-  purchaseMode: 'plan_auto_monthly' | 'plan_one_time'
+  purchaseMode: 'plan_auto_monthly'
   stripePriceId: string
   currency: BillingCurrency
   unitAmount: number
@@ -136,37 +136,34 @@ export async function getPublicPricingPlans(options: {
   const stripe = await getStripe()
 
   const plans = await Promise.all(
-    BILLING_PLANS.flatMap((plan) =>
-      (['plan_auto_monthly', 'plan_one_time'] as const).map(async (purchaseMode) => {
-        const stripePriceId = await resolveStripePriceId({
-          plan,
-          purchaseMode,
-          currency: preferredCurrency,
-        })
-        const stripePrice = await stripe.prices.retrieve(stripePriceId)
-        const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
-        const snapshot = getBillingPlanSnapshot(plan)
+    BILLING_PLANS.map(async (plan) => {
+      const purchaseMode = 'plan_auto_monthly' as const
+      const stripePriceId = await resolveStripePriceId({
+        plan,
+        purchaseMode,
+        currency: preferredCurrency,
+      })
+      const stripePrice = await stripe.prices.retrieve(stripePriceId)
+      const displayed = resolveDisplayedAmount(stripePrice, preferredCurrency)
+      const snapshot = getBillingPlanSnapshot(plan)
 
-        return {
-          plan,
-          purchaseMode,
-          stripePriceId,
-          currency: displayed.currency,
-          unitAmount: displayed.unitAmount,
-          interval: assertRecurringInterval(stripePrice),
-          monthlyCredits: snapshot.monthlyCredits,
-          storageGB: snapshot.storageGB,
-        }
-      }),
-    ),
+      return {
+        plan,
+        purchaseMode,
+        stripePriceId,
+        currency: displayed.currency,
+        unitAmount: displayed.unitAmount,
+        interval: assertRecurringInterval(stripePrice),
+        monthlyCredits: snapshot.monthlyCredits,
+        storageGB: snapshot.storageGB,
+      }
+    }),
   )
-
-  const creditPacks = await getPublicCreditPackPrices(preferredCurrency, stripe)
 
   return {
     currency: preferredCurrency,
     plans,
-    creditPacks,
+    creditPacks: [],
   }
 }
 

@@ -342,7 +342,7 @@ export function PricingSection({
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
-      <div className="mx-auto w-full max-w-[1240px]">
+      <div className="mx-auto w-full max-w-[1480px]">
         <div className="mx-auto max-w-[980px] text-center">
             <h2 className="text-3xl font-semibold text-white md:text-5xl">
               {pricingT('title')}
@@ -353,7 +353,7 @@ export function PricingSection({
 
         </div>
 
-        <div className="mt-14 grid gap-4 xl:grid-cols-4">
+        <div className="mt-14 grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
           {LANDING_PERSONA_ITEMS.map((planKey) => {
             const snapshot =
               planKey === 'free'
@@ -383,7 +383,7 @@ export function PricingSection({
             return (
               <article
                 key={planKey}
-                className={`flex h-full flex-col rounded-[30px] border p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-7 ${
+                className={`flex h-full min-w-0 flex-col rounded-[30px] border p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-8 ${
                   planKey === 'standard'
                     ? 'border-[#6b5cff]/30 bg-[linear-gradient(180deg,rgba(20,18,35,0.98),rgba(12,11,21,0.98))]'
                     : planKey === 'pro'
@@ -407,8 +407,8 @@ export function PricingSection({
                   >
                     {pricingT(getLandingPricingKey(planKey, 'planLabel'))}
                   </span>
-                  <div className="mt-5 max-w-[14rem]">
-                    <p className="text-[1.9rem] leading-[1.02] font-semibold tracking-tight text-white md:text-[2.15rem]">
+                  <div className="mt-5 max-w-[17rem]">
+                    <p className="text-[1.9rem] leading-[1.02] font-semibold tracking-tight text-white md:text-[2.05rem]">
                       {pricingT(`plans.${planKey}.name`)}
                     </p>
                     <p className="mt-4 text-[1.02rem] leading-8 text-white/60">
@@ -418,7 +418,7 @@ export function PricingSection({
                 </div>
 
                 <div className="mt-8 min-h-[6.75rem] border-t border-white/8 pt-6">
-                  <p className="text-[2.9rem] leading-none font-semibold tracking-tight text-white">
+                  <p className="break-words text-[2.55rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[2.75rem]">
                     {priceLabel}
                   </p>
                   <p className="mt-3 text-sm tracking-[0.08em] text-white/42 uppercase">

@@ -153,10 +153,10 @@
         "credits": "{value} monthly credits",
         "storage": "{value} allowance",
         "cta": "View pricing",
-        "pricePending": "See pricing page for live pricing",
+        "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "Explorer",
+            "name": "Free Trial",
             "body": "Free for 30 days, then renews automatically.",
             "planLabel": "Free",
             "period": "Start here",
@@ -166,7 +166,7 @@
             "cta": "Start Free"
           },
           "standard": {
-            "name": "Daily Creator",
+            "name": "Standard",
             "body": "For people creating every day.",
             "planLabel": "Standard",
             "period": "Per month",
@@ -181,7 +181,7 @@
             "note": "Best balance for working teams"
           },
           "ultimate": {
-            "name": "Studio Team",
+            "name": "Ultimate",
             "body": "For team collaboration and formal production workflows.",
             "planLabel": "Ultimate",
             "period": "Per month",
