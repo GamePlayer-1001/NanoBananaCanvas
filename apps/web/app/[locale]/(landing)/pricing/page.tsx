@@ -16,7 +16,6 @@ import { MarketingBackLink } from '@/components/landing/public-pages'
 import { MarketingSiteTree } from '@/components/landing/marketing-site-tree'
 import { PricingContent } from '@/components/pricing/pricing-content'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
-import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
 import { getBillingSubscription } from '@/lib/billing/subscription'
 import {
   BASE_URL,
@@ -120,13 +119,6 @@ export default async function PricingPage({
       image: `${BASE_URL}/brand/logo-1024.png`,
       keywords: pricingKeywords.join(', '),
       offers: [freeOffer, ...paidPlanOffers],
-      additionalProperty: [
-        {
-          '@type': 'PropertyValue',
-          name: 'Free storage',
-          value: `${FREE_PLAN_SNAPSHOT.storageGB} GB`,
-        },
-      ],
     },
     {
       '@context': 'https://schema.org',
