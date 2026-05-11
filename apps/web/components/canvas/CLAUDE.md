@@ -8,6 +8,7 @@
 
 ```
 canvas.tsx              — Canvas 主画布组件 (ReactFlow 包裹，右键菜单，拖线到空白处按端口类型筛选有效节点并自动补默认连线，辅助线，顶部/底部工具栏，本地草稿自动保存 + 离场云端兜底，快捷键与左下角前三次淡色提示，并在运行态统一禁删节点/连线)
+editor-particle-field.tsx — EditorParticleField 编辑器交互粒子背景层 (跟随视口平移/缩放的自绘点阵，鼠标邻域浮起、加粗、变大并在离开后缓动恢复)
 canvas-controls.tsx     — CanvasControls 缩放/居中控制栏
 node-entry-config.ts    — 画布节点入口共享配置 (快捷栏/右键菜单的可见项、顺序、分组语义、入口图标，含 Merge 工具入口)
 canvas-toolbar.tsx      — CanvasToolbar 底部节点拖放工具栏 (指针工具 + 共享入口配置驱动的快捷节点)
