@@ -154,8 +154,10 @@ export function useDeleteWorkflow() {
   return useMutation({
     mutationFn: (id: string) =>
       fetchJson(`/api/workflows/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
+      qc.invalidateQueries({ queryKey: queryKeys.explore.all })
+      qc.invalidateQueries({ queryKey: queryKeys.explore.detail(id) })
     },
   })
 }
@@ -173,6 +175,8 @@ export function usePublishWorkflow(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
       qc.invalidateQueries({ queryKey: queryKeys.explore.all })
+      qc.invalidateQueries({ queryKey: queryKeys.workflows.detail(id) })
+      qc.invalidateQueries({ queryKey: queryKeys.explore.detail(id) })
     },
   })
 }
@@ -186,6 +190,8 @@ export function useUnpublishWorkflow(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all })
       qc.invalidateQueries({ queryKey: queryKeys.explore.all })
+      qc.invalidateQueries({ queryKey: queryKeys.workflows.detail(id) })
+      qc.invalidateQueries({ queryKey: queryKeys.explore.detail(id) })
     },
   })
 }

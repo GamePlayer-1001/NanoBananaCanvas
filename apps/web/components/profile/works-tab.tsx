@@ -14,11 +14,12 @@
 
 /* eslint-disable @next/next/no-img-element -- 账户内私有文件经 /api/files 鉴权返回，直接渲染最稳定。 */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckSquare,
+  GlobeLock,
   Globe,
   ImageIcon,
   Import,
@@ -135,12 +136,14 @@ function WorkflowItem({
   onToggle,
   href,
   meta,
+  actions,
 }: {
   item: WorkflowListItem
   selected: boolean
   onToggle: (id: string) => void
   href: string
   meta: string
+  actions?: ReactNode
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-background p-3">
@@ -169,6 +172,8 @@ function WorkflowItem({
           <p className="mt-1 truncate text-xs text-muted-foreground">{meta}</p>
         </div>
       </Link>
+
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   )
 }
@@ -322,6 +327,21 @@ export function WorksTab({
       toast.error(error.message || t('bulkDeleteFailed'))
     },
   })
+
+  const handleUnpublishSingle = async (workflowId: string) => {
+    try {
+      await fetch(`/api/workflows/${workflowId}/publish`, { method: 'DELETE' }).then(async (res) => {
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => ({}))) as { error?: { message?: string } }
+          throw new Error(payload.error?.message ?? 'Failed to unpublish workflow')
+        }
+      })
+      await invalidateWorks()
+      toast.success(t('unpublishedSuccess'))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('unpublishedFailed'))
+    }
+  }
 
   const handleToggleSelection = (id: string) => {
     setSelectedIds((current) =>
@@ -616,6 +636,20 @@ export function WorksTab({
                     : view === 'published'
                       ? t('publishedMeta')
                       : item.updated_at || t('metaUnknownDate')
+                }
+                actions={
+                  view === 'published' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleUnpublishSingle(item.id)
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+                    >
+                      <GlobeLock size={13} />
+                      {t('unpublishAction')}
+                    </button>
+                  ) : undefined
                 }
               />
             ))
