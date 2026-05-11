@@ -156,9 +156,10 @@
         "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "Free Trial · Official model trial",
+            "name": "Free Trial",
+            "subtitle": "Official model trial",
             "body": "",
-            "planLabel": "Free",
+            "planLabel": "Trial",
             "period": "$0 / first month",
             "note": "$0 access to GPT 5.4 / 5.5 and other flagship models",
             "storageNote": "1,600 credits/month, use until depleted",
@@ -166,7 +167,8 @@
             "cta": "Start free trial"
           },
           "standard": {
-            "name": "Standard · Best value",
+            "name": "Standard",
+            "subtitle": "Best value",
             "body": "",
             "planLabel": "Standard",
             "period": "/ month",
@@ -176,22 +178,26 @@
             "useCase": "For daily work and creation"
           },
           "pro": {
-            "name": "Pro · Productivity upgrade",
+            "name": "Pro",
+            "subtitle": "Productivity upgrade",
             "body": "",
+            "planLabel": "Plus",
             "period": "/ month",
             "note": "5,400 credits/month (about 3.4x Standard)",
-            "supportNote": "Unlimited access across all model families",
+            "supportNote": "All model families available: GPT 5.4, GPT image 2, nano banana, GPT 5.5, Gemini, and more",
             "cta": "Subscribe now",
             "useCase": "For high-frequency users and teams"
           },
           "ultimate": {
-            "name": "Ultimate · Call without holding back",
+            "name": "Ultimate",
+            "subtitle": "Call without holding back",
             "body": "",
             "planLabel": "Ultimate",
             "period": "/ month",
             "note": "17,000 credits/month (about 10x Standard)",
-            "supportNote": "All model families + priority response",
+            "supportNote": "All model families available: GPT 5.4, GPT image 2, nano banana, GPT 5.5, Gemini, and more",
             "cta": "Subscribe now",
+            "priorityNote": "Priority model response",
             "useCase": "For heavy AI users and commercial workflows",
             "extra": "The most efficient AI workstation"
           }
@@ -1422,7 +1428,7 @@
     "subscriptionToggleMonthly": "Monthly",
     "subscriptionToggleOneTime": "One-time",
     "subscriptionToggleCredits": "Credit packs",
-    "subscriptionModeMonthlyBody": "Built for creators who want a steady production engine, with enough room to keep output high month after month.",
+    "subscriptionModeMonthlyBody": "",
     "subscriptionModeOneTimeBody": "Perfect for project sprints, pitch deadlines, and short bursts where you want more power right now.",
     "subscriptionModeCreditsBody": "Best for quick refills when your momentum is high and you do not want your creative flow to slow down.",
     "subscriptionPricingUnavailable": "Live Stripe pricing is temporarily unavailable. The Free path still works and paid checkout will return once billing configuration is restored.",

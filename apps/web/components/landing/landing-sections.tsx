@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
- *          依赖 next-intl 的 useLocale/useTranslations，依赖 lucide-react 的区块与交互图标，
+ *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的区块与交互图标，
  *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
@@ -13,7 +13,7 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 
 import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
 import { Link } from '@/i18n/navigation'
@@ -77,19 +77,22 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-function formatLandingMoney(locale: string, currency: string, amount: number) {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-    maximumFractionDigits: 2,
-  }).format(amount / 100)
+function formatLandingMoney(amount: number) {
+  return `$${(amount / 100).toFixed(2)}`
 }
 
 function getLandingPricingKey(
   planKey: (typeof LANDING_PERSONA_ITEMS)[number],
-  field: 'planLabel' | 'supportNote' | 'cta' | 'period' | 'useCase' | 'extra',
+  field:
+    | 'planLabel'
+    | 'supportNote'
+    | 'cta'
+    | 'period'
+    | 'useCase'
+    | 'extra'
+    | 'priorityNote'
+    | 'subtitle',
 ) {
-  if (planKey === 'pro' && field === 'planLabel') return 'popular'
   return `plans.${planKey}.${field}`
 }
 
@@ -321,8 +324,6 @@ export function FeaturesSection() {
 
 export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
   const pricingT = useTranslations('landing.sections.pricing')
-  const billingT = useTranslations('pricing')
-  const locale = useLocale()
   const monthlyPlans = plans.filter(
     (plan) => plan.purchaseMode === 'plan_auto_monthly',
   )
@@ -351,7 +352,7 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
               planKey === 'free'
                 ? pricingT('plans.free.period')
                 : livePlan
-                  ? `${formatLandingMoney(locale, livePlan.currency, livePlan.unitAmount)} ${pricingT(getLandingPricingKey(planKey, 'period'))}`
+                  ? `${formatLandingMoney(livePlan.unitAmount)} ${pricingT(getLandingPricingKey(planKey, 'period'))}`
                   : pricingT('pricePending')
             const highlights =
               planKey === 'free'
@@ -363,6 +364,9 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                 : [
                     pricingT(`plans.${planKey}.note`),
                     pricingT(getLandingPricingKey(planKey, 'supportNote')),
+                    ...(planKey === 'ultimate'
+                      ? [pricingT(getLandingPricingKey(planKey, 'priorityNote'))]
+                      : []),
                     pricingT(getLandingPricingKey(planKey, 'useCase')),
                     ...(planKey === 'ultimate'
                       ? [pricingT(getLandingPricingKey(planKey, 'extra'))]
@@ -373,7 +377,7 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
               <article
                 key={planKey}
                 className={`flex h-full min-w-0 flex-col rounded-[30px] border p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-8 ${
-                  planKey === 'standard'
+                  planKey === 'free'
                     ? 'border-[#6b5cff]/30 bg-[linear-gradient(180deg,rgba(20,18,35,0.98),rgba(12,11,21,0.98))]'
                     : planKey === 'pro'
                       ? 'border-[#3f8f76]/30 bg-[linear-gradient(180deg,rgba(17,30,27,0.96),rgba(9,17,16,0.98))]'
@@ -385,7 +389,7 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                 <div className="min-h-[9.5rem]">
                   <span
                     className={`inline-flex rounded-full border px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase ${
-                      planKey === 'standard'
+                      planKey === 'free'
                         ? 'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d3ccff]'
                         : planKey === 'pro'
                           ? 'border-[#68b89b]/22 bg-[#68b89b]/10 text-[#bde9d8]'
@@ -397,8 +401,11 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                     {pricingT(getLandingPricingKey(planKey, 'planLabel'))}
                   </span>
                   <div className="mt-5 max-w-[17rem]">
-                    <p className="text-[1.9rem] leading-[1.02] font-semibold tracking-tight text-white md:text-[2.05rem]">
+                    <p className="text-[2.05rem] leading-[0.98] font-semibold tracking-tight text-white md:text-[2.25rem]">
                       {pricingT(`plans.${planKey}.name`)}
+                    </p>
+                    <p className="mt-2 text-[1.02rem] leading-6 font-medium text-white/58 md:text-[1.08rem]">
+                      {pricingT(getLandingPricingKey(planKey, 'subtitle'))}
                     </p>
                     {pricingT(`plans.${planKey}.body`) ? (
                       <p className="mt-4 text-[1.02rem] leading-8 text-white/60">
@@ -411,9 +418,6 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                 <div className="mt-8 min-h-[6.75rem] border-t border-white/8 pt-6">
                   <p className="break-words text-[2.55rem] leading-[0.96] font-semibold tracking-tight text-white md:text-[2.75rem]">
                     {priceLabel}
-                  </p>
-                  <p className="mt-3 text-sm tracking-[0.08em] text-white/42 uppercase">
-                    {planKey === 'free' ? pricingT('plans.free.body') : billingT('billedMonthly')}
                   </p>
                 </div>
 

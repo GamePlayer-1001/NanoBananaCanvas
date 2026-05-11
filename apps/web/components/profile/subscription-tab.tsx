@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useLocale/useTranslations，依赖 sonner 的 toast，
+ * [INPUT]: 依赖 react 的 useState，依赖 next-intl 的 useTranslations，依赖 sonner 的 toast，
  *          依赖 @/lib/billing/pricing 与 @/lib/billing/subscription 类型，
  *          依赖 @/components/ui/button / tabs，依赖 @/i18n/navigation 的 useRouter
  * [OUTPUT]: 对外提供 SubscriptionTab 订阅页签
@@ -10,7 +10,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import type { PublicBillingPlanPrice, PublicCreditPackPrice } from '@/lib/billing/pricing'
@@ -31,12 +31,8 @@ interface SubscriptionTabProps {
   onModeChange?: (mode: PurchaseMode) => void
 }
 
-function formatMoney(locale: string, currency: string, amount: number): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-    maximumFractionDigits: 2,
-  }).format(amount / 100)
+function formatMoney(amount: number): string {
+  return `$${(amount / 100).toFixed(2)}`
 }
 
 export function SubscriptionTab({
@@ -49,7 +45,6 @@ export function SubscriptionTab({
 }: SubscriptionTabProps) {
   const t = useTranslations('profile')
   const pricingT = useTranslations('landing.sections.pricing')
-  const locale = useLocale()
   const router = useRouter()
   const [selectedMode, setSelectedMode] = useState<PurchaseMode>(initialMode)
   const [pendingKey, setPendingKey] = useState<string | null>(null)
@@ -168,9 +163,6 @@ export function SubscriptionTab({
           </TabsList>
         </Tabs>
 
-        <p className="mt-4 text-sm text-muted-foreground">
-          {t('subscriptionModeMonthlyBody')}
-        </p>
       </section>
 
       {!isPricingReady ? (
@@ -180,7 +172,7 @@ export function SubscriptionTab({
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
-        <article className="flex h-full flex-col rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <article className="flex h-full flex-col rounded-[26px] border border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
@@ -189,12 +181,13 @@ export function SubscriptionTab({
                   <h3 className="mt-3 text-2xl font-semibold text-foreground">
                     {pricingT('plans.free.name')}
                   </h3>
+                  <p className="mt-1 text-sm font-medium text-muted-foreground">
+                    {pricingT('plans.free.subtitle')}
+                  </p>
                 </div>
-                {subscription.status === 'trialing' ? (
-                  <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    {t('subscriptionCurrentPlan')}
-                  </span>
-                ) : null}
+                <span className="rounded-full border border-violet-300 bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">
+                  {t('subscriptionPopular')}
+                </span>
               </div>
 
               <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
@@ -233,16 +226,10 @@ export function SubscriptionTab({
           const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`
           const isCurrentPlan =
             subscription.plan === plan.plan && subscription.purchaseMode === plan.purchaseMode
-          const featured = plan.plan === 'pro'
-
           return (
             <article
               key={`${plan.plan}:${plan.purchaseMode}`}
-              className={`flex h-full flex-col rounded-[26px] border p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${
-                featured
-                  ? 'border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)]'
-                  : 'border-border/70 bg-white/95'
-              }`}
+              className="flex h-full flex-col rounded-[26px] border border-border/70 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -252,12 +239,11 @@ export function SubscriptionTab({
                   <h3 className="mt-3 text-2xl font-semibold text-foreground">
                     {pricingT(`plans.${plan.plan}.name`)}
                   </h3>
+                  <p className="mt-1 text-sm font-medium text-muted-foreground">
+                    {pricingT(`plans.${plan.plan}.subtitle`)}
+                  </p>
                 </div>
-                {featured ? (
-                  <span className="rounded-full border border-violet-300 bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">
-                    {t('subscriptionPopular')}
-                  </span>
-                ) : isCurrentPlan ? (
+                {isCurrentPlan ? (
                   <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
                     {t('subscriptionCurrentPlan')}
                   </span>
@@ -266,7 +252,7 @@ export function SubscriptionTab({
 
               <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 px-4 py-4">
                 <p className="text-3xl font-semibold text-foreground">
-                  {formatMoney(locale, plan.currency, plan.unitAmount)}{' '}
+                  {formatMoney(plan.unitAmount)}{' '}
                   {pricingT(`plans.${plan.plan}.period`)}
                 </p>
               </div>
@@ -275,6 +261,9 @@ export function SubscriptionTab({
                 <div className="space-y-3">
                   <SubscriptionFeature value={pricingT(`plans.${plan.plan}.note`)} />
                   <SubscriptionFeature value={pricingT(`plans.${plan.plan}.supportNote`)} />
+                  {plan.plan === 'ultimate' ? (
+                    <SubscriptionFeature value={pricingT('plans.ultimate.priorityNote')} />
+                  ) : null}
                   <SubscriptionFeature value={pricingT(`plans.${plan.plan}.useCase`)} />
                   {plan.plan === 'ultimate' ? (
                     <SubscriptionFeature value={pricingT('plans.ultimate.extra')} />
@@ -285,11 +274,7 @@ export function SubscriptionTab({
               <div className="mt-auto pt-16">
                 <Button
                   type="button"
-                  className={`h-12 w-full rounded-xl ${
-                    featured
-                      ? 'bg-violet-600 text-white hover:bg-violet-700'
-                      : 'bg-foreground text-background hover:bg-foreground/90'
-                  }`}
+                  className="h-12 w-full rounded-xl bg-foreground text-background hover:bg-foreground/90"
                   onClick={() => {
                     void handlePlanCheckout(plan)
                   }}

@@ -156,9 +156,10 @@
         "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "Free Trial · 官方模型免费试用",
+            "name": "Free Trial",
+            "subtitle": "官方模型免费试用",
             "body": "",
-            "planLabel": "免费版",
+            "planLabel": "试用版",
             "period": "$0 / 首月",
             "note": "0 元解锁 GPT 5.4 / 5.5 等主力模型",
             "storageNote": "1600 积分/月，用完即止",
@@ -166,7 +167,8 @@
             "cta": "免费试用"
           },
           "standard": {
-            "name": "Standard · 超高性价比",
+            "name": "Standard",
+            "subtitle": "超高性价比",
             "body": "",
             "planLabel": "标准版",
             "period": "/ 月",
@@ -176,22 +178,26 @@
             "useCase": "适合日常办公 & 创作"
           },
           "pro": {
-            "name": "Pro · 生产力进阶",
+            "name": "Pro",
+            "subtitle": "生产力进阶",
             "body": "",
+            "planLabel": "增强版",
             "period": "/ 月",
             "note": "每月 5,400 积分（≈ 3.4 倍 Standard）",
-            "supportNote": "全系模型无限制使用",
+            "supportNote": "全系模型可用：GPT 5.4、GPT image 2、nano banana、GPT 5.5、Gemini 等",
             "cta": "立即订阅",
             "useCase": "适合高频使用者 & 团队"
           },
           "ultimate": {
-            "name": "Ultimate · 尽情调用",
+            "name": "Ultimate",
+            "subtitle": "尽情调用",
             "body": "",
             "planLabel": "旗舰版",
             "period": "/ 月",
             "note": "每月 17,000 积分（≈ 10 倍 Standard）",
-            "supportNote": "全系模型 + 优先响应",
+            "supportNote": "全系模型可用：GPT 5.4、GPT image 2、nano banana、GPT 5.5、Gemini 等",
             "cta": "立即订阅",
+            "priorityNote": "模型优先响应",
             "useCase": "适合重度 AI 用户 & 商用场景",
             "extra": "最高效 AI 工作站"
           }
@@ -1422,7 +1428,7 @@
     "subscriptionToggleMonthly": "按月",
     "subscriptionToggleOneTime": "一次性",
     "subscriptionToggleCredits": "积分包",
-    "subscriptionModeMonthlyBody": "适合把创作当成长期生产线的人，用稳定额度持续拉满输出节奏。",
+    "subscriptionModeMonthlyBody": "",
     "subscriptionModeOneTimeBody": "适合项目冲刺、提案交付和阶段性扩容，一次买断就能快速把产能拉上去。",
     "subscriptionModeCreditsBody": "适合随时补能，在灵感最旺的时候继续推进，不让额度打断你的创作流。",
     "subscriptionPricingUnavailable": "当前无法从 Stripe 读取实时价格，Free 入口仍可使用；付费购买将在计费配置恢复后继续开放。",
