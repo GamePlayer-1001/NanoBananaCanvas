@@ -30,6 +30,11 @@ interface WorkflowDetail {
   data?: string
   prompt?: string
   source_url?: string
+  source_mode?: 'task' | 'import'
+  source_type?: 'native' | 'civitai' | 'manual' | 'other'
+  source_author_name?: string
+  source_author_avatar?: string
+  workflow_json_url?: string
   media_url?: string
   media_type?: 'image' | 'video'
   thumbnail?: string
@@ -75,7 +80,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   }
 
   const workflow = data as WorkflowDetail
-  const authorName = workflow.author_name?.trim() || 'Unknown Creator'
+  const authorName = workflow.author_name?.trim() || workflow.source_author_name?.trim() || 'Unknown Creator'
   const isOutput = workflow.entity_type === 'output'
 
   return (
@@ -193,6 +198,22 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
                       className="break-all text-sm text-brand-600 hover:underline"
                     >
                       {workflow.source_url}
+                    </a>
+                  </div>
+                ) : null}
+
+                {workflow.workflow_json_url ? (
+                  <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                      Workflow JSON
+                    </p>
+                    <a
+                      href={workflow.workflow_json_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="break-all text-sm text-brand-600 hover:underline"
+                    >
+                      {workflow.workflow_json_url}
                     </a>
                   </div>
                 ) : null}

@@ -15,6 +15,7 @@ ai.ts       — aiExecuteSchema / apiKeySchema / modelsQuerySchema AI 执行验�
 agent.ts    — agentPlanRequestSchema / agentPlanResponseSchema / agentPlanSchema Agent 提案/诊断/优化链路结构化验证 (含模板上下文、优化信号与助手运行时选择)
 billing.ts  — checkoutSchema / topupSchema Stripe 结账请求验证 (plan/packageId/standard trial + currency)
 upload.ts   — SHARE_UPLOAD_ACCEPT / UPLOAD_LIMITS / detectUploadKind / validateUpload 文件上传校验 (图片/视频/工作流)
+published-output.ts — publishOutputSchema / importPublishedOutputSchema 公开作品验证 (站内任务发布 + 本地/外部批量导入)
 task.ts     — submitTaskSchema / listTasksSchema / deleteTasksSchema 异步任务请求验证 (P2)
 ```
 

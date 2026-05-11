@@ -31,6 +31,8 @@ const orderedMigrations = [
   'migration-018-agent-audit-r2.sql',
   'migration-async-tasks.sql',
   'migration-execution-history.sql',
+  'migration-020-published-outputs.sql',
+  'migration-021-explore-import-compat.sql',
 ]
 
 function resolveTargetFlag(args) {

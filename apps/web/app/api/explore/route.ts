@@ -20,7 +20,7 @@ const SORT_MAP: Record<string, string> = {
   'most-liked': 'like_count DESC',
 }
 
-const AUTHOR_NAME_SQL = `COALESCE(
+const ACCOUNT_AUTHOR_NAME_SQL = `COALESCE(
   NULLIF(TRIM(u.name), ''),
   NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
   NULLIF(TRIM(u.username), ''),
@@ -35,6 +35,16 @@ const AUTHOR_NAME_SQL = `COALESCE(
     ''
   ),
   'Unknown Creator'
+)`
+
+const OUTPUT_AUTHOR_NAME_SQL = `COALESCE(
+  NULLIF(TRIM(po.source_author_name), ''),
+  ${ACCOUNT_AUTHOR_NAME_SQL}
+)`
+
+const OUTPUT_AUTHOR_AVATAR_SQL = `COALESCE(
+  NULLIF(TRIM(po.source_author_avatar), ''),
+  NULLIF(TRIM(u.avatar_url), '')
 )`
 
 /* ─── GET /api/explore ──────────────────────────────── */
@@ -80,12 +90,13 @@ export async function GET(req: NextRequest) {
              w.name,
              w.description,
              w.thumbnail,
+             NULL AS media_url,
              w.like_count,
              w.clone_count,
              w.view_count,
              w.published_at,
              w.category_id,
-             ${AUTHOR_NAME_SQL} as author_name,
+             ${ACCOUNT_AUTHOR_NAME_SQL} as author_name,
              u.avatar_url as author_avatar,
              'workflow' as content_type,
              (SELECT GROUP_CONCAT(DISTINCT json_extract(j.value, '$.type'))
@@ -101,13 +112,14 @@ export async function GET(req: NextRequest) {
              po.title AS name,
              po.description,
              po.thumbnail,
+             po.media_url,
              po.like_count,
              po.clone_count,
              po.view_count,
              po.published_at,
              NULL AS category_id,
-             ${AUTHOR_NAME_SQL} as author_name,
-             u.avatar_url as author_avatar,
+             ${OUTPUT_AUTHOR_NAME_SQL} as author_name,
+             ${OUTPUT_AUTHOR_AVATAR_SQL} as author_avatar,
              po.media_type as content_type,
              NULL as node_types
       FROM published_outputs po

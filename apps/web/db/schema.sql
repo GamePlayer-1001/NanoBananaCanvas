@@ -378,29 +378,42 @@ CREATE INDEX IF NOT EXISTS idx_async_tasks_external ON async_tasks(external_task
 -- ── EXPLORE-001: published_outputs ───────────────────
 -- 公开生成作品实体，和工作流模板分离，避免用节点类型误判内容类型
 CREATE TABLE IF NOT EXISTS published_outputs (
-  id                TEXT PRIMARY KEY,
-  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  task_id           TEXT NOT NULL UNIQUE REFERENCES async_tasks(id) ON DELETE CASCADE,
-  workflow_id       TEXT REFERENCES workflows(id) ON DELETE SET NULL,
-  title             TEXT NOT NULL DEFAULT 'Untitled Output',
-  description       TEXT DEFAULT '',
-  prompt            TEXT DEFAULT '',
-  source_url        TEXT DEFAULT '',
-  thumbnail         TEXT DEFAULT '',
-  media_url         TEXT NOT NULL,
-  media_type        TEXT NOT NULL CHECK(media_type IN ('image','video')),
-  like_count        INTEGER NOT NULL DEFAULT 0,
-  clone_count       INTEGER NOT NULL DEFAULT 0,
-  view_count        INTEGER NOT NULL DEFAULT 0,
-  is_public         INTEGER NOT NULL DEFAULT 1,
-  published_at      TEXT NOT NULL DEFAULT (datetime('now')),
-  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+  id                  TEXT PRIMARY KEY,
+  user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  task_id             TEXT UNIQUE REFERENCES async_tasks(id) ON DELETE CASCADE,
+  workflow_id         TEXT REFERENCES workflows(id) ON DELETE SET NULL,
+  source_mode         TEXT NOT NULL DEFAULT 'task' CHECK(source_mode IN ('task', 'import')),
+  source_type         TEXT NOT NULL DEFAULT 'native' CHECK(source_type IN ('native', 'civitai', 'manual', 'other')),
+  source_author_name  TEXT DEFAULT '',
+  source_author_avatar TEXT DEFAULT '',
+  import_key          TEXT,
+  workflow_json_url   TEXT DEFAULT '',
+  title               TEXT NOT NULL DEFAULT 'Untitled Output',
+  description         TEXT DEFAULT '',
+  prompt              TEXT DEFAULT '',
+  source_url          TEXT DEFAULT '',
+  thumbnail           TEXT DEFAULT '',
+  media_url           TEXT NOT NULL,
+  media_type          TEXT NOT NULL CHECK(media_type IN ('image','video')),
+  like_count          INTEGER NOT NULL DEFAULT 0,
+  clone_count         INTEGER NOT NULL DEFAULT 0,
+  view_count          INTEGER NOT NULL DEFAULT 0,
+  is_public           INTEGER NOT NULL DEFAULT 1,
+  published_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_published_outputs_task_id
+  ON published_outputs(task_id)
+  WHERE task_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_published_outputs_import_key
+  ON published_outputs(import_key)
+  WHERE import_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_published_outputs_user ON published_outputs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_published_outputs_public ON published_outputs(is_public, published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_published_outputs_workflow ON published_outputs(workflow_id) WHERE workflow_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_published_outputs_source_mode ON published_outputs(source_mode, source_type, published_at DESC);
 
 -- ── EXPLORE-002: published_output_likes ──────────────
 CREATE TABLE IF NOT EXISTS published_output_likes (
