@@ -85,7 +85,7 @@ export function NoteNode(props: NodeProps) {
       style={{ backgroundColor: bgColor }}
     >
       <NodeResizer
-        isVisible={!!props.selected || showResizer}
+        isVisible={showResizer}
         minWidth={240}
         minHeight={120}
         lineClassName={RESIZER_LINE_CLASS}
