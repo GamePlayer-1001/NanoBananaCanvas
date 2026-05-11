@@ -373,12 +373,14 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                       : []),
                   ]
 
+            const isRecommended = planKey === 'free'
+
             return (
               <article
                 key={planKey}
-                className={`flex h-full min-w-0 flex-col rounded-[30px] border p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-8 ${
-                  planKey === 'free'
-                    ? 'border-[#6b5cff]/30 bg-[linear-gradient(180deg,rgba(20,18,35,0.98),rgba(12,11,21,0.98))]'
+                className={`relative flex h-full min-w-0 flex-col overflow-visible rounded-[30px] border p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1 md:p-8 ${
+                  isRecommended
+                    ? 'border-[#9b5cff]/80 bg-[radial-gradient(circle_at_50%_-6%,rgba(179,95,255,0.34),transparent_34%),linear-gradient(180deg,rgba(31,19,52,0.98),rgba(12,10,22,0.99))] shadow-[0_0_0_1px_rgba(179,95,255,0.22),0_26px_90px_rgba(124,58,237,0.30)]'
                     : planKey === 'pro'
                       ? 'border-[#3f8f76]/30 bg-[linear-gradient(180deg,rgba(17,30,27,0.96),rgba(9,17,16,0.98))]'
                     : planKey === 'ultimate'
@@ -386,11 +388,19 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                       : 'border-white/10 bg-[linear-gradient(180deg,rgba(19,20,24,0.96),rgba(11,12,15,0.98))]'
                 }`}
               >
+                {isRecommended ? (
+                  <>
+                    <div className="pointer-events-none absolute inset-x-8 -top-px h-px bg-[linear-gradient(90deg,transparent,rgba(220,190,255,0.95),transparent)]" />
+                    <div className="absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,#7c3aed,#c026d3,#f97316)] px-4 py-1 text-xs font-semibold tracking-[0.08em] text-white shadow-[0_0_28px_rgba(168,85,247,0.7)]">
+                      推荐试用
+                    </div>
+                  </>
+                ) : null}
                 <div className="min-h-[7.2rem]">
                   <span
                     className={`inline-flex rounded-full border px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase ${
-                      planKey === 'free'
-                        ? 'border-[#6b5cff]/28 bg-[#6b5cff]/12 text-[#d3ccff]'
+                      isRecommended
+                        ? 'border-[#c084fc]/36 bg-[#8b5cf6]/20 text-[#eadcff]'
                         : planKey === 'pro'
                           ? 'border-[#68b89b]/22 bg-[#68b89b]/10 text-[#bde9d8]'
                         : planKey === 'ultimate'
@@ -422,13 +432,19 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                 </div>
 
                 <div className="mt-4 flex flex-1 flex-col">
-                  <div className="space-y-3">
+                  <div className="space-y-3 border-t border-white/8 pt-4">
                     {highlights.map((highlight) => (
                       <div
                         key={highlight}
-                        className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3.5 text-sm leading-6 text-white/72"
+                        className="flex items-start gap-3 text-sm leading-6 text-white/74"
                       >
-                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/72">
+                        <span
+                          className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            isRecommended
+                              ? 'border-[#c084fc]/35 bg-[#8b5cf6]/18 text-[#eadcff]'
+                              : 'border-white/10 bg-white/[0.06] text-white/72'
+                          }`}
+                        >
                           <Check className="h-3.2 w-3.2" />
                         </span>
                         <span>{highlight}</span>
@@ -439,7 +455,11 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                   <div className="mt-auto pt-7">
                     <Link
                       href="/pricing"
-                      className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/10 bg-white px-4 text-sm font-semibold text-black transition hover:bg-white/90"
+                      className={`inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-4 text-sm font-semibold transition ${
+                        isRecommended
+                          ? 'border border-[#c084fc]/20 bg-[linear-gradient(90deg,#f8f5ff,#ffffff)] text-[#13081f] shadow-[0_16px_34px_rgba(168,85,247,0.24)] hover:shadow-[0_18px_42px_rgba(168,85,247,0.34)]'
+                          : 'border border-white/10 bg-white text-black hover:bg-white/90'
+                      }`}
                     >
                       {pricingT(getLandingPricingKey(planKey, 'cta'))}
                     </Link>
