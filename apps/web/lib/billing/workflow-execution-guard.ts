@@ -14,7 +14,7 @@ import {
   WORKFLOW_IMAGE_FALLBACK_PRICES,
 } from './workflow-pricing'
 
-export const TEXT_INPUT_MAX_LENGTH = 300
+export const TEXT_INPUT_MAX_LENGTH = 800
 
 export interface WorkflowTextLengthViolation {
   nodeId: string

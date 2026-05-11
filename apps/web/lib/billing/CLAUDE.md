@@ -13,7 +13,7 @@ ledger.test.ts: 积分事务测试，覆盖双池冻结顺序、确认消费、�
 metering.ts: 计量真相源，统一模型定价查询、billable units 预估与 credits 预估口径
 metering.test.ts: 计量测试，覆盖 model_pricing 查询、文本/图片/视频/音频 billable units 与 credits 换算
 workflow-pricing.ts: 工作流积分规则真相源，统一平台文本按次 1 分、图片按模型尺寸扣分与签到试用积分常量
-workflow-execution-guard.ts: 工作流运行前护栏层，统一文本输入 `300` 字限制、平台收费节点积分预估与运行前余额校验口径
+workflow-execution-guard.ts: 工作流运行前护栏层，统一文本输入 `800` 字限制、平台收费节点积分预估与运行前余额校验口径
 workflow-execution-guard.test.ts: 工作流运行前护栏测试，覆盖平台积分估算、auto 图片保守预估与文本超长拦截
 plans.ts: 套餐与积分包权益真相源，统一维护 Standard / Pro / Ultimate 与 credit_pack 的本地 snapshot
 entitlements.ts: 权益兑现层，统一维护 subscriptions 镜像、membership、月度积分重置、一次性积分发放与 Free 降级

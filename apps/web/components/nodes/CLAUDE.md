@@ -10,7 +10,7 @@
 plugin-registry.ts       — NodePluginMeta 节点元数据注册中心 (ports/defaults/category/icon，单一真相源)
 registry.ts              — NODE_TYPES 节点类型→组件映射 (ReactFlow 消费)
 base-node.tsx       — BaseNode 节点基础框架 (从 plugin-registry 读取端口，渲染状态指示/Handle/端口标签/选中样式，并统一提供稳定默认尺寸、内容裁切与边缘缩放)
-text-input-node.tsx — TextInputNode 文本输入节点（现收口 `300` 字输入上限，并在节点底部回显当前字数/剩余额度，避免超长提示词把图片主链拖入异常长耗时）
+text-input-node.tsx — TextInputNode 文本输入节点（现收口 `800` 字输入上限，并在节点底部回显当前字数/剩余额度，避免超长提示词把图片主链拖入异常长耗时）
 image-input-node.tsx — ImageInputNode 图片输入节点 (R2 上传 + 固定内容区图片预览 + image-out 输出)
 llm-node.tsx        — LLMNode 大语言模型节点 (platformProvider/platformModel 与 userKeyConfigId 分离；平台模式只暴露 4 个 comfly 静态文本模型且不再单独显示供应商字段，用户模式保留多协议自配置，支持温度/MaxTokens/SystemPrompt/流式输出，并通过 showPreview 开关控制节点内结果预览)
 display-node.tsx    — DisplayNode 结果展示节点 (递归渲染文本/图片/视频/音频/JSON/数组对象/裸 base64，以固定节点框体承载滚动文本与 contain 媒体预览，并支持浏览器下载)
