@@ -110,6 +110,7 @@ export function useUpdateUserTimezone() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.user.profile() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap.sidebar() })
       await queryClient.invalidateQueries({ queryKey: queryKeys.billing.signinStatus() })
     },
   })

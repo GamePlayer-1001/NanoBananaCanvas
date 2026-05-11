@@ -324,6 +324,7 @@ export function AppSidebar() {
     typeof window === 'undefined'
       ? null
       : Intl.DateTimeFormat().resolvedOptions().timeZone || null
+  const effectiveSigninTimeZone = user?.timezone ?? browserTimeZone
   const claimSignin = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/credits/signin', {
@@ -331,7 +332,9 @@ export function AppSidebar() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(browserTimeZone ? { timezone: browserTimeZone } : {}),
+        body: JSON.stringify(
+          effectiveSigninTimeZone ? { timezone: effectiveSigninTimeZone } : {},
+        ),
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {

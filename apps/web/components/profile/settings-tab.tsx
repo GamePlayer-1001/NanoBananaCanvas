@@ -24,12 +24,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { useUpdateUserTimezone } from '@/hooks/use-user'
+import { useCurrentUser, useUpdateUserTimezone } from '@/hooks/use-user'
 import { useUserPreferences } from '@/hooks/use-user-preferences'
 import { TIMEZONE_OPTIONS } from '@/lib/timezones'
 
 export function SettingsTab({ currentTimezone }: { currentTimezone: string | null }) {
   const t = useTranslations('profile')
+  const { data: currentUser } = useCurrentUser()
   const updateTimezone = useUpdateUserTimezone()
   const {
     preferences,
@@ -41,7 +42,7 @@ export function SettingsTab({ currentTimezone }: { currentTimezone: string | nul
     typeof window === 'undefined'
       ? 'UTC'
       : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  const effectiveTimezone = currentTimezone ?? browserTimeZone
+  const effectiveTimezone = currentUser?.timezone ?? currentTimezone ?? browserTimeZone
   const [selectedTimezone, setSelectedTimezone] = useState(effectiveTimezone)
 
   useEffect(() => {

@@ -1,12 +1,13 @@
 /**
- * [INPUT]: 依赖 @/lib/db，依赖 @/lib/auth/session-actor，依赖 @/lib/billing/credits
- * [OUTPUT]: 对外提供 getSidebarBootstrap，聚合侧边栏所需的用户/积分/签到/文件夹数据
+ * [INPUT]: 依赖 @/lib/db，依赖 @/lib/auth/session-actor，依赖 @/lib/billing/credits 与 @/lib/billing/ledger
+ * [OUTPUT]: 对外提供 getSidebarBootstrap，聚合侧边栏所需的用户/积分/真实签到状态与文件夹数据
  * [POS]: lib 的侧边栏聚合读取层，被 bootstrap API 与服务端预取复用，负责把 4 次常驻请求收口为 1 次
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { SessionActor } from '@/lib/auth/session-actor'
 import { getCreditBalanceSummary, type CreditBalanceSummary } from '@/lib/billing/credits'
+import { getDailySigninStatus } from '@/lib/billing/ledger'
 import { getDb } from '@/lib/db'
 
 export interface SidebarFolderSummary {
@@ -77,25 +78,22 @@ async function getSidebarFolders(userId: string): Promise<SidebarFolderSummary[]
   return result.results ?? []
 }
 
-function toSigninStatus(balance: CreditBalanceSummary): SidebarSigninStatus {
-  const available = balance.checkedInToday === false
-
-  return {
-    status: balance.checkedInToday ? 'claimed' : available ? 'available' : 'unavailable',
-    available,
-    checkedInToday: balance.checkedInToday,
-    trialBalance: balance.trialBalance,
-    trialExpiresAt: balance.trialExpiresAt,
-  }
-}
-
 export async function getSidebarBootstrap(actor: SessionActor): Promise<SidebarBootstrapPayload> {
   const foldersPromise = getSidebarFolders(actor.userId)
   const balancePromise = actor.isAuthenticated
     ? getCreditBalanceSummary(actor.userId).catch(() => null)
     : Promise.resolve<CreditBalanceSummary | null>(null)
+  const signinStatusPromise = actor.isAuthenticated
+    ? getDailySigninStatus(actor.userId, {
+        reportedTimezone: actor.timezone,
+      }).catch(() => null)
+    : Promise.resolve<SidebarSigninStatus | null>(null)
 
-  const [folders, balance] = await Promise.all([foldersPromise, balancePromise])
+  const [folders, balance, signinStatus] = await Promise.all([
+    foldersPromise,
+    balancePromise,
+    signinStatusPromise,
+  ])
 
   return {
     user: {
@@ -119,7 +117,7 @@ export async function getSidebarBootstrap(actor: SessionActor): Promise<SidebarB
       createdAt: actor.createdAt,
     },
     balance,
-    signinStatus: balance ? toSigninStatus(balance) : null,
+    signinStatus,
     folders,
   }
 }

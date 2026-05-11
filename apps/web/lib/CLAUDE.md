@@ -32,6 +32,8 @@ l10n.test.ts — L10N 语义测试 (业务字段 locale 回退链 + 多语言值
 image-model-capabilities.test.ts — 图片能力测试 (尺寸解析 + 动态护栏 + 错误学习回归)
 legal-documents.ts — 公开法律文档读取与解析层，消费静态法律文本常量并输出统一段落/列表/表格结构
 legal-document-sources.generated.ts — 由 `.md` 法律源文件生成的静态文本常量，供生产环境安全打包消费
+sidebar-bootstrap.ts — 侧边栏聚合读取层，被 bootstrap API 与服务端预取复用，负责把 4 次常驻请求收口为 1 次；签到状态现直接复用 ledger 的真实时区判定，不再从余额字段猜测
+sidebar-bootstrap.test.ts — 侧边栏聚合回归测试（锁定真实签到状态优先于余额快照猜测，防止时区相关 UI 状态再次漂移）
 api/                 — API 路由公共基础设施 (auth 守卫 + response 统一响应，详见子 CLAUDE.md)
 billing/     — Stripe 计费服务层 (配置解析 + 套餐权益 + Stripe client + Checkout/公开价格目录，详见子 CLAUDE.md)
 auth/        — 身份桥接层 (Clerk/匿名 identity adapter + SessionActor 门面 + route guard + redirect 策略，详见子 CLAUDE.md)

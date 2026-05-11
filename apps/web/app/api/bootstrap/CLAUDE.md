@@ -5,6 +5,6 @@
 
 ## 成员清单
 
-sidebar/route.ts: GET 侧边栏 bootstrap 聚合接口，返回当前 actor 的用户镜像、积分摘要、签到状态与文件夹列表，替代原先 4 次常驻请求
+sidebar/route.ts: GET 侧边栏 bootstrap 聚合接口，返回当前 actor 的用户镜像、积分摘要、真实签到状态与文件夹列表，替代原先 4 次常驻请求
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

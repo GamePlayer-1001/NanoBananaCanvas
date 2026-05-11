@@ -53,11 +53,12 @@ function getBrowserTimeZone() {
 
 export function useDailySigninStatus(enabled = true) {
   const bootstrap = useSidebarBootstrap()
+  const accountTimeZone = bootstrap.data?.user?.timezone ?? null
 
   return useQuery({
     queryKey: queryKeys.billing.signinStatus(),
     queryFn: () => {
-      const timeZone = getBrowserTimeZone()
+      const timeZone = accountTimeZone || getBrowserTimeZone()
       const search = timeZone ? `?timezone=${encodeURIComponent(timeZone)}` : ''
       return fetchJson<DailySigninStatus>(`/api/credits/signin${search}`)
     },
