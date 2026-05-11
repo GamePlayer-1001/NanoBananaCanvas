@@ -86,7 +86,7 @@ export function GroupNode(props: NodeProps) {
       style={{ backgroundColor: bgColor, minWidth: 300, minHeight: 200 }}
     >
       <NodeResizer
-        isVisible={!!props.selected || showResizer}
+        isVisible={showResizer}
         minWidth={300}
         minHeight={200}
         lineClassName={RESIZER_LINE_CLASS}

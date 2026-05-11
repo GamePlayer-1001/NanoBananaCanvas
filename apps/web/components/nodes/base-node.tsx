@@ -166,7 +166,7 @@ export function BaseNode({
     >
       {resizable ? (
         <NodeResizer
-          isVisible={selected || showResizer}
+          isVisible={showResizer}
           minWidth={minWidth}
           minHeight={minHeight}
           lineClassName={RESIZER_LINE_CLASS}
