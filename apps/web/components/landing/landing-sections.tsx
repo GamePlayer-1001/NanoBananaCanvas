@@ -348,12 +348,21 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
           {LANDING_PERSONA_ITEMS.map((planKey) => {
             const livePlan =
               planKey === 'free' ? null : monthlyPlanMap[planKey]
-            const priceLabel =
+            const priceParts =
               planKey === 'free'
-                ? pricingT('plans.free.period')
+                ? {
+                    amount: '$0',
+                    period: pricingT('plans.free.period').split(' ').slice(1).join(' '),
+                  }
                 : livePlan
-                  ? `${formatLandingMoney(livePlan.unitAmount)} ${pricingT(getLandingPricingKey(planKey, 'period'))}`
-                  : pricingT('pricePending')
+                  ? {
+                      amount: formatLandingMoney(livePlan.unitAmount),
+                      period: pricingT(getLandingPricingKey(planKey, 'period')),
+                    }
+                  : {
+                      amount: pricingT('pricePending'),
+                      period: '',
+                    }
             const highlights =
               planKey === 'free'
                 ? [
@@ -426,8 +435,15 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                 </div>
 
                 <div className="mt-4 min-h-[4.4rem] border-t border-white/8 pt-4">
-                  <p className="whitespace-nowrap text-[2.05rem] leading-none font-semibold tracking-tight text-white md:text-[2.25rem]">
-                    {priceLabel}
+                  <p className="flex items-baseline gap-2 whitespace-nowrap text-white">
+                    <span className="text-[2.05rem] leading-none font-semibold tracking-tight md:text-[2.25rem]">
+                      {priceParts.amount}
+                    </span>
+                    {priceParts.period ? (
+                      <span className="text-[1.28rem] leading-none font-semibold tracking-normal text-white/86 md:text-[1.42rem]">
+                        {priceParts.period}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
 
