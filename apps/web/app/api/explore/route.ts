@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     const db = await getDb()
 
     // 构建查询
-    const conditions = ['is_public = 1']
+    const conditions: string[] = []
     const binds: (string | number)[] = []
 
     if (category) {
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
       binds.push(type)
     }
 
-    const where = conditions.join(' AND ')
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
     const publicItemsSql = `
       SELECT 'workflow' AS entity_type,
              w.id,
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
 
     // 总数
     const countRow = await db
-      .prepare(`SELECT COUNT(*) as total FROM (${publicItemsSql}) items WHERE ${where}`)
+      .prepare(`SELECT COUNT(*) as total FROM (${publicItemsSql}) items ${whereClause}`)
       .bind(...binds)
       .first<{ total: number }>()
     const total = countRow?.total ?? 0
@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
       .prepare(
         `SELECT *
          FROM (${publicItemsSql}) items
-         WHERE ${where}
+         ${whereClause}
          ORDER BY ${orderBy}
          LIMIT ? OFFSET ?`,
       )

@@ -35,6 +35,44 @@ function formatMoney(amount: number): string {
   return `$${(amount / 100).toFixed(2)}`
 }
 
+function splitPricePeriod(label: string) {
+  const normalized = label.replace(/\s+/g, ' ').trim()
+  const parts = normalized.split(' / ')
+
+  if (parts.length === 2) {
+    return {
+      amount: parts[0],
+      period: parts[1],
+    }
+  }
+
+  return {
+    amount: normalized,
+    period: null,
+  }
+}
+
+function PriceLine({
+  amount,
+  period,
+}: {
+  amount: string
+  period: string | null
+}) {
+  return (
+    <div className="flex flex-wrap items-end gap-x-2 gap-y-1 text-foreground">
+      <span className="text-[2.15rem] leading-none font-semibold tracking-tight tabular-nums sm:text-[2.35rem]">
+        {amount}
+      </span>
+      {period ? (
+        <span className="pb-0.5 text-sm font-medium leading-none text-muted-foreground sm:text-base">
+          / {period}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 export function SubscriptionTab({
   isAuthenticated,
   subscription,
@@ -56,6 +94,7 @@ export function SubscriptionTab({
 
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
   const standardPlan = visiblePlans.find((plan) => plan.plan === 'standard')
+  const freeTrialPrice = splitPricePeriod(pricingT('plans.free.period'))
 
   const setMode = (mode: PurchaseMode) => {
     setSelectedMode(mode)
@@ -241,9 +280,7 @@ export function SubscriptionTab({
               </div>
 
               <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
-                <p className="whitespace-nowrap text-2xl font-semibold text-foreground">
-                  {pricingT('plans.free.period')}
-                </p>
+                <PriceLine amount={freeTrialPrice.amount} period={freeTrialPrice.period} />
               </div>
 
               <div className="mt-5 flex flex-1 flex-col">
@@ -276,6 +313,9 @@ export function SubscriptionTab({
           const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`
           const isCurrentPlan =
             subscription.plan === plan.plan && subscription.purchaseMode === plan.purchaseMode
+          const formattedPrice = splitPricePeriod(
+            `${formatMoney(plan.unitAmount)} ${pricingT(`plans.${plan.plan}.period`)}`,
+          )
           return (
             <article
               key={`${plan.plan}:${plan.purchaseMode}`}
@@ -301,10 +341,7 @@ export function SubscriptionTab({
               </div>
 
               <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
-                <p className="whitespace-nowrap text-2xl font-semibold text-foreground">
-                  {formatMoney(plan.unitAmount)}{' '}
-                  {pricingT(`plans.${plan.plan}.period`)}
-                </p>
+                <PriceLine amount={formattedPrice.amount} period={formattedPrice.period} />
               </div>
 
               <div className="mt-5 flex flex-1 flex-col">
