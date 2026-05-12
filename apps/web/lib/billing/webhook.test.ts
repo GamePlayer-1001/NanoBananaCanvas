@@ -212,7 +212,7 @@ describe('processStripeWebhookEvent', () => {
     expect(updateTrialUsed).toHaveBeenCalledTimes(1)
   })
 
-  it('should cap monthly credits instead of regranting full credits for a normal recurring checkout start', async () => {
+  it('should grant starting monthly credits for a normal recurring checkout start', async () => {
     vi.mocked(getDb).mockResolvedValue({
       prepare: vi.fn((sql: string) => {
         if (sql.includes('INSERT OR IGNORE INTO processed_stripe_events')) {
@@ -272,14 +272,14 @@ describe('processStripeWebhookEvent', () => {
       processed: true,
     })
 
-    expect(resetPlanMonthlyCredits).not.toHaveBeenCalled()
-    expect(capPlanMonthlyCredits).toHaveBeenCalledTimes(1)
-    expect(capPlanMonthlyCredits).toHaveBeenCalledWith({
+    expect(capPlanMonthlyCredits).not.toHaveBeenCalled()
+    expect(resetPlanMonthlyCredits).toHaveBeenCalledTimes(1)
+    expect(resetPlanMonthlyCredits).toHaveBeenCalledWith({
       userId: 'user_123',
       plan: 'pro',
       referenceId: 'cs_pro_123',
-      source: 'stripe_subscription_cap_sync',
-      description: 'Stripe subscription start keeps remaining monthly credits without regranting',
+      source: 'stripe_subscription_renewal',
+      description: 'Stripe subscription starting credits',
     })
   })
 })

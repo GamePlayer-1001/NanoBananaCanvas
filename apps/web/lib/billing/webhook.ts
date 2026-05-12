@@ -191,12 +191,12 @@ async function handlePlanCheckoutCompleted(
       return
     }
 
-    await capPlanMonthlyCredits({
+    await resetPlanMonthlyCredits({
       userId,
       plan,
       referenceId: session.id,
-      source: 'stripe_subscription_cap_sync',
-      description: 'Stripe subscription start keeps remaining monthly credits without regranting',
+      source: 'stripe_subscription_renewal',
+      description: 'Stripe subscription starting credits',
     })
     return
   }
