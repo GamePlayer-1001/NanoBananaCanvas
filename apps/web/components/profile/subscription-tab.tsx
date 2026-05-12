@@ -48,6 +48,7 @@ export function SubscriptionTab({
   const router = useRouter()
   const [selectedMode, setSelectedMode] = useState<PurchaseMode>(initialMode)
   const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false)
 
   useEffect(() => {
     setSelectedMode(initialMode)
@@ -140,6 +141,33 @@ export function SubscriptionTab({
     }
   }
 
+  async function handleOpenPortal() {
+    if (!isAuthenticated) {
+      router.push('/sign-in?redirect_url=/account?tab=subscription')
+      return
+    }
+
+    setIsOpeningPortal(true)
+
+    try {
+      const response = await fetch('/api/billing/portal', { method: 'POST' })
+      const payload = (await response.json()) as {
+        ok: boolean
+        data?: { portalUrl: string }
+        error?: { message?: string }
+      }
+
+      if (!response.ok || !payload.ok || !payload.data?.portalUrl) {
+        throw new Error(payload.error?.message ?? t('subscriptionCheckoutFailed'))
+      }
+
+      window.location.assign(payload.data.portalUrl)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('subscriptionCheckoutFailed'))
+      setIsOpeningPortal(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[28px] border border-border/70 bg-white/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
@@ -169,6 +197,28 @@ export function SubscriptionTab({
         <div className="rounded-[24px] border border-amber-300/40 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
           {t('subscriptionPricingUnavailable')}
         </div>
+      ) : null}
+
+      {isAuthenticated ? (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/70 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">{t('subscriptionCurrentPlan')}</p>
+            <p className="text-sm text-muted-foreground">
+              {subscription.plan} · {subscription.status}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 rounded-xl px-5"
+            onClick={() => {
+              void handleOpenPortal()
+            }}
+            disabled={isOpeningPortal}
+          >
+            {isOpeningPortal ? t('openingBilling') : t('dashboardPortalAction')}
+          </Button>
+        </section>
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">

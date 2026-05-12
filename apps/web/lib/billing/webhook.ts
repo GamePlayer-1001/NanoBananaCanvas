@@ -179,6 +179,13 @@ async function handlePlanCheckoutCompleted(
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     })
     if (isStandardTrialPurchase(purchaseMode)) {
+      await resetPlanMonthlyCredits({
+        userId,
+        plan,
+        referenceId: session.id,
+        source: 'stripe_subscription_renewal',
+        description: 'Stripe standard trial starting credits',
+      })
       await markStandardTrialUsed(userId)
     }
     return
