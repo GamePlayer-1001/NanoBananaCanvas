@@ -53,11 +53,11 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url)
     const parsed = exploreQuerySchema.safeParse({
-      page: url.searchParams.get('page'),
-      limit: url.searchParams.get('limit'),
+      page: url.searchParams.get('page') ?? undefined,
+      limit: url.searchParams.get('limit') ?? undefined,
       category: url.searchParams.get('category') || undefined,
-      sort: url.searchParams.get('sort'),
-      type: url.searchParams.get('type'),
+      sort: url.searchParams.get('sort') ?? undefined,
+      type: url.searchParams.get('type') ?? undefined,
     })
 
     const { page, limit, category, sort, type } = parsed.success

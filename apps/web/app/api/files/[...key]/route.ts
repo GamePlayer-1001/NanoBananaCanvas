@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/response 的 apiError/handleApiError，
- *          依赖 @/lib/r2 的 getR2，依赖 next/server 的 NextRequest/NextResponse
- * [OUTPUT]: 对外提供 GET /api/files/[...key] (R2 文件读取：缩略图公开，其余按用户隔离)
- * [POS]: api/files 的通用文件读取端点，被工作流缩略图、上传素材与任务输出消费
+ *          依赖 @/lib/db 的 getDb，依赖 @/lib/r2 的 getR2，依赖 next/server 的 NextRequest/NextResponse
+ * [OUTPUT]: 对外提供 GET /api/files/[...key] (R2 文件读取：缩略图公开，公开作品引用媒体可匿名读取，其余按用户隔离)
+ * [POS]: api/files 的通用文件读取端点，被工作流缩略图、上传素材、任务输出与 Explore 公开作品消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -10,21 +10,75 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { requireAuth } from '@/lib/api/auth'
 import { apiError, handleApiError } from '@/lib/api/response'
+import { getDb } from '@/lib/db'
 import { getR2 } from '@/lib/r2'
 
 type Params = { params: Promise<{ key: string[] }> }
+type PublicMediaCacheEntry = { value: boolean; expiresAt: number }
+
+const PUBLIC_EXPLORE_MEDIA_CACHE_TTL_MS = 5 * 60 * 1000
+const publicExploreMediaCache = new Map<string, PublicMediaCacheEntry>()
 
 function isPublicKey(key: string): boolean {
   return key.startsWith('thumbnails/')
+}
+
+function buildInternalFileUrl(key: string): string {
+  return `/api/files/${key}`
 }
 
 function isAllowedPrivateKey(key: string, userId: string): boolean {
   return key.startsWith(`uploads/${userId}/`) || key.startsWith(`outputs/${userId}/`)
 }
 
+function getCachedPublicExploreMedia(key: string): boolean | null {
+  const cached = publicExploreMediaCache.get(key)
+  if (!cached) return null
+  if (cached.expiresAt <= Date.now()) {
+    publicExploreMediaCache.delete(key)
+    return null
+  }
+  return cached.value
+}
+
+function setCachedPublicExploreMedia(key: string, value: boolean): void {
+  publicExploreMediaCache.set(key, {
+    value,
+    expiresAt: Date.now() + PUBLIC_EXPLORE_MEDIA_CACHE_TTL_MS,
+  })
+}
+
+async function isPublicExploreMediaKey(key: string): Promise<boolean> {
+  const cached = getCachedPublicExploreMedia(key)
+  if (cached !== null) {
+    return cached
+  }
+
+  const db = await getDb()
+  const internalUrl = buildInternalFileUrl(key)
+  const row = await db
+    .prepare(
+      `SELECT id
+       FROM published_outputs
+       WHERE is_public = 1
+         AND (media_url = ? OR thumbnail = ?)
+       LIMIT 1`,
+    )
+    .bind(internalUrl, internalUrl)
+    .first<{ id: string }>()
+
+  const isPublic = !!row
+  setCachedPublicExploreMedia(key, isPublic)
+  return isPublic
+}
+
 function buildCacheControl(key: string): string {
   if (key.startsWith('thumbnails/')) {
     return 'public, max-age=86400, stale-while-revalidate=604800'
+  }
+
+  if (key.startsWith('uploads/') || key.startsWith('outputs/')) {
+    return 'public, max-age=3600, stale-while-revalidate=86400'
   }
 
   return 'private, max-age=3600'
@@ -54,7 +108,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       return apiError('VALIDATION_FAILED', 'Missing file key', 400)
     }
 
-    const isPublic = isPublicKey(key)
+    const isPublic = isPublicKey(key) || await isPublicExploreMediaKey(key)
 
     if (!isPublic) {
       const { userId } = await requireAuth()
