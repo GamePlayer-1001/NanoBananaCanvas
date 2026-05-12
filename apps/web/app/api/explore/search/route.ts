@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/response, @/lib/db, @/lib/validations/explore
  * [OUTPUT]: 对外提供 GET /api/explore/search
- * [POS]: api/explore/search 的搜索端点，LIKE 模糊匹配公开工作流与公开生成作品
+ * [POS]: api/explore/search 的搜索端点，对公开工作流与公开生成作品做标题/描述/作者/Prompt/来源的模糊搜索
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -55,7 +55,8 @@ export async function GET(req: NextRequest) {
 
     const { q, page, limit } = parsed.data
     const offset = (page - 1) * limit
-    const keyword = `%${q}%`
+    const normalizedQuery = q.trim()
+    const keyword = `%${normalizedQuery}%`
     const db = await getDb()
 
     const publicItemsSql = `
@@ -70,7 +71,10 @@ export async function GET(req: NextRequest) {
              w.published_at,
              'workflow' AS content_type,
              ${ACCOUNT_AUTHOR_NAME_SQL} as author_name,
-             u.avatar_url as author_avatar
+             u.avatar_url as author_avatar,
+             '' AS prompt,
+             '' AS source_url,
+             '' AS source_author_name
       FROM workflows w
       JOIN users u ON u.id = w.user_id
       WHERE w.is_public = 1
@@ -88,19 +92,32 @@ export async function GET(req: NextRequest) {
              po.published_at,
              po.media_type AS content_type,
              ${OUTPUT_AUTHOR_NAME_SQL} as author_name,
-             ${OUTPUT_AUTHOR_AVATAR_SQL} as author_avatar
+             ${OUTPUT_AUTHOR_AVATAR_SQL} as author_avatar,
+             COALESCE(po.prompt, '') AS prompt,
+             COALESCE(po.source_url, '') AS source_url,
+             COALESCE(po.source_author_name, '') AS source_author_name
       FROM published_outputs po
       JOIN users u ON u.id = po.user_id
       WHERE po.is_public = 1
     `
 
+    const searchWhere = `
+      WHERE name LIKE ?
+         OR description LIKE ?
+         OR author_name LIKE ?
+         OR prompt LIKE ?
+         OR source_url LIKE ?
+         OR source_author_name LIKE ?
+    `
+
     // 总数
     const countRow = await db
       .prepare(
-        `SELECT COUNT(*) as total FROM (${publicItemsSql}) items
-         WHERE name LIKE ? OR description LIKE ?`,
+        `SELECT COUNT(*) as total
+         FROM (${publicItemsSql}) items
+         ${searchWhere}`,
       )
-      .bind(keyword, keyword)
+      .bind(keyword, keyword, keyword, keyword, keyword, keyword)
       .first<{ total: number }>()
     const total = countRow?.total ?? 0
 
@@ -109,11 +126,11 @@ export async function GET(req: NextRequest) {
       .prepare(
         `SELECT *
          FROM (${publicItemsSql}) items
-         WHERE name LIKE ? OR description LIKE ?
+         ${searchWhere}
          ORDER BY published_at DESC
          LIMIT ? OFFSET ?`,
       )
-      .bind(keyword, keyword, limit, offset)
+      .bind(keyword, keyword, keyword, keyword, keyword, keyword, limit, offset)
       .all()
 
     return apiOk({
