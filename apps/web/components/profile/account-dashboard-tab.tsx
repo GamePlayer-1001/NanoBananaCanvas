@@ -101,6 +101,40 @@ export function AccountDashboardTab({
   const monthlyAllowance = Math.max(balance.currentPlanMonthlyCredits, 1)
   const monthlyUsed = Math.max(balance.currentPlanMonthlyCredits - balance.monthlyBalance, 0)
   const monthlyUsagePercent = Math.min((monthlyUsed / monthlyAllowance) * 100, 100)
+  const statsCards = [
+    {
+      key: 'signin',
+      label: t('dashboardSigninCreditsLabel'),
+      value: balance.trialBalance,
+      containerClassName: 'border-violet-200 bg-violet-50',
+      labelClassName: 'text-violet-700',
+      valueClassName: 'text-violet-950',
+    },
+    {
+      key: 'allowance',
+      label: t('dashboardMonthlyAllowanceLabel'),
+      value: balance.currentPlanMonthlyCredits,
+      containerClassName: 'border-sky-200 bg-sky-50',
+      labelClassName: 'text-sky-700',
+      valueClassName: 'text-sky-950',
+    },
+    {
+      key: 'available',
+      label: t('dashboardAvailableCreditsLabel'),
+      value: balance.availableCredits,
+      containerClassName: 'border-emerald-200 bg-emerald-50',
+      labelClassName: 'text-emerald-700',
+      valueClassName: 'text-emerald-950',
+    },
+    {
+      key: 'spent',
+      label: t('dashboardLifetimeSpentLabel'),
+      value: balance.totalSpent,
+      containerClassName: 'border-slate-200 bg-slate-50',
+      labelClassName: 'text-slate-600',
+      valueClassName: 'text-slate-950',
+    },
+  ] as const
 
   async function handleOpenPortal() {
     setIsOpeningPortal(true)
@@ -186,19 +220,19 @@ export function AccountDashboardTab({
 
             <div className="min-w-0 flex-1 space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
-                  <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
+                <div className="flex min-h-[90px] flex-col justify-between rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+                  <p className="text-xs leading-4 tracking-[0.14em] text-muted-foreground uppercase [overflow-wrap:anywhere]">
                     {t('dashboardCurrentPlan')}
                   </p>
-                  <p className="mt-1 text-lg font-semibold capitalize text-foreground">
+                  <p className="mt-2 text-lg font-semibold capitalize text-foreground break-words">
                     {subscription.plan}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
-                  <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
+                <div className="flex min-h-[90px] flex-col justify-between rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+                  <p className="text-xs leading-4 tracking-[0.14em] text-muted-foreground uppercase [overflow-wrap:anywhere]">
                     {t('dashboardSubscriptionState')}
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-foreground">
+                  <p className="mt-2 text-lg font-semibold text-foreground break-words">
                     {subscription.status}
                   </p>
                 </div>
@@ -229,30 +263,17 @@ export function AccountDashboardTab({
 
         <article className="rounded-[28px] border border-border/70 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="text-sm text-emerald-700">{t('dashboardAvailableCreditsLabel')}</p>
-              <p className="mt-2 text-3xl font-semibold text-emerald-950">
-                {balance.availableCredits.toLocaleString()}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-              <p className="text-sm text-sky-700">{t('dashboardMonthlyAllowanceLabel')}</p>
-              <p className="mt-2 text-3xl font-semibold text-sky-950">
-                {balance.currentPlanMonthlyCredits.toLocaleString()}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-600">{t('dashboardLifetimeSpentLabel')}</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">
-                {balance.totalSpent.toLocaleString()}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-              <p className="text-sm text-violet-700">{t('dashboardSigninCreditsLabel')}</p>
-              <p className="mt-2 text-3xl font-semibold text-violet-950">
-                {balance.trialBalance.toLocaleString()}
-              </p>
-            </div>
+            {statsCards.map((card) => (
+              <div
+                key={card.key}
+                className={`flex min-h-[132px] flex-col justify-between rounded-2xl border p-4 ${card.containerClassName}`}
+              >
+                <p className={`text-sm leading-6 ${card.labelClassName}`}>{card.label}</p>
+                <p className={`mt-4 text-3xl font-semibold tabular-nums ${card.valueClassName}`}>
+                  {card.value.toLocaleString()}
+                </p>
+              </div>
+            ))}
           </div>
 
           <div className="mt-6 rounded-[24px] border border-border/70 bg-muted/20 p-5">

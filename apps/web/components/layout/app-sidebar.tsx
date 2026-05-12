@@ -528,15 +528,21 @@ export function AppSidebar() {
                   </span>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant={signinButtonVariant}
-                disabled={signinButtonDisabled}
-                onClick={() => claimSignin.mutate()}
-                className={signinButtonClassName}
-              >
-                {signinButtonLabel}
-              </Button>
+              {signinState === 'claimed' ? (
+                <span className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-700">
+                  {signinButtonLabel}
+                </span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant={signinButtonVariant}
+                  disabled={signinButtonDisabled}
+                  onClick={() => claimSignin.mutate()}
+                  className={signinButtonClassName}
+                >
+                  {signinButtonLabel}
+                </Button>
+              )}
             </div>
           </div>
 
