@@ -31,7 +31,6 @@ const TAB_SORT: Record<ExploreTab, ExploreQuery['sort']> = {
   hot: 'popular',
   latest: 'latest',
   myLiked: 'most-liked',
-  myVideos: 'latest',
 }
 
 /* ─── D1 → VideoCardData 映射 ────────────────────────── */

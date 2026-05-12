@@ -20,7 +20,7 @@ import { SHARE_UPLOAD_ACCEPT, UPLOAD_LIMITS, detectUploadKind } from '@/lib/vali
 
 /* ─── Tab Config ─────────────────────────────────────── */
 
-const TABS = ['hot', 'latest', 'myLiked', 'myVideos'] as const
+const TABS = ['hot', 'latest', 'myLiked'] as const
 const TYPE_TABS = ['all', 'video', 'image', 'workflow'] as const
 
 export type ExploreTab = (typeof TABS)[number]
