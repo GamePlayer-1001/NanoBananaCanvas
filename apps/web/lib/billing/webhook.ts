@@ -17,6 +17,7 @@ import {
   applyFreePlanDowngrade,
   awardCreditPackCredits,
   awardOneTimePlanCredits,
+  capPlanMonthlyCredits,
   resetPlanMonthlyCredits,
   syncUserPlanEntitlement,
 } from './entitlements'
@@ -187,7 +188,16 @@ async function handlePlanCheckoutCompleted(
         description: 'Stripe standard trial starting credits',
       })
       await markStandardTrialUsed(userId)
+      return
     }
+
+    await capPlanMonthlyCredits({
+      userId,
+      plan,
+      referenceId: session.id,
+      source: 'stripe_subscription_cap_sync',
+      description: 'Stripe subscription start keeps remaining monthly credits without regranting',
+    })
     return
   }
 
@@ -396,6 +406,14 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     currentPeriodStart: period.currentPeriodStart,
     currentPeriodEnd: period.currentPeriodEnd,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
+  })
+
+  await capPlanMonthlyCredits({
+    userId,
+    plan,
+    referenceId: event.id,
+    source: 'stripe_subscription_update_cap_sync',
+    description: 'Stripe subscription update keeps monthly credits capped to current plan',
   })
 }
 

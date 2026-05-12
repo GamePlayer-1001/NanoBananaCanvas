@@ -241,6 +241,45 @@ export async function resetPlanMonthlyCredits(input: {
   })
 }
 
+export async function capPlanMonthlyCredits(input: {
+  userId: string
+  plan: BillingPlan | 'free'
+  referenceId: string
+  source: string
+  description: string
+}) {
+  const db = await getDb()
+  const balance = await readCreditBalanceRow(input.userId)
+  const planMonthlyCap =
+    input.plan === 'free'
+      ? FREE_PLAN_SNAPSHOT.monthlyCredits
+      : getBillingPlanSnapshot(input.plan).monthlyCredits
+
+  if (balance.monthly_balance <= planMonthlyCap) {
+    return
+  }
+
+  await db
+    .prepare(
+      `UPDATE credit_balances
+       SET monthly_balance = ?,
+           updated_at = datetime('now')
+       WHERE user_id = ?`,
+    )
+    .bind(planMonthlyCap, input.userId)
+    .run()
+
+  await writeCreditTransaction({
+    userId: input.userId,
+    pool: 'monthly',
+    amount: planMonthlyCap - balance.monthly_balance,
+    balanceAfter: planMonthlyCap + balance.permanent_balance,
+    source: input.source,
+    referenceId: input.referenceId,
+    description: input.description,
+  })
+}
+
 export async function awardOneTimePlanCredits(input: {
   userId: string
   plan: BillingPlan

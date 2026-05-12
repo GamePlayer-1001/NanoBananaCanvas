@@ -93,6 +93,7 @@ function errorCodeToStatus(code: string): number {
   if (code === 'BILLING_PAYMENT_DECLINED') return 402
   if (code === 'BILLING_CREDITS_INSUFFICIENT') return 402
   if (code === 'BILLING_TRIAL_ALREADY_USED') return 409
+  if (code === 'BILLING_SUBSCRIPTION_ALREADY_ACTIVE') return 409
   if (code === 'BILLING_NETWORK_ERROR') return 503
   if (code === 'BILLING_PROVIDER_ERROR') return 502
   if (code === 'BILLING_PRICE_NOT_CONFIGURED') return 503

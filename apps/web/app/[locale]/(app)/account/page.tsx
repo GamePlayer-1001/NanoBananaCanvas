@@ -43,6 +43,7 @@ function createGuestSubscription() {
     cancelEligible: false,
     standardTrialUsedAt: null,
     standardTrialEligible: false,
+    standardTrialActive: false,
   }
 }
 

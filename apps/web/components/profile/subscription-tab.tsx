@@ -118,8 +118,8 @@ export function SubscriptionTab({
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
   const standardPlan = visiblePlans.find((plan) => plan.plan === 'standard')
   const freeTrialPrice = splitPricePeriod(pricingT('plans.free.period'))
-  const isTrialingStandard = subscription.plan === 'standard' && subscription.status === 'trialing'
-  const isFreeTrialCurrent = isTrialingStandard
+  const shouldShowFreeTrialCard = subscription.standardTrialEligible || subscription.standardTrialActive
+  const isFreeTrialCurrent = subscription.standardTrialActive
   const freeTrialRibbonLabel = isFreeTrialCurrent
     ? t('subscriptionCurrentPlan')
     : t('subscriptionPopular')
@@ -289,61 +289,63 @@ export function SubscriptionTab({
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
-        <article className="relative flex h-full flex-col rounded-[26px] border border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)] p-6 pt-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-              <PlanRibbon
-                label={freeTrialRibbonLabel}
-                tone={isFreeTrialCurrent ? 'emerald' : 'violet'}
-              />
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                    {pricingT('plans.free.planLabel')}
-                  </p>
-                  <h3 className="mt-2.5 text-2xl font-semibold text-foreground">
-                    {pricingT('plans.free.name')}
-                  </h3>
-                  <p className="mt-1 text-sm font-medium text-muted-foreground">
-                    {pricingT('plans.free.subtitle')}
-                  </p>
+        {shouldShowFreeTrialCard ? (
+          <article className="relative flex h-full flex-col rounded-[26px] border border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)] p-6 pt-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                <PlanRibbon
+                  label={freeTrialRibbonLabel}
+                  tone={isFreeTrialCurrent ? 'emerald' : 'violet'}
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+                      {pricingT('plans.free.planLabel')}
+                    </p>
+                    <h3 className="mt-2.5 text-2xl font-semibold text-foreground">
+                      {pricingT('plans.free.name')}
+                    </h3>
+                    <p className="mt-1 text-sm font-medium text-muted-foreground">
+                      {pricingT('plans.free.subtitle')}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
-                <PriceLine amount={freeTrialPrice.amount} period={freeTrialPrice.period} />
-              </div>
-
-              <div className="mt-5 flex flex-1 flex-col">
-                <div className="space-y-3">
-                  <SubscriptionFeature value={pricingT('plans.free.note')} />
-                  <SubscriptionFeature value={pricingT('plans.free.storageNote')} />
-                  <SubscriptionFeature value={pricingT('plans.free.supportNote')} />
+                <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                  <PriceLine amount={freeTrialPrice.amount} period={freeTrialPrice.period} />
                 </div>
-              </div>
 
-              <div className="mt-auto pt-16">
-                <Button
-                  type="button"
-                  className="h-12 w-full rounded-xl"
-                  disabled={pendingKey === 'trial:standard' || !standardPlan || isFreeTrialCurrent}
-                  onClick={() => {
-                    void handleTrialCheckout(standardPlan)
-                  }}
-                >
-                  {isFreeTrialCurrent
-                    ? t('subscriptionCurrentPlan')
-                    : pendingKey === 'trial:standard'
-                    ? t('subscriptionRedirecting')
-                    : isAuthenticated
-                      ? pricingT('plans.free.cta')
-                      : t('subscriptionSignInFirst')}
-                </Button>
-              </div>
-        </article>
+                <div className="mt-5 flex flex-1 flex-col">
+                  <div className="space-y-3">
+                    <SubscriptionFeature value={pricingT('plans.free.note')} />
+                    <SubscriptionFeature value={pricingT('plans.free.storageNote')} />
+                    <SubscriptionFeature value={pricingT('plans.free.supportNote')} />
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-16">
+                  <Button
+                    type="button"
+                    className="h-12 w-full rounded-xl"
+                    disabled={pendingKey === 'trial:standard' || !standardPlan || isFreeTrialCurrent}
+                    onClick={() => {
+                      void handleTrialCheckout(standardPlan)
+                    }}
+                  >
+                    {isFreeTrialCurrent
+                      ? t('subscriptionCurrentPlan')
+                      : pendingKey === 'trial:standard'
+                      ? t('subscriptionRedirecting')
+                      : isAuthenticated
+                        ? pricingT('plans.free.cta')
+                        : t('subscriptionSignInFirst')}
+                  </Button>
+                </div>
+          </article>
+        ) : null}
 
         {visiblePlans.map((plan) => {
           const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`
           const isCurrentPlan =
-            !isTrialingStandard &&
+            !subscription.standardTrialActive &&
             subscription.plan === plan.plan &&
             subscription.purchaseMode === plan.purchaseMode
           const formattedPrice = splitPricePeriod(

@@ -157,6 +157,7 @@ export default async function PricingPage({
         plans={pricing?.plans ?? []}
         creditPacks={pricing?.creditPacks ?? []}
         standardTrialEligible={subscription?.standardTrialEligible ?? true}
+        standardTrialActive={subscription?.standardTrialActive ?? false}
       />
       <div className="bg-[#09090d] px-4 pb-24 sm:px-6 lg:px-8 xl:px-10">
         <div className="mx-auto w-full max-w-[1380px]">

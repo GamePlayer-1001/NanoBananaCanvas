@@ -92,6 +92,17 @@ function createDbMock(options: {
         }
       }
 
+      if (sql.includes('SELECT standard_trial_used_at FROM users WHERE id = ?')) {
+        return {
+          bind: vi.fn().mockReturnValue({
+            first: vi.fn().mockResolvedValue({
+              standard_trial_used_at:
+                (options.subscriptionRow?.standard_trial_used_at as string | null | undefined) ?? null,
+            }),
+          }),
+        }
+      }
+
       throw new Error(`Unexpected SQL in test: ${sql}`)
     }),
   } as unknown as D1Database
@@ -149,6 +160,7 @@ describe('getBillingSubscription', () => {
       stripeSubscriptionId: null,
       standardTrialUsedAt: null,
       standardTrialEligible: true,
+      standardTrialActive: false,
       portalEligible: false,
       cancelEligible: false,
     })
@@ -175,8 +187,96 @@ describe('getBillingSubscription', () => {
       stripeSubscriptionId: null,
       standardTrialUsedAt: null,
       standardTrialEligible: true,
+      standardTrialActive: false,
       portalEligible: false,
       cancelEligible: false,
+    })
+  })
+
+  it('marks standard trial as active when the mirrored subscription is still trialing', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        userColumns: [
+          'id',
+          'plan',
+          'membership_status',
+          'standard_trial_used_at',
+          'created_at',
+          'updated_at',
+        ],
+        subscriptionRow: {
+          user_id: 'trial-user',
+          user_plan: 'standard',
+          membership_status: 'standard',
+          standard_trial_used_at: '2026-05-12T00:00:00.000Z',
+          id: 'sub_local_123',
+          stripe_subscription_id: 'sub_stripe_123',
+          stripe_customer_id: 'cus_123',
+          plan: 'standard',
+          purchase_mode: 'auto_monthly',
+          billing_period: 'monthly',
+          status: 'trialing',
+          current_period_start: '2026-05-12T00:00:00.000Z',
+          current_period_end: '2026-06-11T00:00:00.000Z',
+          monthly_credits: 1600,
+          storage_gb: 1,
+          cancel_at_period_end: 0,
+          created_at: '2026-05-12T00:00:00.000Z',
+          updated_at: '2026-05-12T00:00:00.000Z',
+        },
+      }),
+    )
+
+    await expect(getBillingSubscription('trial-user')).resolves.toMatchObject({
+      userId: 'trial-user',
+      plan: 'standard',
+      status: 'trialing',
+      standardTrialEligible: false,
+      standardTrialActive: true,
+    })
+  })
+
+  it('hides standard trial when the trial subscription is already set to cancel at period end', async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      createDbMock({
+        userColumns: [
+          'id',
+          'plan',
+          'membership_status',
+          'standard_trial_used_at',
+          'created_at',
+          'updated_at',
+        ],
+        subscriptionRow: {
+          user_id: 'trial-cancel-user',
+          user_plan: 'standard',
+          membership_status: 'standard',
+          standard_trial_used_at: '2026-05-12T00:00:00.000Z',
+          id: 'sub_local_cancel_123',
+          stripe_subscription_id: 'sub_stripe_cancel_123',
+          stripe_customer_id: 'cus_cancel_123',
+          plan: 'standard',
+          purchase_mode: 'auto_monthly',
+          billing_period: 'monthly',
+          status: 'trialing',
+          current_period_start: '2026-05-12T00:00:00.000Z',
+          current_period_end: '2026-06-11T00:00:00.000Z',
+          monthly_credits: 1600,
+          storage_gb: 1,
+          cancel_at_period_end: 1,
+          created_at: '2026-05-12T00:00:00.000Z',
+          updated_at: '2026-05-12T00:00:00.000Z',
+        },
+      }),
+    )
+
+    await expect(getBillingSubscription('trial-cancel-user')).resolves.toMatchObject({
+      userId: 'trial-cancel-user',
+      plan: 'standard',
+      status: 'trialing',
+      cancelAtPeriodEnd: true,
+      standardTrialEligible: false,
+      standardTrialActive: false,
     })
   })
 })
