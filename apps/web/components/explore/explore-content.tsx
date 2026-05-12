@@ -13,6 +13,7 @@
 
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight, Flame, SearchCheck, X } from 'lucide-react'
@@ -35,21 +36,21 @@ const TAB_SORT: Record<ExploreTab, ExploreQuery['sort']> = {
 
 const BANNERS = [
   {
-    accent: 'from-[#ff8a3d] via-[#fb7185] to-[#ffd84d]',
+    image: '/explore/banners/01.png',
     panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.02))]',
     eyebrowKey: 'bannerEyebrow1',
     titleKey: 'bannerTitle1',
     bodyKey: 'bannerBody1',
   },
   {
-    accent: 'from-[#111827] via-[#0f3fb2] to-[#6aa8ff]',
+    image: '/explore/banners/02.png',
     panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02))]',
     eyebrowKey: 'bannerEyebrow2',
     titleKey: 'bannerTitle2',
     bodyKey: 'bannerBody2',
   },
   {
-    accent: 'from-[#1f4d31] via-[#22c55e] to-[#f6e27a]',
+    image: '/explore/banners/03.png',
     panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02))]',
     eyebrowKey: 'bannerEyebrow3',
     titleKey: 'bannerTitle3',
@@ -210,46 +211,59 @@ export function ExploreContent() {
         ) : null}
 
         <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
-          {BANNERS.slice(0, 2).map((banner, index) => {
-            const isActive = index === activeBanner % 2
+          {BANNERS.slice(0, 2).map((_, index) => {
+            const banner = BANNERS[(activeBanner + index) % BANNERS.length]
+            const isActive = index === 0
             return (
               <article
-                key={banner.titleKey}
-                className={`animate-explore-rise relative overflow-hidden rounded-[32px] border border-white/70 bg-gradient-to-br ${banner.accent} p-6 text-white shadow-[0_28px_80px_-34px_rgba(15,23,42,0.4)] transition-all duration-500 ${
-                  isActive ? 'translate-y-0 opacity-100' : 'opacity-78 xl:translate-y-1 xl:scale-[0.99]'
+                key={`${banner.titleKey}-${activeBanner}-${index}`}
+                className={`animate-explore-rise relative overflow-hidden rounded-[32px] border border-white/70 p-5 text-white shadow-[0_28px_80px_-34px_rgba(15,23,42,0.4)] transition-all duration-500 sm:p-6 ${
+                  isActive ? 'translate-y-0 opacity-100' : 'opacity-88 xl:translate-y-1 xl:scale-[0.99]'
                 }`}
                 style={{ animationDelay: `${index * 110}ms` }}
               >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.34),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0))]" />
+                <Image
+                  src={banner.image}
+                  alt={t(banner.titleKey)}
+                  fill
+                  sizes="(max-width: 1279px) 100vw, 50vw"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(92deg,rgba(15,23,42,0.6)_0%,rgba(15,23,42,0.28)_36%,rgba(15,23,42,0.18)_58%,rgba(15,23,42,0.5)_100%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0))]" />
                 <div className="absolute -right-8 top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-                <div className="relative flex min-h-[208px] flex-col justify-between gap-6">
+                <div className="relative flex min-h-[200px] flex-col justify-between gap-6 sm:min-h-[224px]">
                   <div className="space-y-4">
                     <p className="text-xs font-semibold tracking-[0.22em] text-white/78 uppercase">
                       {t(banner.eyebrowKey)}
                     </p>
-                    <h2 className="max-w-[15ch] text-2xl font-semibold tracking-tight sm:text-3xl">
+                    <h2 className="max-w-[14ch] text-2xl font-semibold tracking-tight sm:text-3xl">
                       {t(banner.titleKey)}
                     </h2>
-                    <p className="max-w-[40ch] text-sm leading-6 text-white/84">{t(banner.bodyKey)}</p>
+                    <p className="max-w-[38ch] text-sm leading-6 text-white/84">{t(banner.bodyKey)}</p>
                   </div>
                   <div className="flex items-end justify-between gap-4">
                     <div className={`rounded-[24px] ${banner.panel} px-4 py-3 backdrop-blur-md`}>
                       <p className="text-[11px] font-semibold tracking-[0.18em] text-white/68 uppercase">
                         {t('bannerStatLabel')}
                       </p>
-                      <p className="mt-1 text-lg font-semibold">{t(index === 0 ? 'bannerStatValue1' : 'bannerStatValue2')}</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {t(index === 0 ? 'bannerStatValue1' : 'bannerStatValue2')}
+                      </p>
                     </div>
-                    {BANNERS.slice(0, 2).map((_, dotIndex) => (
-                      <button
-                        key={dotIndex}
-                        type="button"
-                        onClick={() => setActiveBanner(dotIndex)}
-                        className={`h-2.5 rounded-full transition-all ${
-                          dotIndex === activeBanner % 2 ? 'w-8 bg-white' : 'w-2.5 bg-white/45'
-                        }`}
-                        aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
-                      />
-                    ))}
+                    <div className="flex items-center gap-2">
+                      {BANNERS.map((__, dotIndex) => (
+                        <button
+                          key={dotIndex}
+                          type="button"
+                          onClick={() => setActiveBanner(dotIndex)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            dotIndex === activeBanner ? 'w-8 bg-white' : 'w-2.5 bg-white/45'
+                          }`}
+                          aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </article>
@@ -257,7 +271,7 @@ export function ExploreContent() {
           })}
         </section>
 
-        <section className="animate-explore-rise rounded-[32px] border border-[#efe5d7] bg-white/88 px-4 py-5 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:px-6 lg:px-7" style={{ animationDelay: '120ms' }}>
+        <section className="animate-explore-rise rounded-[28px] border border-[#efe5d7] bg-white/88 px-4 py-4 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:rounded-[32px] sm:px-6 sm:py-5 lg:px-7" style={{ animationDelay: '120ms' }}>
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -298,12 +312,12 @@ export function ExploreContent() {
           </div>
         </section>
 
-        <section className="animate-explore-rise flex items-center justify-between gap-4 px-1" style={{ animationDelay: '180ms' }}>
-          <div>
+        <section className="animate-explore-rise flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4" style={{ animationDelay: '180ms' }}>
+          <div className="min-w-0">
             <p className="text-xs font-semibold tracking-[0.24em] text-stone-400 uppercase">
               {t('sectionEyebrow')}
             </p>
-            <h3 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900 sm:text-[2rem]">
+            <h3 className="mt-1 text-[1.75rem] font-semibold tracking-tight text-stone-900 sm:text-[2rem]">
               {t('sectionTitle')}
             </h3>
             <p className="mt-2 inline-flex items-center gap-2 text-sm text-stone-500">
@@ -311,7 +325,7 @@ export function ExploreContent() {
               {t('sectionSubtitle')}
             </p>
           </div>
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-stone-500 sm:text-right">
             {filteredVideos.length} {t('resultsCount')}
           </p>
         </section>

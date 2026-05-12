@@ -10,7 +10,7 @@
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
 import { useTranslations } from 'next-intl'
-import { Heart, Play, Sparkles } from 'lucide-react'
+import { Bookmark, Ellipsis, Heart, Play, Sparkles } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 
@@ -64,6 +64,11 @@ function formatCreatedAt(value?: string): string {
     month: '2-digit',
     day: '2-digit',
   }).format(date)
+}
+
+function formatDuration(duration?: string) {
+  if (duration?.trim()) return duration
+  return '00:05'
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -125,26 +130,53 @@ export function VideoCard({
 
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_46%,rgba(15,23,42,0.06)_74%,rgba(15,23,42,0.48)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-            <div className="absolute inset-x-4 bottom-4 translate-y-5 rounded-[22px] border border-white/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,243,233,0.94))] p-4 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="line-clamp-2 text-sm font-semibold text-stone-900">{data.title}</h3>
-                  <p className="mt-1 text-xs text-stone-500">{authorName}</p>
+            <div className="absolute inset-x-3 bottom-3 translate-y-5 rounded-[24px] border border-white/45 bg-[linear-gradient(180deg,rgba(255,249,246,0.98),rgba(250,224,206,0.94))] p-3 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:inset-x-4 sm:bottom-4 sm:p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/70 bg-white/80">
+                  {data.author.avatarUrl ? (
+                    <img
+                      src={data.author.avatarUrl}
+                      alt={authorName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-brand-100 text-xs font-semibold text-brand-700">
+                      {getInitial(authorName)}
+                    </div>
+                  )}
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-stone-600">
-                  <Heart size={12} className="text-rose-500" />
-                  {formatViews(data.views) || '0'}
-                </span>
-              </div>
-              {summary ? (
-                <p className="mt-3 line-clamp-2 text-xs leading-5 text-stone-600">{summary}</p>
-              ) : null}
-              <div className="mt-3 flex items-center justify-between text-[11px] text-stone-500">
-                <span>{meta || authorName}</span>
-                <span className="inline-flex items-center gap-1 font-medium text-brand-600">
-                  <Sparkles size={12} />
-                  Open
-                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="line-clamp-2 text-sm font-semibold text-stone-900">{data.title}</h3>
+                      <p className="mt-1 truncate text-xs text-stone-500">{authorName}</p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-stone-600">
+                      <Heart size={12} className="text-rose-500" />
+                      {formatViews(data.views) || '0'}
+                    </span>
+                  </div>
+                  {summary ? (
+                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-stone-600">{summary}</p>
+                  ) : null}
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-[11px] text-stone-500">
+                      <span>{formatDuration(data.duration)}</span>
+                      <span className="rounded-full bg-white/70 px-2 py-1">{t(`type_${data.contentType ?? 'workflow'}`)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/78 text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.55)]">
+                        <Sparkles size={15} />
+                      </span>
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/78 text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.55)]">
+                        <Bookmark size={15} />
+                      </span>
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/78 text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.55)]">
+                        <Ellipsis size={15} />
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -16,6 +16,7 @@ landing/hero/hero-motion.webm — 首页首屏动态演示视频
 landing/hero/feature-workflow-overview.webp — 功能板块「纵览你的创作流程」亮色主视觉
 landing/hero/feature-any-model-image.webp — 功能板块「用任何模型生成图像」亮色主视觉
 landing/hero/feature-video-everything.webp — 功能板块「万物皆可生成视频」亮色主视觉
+explore/banners/01.png ~ 06.png — Explore 社区广场顶部轮播图素材，按命名编号顺序轮播展示
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

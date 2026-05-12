@@ -28,7 +28,7 @@ function VideoCardSkeleton() {
   )
 }
 
-const GRID_CLASS = 'columns-1 gap-6 sm:columns-2 xl:columns-3 2xl:columns-4'
+const GRID_CLASS = 'columns-1 gap-4 sm:columns-2 sm:gap-5 xl:columns-3 2xl:columns-4'
 
 /* ─── Component ──────────────────────────────────────── */
 
