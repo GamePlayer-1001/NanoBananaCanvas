@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const appDir = path.resolve(scriptDir, '..')
 const databaseName = 'nano-banana-canvas-db'
+const wranglerCliPath = path.resolve(appDir, 'node_modules', 'wrangler', 'bin', 'wrangler.js')
 
 const ALLOWED_SOURCE_TYPES = new Set(['civitai', 'manual', 'other'])
 const ALLOWED_MEDIA_TYPES = new Set(['image', 'video'])
@@ -25,6 +26,7 @@ function parseArgs(argv) {
     userId: '',
     target: '--local',
     dryRun: false,
+    fakeAuthors: false,
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,46 +36,72 @@ function parseArgs(argv) {
     else if (token === '--remote') args.target = '--remote'
     else if (token === '--local') args.target = '--local'
     else if (token === '--dry-run') args.dryRun = true
+    else if (token === '--fake-authors') args.fakeAuthors = true
   }
 
   if (!args.manifest || !args.userId) {
-    throw new Error('Usage: node ./scripts/import-explore-works.mjs --manifest <file> --user-id <userId> [--local|--remote] [--dry-run]')
+    throw new Error('Usage: node ./scripts/import-explore-works.mjs --manifest <file> --user-id <userId> [--local|--remote] [--dry-run] [--fake-authors]')
   }
 
   return args
 }
 
-function parseCsvLine(line) {
-  const cells = []
-  let current = ''
+function parseCsvRows(raw) {
+  const rows = []
+  let currentCell = ''
+  let currentRow = []
   let inQuotes = false
 
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i]
-    const next = line[i + 1]
-
-    if (char === '"' && inQuotes && next === '"') {
-      current += '"'
-      i += 1
-      continue
-    }
+  for (let i = 0; i < raw.length; i += 1) {
+    const char = raw[i]
+    const next = raw[i + 1]
 
     if (char === '"') {
+      if (inQuotes && next === '"') {
+        currentCell += '"'
+        i += 1
+        continue
+      }
+
       inQuotes = !inQuotes
       continue
     }
 
     if (char === ',' && !inQuotes) {
-      cells.push(current)
-      current = ''
+      currentRow.push(currentCell.trim())
+      currentCell = ''
       continue
     }
 
-    current += char
+    if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') {
+        i += 1
+      }
+
+      currentRow.push(currentCell.trim())
+      currentCell = ''
+
+      const hasContent = currentRow.some((cell) => cell.length > 0)
+      if (hasContent) {
+        rows.push(currentRow)
+      }
+
+      currentRow = []
+      continue
+    }
+
+    currentCell += char
   }
 
-  cells.push(current)
-  return cells.map((cell) => cell.trim())
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell.trim())
+    const hasContent = currentRow.some((cell) => cell.length > 0)
+    if (hasContent) {
+      rows.push(currentRow)
+    }
+  }
+
+  return rows
 }
 
 function parseManifest(filePath) {
@@ -86,23 +114,27 @@ function parseManifest(filePath) {
     return parsed
   }
 
-  const lines = raw
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-  if (lines.length < 2) {
+  const rows = parseCsvRows(raw)
+  if (rows.length < 2) {
     return []
   }
 
-  const headers = parseCsvLine(lines[0])
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line)
+  const headers = rows[0]
+  return rows.slice(1).map((values) => {
     return headers.reduce((acc, header, index) => {
       acc[header] = values[index] ?? ''
       return acc
     }, {})
   })
+}
+
+function normalizeOptionalText(value) {
+  const normalized = String(value ?? '').trim()
+  if (!normalized) return ''
+  if (['（空）', '(空)', '空', 'N/A', 'n/a', 'null', 'NULL'].includes(normalized)) {
+    return ''
+  }
+  return normalized
 }
 
 function normalizeBoolean(value, fallback = true) {
@@ -151,19 +183,40 @@ function buildInternalFileUrl(key) {
   return `/api/files/${key}`
 }
 
+function slugifyAuthorName(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function randomSuffix(length = 6) {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz'
+  return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('')
+}
+
 function quoteSql(value) {
   if (value === null || value === undefined) return 'NULL'
   return `'${String(value).replaceAll("'", "''")}'`
 }
 
-function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
+function spawnCommand(command, args, options = {}) {
+  return spawnSync(command, args, {
     cwd: appDir,
     encoding: 'utf8',
     stdio: 'pipe',
     env: process.env,
     ...options,
   })
+}
+
+function run(command, args, options = {}) {
+  const result = spawnCommand(command, args, options)
+
+  if (result.error) {
+    throw result.error
+  }
 
   if (result.stdout) process.stdout.write(result.stdout)
   if (result.stderr) process.stderr.write(result.stderr)
@@ -173,11 +226,27 @@ function run(command, args, options = {}) {
   }
 }
 
+function runAndCapture(command, args, options = {}) {
+  const result = spawnCommand(command, args, options)
+
+  if (result.error) {
+    throw result.error
+  }
+
+  return result
+}
+
+function getWranglerArgs(commandArgs) {
+  return [
+    '--no-warnings',
+    '--experimental-vm-modules',
+    wranglerCliPath,
+    ...commandArgs,
+  ]
+}
+
 function uploadFile(target, localPath, r2Key) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  run(command, [
-    'exec',
-    'wrangler',
+  run(process.execPath, getWranglerArgs([
     'r2',
     'object',
     'put',
@@ -185,49 +254,131 @@ function uploadFile(target, localPath, r2Key) {
     '--file',
     localPath,
     target,
-  ])
+  ]))
 }
 
 function executeSql(target, sql) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  run(command, [
-    'exec',
-    'wrangler',
+  run(process.execPath, getWranglerArgs([
     'd1',
     'execute',
     databaseName,
     target,
     '--command',
     sql,
-  ])
+  ]))
 }
 
 function fetchUserExists(target, userId) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const result = spawnSync(command, [
-    'exec',
-    'wrangler',
+  const rows = fetchJsonResults(
+    target,
+    `SELECT id FROM users WHERE id = ${quoteSql(userId)} LIMIT 1`,
+  )
+  return rows.some((row) => row.id === userId)
+}
+
+function fetchJsonResults(target, sql) {
+  const result = runAndCapture(process.execPath, getWranglerArgs([
     'd1',
     'execute',
     databaseName,
     target,
     '--command',
-    `SELECT id FROM users WHERE id = ${quoteSql(userId)} LIMIT 1`,
-  ], {
-    cwd: appDir,
-    encoding: 'utf8',
-    stdio: 'pipe',
-    env: process.env,
-  })
+    sql,
+    '--json',
+  ]))
 
-  if (result.stdout) process.stdout.write(result.stdout)
   if (result.stderr) process.stderr.write(result.stderr)
 
   if (result.status !== 0) {
-    throw new Error('Failed to validate user id')
+    throw new Error(`Failed to query D1 JSON: ${sql}`)
   }
 
-  return result.stdout.includes(`"id": "${userId}"`)
+  const raw = result.stdout || '[]'
+  const jsonStart = raw.indexOf('[')
+  if (jsonStart === -1) {
+    throw new Error(`Unexpected D1 JSON output: ${raw}`)
+  }
+  const payload = JSON.parse(raw.slice(jsonStart))
+  return payload?.[0]?.results ?? []
+}
+
+function fetchExistingPublishedOutputId(target, importKey) {
+  if (!importKey) return ''
+  const rows = fetchJsonResults(
+    target,
+    `SELECT id FROM published_outputs WHERE import_key = ${quoteSql(importKey)} LIMIT 1`,
+  )
+  return rows[0]?.id ?? ''
+}
+
+function buildFakeAuthorIdentity(authorName) {
+  const normalizedName = String(authorName || '').trim()
+  if (!normalizedName) {
+    throw new Error('Fake author mode requires sourceAuthorName')
+  }
+
+  return {
+    normalizedName,
+    slug: slugifyAuthorName(normalizedName) || randomSuffix(8),
+  }
+}
+
+function ensureFakeAuthorUser(target, authorName, avatarUrl = '', dryRun = false) {
+  const { normalizedName, slug } = buildFakeAuthorIdentity(authorName)
+  const identityKey = `import:author:${slug}`
+  const existingRows = fetchJsonResults(
+    target,
+    `SELECT id FROM users WHERE clerk_id = ${quoteSql(identityKey)} LIMIT 1`,
+  )
+  if (existingRows.length > 0) {
+    return existingRows[0].id
+  }
+
+  if (dryRun) {
+    return `dryrun-${slug}`.slice(0, 21)
+  }
+
+  const email = `${slug}@${randomSuffix(6)}.com`
+  const userId = crypto.randomBytes(10).toString('hex').slice(0, 21)
+  const safeDisplayName = normalizedName.replaceAll("'", "''")
+  const safeAvatar = String(avatarUrl || '').replaceAll("'", "''")
+  const safeIdentity = identityKey.replaceAll("'", "''")
+  const safeEmail = email.replaceAll("'", "''")
+
+  executeSql(
+    target,
+    `INSERT INTO users (
+      id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status, created_at, updated_at
+    ) VALUES (
+      '${userId}',
+      '${safeIdentity}',
+      '${safeEmail}',
+      '',
+      '',
+      '',
+      '${safeDisplayName}',
+      '${safeAvatar}',
+      'free',
+      'free',
+      datetime('now'),
+      datetime('now')
+    )`,
+  )
+
+  return userId
+}
+
+function resolveOwnerUserId(target, item, args) {
+  if (!args.fakeAuthors) {
+    return args.userId
+  }
+
+  return ensureFakeAuthorUser(
+    target,
+    item.sourceAuthorName,
+    item.sourceAuthorAvatar,
+    args.dryRun,
+  )
 }
 
 function ensureFileExists(filePath, label) {
@@ -240,9 +391,13 @@ function ensureFileExists(filePath, label) {
 }
 
 function normalizeEntry(entry, manifestDir) {
-  const mediaPath = path.resolve(manifestDir, entry.mediaPath || entry.local_video || entry.video || '')
-  const thumbnailPath = path.resolve(manifestDir, entry.thumbnailPath || entry.cover_image || entry.thumbnail || mediaPath)
-  const workflowJsonPathValue = entry.workflowJsonPath || entry.local_workflow || entry.workflow || ''
+  const mediaPathValue = normalizeOptionalText(entry.mediaPath || entry.local_video || entry.video)
+  const thumbnailPathValue = normalizeOptionalText(entry.thumbnailPath || entry.cover_image || entry.thumbnail)
+  const workflowJsonPathValue = normalizeOptionalText(entry.workflowJsonPath || entry.local_workflow || entry.workflow)
+  const mediaPath = path.resolve(manifestDir, mediaPathValue)
+  const thumbnailPath = thumbnailPathValue
+    ? path.resolve(manifestDir, thumbnailPathValue)
+    : mediaPath
   const workflowJsonPath = workflowJsonPathValue
     ? path.resolve(manifestDir, workflowJsonPathValue)
     : ''
@@ -251,24 +406,24 @@ function normalizeEntry(entry, manifestDir) {
   ensureFileExists(thumbnailPath, 'thumbnailPath')
   if (workflowJsonPath) ensureFileExists(workflowJsonPath, 'workflowJsonPath')
 
-  const sourceUrl = String(entry.sourceUrl || entry.source_url || '').trim()
-  const importKey = String(entry.importKey || entry.import_key || '').trim() || buildImportKey(sourceUrl, mediaPath)
+  const sourceUrl = normalizeOptionalText(entry.sourceUrl || entry.source_url || '')
+  const importKey = normalizeOptionalText(entry.importKey || entry.import_key || '') || buildImportKey(sourceUrl, mediaPath)
 
   return {
     importKey,
-    title: String(entry.title || entry.name || path.parse(mediaPath).name).trim(),
-    description: String(entry.description || '').trim(),
-    prompt: String(entry.prompt || '').trim(),
+    title: normalizeOptionalText(entry.title || entry.name || path.parse(mediaPath).name),
+    description: normalizeOptionalText(entry.description || ''),
+    prompt: normalizeOptionalText(entry.prompt || ''),
     sourceUrl,
     sourceType: normalizeSourceType(entry.sourceType || entry.source_type || ''),
-    sourceAuthorName: String(entry.sourceAuthorName || entry.author_name || entry.author || '').trim(),
-    sourceAuthorAvatar: String(entry.sourceAuthorAvatar || entry.author_avatar || '').trim(),
+    sourceAuthorName: normalizeOptionalText(entry.sourceAuthorName || entry.author_name || entry.author || ''),
+    sourceAuthorAvatar: normalizeOptionalText(entry.sourceAuthorAvatar || entry.author_avatar || ''),
     mediaPath,
     thumbnailPath,
     workflowJsonPath,
     mediaType: normalizeMediaType(entry.mediaType || entry.media_type || '', mediaPath),
-    workflowId: String(entry.workflowId || entry.workflow_id || '').trim(),
-    publishedAt: String(entry.publishedAt || entry.published_at || '').trim(),
+    workflowId: normalizeOptionalText(entry.workflowId || entry.workflow_id || ''),
+    publishedAt: normalizeOptionalText(entry.publishedAt || entry.published_at || ''),
     isPublic: normalizeBoolean(entry.isPublic || entry.is_public, true),
   }
 }
@@ -285,10 +440,13 @@ function main() {
   console.log(`Loaded ${items.length} manifest items`)
 
   for (const item of items) {
-    const mediaKey = buildR2Key('uploads', args.userId, item.mediaPath)
-    const thumbnailKey = buildR2Key('uploads', args.userId, item.thumbnailPath)
+    const ownerUserId = resolveOwnerUserId(args.target, item, args)
+    const existingPublishedOutputId = fetchExistingPublishedOutputId(args.target, item.importKey)
+
+    const mediaKey = buildR2Key('uploads', ownerUserId, item.mediaPath)
+    const thumbnailKey = buildR2Key('uploads', ownerUserId, item.thumbnailPath)
     const workflowJsonKey = item.workflowJsonPath
-      ? buildR2Key('uploads', args.userId, item.workflowJsonPath)
+      ? buildR2Key('uploads', ownerUserId, item.workflowJsonPath)
       : ''
 
     const mediaUrl = buildInternalFileUrl(mediaKey)
@@ -297,6 +455,10 @@ function main() {
 
     console.log(`\n==> Importing ${item.title}`)
     console.log(`    import_key: ${item.importKey}`)
+    console.log(`    owner_user_id: ${ownerUserId}`)
+    if (existingPublishedOutputId) {
+      console.log(`    existing_output_id: ${existingPublishedOutputId}`)
+    }
 
     if (!args.dryRun) {
       uploadFile(args.target, item.mediaPath, mediaKey)
@@ -306,52 +468,59 @@ function main() {
       }
     }
 
-    const sql = `
-      INSERT INTO published_outputs (
-        id, user_id, workflow_id, source_mode, source_type, source_author_name,
-        source_author_avatar, import_key, workflow_json_url, title, description,
-        prompt, source_url, thumbnail, media_url, media_type, is_public,
-        published_at, created_at, updated_at
-      ) VALUES (
-        lower(hex(randomblob(16))),
-        ${quoteSql(args.userId)},
-        ${quoteSql(item.workflowId || null)},
-        'import',
-        ${quoteSql(item.sourceType)},
-        ${quoteSql(item.sourceAuthorName)},
-        ${quoteSql(item.sourceAuthorAvatar)},
-        ${quoteSql(item.importKey)},
-        ${quoteSql(workflowJsonUrl)},
-        ${quoteSql(item.title)},
-        ${quoteSql(item.description)},
-        ${quoteSql(item.prompt)},
-        ${quoteSql(item.sourceUrl)},
-        ${quoteSql(thumbnailUrl)},
-        ${quoteSql(mediaUrl)},
-        ${quoteSql(item.mediaType)},
-        ${item.isPublic ? 1 : 0},
-        ${quoteSql(item.publishedAt || new Date().toISOString())},
-        datetime('now'),
-        datetime('now')
-      )
-      ON CONFLICT(import_key) DO UPDATE SET
-        workflow_id = excluded.workflow_id,
-        source_mode = 'import',
-        source_type = excluded.source_type,
-        source_author_name = excluded.source_author_name,
-        source_author_avatar = excluded.source_author_avatar,
-        workflow_json_url = excluded.workflow_json_url,
-        title = excluded.title,
-        description = excluded.description,
-        prompt = excluded.prompt,
-        source_url = excluded.source_url,
-        thumbnail = excluded.thumbnail,
-        media_url = excluded.media_url,
-        media_type = excluded.media_type,
-        is_public = excluded.is_public,
-        published_at = excluded.published_at,
-        updated_at = datetime('now');
-    `
+    const publishedAt = quoteSql(item.publishedAt || new Date().toISOString())
+    const sql = existingPublishedOutputId
+      ? `
+        UPDATE published_outputs
+        SET
+          user_id = ${quoteSql(ownerUserId)},
+          workflow_id = ${quoteSql(item.workflowId || null)},
+          source_mode = 'import',
+          source_type = ${quoteSql(item.sourceType)},
+          source_author_name = ${quoteSql(item.sourceAuthorName)},
+          source_author_avatar = ${quoteSql(item.sourceAuthorAvatar)},
+          workflow_json_url = ${quoteSql(workflowJsonUrl)},
+          title = ${quoteSql(item.title)},
+          description = ${quoteSql(item.description)},
+          prompt = ${quoteSql(item.prompt)},
+          source_url = ${quoteSql(item.sourceUrl)},
+          thumbnail = ${quoteSql(thumbnailUrl)},
+          media_url = ${quoteSql(mediaUrl)},
+          media_type = ${quoteSql(item.mediaType)},
+          is_public = ${item.isPublic ? 1 : 0},
+          published_at = ${publishedAt},
+          updated_at = datetime('now')
+        WHERE id = ${quoteSql(existingPublishedOutputId)};
+      `
+      : `
+        INSERT INTO published_outputs (
+          id, user_id, workflow_id, source_mode, source_type, source_author_name,
+          source_author_avatar, import_key, workflow_json_url, title, description,
+          prompt, source_url, thumbnail, media_url, media_type, is_public,
+          published_at, created_at, updated_at
+        ) VALUES (
+          lower(hex(randomblob(16))),
+          ${quoteSql(ownerUserId)},
+          ${quoteSql(item.workflowId || null)},
+          'import',
+          ${quoteSql(item.sourceType)},
+          ${quoteSql(item.sourceAuthorName)},
+          ${quoteSql(item.sourceAuthorAvatar)},
+          ${quoteSql(item.importKey)},
+          ${quoteSql(workflowJsonUrl)},
+          ${quoteSql(item.title)},
+          ${quoteSql(item.description)},
+          ${quoteSql(item.prompt)},
+          ${quoteSql(item.sourceUrl)},
+          ${quoteSql(thumbnailUrl)},
+          ${quoteSql(mediaUrl)},
+          ${quoteSql(item.mediaType)},
+          ${item.isPublic ? 1 : 0},
+          ${publishedAt},
+          datetime('now'),
+          datetime('now')
+        );
+      `
 
     if (args.dryRun) {
       console.log('    dry-run: skipping upload and D1 write')
