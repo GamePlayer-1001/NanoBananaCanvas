@@ -14,6 +14,10 @@ import { getDb } from '@/lib/db'
 import { getR2 } from '@/lib/r2'
 
 type Params = { params: Promise<{ key: string[] }> }
+type PublicMediaCacheEntry = { value: boolean; expiresAt: number }
+
+const PUBLIC_EXPLORE_MEDIA_CACHE_TTL_MS = 5 * 60 * 1000
+const publicExploreMediaCache = new Map<string, PublicMediaCacheEntry>()
 
 function isPublicKey(key: string): boolean {
   return key.startsWith('thumbnails/')
@@ -27,7 +31,29 @@ function isAllowedPrivateKey(key: string, userId: string): boolean {
   return key.startsWith(`uploads/${userId}/`) || key.startsWith(`outputs/${userId}/`)
 }
 
+function getCachedPublicExploreMedia(key: string): boolean | null {
+  const cached = publicExploreMediaCache.get(key)
+  if (!cached) return null
+  if (cached.expiresAt <= Date.now()) {
+    publicExploreMediaCache.delete(key)
+    return null
+  }
+  return cached.value
+}
+
+function setCachedPublicExploreMedia(key: string, value: boolean): void {
+  publicExploreMediaCache.set(key, {
+    value,
+    expiresAt: Date.now() + PUBLIC_EXPLORE_MEDIA_CACHE_TTL_MS,
+  })
+}
+
 async function isPublicExploreMediaKey(key: string): Promise<boolean> {
+  const cached = getCachedPublicExploreMedia(key)
+  if (cached !== null) {
+    return cached
+  }
+
   const db = await getDb()
   const internalUrl = buildInternalFileUrl(key)
   const row = await db
@@ -41,12 +67,18 @@ async function isPublicExploreMediaKey(key: string): Promise<boolean> {
     .bind(internalUrl, internalUrl)
     .first<{ id: string }>()
 
-  return !!row
+  const isPublic = !!row
+  setCachedPublicExploreMedia(key, isPublic)
+  return isPublic
 }
 
 function buildCacheControl(key: string): string {
   if (key.startsWith('thumbnails/')) {
     return 'public, max-age=86400, stale-while-revalidate=604800'
+  }
+
+  if (key.startsWith('uploads/') || key.startsWith('outputs/')) {
+    return 'public, max-age=3600, stale-while-revalidate=86400'
   }
 
   return 'private, max-age=3600'

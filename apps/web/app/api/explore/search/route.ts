@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/response, @/lib/db, @/lib/validations/explore
  * [OUTPUT]: 对外提供 GET /api/explore/search
- * [POS]: api/explore/search 的搜索端点，对公开工作流与公开生成作品做标题/描述/作者/Prompt/来源的模糊搜索
+ * [POS]: api/explore/search 的搜索端点，对公开工作流与公开生成作品做标题/描述/作者/Prompt/来源的模糊搜索，并按相关性优先排序
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit
     const normalizedQuery = q.trim()
     const keyword = `%${normalizedQuery}%`
+    const exactKeyword = normalizedQuery
     const db = await getDb()
 
     const publicItemsSql = `
@@ -110,6 +111,20 @@ export async function GET(req: NextRequest) {
          OR source_author_name LIKE ?
     `
 
+    const relevanceScoreSql = `
+      CASE
+        WHEN LOWER(name) = LOWER(?) THEN 1000
+        WHEN LOWER(name) LIKE LOWER(?) THEN 800
+        WHEN LOWER(author_name) = LOWER(?) THEN 700
+        WHEN LOWER(author_name) LIKE LOWER(?) THEN 600
+        WHEN LOWER(description) LIKE LOWER(?) THEN 500
+        WHEN LOWER(prompt) LIKE LOWER(?) THEN 400
+        WHEN LOWER(source_author_name) LIKE LOWER(?) THEN 300
+        WHEN LOWER(source_url) LIKE LOWER(?) THEN 200
+        ELSE 0
+      END
+    `
+
     // 总数
     const countRow = await db
       .prepare(
@@ -127,10 +142,27 @@ export async function GET(req: NextRequest) {
         `SELECT *
          FROM (${publicItemsSql}) items
          ${searchWhere}
-         ORDER BY published_at DESC
+         ORDER BY ${relevanceScoreSql} DESC, published_at DESC
          LIMIT ? OFFSET ?`,
       )
-      .bind(keyword, keyword, keyword, keyword, keyword, keyword, limit, offset)
+      .bind(
+        keyword,
+        keyword,
+        keyword,
+        keyword,
+        keyword,
+        keyword,
+        exactKeyword,
+        keyword,
+        exactKeyword,
+        keyword,
+        keyword,
+        keyword,
+        keyword,
+        keyword,
+        limit,
+        offset,
+      )
       .all()
 
     return apiOk({

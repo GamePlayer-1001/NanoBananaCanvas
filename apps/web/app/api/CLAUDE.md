@@ -49,7 +49,7 @@ workflows/              — 工作流 CRUD + 社交 (见子 CLAUDE.md, 支持 fo
 explore/                — 社区广场 (7 端点)
   route.ts              — GET  混合公开列表 (工作流模板 + 公开生成作品，分类/排序/分页/互动标记 + 类型过滤)
   [id]/route.ts         — GET  统一详情 (工作流/公开生成作品按 id 分流并递增浏览量)
-  search/route.ts       — GET  模糊搜索 (标题/描述/作者/Prompt/来源，覆盖工作流与公开生成作品)
+  search/route.ts       — GET  模糊搜索 (标题/描述/作者/Prompt/来源，覆盖工作流与公开生成作品，并按相关性优先排序)
   outputs/route.ts      — GET 当前用户已发布生成作品列表 / POST 公开生成作品 (completed task -> published_outputs；批量导入作品不走这里，改由导入脚本直写 import-compatible published_outputs)
   outputs/[id]/like/route.ts     — POST 公开生成作品点赞切换
   outputs/[id]/favorite/route.ts — POST 公开生成作品收藏切换
@@ -64,7 +64,7 @@ video-analysis/         — 视频分析 (1 端点)
   route.ts              — GET 账号历史 / POST 平台 Gemini 视频分析 (上传文件 -> 分镜表/剧本 JSON)
 files/                  — 文件上传与读取 (见子 CLAUDE.md)
   upload/route.ts       — POST 文件上传 (R2 存储, 配额检查)
-  [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开, uploads/outputs 按用户隔离)
+  [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开；公开 Explore 作品引用的媒体做匿名放行 + 短 TTL 白名单缓存；其余 uploads/outputs 按用户隔离)
 
 admin/                  — 运维管理 (1 端点)
   cleanup/route.ts      — POST 手动触发过期文件清理与终态任务修剪 (Bearer token 认证)
