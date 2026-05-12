@@ -44,9 +44,9 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url)
     const parsed = searchQuerySchema.safeParse({
-      q: url.searchParams.get('q'),
-      page: url.searchParams.get('page'),
-      limit: url.searchParams.get('limit'),
+      q: url.searchParams.get('q') ?? undefined,
+      page: url.searchParams.get('page') ?? undefined,
+      limit: url.searchParams.get('limit') ?? undefined,
     })
 
     if (!parsed.success) {
