@@ -73,6 +73,29 @@ function PriceLine({
   )
 }
 
+function PlanRibbon({
+  label,
+  tone = 'violet',
+}: {
+  label: string
+  tone?: 'violet' | 'emerald'
+}) {
+  const toneClassName =
+    tone === 'emerald'
+      ? 'border-emerald-300 bg-emerald-100 text-emerald-700'
+      : 'border-violet-300 bg-violet-100 text-violet-700'
+
+  return (
+    <div className="pointer-events-none absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 px-4">
+      <span
+        className={`inline-flex min-h-9 min-w-[148px] items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase shadow-[0_10px_24px_rgba(15,23,42,0.08)] ${toneClassName}`}
+      >
+        {label}
+      </span>
+    </div>
+  )
+}
+
 export function SubscriptionTab({
   isAuthenticated,
   subscription,
@@ -95,6 +118,11 @@ export function SubscriptionTab({
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
   const standardPlan = visiblePlans.find((plan) => plan.plan === 'standard')
   const freeTrialPrice = splitPricePeriod(pricingT('plans.free.period'))
+  const isTrialingStandard = subscription.plan === 'standard' && subscription.status === 'trialing'
+  const isFreeTrialCurrent = isTrialingStandard
+  const freeTrialRibbonLabel = isFreeTrialCurrent
+    ? t('subscriptionCurrentPlan')
+    : t('subscriptionPopular')
 
   const setMode = (mode: PurchaseMode) => {
     setSelectedMode(mode)
@@ -261,7 +289,11 @@ export function SubscriptionTab({
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
-        <article className="flex h-full flex-col rounded-[26px] border border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <article className="relative flex h-full flex-col rounded-[26px] border border-violet-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7f3ff_100%)] p-6 pt-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+              <PlanRibbon
+                label={freeTrialRibbonLabel}
+                tone={isFreeTrialCurrent ? 'emerald' : 'violet'}
+              />
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
@@ -274,9 +306,6 @@ export function SubscriptionTab({
                     {pricingT('plans.free.subtitle')}
                   </p>
                 </div>
-                <span className="rounded-full border border-violet-300 bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">
-                  {t('subscriptionPopular')}
-                </span>
               </div>
 
               <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
@@ -295,12 +324,14 @@ export function SubscriptionTab({
                 <Button
                   type="button"
                   className="h-12 w-full rounded-xl"
-                  disabled={pendingKey === 'trial:standard' || !standardPlan}
+                  disabled={pendingKey === 'trial:standard' || !standardPlan || isFreeTrialCurrent}
                   onClick={() => {
                     void handleTrialCheckout(standardPlan)
                   }}
                 >
-                  {pendingKey === 'trial:standard'
+                  {isFreeTrialCurrent
+                    ? t('subscriptionCurrentPlan')
+                    : pendingKey === 'trial:standard'
                     ? t('subscriptionRedirecting')
                     : isAuthenticated
                       ? pricingT('plans.free.cta')
@@ -312,15 +343,20 @@ export function SubscriptionTab({
         {visiblePlans.map((plan) => {
           const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`
           const isCurrentPlan =
-            subscription.plan === plan.plan && subscription.purchaseMode === plan.purchaseMode
+            !isTrialingStandard &&
+            subscription.plan === plan.plan &&
+            subscription.purchaseMode === plan.purchaseMode
           const formattedPrice = splitPricePeriod(
             `${formatMoney(plan.unitAmount)} ${pricingT(`plans.${plan.plan}.period`)}`,
           )
           return (
             <article
               key={`${plan.plan}:${plan.purchaseMode}`}
-              className="flex h-full flex-col rounded-[26px] border border-border/70 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
+              className="relative flex h-full flex-col rounded-[26px] border border-border/70 bg-white/95 p-6 pt-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
             >
+              {isCurrentPlan ? (
+                <PlanRibbon label={t('subscriptionCurrentPlan')} tone="emerald" />
+              ) : null}
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
@@ -333,11 +369,6 @@ export function SubscriptionTab({
                     {pricingT(`plans.${plan.plan}.subtitle`)}
                   </p>
                 </div>
-                {isCurrentPlan ? (
-                  <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    {t('subscriptionCurrentPlan')}
-                  </span>
-                ) : null}
               </div>
 
               <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">

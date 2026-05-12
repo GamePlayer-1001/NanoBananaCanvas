@@ -1162,7 +1162,7 @@
     "creditsHint": "Platform mode charges by run count and image size",
     "trialCreditsHint": "{count} trial credits are active and will be used first today",
     "signinAction": "Daily check-in",
-    "signedInToday": "Checked in today",
+    "signedInToday": "Checked",
     "signinUnavailable": "Unavailable today",
     "signinSuccess": "Check-in complete. {count} trial credits added",
     "contactUs": "Contact Us",
