@@ -100,6 +100,47 @@ function resolveCheckoutPlan(input: PlanCheckoutSessionInput): BillingPlan {
   return isStandardTrialCheckout(input) ? 'standard' : input.plan
 }
 
+async function readExistingSubscriptionState(userId: string): Promise<{
+  plan: string | null
+  status: string | null
+  stripeSubscriptionId: string | null
+} | null> {
+  const schema = await getBillingSchemaInfo()
+  if (!schema.hasSubscriptions || !schema.subscriptionsColumns.has('user_id')) {
+    return null
+  }
+
+  const db = await getDb()
+  return db
+    .prepare(
+      `SELECT plan, status, stripe_subscription_id
+       FROM subscriptions
+       WHERE user_id = ?`,
+    )
+    .bind(userId)
+    .first<{ plan: string | null; status: string | null; stripeSubscriptionId: string | null }>()
+}
+
+function hasActiveRecurringSubscription(existing: {
+  status: string | null
+  stripeSubscriptionId: string | null
+} | null): boolean {
+  const activeStatuses = new Set(['active', 'trialing', 'past_due', 'incomplete'])
+  return Boolean(existing?.stripeSubscriptionId) && activeStatuses.has(existing?.status ?? '')
+}
+
+async function assertRecurringSubscriptionAvailable(userId: string) {
+  const existing = await readExistingSubscriptionState(userId)
+
+  if (hasActiveRecurringSubscription(existing)) {
+    throw new BillingError(
+      ErrorCode.BILLING_SUBSCRIPTION_ALREADY_ACTIVE,
+      'An active or pending recurring subscription already exists for this account',
+      { userId, plan: existing?.plan, status: existing?.status },
+    )
+  }
+}
+
 async function assertStandardTrialAvailable(userId: string) {
   const schema = await getBillingSchemaInfo()
   const db = await getDb()
@@ -119,25 +160,12 @@ async function assertStandardTrialAvailable(userId: string) {
     }
   }
 
-  if (!schema.hasSubscriptions || !schema.subscriptionsColumns.has('user_id')) {
-    return
-  }
-
-  const existing = await db
-    .prepare(
-      `SELECT plan, status, stripe_subscription_id
-       FROM subscriptions
-       WHERE user_id = ?`,
-    )
-    .bind(userId)
-    .first<{ plan: string | null; status: string | null; stripe_subscription_id: string | null }>()
-
-  const activeStatuses = new Set(['active', 'trialing', 'past_due', 'incomplete'])
-  if (existing?.stripe_subscription_id && activeStatuses.has(existing.status ?? '')) {
+  const existing = await readExistingSubscriptionState(userId)
+  if (hasActiveRecurringSubscription(existing)) {
     throw new BillingError(
       ErrorCode.BILLING_TRIAL_ALREADY_USED,
       'An active or pending subscription already exists for this account',
-      { userId, plan: existing.plan, status: existing.status },
+      { userId, plan: existing?.plan, status: existing?.status },
     )
   }
 }
@@ -150,6 +178,10 @@ export async function createCheckoutSession(
 
   if (isStandardTrialCheckout(input)) {
     await assertStandardTrialAvailable(input.userId)
+  }
+
+  if (input.purchaseMode === 'plan_auto_monthly') {
+    await assertRecurringSubscriptionAvailable(input.userId)
   }
 
   const customer = await getOrCreateStripeCustomer(input.userId)

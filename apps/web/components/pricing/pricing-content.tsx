@@ -21,6 +21,7 @@ export interface PricingContentProps {
   plans: PublicBillingPlanPrice[]
   creditPacks: PublicCreditPackPrice[]
   standardTrialEligible?: boolean
+  standardTrialActive?: boolean
 }
 
 function formatMoney(locale: string, currency: string, amount: number): string {
@@ -35,6 +36,7 @@ export function PricingContent({
   isAuthenticated,
   plans,
   standardTrialEligible = true,
+  standardTrialActive = false,
 }: PricingContentProps) {
   const t = useTranslations('pricing')
   const locale = useLocale()
@@ -76,6 +78,7 @@ export function PricingContent({
 
   const visiblePlans = plans.filter((plan) => plan.purchaseMode === 'plan_auto_monthly')
   const standardPlan = visiblePlans.find((plan) => plan.plan === 'standard')
+  const shouldShowFreeTrialCard = standardTrialEligible || standardTrialActive
 
   async function handlePlanCheckout(plan: PublicBillingPlanPrice) {
     if (!isAuthenticated) {
@@ -181,57 +184,61 @@ export function PricingContent({
           </p>
         </div>
         <div className="mt-14 grid gap-6 lg:grid-cols-4">
-            <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(27,27,31,0.98),rgba(18,18,22,0.98))] p-7 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
-              <div className="absolute inset-x-6 top-0 h-px bg-white/12" />
-              <div className="flex items-start justify-between gap-4">
-                <span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] text-white/72 uppercase">
-                  {t('freeEyebrow')}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-medium text-white/82">
-                  {standardTrialEligible ? t('freeBadge') : t('toggleMonthly')}
-                </span>
-              </div>
+            {shouldShowFreeTrialCard ? (
+              <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(27,27,31,0.98),rgba(18,18,22,0.98))] p-7 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+                <div className="absolute inset-x-6 top-0 h-px bg-white/12" />
+                <div className="flex items-start justify-between gap-4">
+                  <span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] text-white/72 uppercase">
+                    {t('freeEyebrow')}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-medium text-white/82">
+                    {standardTrialActive ? t('toggleMonthly') : standardTrialEligible ? t('freeBadge') : t('toggleMonthly')}
+                  </span>
+                </div>
 
-              <div className="mt-8">
-                <h2 className="text-2xl font-semibold">{t('freeTitle')}</h2>
-                <p className="mt-3 text-sm leading-6 text-white/58">{t('freeDescription')}</p>
-              </div>
+                <div className="mt-8">
+                  <h2 className="text-2xl font-semibold">{t('freeTitle')}</h2>
+                  <p className="mt-3 text-sm leading-6 text-white/58">{t('freeDescription')}</p>
+                </div>
 
-              <div className="mt-8 border-t border-white/8 pt-6">
-                <p className="text-[3rem] font-semibold tracking-tight text-white">
-                  {t('freePriceValue')}
-                </p>
-                <p className="mt-2 text-sm text-white/45">
-                  {standardPlan
-                    ? `${t('billedMonthly')} ${formatMoney(locale, standardPlan.currency, standardPlan.unitAmount)}`
-                    : t('freePriceLabel')}
-                </p>
-              </div>
+                <div className="mt-8 border-t border-white/8 pt-6">
+                  <p className="text-[3rem] font-semibold tracking-tight text-white">
+                    {t('freePriceValue')}
+                  </p>
+                  <p className="mt-2 text-sm text-white/45">
+                    {standardPlan
+                      ? `${t('billedMonthly')} ${formatMoney(locale, standardPlan.currency, standardPlan.unitAmount)}`
+                      : t('freePriceLabel')}
+                  </p>
+                </div>
 
-              <div className="mt-8 space-y-3 text-sm text-white/78">
-                <PricingStat label={t('freeFeatureEntryTitle')} value={t('freeFeatureEntryBody')} />
-                <PricingStat
-                  label={t('freeFeatureCreditsTitle')}
-                  value={t('freeFeatureCreditsBody')}
-                />
-                <PricingMeta value={t('freeFeatureUpgradeBody')} />
-              </div>
+                <div className="mt-8 space-y-3 text-sm text-white/78">
+                  <PricingStat label={t('freeFeatureEntryTitle')} value={t('freeFeatureEntryBody')} />
+                  <PricingStat
+                    label={t('freeFeatureCreditsTitle')}
+                    value={t('freeFeatureCreditsBody')}
+                  />
+                  <PricingMeta value={t('freeFeatureUpgradeBody')} />
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  void handleTrialCheckout()
-                }}
-                disabled={pendingKey === 'trial:standard' || !standardPlan}
-                className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#5d55d6] text-sm font-semibold text-white transition hover:bg-[#6a63e2] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {pendingKey === 'trial:standard'
-                  ? t('redirecting')
-                  : isAuthenticated
-                    ? t('startSubscription')
-                    : t('signInToSubscribe')}
-              </button>
-            </article>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleTrialCheckout()
+                  }}
+                  disabled={pendingKey === 'trial:standard' || !standardPlan || standardTrialActive}
+                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#5d55d6] text-sm font-semibold text-white transition hover:bg-[#6a63e2] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {standardTrialActive
+                    ? t('toggleMonthly')
+                    : pendingKey === 'trial:standard'
+                    ? t('redirecting')
+                    : isAuthenticated
+                      ? t('startSubscription')
+                      : t('signInToSubscribe')}
+                </button>
+              </article>
+            ) : null}
 
             {visiblePlans.map((plan) => {
               const isPending = pendingKey === `${plan.plan}:${plan.purchaseMode}`

@@ -51,6 +51,7 @@ export interface BillingSubscriptionSummary {
   stripeSubscriptionId: string | null
   standardTrialUsedAt: string | null
   standardTrialEligible: boolean
+  standardTrialActive: boolean
   portalEligible: boolean
   cancelEligible: boolean
 }
@@ -106,6 +107,10 @@ function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary
   const plan = row.plan ?? row.user_plan ?? 'free'
   const monthlyCredits = row.monthly_credits ?? FREE_PLAN_SNAPSHOT.monthlyCredits
   const storageGB = row.storage_gb ?? FREE_PLAN_SNAPSHOT.storageGB
+  const standardTrialActive =
+    plan === 'standard' &&
+    (row.status ?? 'active') === 'trialing' &&
+    !Boolean(row.cancel_at_period_end)
 
   return {
     userId: row.user_id,
@@ -123,6 +128,7 @@ function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary
     stripeSubscriptionId: row.stripe_subscription_id,
     standardTrialUsedAt: null,
     standardTrialEligible: plan === 'free' && !row.stripe_subscription_id,
+    standardTrialActive,
     portalEligible: Boolean(row.stripe_customer_id),
     cancelEligible: canCancelSubscription(row) && !Boolean(row.cancel_at_period_end),
   }
@@ -271,6 +277,10 @@ export async function getBillingSubscription(userId: string): Promise<BillingSub
   return {
     ...summary,
     standardTrialUsedAt,
+    standardTrialActive:
+      summary.plan === 'standard' &&
+      summary.status === 'trialing' &&
+      !summary.cancelAtPeriodEnd,
     standardTrialEligible:
       !standardTrialUsedAt &&
       summary.plan === 'free' &&

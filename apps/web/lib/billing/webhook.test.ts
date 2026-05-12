@@ -15,6 +15,7 @@ vi.mock('./entitlements', () => ({
   applyFreePlanDowngrade: vi.fn(),
   awardCreditPackCredits: vi.fn(),
   awardOneTimePlanCredits: vi.fn(),
+  capPlanMonthlyCredits: vi.fn(),
   resetPlanMonthlyCredits: vi.fn(),
   syncUserPlanEntitlement: vi.fn(),
 }))
@@ -30,6 +31,7 @@ vi.mock('./stripe-client', () => ({
 import { getDb } from '@/lib/db'
 
 import { applyFreePlanDowngrade } from './entitlements'
+import { capPlanMonthlyCredits } from './entitlements'
 import { resetPlanMonthlyCredits } from './entitlements'
 import { getBillingSchemaInfo } from './schema'
 import { getStripe } from './stripe-client'
@@ -206,6 +208,78 @@ describe('processStripeWebhookEvent', () => {
       source: 'stripe_subscription_renewal',
       description: 'Stripe standard trial starting credits',
     })
+    expect(capPlanMonthlyCredits).not.toHaveBeenCalled()
     expect(updateTrialUsed).toHaveBeenCalledTimes(1)
+  })
+
+  it('should cap monthly credits instead of regranting full credits for a normal recurring checkout start', async () => {
+    vi.mocked(getDb).mockResolvedValue({
+      prepare: vi.fn((sql: string) => {
+        if (sql.includes('INSERT OR IGNORE INTO processed_stripe_events')) {
+          return {
+            bind: vi.fn().mockReturnValue({
+              run: vi.fn().mockResolvedValue({ meta: { changes: 1 } }),
+            }),
+          }
+        }
+
+        throw new Error(`Unexpected SQL in webhook recurring start test: ${sql}`)
+      }),
+    } as unknown as D1Database)
+    vi.mocked(getStripe).mockResolvedValue({
+      subscriptions: {
+        retrieve: vi.fn().mockResolvedValue({
+          id: 'sub_pro_123',
+          customer: 'cus_pro_123',
+          status: 'active',
+          cancel_at_period_end: false,
+          metadata: {
+            userId: 'user_123',
+            plan: 'pro',
+            purchaseMode: 'plan_auto_monthly',
+          },
+          items: {
+            data: [
+              {
+                current_period_start: 1_700_000_000,
+                current_period_end: 1_702_592_000,
+              },
+            ],
+          },
+        }),
+      },
+    } as never)
+
+    await expect(
+      processStripeWebhookEvent({
+        id: 'evt_pro_checkout',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_pro_123',
+            subscription: 'sub_pro_123',
+            customer: 'cus_pro_123',
+            metadata: {
+              userId: 'user_123',
+              plan: 'pro',
+              purchaseMode: 'plan_auto_monthly',
+            },
+          },
+        },
+      } as never),
+    ).resolves.toEqual({
+      received: true,
+      processed: true,
+    })
+
+    expect(resetPlanMonthlyCredits).not.toHaveBeenCalled()
+    expect(capPlanMonthlyCredits).toHaveBeenCalledTimes(1)
+    expect(capPlanMonthlyCredits).toHaveBeenCalledWith({
+      userId: 'user_123',
+      plan: 'pro',
+      referenceId: 'cs_pro_123',
+      source: 'stripe_subscription_cap_sync',
+      description: 'Stripe subscription start keeps remaining monthly credits without regranting',
+    })
   })
 })
