@@ -153,7 +153,7 @@ export function AccountDashboardTab({
               onClick={() => {
                 void handleOpenPortal()
               }}
-              disabled={!subscription.portalEligible || isOpeningPortal}
+              disabled={isOpeningPortal}
             >
               {isOpeningPortal ? t('openingBilling') : t('dashboardPortalAction')}
             </Button>

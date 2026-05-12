@@ -30,6 +30,7 @@ vi.mock('./stripe-client', () => ({
 import { getDb } from '@/lib/db'
 
 import { applyFreePlanDowngrade } from './entitlements'
+import { resetPlanMonthlyCredits } from './entitlements'
 import { getBillingSchemaInfo } from './schema'
 import { getStripe } from './stripe-client'
 import { processStripeWebhookEvent } from './webhook'
@@ -197,6 +198,14 @@ describe('processStripeWebhookEvent', () => {
       processed: true,
     })
 
+    expect(resetPlanMonthlyCredits).toHaveBeenCalledTimes(1)
+    expect(resetPlanMonthlyCredits).toHaveBeenCalledWith({
+      userId: 'user_123',
+      plan: 'standard',
+      referenceId: 'cs_trial_123',
+      source: 'stripe_subscription_renewal',
+      description: 'Stripe standard trial starting credits',
+    })
     expect(updateTrialUsed).toHaveBeenCalledTimes(1)
   })
 })
