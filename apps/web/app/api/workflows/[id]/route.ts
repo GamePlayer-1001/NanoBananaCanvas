@@ -45,14 +45,65 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { id } = await params
     const db = await getDb()
 
+    const readInteractionState = async (workflowId: string, userId?: string | null) => {
+      if (!userId) {
+        return { liked: false, favorited: false }
+      }
+
+      const [likeRow, favRow] = await Promise.all([
+        db.prepare('SELECT 1 FROM likes WHERE user_id = ? AND workflow_id = ?')
+          .bind(userId, workflowId).first(),
+        db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND workflow_id = ?')
+          .bind(userId, workflowId).first(),
+      ])
+
+      return {
+        liked: !!likeRow,
+        favorited: !!favRow,
+      }
+    }
+
+    const incrementPublicView = async (workflowId: string, currentCount: number | null | undefined) => {
+      try {
+        await db
+          .prepare('UPDATE workflows SET view_count = view_count + 1 WHERE id = ? AND is_public = 1')
+          .bind(workflowId)
+          .run()
+        return (currentCount ?? 0) + 1
+      } catch (err) {
+        log.warn('Failed to increment view_count', { workflowId, error: String(err) })
+        return currentCount ?? 0
+      }
+    }
+
     /* 优先匹配 owner (私有+公开均可) */
     if (authUser) {
       const owned = await db
-        .prepare('SELECT * FROM workflows WHERE id = ? AND user_id = ?')
+        .prepare(
+          `SELECT w.*,
+                  ${AUTHOR_NAME_SQL} AS author_name,
+                  u.avatar_url AS author_avatar
+           FROM workflows w
+           JOIN users u ON u.id = w.user_id
+           WHERE w.id = ? AND w.user_id = ?`,
+        )
         .bind(id, authUser.userId)
         .first()
 
-      if (owned) return apiOk({ ...owned, canEdit: true })
+      if (owned) {
+        const interaction = await readInteractionState(id, authUser.userId)
+        const viewCount =
+          Number((owned as { is_public?: number }).is_public) === 1
+            ? await incrementPublicView(id, (owned as { view_count?: number | null }).view_count)
+            : ((owned as { view_count?: number | null }).view_count ?? 0)
+
+        return apiOk({
+          ...owned,
+          ...interaction,
+          view_count: viewCount,
+          canEdit: true,
+        })
+      }
     }
 
     /* 非 owner → 仅允许公开作品，附带作者信息 */
@@ -69,27 +120,18 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     if (!pub) throw new NotFoundError('Workflow', id)
 
-    /* 异步递增浏览量 (fire-and-forget — 不阻塞响应，失败仅记日志) */
-    db.prepare('UPDATE workflows SET view_count = view_count + 1 WHERE id = ?')
-      .bind(id)
-      .run()
-      .catch((err) => log.warn('Failed to increment view_count', { workflowId: id, error: String(err) }))
+    const nextViewCount = await incrementPublicView(id, (pub as { view_count?: number | null }).view_count)
 
     /* 查询当前用户的互动状态 */
-    let liked = false
-    let favorited = false
-    if (authUser) {
-      const [likeRow, favRow] = await Promise.all([
-        db.prepare('SELECT 1 FROM likes WHERE user_id = ? AND workflow_id = ?')
-          .bind(authUser.userId, id).first(),
-        db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND workflow_id = ?')
-          .bind(authUser.userId, id).first(),
-      ])
-      liked = !!likeRow
-      favorited = !!favRow
-    }
+    const { liked, favorited } = await readInteractionState(id, authUser?.userId)
 
-    return apiOk({ ...pub, liked, favorited, canEdit: false })
+    return apiOk({
+      ...pub,
+      liked,
+      favorited,
+      view_count: nextViewCount,
+      canEdit: false,
+    })
   } catch (error) {
     return handleApiError(error)
   }

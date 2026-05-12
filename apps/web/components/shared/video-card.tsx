@@ -10,6 +10,7 @@
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
 import { useTranslations } from 'next-intl'
+import { Play } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 
@@ -19,8 +20,10 @@ export interface VideoCardData {
   id: string
   title: string
   thumbnailUrl?: string
+  mediaUrl?: string
   duration?: string
   contentType?: 'video' | 'image' | 'workflow'
+  entityType?: 'workflow' | 'output'
   author: {
     name: string
     avatarUrl?: string
@@ -101,8 +104,16 @@ export function VideoCard({ data }: { data: VideoCardData }) {
           </span>
         )}
 
+        {data.contentType === 'video' ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-black/55 text-white shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-105">
+              <Play size={20} className="ml-0.5 fill-current" />
+            </div>
+          </div>
+        ) : null}
+
         {/* 节点类型标签 */}
-        {data.nodeTypes && data.nodeTypes.length > 0 && (
+        {data.entityType === 'workflow' && data.nodeTypes && data.nodeTypes.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {data.nodeTypes.slice(0, 3).map((t) => (
               <span

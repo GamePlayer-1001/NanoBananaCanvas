@@ -9,6 +9,8 @@
 
 'use client'
 
+/* eslint-disable @next/next/no-img-element -- 公开详情里的用户作品媒体地址来自运行时资源，图片/视频混合展示时直接使用原生标签最稳。 */
+
 import { useTranslations } from 'next-intl'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
@@ -21,10 +23,21 @@ import { ActionButtons } from './action-buttons'
 /* ─── Types ──────────────────────────────────────────── */
 
 interface WorkflowDetail {
+  entity_type?: 'workflow' | 'output'
   id: string
   name: string
   description?: string
   data?: string
+  prompt?: string
+  source_url?: string
+  source_mode?: 'task' | 'import'
+  source_type?: 'native' | 'civitai' | 'manual' | 'other'
+  source_author_name?: string
+  source_author_avatar?: string
+  workflow_json_url?: string
+  media_url?: string
+  media_type?: 'image' | 'video'
+  thumbnail?: string
   author_name?: string | null
   author_avatar?: string
   published_at?: string
@@ -67,7 +80,10 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   }
 
   const workflow = data as WorkflowDetail
-  const authorName = workflow.author_name?.trim() || 'Unknown Creator'
+  const authorName = workflow.author_name?.trim() || workflow.source_author_name?.trim() || 'Unknown Creator'
+  const isOutput = workflow.entity_type === 'output'
+  const sourceAuthorName = workflow.source_author_name?.trim()
+  const previewUrl = workflow.media_type === 'video' ? workflow.thumbnail || workflow.media_url : workflow.media_url
 
   return (
     <div className="mx-auto w-full max-w-[1380px] px-6 py-8 lg:px-8 lg:py-10">
@@ -96,7 +112,35 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* 左: 只读画布预览 */}
         <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-border/70 bg-muted shadow-[0_18px_48px_-32px_rgba(15,23,42,0.4)]">
-          <WorkflowPreview data={workflow.data} />
+          {isOutput ? (
+            workflow.media_type === 'video' ? (
+              workflow.media_url ? (
+                <video
+                  poster={previewUrl}
+                  src={workflow.media_url}
+                  className="h-full w-full bg-black object-contain"
+                  controls
+                  playsInline
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  {t('notFound')}
+                </div>
+              )
+            ) : workflow.media_url ? (
+              <img
+                src={workflow.media_url}
+                alt={workflow.name}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {t('notFound')}
+              </div>
+            )
+          ) : (
+            <WorkflowPreview data={workflow.data} />
+          )}
         </div>
 
         {/* 右: 作者 + 统计 + 操作 */}
@@ -107,29 +151,116 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
             publishedAt={workflow.published_at}
           />
 
-          {/* 统计数据 */}
+          {workflow.description ? (
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {t('descriptionTitle')}
+              </p>
+              <p className="text-sm leading-6 text-muted-foreground">{workflow.description}</p>
+            </div>
+          ) : null}
+
           <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
                 <p className="text-lg font-semibold text-foreground">{workflow.view_count ?? 0}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('views', { count: 0 })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('views', { count: workflow.view_count ?? 0 })}</p>
               </div>
               <div>
                 <p className="text-lg font-semibold text-foreground">{workflow.like_count ?? 0}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('likes', { count: 0 })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('likes', { count: workflow.like_count ?? 0 })}</p>
               </div>
               <div>
                 <p className="text-lg font-semibold text-foreground">{workflow.clone_count ?? 0}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('clones', { count: 0 })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('clones', { count: workflow.clone_count ?? 0 })}</p>
               </div>
+            </div>
+
+            <div className="mt-5 border-t border-border/60 pt-5">
+              <ActionButtons
+                workflowId={workflowId}
+                entityType={workflow.entity_type}
+                liked={workflow.liked ?? false}
+                favorited={workflow.favorited ?? false}
+                likeCount={workflow.like_count ?? 0}
+                cloneCount={workflow.clone_count ?? 0}
+              />
             </div>
           </div>
 
-          <ActionButtons
-            workflowId={workflowId}
-            liked={workflow.liked ?? false}
-            favorited={workflow.favorited ?? false}
-          />
+          {isOutput && workflow.prompt ? (
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {t('prompt')}
+              </p>
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+                {workflow.prompt}
+              </p>
+            </div>
+          ) : null}
+
+          {isOutput && (workflow.source_url || sourceAuthorName || workflow.source_mode || workflow.source_type) ? (
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {t('sourceTitle')}
+              </p>
+
+              {sourceAuthorName ? (
+                <div className="mb-3 flex items-center gap-3 rounded-2xl border border-border/60 bg-background/80 p-3">
+                  <div className="h-9 w-9 overflow-hidden rounded-full bg-muted">
+                    {workflow.source_author_avatar ? (
+                      <img
+                        src={workflow.source_author_avatar}
+                        alt={sourceAuthorName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-brand-100 text-xs font-medium text-brand-600">
+                        {sourceAuthorName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{sourceAuthorName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[workflow.source_type, workflow.source_mode].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {workflow.source_url ? (
+                <a
+                  href={workflow.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-sm text-brand-600 hover:underline"
+                >
+                  {workflow.source_url}
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {[workflow.source_type, workflow.source_mode].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
+          ) : null}
+
+          {isOutput && workflow.workflow_json_url ? (
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {t('workflowJsonTitle')}
+              </p>
+              <a
+                href={workflow.workflow_json_url}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all text-sm text-brand-600 hover:underline"
+              >
+                {workflow.workflow_json_url}
+              </a>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

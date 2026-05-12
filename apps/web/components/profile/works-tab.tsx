@@ -14,11 +14,12 @@
 
 /* eslint-disable @next/next/no-img-element -- 账户内私有文件经 /api/files 鉴权返回，直接渲染最稳定。 */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckSquare,
+  GlobeLock,
   Globe,
   ImageIcon,
   Import,
@@ -40,6 +41,7 @@ import {
 import { queryKeys } from '@/lib/query/keys'
 import { clearLocal, loadFromLocal } from '@/services/storage/local-storage'
 import { serializeWorkflow } from '@/services/storage/serializer'
+import { PublishOutputDialog } from './publish-output-dialog'
 
 type WorksView = 'workflow' | 'generated' | 'published' | 'favorites'
 type GeneratedView = 'image' | 'video'
@@ -69,7 +71,35 @@ interface GeneratedTaskItem {
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
   createdAt: string
   completedAt: string | null
+  input?: Record<string, unknown>
   output: GeneratedOutputPayload | null
+}
+
+interface PublishedOutputListItem {
+  id: string
+  title: string
+  description?: string
+  prompt?: string
+  source_url?: string
+  thumbnail?: string
+  media_url?: string
+  media_type?: 'image' | 'video'
+  like_count?: number
+  clone_count?: number
+  view_count?: number
+  published_at?: string
+  created_at?: string
+}
+
+type SelectionKind =
+  | 'workflow'
+  | 'favorite'
+  | 'generated'
+  | 'published-workflow'
+  | 'published-output'
+
+function makeSelectionKey(kind: SelectionKind, id: string) {
+  return `${kind}:${id}`
 }
 
 function useFavorites(enabled: boolean) {
@@ -94,6 +124,19 @@ function useGeneratedWorks(enabled: boolean) {
       const json = await res.json()
       const data = json.data as { tasks: GeneratedTaskItem[] }
       return data.tasks ?? []
+    },
+    enabled,
+  })
+}
+
+function usePublishedOutputs(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.explore.outputs(),
+    queryFn: async () => {
+      const res = await fetch('/api/explore/outputs')
+      if (!res.ok) throw new Error('Failed to fetch published outputs')
+      const json = await res.json()
+      return (json.data as { items: PublishedOutputListItem[] }).items ?? []
     },
     enabled,
   })
@@ -135,12 +178,14 @@ function WorkflowItem({
   onToggle,
   href,
   meta,
+  actions,
 }: {
   item: WorkflowListItem
   selected: boolean
   onToggle: (id: string) => void
   href: string
   meta: string
+  actions?: ReactNode
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-background p-3">
@@ -169,6 +214,8 @@ function WorkflowItem({
           <p className="mt-1 truncate text-xs text-muted-foreground">{meta}</p>
         </div>
       </Link>
+
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   )
 }
@@ -177,12 +224,16 @@ function GeneratedWorkItem({
   item,
   selected,
   onToggle,
+  selectionKey,
   title,
+  onPublish,
 }: {
   item: GeneratedTaskItem
   selected: boolean
   onToggle: (id: string) => void
+  selectionKey: string
   title: string
+  onPublish: (item: GeneratedTaskItem) => void
 }) {
   const mediaUrl = item.output?.url
   const isVideo = item.taskType === 'video_gen'
@@ -204,7 +255,7 @@ function GeneratedWorkItem({
 
         <button
           type="button"
-          onClick={() => onToggle(item.id)}
+          onClick={() => onToggle(selectionKey)}
           className="absolute left-3 top-3 rounded-full border border-white/40 bg-black/55 p-2 text-white transition hover:bg-black/70"
           aria-label={selected ? 'unselect generated work' : 'select generated work'}
         >
@@ -223,6 +274,13 @@ function GeneratedWorkItem({
         <p className="truncate text-xs text-muted-foreground">
           {item.provider} · {item.modelId}
         </p>
+        <button
+          type="button"
+          onClick={() => onPublish(item)}
+          className="mt-3 inline-flex items-center rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+        >
+          公开到广场
+        </button>
       </div>
     </article>
   )
@@ -238,6 +296,7 @@ export function WorksTab({
   const [view, setView] = useState<WorksView>('workflow')
   const [generatedView, setGeneratedView] = useState<GeneratedView>('image')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [publishingItem, setPublishingItem] = useState<GeneratedTaskItem | null>(null)
   const [localDraft, setLocalDraft] = useState<ReturnType<typeof loadFromLocal> | null>(() => {
     if (typeof window === 'undefined') {
       return null
@@ -251,6 +310,9 @@ export function WorksTab({
   })
   const { data: favoriteItems = [], isLoading: favoritesLoading } = useFavorites(isAuthenticated)
   const { data: generatedItems = [], isLoading: generatedLoading } = useGeneratedWorks(isAuthenticated)
+  const { data: publishedOutputItems = [], isLoading: publishedOutputsLoading } = usePublishedOutputs(
+    isAuthenticated,
+  )
   const importLocalWorkflow = useImportLocalWorkflow()
   const deleteWorkflow = useDeleteWorkflow()
 
@@ -259,6 +321,7 @@ export function WorksTab({
     [workflowData],
   )
   const publishedItems = workflowItems.filter((item) => item.is_public === 1)
+  const isPublishedView = view === 'published'
   const filteredGeneratedItems = generatedItems.filter((item) =>
     generatedView === 'image' ? item.taskType === 'image_gen' : item.taskType === 'video_gen',
   )
@@ -266,17 +329,20 @@ export function WorksTab({
   const visibleIds = useMemo(() => {
     switch (view) {
       case 'workflow':
-        return workflowItems.map((item) => item.id)
+        return workflowItems.map((item) => makeSelectionKey('workflow', item.id))
       case 'published':
-        return publishedItems.map((item) => item.id)
+        return [
+          ...publishedItems.map((item) => makeSelectionKey('published-workflow', item.id)),
+          ...publishedOutputItems.map((item) => makeSelectionKey('published-output', item.id)),
+        ]
       case 'favorites':
-        return favoriteItems.map((item) => item.id)
+        return favoriteItems.map((item) => makeSelectionKey('favorite', item.id))
       case 'generated':
-        return filteredGeneratedItems.map((item) => item.id)
+        return filteredGeneratedItems.map((item) => makeSelectionKey('generated', item.id))
       default:
         return []
     }
-  }, [favoriteItems, filteredGeneratedItems, publishedItems, view, workflowItems])
+  }, [favoriteItems, filteredGeneratedItems, publishedItems, publishedOutputItems, view, workflowItems])
 
   const loading =
     isAuthenticated &&
@@ -284,6 +350,8 @@ export function WorksTab({
       ? favoritesLoading
       : view === 'generated'
         ? generatedLoading
+        : view === 'published'
+          ? workflowsLoading || publishedOutputsLoading
         : workflowsLoading)
 
   const visibleCount = visibleIds.length
@@ -292,6 +360,8 @@ export function WorksTab({
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.explore.outputs() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.explore.all }),
     ])
   }
 
@@ -323,6 +393,35 @@ export function WorksTab({
     },
   })
 
+  const handleUnpublishSingle = async (workflowId: string) => {
+    try {
+      await fetch(`/api/workflows/${workflowId}/publish`, { method: 'DELETE' }).then(async (res) => {
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => ({}))) as { error?: { message?: string } }
+          throw new Error(payload.error?.message ?? 'Failed to unpublish workflow')
+        }
+      })
+      await invalidateWorks()
+      toast.success(t('unpublishedSuccess'))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('unpublishedFailed'))
+    }
+  }
+
+  const handleUnpublishOutputSingle = async (outputId: string) => {
+    try {
+      const res = await fetch(`/api/explore/outputs/${outputId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { error?: { message?: string } }
+        throw new Error(payload.error?.message ?? 'Failed to unpublish output')
+      }
+      await invalidateWorks()
+      toast.success(t('unpublishedSuccess'))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('unpublishedFailed'))
+    }
+  }
+
   const handleToggleSelection = (id: string) => {
     setSelectedIds((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
@@ -345,16 +444,47 @@ export function WorksTab({
 
     try {
       if (view === 'generated') {
-        await bulkGeneratedDelete.mutateAsync(ids)
+        await bulkGeneratedDelete.mutateAsync(ids.map((id) => id.replace(/^generated:/, '')))
         return
       }
 
       if (view === 'favorites') {
-        await bulkFavoriteDelete.mutateAsync(ids)
+        await bulkFavoriteDelete.mutateAsync(ids.map((id) => id.replace(/^favorite:/, '')))
         return
       }
 
-      const deleteResults = await Promise.allSettled(ids.map((id) => deleteWorkflow.mutateAsync(id)))
+      if (view === 'published') {
+        const workflowIds = ids
+          .filter((id) => id.startsWith('published-workflow:'))
+          .map((id) => id.replace(/^published-workflow:/, ''))
+        const outputIds = ids
+          .filter((id) => id.startsWith('published-output:'))
+          .map((id) => id.replace(/^published-output:/, ''))
+
+        const workflowResponses = await Promise.all(
+          workflowIds.map((id) => fetch(`/api/workflows/${id}/publish`, { method: 'DELETE' })),
+        )
+        const outputResponses = await Promise.all(
+          outputIds.map((id) => fetch(`/api/explore/outputs/${id}`, { method: 'DELETE' })),
+        )
+
+        const failedResponse = [...workflowResponses, ...outputResponses].find((res) => !res.ok)
+        if (failedResponse) {
+          const payload = (await failedResponse.json().catch(() => ({}))) as {
+            error?: { message?: string }
+          }
+          throw new Error(payload.error?.message ?? 'Failed to unpublish selected works')
+        }
+
+        await invalidateWorks()
+        setSelectedIds([])
+        toast.success(t('bulkPublishedDeleted'))
+        return
+      }
+
+      const deleteResults = await Promise.allSettled(
+        ids.map((id) => deleteWorkflow.mutateAsync(id.replace(/^workflow:/, ''))),
+      )
       const firstFailure = deleteResults.find(
         (result) =>
           result.status === 'rejected' && !isAlreadyDeletedError(result.reason),
@@ -366,9 +496,7 @@ export function WorksTab({
 
       await invalidateWorks()
       setSelectedIds([])
-      toast.success(
-        view === 'published' ? t('bulkPublishedDeleted') : t('bulkWorkflowsDeleted'),
-      )
+      toast.success(t('bulkWorkflowsDeleted'))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('bulkDeleteFailed'))
     }
@@ -404,7 +532,9 @@ export function WorksTab({
       ? t('bulkDeleteGenerated')
       : view === 'favorites'
         ? t('bulkDeleteFavorites')
-        : t('bulkDeleteWorks')
+        : view === 'published'
+          ? t('bulkDeletePublished')
+          : t('bulkDeleteWorks')
 
   return (
     <div className="space-y-6">
@@ -575,53 +705,223 @@ export function WorksTab({
               <GeneratedWorkItem
                 key={item.id}
                 item={item}
-                selected={selectedIds.includes(item.id)}
+                selected={selectedIds.includes(makeSelectionKey('generated', item.id))}
+                selectionKey={makeSelectionKey('generated', item.id)}
                 onToggle={handleToggleSelection}
                 title={t(item.taskType === 'image_gen' ? 'generated_image' : 'generated_video')}
+                onPublish={setPublishingItem}
               />
             ))}
           </div>
         )
       ) : (
         <div className="space-y-3">
-          {(view === 'workflow'
-            ? workflowItems
-            : view === 'published'
-              ? publishedItems
-              : favoriteItems
-          ).length === 0 ? (
+          {isPublishedView
+            ? publishedItems.length === 0 && publishedOutputItems.length === 0
+            : (view === 'workflow' ? workflowItems : favoriteItems).length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">
-              {view === 'workflow'
+              {isPublishedView
+                ? t('emptyPublished')
+                : view === 'workflow'
                 ? t('emptyWorkflow')
-                : view === 'published'
-                  ? t('emptyPublished')
-                  : t('emptyFavorites')}
+                : t('emptyFavorites')}
             </p>
-          ) : (
-            (view === 'workflow'
-              ? workflowItems
-              : view === 'published'
-                ? publishedItems
-                : favoriteItems
-            ).map((item) => (
+          ) : isPublishedView ? (
+            <>
+              {publishedItems.map((item) => (
               <WorkflowItem
                 key={item.id}
                 item={item}
-                selected={selectedIds.includes(item.id)}
-                onToggle={handleToggleSelection}
+                selected={selectedIds.includes(makeSelectionKey('published-workflow', item.id))}
+                onToggle={(id) => handleToggleSelection(makeSelectionKey('published-workflow', id))}
+                href={`/workspace/${item.id}`}
+                meta={t('publishedMeta')}
+                actions={(
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleUnpublishSingle(item.id)
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+                  >
+                    <GlobeLock size={13} />
+                    {t('unpublishAction')}
+                  </button>
+                )}
+              />
+              ))}
+
+              {publishedOutputItems.map((item) => (
+                <PublishedOutputItem
+                  key={item.id}
+                  item={item}
+                  selected={selectedIds.includes(makeSelectionKey('published-output', item.id))}
+                  selectionKey={makeSelectionKey('published-output', item.id)}
+                  onToggle={handleToggleSelection}
+                  onUnpublish={(id) => {
+                    void handleUnpublishOutputSingle(id)
+                  }}
+                  labels={{
+                    video: t('generated_video'),
+                    image: t('generated_image'),
+                    prompt: t('publishOutputPrompt'),
+                    source: t('publishOutputSourceUrl'),
+                    views: t('publishedViewsLabel'),
+                    likes: t('publishedLikesLabel'),
+                    unpublish: t('unpublishAction'),
+                  }}
+                />
+              ))}
+            </>
+          ) : (
+            (view === 'workflow' ? workflowItems : favoriteItems).map((item) => (
+              <WorkflowItem
+                key={item.id}
+                item={item}
+                selected={selectedIds.includes(
+                  makeSelectionKey(view === 'workflow' ? 'workflow' : 'favorite', item.id),
+                )}
+                onToggle={(id) =>
+                  handleToggleSelection(makeSelectionKey(view === 'workflow' ? 'workflow' : 'favorite', id))
+                }
                 href={view === 'favorites' ? `/explore/${item.id}` : `/workspace/${item.id}`}
                 meta={
                   view === 'favorites'
                     ? item.author_name || t('metaUnknownAuthor')
-                    : view === 'published'
-                      ? t('publishedMeta')
-                      : item.updated_at || t('metaUnknownDate')
+                    : item.updated_at || t('metaUnknownDate')
                 }
               />
             ))
           )}
         </div>
       )}
+
+      {publishingItem ? (
+        <PublishOutputDialog
+          taskId={publishingItem.id}
+          defaultTitle={publishingItem.output?.fileName || publishingItem.modelId}
+          defaultPrompt={String(publishingItem.input?.prompt ?? '')}
+          defaultThumbnail={publishingItem.output?.url}
+          open={!!publishingItem}
+          onOpenChange={(open) => {
+            if (!open) setPublishingItem(null)
+          }}
+        />
+      ) : null}
     </div>
+  )
+}
+
+function PublishedOutputItem({
+  item,
+  selected,
+  selectionKey,
+  onToggle,
+  onUnpublish,
+  labels,
+}: {
+  item: PublishedOutputListItem
+  selected: boolean
+  selectionKey: string
+  onToggle: (id: string) => void
+  onUnpublish: (id: string) => void
+  labels: {
+    video: string
+    image: string
+    prompt: string
+    source: string
+    views: string
+    likes: string
+    unpublish: string
+  }
+}) {
+  const isVideo = item.media_type === 'video'
+
+  return (
+    <article className="flex flex-col gap-4 rounded-2xl border border-border bg-background p-4 md:flex-row">
+      <div className="relative w-full overflow-hidden rounded-xl border border-border bg-muted md:w-44">
+        <Link href={`/explore/${item.id}`} className="block aspect-[4/3]">
+          {item.thumbnail || item.media_url ? (
+            <img
+              src={item.thumbnail || item.media_url}
+              alt={item.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+              {isVideo ? <Video size={22} /> : <ImageIcon size={22} />}
+            </div>
+          )}
+
+          {isVideo ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/55 text-white backdrop-blur-sm">
+                <PlayCircle size={18} className="ml-0.5" />
+              </div>
+            </div>
+          ) : null}
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => onToggle(selectionKey)}
+          className="absolute left-3 top-3 rounded-full border border-white/40 bg-black/55 p-2 text-white transition hover:bg-black/70"
+          aria-label={selected ? 'unselect published output' : 'select published output'}
+        >
+          {selected ? <CheckSquare size={16} /> : <Square size={16} />}
+        </button>
+      </div>
+
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {isVideo ? <PlayCircle size={13} /> : <ImageIcon size={13} />}
+              <span>{isVideo ? labels.video : labels.image}</span>
+            </div>
+            <Link href={`/explore/${item.id}`} className="block">
+              <p className="truncate text-sm font-medium text-foreground hover:text-brand-600">
+                {item.title}
+              </p>
+            </Link>
+            {item.description ? (
+              <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                {item.description}
+              </p>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onUnpublish(item.id)}
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+          >
+            <GlobeLock size={13} />
+            {labels.unpublish}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+          <span>
+            {item.view_count ?? 0} {labels.views}
+          </span>
+          <span>
+            {item.like_count ?? 0} {labels.likes}
+          </span>
+        </div>
+
+        {item.prompt ? (
+          <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+            {labels.prompt} · {item.prompt}
+          </p>
+        ) : null}
+
+        {item.source_url ? (
+          <p className="truncate text-xs text-muted-foreground">
+            {labels.source} · {item.source_url}
+          </p>
+        ) : null}
+      </div>
+    </article>
   )
 }

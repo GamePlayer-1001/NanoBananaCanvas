@@ -7,7 +7,7 @@ D1 数据库 Schema 与种子数据
 ## 成员清单
 
 ```
-schema.sql               — D1 完整 Schema (基础内容表 + Stripe 账本/订阅/积分包 + ai_models + user_api_keys + ai_usage_logs + async_tasks + execution_history + agent_audit_logs + video_analysis_history)
+schema.sql               — D1 完整 Schema (基础内容表 + Stripe 账本/订阅/积分包 + ai_models + user_api_keys + ai_usage_logs + async_tasks + execution_history + agent_audit_logs + video_analysis_history + published_outputs 社区作品实体)
 migration-async-tasks.sql — P2 异步任务表独立迁移脚本 (async_tasks + 4 索引)
 migration-008-media-runtime.sql — 媒体运行时对齐迁移 (Kling 视频模型 + OpenAI TTS 定价)
 migration-009-user-account-profile.sql — users 账户资料扩展迁移 (username/first_name/last_name/membership_status)
@@ -22,6 +22,8 @@ migration-016-credit-transactions-trial-pool.sql — credit_transactions 约束�
 migration-017-user-timezone.sql — users 时区迁移 (新增 timezone，用于按账号本地日界线判定签到状态)
 migration-018-agent-audit-r2.sql — Agent 审计瘦身迁移 (新增 R2 指针/摘要/存在性索引列，把大 JSON 从 D1 正文降为对象存储正文)
 migration-019-standard-trial-guard.sql — Standard 30 天试用防重复迁移 (users.standard_trial_used_at 账号级锁)
+migration-020-published-outputs.sql — 社区生成作品迁移 (published_outputs + likes/favorites/reports 独立互动表)
+migration-021-explore-import-compat.sql — Explore 作品兼容迁移 (published_outputs 从 task-only 升级为 task/import 双来源兼容，并重建 likes/favorites/reports 外键到新作品实体)
 seed.sql                 — 分类种子数据 (8 个 AI 工作流分类，name_i18n JSON 真相源 + 历史兼容列)
 seed-models.sql          — 模型目录种子 (23 模型: 13 text + 6 image + 2 video + 2 audio，覆盖 openrouter/deepseek/gemini/openai/kling 的平台目录)
 seed-pricing.sql         — 商业化种子数据 (4 个积分包 + token 计费版 model_pricing)

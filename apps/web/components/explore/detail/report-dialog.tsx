@@ -32,27 +32,48 @@ const REPORT_REASONS = ['spam', 'nsfw', 'copyright', 'other'] as const
 
 interface ReportDialogProps {
   workflowId: string
+  entityType?: 'workflow' | 'output'
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 /* ─── Component ──────────────────────────────────────── */
 
-export function ReportDialog({ workflowId, open, onOpenChange }: ReportDialogProps) {
+export function ReportDialog({
+  workflowId,
+  entityType = 'workflow',
+  open,
+  onOpenChange,
+}: ReportDialogProps) {
   const t = useTranslations('exploreDetail')
   const tc = useTranslations('common')
   const [selected, setSelected] = useState<string>('')
+  const [description, setDescription] = useState('')
   const { mutate, isPending } = useReportWorkflow()
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setSelected('')
+      setDescription('')
+    }
+    onOpenChange(nextOpen)
+  }
 
   const handleSubmit = () => {
     if (!selected) return
     mutate(
-      { id: workflowId, reason: selected },
+      {
+        id: workflowId,
+        reason: selected,
+        description: description.trim() || undefined,
+        entityType,
+      },
       {
         onSuccess: () => {
           toast.success(t('reportSubmitted'))
           onOpenChange(false)
           setSelected('')
+          setDescription('')
         },
         onError: () => toast.error(t('reportFailed')),
       },
@@ -60,7 +81,7 @@ export function ReportDialog({ workflowId, open, onOpenChange }: ReportDialogPro
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>{t('reportTitle')}</DialogTitle>
@@ -82,6 +103,22 @@ export function ReportDialog({ workflowId, open, onOpenChange }: ReportDialogPro
               {t(`reason_${reason}`)}
             </button>
           ))}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            {t('reportDetails')}
+          </label>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            maxLength={1000}
+            placeholder={t('reportDetailsPlaceholder')}
+            className="min-h-28 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+          <p className="text-right text-xs text-muted-foreground">
+            {description.length}/1000
+          </p>
         </div>
 
         <DialogFooter>
