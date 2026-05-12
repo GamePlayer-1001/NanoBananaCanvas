@@ -18,6 +18,7 @@ const intlMiddleware = createIntlMiddleware(routing)
 const CANONICAL_HOST = 'nanobananacanvas.com'
 const WWW_HOST = `www.${CANONICAL_HOST}`
 const CLERK_PROXY_PATH = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
+const METADATA_ROUTE_PREFIXES = ['/icon', '/apple-icon']
 
 function resolveClerkProxyPath() {
   if (!CLERK_PROXY_PATH) {
@@ -31,6 +32,12 @@ function resolveClerkProxyPath() {
   return CLERK_PROXY_PATH
 }
 
+function isMetadataRoute(pathname: string) {
+  return METADATA_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
+}
+
 /* ─── Combined Middleware ────────────────────────────── */
 
 export default clerkMiddleware(
@@ -39,6 +46,10 @@ export default clerkMiddleware(
       const url = req.nextUrl.clone()
       url.hostname = CANONICAL_HOST
       return NextResponse.redirect(url, 308)
+    }
+
+    if (isMetadataRoute(req.nextUrl.pathname)) {
+      return NextResponse.next()
     }
 
     if (req.nextUrl.pathname.startsWith('/api/')) {

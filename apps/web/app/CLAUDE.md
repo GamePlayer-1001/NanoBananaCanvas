@@ -43,7 +43,7 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/(app)/layout.tsx                   — 应用动态布局 (ClerkShell + AppSidebar 200px + main flex-1)
 [locale]/(app)/account/page.tsx             — 账户页 (AccountContent: 个人资料/作品/通知/多条 API 接入配置)
 [locale]/(app)/billing/page.tsx             — 账单页 (BillingContent: 余额/流水/usage + Stripe Portal 入口)
-[locale]/(app)/explore/page.tsx             — 社区广场 (ExploreContent: tabs + 视频卡片网格 + CollectionPage/BreadcrumbList 结构化数据)
+[locale]/(app)/explore/page.tsx             — 社区广场 (ExploreContent: 促销条 + 轮播 Banner + 分类筛选 + 四列瀑布流卡片 + CollectionPage/BreadcrumbList 结构化数据)
 [locale]/(app)/explore/[id]/page.tsx       — 作品详情 (ExploreDetailContent: 预览 + 作者 + 互动 + CreativeWork/BreadcrumbList 结构化数据)
 [locale]/(app)/workflows/page.tsx           — 工作流分享 (WorkflowsContent: 分类 + 搜索 + 工作流卡片 + CollectionPage/BreadcrumbList 结构化数据)
 [locale]/(app)/video-analysis/page.tsx      — 视频分析工具页 (上传 + AI 模型 + 历史，可访问但不参与搜索索引)

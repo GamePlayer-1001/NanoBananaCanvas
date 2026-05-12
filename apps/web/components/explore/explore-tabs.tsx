@@ -2,8 +2,8 @@
  * [INPUT]: 依赖 react 的 useRef，依赖 next-intl 的 useTranslations，依赖 sonner 的 toast，
  *          依赖 @/i18n/navigation 的 useRouter，依赖 @/hooks/use-user 的 useCurrentUser，
  *          依赖 @/hooks/use-upload 的 useUpload，依赖 @/lib/validations/upload
- * [OUTPUT]: 对外提供 ExploreTabs 标签栏组件 (排序标签 + 作品类型标签 + 探索搜索入口 + 本地作品分享上传入口)
- * [POS]: explore 的顶部标签导航，被 explore/page.tsx 消费
+ * [OUTPUT]: 对外提供 ExploreTabs 顶部工具条 (排序标签 + 类型筛选 + 内联搜索 + 上传入口)
+ * [POS]: explore 的顶部工具区，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -12,8 +12,9 @@
 import { useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { useRouter } from '@/i18n/navigation'
 import { Loader2, Search, Share2 } from 'lucide-react'
+
+import { useRouter } from '@/i18n/navigation'
 import { useCurrentUser } from '@/hooks/use-user'
 import { useUpload } from '@/hooks/use-upload'
 import { SHARE_UPLOAD_ACCEPT, UPLOAD_LIMITS, detectUploadKind } from '@/lib/validations/upload'
@@ -53,17 +54,17 @@ function getVideoDuration(file: File) {
 export function ExploreTabs({
   active,
   activeType,
+  searchValue,
   onChange,
   onTypeChange,
-  onSearchOpen,
-  searchLabel,
+  onSearchChange,
 }: {
   active: ExploreTab
   activeType: ExploreContentTypeTab
+  searchValue: string
   onChange: (tab: ExploreTab) => void
   onTypeChange: (tab: ExploreContentTypeTab) => void
-  onSearchOpen: () => void
-  searchLabel: string
+  onSearchChange: (value: string) => void
 }) {
   const t = useTranslations('explore')
   const router = useRouter()
@@ -134,18 +135,18 @@ export function ExploreTabs({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        {/* 排序标签 */}
-        <div className="flex flex-wrap gap-1">
+    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
           {TABS.map((tab) => (
             <button
               key={tab}
+              type="button"
               onClick={() => onChange(tab)}
-              className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+              className={`rounded-full px-4 py-2 text-sm transition-all ${
                 active === tab
-                  ? 'bg-brand-500 font-medium text-white'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-brand-500 font-medium text-white shadow-[0_10px_24px_-16px_rgba(79,70,229,0.9)]'
+                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-900'
               }`}
             >
               {t(tab)}
@@ -153,18 +154,20 @@ export function ExploreTabs({
           ))}
         </div>
 
-        {/* 作品类型标签 */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">{t('typeLabel')}</span>
-          <div className="flex flex-wrap gap-1">
+          <span className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">
+            {t('typeLabel')}
+          </span>
+          <div className="flex flex-wrap gap-2">
             {TYPE_TABS.map((tab) => (
               <button
                 key={tab}
+                type="button"
                 onClick={() => onTypeChange(tab)}
-                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                className={`rounded-full border px-3 py-1.5 text-xs transition-all ${
                   activeType === tab
-                    ? 'border-brand-500 bg-brand-500/10 text-brand-600'
-                    : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'border-brand-500 bg-brand-500/10 text-brand-700'
+                    : 'border-stone-200 bg-white text-stone-500 hover:bg-stone-100 hover:text-stone-900'
                 }`}
               >
                 {t(`type_${tab}`)}
@@ -174,7 +177,7 @@ export function ExploreTabs({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input
           ref={fileInputRef}
           type="file"
@@ -183,22 +186,21 @@ export function ExploreTabs({
           onChange={(event) => void handleFileChange(event)}
         />
 
-        <button
-          onClick={onSearchOpen}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm transition-colors"
-        >
+        <label className="flex min-w-[250px] items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-500 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] transition-colors focus-within:border-brand-300 focus-within:text-stone-900">
           <Search size={14} />
-          <span>{searchLabel}</span>
-          <kbd className="border-border bg-muted rounded border px-1 py-0.5 text-[10px]">
-            ⌘K
-          </kbd>
-        </button>
+          <input
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={t('searchPlaceholder')}
+            className="w-full bg-transparent text-sm text-stone-900 outline-none placeholder:text-stone-400"
+          />
+        </label>
 
-        {/* 分享入口 */}
         <button
+          type="button"
           onClick={handleShareClick}
           disabled={uploading}
-          className="flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex items-center justify-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {uploading ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
           {uploading ? t('shareUploading', { progress }) : t('shareWork')}

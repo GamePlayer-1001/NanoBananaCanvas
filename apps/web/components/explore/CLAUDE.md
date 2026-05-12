@@ -3,9 +3,9 @@
 
 ## 成员清单
 
-explore-content.tsx: ExploreContent 客户端容器，组合 tabs + grid，管理排序/作品类型状态、探索搜索弹窗与 API 调用
-explore-tabs.tsx: ExploreTabs 标签栏，热门/最新/我点赞的排序分组 + 视频/图片/工作流类型过滤 + 搜索入口 + 本地文件选择上传按钮
-explore-grid.tsx: ExploreGrid 视频卡片网格，含 Skeleton 加载态和空状态
+explore-content.tsx: ExploreContent 客户端容器，组合促销条、轮播 Banner、分类/搜索/排序工具区与 Explore API，驱动社区广场主展示层
+explore-tabs.tsx: ExploreTabs 顶部工具条，负责热门/最新/我点赞排序、视频/图片/工作流类型过滤、内联搜索与本地文件上传入口
+explore-grid.tsx: ExploreGrid 瀑布流卡片区域，负责四列不规则排布、Skeleton 加载态与空状态
 detail/: 探索详情子模块 (见 detail/CLAUDE.md)
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

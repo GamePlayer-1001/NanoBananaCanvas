@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，
  *          依赖 @/components/shared/video-card，
  *          依赖 @/components/ui/skeleton
- * [OUTPUT]: 对外提供 ExploreGrid 视频卡片网格 + 加载骨架
+ * [OUTPUT]: 对外提供 ExploreGrid 瀑布流卡片区域 + 加载骨架
  * [POS]: explore 的内容区域，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -18,22 +18,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function VideoCardSkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
-      <div className="flex gap-3">
-        <Skeleton className="h-10 w-10 rounded-full" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-4/5" />
-          <Skeleton className="h-3.5 w-3/5" />
-          <Skeleton className="h-3.5 w-2/5" />
-        </div>
+    <div className="mb-6 break-inside-avoid overflow-hidden rounded-[28px] border border-stone-200/70 bg-white p-3 shadow-[0_16px_42px_-34px_rgba(15,23,42,0.22)]">
+      <Skeleton className="h-[260px] w-full rounded-[22px]" />
+      <div className="mt-4 space-y-2 px-1 pb-1">
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-3.5 w-3/5" />
       </div>
     </div>
   )
 }
 
-const GRID_CLASS =
-  'grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+const GRID_CLASS = 'columns-1 gap-6 sm:columns-2 xl:columns-3 2xl:columns-4'
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -67,7 +62,7 @@ export function ExploreGrid({
   return (
     <div className={GRID_CLASS}>
       {videos.map((video) => (
-        <VideoCard key={video.id} data={video} />
+        <VideoCard key={video.id} data={video} variant="masonry" />
       ))}
     </div>
   )

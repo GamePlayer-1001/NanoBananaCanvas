@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用视频卡片组件 (含节点类型 Badge + 作品类型徽标)
- * [POS]: shared 的通用视频卡，被 explore/workspace 页面消费
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡)
+ * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -10,7 +10,7 @@
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
 import { useTranslations } from 'next-intl'
-import { Play } from 'lucide-react'
+import { Heart, Play, Sparkles } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 
@@ -31,6 +31,8 @@ export interface VideoCardData {
   views?: number
   createdAt?: string
   nodeTypes?: string[]
+  description?: string
+  categoryName?: string
 }
 
 /* ─── Helpers ────────────────────────────────────────── */
@@ -66,12 +68,103 @@ function formatCreatedAt(value?: string): string {
 
 /* ─── Component ──────────────────────────────────────── */
 
-export function VideoCard({ data }: { data: VideoCardData }) {
+export function VideoCard({
+  data,
+  variant = 'default',
+}: {
+  data: VideoCardData
+  variant?: 'default' | 'masonry'
+}) {
   const t = useTranslations('explore')
   const authorName = getDisplayName(data.author.name)
-  const meta = [data.views !== undefined ? `${formatViews(data.views)} views` : '', formatCreatedAt(data.createdAt)]
+  const meta = [
+    data.views !== undefined ? `${formatViews(data.views)} views` : '',
+    formatCreatedAt(data.createdAt),
+  ]
     .filter(Boolean)
     .join(' · ')
+  const summary = data.description?.trim() || meta
+
+  if (variant === 'masonry') {
+    return (
+      <Link href={`/explore/${data.id}`} className="group mb-6 block break-inside-avoid">
+        <article className="overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_22px_60px_-34px_rgba(15,23,42,0.28)] transition-[transform,box-shadow,border-color] duration-300 group-hover:-translate-y-2 group-hover:border-brand-200 group-hover:shadow-[0_34px_90px_-38px_rgba(79,70,229,0.28)]">
+          <div className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9ea_0%,#fffefb_42%,#ffffff_100%)]">
+            {data.thumbnailUrl ? (
+              <img
+                src={data.thumbnailUrl}
+                alt={data.title}
+                className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+            ) : (
+              <div className="flex min-h-[240px] items-center justify-center bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.24),transparent_36%),linear-gradient(135deg,#fff7ed,#ffffff)] px-6 py-14">
+                <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                  {data.contentType ? t(`type_${data.contentType}`) : 'Preview'}
+                </span>
+              </div>
+            )}
+
+            <div className="absolute left-4 top-4 right-4 flex items-start justify-between gap-2">
+              <span className="rounded-full border border-white/80 bg-white/88 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-stone-700 uppercase backdrop-blur-sm">
+                {data.contentType ? t(`type_${data.contentType}`) : 'content'}
+              </span>
+              {data.categoryName ? (
+                <span className="rounded-full bg-black/58 px-3 py-1 text-[11px] font-medium text-white/92 backdrop-blur-sm">
+                  {data.categoryName}
+                </span>
+              ) : null}
+            </div>
+
+            {data.contentType === 'video' ? (
+              <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/40 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                  <Play size={18} className="ml-0.5 fill-current" />
+                </div>
+              </div>
+            ) : null}
+
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_46%,rgba(15,23,42,0.06)_74%,rgba(15,23,42,0.48)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+            <div className="absolute inset-x-4 bottom-4 translate-y-5 rounded-[22px] border border-white/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,243,233,0.92))] p-4 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="line-clamp-2 text-sm font-semibold text-stone-900">{data.title}</h3>
+                  <p className="mt-1 text-xs text-stone-500">{authorName}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-stone-600">
+                  <Heart size={12} className="text-rose-500" />
+                  {formatViews(data.views) || '0'}
+                </span>
+              </div>
+              {summary ? (
+                <p className="mt-3 line-clamp-2 text-xs leading-5 text-stone-600">{summary}</p>
+              ) : null}
+              <div className="mt-3 flex items-center justify-between text-[11px] text-stone-500">
+                <span>{meta || authorName}</span>
+                <span className="inline-flex items-center gap-1 font-medium text-brand-600">
+                  <Sparkles size={12} />
+                  Open
+                </span>
+              </div>
+            </div>
+
+            {data.entityType === 'workflow' && data.nodeTypes && data.nodeTypes.length > 0 ? (
+              <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-1.5 transition-opacity duration-300 group-hover:opacity-0">
+                {data.nodeTypes.slice(0, 3).map((nodeType) => (
+                  <span
+                    key={nodeType}
+                    className="rounded-full bg-black/58 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm"
+                  >
+                    {nodeType}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </article>
+      </Link>
+    )
+  }
 
   return (
     <Link href={`/explore/${data.id}`} className="group block">
