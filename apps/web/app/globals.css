@@ -334,3 +334,18 @@
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+@keyframes explore-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-explore-rise {
+  animation: explore-rise 0.6s ease-out both;
+}

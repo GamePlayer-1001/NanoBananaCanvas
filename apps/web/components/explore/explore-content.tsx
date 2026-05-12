@@ -15,7 +15,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Flame, SearchCheck, X } from 'lucide-react'
 
 import { ExploreTabs, type ExploreContentTypeTab, type ExploreTab } from './explore-tabs'
 import { ExploreGrid } from './explore-grid'
@@ -36,18 +36,21 @@ const TAB_SORT: Record<ExploreTab, ExploreQuery['sort']> = {
 const BANNERS = [
   {
     accent: 'from-[#ff8a3d] via-[#fb7185] to-[#ffd84d]',
+    panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.02))]',
     eyebrowKey: 'bannerEyebrow1',
     titleKey: 'bannerTitle1',
     bodyKey: 'bannerBody1',
   },
   {
     accent: 'from-[#111827] via-[#0f3fb2] to-[#6aa8ff]',
+    panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02))]',
     eyebrowKey: 'bannerEyebrow2',
     titleKey: 'bannerTitle2',
     bodyKey: 'bannerBody2',
   },
   {
     accent: 'from-[#1f4d31] via-[#22c55e] to-[#f6e27a]',
+    panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02))]',
     eyebrowKey: 'bannerEyebrow3',
     titleKey: 'bannerTitle3',
     bodyKey: 'bannerBody3',
@@ -180,11 +183,16 @@ export function ExploreContent() {
 
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top,#fff6d8_0%,#fffdf7_18%,#fffefb_35%,#ffffff_100%)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_34%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.2),transparent_26%)]" />
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         {promoVisible ? (
-          <section className="flex items-center justify-between gap-4 rounded-[24px] border border-[#f4dc68] bg-[#fff45b] px-5 py-3 text-sm text-stone-800 shadow-[0_14px_32px_-28px_rgba(202,138,4,0.68)]">
+          <section className="animate-explore-rise relative overflow-hidden flex items-center justify-between gap-4 rounded-[24px] border border-[#f4dc68] bg-[#fff45b] px-5 py-3 text-sm text-stone-800 shadow-[0_14px_32px_-28px_rgba(202,138,4,0.68)]">
+            <div className="absolute inset-y-0 right-0 w-40 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35))]" />
             <div className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="font-semibold">{t('promoTitle')}</span>
+              <span className="inline-flex items-center gap-2 font-semibold">
+                <Flame size={15} className="text-amber-700" />
+                {t('promoTitle')}
+              </span>
               <span className="rounded-full border border-black/10 bg-white/65 px-3 py-1 text-xs font-semibold">
                 {t('promoCountdown')}
               </span>
@@ -201,19 +209,21 @@ export function ExploreContent() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
+        <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
           {BANNERS.slice(0, 2).map((banner, index) => {
             const isActive = index === activeBanner % 2
             return (
               <article
                 key={banner.titleKey}
-                className={`relative overflow-hidden rounded-[32px] border border-white/70 bg-gradient-to-br ${banner.accent} p-6 text-white shadow-[0_28px_80px_-34px_rgba(15,23,42,0.4)] transition-all duration-500 ${
-                  isActive ? 'opacity-100' : 'opacity-78 xl:scale-[0.99]'
+                className={`animate-explore-rise relative overflow-hidden rounded-[32px] border border-white/70 bg-gradient-to-br ${banner.accent} p-6 text-white shadow-[0_28px_80px_-34px_rgba(15,23,42,0.4)] transition-all duration-500 ${
+                  isActive ? 'translate-y-0 opacity-100' : 'opacity-78 xl:translate-y-1 xl:scale-[0.99]'
                 }`}
+                style={{ animationDelay: `${index * 110}ms` }}
               >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.34),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0))]" />
-                <div className="relative flex min-h-[170px] flex-col justify-between gap-6">
-                  <div className="space-y-3">
+                <div className="absolute -right-8 top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+                <div className="relative flex min-h-[208px] flex-col justify-between gap-6">
+                  <div className="space-y-4">
                     <p className="text-xs font-semibold tracking-[0.22em] text-white/78 uppercase">
                       {t(banner.eyebrowKey)}
                     </p>
@@ -222,7 +232,13 @@ export function ExploreContent() {
                     </h2>
                     <p className="max-w-[40ch] text-sm leading-6 text-white/84">{t(banner.bodyKey)}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-end justify-between gap-4">
+                    <div className={`rounded-[24px] ${banner.panel} px-4 py-3 backdrop-blur-md`}>
+                      <p className="text-[11px] font-semibold tracking-[0.18em] text-white/68 uppercase">
+                        {t('bannerStatLabel')}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold">{t(index === 0 ? 'bannerStatValue1' : 'bannerStatValue2')}</p>
+                    </div>
                     {BANNERS.slice(0, 2).map((_, dotIndex) => (
                       <button
                         key={dotIndex}
@@ -241,7 +257,7 @@ export function ExploreContent() {
           })}
         </section>
 
-        <section className="rounded-[32px] border border-[#efe5d7] bg-white/88 px-4 py-5 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:px-6 lg:px-7">
+        <section className="animate-explore-rise rounded-[32px] border border-[#efe5d7] bg-white/88 px-4 py-5 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:px-6 lg:px-7" style={{ animationDelay: '120ms' }}>
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -282,14 +298,18 @@ export function ExploreContent() {
           </div>
         </section>
 
-        <section className="flex items-center justify-between gap-4 px-1">
+        <section className="animate-explore-rise flex items-center justify-between gap-4 px-1" style={{ animationDelay: '180ms' }}>
           <div>
             <p className="text-xs font-semibold tracking-[0.24em] text-stone-400 uppercase">
               {t('sectionEyebrow')}
             </p>
-            <h3 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">
+            <h3 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900 sm:text-[2rem]">
               {t('sectionTitle')}
             </h3>
+            <p className="mt-2 inline-flex items-center gap-2 text-sm text-stone-500">
+              <SearchCheck size={16} className="text-brand-500" />
+              {t('sectionSubtitle')}
+            </p>
           </div>
           <p className="text-sm text-stone-500">
             {filteredVideos.length} {t('resultsCount')}

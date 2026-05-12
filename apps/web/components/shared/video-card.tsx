@@ -88,13 +88,13 @@ export function VideoCard({
   if (variant === 'masonry') {
     return (
       <Link href={`/explore/${data.id}`} className="group mb-6 block break-inside-avoid">
-        <article className="overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_22px_60px_-34px_rgba(15,23,42,0.28)] transition-[transform,box-shadow,border-color] duration-300 group-hover:-translate-y-2 group-hover:border-brand-200 group-hover:shadow-[0_34px_90px_-38px_rgba(79,70,229,0.28)]">
+        <article className="animate-explore-rise overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_22px_60px_-34px_rgba(15,23,42,0.28)] transition-[transform,box-shadow,border-color,filter] duration-300 group-hover:-translate-y-2 group-hover:border-brand-200 group-hover:shadow-[0_34px_90px_-38px_rgba(79,70,229,0.28)] group-hover:saturate-[1.03]">
           <div className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9ea_0%,#fffefb_42%,#ffffff_100%)]">
             {data.thumbnailUrl ? (
               <img
                 src={data.thumbnailUrl}
                 alt={data.title}
-                className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                className="h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.035]"
               />
             ) : (
               <div className="flex min-h-[240px] items-center justify-center bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.24),transparent_36%),linear-gradient(135deg,#fff7ed,#ffffff)] px-6 py-14">
@@ -125,7 +125,7 @@ export function VideoCard({
 
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_46%,rgba(15,23,42,0.06)_74%,rgba(15,23,42,0.48)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-            <div className="absolute inset-x-4 bottom-4 translate-y-5 rounded-[22px] border border-white/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,243,233,0.92))] p-4 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="absolute inset-x-4 bottom-4 translate-y-5 rounded-[22px] border border-white/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,243,233,0.94))] p-4 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="line-clamp-2 text-sm font-semibold text-stone-900">{data.title}</h3>
