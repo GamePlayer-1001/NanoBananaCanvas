@@ -20,6 +20,7 @@ Stripe 支付系统嵌入执行清单.md: Stripe 商业化重建的活任务清�
 Agent 工作流画板完整方案.md: 带 Agent 的工作流画板完整产品方案，定义轻聊天面板、工作流真相源、提示词确认、Agent 能力与版本路线
 Agent 工作流画板最终技术设计稿.md: Agent 画板的正式技术真相源，定义模块拆分、状态机、Operation 协议、API 边界、落图与执行集成
 Agent 工作流画板实现任务执行清单.md: Agent 画板 V1 的阶段化开发任务清单，按里程碑拆解前端、后端、测试、文档与验收项
+explore-import-manifest-template.csv: Explore 批量导入 CSV 模板，按标准字段填写本地作品、来源链接、作者信息与媒体路径，供导入脚本直接消费
 
 ## 历史归档
 
