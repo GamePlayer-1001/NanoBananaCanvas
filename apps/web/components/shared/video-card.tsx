@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；无上传封面时视频回退首帧预览)
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；无上传封面时视频回退到客户端抓取的首帧预览)
  * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用并承接底部操作条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -9,6 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Bookmark, Ellipsis, Heart, Play, Sparkles } from 'lucide-react'
 
@@ -76,27 +77,142 @@ function formatMetric(n?: number) {
   return formatViews(n) || '0'
 }
 
-function renderPreviewMedia(data: VideoCardData, title: string, className: string) {
-  if (data.thumbnailUrl) {
-    return (
-      <img
-        src={data.thumbnailUrl}
-        alt={title}
-        className={className}
-      />
+function getVideoFrameDataUrl(url: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video')
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    video.playsInline = true
+    video.preload = 'auto'
+    video.src = url
+
+    const cleanup = () => {
+      video.pause()
+      video.removeAttribute('src')
+      video.load()
+    }
+
+    const capture = () => {
+      try {
+        const width = video.videoWidth
+        const height = video.videoHeight
+
+        if (!width || !height) {
+          cleanup()
+          resolve(null)
+          return
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const context = canvas.getContext('2d')
+
+        if (!context) {
+          cleanup()
+          resolve(null)
+          return
+        }
+
+        context.drawImage(video, 0, 0, width, height)
+        const result = canvas.toDataURL('image/jpeg', 0.82)
+        cleanup()
+        resolve(result)
+      } catch {
+        cleanup()
+        resolve(null)
+      }
+    }
+
+    video.addEventListener(
+      'loadedmetadata',
+      () => {
+        try {
+          video.currentTime = Math.min(0.05, Number.isFinite(video.duration) ? video.duration / 2 : 0.05)
+        } catch {
+          capture()
+        }
+      },
+      { once: true },
     )
+
+    video.addEventListener(
+      'loadeddata',
+      () => {
+        if (video.readyState >= 2) {
+          capture()
+        }
+      },
+      { once: true },
+    )
+
+    video.addEventListener(
+      'seeked',
+      () => {
+        capture()
+      },
+      { once: true },
+    )
+
+    video.addEventListener(
+      'error',
+      () => {
+        cleanup()
+        resolve(null)
+      },
+      { once: true },
+    )
+  })
+}
+
+function useVideoPreviewFrame(frameSourceKey?: string) {
+  const [previewFrameState, setPreviewFrameState] = useState<{
+    sourceKey?: string
+    frameUrl?: string
+  }>({})
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!frameSourceKey) {
+      return undefined
+    }
+
+    void getVideoFrameDataUrl(frameSourceKey).then((frameUrl) => {
+      if (!cancelled) {
+        setPreviewFrameState({
+          sourceKey: frameSourceKey,
+          frameUrl: frameUrl ?? undefined,
+        })
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [frameSourceKey])
+
+  if (!frameSourceKey || previewFrameState.sourceKey !== frameSourceKey) {
+    return undefined
   }
 
-  if (data.contentType === 'video' && data.mediaUrl) {
+  return previewFrameState.frameUrl
+}
+
+function renderPreviewMedia(
+  data: VideoCardData,
+  title: string,
+  className: string,
+  previewFrameUrl?: string,
+) {
+  const resolvedThumbnailUrl = data.thumbnailUrl || previewFrameUrl
+
+  if (resolvedThumbnailUrl) {
     return (
-      <video
-        src={data.mediaUrl}
+      <img
+        src={resolvedThumbnailUrl}
+        alt={title}
         className={className}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
       />
     )
   }
@@ -121,9 +237,38 @@ export function VideoCard({
   ]
     .filter(Boolean)
     .join(' · ')
-  const summary = data.description?.trim() || meta
+
+  return (
+    <CardWithPreview
+      data={data}
+      authorName={authorName}
+      meta={meta}
+      variant={variant}
+      t={t}
+    />
+  )
+}
+
+function CardWithPreview({
+  data,
+  authorName,
+  meta,
+  variant,
+  t,
+}: {
+  data: VideoCardData
+  authorName: string
+  meta: string
+  variant: 'default' | 'masonry'
+  t: ReturnType<typeof useTranslations<'explore'>>
+}) {
+  const frameSourceKey =
+    data.thumbnailUrl || data.contentType !== 'video' || !data.mediaUrl ? undefined : data.mediaUrl
+  const previewFrameUrl = useVideoPreviewFrame(frameSourceKey)
 
   if (variant === 'masonry') {
+    const summary = data.description?.trim() || meta
+
     return (
       <Link href={`/explore/${data.id}`} className="group mb-6 block break-inside-avoid">
         <article className="animate-explore-rise overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[transform,box-shadow,border-color] duration-300 group-hover:-translate-y-2 group-hover:border-stone-300 group-hover:shadow-[0_34px_88px_-42px_rgba(15,23,42,0.32)]">
@@ -132,6 +277,7 @@ export function VideoCard({
               data,
               data.title,
               'h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.03]',
+              previewFrameUrl,
             ) ?? (
               <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
                 <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
@@ -240,12 +386,12 @@ export function VideoCard({
 
   return (
     <Link href={`/explore/${data.id}`} className="group block">
-      {/* 缩略图 */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
         {renderPreviewMedia(
           data,
           data.title,
           'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]',
+          previewFrameUrl,
         ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">
@@ -254,7 +400,6 @@ export function VideoCard({
           </div>
         )}
 
-        {/* 时长标签 */}
         {data.duration && (
           <span className="absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
             {data.duration}
@@ -275,24 +420,21 @@ export function VideoCard({
           </div>
         ) : null}
 
-        {/* 节点类型标签 */}
         {data.entityType === 'workflow' && data.nodeTypes && data.nodeTypes.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
-            {data.nodeTypes.slice(0, 3).map((t) => (
+            {data.nodeTypes.slice(0, 3).map((nodeType) => (
               <span
-                key={t}
+                key={nodeType}
                 className="rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm"
               >
-                {t}
+                {nodeType}
               </span>
             ))}
           </div>
         )}
       </div>
 
-      {/* 信息区 */}
       <div className="mt-4 flex gap-3 px-1">
-        {/* 头像 */}
         <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border/50 bg-muted">
           {data.author.avatarUrl ? (
             <img
@@ -307,14 +449,11 @@ export function VideoCard({
           )}
         </div>
 
-        {/* 文字 */}
         <div className="min-w-0 flex-1 space-y-1">
           <h3 className="line-clamp-2 text-[15px] font-medium leading-6 text-foreground transition-colors group-hover:text-brand-600">
             {data.title}
           </h3>
-          <p className="truncate text-sm text-muted-foreground">
-            {authorName}
-          </p>
+          <p className="truncate text-sm text-muted-foreground">{authorName}</p>
           {meta ? <p className="text-xs text-muted-foreground/75">{meta}</p> : null}
         </div>
       </div>
