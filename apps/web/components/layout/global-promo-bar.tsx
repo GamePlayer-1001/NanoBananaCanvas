@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useState，依赖 next-intl 的 useTranslations，
  *          依赖 lucide-react 的 Flame/X
- * [OUTPUT]: 对外提供 GlobalPromoBar 全局宣传条组件（支持本地关闭记忆）
+ * [OUTPUT]: 对外提供 GlobalPromoBar 全局宣传条组件（支持会话级关闭记忆）
  * [POS]: layout 的全局顶部横条，被 (app)/layout.tsx 消费，统一承接工作台级促销提示
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,7 +12,7 @@ import { useState } from 'react'
 import { Flame, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-const PROMO_STORAGE_KEY = 'global-promo-bar:hidden:v1'
+const PROMO_STORAGE_KEY = 'global-promo-bar:hidden:v2'
 
 /* ─── Component ──────────────────────────────────────── */
 
@@ -20,11 +20,11 @@ export function GlobalPromoBar() {
   const t = useTranslations('explore')
   const [visible, setVisible] = useState(() => {
     if (typeof window === 'undefined') return true
-    return window.localStorage.getItem(PROMO_STORAGE_KEY) !== '1'
+    return window.sessionStorage.getItem(PROMO_STORAGE_KEY) !== '1'
   })
 
   const handleClose = () => {
-    window.localStorage.setItem(PROMO_STORAGE_KEY, '1')
+    window.sessionStorage.setItem(PROMO_STORAGE_KEY, '1')
     setVisible(false)
   }
 

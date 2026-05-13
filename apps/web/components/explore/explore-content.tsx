@@ -6,7 +6,7 @@
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
  *          依赖 @/components/ui/button
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（下移纯图片轮播 Banner + 两行分类/排序 + 瀑布流内容卡片）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（居中纯图片轮播 Banner + 两行分类/排序 + 瀑布流内容卡片）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -272,8 +272,8 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative px-1 pt-8 sm:px-2 sm:pt-10 lg:px-3 lg:pt-12">
-          <div className="relative h-[188px] overflow-visible sm:h-[272px] lg:h-[352px]">
+        <section className="animate-explore-rise relative px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
+          <div className="relative h-[232px] overflow-visible sm:h-[304px] lg:h-[384px]">
             {BANNERS.map((banner, index) => {
               const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
               const isActive = offset === 0
@@ -291,7 +291,7 @@ export function ExploreContent() {
                   }`}
                   style={{
                     zIndex: isActive ? 30 : isSideCard ? 20 : 10,
-                    transform: `translate(-50%, -46%) perspective(1400px) translateX(${offset * 34}%) scale(${
+                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 34}%) scale(${
                       isActive ? 1 : 0.86
                     }) rotateY(${offset * -24}deg)`,
                     opacity: isActive ? 1 : isSideCard ? 0.72 : 0,
@@ -316,7 +316,7 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-[40%] items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:left-1"
+            className="absolute left-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:left-1"
             aria-label={t('bannerPrev')}
           >
             <ChevronLeft size={18} />
@@ -324,7 +324,7 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-            className="absolute right-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-[40%] items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:right-1"
+            className="absolute right-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:right-1"
             aria-label={t('bannerNext')}
           >
             <ChevronRight size={18} />
