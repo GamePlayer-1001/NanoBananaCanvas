@@ -11,12 +11,14 @@
 
 /* eslint-disable @next/next/no-img-element -- 公开详情里的用户作品媒体地址来自运行时资源，图片/视频混合展示时直接使用原生标签最稳。 */
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
   Bookmark,
   Clapperboard,
   Eye,
+  Flag,
   Heart,
   Loader2,
   Sparkles,
@@ -27,6 +29,7 @@ import { useExploreDetail } from '@/hooks/use-explore'
 import { WorkflowPreview } from './workflow-preview'
 import { AuthorInfo } from './author-info'
 import { ActionButtons } from './action-buttons'
+import { ReportDialog } from './report-dialog'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -80,6 +83,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   const t = useTranslations('exploreDetail')
   const { data, isLoading } = useExploreDetail(workflowId)
   const showSourceCard = false
+  const [reportOpen, setReportOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -222,13 +226,24 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           </div>
 
           {isOutput && workflow.prompt ? (
-            <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
-                {t('prompt')}
-              </p>
-              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-stone-900">
-                {workflow.prompt}
-              </p>
+            <div className="space-y-3">
+              <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
+                  {t('prompt')}
+                </p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-stone-900">
+                  {workflow.prompt}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-1 text-sm text-stone-500 underline-offset-4 transition-colors hover:text-stone-900 hover:underline"
+                onClick={() => setReportOpen(true)}
+              >
+                <Flag size={15} />
+                {t('report')}
+              </button>
             </div>
           ) : null}
 
@@ -282,6 +297,13 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           ) : null}
         </div>
       </div>
+
+      <ReportDialog
+        workflowId={workflowId}
+        entityType={workflow.entity_type}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
     </div>
   )
 }
