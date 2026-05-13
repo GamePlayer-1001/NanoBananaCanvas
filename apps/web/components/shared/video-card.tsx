@@ -71,6 +71,32 @@ function formatDuration(duration?: string) {
   return '00:05'
 }
 
+function renderPreviewMedia(data: VideoCardData, title: string, className: string) {
+  if (data.thumbnailUrl) {
+    return (
+      <img
+        src={data.thumbnailUrl}
+        alt={title}
+        className={className}
+      />
+    )
+  }
+
+  if (data.contentType === 'video' && data.mediaUrl) {
+    return (
+      <video
+        src={data.mediaUrl}
+        className={className}
+        muted
+        playsInline
+        preload="auto"
+      />
+    )
+  }
+
+  return null
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function VideoCard({
@@ -95,13 +121,11 @@ export function VideoCard({
       <Link href={`/explore/${data.id}`} className="group mb-6 block break-inside-avoid">
         <article className="animate-explore-rise overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_22px_60px_-34px_rgba(15,23,42,0.28)] transition-[transform,box-shadow,border-color,filter] duration-300 group-hover:-translate-y-2 group-hover:border-brand-200 group-hover:shadow-[0_34px_90px_-38px_rgba(79,70,229,0.28)] group-hover:saturate-[1.03]">
           <div className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9ea_0%,#fffefb_42%,#ffffff_100%)]">
-            {data.thumbnailUrl ? (
-              <img
-                src={data.thumbnailUrl}
-                alt={data.title}
-                className="h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.035]"
-              />
-            ) : (
+            {renderPreviewMedia(
+              data,
+              data.title,
+              'h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.035]',
+            ) ?? (
               <div className="flex min-h-[240px] items-center justify-center bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.24),transparent_36%),linear-gradient(135deg,#fff7ed,#ffffff)] px-6 py-14">
                 <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                   {data.contentType ? t(`type_${data.contentType}`) : 'Preview'}
@@ -202,13 +226,11 @@ export function VideoCard({
     <Link href={`/explore/${data.id}`} className="group block">
       {/* 缩略图 */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
-        {data.thumbnailUrl ? (
-          <img
-            src={data.thumbnailUrl}
-            alt={data.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
-        ) : (
+        {renderPreviewMedia(
+          data,
+          data.title,
+          'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]',
+        ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">
               No Preview
