@@ -83,7 +83,9 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   const authorName = workflow.author_name?.trim() || workflow.source_author_name?.trim() || 'Unknown Creator'
   const isOutput = workflow.entity_type === 'output'
   const sourceAuthorName = workflow.source_author_name?.trim()
-  const previewUrl = workflow.media_type === 'video' ? workflow.thumbnail || workflow.media_url : workflow.media_url
+  const customThumbnail =
+    workflow.thumbnail && workflow.thumbnail !== workflow.media_url ? workflow.thumbnail : undefined
+  const previewUrl = workflow.media_type === 'video' ? customThumbnail || workflow.media_url : workflow.media_url
 
   return (
     <div className="mx-auto w-full max-w-[1380px] px-6 py-8 lg:px-8 lg:py-10">

@@ -93,8 +93,9 @@ interface PublishedOutputListItem {
 
 function renderPublishedOutputPreview(item: PublishedOutputListItem) {
   const isVideo = item.media_type === 'video'
+  const hasCustomThumbnail = !!item.thumbnail && item.thumbnail !== item.media_url
 
-  if (item.thumbnail) {
+  if (hasCustomThumbnail) {
     return (
       <img
         src={item.thumbnail}
@@ -834,6 +835,7 @@ export function WorksTab({
           defaultTitle={publishingItem.output?.fileName || publishingItem.modelId}
           defaultPrompt={String(publishingItem.input?.prompt ?? '')}
           defaultThumbnail={publishingItem.output?.url}
+          mediaType={publishingItem.taskType === 'video_gen' ? 'video' : 'image'}
           open={!!publishingItem}
           onOpenChange={(open) => {
             if (!open) setPublishingItem(null)
