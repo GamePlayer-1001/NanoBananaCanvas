@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/hooks/use-explore 的 useExploreDetail，
  *          依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
- *          依赖 ./workflow-preview, ./author-info, ./action-buttons
+ *          依赖 ./workflow-preview, ./author-info, ./action-buttons, ./report-dialog
  * [OUTPUT]: 对外提供 ExploreDetailContent 客户端交互容器
  * [POS]: explore/detail 的主容器，被 explore/[id]/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -51,6 +51,10 @@ interface WorkflowDetail {
   thumbnail?: string
   author_name?: string | null
   author_avatar?: string
+  author_membership_status?: string | null
+  author_total_likes?: number
+  author_total_favorites?: number
+  author_total_views?: number
   published_at?: string
   view_count: number
   like_count: number
@@ -212,7 +216,10 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           <AuthorInfo
             name={authorName}
             avatar={workflow.author_avatar}
-            publishedAt={workflow.published_at}
+            membershipStatus={workflow.author_membership_status}
+            totalLikes={workflow.author_total_likes}
+            totalFavorites={workflow.author_total_favorites}
+            totalViews={workflow.author_total_views}
           />
 
           <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
