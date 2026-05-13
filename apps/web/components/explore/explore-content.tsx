@@ -89,6 +89,37 @@ interface ExploreApiItem {
   node_types?: string
 }
 
+const SUBCATEGORY_HINTS: Record<Exclude<ExploreSubcategoryTab, 'all'>, string[]> = {
+  'photo-real': ['photo-real', 'photoreal', 'realistic', '写实'],
+  comic: ['comic', '漫画'],
+  visual: ['visual', '视觉', 'creative'],
+  architecture: ['architecture', '建筑'],
+  abstract: ['abstract', '抽象'],
+  design: ['design', '设计'],
+  anime: ['anime', '动漫', 'animation'],
+  'text-gen': ['text-generation', 'text gen', '文本生成', 'llm', 'text-input'],
+  'image-gen': ['image-generation', 'image gen', '图片生成', 'image-gen'],
+  'video-gen': ['video-generation', 'video gen', '视频生成', 'video-gen'],
+  'audio-gen': ['audio-generation', 'audio gen', '音频生成', 'audio-gen'],
+  other: ['other', '其他'],
+}
+
+const SUBCATEGORY_CATEGORY_SLUGS: Partial<Record<ExploreSubcategoryTab, string[]>> = {
+  'text-gen': ['text-generation'],
+  'image-gen': ['image-generation'],
+  'video-gen': ['video-generation'],
+  'audio-gen': ['audio-generation'],
+  visual: ['creative'],
+  other: ['other'],
+}
+
+const SUBCATEGORY_TYPE_HINTS: Partial<Record<ExploreSubcategoryTab, string[]>> = {
+  'text-gen': ['llm', 'text-input'],
+  'image-gen': ['image-gen'],
+  'video-gen': ['video-gen'],
+  'audio-gen': ['audio-gen'],
+}
+
 interface ExploreApiResponse {
   items?: ExploreApiItem[]
   pagination?: { page: number; limit: number; total: number; totalPages: number }
@@ -114,6 +145,41 @@ function toVideoCard(item: ExploreApiItem, categoryMap: Map<string, string>): Vi
     description: item.description,
     categoryName: item.category_id ? categoryMap.get(item.category_id) : undefined,
   }
+}
+
+function normalizeKeyword(value?: string) {
+  return value?.trim().toLowerCase() ?? ''
+}
+
+function matchesSubcategory(video: VideoCardData, activeSubcategory: ExploreSubcategoryTab) {
+  if (activeSubcategory === 'all') return true
+
+  const normalizedCategory = normalizeKeyword(video.categoryName)
+  const normalizedNodeTypes = (video.nodeTypes ?? []).map((nodeType) => normalizeKeyword(nodeType))
+  const haystack = [
+    video.title,
+    video.author.name,
+    video.description,
+    video.categoryName,
+    ...(video.nodeTypes ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  const categorySlugs = SUBCATEGORY_CATEGORY_SLUGS[activeSubcategory] ?? []
+  const typeHints = SUBCATEGORY_TYPE_HINTS[activeSubcategory] ?? []
+  const keywordHints = SUBCATEGORY_HINTS[activeSubcategory] ?? []
+
+  if (categorySlugs.some((slug) => normalizedCategory.includes(slug))) {
+    return true
+  }
+
+  if (typeHints.some((hint) => normalizedNodeTypes.some((nodeType) => nodeType.includes(hint)))) {
+    return true
+  }
+
+  return keywordHints.some((hint) => haystack.includes(hint))
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -155,26 +221,9 @@ export function ExploreContent() {
     [categoryMap, response?.items],
   )
 
-  const subcategoryLabel = t(`subcategory_${activeSubcategory}`)
-
   const filteredVideos = useMemo(() => {
-    if (activeSubcategory === 'all') return videos
-
-    return videos.filter((video) => {
-      const haystack = [
-        video.title,
-        video.author.name,
-        video.description,
-        video.categoryName,
-        ...(video.nodeTypes ?? []),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-
-      return haystack.includes(subcategoryLabel.toLowerCase())
-    })
-  }, [activeSubcategory, subcategoryLabel, videos])
+    return videos.filter((video) => matchesSubcategory(video, activeSubcategory))
+  }, [activeSubcategory, videos])
 
   const handleSortChange = (tab: ExploreTab) => {
     setActiveSort(tab)
@@ -195,8 +244,10 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative overflow-hidden rounded-[32px] border border-stone-200 bg-[linear-gradient(180deg,#fcfcfb,#f3f1ec)] px-3 py-4 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.18)] sm:px-5 sm:py-5 lg:px-8 lg:py-7">
-          <div className="relative h-[210px] sm:h-[280px] lg:h-[360px]">
+        <section className="animate-explore-rise relative overflow-hidden rounded-[32px] border border-stone-200 bg-white px-3 py-4 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.14)] sm:px-5 sm:py-5 lg:px-7 lg:py-6">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(255,255,255,0))] sm:w-20" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-[linear-gradient(270deg,rgba(255,255,255,0.96),rgba(255,255,255,0))] sm:w-20" />
+          <div className="relative h-[220px] sm:h-[300px] lg:h-[360px]">
             {BANNERS.map((banner, index) => {
               const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
               const isActive = offset === 0
@@ -209,16 +260,16 @@ export function ExploreContent() {
                   type="button"
                   onClick={() => setActiveBanner(index)}
                   aria-label={`${t('switchBanner')} ${index + 1}`}
-                  className={`absolute left-1/2 top-1/2 block h-[74%] w-[72%] -translate-y-1/2 overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_55px_-36px_rgba(15,23,42,0.42)] transition-all duration-500 ease-out sm:w-[68%] lg:h-[82%] lg:w-[62%] ${
+                  className={`absolute left-1/2 top-1/2 block h-[76%] w-[80%] -translate-y-1/2 overflow-hidden rounded-[28px] border border-stone-200 bg-stone-100 shadow-[0_24px_55px_-36px_rgba(15,23,42,0.32)] transition-all duration-500 ease-out sm:w-[70%] lg:h-[84%] lg:w-[60%] ${
                     hidden ? 'pointer-events-none opacity-0' : ''
                   }`}
                   style={{
                     zIndex: isActive ? 30 : isSideCard ? 20 : 10,
-                    transform: `translate(-50%, -50%) translateX(${offset * 34}%) scale(${
-                      isActive ? 1 : 0.84
-                    }) rotateY(${offset * -18}deg)`,
-                    opacity: isActive ? 1 : isSideCard ? 0.72 : 0,
-                    filter: isActive ? 'none' : 'saturate(0.88) brightness(0.94)',
+                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 36}%) scale(${
+                      isActive ? 1 : 0.82
+                    }) rotateY(${offset * -24}deg)`,
+                    opacity: isActive ? 1 : isSideCard ? 0.64 : 0,
+                    filter: isActive ? 'none' : 'saturate(0.9) brightness(0.92)',
                   }}
                 >
                   <div className="relative h-full w-full">
@@ -239,7 +290,7 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-4 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-stone-700 shadow-sm transition hover:bg-white sm:left-6"
+            className="absolute left-2 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/96 text-stone-700 shadow-sm transition hover:bg-white sm:left-4"
             aria-label={t('bannerPrev')}
           >
             <ChevronLeft size={18} />
@@ -247,20 +298,20 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-            className="absolute right-4 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-stone-700 shadow-sm transition hover:bg-white sm:right-6"
+            className="absolute right-2 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/96 text-stone-700 shadow-sm transition hover:bg-white sm:right-4"
             aria-label={t('bannerNext')}
           >
             <ChevronRight size={18} />
           </button>
 
-          <div className="absolute inset-x-0 bottom-5 z-40 flex justify-center gap-2">
+          <div className="absolute inset-x-0 bottom-3 z-40 flex justify-center gap-2 sm:bottom-4">
             {BANNERS.map((banner, dotIndex) => (
               <button
                 key={banner.image}
                 type="button"
                 onClick={() => setActiveBanner(dotIndex)}
                 className={`h-2.5 rounded-full transition-all ${
-                  dotIndex === activeBanner ? 'w-8 bg-white' : 'w-2.5 bg-white/65'
+                  dotIndex === activeBanner ? 'w-8 bg-stone-900' : 'w-2.5 bg-stone-300'
                 }`}
                 aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
               />
