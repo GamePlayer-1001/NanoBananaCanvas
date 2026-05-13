@@ -5,7 +5,7 @@
  *          依赖 @/hooks/use-explore 的 useExplore，
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（降低裁剪的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（固定高度自适应宽度的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -341,7 +341,7 @@ export function ExploreContent() {
                       alt={t(banner.altKey)}
                       fill
                       sizes="(max-width: 1024px) 88vw, 980px"
-                      className="object-contain object-center"
+                      className="object-cover object-center"
                       priority={isActive}
                     />
                   </div>
