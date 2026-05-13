@@ -92,6 +92,7 @@ interface ExploreApiItem {
   like_count: number
   clone_count: number
   view_count: number
+  favorite_count?: number
   published_at?: string
   category_id?: string
   category_slug?: string
@@ -99,6 +100,8 @@ interface ExploreApiItem {
   author_avatar?: string
   content_type?: 'video' | 'image' | 'workflow'
   node_types?: string
+  liked?: boolean
+  favorited?: boolean
 }
 
 const SUBCATEGORY_HINTS: Record<Exclude<ExploreSubcategoryTab, 'all'>, string[]> = {
@@ -158,11 +161,15 @@ function toVideoCard(
       avatarUrl: item.author_avatar,
     },
     views: item.view_count,
+    likes: item.like_count,
+    favorites: item.favorite_count,
     createdAt: item.published_at,
     nodeTypes: item.node_types?.split(',').filter(Boolean),
     description: item.description,
     categoryName: item.category_id ? categoryMap.get(item.category_id) : undefined,
     categorySlug: item.category_slug ?? (item.category_id ? categorySlugMap.get(item.category_id) : undefined),
+    liked: item.liked,
+    favorited: item.favorited,
   }
 }
 

@@ -47,7 +47,7 @@ folders/                — 文件夹 CRUD (2+2 端点)
 workflows/              — 工作流 CRUD + 社交 (见子 CLAUDE.md, 支持 folder 筛选/移动)
 
 explore/                — 社区广场 (7 端点)
-  route.ts              — GET  混合公开列表 (工作流模板 + 公开生成作品，分类/排序/分页/互动标记 + 类型过滤；兼容旧库缺失 published_outputs 新列/互动表时的降级查询)
+  route.ts              — GET  混合公开列表 (工作流模板 + 公开生成作品，分类/排序/分页/互动标记 + 真实 favorite_count + 类型过滤；兼容旧库缺失 published_outputs 新列/互动表时的降级查询)
   [id]/route.ts         — GET  统一详情 (工作流/公开生成作品按 id 分流并递增浏览量；兼容旧库缺失 published_outputs 新列/互动表时的降级读取)
   search/route.ts       — GET  模糊搜索 (标题/描述/作者/Prompt/来源，覆盖工作流与公开生成作品，并按相关性优先排序；兼容旧库缺失 published_outputs.category_id)
   outputs/route.ts      — GET 当前用户已发布生成作品列表 / POST 公开生成作品 (completed task -> published_outputs；用户上传封面优先，视频未上传封面时不写 thumbnail 而由前端回退首帧；批量导入作品不走这里，改由导入脚本直写 import-compatible published_outputs；兼容旧库缺失 category_id 列)

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/validations/explore
- * [OUTPUT]: 对外提供 GET /api/explore (混合返回公开工作流 + 公开生成作品，并在聚合结果层按 entity_type + id 去重)
+ * [OUTPUT]: 对外提供 GET /api/explore (混合返回公开工作流 + 公开生成作品，并在聚合结果层按 entity_type + id 去重，同时补齐真实 favorite_count 与当前用户互动状态)
  * [POS]: api/explore 的广场列表端点，统一查询公开工作流与公开生成作品并标记互动状态
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -174,6 +174,11 @@ export async function GET(req: NextRequest) {
              w.like_count,
              w.clone_count,
              w.view_count,
+             (
+               SELECT COUNT(*)
+               FROM favorites f
+               WHERE f.workflow_id = w.id
+             ) AS favorite_count,
              w.published_at,
              w.category_id,
              ${ACCOUNT_AUTHOR_NAME_SQL} as author_name,
@@ -196,6 +201,15 @@ export async function GET(req: NextRequest) {
              po.like_count,
              po.clone_count,
              po.view_count,
+             ${
+               schemaSupport.hasPublishedOutputFavoritesTable
+                 ? `(
+               SELECT COUNT(*)
+               FROM published_output_favorites pof
+               WHERE pof.published_output_id = po.id
+             )`
+                 : '0'
+             } AS favorite_count,
              po.published_at,
              ${schemaSupport.hasPublishedOutputCategoryId ? 'po.category_id' : 'NULL'} AS category_id,
              ${OUTPUT_AUTHOR_NAME_SQL} as author_name,
