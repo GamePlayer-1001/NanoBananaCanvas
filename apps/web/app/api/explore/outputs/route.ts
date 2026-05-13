@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors, @/lib/nanoid, @/lib/validations/published-output
- * [OUTPUT]: 对外提供 GET/POST /api/explore/outputs (当前用户已发布生成作品列表 + 发布生成作品；上传封面优先，缺省时由前端对视频回退首帧预览，并保留真实分类字段)
+ * [OUTPUT]: 对外提供 GET/POST /api/explore/outputs (当前用户已发布生成作品列表 + 发布生成作品；上传封面优先，缺省时视频不写 thumbnail 并由前端回退首帧预览，同时保留真实分类字段)
  * [POS]: api/explore/outputs 的生成作品入口，支持当前用户管理与 completed task 发布为公开社区作品
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -102,6 +102,7 @@ export async function POST(req: Request) {
     }
 
     const mediaType = task.task_type === 'video_gen' ? 'video' : 'image'
+    const thumbnailInput = parsed.data.thumbnail?.trim() || null
     const workflowCategory = task.workflow_id
       ? await db
           .prepare('SELECT category_id FROM workflows WHERE id = ?')
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
             parsed.data.description ?? '',
             parsed.data.prompt ?? String(input.prompt ?? ''),
             parsed.data.sourceUrl ?? '',
-            parsed.data.thumbnail ?? null,
+            thumbnailInput,
             resolvedCategoryId,
             mediaUrl,
             mediaType,
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
             parsed.data.description ?? '',
             parsed.data.prompt ?? String(input.prompt ?? ''),
             parsed.data.sourceUrl ?? '',
-            parsed.data.thumbnail ?? null,
+            thumbnailInput,
             mediaUrl,
             mediaType,
             task.workflow_id,
@@ -177,7 +178,7 @@ export async function POST(req: Request) {
           parsed.data.description ?? '',
           parsed.data.prompt ?? String(input.prompt ?? ''),
           parsed.data.sourceUrl ?? '',
-          parsed.data.thumbnail ?? output.url ?? '',
+          thumbnailInput,
           mediaUrl,
           mediaType,
           resolvedCategoryId,
@@ -191,7 +192,7 @@ export async function POST(req: Request) {
           parsed.data.description ?? '',
           parsed.data.prompt ?? String(input.prompt ?? ''),
           parsed.data.sourceUrl ?? '',
-          parsed.data.thumbnail ?? output.url ?? '',
+          thumbnailInput,
           mediaUrl,
           mediaType,
         ]

@@ -30,6 +30,7 @@ interface PublishOutputDialogProps {
   defaultTitle: string
   defaultPrompt?: string
   defaultThumbnail?: string
+  mediaType?: 'image' | 'video'
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -39,6 +40,7 @@ export function PublishOutputDialog({
   defaultTitle,
   defaultPrompt,
   defaultThumbnail,
+  mediaType,
   open,
   onOpenChange,
 }: PublishOutputDialogProps) {
@@ -53,6 +55,7 @@ export function PublishOutputDialog({
   const [categoryId, setCategoryId] = useState('')
   const { mutate, isPending } = usePublishOutput()
   const { data: categories = [] } = useCategories(locale)
+  const previewValue = thumbnail || (mediaType === 'image' ? defaultThumbnail : undefined)
 
   const handleSubmit = () => {
     mutate(
@@ -62,7 +65,7 @@ export function PublishOutputDialog({
         description: description.trim() || undefined,
         prompt: prompt.trim() || undefined,
         sourceUrl: sourceUrl.trim() || undefined,
-        thumbnail: thumbnail || defaultThumbnail,
+        thumbnail,
         categoryId: categoryId || undefined,
       },
       {
@@ -89,7 +92,7 @@ export function PublishOutputDialog({
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">{t('publishOutputCover')}</p>
             <ImageUpload
-              value={thumbnail || defaultThumbnail}
+              value={previewValue}
               onChange={setThumbnail}
               className="h-36"
             />

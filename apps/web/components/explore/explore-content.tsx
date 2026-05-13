@@ -145,11 +145,13 @@ function toVideoCard(
   categorySlugMap: Map<string, string>,
 ): VideoCardData {
   const authorName = item.author_name?.trim() || 'Unknown Creator'
+  const thumbnailUrl =
+    item.content_type === 'video' && item.thumbnail === item.media_url ? undefined : item.thumbnail
 
   return {
     id: item.id,
     title: item.name,
-    thumbnailUrl: item.thumbnail,
+    thumbnailUrl,
     mediaUrl: item.media_url,
     contentType: item.content_type,
     entityType: item.entity_type,
