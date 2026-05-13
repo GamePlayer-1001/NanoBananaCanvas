@@ -6,7 +6,7 @@
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
  *          依赖 @/components/ui/button
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器 (促销条 + 轮播 Banner + 分类/搜索/排序 + 瀑布流内容卡片)
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（纯图片轮播 Banner + 两行分类/排序 + 瀑布流内容卡片）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -16,9 +16,14 @@
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { ChevronLeft, ChevronRight, Flame, SearchCheck, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { ExploreTabs, type ExploreContentTypeTab, type ExploreTab } from './explore-tabs'
+import {
+  ExploreTabs,
+  type ExploreContentTypeTab,
+  type ExploreSubcategoryTab,
+  type ExploreTab,
+} from './explore-tabs'
 import { ExploreGrid } from './explore-grid'
 import { useExplore } from '@/hooks/use-explore'
 import { useCategories } from '@/hooks/use-categories'
@@ -37,26 +42,32 @@ const TAB_SORT: Record<ExploreTab, ExploreQuery['sort']> = {
 const BANNERS = [
   {
     image: '/explore/banners/01.png',
-    panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.02))]',
-    eyebrowKey: 'bannerEyebrow1',
-    titleKey: 'bannerTitle1',
-    bodyKey: 'bannerBody1',
+    altKey: 'bannerAlt1',
   },
   {
     image: '/explore/banners/02.png',
-    panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02))]',
-    eyebrowKey: 'bannerEyebrow2',
-    titleKey: 'bannerTitle2',
-    bodyKey: 'bannerBody2',
+    altKey: 'bannerAlt2',
   },
   {
     image: '/explore/banners/03.png',
-    panel: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.02))]',
-    eyebrowKey: 'bannerEyebrow3',
-    titleKey: 'bannerTitle3',
-    bodyKey: 'bannerBody3',
+    altKey: 'bannerAlt3',
   },
 ] as const
+
+const DEFAULT_SUBCATEGORY: Record<ExploreContentTypeTab, ExploreSubcategoryTab> = {
+  image: 'all',
+  video: 'all',
+  workflow: 'all',
+}
+
+function getCarouselOffset(index: number, activeIndex: number, total: number) {
+  const rawOffset = index - activeIndex
+
+  if (rawOffset > total / 2) return rawOffset - total
+  if (rawOffset < -total / 2) return rawOffset + total
+
+  return rawOffset
+}
 
 /* ─── D1 → VideoCardData 映射 ────────────────────────── */
 
@@ -72,10 +83,42 @@ interface ExploreApiItem {
   view_count: number
   published_at?: string
   category_id?: string
+  category_slug?: string
   author_name?: string | null
   author_avatar?: string
   content_type?: 'video' | 'image' | 'workflow'
   node_types?: string
+}
+
+const SUBCATEGORY_HINTS: Record<Exclude<ExploreSubcategoryTab, 'all'>, string[]> = {
+  'photo-real': ['photo-real', 'photoreal', 'realistic', '写实'],
+  comic: ['comic', '漫画'],
+  visual: ['visual', '视觉', 'creative'],
+  architecture: ['architecture', '建筑'],
+  abstract: ['abstract', '抽象'],
+  design: ['design', '设计'],
+  anime: ['anime', '动漫', 'animation'],
+  'text-gen': ['text-generation', 'text gen', '文本生成', 'llm', 'text-input'],
+  'image-gen': ['image-generation', 'image gen', '图片生成', 'image-gen'],
+  'video-gen': ['video-generation', 'video gen', '视频生成', 'video-gen'],
+  'audio-gen': ['audio-generation', 'audio gen', '音频生成', 'audio-gen'],
+  other: ['other', '其他'],
+}
+
+const SUBCATEGORY_CATEGORY_SLUGS: Partial<Record<ExploreSubcategoryTab, string[]>> = {
+  'text-gen': ['text-generation'],
+  'image-gen': ['image-generation'],
+  'video-gen': ['video-generation'],
+  'audio-gen': ['audio-generation'],
+  visual: ['creative'],
+  other: ['other'],
+}
+
+const SUBCATEGORY_TYPE_HINTS: Partial<Record<ExploreSubcategoryTab, string[]>> = {
+  'text-gen': ['llm', 'text-input'],
+  'image-gen': ['image-gen'],
+  'video-gen': ['video-gen'],
+  'audio-gen': ['audio-gen'],
 }
 
 interface ExploreApiResponse {
@@ -83,7 +126,11 @@ interface ExploreApiResponse {
   pagination?: { page: number; limit: number; total: number; totalPages: number }
 }
 
-function toVideoCard(item: ExploreApiItem, categoryMap: Map<string, string>): VideoCardData {
+function toVideoCard(
+  item: ExploreApiItem,
+  categoryMap: Map<string, string>,
+  categorySlugMap: Map<string, string>,
+): VideoCardData {
   const authorName = item.author_name?.trim() || 'Unknown Creator'
 
   return {
@@ -102,7 +149,48 @@ function toVideoCard(item: ExploreApiItem, categoryMap: Map<string, string>): Vi
     nodeTypes: item.node_types?.split(',').filter(Boolean),
     description: item.description,
     categoryName: item.category_id ? categoryMap.get(item.category_id) : undefined,
+    categorySlug: item.category_slug ?? (item.category_id ? categorySlugMap.get(item.category_id) : undefined),
   }
+}
+
+function normalizeKeyword(value?: string) {
+  return value?.trim().toLowerCase() ?? ''
+}
+
+function matchesSubcategory(video: VideoCardData, activeSubcategory: ExploreSubcategoryTab) {
+  if (activeSubcategory === 'all') return true
+
+  const normalizedCategory = normalizeKeyword(video.categoryName)
+  const normalizedCategorySlug = normalizeKeyword(video.categorySlug)
+  const normalizedNodeTypes = (video.nodeTypes ?? []).map((nodeType) => normalizeKeyword(nodeType))
+  const haystack = [
+    video.title,
+    video.author.name,
+    video.description,
+    video.categoryName,
+    ...(video.nodeTypes ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  const categorySlugs = SUBCATEGORY_CATEGORY_SLUGS[activeSubcategory] ?? []
+  const typeHints = SUBCATEGORY_TYPE_HINTS[activeSubcategory] ?? []
+  const keywordHints = SUBCATEGORY_HINTS[activeSubcategory] ?? []
+
+  if (
+    categorySlugs.some(
+      (slug) => normalizedCategorySlug.includes(slug) || normalizedCategory.includes(slug),
+    )
+  ) {
+    return true
+  }
+
+  if (typeHints.some((hint) => normalizedNodeTypes.some((nodeType) => nodeType.includes(hint)))) {
+    return true
+  }
+
+  return keywordHints.some((hint) => haystack.includes(hint))
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -110,18 +198,15 @@ function toVideoCard(item: ExploreApiItem, categoryMap: Map<string, string>): Vi
 export function ExploreContent() {
   const t = useTranslations('explore')
   const locale = useLocale()
-  const [activeTab, setActiveTab] = useState<ExploreTab>('hot')
-  const [activeType, setActiveType] = useState<ExploreContentTypeTab>('all')
-  const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [activeSort, setActiveSort] = useState<ExploreTab>('hot')
+  const [activeType, setActiveType] = useState<ExploreContentTypeTab>('image')
+  const [activeSubcategory, setActiveSubcategory] = useState<ExploreSubcategoryTab>('all')
   const [page, setPage] = useState(1)
-  const [searchValue, setSearchValue] = useState('')
-  const [promoVisible, setPromoVisible] = useState(true)
   const [activeBanner, setActiveBanner] = useState(0)
 
   const { data: categories = [] } = useCategories(locale)
   const { data, isLoading } = useExplore({
-    category: activeCategory === 'all' ? undefined : activeCategory,
-    sort: TAB_SORT[activeTab],
+    sort: TAB_SORT[activeSort],
     type: activeType,
     page,
   })
@@ -141,189 +226,139 @@ export function ExploreContent() {
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
   )
+  const categorySlugMap = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.slug])),
+    [categories],
+  )
 
   const videos = useMemo(
-    () => response?.items?.map((item) => toVideoCard(item, categoryMap)) ?? [],
-    [categoryMap, response?.items],
+    () => response?.items?.map((item) => toVideoCard(item, categoryMap, categorySlugMap)) ?? [],
+    [categoryMap, categorySlugMap, response?.items],
   )
 
   const filteredVideos = useMemo(() => {
-    const query = searchValue.trim().toLowerCase()
-    if (!query) return videos
+    return videos.filter((video) => matchesSubcategory(video, activeSubcategory))
+  }, [activeSubcategory, videos])
 
-    return videos.filter((video) => {
-      const haystack = [
-        video.title,
-        video.author.name,
-        video.description,
-        video.categoryName,
-        ...(video.nodeTypes ?? []),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-
-      return haystack.includes(query)
-    })
-  }, [searchValue, videos])
-
-  const handleTabChange = (tab: ExploreTab) => {
-    setActiveTab(tab)
+  const handleSortChange = (tab: ExploreTab) => {
+    setActiveSort(tab)
     setPage(1)
   }
 
   const handleTypeChange = (tab: ExploreContentTypeTab) => {
     setActiveType(tab)
+    setActiveSubcategory(DEFAULT_SUBCATEGORY[tab])
     setPage(1)
   }
 
-  const handleCategoryChange = (categoryId: string) => {
-    setActiveCategory(categoryId)
+  const handleSubcategoryChange = (subcategory: ExploreSubcategoryTab) => {
+    setActiveSubcategory(subcategory)
     setPage(1)
   }
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,#fff6d8_0%,#fffdf7_18%,#fffefb_35%,#ffffff_100%)]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_34%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.2),transparent_26%)]" />
+    <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        {promoVisible ? (
-          <section className="animate-explore-rise relative overflow-hidden flex items-center justify-between gap-4 rounded-[24px] border border-[#f4dc68] bg-[#fff45b] px-5 py-3 text-sm text-stone-800 shadow-[0_14px_32px_-28px_rgba(202,138,4,0.68)]">
-            <div className="absolute inset-y-0 right-0 w-40 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35))]" />
-            <div className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="inline-flex items-center gap-2 font-semibold">
-                <Flame size={15} className="text-amber-700" />
-                {t('promoTitle')}
-              </span>
-              <span className="rounded-full border border-black/10 bg-white/65 px-3 py-1 text-xs font-semibold">
-                {t('promoCountdown')}
-              </span>
-              <span className="text-stone-700">{t('promoBody')}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPromoVisible(false)}
-              className="rounded-full p-2 text-stone-700 transition-colors hover:bg-black/5 hover:text-stone-950"
-              aria-label={t('closePromo')}
-            >
-              <X size={18} />
-            </button>
-          </section>
-        ) : null}
+        <section className="animate-explore-rise relative overflow-hidden rounded-[32px] border border-stone-200 bg-white px-3 py-4 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.14)] sm:px-5 sm:py-5 lg:px-7 lg:py-6">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(255,255,255,0))] sm:w-20" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-[linear-gradient(270deg,rgba(255,255,255,0.96),rgba(255,255,255,0))] sm:w-20" />
+          <div className="relative h-[220px] sm:h-[300px] lg:h-[360px]">
+            {BANNERS.map((banner, index) => {
+              const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
+              const isActive = offset === 0
+              const isSideCard = Math.abs(offset) === 1
+              const hidden = Math.abs(offset) > 1
 
-        <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
-          {BANNERS.slice(0, 2).map((_, index) => {
-            const banner = BANNERS[(activeBanner + index) % BANNERS.length]
-            const isActive = index === 0
-            return (
-              <article
-                key={`${banner.titleKey}-${activeBanner}-${index}`}
-                className={`animate-explore-rise relative overflow-hidden rounded-[32px] border border-white/70 p-5 text-white shadow-[0_28px_80px_-34px_rgba(15,23,42,0.4)] transition-all duration-500 sm:p-6 ${
-                  isActive ? 'translate-y-0 opacity-100' : 'opacity-88 xl:translate-y-1 xl:scale-[0.99]'
+              return (
+                <button
+                  key={banner.image}
+                  type="button"
+                  onClick={() => setActiveBanner(index)}
+                  aria-label={`${t('switchBanner')} ${index + 1}`}
+                  className={`absolute left-1/2 top-1/2 block h-[76%] w-[80%] -translate-y-1/2 overflow-hidden rounded-[28px] border border-stone-200 bg-stone-100 shadow-[0_24px_55px_-36px_rgba(15,23,42,0.32)] transition-all duration-500 ease-out sm:w-[70%] lg:h-[84%] lg:w-[60%] ${
+                    hidden ? 'pointer-events-none opacity-0' : ''
+                  }`}
+                  style={{
+                    zIndex: isActive ? 30 : isSideCard ? 20 : 10,
+                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 36}%) scale(${
+                      isActive ? 1 : 0.82
+                    }) rotateY(${offset * -24}deg)`,
+                    opacity: isActive ? 1 : isSideCard ? 0.64 : 0,
+                    filter: isActive ? 'none' : 'saturate(0.9) brightness(0.92)',
+                  }}
+                >
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={banner.image}
+                      alt={t(banner.altKey)}
+                      fill
+                      sizes="(max-width: 1024px) 88vw, 980px"
+                      className="object-cover"
+                      priority={isActive}
+                    />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
+            className="absolute left-2 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/96 text-stone-700 shadow-sm transition hover:bg-white sm:left-4"
+            aria-label={t('bannerPrev')}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
+            className="absolute right-2 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/96 text-stone-700 shadow-sm transition hover:bg-white sm:right-4"
+            aria-label={t('bannerNext')}
+          >
+            <ChevronRight size={18} />
+          </button>
+
+          <div className="absolute inset-x-0 bottom-3 z-40 flex justify-center gap-2 sm:bottom-4">
+            {BANNERS.map((banner, dotIndex) => (
+              <button
+                key={banner.image}
+                type="button"
+                onClick={() => setActiveBanner(dotIndex)}
+                className={`h-2.5 rounded-full transition-all ${
+                  dotIndex === activeBanner ? 'w-8 bg-stone-900' : 'w-2.5 bg-stone-300'
                 }`}
-                style={{ animationDelay: `${index * 110}ms` }}
-              >
-                <Image
-                  src={banner.image}
-                  alt={t(banner.titleKey)}
-                  fill
-                  sizes="(max-width: 1279px) 100vw, 50vw"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(92deg,rgba(15,23,42,0.6)_0%,rgba(15,23,42,0.28)_36%,rgba(15,23,42,0.18)_58%,rgba(15,23,42,0.5)_100%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0))]" />
-                <div className="absolute -right-8 top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-                <div className="relative flex min-h-[200px] flex-col justify-between gap-6 sm:min-h-[224px]">
-                  <div className="space-y-4">
-                    <p className="text-xs font-semibold tracking-[0.22em] text-white/78 uppercase">
-                      {t(banner.eyebrowKey)}
-                    </p>
-                    <h2 className="max-w-[14ch] text-2xl font-semibold tracking-tight sm:text-3xl">
-                      {t(banner.titleKey)}
-                    </h2>
-                    <p className="max-w-[38ch] text-sm leading-6 text-white/84">{t(banner.bodyKey)}</p>
-                  </div>
-                  <div className="flex items-end justify-between gap-4">
-                    <div className={`rounded-[24px] ${banner.panel} px-4 py-3 backdrop-blur-md`}>
-                      <p className="text-[11px] font-semibold tracking-[0.18em] text-white/68 uppercase">
-                        {t('bannerStatLabel')}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {t(index === 0 ? 'bannerStatValue1' : 'bannerStatValue2')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {BANNERS.map((__, dotIndex) => (
-                        <button
-                          key={dotIndex}
-                          type="button"
-                          onClick={() => setActiveBanner(dotIndex)}
-                          className={`h-2.5 rounded-full transition-all ${
-                            dotIndex === activeBanner ? 'w-8 bg-white' : 'w-2.5 bg-white/45'
-                          }`}
-                          aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            )
-          })}
+                aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
+              />
+            ))}
+          </div>
         </section>
 
-        <section className="animate-explore-rise rounded-[28px] border border-[#efe5d7] bg-white/88 px-4 py-4 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:rounded-[32px] sm:px-6 sm:py-5 lg:px-7" style={{ animationDelay: '120ms' }}>
+        <section
+          className="animate-explore-rise rounded-[28px] border border-stone-200 bg-white px-4 py-4 shadow-[0_20px_50px_-34px_rgba(15,23,42,0.12)] sm:rounded-[32px] sm:px-6 sm:py-5 lg:px-7"
+          style={{ animationDelay: '120ms' }}
+        >
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleCategoryChange('all')}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                  activeCategory === 'all'
-                    ? 'bg-brand-500 text-white shadow-[0_10px_24px_-16px_rgba(79,70,229,0.9)]'
-                    : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'
-                }`}
-              >
-                {t('category_all')}
-              </button>
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => handleCategoryChange(category.id)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                    activeCategory === category.id
-                      ? 'bg-brand-500 text-white shadow-[0_10px_24px_-16px_rgba(79,70,229,0.9)]'
-                      : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-
             <ExploreTabs
-              active={activeTab}
+              activeSort={activeSort}
               activeType={activeType}
-              searchValue={searchValue}
-              onChange={handleTabChange}
+              activeSubcategory={activeSubcategory}
+              onSortChange={handleSortChange}
               onTypeChange={handleTypeChange}
-              onSearchChange={setSearchValue}
+              onSubcategoryChange={handleSubcategoryChange}
             />
           </div>
         </section>
 
-        <section className="animate-explore-rise flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4" style={{ animationDelay: '180ms' }}>
+        <section
+          className="animate-explore-rise flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+          style={{ animationDelay: '180ms' }}
+        >
           <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.24em] text-stone-400 uppercase">
-              {t('sectionEyebrow')}
-            </p>
-            <h3 className="mt-1 text-[1.75rem] font-semibold tracking-tight text-stone-900 sm:text-[2rem]">
+            <h3 className="text-[1.75rem] font-semibold tracking-tight text-stone-900 sm:text-[2rem]">
               {t('sectionTitle')}
             </h3>
-            <p className="mt-2 inline-flex items-center gap-2 text-sm text-stone-500">
-              <SearchCheck size={16} className="text-brand-500" />
-              {t('sectionSubtitle')}
-            </p>
+            <p className="mt-2 text-sm text-stone-500">{t('sectionSubtitle')}</p>
           </div>
           <p className="text-sm text-stone-500 sm:text-right">
             {filteredVideos.length} {t('resultsCount')}
@@ -332,14 +367,14 @@ export function ExploreContent() {
 
         <ExploreGrid videos={filteredVideos} isLoading={isLoading} />
 
-        {pagination && pagination.totalPages > 1 && !searchValue.trim() ? (
+        {pagination && pagination.totalPages > 1 ? (
           <div className="flex items-center justify-center gap-3 pb-6">
             <Button
               variant="outline"
               size="sm"
               disabled={page <= 1}
               onClick={() => setPage((current) => current - 1)}
-              className="rounded-full border-stone-300 bg-white/82 px-4"
+              className="rounded-full border-stone-300 bg-white px-4"
             >
               <ChevronLeft size={14} className="mr-1" />
               {t('prev')}
@@ -354,7 +389,7 @@ export function ExploreContent() {
               size="sm"
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((current) => current + 1)}
-              className="rounded-full border-stone-300 bg-white/82 px-4"
+              className="rounded-full border-stone-300 bg-white px-4"
             >
               {t('next')}
               <ChevronRight size={14} className="ml-1" />

@@ -1,210 +1,100 @@
 /**
- * [INPUT]: 依赖 react 的 useRef，依赖 next-intl 的 useTranslations，依赖 sonner 的 toast，
- *          依赖 @/i18n/navigation 的 useRouter，依赖 @/hooks/use-user 的 useCurrentUser，
- *          依赖 @/hooks/use-upload 的 useUpload，依赖 @/lib/validations/upload
- * [OUTPUT]: 对外提供 ExploreTabs 顶部工具条 (排序标签 + 类型筛选 + 内联搜索 + 上传入口)
+ * [INPUT]: 依赖 next-intl 的 useTranslations
+ * [OUTPUT]: 对外提供 ExploreTabs 顶部工具条（主类型 Tab + 二级分类 Tab + 排序下拉）
  * [POS]: explore 的顶部工具区，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
-import { Loader2, Search, Share2 } from 'lucide-react'
-
-import { useRouter } from '@/i18n/navigation'
-import { useCurrentUser } from '@/hooks/use-user'
-import { useUpload } from '@/hooks/use-upload'
-import { SHARE_UPLOAD_ACCEPT, UPLOAD_LIMITS, detectUploadKind } from '@/lib/validations/upload'
 
 /* ─── Tab Config ─────────────────────────────────────── */
 
-const TABS = ['hot', 'latest', 'myLiked'] as const
-const TYPE_TABS = ['all', 'video', 'image', 'workflow'] as const
+const SORT_TABS = ['hot', 'latest', 'myLiked'] as const
+const TYPE_TABS = ['image', 'video', 'workflow'] as const
 
-export type ExploreTab = (typeof TABS)[number]
+const SUBCATEGORY_TABS = {
+  image: ['all', 'photo-real', 'comic', 'visual', 'architecture', 'abstract', 'design'],
+  video: ['all', 'photo-real', 'anime', 'visual', 'architecture', 'abstract', 'design'],
+  workflow: ['all', 'text-gen', 'image-gen', 'video-gen', 'audio-gen', 'other'],
+} as const
+
+export type ExploreTab = (typeof SORT_TABS)[number]
 export type ExploreContentTypeTab = (typeof TYPE_TABS)[number]
-
-/* ─── Helpers ────────────────────────────────────────── */
-
-function getVideoDuration(file: File) {
-  return new Promise<number>((resolve, reject) => {
-    const url = URL.createObjectURL(file)
-    const video = document.createElement('video')
-
-    video.preload = 'metadata'
-    video.onloadedmetadata = () => {
-      const duration = Math.round(video.duration)
-      URL.revokeObjectURL(url)
-      resolve(duration)
-    }
-    video.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('VIDEO_METADATA_FAILED'))
-    }
-
-    video.src = url
-  })
-}
+export type ExploreSubcategoryTab = (typeof SUBCATEGORY_TABS)[ExploreContentTypeTab][number]
 
 /* ─── Component ──────────────────────────────────────── */
 
 export function ExploreTabs({
-  active,
+  activeSort,
   activeType,
-  searchValue,
-  onChange,
+  activeSubcategory,
+  onSortChange,
   onTypeChange,
-  onSearchChange,
+  onSubcategoryChange,
 }: {
-  active: ExploreTab
+  activeSort: ExploreTab
   activeType: ExploreContentTypeTab
-  searchValue: string
-  onChange: (tab: ExploreTab) => void
+  activeSubcategory: ExploreSubcategoryTab
+  onSortChange: (tab: ExploreTab) => void
   onTypeChange: (tab: ExploreContentTypeTab) => void
-  onSearchChange: (value: string) => void
+  onSubcategoryChange: (tab: ExploreSubcategoryTab) => void
 }) {
   const t = useTranslations('explore')
-  const router = useRouter()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const { data: user } = useCurrentUser()
-  const { uploading, progress, upload, reset } = useUpload()
-
-  const handleShareClick = () => {
-    if (user && !user.isAuthenticated) {
-      toast.message(t('shareSignInRequired'))
-      router.push('/sign-in?redirect_url=/explore')
-      return
-    }
-
-    reset()
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-
-    if (!file) return
-
-    const kind = detectUploadKind(file)
-    if (!kind) {
-      toast.error(t('shareUnsupportedType'))
-      return
-    }
-
-    if (kind === 'image' && file.size > UPLOAD_LIMITS.imageMaxSizeBytes) {
-      toast.error(t('shareImageTooLarge', { size: UPLOAD_LIMITS.imageMaxSizeBytes / 1024 / 1024 }))
-      return
-    }
-
-    if (kind === 'video') {
-      if (file.size > UPLOAD_LIMITS.videoMaxSizeBytes) {
-        toast.error(t('shareVideoTooLarge', { size: UPLOAD_LIMITS.videoMaxSizeBytes / 1024 / 1024 }))
-        return
-      }
-
-      try {
-        const durationSeconds = await getVideoDuration(file)
-        if (durationSeconds > UPLOAD_LIMITS.videoMaxDurationSeconds) {
-          toast.error(t('shareDurationTooLong', { seconds: UPLOAD_LIMITS.videoMaxDurationSeconds }))
-          return
-        }
-      } catch {
-        toast.error(t('shareVideoReadFailed'))
-        return
-      }
-    }
-
-    if (kind === 'workflow' && file.size > UPLOAD_LIMITS.workflowMaxSizeBytes) {
-      toast.error(
-        t('shareWorkflowTooLarge', { size: UPLOAD_LIMITS.workflowMaxSizeBytes / 1024 / 1024 }),
-      )
-      return
-    }
-
-    const result = await upload(file)
-    if (!result) {
-      toast.error(t('shareUploadFailed'))
-      return
-    }
-
-    toast.success(t('shareUploadSuccess', { name: file.name }))
-  }
+  const subcategories = SUBCATEGORY_TABS[activeType]
 
   return (
-    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-wrap gap-2">
-          {TABS.map((tab) => (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {TYPE_TABS.map((tab) => (
             <button
               key={tab}
               type="button"
-              onClick={() => onChange(tab)}
-              className={`rounded-full px-4 py-2 text-sm transition-all ${
-                active === tab
-                  ? 'bg-brand-500 font-medium text-white shadow-[0_10px_24px_-16px_rgba(79,70,229,0.9)]'
+              onClick={() => onTypeChange(tab)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                activeType === tab
+                  ? 'bg-stone-900 text-white'
                   : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-900'
               }`}
             >
-              {t(tab)}
+              {t(`type_${tab}`)}
             </button>
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">
-            {t('typeLabel')}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {TYPE_TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => onTypeChange(tab)}
-                className={`rounded-full border px-3 py-1.5 text-xs transition-all ${
-                  activeType === tab
-                    ? 'border-brand-500 bg-brand-500/10 text-brand-700'
-                    : 'border-stone-200 bg-white text-stone-500 hover:bg-stone-100 hover:text-stone-900'
-                }`}
-              >
-                {t(`type_${tab}`)}
-              </button>
+        <label className="flex items-center gap-2 text-sm text-stone-500">
+          <span>{t('sortLabel')}</span>
+          <select
+            value={activeSort}
+            onChange={(event) => onSortChange(event.target.value as ExploreTab)}
+            className="h-10 rounded-full border border-stone-200 bg-white px-4 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
+          >
+            {SORT_TABS.map((tab) => (
+              <option key={tab} value={tab}>
+                {t(tab)}
+              </option>
             ))}
-          </div>
-        </div>
+          </select>
+        </label>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={SHARE_UPLOAD_ACCEPT}
-          className="hidden"
-          onChange={(event) => void handleFileChange(event)}
-        />
-
-        <label className="flex min-w-[250px] items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-500 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] transition-colors focus-within:border-brand-300 focus-within:text-stone-900">
-          <Search size={14} />
-          <input
-            value={searchValue}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={t('searchPlaceholder')}
-            className="w-full bg-transparent text-sm text-stone-900 outline-none placeholder:text-stone-400"
-          />
-        </label>
-
-        <button
-          type="button"
-          onClick={handleShareClick}
-          disabled={uploading}
-          className="flex items-center justify-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-          {uploading ? t('shareUploading', { progress }) : t('shareWork')}
-        </button>
+      <div className="flex flex-wrap gap-2">
+        {subcategories.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => onSubcategoryChange(tab)}
+            className={`rounded-full border px-4 py-2 text-sm transition-all ${
+              activeSubcategory === tab
+                ? 'border-stone-900 bg-stone-900 text-white'
+                : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-900'
+            }`}
+          >
+            {t(`subcategory_${tab}`)}
+          </button>
+        ))}
       </div>
     </div>
   )

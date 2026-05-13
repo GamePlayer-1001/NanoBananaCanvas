@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 sonner 的 toast，依赖 @/hooks/use-explore 的 usePublishOutput，
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 next-intl 的 useLocale，依赖 sonner 的 toast，依赖 @/hooks/use-explore 的 usePublishOutput，
  *          依赖 @/components/shared/image-upload，依赖 @/components/ui/dialog, @/components/ui/button
- * [OUTPUT]: 对外提供 PublishOutputDialog 生成作品公开弹窗
+ * [OUTPUT]: 对外提供 PublishOutputDialog 生成作品公开弹窗（封面上传 + 真实分类选择）
  * [POS]: profile 的生成作品公开入口，被 works-tab.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -9,10 +9,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { usePublishOutput } from '@/hooks/use-explore'
+import { useCategories } from '@/hooks/use-categories'
 import { ImageUpload } from '@/components/shared/image-upload'
 import {
   Dialog,
@@ -43,12 +44,15 @@ export function PublishOutputDialog({
 }: PublishOutputDialogProps) {
   const t = useTranslations('profileWorks')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const [title, setTitle] = useState(defaultTitle)
   const [description, setDescription] = useState('')
   const [prompt, setPrompt] = useState(defaultPrompt ?? '')
   const [sourceUrl, setSourceUrl] = useState('')
   const [thumbnail, setThumbnail] = useState<string | undefined>(undefined)
+  const [categoryId, setCategoryId] = useState('')
   const { mutate, isPending } = usePublishOutput()
+  const { data: categories = [] } = useCategories(locale)
 
   const handleSubmit = () => {
     mutate(
@@ -59,6 +63,7 @@ export function PublishOutputDialog({
         prompt: prompt.trim() || undefined,
         sourceUrl: sourceUrl.trim() || undefined,
         thumbnail: thumbnail || defaultThumbnail,
+        categoryId: categoryId || undefined,
       },
       {
         onSuccess: () => {
@@ -97,6 +102,22 @@ export function PublishOutputDialog({
               onChange={(event) => setTitle(event.target.value)}
               className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">{t('publishOutputCategory')}</p>
+            <select
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            >
+              <option value="">{t('publishOutputCategoryAuto')}</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">

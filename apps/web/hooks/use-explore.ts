@@ -160,6 +160,7 @@ export function usePublishOutput() {
       prompt?: string
       sourceUrl?: string
       thumbnail?: string
+      categoryId?: string
     }) =>
       fetchJson<{ id: string; published: boolean }>('/api/explore/outputs', {
         method: 'POST',

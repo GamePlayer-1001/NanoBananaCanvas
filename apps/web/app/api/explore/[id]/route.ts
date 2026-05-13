@@ -50,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const workflow = await db
       .prepare(
         `SELECT 'workflow' AS entity_type, w.id, w.name, w.description, w.data, w.thumbnail,
-                w.view_count, w.like_count, w.clone_count, w.published_at,
+                w.view_count, w.like_count, w.clone_count, w.published_at, w.category_id,
                 ${ACCOUNT_AUTHOR_NAME_SQL} AS author_name, u.avatar_url AS author_avatar
          FROM workflows w
          JOIN users u ON u.id = w.user_id
@@ -86,7 +86,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .prepare(
         `SELECT 'output' AS entity_type, po.id, po.title AS name, po.description, po.prompt,
                 po.source_url, po.thumbnail, po.media_url, po.media_type, po.view_count,
-                po.like_count, po.clone_count, po.published_at, po.workflow_id,
+                po.like_count, po.clone_count, po.published_at, po.workflow_id, po.category_id,
                 po.source_mode, po.source_type, po.source_author_name, po.source_author_avatar,
                 po.workflow_json_url,
                 ${OUTPUT_AUTHOR_NAME_SQL} AS author_name, ${OUTPUT_AUTHOR_AVATAR_SQL} AS author_avatar

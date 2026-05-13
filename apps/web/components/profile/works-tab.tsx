@@ -91,6 +91,38 @@ interface PublishedOutputListItem {
   created_at?: string
 }
 
+function renderPublishedOutputPreview(item: PublishedOutputListItem) {
+  const isVideo = item.media_type === 'video'
+
+  if (item.thumbnail) {
+    return (
+      <img
+        src={item.thumbnail}
+        alt={item.title}
+        className="h-full w-full object-cover"
+      />
+    )
+  }
+
+  if (isVideo && item.media_url) {
+    return (
+      <video
+        src={item.media_url}
+        className="h-full w-full object-cover"
+        muted
+        playsInline
+        preload="auto"
+      />
+    )
+  }
+
+  if (item.media_url) {
+    return <img src={item.media_url} alt={item.title} className="h-full w-full object-cover" />
+  }
+
+  return null
+}
+
 type SelectionKind =
   | 'workflow'
   | 'favorite'
@@ -841,13 +873,7 @@ function PublishedOutputItem({
     <article className="flex flex-col gap-4 rounded-2xl border border-border bg-background p-4 md:flex-row">
       <div className="relative w-full overflow-hidden rounded-xl border border-border bg-muted md:w-44">
         <Link href={`/explore/${item.id}`} className="block aspect-[4/3]">
-          {item.thumbnail || item.media_url ? (
-            <img
-              src={item.thumbnail || item.media_url}
-              alt={item.title}
-              className="h-full w-full object-cover"
-            />
-          ) : (
+          {renderPublishedOutputPreview(item) ?? (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
               {isVideo ? <Video size={22} /> : <ImageIcon size={22} />}
             </div>

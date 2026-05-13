@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡)
- * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；无上传封面时视频回退首帧预览)
+ * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用并承接底部操作条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -33,6 +33,7 @@ export interface VideoCardData {
   nodeTypes?: string[]
   description?: string
   categoryName?: string
+  categorySlug?: string
 }
 
 /* ─── Helpers ────────────────────────────────────────── */
@@ -71,6 +72,36 @@ function formatDuration(duration?: string) {
   return '00:05'
 }
 
+function formatMetric(n?: number) {
+  return formatViews(n) || '0'
+}
+
+function renderPreviewMedia(data: VideoCardData, title: string, className: string) {
+  if (data.thumbnailUrl) {
+    return (
+      <img
+        src={data.thumbnailUrl}
+        alt={title}
+        className={className}
+      />
+    )
+  }
+
+  if (data.contentType === 'video' && data.mediaUrl) {
+    return (
+      <video
+        src={data.mediaUrl}
+        className={className}
+        muted
+        playsInline
+        preload="auto"
+      />
+    )
+  }
+
+  return null
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function VideoCard({
@@ -93,24 +124,22 @@ export function VideoCard({
   if (variant === 'masonry') {
     return (
       <Link href={`/explore/${data.id}`} className="group mb-6 block break-inside-avoid">
-        <article className="animate-explore-rise overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_22px_60px_-34px_rgba(15,23,42,0.28)] transition-[transform,box-shadow,border-color,filter] duration-300 group-hover:-translate-y-2 group-hover:border-brand-200 group-hover:shadow-[0_34px_90px_-38px_rgba(79,70,229,0.28)] group-hover:saturate-[1.03]">
-          <div className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9ea_0%,#fffefb_42%,#ffffff_100%)]">
-            {data.thumbnailUrl ? (
-              <img
-                src={data.thumbnailUrl}
-                alt={data.title}
-                className="h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.035]"
-              />
-            ) : (
-              <div className="flex min-h-[240px] items-center justify-center bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.24),transparent_36%),linear-gradient(135deg,#fff7ed,#ffffff)] px-6 py-14">
+        <article className="animate-explore-rise overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[transform,box-shadow,border-color] duration-300 group-hover:-translate-y-2 group-hover:border-stone-300 group-hover:shadow-[0_34px_88px_-42px_rgba(15,23,42,0.32)]">
+          <div className="relative overflow-hidden bg-stone-100">
+            {renderPreviewMedia(
+              data,
+              data.title,
+              'h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.03]',
+            ) ?? (
+              <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
                 <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                   {data.contentType ? t(`type_${data.contentType}`) : 'Preview'}
                 </span>
               </div>
             )}
 
-            <div className="absolute left-4 top-4 right-4 flex items-start justify-between gap-2">
-              <span className="rounded-full border border-white/80 bg-white/88 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-stone-700 uppercase backdrop-blur-sm">
+            <div className="absolute left-3 top-3 right-3 flex items-start justify-between gap-2 sm:left-4 sm:top-4 sm:right-4">
+              <span className="rounded-full border border-white/80 bg-white/92 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-stone-700 uppercase backdrop-blur-sm">
                 {data.contentType ? t(`type_${data.contentType}`) : 'content'}
               </span>
               {data.categoryName ? (
@@ -128,11 +157,11 @@ export function VideoCard({
               </div>
             ) : null}
 
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_46%,rgba(15,23,42,0.06)_74%,rgba(15,23,42,0.48)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_48%,rgba(15,23,42,0.08)_72%,rgba(15,23,42,0.52)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-            <div className="absolute inset-x-3 bottom-3 translate-y-5 rounded-[24px] border border-white/45 bg-[linear-gradient(180deg,rgba(255,249,246,0.98),rgba(250,224,206,0.94))] p-3 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:inset-x-4 sm:bottom-4 sm:p-4">
+            <div className="absolute inset-x-3 bottom-3 translate-y-5 rounded-[24px] border border-white/45 bg-[rgba(255,255,255,0.9)] p-3 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:inset-x-4 sm:bottom-4 sm:p-4">
               <div className="flex items-start gap-3">
-                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/70 bg-white/80">
+                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-stone-200 bg-white/90">
                   {data.author.avatarUrl ? (
                     <img
                       src={data.author.avatarUrl}
@@ -148,30 +177,39 @@ export function VideoCard({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="line-clamp-2 text-sm font-semibold text-stone-900">{data.title}</h3>
-                      <p className="mt-1 truncate text-xs text-stone-500">{authorName}</p>
+                      <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-stone-900">
+                        {data.title}
+                      </h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-stone-500">
+                        <span className="truncate font-medium text-stone-700">{authorName}</span>
+                        <span>{formatCreatedAt(data.createdAt)}</span>
+                      </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-stone-600">
-                      <Heart size={12} className="text-rose-500" />
-                      {formatViews(data.views) || '0'}
-                    </span>
+                    <div className="rounded-full bg-stone-900 px-2.5 py-1 text-[11px] font-medium text-white">
+                      {formatDuration(data.duration)}
+                    </div>
                   </div>
                   {summary ? (
                     <p className="mt-3 line-clamp-2 text-xs leading-5 text-stone-600">{summary}</p>
                   ) : null}
-                  <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-stone-200/80 pt-3">
                     <div className="flex items-center gap-2 text-[11px] text-stone-500">
-                      <span>{formatDuration(data.duration)}</span>
-                      <span className="rounded-full bg-white/70 px-2 py-1">{t(`type_${data.contentType ?? 'workflow'}`)}</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
+                        <Heart size={12} className="text-rose-500" />
+                        {formatMetric(data.views)}
+                      </span>
+                      <span className="rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
+                        {t(`type_${data.contentType ?? 'workflow'}`)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/78 text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.55)]">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.2)]">
                         <Sparkles size={15} />
                       </span>
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/78 text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.55)]">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.2)]">
                         <Bookmark size={15} />
                       </span>
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/78 text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.55)]">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.2)]">
                         <Ellipsis size={15} />
                       </span>
                     </div>
@@ -202,13 +240,11 @@ export function VideoCard({
     <Link href={`/explore/${data.id}`} className="group block">
       {/* 缩略图 */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
-        {data.thumbnailUrl ? (
-          <img
-            src={data.thumbnailUrl}
-            alt={data.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
-        ) : (
+        {renderPreviewMedia(
+          data,
+          data.title,
+          'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]',
+        ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">
               No Preview

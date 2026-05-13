@@ -14,6 +14,7 @@ export const publishOutputSchema = z.object({
   prompt: z.string().max(8000).optional(),
   sourceUrl: z.string().url().optional().or(z.literal('')),
   thumbnail: z.string().optional(),
+  categoryId: z.string().min(1).optional(),
 })
 
 export const importPublishedOutputSchema = z.object({

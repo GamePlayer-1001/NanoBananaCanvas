@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
              po.clone_count,
              po.view_count,
              po.published_at,
-             NULL AS category_id,
+             po.category_id,
              ${OUTPUT_AUTHOR_NAME_SQL} as author_name,
              ${OUTPUT_AUTHOR_AVATAR_SQL} as author_avatar,
              po.media_type as content_type,
