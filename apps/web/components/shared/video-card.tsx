@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流 Z 轴浮动卡；仅消费稳定图片封面，避免列表态反复探测视频资源)
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流 Z 轴浮动卡；hover 时底部贴边弹出高浓度毛玻璃详情层，仅消费稳定图片封面，避免列表态反复探测视频资源)
  * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用并承接底部操作条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,7 +10,7 @@
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
 import { useTranslations } from 'next-intl'
-import { Bookmark, Download, Ellipsis, Flag, Heart, Play, Sparkles } from 'lucide-react'
+import { Download, Ellipsis, Flag, Heart, Play, Sparkles, Star } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Link, useRouter } from '@/i18n/navigation'
@@ -182,9 +182,9 @@ function CardWithPreview({
 
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_44%,rgba(15,23,42,0.1)_70%,rgba(15,23,42,0.58)_100%)]" />
 
-                <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
-                  <div className="flex items-center gap-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <div className="h-10 w-10 overflow-hidden rounded-full border border-white/35 bg-white/20 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
+                <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex max-w-[148px] translate-y-1 items-center gap-2.5 transition-transform duration-300 group-hover:translate-y-0 sm:max-w-[176px]">
+                    <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-white/35 bg-white/20 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
                       {data.author.avatarUrl ? (
                         <img
                           src={data.author.avatarUrl}
@@ -197,14 +197,14 @@ function CardWithPreview({
                         </div>
                       )}
                     </div>
-                    <span className="max-w-[160px] truncate text-sm font-semibold text-white drop-shadow-[0_2px_10px_rgba(15,23,42,0.55)]">
+                    <span className="min-w-0 truncate text-[13px] font-semibold text-white drop-shadow-[0_2px_10px_rgba(15,23,42,0.55)]">
                       {authorName}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <div className="flex flex-shrink-0 items-center gap-1.5">
                     <MetricPill icon={<Heart size={12} className="text-rose-200" />} value={formatMetric(data.likes)} />
-                    <MetricPill icon={<Bookmark size={12} className="text-white/90" />} value={formatMetric(data.favorites)} />
+                    <MetricPill icon={<Star size={12} className="text-white/90" />} value={formatMetric(data.favorites)} />
                     <MetricPill icon={<Play size={12} className="fill-current text-white/90" />} value={formatMetric(data.views)} />
                   </div>
                 </div>
@@ -392,8 +392,8 @@ function CardDetailPanel({
   ].filter(Boolean) as string[]
 
   return (
-    <div className="relative -mt-3 px-3 pb-1 sm:px-4">
-      <div className="rounded-[28px] border border-white/40 bg-white/32 p-4 shadow-[0_24px_64px_-40px_rgba(15,23,42,0.42)] backdrop-blur-2xl transition-all duration-300 group-hover:bg-white/48">
+    <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
+      <div className="translate-y-[-10px] rounded-b-[30px] rounded-t-none border border-stone-200/85 border-t-0 bg-white/38 p-4 shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[22px] transition-transform duration-300 group-hover:translate-y-0">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -416,7 +416,7 @@ function CardDetailPanel({
             label={favorited ? tDetail('favorited') : tDetail('favoriteNow')}
             onClick={handleFavorite}
           >
-            <Bookmark size={16} className={cn(favorited && 'fill-current')} />
+            <Star size={16} className={cn(favorited && 'fill-current')} />
           </IconButton>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
