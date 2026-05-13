@@ -16,13 +16,16 @@ import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
   Bookmark,
+  Check,
   Clapperboard,
+  Copy,
   Eye,
   Flag,
   Heart,
   Loader2,
   Sparkles,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Link } from '@/i18n/navigation'
 import { useExploreDetail } from '@/hooks/use-explore'
@@ -88,6 +91,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   const { data, isLoading } = useExploreDetail(workflowId)
   const showSourceCard = false
   const [reportOpen, setReportOpen] = useState(false)
+  const [promptCopied, setPromptCopied] = useState(false)
 
   if (isLoading) {
     return (
@@ -126,6 +130,19 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
       ? workflow.source_mode.toUpperCase()
       : t('publicAsset')
   const downloadUrl = workflow.media_url || workflow.workflow_json_url
+
+  const handleCopyPrompt = async () => {
+    if (!workflow.prompt) return
+
+    try {
+      await navigator.clipboard.writeText(workflow.prompt)
+      setPromptCopied(true)
+      toast.success(t('copied'))
+      window.setTimeout(() => setPromptCopied(false), 2000)
+    } catch {
+      toast.error(t('actionFailed'))
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1560px] px-6 py-6 lg:px-8 lg:py-8">
@@ -235,9 +252,20 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           {isOutput && workflow.prompt ? (
             <div className="space-y-3">
               <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
-                  {t('prompt')}
-                </p>
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
+                    {t('prompt')}
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-stone-200 bg-stone-50 text-stone-500 transition-colors hover:border-stone-300 hover:bg-stone-100 hover:text-stone-900"
+                    onClick={handleCopyPrompt}
+                    aria-label={promptCopied ? t('copied') : t('copyResult')}
+                    title={promptCopied ? t('copied') : t('copyResult')}
+                  >
+                    {promptCopied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                  </button>
+                </div>
                 <p className="whitespace-pre-wrap break-words text-sm leading-6 text-stone-900">
                   {workflow.prompt}
                 </p>
