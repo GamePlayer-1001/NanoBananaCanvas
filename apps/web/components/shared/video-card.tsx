@@ -9,6 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Download, Ellipsis, Flag, Heart, Play, Sparkles, Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -153,9 +154,30 @@ function CardWithPreview({
   t: ReturnType<typeof useTranslations<'explore'>>
   tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
 }) {
+  const [interactionState, setInteractionState] = useState(() => ({
+    liked: Boolean(data.liked),
+    favorited: Boolean(data.favorited),
+    likeCount: data.likes ?? 0,
+    favoriteCount: data.favorites ?? 0,
+  }))
+
   if (variant === 'masonry') {
+    const cardState =
+      interactionState.liked === Boolean(data.liked) &&
+      interactionState.favorited === Boolean(data.favorited) &&
+      interactionState.likeCount === (data.likes ?? 0) &&
+      interactionState.favoriteCount === (data.favorites ?? 0)
+        ? interactionState
+        : {
+            liked: Boolean(data.liked),
+            favorited: Boolean(data.favorited),
+            likeCount: data.likes ?? 0,
+            favoriteCount: data.favorites ?? 0,
+          }
+
     return (
       <Link
+        key={`${data.id}-${data.liked ? 1 : 0}-${data.favorited ? 1 : 0}-${data.likes ?? 0}-${data.favorites ?? 0}`}
         href={`/explore/${data.id}`}
         className="group relative z-0 mb-6 block break-inside-avoid overflow-visible transition-[z-index] duration-300 hover:z-30 focus-visible:z-30"
       >
@@ -206,8 +228,8 @@ function CardWithPreview({
                   </div>
 
                   <div className="flex flex-shrink-0 items-center gap-1.5">
-                    <MetricPill icon={<Heart size={12} className="text-rose-200" />} value={formatMetric(data.likes)} />
-                    <MetricPill icon={<Star size={12} className="text-white/90" />} value={formatMetric(data.favorites)} />
+                    <MetricPill icon={<Heart size={12} className="text-rose-200" />} value={formatMetric(cardState.likeCount)} />
+                    <MetricPill icon={<Star size={12} className="text-white/90" />} value={formatMetric(cardState.favoriteCount)} />
                     <MetricPill icon={<Play size={12} className="fill-current text-white/90" />} value={formatMetric(data.views)} />
                   </div>
                 </div>
@@ -216,6 +238,11 @@ function CardWithPreview({
 
             <CardDetailPanel
               data={data}
+              liked={cardState.liked}
+              favorited={cardState.favorited}
+              likeCount={cardState.likeCount}
+              favoriteCount={cardState.favoriteCount}
+              setInteractionState={setInteractionState}
               t={t}
               tDetail={tDetail}
             />
@@ -303,10 +330,26 @@ function CardWithPreview({
 
 function CardDetailPanel({
   data,
+  liked,
+  favorited,
+  likeCount,
+  favoriteCount,
   t,
   tDetail,
 }: {
   data: VideoCardData
+  liked: boolean
+  favorited: boolean
+  likeCount: number
+  favoriteCount: number
+  setInteractionState: React.Dispatch<
+    React.SetStateAction<{
+      liked: boolean
+      favorited: boolean
+      likeCount: number
+      favoriteCount: number
+    }>
+  >
   t: ReturnType<typeof useTranslations<'explore'>>
   tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
 }) {
@@ -315,8 +358,6 @@ function CardDetailPanel({
   const { mutate: toggleFavorite } = useToggleFavorite()
   const { mutate: clone, isPending: cloning } = useCloneWorkflow()
   const { mutate: report } = useReportWorkflow()
-  const liked = Boolean(data.liked)
-  const favorited = Boolean(data.favorited)
 
   const handleClone = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
@@ -336,10 +377,36 @@ function CardDetailPanel({
   const handleLike = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
+    const nextLiked = !liked
+    const nextLikeCount = Math.max(0, likeCount + (nextLiked ? 1 : -1))
+
+    setInteractionState((prev) => ({
+      ...prev,
+      liked: nextLiked,
+      likeCount: nextLikeCount,
+    }))
+
     toggleLike(
       { id: data.id, entityType: data.entityType },
       {
-        onError: () => toast.error(tDetail('actionFailed')),
+        onSuccess: (result) => {
+          const resolvedLiked =
+            typeof (result as { liked?: boolean }).liked === 'boolean'
+              ? Boolean((result as { liked?: boolean }).liked)
+              : nextLiked
+          setInteractionState((prev) => ({
+            ...prev,
+            liked: resolvedLiked,
+          }))
+        },
+        onError: () => {
+          setInteractionState((prev) => ({
+            ...prev,
+            liked,
+            likeCount,
+          }))
+          toast.error(tDetail('actionFailed'))
+        },
       },
     )
   }
@@ -347,10 +414,36 @@ function CardDetailPanel({
   const handleFavorite = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
+    const nextFavorited = !favorited
+    const nextFavoriteCount = Math.max(0, favoriteCount + (nextFavorited ? 1 : -1))
+
+    setInteractionState((prev) => ({
+      ...prev,
+      favorited: nextFavorited,
+      favoriteCount: nextFavoriteCount,
+    }))
+
     toggleFavorite(
       { id: data.id, entityType: data.entityType },
       {
-        onError: () => toast.error(tDetail('actionFailed')),
+        onSuccess: (result) => {
+          const resolvedFavorited =
+            typeof (result as { favorited?: boolean }).favorited === 'boolean'
+              ? Boolean((result as { favorited?: boolean }).favorited)
+              : nextFavorited
+          setInteractionState((prev) => ({
+            ...prev,
+            favorited: resolvedFavorited,
+          }))
+        },
+        onError: () => {
+          setInteractionState((prev) => ({
+            ...prev,
+            favorited,
+            favoriteCount,
+          }))
+          toast.error(tDetail('actionFailed'))
+        },
       },
     )
   }
@@ -413,7 +506,7 @@ function CardDetailPanel({
             </Button>
             <IconButton
               active={liked}
-              label={t('likes', { count: data.likes ?? 0 })}
+              label={t('likes', { count: likeCount })}
               onClick={handleLike}
             >
               <Heart size={16} className={cn(liked && 'fill-current')} />
