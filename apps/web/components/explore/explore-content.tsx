@@ -1,12 +1,11 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useMemo/useState，依赖 next-intl 的 useLocale/useTranslations，
+ * [INPUT]: 依赖 react 的 useEffect/useMemo/useRef/useState，依赖 next-intl 的 useLocale/useTranslations，
  *          依赖 @/components/explore/explore-tabs，
  *          依赖 @/components/explore/explore-grid，
  *          依赖 @/hooks/use-explore 的 useExplore，
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
- *          依赖 @/components/ui/button
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（轮播主体下移、圆点覆盖在画面上的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（轮播主体下移、圆点覆盖在画面上的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -14,9 +13,9 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 import {
   ExploreTabs,
@@ -27,7 +26,6 @@ import {
 import { ExploreGrid } from './explore-grid'
 import { useExplore } from '@/hooks/use-explore'
 import { useCategories } from '@/hooks/use-categories'
-import { Button } from '@/components/ui/button'
 import type { VideoCardData } from '@/components/shared/video-card'
 import type { ExploreQuery } from '@/lib/validations/explore'
 
@@ -216,14 +214,20 @@ export function ExploreContent() {
   const [activeSort, setActiveSort] = useState<ExploreTab>('hot')
   const [activeType, setActiveType] = useState<ExploreContentTypeTab>('all')
   const [activeSubcategory, setActiveSubcategory] = useState<ExploreSubcategoryTab>('all')
-  const [page, setPage] = useState(1)
   const [activeBanner, setActiveBanner] = useState(0)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const { data: categories = [] } = useCategories(locale)
-  const { data, isLoading } = useExplore({
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useExplore({
     sort: TAB_SORT[activeSort],
     type: activeType,
-    page,
+    limit: 20,
   })
 
   useEffect(() => {
@@ -234,8 +238,24 @@ export function ExploreContent() {
     return () => window.clearInterval(timer)
   }, [])
 
-  const response = data as ExploreApiResponse | undefined
-  const pagination = response?.pagination
+  useEffect(() => {
+    const target = loadMoreRef.current
+    if (!target || !hasNextPage) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (entry?.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage()
+        }
+      },
+      { rootMargin: '900px 0px 900px 0px' },
+    )
+
+    observer.observe(target)
+
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
@@ -246,9 +266,17 @@ export function ExploreContent() {
     [categories],
   )
 
+  const allItems = useMemo(
+    () =>
+      (data?.pages ?? []).flatMap(
+        (page) => ((page as ExploreApiResponse | undefined)?.items ?? []),
+      ),
+    [data?.pages],
+  )
+
   const videos = useMemo(
-    () => response?.items?.map((item) => toVideoCard(item, categoryMap, categorySlugMap)) ?? [],
-    [categoryMap, categorySlugMap, response?.items],
+    () => allItems.map((item) => toVideoCard(item, categoryMap, categorySlugMap)),
+    [allItems, categoryMap, categorySlugMap],
   )
 
   const filteredVideos = useMemo(() => {
@@ -257,23 +285,20 @@ export function ExploreContent() {
 
   const handleSortChange = (tab: ExploreTab) => {
     setActiveSort(tab)
-    setPage(1)
   }
 
   const handleTypeChange = (tab: ExploreContentTypeTab) => {
     setActiveType(tab)
     setActiveSubcategory(DEFAULT_SUBCATEGORY[tab])
-    setPage(1)
   }
 
   const handleSubcategoryChange = (subcategory: ExploreSubcategoryTab) => {
     setActiveSubcategory(subcategory)
-    setPage(1)
   }
 
   return (
-    <div className="min-h-full bg-[#f7f7f5]">
-      <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-full overflow-x-hidden bg-[#f7f7f5]">
+      <div className="mx-auto flex w-full max-w-[2200px] flex-col gap-6 px-3 py-6 sm:px-4 lg:px-4 xl:px-5 2xl:px-6 lg:py-8">
         <section className="animate-explore-rise relative -mt-7 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
           <div className="relative h-[232px] overflow-visible sm:h-[304px] lg:h-[384px]">
             {BANNERS.map((banner, index) => {
@@ -330,7 +355,7 @@ export function ExploreContent() {
           </div>
         </section>
 
-        <section className="animate-explore-rise px-1" style={{ animationDelay: '120ms' }}>
+        <section className="animate-explore-rise -mt-6 px-1" style={{ animationDelay: '120ms' }}>
           <ExploreTabs
             activeSort={activeSort}
             activeType={activeType}
@@ -343,35 +368,18 @@ export function ExploreContent() {
 
         <ExploreGrid videos={filteredVideos} isLoading={isLoading} />
 
-        {pagination && pagination.totalPages > 1 ? (
-          <div className="flex items-center justify-center gap-3 pb-6">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((current) => current - 1)}
-              className="rounded-full border-stone-300 bg-white px-4"
-            >
-              <ChevronLeft size={14} className="mr-1" />
-              {t('prev')}
-            </Button>
-
-            <span className="text-sm text-muted-foreground">
-              {page} / {pagination.totalPages}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((current) => current + 1)}
-              className="rounded-full border-stone-300 bg-white px-4"
-            >
-              {t('next')}
-              <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </div>
-        ) : null}
+        <div ref={loadMoreRef} className="flex min-h-20 items-center justify-center pb-6">
+          {isFetchingNextPage ? (
+            <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 shadow-sm">
+              <Loader2 size={16} className="animate-spin" />
+              {t('loading')}
+            </div>
+          ) : hasNextPage ? (
+            <div className="h-8 w-full" />
+          ) : filteredVideos.length > 0 ? (
+            <p className="text-sm text-muted-foreground/70">{t('noMoreResults')}</p>
+          ) : null}
+        </div>
       </div>
     </div>
   )

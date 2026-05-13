@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
 import type { ExploreQuery } from '@/lib/validations/explore'
@@ -18,8 +18,17 @@ interface ExploreParams {
   category?: string
   sort?: ExploreQuery['sort']
   type?: ExploreQuery['type']
-  page?: number
   limit?: number
+}
+
+interface ExploreListResponse<TItem = unknown> {
+  items?: TItem[]
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
 }
 
 /* ─── Fetcher ────────────────────────────────────────── */
@@ -37,17 +46,23 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 /* ─── Hooks ──────────────────────────────────────────── */
 
 export function useExplore(params?: ExploreParams) {
-  const qs = new URLSearchParams()
-  if (params?.category) qs.set('category', params.category)
-  if (params?.sort) qs.set('sort', params.sort)
-  if (params?.type && params.type !== 'all') qs.set('type', params.type)
-  if (params?.page) qs.set('page', String(params.page))
-  if (params?.limit) qs.set('limit', String(params.limit))
-  const query = qs.toString()
-
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.explore.list(params as Record<string, unknown>),
-    queryFn: () => fetchJson(`/api/explore${query ? `?${query}` : ''}`),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => {
+      const qs = new URLSearchParams()
+      if (params?.category) qs.set('category', params.category)
+      if (params?.sort) qs.set('sort', params.sort)
+      if (params?.type && params.type !== 'all') qs.set('type', params.type)
+      if (params?.limit) qs.set('limit', String(params.limit))
+      qs.set('page', String(pageParam))
+      return fetchJson<ExploreListResponse>(`/api/explore?${qs.toString()}`)
+    },
+    getNextPageParam: (lastPage) => {
+      const pagination = lastPage.pagination
+      if (!pagination) return undefined
+      return pagination.page < pagination.totalPages ? pagination.page + 1 : undefined
+    },
     staleTime: 5_000,
     refetchOnMount: true,
   })

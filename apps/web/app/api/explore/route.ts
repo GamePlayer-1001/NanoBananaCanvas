@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/validations/explore
- * [OUTPUT]: 对外提供 GET /api/explore (混合返回公开工作流 + 公开生成作品)
+ * [OUTPUT]: 对外提供 GET /api/explore (混合返回公开工作流 + 公开生成作品，并在聚合结果层按 entity_type + id 去重)
  * [POS]: api/explore 的广场列表端点，统一查询公开工作流与公开生成作品并标记互动状态
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -52,6 +52,24 @@ interface ExploreSchemaSupport {
   hasPublishedOutputLikesTable: boolean
   hasPublishedOutputFavoritesTable: boolean
   hasPublishedOutputCategoryId: boolean
+}
+
+function dedupeExploreItems(items: Record<string, unknown>[]) {
+  const seen = new Set<string>()
+
+  return items.filter((item) => {
+    const entityType = String(item.entity_type ?? '')
+    const id = String(item.id ?? '')
+    if (!entityType || !id) return true
+
+    const key = `${entityType}:${id}`
+    if (seen.has(key)) {
+      return false
+    }
+
+    seen.add(key)
+    return true
+  })
 }
 
 async function hasPublishedOutputsTable(db: Awaited<ReturnType<typeof getDb>>) {
@@ -212,7 +230,7 @@ export async function GET(req: NextRequest) {
       .all()
 
     // 标记当前用户互动状态
-    let items = rows.results ?? []
+    let items = dedupeExploreItems((rows.results ?? []) as Record<string, unknown>[])
     if (auth) {
       const ids = items.map((r: Record<string, unknown>) => r.id as string)
       if (ids.length > 0) {
