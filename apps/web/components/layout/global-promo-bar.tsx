@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useMemo/useState，依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 Link，依赖 lucide-react 的 Clock3/X
- * [OUTPUT]: 对外提供 GlobalPromoBar 全局宣传条组件（支持会话级关闭记忆、循环倒计时与订阅跳转）
- * [POS]: layout 的全局顶部横条，被 (app)/layout.tsx 消费，统一承接工作台级促销提示
+ * [OUTPUT]: 对外提供 GlobalPromoBar 工作台宣传条组件（支持会话级关闭记忆、循环倒计时与订阅跳转）
+ * [POS]: layout 的主内容列顶部横条，被 (app)/layout.tsx 消费，统一承接工作台级促销提示且不挤压桌面侧边栏
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -75,9 +75,9 @@ export function GlobalPromoBar() {
 
   return (
     <div className="border-b border-[#d9cf2f] bg-[#fbf44f] text-stone-900">
-      <div className="mx-auto flex min-h-[60px] w-full max-w-[1920px] items-center justify-center gap-4 px-4 py-2 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 flex-1 items-center justify-center gap-4">
-          <p className="truncate text-lg font-medium leading-7 sm:text-[24px]">
+      <div className="mx-auto flex min-h-[50px] w-full max-w-[1760px] items-center gap-3 px-3 py-1.5 sm:px-5 lg:px-6">
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+          <p className="truncate text-[15px] font-medium leading-6 sm:text-[20px]">
             {locale === 'zh' ? (
               <>
                 <strong className="font-black">{t('promoTitle')}</strong>
@@ -98,17 +98,17 @@ export function GlobalPromoBar() {
               </>
             )}
           </p>
-          <div className="hidden h-8 w-px bg-black/20 lg:block" />
-          <div className="inline-flex shrink-0 items-center gap-3 rounded-2xl border border-black/20 bg-[#fff86d] px-4 py-2 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)]">
-            <Clock3 size={18} className="shrink-0" />
-            <span className="font-mono text-lg font-medium tracking-[0.04em] text-stone-950 sm:text-[24px]">
+          <div className="hidden h-7 w-px bg-black/20 lg:block" />
+          <div className="inline-flex shrink-0 items-center gap-2.5 rounded-2xl border border-black/20 bg-[#fff86d] px-3 py-1.5 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)]">
+            <Clock3 size={15} className="shrink-0" />
+            <span className="font-mono text-[15px] font-normal tracking-[0.04em] text-stone-950 sm:text-[20px]">
               {countdownLabel}
             </span>
           </div>
-          <div className="hidden h-8 w-px bg-black/20 lg:block" />
+          <div className="hidden h-7 w-px bg-black/20 lg:block" />
           <Link
             href="/account?tab=subscription"
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-stone-950 px-6 py-2 text-sm font-semibold text-white transition hover:bg-stone-800 sm:px-8 sm:text-base"
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-stone-950 px-5 py-1.5 text-xs font-semibold text-white transition hover:bg-stone-800 sm:px-6 sm:text-sm"
           >
             {t('promoCta')}
           </Link>
@@ -116,10 +116,10 @@ export function GlobalPromoBar() {
         <button
           type="button"
           onClick={handleClose}
-          className="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-black/5 hover:text-stone-950 lg:mr-2 xl:mr-4"
+          className="ml-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-black/5 hover:text-stone-950 sm:ml-3 lg:ml-5 xl:ml-6"
           aria-label={t('closePromo')}
         >
-          <X size={22} />
+          <X size={18} />
         </button>
       </div>
     </div>

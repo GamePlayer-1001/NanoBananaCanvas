@@ -5,7 +5,7 @@
  *          依赖 @/hooks/use-explore 的 useExplore，
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（轮播主体下移、圆点覆盖在画面上的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（降低裁剪的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -206,6 +206,24 @@ function matchesSubcategory(video: VideoCardData, activeSubcategory: ExploreSubc
   return keywordHints.some((hint) => haystack.includes(hint))
 }
 
+function dedupeVideoCards(videos: VideoCardData[]) {
+  const seenIds = new Set<string>()
+  const seenPreviewKeys = new Set<string>()
+
+  return videos.filter((video) => {
+    if (seenIds.has(video.id)) return false
+    seenIds.add(video.id)
+
+    const previewKey = video.thumbnailUrl?.trim() || video.mediaUrl?.trim()
+    if (!previewKey) return true
+
+    if (seenPreviewKeys.has(previewKey)) return false
+
+    seenPreviewKeys.add(previewKey)
+    return true
+  })
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function ExploreContent() {
@@ -275,7 +293,7 @@ export function ExploreContent() {
   )
 
   const videos = useMemo(
-    () => allItems.map((item) => toVideoCard(item, categoryMap, categorySlugMap)),
+    () => dedupeVideoCards(allItems.map((item) => toVideoCard(item, categoryMap, categorySlugMap))),
     [allItems, categoryMap, categorySlugMap],
   )
 
@@ -298,7 +316,7 @@ export function ExploreContent() {
 
   return (
     <div className="min-h-full overflow-x-hidden bg-[#f7f7f5]">
-      <div className="mx-auto flex w-full max-w-[2200px] flex-col gap-6 px-3 py-6 sm:px-4 lg:px-4 xl:px-5 2xl:px-6 lg:py-8">
+      <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-3 py-6 sm:px-4 lg:px-5 xl:px-6 2xl:px-8 lg:py-8">
         <section className="animate-explore-rise relative -mt-7 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
           <div className="relative h-[232px] overflow-visible sm:h-[304px] lg:h-[384px]">
             {BANNERS.map((banner, index) => {
@@ -325,13 +343,13 @@ export function ExploreContent() {
                     filter: isActive ? 'none' : 'saturate(0.9) brightness(0.92)',
                   }}
                 >
-                  <div className="relative h-full w-full">
+                  <div className="relative h-full w-full bg-[radial-gradient(circle_at_top,#f6f1c9_0%,#efe6a4_26%,#ded6bf_100%)]">
                     <Image
                       src={banner.image}
                       alt={t(banner.altKey)}
                       fill
                       sizes="(max-width: 1024px) 88vw, 980px"
-                      className="object-cover"
+                      className="object-contain object-center"
                       priority={isActive}
                     />
                   </div>
