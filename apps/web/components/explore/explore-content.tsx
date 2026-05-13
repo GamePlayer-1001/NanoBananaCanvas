@@ -5,7 +5,7 @@
  *          依赖 @/hooks/use-explore 的 useExplore，
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（固定高度自适应宽度的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（固定高度且由图片原始比例驱动卡片宽度的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片 + 无尽下拉加载）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -41,26 +41,32 @@ const BANNERS = [
   {
     image: '/explore/banners/01.png',
     altKey: 'bannerAlt1',
+    ratio: 1915 / 821,
   },
   {
     image: '/explore/banners/02.png',
     altKey: 'bannerAlt2',
+    ratio: 1915 / 821,
   },
   {
     image: '/explore/banners/03.png',
     altKey: 'bannerAlt3',
+    ratio: 1915 / 821,
   },
   {
     image: '/explore/banners/04.png',
     altKey: 'bannerAlt4',
+    ratio: 1915 / 821,
   },
   {
     image: '/explore/banners/05.png',
     altKey: 'bannerAlt5',
+    ratio: 1915 / 821,
   },
   {
     image: '/explore/banners/06.png',
     altKey: 'bannerAlt6',
+    ratio: 1915 / 821,
   },
 ] as const
 
@@ -330,11 +336,12 @@ export function ExploreContent() {
                   type="button"
                   onClick={() => setActiveBanner(index)}
                   aria-label={`${t('switchBanner')} ${index + 1}`}
-                  className={`absolute left-1/2 top-1/2 block h-[88%] w-[84%] -translate-y-1/2 overflow-hidden rounded-[24px] shadow-[0_24px_55px_-36px_rgba(15,23,42,0.28)] transition-all duration-500 ease-out sm:h-[90%] sm:w-[72%] lg:w-[60%] ${
+                  className={`absolute left-1/2 top-1/2 block h-[88%] max-w-[84%] -translate-y-1/2 overflow-hidden rounded-[24px] shadow-[0_24px_55px_-36px_rgba(15,23,42,0.28)] transition-all duration-500 ease-out sm:h-[90%] sm:max-w-[72%] lg:max-w-[60%] ${
                     hidden ? 'pointer-events-none opacity-0' : ''
                   }`}
                   style={{
                     zIndex: isActive ? 30 : isSideCard ? 20 : 10,
+                    aspectRatio: String(banner.ratio),
                     transform: `translate(-50%, calc(-50% + 128px)) perspective(1400px) translateX(${offset * 34}%) scale(${
                       isActive ? 1 : 0.86
                     }) rotateY(${offset * -24}deg)`,
@@ -348,7 +355,7 @@ export function ExploreContent() {
                       alt={t(banner.altKey)}
                       fill
                       sizes="(max-width: 1024px) 88vw, 980px"
-                      className="object-cover object-center"
+                      className="object-contain object-center"
                       priority={isActive}
                     />
                   </div>
