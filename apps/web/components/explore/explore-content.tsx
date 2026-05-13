@@ -83,6 +83,7 @@ interface ExploreApiItem {
   view_count: number
   published_at?: string
   category_id?: string
+  category_slug?: string
   author_name?: string | null
   author_avatar?: string
   content_type?: 'video' | 'image' | 'workflow'
@@ -125,7 +126,11 @@ interface ExploreApiResponse {
   pagination?: { page: number; limit: number; total: number; totalPages: number }
 }
 
-function toVideoCard(item: ExploreApiItem, categoryMap: Map<string, string>): VideoCardData {
+function toVideoCard(
+  item: ExploreApiItem,
+  categoryMap: Map<string, string>,
+  categorySlugMap: Map<string, string>,
+): VideoCardData {
   const authorName = item.author_name?.trim() || 'Unknown Creator'
 
   return {
@@ -144,6 +149,7 @@ function toVideoCard(item: ExploreApiItem, categoryMap: Map<string, string>): Vi
     nodeTypes: item.node_types?.split(',').filter(Boolean),
     description: item.description,
     categoryName: item.category_id ? categoryMap.get(item.category_id) : undefined,
+    categorySlug: item.category_slug ?? (item.category_id ? categorySlugMap.get(item.category_id) : undefined),
   }
 }
 
@@ -155,6 +161,7 @@ function matchesSubcategory(video: VideoCardData, activeSubcategory: ExploreSubc
   if (activeSubcategory === 'all') return true
 
   const normalizedCategory = normalizeKeyword(video.categoryName)
+  const normalizedCategorySlug = normalizeKeyword(video.categorySlug)
   const normalizedNodeTypes = (video.nodeTypes ?? []).map((nodeType) => normalizeKeyword(nodeType))
   const haystack = [
     video.title,
@@ -171,7 +178,11 @@ function matchesSubcategory(video: VideoCardData, activeSubcategory: ExploreSubc
   const typeHints = SUBCATEGORY_TYPE_HINTS[activeSubcategory] ?? []
   const keywordHints = SUBCATEGORY_HINTS[activeSubcategory] ?? []
 
-  if (categorySlugs.some((slug) => normalizedCategory.includes(slug))) {
+  if (
+    categorySlugs.some(
+      (slug) => normalizedCategorySlug.includes(slug) || normalizedCategory.includes(slug),
+    )
+  ) {
     return true
   }
 
@@ -215,10 +226,14 @@ export function ExploreContent() {
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
   )
+  const categorySlugMap = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.slug])),
+    [categories],
+  )
 
   const videos = useMemo(
-    () => response?.items?.map((item) => toVideoCard(item, categoryMap)) ?? [],
-    [categoryMap, response?.items],
+    () => response?.items?.map((item) => toVideoCard(item, categoryMap, categorySlugMap)) ?? [],
+    [categoryMap, categorySlugMap, response?.items],
   )
 
   const filteredVideos = useMemo(() => {

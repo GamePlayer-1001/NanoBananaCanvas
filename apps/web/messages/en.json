@@ -1677,6 +1677,8 @@
     "publishOutputDescription": "Publish this generated result as a standalone piece in Explore. If you do not upload a custom cover, the result thumbnail is used by default.",
     "publishOutputCover": "Cover",
     "publishOutputName": "Title",
+    "publishOutputCategory": "Category",
+    "publishOutputCategoryAuto": "Inherit workflow category automatically",
     "publishOutputIntro": "Description",
     "publishOutputPrompt": "Prompt",
     "publishOutputSourceUrl": "Source URL",

@@ -1677,6 +1677,8 @@
     "publishOutputDescription": "把这次生成结果作为独立作品发布到广场。若未手动上传封面，则默认使用结果缩略图。",
     "publishOutputCover": "封面图",
     "publishOutputName": "作品标题",
+    "publishOutputCategory": "作品分类",
+    "publishOutputCategoryAuto": "自动继承工作流分类",
     "publishOutputIntro": "作品介绍",
     "publishOutputPrompt": "提示词",
     "publishOutputSourceUrl": "来源链接",

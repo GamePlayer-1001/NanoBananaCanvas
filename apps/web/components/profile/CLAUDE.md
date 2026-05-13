@@ -11,6 +11,7 @@ subscription-tab.tsx: SubscriptionTab 订阅页签，承接 Standard 30 天试�
 model-preferences-tab.tsx: ModelPreferencesTab API 接入配置面板，仅登录用户维护账户级配置；访客态只展示登录后可配置的账户级说明
 settings-tab.tsx: SettingsTab 账户设置页签，承载语言切换、签到时区矫正、新手提示显隐与引导重置；时区选择已拆分“当前生效值”和“待保存草稿值”，并优先跟随 useCurrentUser 的最新账户时区，避免保存成功后界面继续显示旧值
 works-tab.tsx: WorksTab 我的作品 Tab，工作流/生成作品/已发布/收藏四主页签 + 图片/视频子页签 + 多选删除 + 本地草稿导入；已发布页签同时管理公开工作流与公开生成作品，封面遵循“用户上传优先，视频缺省首帧回退”，并支持撤回发布
+publish-output-dialog.tsx: PublishOutputDialog 生成作品公开弹窗，支持封面上传、标题描述编辑与真实分类选择，提交到 Explore 公开作品链路
 notifications-tab.tsx: NotificationsTab 通知 Tab，通知列表 + 分页 + 标记已读
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

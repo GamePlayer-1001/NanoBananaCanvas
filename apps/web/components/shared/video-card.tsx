@@ -33,6 +33,7 @@ export interface VideoCardData {
   nodeTypes?: string[]
   description?: string
   categoryName?: string
+  categorySlug?: string
 }
 
 /* ─── Helpers ────────────────────────────────────────── */

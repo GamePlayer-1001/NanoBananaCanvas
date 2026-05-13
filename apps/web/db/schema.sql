@@ -382,6 +382,7 @@ CREATE TABLE IF NOT EXISTS published_outputs (
   user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   task_id             TEXT UNIQUE REFERENCES async_tasks(id) ON DELETE CASCADE,
   workflow_id         TEXT REFERENCES workflows(id) ON DELETE SET NULL,
+  category_id         TEXT REFERENCES categories(id) ON DELETE SET NULL,
   source_mode         TEXT NOT NULL DEFAULT 'task' CHECK(source_mode IN ('task', 'import')),
   source_type         TEXT NOT NULL DEFAULT 'native' CHECK(source_type IN ('native', 'civitai', 'manual', 'other')),
   source_author_name  TEXT DEFAULT '',
@@ -413,6 +414,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_published_outputs_import_key
 CREATE INDEX IF NOT EXISTS idx_published_outputs_user ON published_outputs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_published_outputs_public ON published_outputs(is_public, published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_published_outputs_workflow ON published_outputs(workflow_id) WHERE workflow_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_published_outputs_category ON published_outputs(category_id) WHERE category_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_published_outputs_source_mode ON published_outputs(source_mode, source_type, published_at DESC);
 
 -- ── EXPLORE-002: published_output_likes ──────────────
