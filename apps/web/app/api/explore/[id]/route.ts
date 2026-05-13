@@ -39,12 +39,65 @@ const OUTPUT_AUTHOR_AVATAR_SQL = `COALESCE(
   NULLIF(TRIM(u.avatar_url), '')
 )`
 
+interface ExploreDetailSchemaSupport {
+  hasPublishedOutputsTable: boolean
+  hasPublishedOutputLikesTable: boolean
+  hasPublishedOutputFavoritesTable: boolean
+  hasPublishedOutputCategoryId: boolean
+}
+
 async function hasPublishedOutputsTable(db: Awaited<ReturnType<typeof getDb>>) {
   const row = await db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'published_outputs'")
     .first<{ name: string }>()
 
   return !!row?.name
+}
+
+async function hasTable(db: Awaited<ReturnType<typeof getDb>>, tableName: string) {
+  const row = await db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .bind(tableName)
+    .first<{ name: string }>()
+
+  return !!row?.name
+}
+
+async function hasColumn(
+  db: Awaited<ReturnType<typeof getDb>>,
+  tableName: string,
+  columnName: string,
+) {
+  const result = await db.prepare(`PRAGMA table_info(${tableName})`).all<{ name: string }>()
+  return (result.results ?? []).some((column) => column.name === columnName)
+}
+
+async function getExploreDetailSchemaSupport(
+  db: Awaited<ReturnType<typeof getDb>>,
+): Promise<ExploreDetailSchemaSupport> {
+  const publishedOutputsTableExists = await hasPublishedOutputsTable(db)
+  if (!publishedOutputsTableExists) {
+    return {
+      hasPublishedOutputsTable: false,
+      hasPublishedOutputLikesTable: false,
+      hasPublishedOutputFavoritesTable: false,
+      hasPublishedOutputCategoryId: false,
+    }
+  }
+
+  const [hasPublishedOutputLikesTable, hasPublishedOutputFavoritesTable, hasPublishedOutputCategoryId] =
+    await Promise.all([
+      hasTable(db, 'published_output_likes'),
+      hasTable(db, 'published_output_favorites'),
+      hasColumn(db, 'published_outputs', 'category_id'),
+    ])
+
+  return {
+    hasPublishedOutputsTable: true,
+    hasPublishedOutputLikesTable,
+    hasPublishedOutputFavoritesTable,
+    hasPublishedOutputCategoryId,
+  }
 }
 
 type Params = { params: Promise<{ id: string }> }
@@ -54,7 +107,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const authUser = await optionalAuth()
     const { id } = await params
     const db = await getDb()
-    const hasPublishedOutputs = await hasPublishedOutputsTable(db)
+    const schemaSupport = await getExploreDetailSchemaSupport(db)
 
     const workflow = await db
       .prepare(
@@ -91,12 +144,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
       })
     }
 
-    const output = hasPublishedOutputs
+    const output = schemaSupport.hasPublishedOutputsTable
       ? await db
           .prepare(
             `SELECT 'output' AS entity_type, po.id, po.title AS name, po.description, po.prompt,
                     po.source_url, po.thumbnail, po.media_url, po.media_type, po.view_count,
-                    po.like_count, po.clone_count, po.published_at, po.workflow_id, po.category_id,
+                    po.like_count, po.clone_count, po.published_at, po.workflow_id,
+                    ${schemaSupport.hasPublishedOutputCategoryId ? 'po.category_id' : 'NULL'} AS category_id,
                     po.source_mode, po.source_type, po.source_author_name, po.source_author_avatar,
                     po.workflow_json_url,
                     ${OUTPUT_AUTHOR_NAME_SQL} AS author_name, ${OUTPUT_AUTHOR_AVATAR_SQL} AS author_avatar
@@ -119,12 +173,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     let liked = false
     let favorited = false
-    if (authUser) {
+    if (authUser && (schemaSupport.hasPublishedOutputLikesTable || schemaSupport.hasPublishedOutputFavoritesTable)) {
       const [likeRow, favRow] = await Promise.all([
-        db.prepare('SELECT 1 FROM published_output_likes WHERE user_id = ? AND published_output_id = ?')
-          .bind(authUser.userId, id).first(),
-        db.prepare('SELECT 1 FROM published_output_favorites WHERE user_id = ? AND published_output_id = ?')
-          .bind(authUser.userId, id).first(),
+        schemaSupport.hasPublishedOutputLikesTable
+          ? db.prepare('SELECT 1 FROM published_output_likes WHERE user_id = ? AND published_output_id = ?')
+              .bind(authUser.userId, id).first()
+          : Promise.resolve(null),
+        schemaSupport.hasPublishedOutputFavoritesTable
+          ? db.prepare('SELECT 1 FROM published_output_favorites WHERE user_id = ? AND published_output_id = ?')
+              .bind(authUser.userId, id).first()
+          : Promise.resolve(null),
       ])
       liked = !!likeRow
       favorited = !!favRow

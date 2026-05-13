@@ -38,6 +38,15 @@ const OUTPUT_AUTHOR_AVATAR_SQL = `COALESCE(
   NULLIF(TRIM(u.avatar_url), '')
 )`
 
+async function hasColumn(
+  db: Awaited<ReturnType<typeof getDb>>,
+  tableName: string,
+  columnName: string,
+) {
+  const result = await db.prepare(`PRAGMA table_info(${tableName})`).all<{ name: string }>()
+  return (result.results ?? []).some((column) => column.name === columnName)
+}
+
 async function hasPublishedOutputsTable(db: Awaited<ReturnType<typeof getDb>>) {
   const row = await db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'published_outputs'")
@@ -68,6 +77,9 @@ export async function GET(req: NextRequest) {
     const exactKeyword = normalizedQuery
     const db = await getDb()
     const hasPublishedOutputs = await hasPublishedOutputsTable(db)
+    const hasPublishedOutputCategoryId = hasPublishedOutputs
+      ? await hasColumn(db, 'published_outputs', 'category_id')
+      : false
 
     const workflowItemsSql = `
       SELECT 'workflow' AS entity_type,
@@ -101,7 +113,7 @@ export async function GET(req: NextRequest) {
              po.clone_count,
              po.view_count,
              po.published_at,
-             po.category_id,
+             ${hasPublishedOutputCategoryId ? 'po.category_id' : 'NULL'} AS category_id,
              po.media_type AS content_type,
              ${OUTPUT_AUTHOR_NAME_SQL} as author_name,
              ${OUTPUT_AUTHOR_AVATAR_SQL} as author_avatar,

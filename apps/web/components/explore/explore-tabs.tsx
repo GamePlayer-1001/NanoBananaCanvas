@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 ExploreTabs 顶部工具条（主类型 Tab + 二级分类 Tab + 排序下拉）
+ * [OUTPUT]: 对外提供 ExploreTabs 顶部工具条（主类型 Tab + 条件二级分类 + 排序下拉）
  * [POS]: explore 的顶部工具区，被 explore/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,9 +12,10 @@ import { useTranslations } from 'next-intl'
 /* ─── Tab Config ─────────────────────────────────────── */
 
 const SORT_TABS = ['hot', 'latest', 'myLiked'] as const
-const TYPE_TABS = ['image', 'video', 'workflow'] as const
+const TYPE_TABS = ['all', 'image', 'video', 'workflow'] as const
 
 const SUBCATEGORY_TABS = {
+  all: ['all'],
   image: ['all', 'photo-real', 'comic', 'visual', 'architecture', 'abstract', 'design'],
   video: ['all', 'photo-real', 'anime', 'visual', 'architecture', 'abstract', 'design'],
   workflow: ['all', 'text-gen', 'image-gen', 'video-gen', 'audio-gen', 'other'],
@@ -64,8 +65,7 @@ export function ExploreTabs({
           ))}
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-stone-500">
-          <span>{t('sortLabel')}</span>
+        <label className="flex items-center text-sm text-stone-500">
           <select
             value={activeSort}
             onChange={(event) => onSortChange(event.target.value as ExploreTab)}
@@ -80,22 +80,24 @@ export function ExploreTabs({
         </label>
       </div>
 
-      <div className="flex flex-wrap gap-x-7 gap-y-3">
-        {subcategories.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => onSubcategoryChange(tab)}
-            className={`text-sm transition-all ${
-              activeSubcategory === tab
-                ? 'font-medium text-stone-950'
-                : 'text-stone-500 hover:text-stone-900'
-            }`}
-          >
-            {t(`subcategory_${tab}`)}
-          </button>
-        ))}
-      </div>
+      {activeType === 'all' ? null : (
+        <div className="flex flex-wrap gap-x-7 gap-y-3">
+          {subcategories.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onSubcategoryChange(tab)}
+              className={`text-sm transition-all ${
+                activeSubcategory === tab
+                  ? 'font-medium text-stone-950'
+                  : 'text-stone-500 hover:text-stone-900'
+              }`}
+            >
+              {t(`subcategory_${tab}`)}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
