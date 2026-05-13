@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/hooks/use-explore 的 useExploreDetail，
  *          依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
- *          依赖 ./workflow-preview, ./author-info, ./action-buttons
+ *          依赖 ./workflow-preview, ./author-info, ./action-buttons, ./report-dialog
  * [OUTPUT]: 对外提供 ExploreDetailContent 客户端交互容器
  * [POS]: explore/detail 的主容器，被 explore/[id]/page.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -11,12 +11,14 @@
 
 /* eslint-disable @next/next/no-img-element -- 公开详情里的用户作品媒体地址来自运行时资源，图片/视频混合展示时直接使用原生标签最稳。 */
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
   Bookmark,
   Clapperboard,
   Eye,
+  Flag,
   Heart,
   Loader2,
   Sparkles,
@@ -27,6 +29,7 @@ import { useExploreDetail } from '@/hooks/use-explore'
 import { WorkflowPreview } from './workflow-preview'
 import { AuthorInfo } from './author-info'
 import { ActionButtons } from './action-buttons'
+import { ReportDialog } from './report-dialog'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -48,6 +51,10 @@ interface WorkflowDetail {
   thumbnail?: string
   author_name?: string | null
   author_avatar?: string
+  author_membership_status?: string | null
+  author_total_likes?: number
+  author_total_favorites?: number
+  author_total_views?: number
   published_at?: string
   view_count: number
   like_count: number
@@ -79,6 +86,8 @@ function buildDownloadFileName(workflow: WorkflowDetail) {
 export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) {
   const t = useTranslations('exploreDetail')
   const { data, isLoading } = useExploreDetail(workflowId)
+  const showSourceCard = false
+  const [reportOpen, setReportOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -119,7 +128,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   const downloadUrl = workflow.media_url || workflow.workflow_json_url
 
   return (
-    <div className="mx-auto w-full max-w-[1380px] px-6 py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto w-full max-w-[1560px] px-6 py-6 lg:px-8 lg:py-8">
       <Link
         href="/explore"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -128,38 +137,43 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
         {t('backToExplore')}
       </Link>
 
-      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(0,1.08fr)_380px]">
         <div>
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight text-stone-950 lg:text-[3rem]">
               {workflow.name}
             </h1>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-stone-500">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 font-medium text-stone-700">
-                <Clapperboard size={14} />
-                {contentTypeLabel}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 font-medium text-stone-700">
-                <Sparkles size={14} />
-                {sourceBadge}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-stone-500">
-                <Eye size={14} />
-                {workflow.view_count ?? 0}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-stone-500">
-                <Heart size={14} />
-                {workflow.like_count ?? 0}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-stone-500">
-                <Bookmark size={14} />
-                {workflow.clone_count ?? 0}
-              </span>
+            <div className="mt-4 flex flex-col gap-3 text-sm text-stone-500 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-[12px] font-medium text-stone-700">
+                  <Clapperboard size={12} />
+                  {contentTypeLabel}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-[12px] font-medium text-stone-700">
+                  <Sparkles size={12} />
+                  {sourceBadge}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 lg:justify-end">
+                <span className="inline-flex items-center gap-1.5 text-stone-500">
+                  <Eye size={14} />
+                  {workflow.view_count ?? 0}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-stone-500">
+                  <Heart size={14} />
+                  {workflow.like_count ?? 0}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-stone-500">
+                  <Bookmark size={14} />
+                  {workflow.clone_count ?? 0}
+                </span>
+              </div>
             </div>
 
             {workflow.description ? (
-              <p className="mt-4 max-w-3xl text-base leading-7 text-stone-600">
+              <p className="mt-4 max-w-4xl text-base leading-7 text-stone-600">
                 {workflow.description}
               </p>
             ) : null}
@@ -202,7 +216,10 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           <AuthorInfo
             name={authorName}
             avatar={workflow.author_avatar}
-            publishedAt={workflow.published_at}
+            membershipStatus={workflow.author_membership_status}
+            totalLikes={workflow.author_total_likes}
+            totalFavorites={workflow.author_total_favorites}
+            totalViews={workflow.author_total_views}
           />
 
           <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
@@ -216,17 +233,30 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           </div>
 
           {isOutput && workflow.prompt ? (
-            <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
-                {t('prompt')}
-              </p>
-              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-stone-900">
-                {workflow.prompt}
-              </p>
+            <div className="space-y-3">
+              <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
+                  {t('prompt')}
+                </p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-stone-900">
+                  {workflow.prompt}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-1 text-sm text-stone-500 underline-offset-4 transition-colors hover:text-stone-900 hover:underline"
+                onClick={() => setReportOpen(true)}
+              >
+                <Flag size={15} />
+                {t('report')}
+              </button>
             </div>
           ) : null}
 
-          {isOutput && (workflow.source_url || sourceAuthorName || workflow.source_mode || workflow.source_type) ? (
+          {showSourceCard &&
+          isOutput &&
+          (workflow.source_url || sourceAuthorName || workflow.source_mode || workflow.source_type) ? (
             <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
               <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
                 {t('sourceTitle')}
@@ -274,6 +304,13 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
           ) : null}
         </div>
       </div>
+
+      <ReportDialog
+        workflowId={workflowId}
+        entityType={workflow.entity_type}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
     </div>
   )
 }

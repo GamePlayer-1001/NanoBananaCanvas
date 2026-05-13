@@ -3,7 +3,7 @@
  *          依赖 @/hooks/use-explore 的 useReportWorkflow，
  *          依赖 @/components/ui/dialog, @/components/ui/button
  * [OUTPUT]: 对外提供 ReportDialog 举报弹窗组件
- * [POS]: explore/detail 的举报交互，被 action-buttons.tsx 消费
+ * [POS]: explore/detail 的举报交互，被详情页右侧信息区消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors
- * [OUTPUT]: 对外提供 GET /api/explore/:id (工作流/公开生成作品统一详情)
+ * [OUTPUT]: 对外提供 GET /api/explore/:id (工作流/公开生成作品统一详情 + 作者身份摘要)
  * [POS]: api/explore/[id] 的统一详情端点，向 explore 详情页返回跨实体详情
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -45,6 +45,56 @@ interface ExploreDetailSchemaSupport {
   hasPublishedOutputFavoritesTable: boolean
   hasPublishedOutputCategoryId: boolean
 }
+
+const AUTHOR_FAVORITE_COUNT_SQL = `(
+  SELECT COUNT(*)
+  FROM favorites f
+  JOIN workflows wf ON wf.id = f.workflow_id
+  WHERE wf.user_id = u.id AND wf.is_public = 1
+)`
+
+const AUTHOR_OUTPUT_FAVORITE_COUNT_SQL = `(CASE
+  WHEN EXISTS (
+    SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'published_output_favorites'
+  )
+  THEN (
+    SELECT COUNT(*)
+    FROM published_output_favorites pof
+    JOIN published_outputs pop ON pop.id = pof.published_output_id
+    WHERE pop.user_id = u.id AND pop.is_public = 1
+  )
+  ELSE 0
+END)`
+
+const AUTHOR_TOTAL_LIKES_SQL = `(
+  COALESCE((
+    SELECT SUM(COALESCE(wf.like_count, 0))
+    FROM workflows wf
+    WHERE wf.user_id = u.id AND wf.is_public = 1
+  ), 0) +
+  COALESCE((
+    SELECT SUM(COALESCE(pop.like_count, 0))
+    FROM published_outputs pop
+    WHERE pop.user_id = u.id AND pop.is_public = 1
+  ), 0)
+)`
+
+const AUTHOR_TOTAL_VIEWS_SQL = `(
+  COALESCE((
+    SELECT SUM(COALESCE(wf.view_count, 0))
+    FROM workflows wf
+    WHERE wf.user_id = u.id AND wf.is_public = 1
+  ), 0) +
+  COALESCE((
+    SELECT SUM(COALESCE(pop.view_count, 0))
+    FROM published_outputs pop
+    WHERE pop.user_id = u.id AND pop.is_public = 1
+  ), 0)
+)`
+
+const AUTHOR_TOTAL_FAVORITES_SQL = `(
+  ${AUTHOR_FAVORITE_COUNT_SQL} + ${AUTHOR_OUTPUT_FAVORITE_COUNT_SQL}
+)`
 
 async function hasPublishedOutputsTable(db: Awaited<ReturnType<typeof getDb>>) {
   const row = await db
@@ -113,7 +163,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .prepare(
         `SELECT 'workflow' AS entity_type, w.id, w.name, w.description, w.data, w.thumbnail,
                 w.view_count, w.like_count, w.clone_count, w.published_at, w.category_id,
-                ${ACCOUNT_AUTHOR_NAME_SQL} AS author_name, u.avatar_url AS author_avatar
+                ${ACCOUNT_AUTHOR_NAME_SQL} AS author_name, u.avatar_url AS author_avatar,
+                u.membership_status AS author_membership_status,
+                ${AUTHOR_TOTAL_LIKES_SQL} AS author_total_likes,
+                ${AUTHOR_TOTAL_FAVORITES_SQL} AS author_total_favorites,
+                ${AUTHOR_TOTAL_VIEWS_SQL} AS author_total_views
          FROM workflows w
          JOIN users u ON u.id = w.user_id
          WHERE w.id = ? AND w.is_public = 1`,
@@ -153,7 +207,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
                     ${schemaSupport.hasPublishedOutputCategoryId ? 'po.category_id' : 'NULL'} AS category_id,
                     po.source_mode, po.source_type, po.source_author_name, po.source_author_avatar,
                     po.workflow_json_url,
-                    ${OUTPUT_AUTHOR_NAME_SQL} AS author_name, ${OUTPUT_AUTHOR_AVATAR_SQL} AS author_avatar
+                    ${OUTPUT_AUTHOR_NAME_SQL} AS author_name, ${OUTPUT_AUTHOR_AVATAR_SQL} AS author_avatar,
+                    u.membership_status AS author_membership_status,
+                    ${AUTHOR_TOTAL_LIKES_SQL} AS author_total_likes,
+                    ${AUTHOR_TOTAL_FAVORITES_SQL} AS author_total_favorites,
+                    ${AUTHOR_TOTAL_VIEWS_SQL} AS author_total_views
              FROM published_outputs po
              JOIN users u ON u.id = po.user_id
              WHERE po.id = ? AND po.is_public = 1`,
