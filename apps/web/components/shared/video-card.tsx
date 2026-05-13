@@ -161,7 +161,7 @@ function CardWithPreview({
       >
         <article className="animate-explore-rise overflow-visible rounded-[32px] transition-transform duration-300 group-hover:scale-[1.018]">
           <div className="relative overflow-visible">
-            <div className="overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[box-shadow,border-color,filter] duration-300 group-hover:border-stone-300 group-hover:shadow-[0_38px_96px_-46px_rgba(15,23,42,0.34)]">
+            <div className="overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[box-shadow,border-color,filter,border-radius] duration-300 group-hover:rounded-b-none group-hover:border-stone-300 group-hover:shadow-[0_38px_96px_-46px_rgba(15,23,42,0.34)]">
               <div className="relative overflow-hidden bg-stone-100">
                 {renderPreviewMedia(
                   data.thumbnailUrl,
