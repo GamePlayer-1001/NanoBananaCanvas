@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；无上传封面时视频回退到客户端抓取的首帧预览)
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；视频优先图片封面、失败时回退首帧或视频预览)
  * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用并承接底部操作条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -203,16 +203,16 @@ function renderPreviewMedia(
   data: VideoCardData,
   title: string,
   className: string,
-  previewFrameUrl?: string,
+  activePreviewImageUrl?: string,
+  onPreviewImageError?: () => void,
 ) {
-  const resolvedThumbnailUrl = data.thumbnailUrl || previewFrameUrl
-
-  if (resolvedThumbnailUrl) {
+  if (activePreviewImageUrl) {
     return (
       <img
-        src={resolvedThumbnailUrl}
+        src={activePreviewImageUrl}
         alt={title}
         className={className}
+        onError={onPreviewImageError}
       />
     )
   }
@@ -275,8 +275,24 @@ function CardWithPreview({
   t: ReturnType<typeof useTranslations<'explore'>>
 }) {
   const frameSourceKey =
-    data.thumbnailUrl || data.contentType !== 'video' || !data.mediaUrl ? undefined : data.mediaUrl
+    data.contentType === 'video' && data.mediaUrl ? data.mediaUrl : undefined
   const previewFrameUrl = useVideoPreviewFrame(frameSourceKey)
+  const [failedPreviewUrls, setFailedPreviewUrls] = useState<string[]>([])
+  const previewImageCandidates = [data.thumbnailUrl, previewFrameUrl].filter(
+    (value): value is string => Boolean(value),
+  )
+  const activePreviewImageUrl = previewImageCandidates.find(
+    (candidate) => !failedPreviewUrls.includes(candidate),
+  )
+
+  const handlePreviewImageError = () => {
+    if (!activePreviewImageUrl) return
+    setFailedPreviewUrls((current) =>
+      current.includes(activePreviewImageUrl)
+        ? current
+        : [...current, activePreviewImageUrl],
+    )
+  }
 
   if (variant === 'masonry') {
     const summary = data.description?.trim() || meta
@@ -289,7 +305,8 @@ function CardWithPreview({
               data,
               data.title,
               'h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.03]',
-              previewFrameUrl,
+              activePreviewImageUrl,
+              handlePreviewImageError,
             ) ?? (
               <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
                 <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
@@ -403,7 +420,8 @@ function CardWithPreview({
           data,
           data.title,
           'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]',
-          previewFrameUrl,
+          activePreviewImageUrl,
+          handlePreviewImageError,
         ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">

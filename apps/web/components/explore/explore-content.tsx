@@ -6,7 +6,7 @@
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
  *          依赖 @/components/ui/button
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（轮播主体下移、圆点叠放到画面上、箭头半透明悬浮的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（轮播主体下移、圆点覆盖在画面上的纯图片 Banner + 两行分类/排序 + 瀑布流内容卡片）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -274,7 +274,7 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative -mt-7 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
+        <section className="animate-explore-rise relative -mt-14 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
           <div className="relative h-[232px] overflow-visible sm:h-[304px] lg:h-[384px]">
             {BANNERS.map((banner, index) => {
               const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
@@ -314,31 +314,14 @@ export function ExploreContent() {
               )
             })}
 
-            <button
-              type="button"
-              onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-              className="absolute left-[6%] top-1/2 z-40 inline-flex h-10 w-10 translate-y-[128px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/80 text-stone-700 opacity-50 shadow-sm transition hover:bg-white hover:opacity-80"
-              aria-label={t('bannerPrev')}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-              className="absolute right-[6%] top-1/2 z-40 inline-flex h-10 w-10 translate-y-[128px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/80 text-stone-700 opacity-50 shadow-sm transition hover:bg-white hover:opacity-80"
-              aria-label={t('bannerNext')}
-            >
-              <ChevronRight size={18} />
-            </button>
-
-            <div className="absolute inset-x-0 bottom-[12%] z-40 flex justify-center gap-2">
+            <div className="absolute inset-x-0 bottom-[18%] z-40 translate-y-[92px] sm:translate-y-[102px] lg:translate-y-[116px] flex justify-center gap-2">
             {BANNERS.map((banner, dotIndex) => (
               <button
                 key={banner.image}
                 type="button"
                 onClick={() => setActiveBanner(dotIndex)}
                 className={`h-2.5 rounded-full transition-all ${
-                  dotIndex === activeBanner ? 'w-8 bg-stone-900/50' : 'w-2.5 bg-white/50'
+                  dotIndex === activeBanner ? 'w-8 bg-stone-950/55' : 'w-2.5 bg-white/65'
                 }`}
                 aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
               />

@@ -4,10 +4,8 @@
  *          依赖 lucide-react 图标，
  *          依赖 @/components/ui/avatar，
  *          依赖 @/components/shared/brand-mark，
- *          依赖 @/components/auth/sign-out-action，
  *          依赖 @/hooks/use-folders，依赖 @/hooks/use-user，依赖 sonner 的 toast，
- *          依赖 @/lib/auth/redirect 的 getDefaultSignOutRedirect
- * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹创建/重命名/删除弹窗 + 账户入口/仪表盘入口/订阅入口)
+ * [OUTPUT]: 对外提供 AppSidebar 核心侧边栏组件 (导航/文件夹创建/重命名/删除弹窗 + 账户入口)
  * [POS]: layout 的核心导航组件，被 (app)/layout.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -17,7 +15,7 @@
 import { useState } from 'react'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
   Folder,
@@ -25,16 +23,13 @@ import {
   Video,
   Plus,
   MessageCircle,
-  LogOut,
   Coins,
-  Sparkles,
   ChevronRight,
   Pencil,
   Trash2,
 } from 'lucide-react'
 
 import { Link, usePathname, useRouter } from '@/i18n/navigation'
-import { SignOutAction } from '@/components/auth/sign-out-action'
 import { BrandMark } from '@/components/shared/brand-mark'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
@@ -56,7 +51,6 @@ import {
 } from '@/hooks/use-folders'
 import { useCreditBalance, useDailySigninStatus } from '@/hooks/use-billing'
 import { useSidebarBootstrap } from '@/hooks/use-user'
-import { getDefaultSignOutRedirect } from '@/lib/auth/redirect'
 import { queryKeys } from '@/lib/query/keys'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -300,7 +294,6 @@ function DeleteFolderDialog({
 export function AppSidebar() {
   const t = useTranslations('sidebar')
   const queryClient = useQueryClient()
-  const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
   const { data: bootstrap } = useSidebarBootstrap()
@@ -313,13 +306,9 @@ export function AppSidebar() {
   const createFolder = useCreateFolder()
   const updateFolder = useUpdateFolder()
   const deleteFolder = useDeleteFolder()
-  const signOutRedirect = getDefaultSignOutRedirect(locale)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<SidebarFolder | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SidebarFolder | null>(null)
-  const activeAccountTab = searchParams.get('tab')
-  const isDashboardEntryActive = pathname === '/account' && activeAccountTab === 'dashboard'
-  const isSubscriptionEntryActive = pathname === '/account' && activeAccountTab === 'subscription'
   const browserTimeZone =
     typeof window === 'undefined'
       ? null
@@ -576,53 +565,7 @@ export function AppSidebar() {
               <ChevronRight size={14} className="text-muted-foreground shrink-0" />
             </Link>
 
-            {user?.isAuthenticated ? (
-              <>
-                <div className="space-y-1.5">
-                  <Link
-                    href="/account?tab=dashboard"
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors ${
-                      isDashboardEntryActive
-                        ? 'border-brand-200 bg-brand-50 text-brand-700'
-                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Coins size={12} />
-                      {t('creditsEntry')}
-                    </span>
-                    <span className="text-foreground font-medium">
-                      {balance?.availableCredits?.toLocaleString() ?? '...'}
-                    </span>
-                  </Link>
-
-                  <Link
-                    href="/account?tab=subscription"
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-[11px] transition-colors ${
-                      isSubscriptionEntryActive
-                        ? 'border-brand-200 bg-brand-50 text-brand-700'
-                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles size={12} />
-                      {t('upgradeEntry')}
-                    </span>
-                    <span className="font-medium text-brand-600">
-                      {t('upgradeCta')}
-                    </span>
-                  </Link>
-                </div>
-
-                <SignOutAction
-                  redirectUrl={signOutRedirect}
-                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 px-1 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <LogOut size={12} />
-                  {t('signOut')}
-                </SignOutAction>
-              </>
-            ) : (
+            {user?.isAuthenticated ? null : (
               <Link
                 href="/sign-in?redirect_url=/workspace"
                 className="text-brand-600 hover:text-brand-700 inline-flex px-1 text-[11px] font-medium transition"
