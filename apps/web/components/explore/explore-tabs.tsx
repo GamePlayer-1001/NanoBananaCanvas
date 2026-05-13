@@ -69,7 +69,7 @@ export function ExploreTabs({
           <select
             value={activeSort}
             onChange={(event) => onSortChange(event.target.value as ExploreTab)}
-            className="h-10 min-w-[116px] rounded-full border border-stone-200 bg-white px-4 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
+            className="h-10 min-w-[116px] rounded-full border border-stone-200 bg-white pl-4 pr-8 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
           >
             {SORT_TABS.map((tab) => (
               <option key={tab} value={tab}>
