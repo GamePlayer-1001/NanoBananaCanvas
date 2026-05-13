@@ -395,15 +395,18 @@ function normalizeEntry(entry, manifestDir) {
   const thumbnailPathValue = normalizeOptionalText(entry.thumbnailPath || entry.cover_image || entry.thumbnail)
   const workflowJsonPathValue = normalizeOptionalText(entry.workflowJsonPath || entry.local_workflow || entry.workflow)
   const mediaPath = path.resolve(manifestDir, mediaPathValue)
+  const inferredMediaType = normalizeMediaType(entry.mediaType || entry.media_type || '', mediaPath)
   const thumbnailPath = thumbnailPathValue
     ? path.resolve(manifestDir, thumbnailPathValue)
-    : mediaPath
+    : inferredMediaType === 'image'
+      ? mediaPath
+      : ''
   const workflowJsonPath = workflowJsonPathValue
     ? path.resolve(manifestDir, workflowJsonPathValue)
     : ''
 
   ensureFileExists(mediaPath, 'mediaPath')
-  ensureFileExists(thumbnailPath, 'thumbnailPath')
+  if (thumbnailPath) ensureFileExists(thumbnailPath, 'thumbnailPath')
   if (workflowJsonPath) ensureFileExists(workflowJsonPath, 'workflowJsonPath')
 
   const sourceUrl = normalizeOptionalText(entry.sourceUrl || entry.source_url || '')
@@ -421,7 +424,7 @@ function normalizeEntry(entry, manifestDir) {
     mediaPath,
     thumbnailPath,
     workflowJsonPath,
-    mediaType: normalizeMediaType(entry.mediaType || entry.media_type || '', mediaPath),
+    mediaType: inferredMediaType,
     workflowId: normalizeOptionalText(entry.workflowId || entry.workflow_id || ''),
     publishedAt: normalizeOptionalText(entry.publishedAt || entry.published_at || ''),
     isPublic: normalizeBoolean(entry.isPublic || entry.is_public, true),
@@ -444,13 +447,15 @@ function main() {
     const existingPublishedOutputId = fetchExistingPublishedOutputId(args.target, item.importKey)
 
     const mediaKey = buildR2Key('uploads', ownerUserId, item.mediaPath)
-    const thumbnailKey = buildR2Key('uploads', ownerUserId, item.thumbnailPath)
+    const thumbnailKey = item.thumbnailPath
+      ? buildR2Key('uploads', ownerUserId, item.thumbnailPath)
+      : ''
     const workflowJsonKey = item.workflowJsonPath
       ? buildR2Key('uploads', ownerUserId, item.workflowJsonPath)
       : ''
 
     const mediaUrl = buildInternalFileUrl(mediaKey)
-    const thumbnailUrl = buildInternalFileUrl(thumbnailKey)
+    const thumbnailUrl = thumbnailKey ? buildInternalFileUrl(thumbnailKey) : ''
     const workflowJsonUrl = workflowJsonKey ? buildInternalFileUrl(workflowJsonKey) : ''
 
     console.log(`\n==> Importing ${item.title}`)
@@ -462,7 +467,9 @@ function main() {
 
     if (!args.dryRun) {
       uploadFile(args.target, item.mediaPath, mediaKey)
-      uploadFile(args.target, item.thumbnailPath, thumbnailKey)
+      if (item.thumbnailPath && thumbnailKey) {
+        uploadFile(args.target, item.thumbnailPath, thumbnailKey)
+      }
       if (item.workflowJsonPath) {
         uploadFile(args.target, item.workflowJsonPath, workflowJsonKey)
       }
@@ -484,7 +491,7 @@ function main() {
           description = ${quoteSql(item.description)},
           prompt = ${quoteSql(item.prompt)},
           source_url = ${quoteSql(item.sourceUrl)},
-          thumbnail = ${quoteSql(thumbnailUrl)},
+          thumbnail = ${quoteSql(thumbnailUrl || null)},
           media_url = ${quoteSql(mediaUrl)},
           media_type = ${quoteSql(item.mediaType)},
           is_public = ${item.isPublic ? 1 : 0},
@@ -512,7 +519,7 @@ function main() {
           ${quoteSql(item.description)},
           ${quoteSql(item.prompt)},
           ${quoteSql(item.sourceUrl)},
-          ${quoteSql(thumbnailUrl)},
+          ${quoteSql(thumbnailUrl || null)},
           ${quoteSql(mediaUrl)},
           ${quoteSql(item.mediaType)},
           ${item.isPublic ? 1 : 0},

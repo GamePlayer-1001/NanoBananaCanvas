@@ -274,7 +274,7 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative -mt-14 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
+        <section className="animate-explore-rise relative -mt-7 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
           <div className="relative h-[232px] overflow-visible sm:h-[304px] lg:h-[384px]">
             {BANNERS.map((banner, index) => {
               const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
@@ -314,18 +314,18 @@ export function ExploreContent() {
               )
             })}
 
-            <div className="absolute inset-x-0 bottom-[18%] z-40 translate-y-[92px] sm:translate-y-[102px] lg:translate-y-[116px] flex justify-center gap-2">
-            {BANNERS.map((banner, dotIndex) => (
-              <button
-                key={banner.image}
-                type="button"
-                onClick={() => setActiveBanner(dotIndex)}
-                className={`h-2.5 rounded-full transition-all ${
-                  dotIndex === activeBanner ? 'w-8 bg-stone-950/55' : 'w-2.5 bg-white/65'
-                }`}
-                aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
-              />
-            ))}
+            <div className="absolute inset-x-0 top-1/2 z-40 flex translate-y-[108px] justify-center gap-2 sm:translate-y-[142px] lg:translate-y-[182px]">
+              {BANNERS.map((banner, dotIndex) => (
+                <button
+                  key={banner.image}
+                  type="button"
+                  onClick={() => setActiveBanner(dotIndex)}
+                  className={`h-2.5 rounded-full transition-all ${
+                    dotIndex === activeBanner ? 'w-8 bg-stone-950/70' : 'w-2.5 bg-white/80'
+                  }`}
+                  aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
+                />
+              ))}
             </div>
           </div>
         </section>

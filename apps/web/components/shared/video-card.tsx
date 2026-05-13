@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；视频优先图片封面、失败时回退首帧或视频预览)
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；仅消费稳定图片封面，避免列表态反复探测视频资源)
  * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用并承接底部操作条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -9,7 +9,6 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
-import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Bookmark, Ellipsis, Heart, Play, Sparkles } from 'lucide-react'
 
@@ -77,154 +76,17 @@ function formatMetric(n?: number) {
   return formatViews(n) || '0'
 }
 
-function getVideoFrameDataUrl(url: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const video = document.createElement('video')
-    video.crossOrigin = 'anonymous'
-    video.muted = true
-    video.playsInline = true
-    video.preload = 'auto'
-    video.src = url
-
-    const cleanup = () => {
-      video.pause()
-      video.removeAttribute('src')
-      video.load()
-    }
-
-    const capture = () => {
-      try {
-        const width = video.videoWidth
-        const height = video.videoHeight
-
-        if (!width || !height) {
-          cleanup()
-          resolve(null)
-          return
-        }
-
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const context = canvas.getContext('2d')
-
-        if (!context) {
-          cleanup()
-          resolve(null)
-          return
-        }
-
-        context.drawImage(video, 0, 0, width, height)
-        const result = canvas.toDataURL('image/jpeg', 0.82)
-        cleanup()
-        resolve(result)
-      } catch {
-        cleanup()
-        resolve(null)
-      }
-    }
-
-    video.addEventListener(
-      'loadedmetadata',
-      () => {
-        try {
-          video.currentTime = Math.min(0.05, Number.isFinite(video.duration) ? video.duration / 2 : 0.05)
-        } catch {
-          capture()
-        }
-      },
-      { once: true },
-    )
-
-    video.addEventListener(
-      'loadeddata',
-      () => {
-        if (video.readyState >= 2) {
-          capture()
-        }
-      },
-      { once: true },
-    )
-
-    video.addEventListener(
-      'seeked',
-      () => {
-        capture()
-      },
-      { once: true },
-    )
-
-    video.addEventListener(
-      'error',
-      () => {
-        cleanup()
-        resolve(null)
-      },
-      { once: true },
-    )
-  })
-}
-
-function useVideoPreviewFrame(frameSourceKey?: string) {
-  const [previewFrameState, setPreviewFrameState] = useState<{
-    sourceKey?: string
-    frameUrl?: string
-  }>({})
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!frameSourceKey) {
-      return undefined
-    }
-
-    void getVideoFrameDataUrl(frameSourceKey).then((frameUrl) => {
-      if (!cancelled) {
-        setPreviewFrameState({
-          sourceKey: frameSourceKey,
-          frameUrl: frameUrl ?? undefined,
-        })
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [frameSourceKey])
-
-  if (!frameSourceKey || previewFrameState.sourceKey !== frameSourceKey) {
-    return undefined
-  }
-
-  return previewFrameState.frameUrl
-}
-
 function renderPreviewMedia(
-  data: VideoCardData,
+  imageUrl: string | undefined,
   title: string,
   className: string,
-  activePreviewImageUrl?: string,
-  onPreviewImageError?: () => void,
 ) {
-  if (activePreviewImageUrl) {
+  if (imageUrl) {
     return (
       <img
-        src={activePreviewImageUrl}
+        src={imageUrl}
         alt={title}
         className={className}
-        onError={onPreviewImageError}
-      />
-    )
-  }
-
-  if (data.contentType === 'video' && data.mediaUrl) {
-    return (
-      <video
-        src={data.mediaUrl}
-        className={className}
-        muted
-        playsInline
-        preload="metadata"
       />
     )
   }
@@ -274,26 +136,6 @@ function CardWithPreview({
   variant: 'default' | 'masonry'
   t: ReturnType<typeof useTranslations<'explore'>>
 }) {
-  const frameSourceKey =
-    data.contentType === 'video' && data.mediaUrl ? data.mediaUrl : undefined
-  const previewFrameUrl = useVideoPreviewFrame(frameSourceKey)
-  const [failedPreviewUrls, setFailedPreviewUrls] = useState<string[]>([])
-  const previewImageCandidates = [data.thumbnailUrl, previewFrameUrl].filter(
-    (value): value is string => Boolean(value),
-  )
-  const activePreviewImageUrl = previewImageCandidates.find(
-    (candidate) => !failedPreviewUrls.includes(candidate),
-  )
-
-  const handlePreviewImageError = () => {
-    if (!activePreviewImageUrl) return
-    setFailedPreviewUrls((current) =>
-      current.includes(activePreviewImageUrl)
-        ? current
-        : [...current, activePreviewImageUrl],
-    )
-  }
-
   if (variant === 'masonry') {
     const summary = data.description?.trim() || meta
 
@@ -302,11 +144,9 @@ function CardWithPreview({
         <article className="animate-explore-rise overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[transform,box-shadow,border-color] duration-300 group-hover:-translate-y-2 group-hover:border-stone-300 group-hover:shadow-[0_34px_88px_-42px_rgba(15,23,42,0.32)]">
           <div className="relative overflow-hidden bg-stone-100">
             {renderPreviewMedia(
-              data,
+              data.thumbnailUrl,
               data.title,
               'h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.03]',
-              activePreviewImageUrl,
-              handlePreviewImageError,
             ) ?? (
               <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
                 <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
@@ -417,11 +257,9 @@ function CardWithPreview({
     <Link href={`/explore/${data.id}`} className="group block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
         {renderPreviewMedia(
-          data,
+          data.thumbnailUrl,
           data.title,
           'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]',
-          activePreviewImageUrl,
-          handlePreviewImageError,
         ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 Node.js fs/os/path/process/child_process，依赖 wrangler CLI，依赖 ffmpeg，
  *          依赖远端/本地 D1 published_outputs 与 R2 媒体对象
- * [OUTPUT]: 对外提供已发布视频封面批量回填脚本（扫描缺失 thumbnail 的公开视频 -> 从 R2 下载原视频 -> ffmpeg 抽帧 -> 上传封面图 -> 回写 D1）
+ * [OUTPUT]: 对外提供已发布视频封面批量回填脚本（扫描缺失 thumbnail 或误把视频写成 thumbnail 的公开视频 -> 从 R2 下载原视频 -> ffmpeg 抽帧 -> 上传封面图 -> 回写 D1）
  * [POS]: scripts 的历史数据修复工具，被手工运维复用，负责一次性补齐旧 published_outputs 的视频封面
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -128,6 +128,12 @@ function buildInternalFileUrl(key) {
   return `${internalFilePrefix}${key}`
 }
 
+function isVideoLikeThumbnail(url) {
+  const key = extractR2KeyFromFileUrl(url)
+  if (!key) return false
+  return /\.(mp4|mov|webm|m4v)$/i.test(key)
+}
+
 function downloadR2Object(targetFlag, key, outputPath) {
   runWrangler([
     'r2',
@@ -184,7 +190,11 @@ function getCandidateRows(targetFlag, batchSize) {
         AND (
           thumbnail IS NULL OR
           TRIM(thumbnail) = '' OR
-          thumbnail = media_url
+          thumbnail = media_url OR
+          thumbnail LIKE '%.mp4' OR
+          thumbnail LIKE '%.mov' OR
+          thumbnail LIKE '%.webm' OR
+          thumbnail LIKE '%.m4v'
         )
       ORDER BY published_at DESC, created_at DESC
       LIMIT ${batchSize}
@@ -246,6 +256,12 @@ function main() {
         if (!mediaKey) {
           skipped += 1
           console.warn(`[skip] ${row.id} has non-internal media_url: ${row.media_url}`)
+          continue
+        }
+
+        if (row.thumbnail && !isVideoLikeThumbnail(row.thumbnail) && row.thumbnail !== row.media_url) {
+          skipped += 1
+          console.warn(`[skip] ${row.id} already has usable thumbnail: ${row.thumbnail}`)
           continue
         }
 
