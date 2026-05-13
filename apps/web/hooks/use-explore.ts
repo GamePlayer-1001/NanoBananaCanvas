@@ -26,8 +26,8 @@ interface ExploreListResponse<TItem = unknown> {
   pagination?: {
     page: number
     limit: number
-    total: number
-    totalPages: number
+    hasMore: boolean
+    nextPage: number | null
   }
 }
 
@@ -61,10 +61,10 @@ export function useExplore(params?: ExploreParams) {
     getNextPageParam: (lastPage) => {
       const pagination = lastPage.pagination
       if (!pagination) return undefined
-      return pagination.page < pagination.totalPages ? pagination.page + 1 : undefined
+      return pagination.hasMore ? pagination.nextPage ?? undefined : undefined
     },
-    staleTime: 5_000,
-    refetchOnMount: true,
+    staleTime: 60_000,
+    refetchOnMount: false,
   })
 }
 
@@ -77,8 +77,8 @@ export function useExploreSearch(q: string, page?: number) {
       return fetchJson(`/api/explore/search?${qs}`)
     },
     enabled: q.length > 0,
-    staleTime: 5_000,
-    refetchOnMount: true,
+    staleTime: 30_000,
+    refetchOnMount: false,
   })
 }
 
@@ -121,8 +121,8 @@ export function useExploreDetail(id: string) {
     queryKey: queryKeys.explore.detail(id),
     queryFn: () => fetchJson(`/api/explore/${id}`),
     enabled: !!id,
-    staleTime: 5_000,
-    refetchOnMount: true,
+    staleTime: 30_000,
+    refetchOnMount: false,
   })
 }
 

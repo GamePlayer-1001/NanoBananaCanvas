@@ -210,14 +210,7 @@ export async function GET(req: NextRequest) {
       ? `${workflowItemsSql} UNION ALL ${outputItemsSql}`
       : workflowItemsSql
 
-    // 总数
-    const countRow = await db
-      .prepare(`SELECT COUNT(*) as total FROM (${publicItemsSql}) items ${whereClause}`)
-      .bind(...binds)
-      .first<{ total: number }>()
-    const total = countRow?.total ?? 0
-
-    // 列表
+    // 列表：多取一条判断是否还有下一页，避免每次分页额外 COUNT(*)
     const rows = await db
       .prepare(
         `SELECT *
@@ -226,11 +219,13 @@ export async function GET(req: NextRequest) {
          ORDER BY ${orderBy}
          LIMIT ? OFFSET ?`,
       )
-      .bind(...binds, limit, offset)
+      .bind(...binds, limit + 1, offset)
       .all()
 
     // 标记当前用户互动状态
-    let items = dedupeExploreItems((rows.results ?? []) as Record<string, unknown>[])
+    const rawItems = dedupeExploreItems((rows.results ?? []) as Record<string, unknown>[])
+    const hasMore = rawItems.length > limit
+    let items = hasMore ? rawItems.slice(0, limit) : rawItems
     if (auth) {
       const ids = items.map((r: Record<string, unknown>) => r.id as string)
       if (ids.length > 0) {
@@ -241,49 +236,55 @@ export async function GET(req: NextRequest) {
           .filter((r: Record<string, unknown>) => r.entity_type === 'output')
           .map((r: Record<string, unknown>) => r.id as string)
 
-        const likedWorkflowPromise = workflowIds.length > 0
-          ? db.prepare(
+        const likedQueryParts: string[] = []
+        const likedQueryBinds: string[] = []
+        const favoritedQueryParts: string[] = []
+        const favoritedQueryBinds: string[] = []
+
+        if (workflowIds.length > 0) {
+          likedQueryParts.push(
             `SELECT workflow_id AS target_id FROM likes WHERE user_id = ? AND workflow_id IN (${workflowIds.map(() => '?').join(',')})`,
-          ).bind(auth.userId, ...workflowIds).all()
-          : Promise.resolve({ results: [] as Record<string, unknown>[] })
-        const favoritedWorkflowPromise = workflowIds.length > 0
-          ? db.prepare(
+          )
+          likedQueryBinds.push(auth.userId, ...workflowIds)
+
+          favoritedQueryParts.push(
             `SELECT workflow_id AS target_id FROM favorites WHERE user_id = ? AND workflow_id IN (${workflowIds.map(() => '?').join(',')})`,
-          ).bind(auth.userId, ...workflowIds).all()
-          : Promise.resolve({ results: [] as Record<string, unknown>[] })
-        const likedOutputPromise = outputIds.length > 0 && schemaSupport.hasPublishedOutputLikesTable
-          ? db.prepare(
+          )
+          favoritedQueryBinds.push(auth.userId, ...workflowIds)
+        }
+
+        if (outputIds.length > 0 && schemaSupport.hasPublishedOutputLikesTable) {
+          likedQueryParts.push(
             `SELECT published_output_id AS target_id
              FROM published_output_likes
              WHERE user_id = ? AND published_output_id IN (${outputIds.map(() => '?').join(',')})`,
-          ).bind(auth.userId, ...outputIds).all()
-          : Promise.resolve({ results: [] as Record<string, unknown>[] })
-        const favoritedOutputPromise = outputIds.length > 0 && schemaSupport.hasPublishedOutputFavoritesTable
-          ? db.prepare(
+          )
+          likedQueryBinds.push(auth.userId, ...outputIds)
+        }
+
+        if (outputIds.length > 0 && schemaSupport.hasPublishedOutputFavoritesTable) {
+          favoritedQueryParts.push(
             `SELECT published_output_id AS target_id
              FROM published_output_favorites
              WHERE user_id = ? AND published_output_id IN (${outputIds.map(() => '?').join(',')})`,
-          ).bind(auth.userId, ...outputIds).all()
-          : Promise.resolve({ results: [] as Record<string, unknown>[] })
+          )
+          favoritedQueryBinds.push(auth.userId, ...outputIds)
+        }
 
-        const [likedWorkflow, favoritedWorkflow, likedOutput, favoritedOutput] = await Promise.all([
-          likedWorkflowPromise,
-          favoritedWorkflowPromise,
-          likedOutputPromise,
-          favoritedOutputPromise,
+        const [likedRows, favoritedRows] = await Promise.all([
+          likedQueryParts.length > 0
+            ? db.prepare(likedQueryParts.join(' UNION ALL ')).bind(...likedQueryBinds).all()
+            : Promise.resolve({ results: [] as Record<string, unknown>[] }),
+          favoritedQueryParts.length > 0
+            ? db.prepare(favoritedQueryParts.join(' UNION ALL ')).bind(...favoritedQueryBinds).all()
+            : Promise.resolve({ results: [] as Record<string, unknown>[] }),
         ])
 
         const likedSet = new Set(
-          [
-            ...(likedWorkflow.results ?? []).map((r: Record<string, unknown>) => r.target_id),
-            ...(likedOutput.results ?? []).map((r: Record<string, unknown>) => r.target_id),
-          ],
+          (likedRows.results ?? []).map((r: Record<string, unknown>) => r.target_id),
         )
         const favoritedSet = new Set(
-          [
-            ...(favoritedWorkflow.results ?? []).map((r: Record<string, unknown>) => r.target_id),
-            ...(favoritedOutput.results ?? []).map((r: Record<string, unknown>) => r.target_id),
-          ],
+          (favoritedRows.results ?? []).map((r: Record<string, unknown>) => r.target_id),
         )
 
         items = items.map((item: Record<string, unknown>) => ({
@@ -296,7 +297,12 @@ export async function GET(req: NextRequest) {
 
     return apiOk({
       items,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: {
+        page,
+        limit,
+        hasMore,
+        nextPage: hasMore ? page + 1 : null,
+      },
     })
   } catch (error) {
     return handleApiError(error)

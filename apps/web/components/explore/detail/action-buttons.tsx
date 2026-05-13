@@ -1,10 +1,10 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 sonner 的 toast，
- *          依赖 @/hooks/use-explore 的 useToggleLike / useToggleFavorite / useCloneWorkflow，
+ *          依赖 @/hooks/use-explore 的 useToggleFavorite / useCloneWorkflow，
  *          依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/components/ui/button，依赖 lucide-react 图标，
  *          依赖 ./report-dialog
- * [OUTPUT]: 对外提供 ActionButtons 互动按钮组
+ * [OUTPUT]: 对外提供 ActionButtons 操作按钮组（立即生成 / 加入收藏 / 下载）
  * [POS]: explore/detail 的操作栏，被 explore-detail-content.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -13,11 +13,11 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Copy, Flag, Heart, Star } from 'lucide-react'
+import { Copy, Download, Flag, Star } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useRouter } from '@/i18n/navigation'
-import { useToggleLike, useToggleFavorite, useCloneWorkflow } from '@/hooks/use-explore'
+import { useToggleFavorite, useCloneWorkflow } from '@/hooks/use-explore'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { ReportDialog } from './report-dialog'
@@ -27,10 +27,9 @@ import { ReportDialog } from './report-dialog'
 interface ActionButtonsProps {
   workflowId: string
   entityType?: 'workflow' | 'output'
-  liked: boolean
   favorited: boolean
-  likeCount: number
-  cloneCount: number
+  downloadUrl?: string
+  downloadFileName?: string
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -38,151 +37,120 @@ interface ActionButtonsProps {
 export function ActionButtons({
   workflowId,
   entityType = 'workflow',
-  liked,
   favorited,
-  likeCount,
-  cloneCount,
+  downloadUrl,
+  downloadFileName,
 }: ActionButtonsProps) {
   const t = useTranslations('exploreDetail')
   const router = useRouter()
   const [reportOpen, setReportOpen] = useState(false)
-  const [likedState, setLikedState] = useState(liked)
   const [favoritedState, setFavoritedState] = useState(favorited)
-  const [likeCountState, setLikeCountState] = useState(likeCount)
-  const [heartBurst, setHeartBurst] = useState(false)
   const [starBurst, setStarBurst] = useState(false)
 
-  const { mutate: toggleLike } = useToggleLike()
   const { mutate: toggleFavorite } = useToggleFavorite()
   const { mutate: clone, isPending: cloning } = useCloneWorkflow()
-
-  useEffect(() => {
-    setLikedState(liked)
-  }, [liked])
 
   useEffect(() => {
     setFavoritedState(favorited)
   }, [favorited])
 
-  useEffect(() => {
-    setLikeCountState(likeCount)
-  }, [likeCount])
-
-  const handleLike = () => {
-    const nextLiked = !likedState
-    const nextCount = Math.max(likeCountState + (nextLiked ? 1 : -1), 0)
-    setLikedState(nextLiked)
-    setLikeCountState(nextCount)
-    setHeartBurst(nextLiked)
-    toggleLike({ id: workflowId, entityType }, {
-      onSuccess: (data) => {
-        const likedFromServer = Boolean((data as { liked?: boolean }).liked)
-        setLikedState(likedFromServer)
-      },
-      onError: () => toast.error(t('actionFailed')),
-      onSettled: () => {
-        window.setTimeout(() => setHeartBurst(false), 320)
-      },
-    })
-  }
-
   const handleFavorite = () => {
     const nextFavorited = !favoritedState
     setFavoritedState(nextFavorited)
     setStarBurst(nextFavorited)
-    toggleFavorite({ id: workflowId, entityType }, {
-      onSuccess: (data) => {
-        setFavoritedState(Boolean((data as { favorited?: boolean }).favorited))
+    toggleFavorite(
+      { id: workflowId, entityType },
+      {
+        onSuccess: (data) => {
+          setFavoritedState(Boolean((data as { favorited?: boolean }).favorited))
+        },
+        onError: () => toast.error(t('actionFailed')),
+        onSettled: () => {
+          window.setTimeout(() => setStarBurst(false), 320)
+        },
       },
-      onError: () => toast.error(t('actionFailed')),
-      onSettled: () => {
-        window.setTimeout(() => setStarBurst(false), 320)
-      },
-    })
+    )
   }
 
   const handleClone = () => {
-    clone({ id: workflowId, entityType }, {
-      onSuccess: (data) => {
-        toast.success(t('cloneSuccess'))
-        router.push(`/canvas/${data.id}`)
+    clone(
+      { id: workflowId, entityType },
+      {
+        onSuccess: (data) => {
+          toast.success(t('cloneSuccess'))
+          router.push(`/canvas/${data.id}`)
+        },
+        onError: () => toast.error(t('cloneFailed')),
       },
-      onError: () => toast.error(t('cloneFailed')),
-    })
+    )
+  }
+
+  const handleDownload = () => {
+    if (!downloadUrl) {
+      toast.error(t('downloadUnavailable'))
+      return
+    }
+
+    const anchor = document.createElement('a')
+    anchor.href = downloadUrl
+    anchor.target = '_blank'
+    anchor.rel = 'noreferrer'
+    if (downloadFileName) {
+      anchor.download = downloadFileName
+    }
+    anchor.click()
   }
 
   return (
     <>
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-            <p className="text-xs text-muted-foreground">{t('likes', { count: likeCountState })}</p>
-            <p className="mt-1 text-xl font-semibold text-foreground">{likeCountState}</p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-            <p className="text-xs text-muted-foreground">{t('clones', { count: cloneCount })}</p>
-            <p className="mt-1 text-xl font-semibold text-foreground">{cloneCount}</p>
-          </div>
-        </div>
-
-        {/* 点赞 */}
         <Button
-          variant={likedState ? 'default' : 'outline'}
-          className={cn(
-            'w-full justify-start gap-2 transition-transform duration-200',
-            heartBurst && 'scale-[1.02]',
-          )}
-          onClick={handleLike}
-        >
-          <Heart
-            size={16}
-            className={cn(
-              likedState ? 'fill-current text-current' : '',
-              heartBurst && 'animate-[pulse_0.32s_ease-out]',
-            )}
-          />
-          {likedState ? t('liked') : t('like')}
-        </Button>
-
-        {/* 收藏 */}
-        <Button
-          variant={favoritedState ? 'default' : 'outline'}
-          className={cn(
-            'w-full justify-start gap-2 transition-transform duration-200',
-            starBurst && 'scale-[1.02]',
-          )}
-          onClick={handleFavorite}
-        >
-          <Star
-            size={16}
-            className={cn(
-              favoritedState ? 'fill-current text-current' : '',
-              starBurst && 'animate-[pulse_0.32s_ease-out]',
-            )}
-          />
-          {favoritedState ? t('favorited') : t('favorite')}
-        </Button>
-
-        {/* 克隆并打开 */}
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-2"
+          className="h-12 w-full rounded-2xl bg-[#c9c9c9] text-base font-semibold text-white shadow-none hover:bg-[#b9b9b9]"
           onClick={handleClone}
           disabled={cloning}
         >
-          <Copy size={16} />
-          {t('cloneAndOpen')}
+          <Copy size={18} />
+          {cloning ? t('generatePending') : t('generateNow')}
         </Button>
 
-        {/* 举报 */}
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2 text-muted-foreground"
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button
+            variant="outline"
+            className={cn(
+              'h-12 rounded-2xl border-stone-200 bg-[#f4f6ff] text-base font-semibold text-stone-900 shadow-none hover:bg-[#e9edff]',
+              starBurst && 'scale-[1.02]',
+            )}
+            onClick={handleFavorite}
+          >
+            <Star
+              size={18}
+              className={cn(
+                favoritedState ? 'fill-current text-current' : '',
+                starBurst && 'animate-[pulse_0.32s_ease-out]',
+              )}
+            />
+            {favoritedState ? t('favorited') : t('favoriteNow')}
+          </Button>
+
+          <Button
+            variant="outline"
+            className="h-12 rounded-2xl border-stone-200 bg-[#f4f6ff] text-base font-semibold text-stone-900 shadow-none hover:bg-[#e9edff]"
+            onClick={handleDownload}
+            disabled={!downloadUrl}
+          >
+            <Download size={18} />
+            {t('download')}
+          </Button>
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 px-1 text-sm text-stone-500 transition-colors hover:text-stone-900"
           onClick={() => setReportOpen(true)}
         >
-          <Flag size={16} />
+          <Flag size={15} />
           {t('report')}
-        </Button>
+        </button>
       </div>
 
       <ReportDialog

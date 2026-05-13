@@ -134,7 +134,7 @@ const SUBCATEGORY_TYPE_HINTS: Partial<Record<ExploreSubcategoryTab, string[]>> =
 
 interface ExploreApiResponse {
   items?: ExploreApiItem[]
-  pagination?: { page: number; limit: number; total: number; totalPages: number }
+  pagination?: { page: number; limit: number; hasMore: boolean; nextPage: number | null }
 }
 
 function toVideoCard(
@@ -208,18 +208,10 @@ function matchesSubcategory(video: VideoCardData, activeSubcategory: ExploreSubc
 
 function dedupeVideoCards(videos: VideoCardData[]) {
   const seenIds = new Set<string>()
-  const seenPreviewKeys = new Set<string>()
 
   return videos.filter((video) => {
     if (seenIds.has(video.id)) return false
     seenIds.add(video.id)
-
-    const previewKey = video.thumbnailUrl?.trim() || video.mediaUrl?.trim()
-    if (!previewKey) return true
-
-    if (seenPreviewKeys.has(previewKey)) return false
-
-    seenPreviewKeys.add(previewKey)
     return true
   })
 }
