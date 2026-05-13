@@ -396,8 +396,10 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/70 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(244,246,251,0.9))] shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[48px] transition-transform duration-300 group-hover:translate-y-0">
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.18)_28%,rgba(255,255,255,0.3)_100%)] backdrop-blur-[72px]" />
+      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/50 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0.18)_26%,rgba(255,255,255,0.24)_100%)] shadow-[0_32px_72px_-42px_rgba(15,23,42,0.52)] backdrop-blur-[42px] transition-transform duration-300 group-hover:translate-y-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(255,189,214,0.28),transparent_28%),radial-gradient(circle_at_84%_16%,rgba(254,215,170,0.22),transparent_24%),radial-gradient(circle_at_52%_118%,rgba(99,102,241,0.26),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.08)_28%,rgba(255,255,255,0.14)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.26),rgba(255,255,255,0.06)_24%,rgba(15,23,42,0.12)_100%)] backdrop-blur-[72px]" />
+        <div className="absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" />
         <div className="relative p-4">
           <div className="grid grid-cols-[minmax(0,1fr)_44px_44px_44px] items-center gap-2">
             <Button
@@ -468,7 +470,7 @@ function CardDetailPanel({
               {tagItems.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-white/65 bg-white/82 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-[32px]"
+                  className="rounded-full border border-white/45 bg-white/36 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] backdrop-blur-[24px]"
                 >
                   {tag}
                 </span>
