@@ -52,6 +52,18 @@ const BANNERS = [
     image: '/explore/banners/03.png',
     altKey: 'bannerAlt3',
   },
+  {
+    image: '/explore/banners/04.png',
+    altKey: 'bannerAlt4',
+  },
+  {
+    image: '/explore/banners/05.png',
+    altKey: 'bannerAlt5',
+  },
+  {
+    image: '/explore/banners/06.png',
+    altKey: 'bannerAlt6',
+  },
 ] as const
 
 const DEFAULT_SUBCATEGORY: Record<ExploreContentTypeTab, ExploreSubcategoryTab> = {
