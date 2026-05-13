@@ -60,6 +60,15 @@ const DEFAULT_SUBCATEGORY: Record<ExploreContentTypeTab, ExploreSubcategoryTab> 
   workflow: 'all',
 }
 
+function getCarouselOffset(index: number, activeIndex: number, total: number) {
+  const rawOffset = index - activeIndex
+
+  if (rawOffset > total / 2) return rawOffset - total
+  if (rawOffset < -total / 2) return rawOffset + total
+
+  return rawOffset
+}
+
 /* ─── D1 → VideoCardData 映射 ────────────────────────── */
 
 interface ExploreApiItem {
@@ -186,22 +195,51 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-[0_20px_60px_-34px_rgba(15,23,42,0.18)]">
-          <div className="relative aspect-[16/6] min-h-[180px] sm:min-h-[240px]">
-            <Image
-              src={BANNERS[activeBanner].image}
-              alt={t(BANNERS[activeBanner].altKey)}
-              fill
-              sizes="(max-width: 1024px) 100vw, 1400px"
-              className="object-cover"
-              priority
-            />
+        <section className="animate-explore-rise relative overflow-hidden rounded-[32px] border border-stone-200 bg-[linear-gradient(180deg,#fcfcfb,#f3f1ec)] px-3 py-4 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.18)] sm:px-5 sm:py-5 lg:px-8 lg:py-7">
+          <div className="relative h-[210px] sm:h-[280px] lg:h-[360px]">
+            {BANNERS.map((banner, index) => {
+              const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
+              const isActive = offset === 0
+              const isSideCard = Math.abs(offset) === 1
+              const hidden = Math.abs(offset) > 1
+
+              return (
+                <button
+                  key={banner.image}
+                  type="button"
+                  onClick={() => setActiveBanner(index)}
+                  aria-label={`${t('switchBanner')} ${index + 1}`}
+                  className={`absolute left-1/2 top-1/2 block h-[74%] w-[72%] -translate-y-1/2 overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_55px_-36px_rgba(15,23,42,0.42)] transition-all duration-500 ease-out sm:w-[68%] lg:h-[82%] lg:w-[62%] ${
+                    hidden ? 'pointer-events-none opacity-0' : ''
+                  }`}
+                  style={{
+                    zIndex: isActive ? 30 : isSideCard ? 20 : 10,
+                    transform: `translate(-50%, -50%) translateX(${offset * 34}%) scale(${
+                      isActive ? 1 : 0.84
+                    }) rotateY(${offset * -18}deg)`,
+                    opacity: isActive ? 1 : isSideCard ? 0.72 : 0,
+                    filter: isActive ? 'none' : 'saturate(0.88) brightness(0.94)',
+                  }}
+                >
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={banner.image}
+                      alt={t(banner.altKey)}
+                      fill
+                      sizes="(max-width: 1024px) 88vw, 980px"
+                      className="object-cover"
+                      priority={isActive}
+                    />
+                  </div>
+                </button>
+              )
+            })}
           </div>
 
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-4 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-stone-700 shadow-sm transition hover:bg-white"
+            className="absolute left-4 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-stone-700 shadow-sm transition hover:bg-white sm:left-6"
             aria-label={t('bannerPrev')}
           >
             <ChevronLeft size={18} />
@@ -209,13 +247,13 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-            className="absolute right-4 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-stone-700 shadow-sm transition hover:bg-white"
+            className="absolute right-4 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-stone-700 shadow-sm transition hover:bg-white sm:right-6"
             aria-label={t('bannerNext')}
           >
             <ChevronRight size={18} />
           </button>
 
-          <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2">
+          <div className="absolute inset-x-0 bottom-5 z-40 flex justify-center gap-2">
             {BANNERS.map((banner, dotIndex) => (
               <button
                 key={banner.image}
