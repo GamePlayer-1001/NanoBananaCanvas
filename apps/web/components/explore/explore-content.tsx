@@ -314,7 +314,7 @@ export function ExploreContent() {
               )
             })}
 
-            <div className="absolute inset-x-0 top-1/2 z-40 flex translate-y-[108px] justify-center gap-2 sm:translate-y-[142px] lg:translate-y-[182px]">
+            <div className="absolute inset-x-0 top-1/2 z-40 flex translate-y-[44px] justify-center gap-2 sm:translate-y-[62px] lg:translate-y-[82px]">
               {BANNERS.map((banner, dotIndex) => (
                 <button
                   key={banner.image}
