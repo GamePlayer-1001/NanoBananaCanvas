@@ -20,7 +20,7 @@ use-thumbnail-capture.ts — useThumbnailCapture 画布截图生成 (html-to-ima
 use-media-query.ts       — useMediaQuery / useIsDesktop 响应式媒体查询 hook
 use-workflows.ts         — useWorkflows / useWorkflow / useCreateWorkflow / useImportLocalWorkflow / useUpdateWorkflow / useDeleteWorkflow (TanStack Query, folder 筛选 + 创建时继承当前文件夹 + 本地草稿导入账户 + 模板起手创建)
 use-folders.ts           — useFolders / useCreateFolder / useUpdateFolder / useDeleteFolder / useMoveWorkflowToFolder (TanStack Query)
-use-explore.ts           — useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow (TanStack Query)
+use-explore.ts           — useExplore / useExploreSearch / useToggleLike / useToggleFavorite / useCloneWorkflow (TanStack Query，Explore 列表与详情缓存提升到 30-60s，减少挂载即重刷与广场分页压力)
 use-user.ts              — useCurrentUser / useSidebarBootstrap 当前用户与侧边栏聚合数据 (TanStack Query，侧边栏常驻请求由 4 条收口为 1 条；时区更新后会同步失效 user/profile + sidebar bootstrap + signinStatus，避免设置页与侧边栏继续显示旧时区)
 use-billing.ts           — useCreditBalance / useDailySigninStatus 本地账本余额与每日签到状态 (TanStack Query；签到状态优先携带已保存账号时区，账号无时区时才回退浏览器时区)
 use-account-billing.ts   — useBillingTransactions / useBillingUsage 账户页重查询懒加载层 (仅在 dashboard 页签激活后请求流水/usage，避免账户首页首屏直打重查询)

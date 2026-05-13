@@ -27,10 +27,9 @@ export function AuthorInfo({ name, avatar, publishedAt }: AuthorInfoProps) {
   const displayName = name?.trim() || 'Unknown Creator'
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+    <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
       <div className="flex items-center gap-3">
-        {/* 头像 */}
-        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-stone-100">
           {avatar ? (
             <img src={avatar} alt={displayName} className="h-full w-full object-cover" />
           ) : (
@@ -40,16 +39,14 @@ export function AuthorInfo({ name, avatar, publishedAt }: AuthorInfoProps) {
           )}
         </div>
 
-        {/* 信息 */}
-        <div>
-          <p className="text-sm font-medium text-foreground">{displayName}</p>
-          <p className="text-xs text-muted-foreground">{t('author')}</p>
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold text-stone-900">{displayName}</p>
+          <p className="text-sm text-stone-500">{t('author')}</p>
         </div>
       </div>
 
-      {/* 发布时间 */}
       {publishedAt && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="mt-4 flex items-center gap-1.5 text-sm text-stone-500">
           <Calendar size={12} />
           <span>{t('publishedOn', { date: publishedAt })}</span>
         </div>
