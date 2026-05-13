@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link
- * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流悬浮卡；仅消费稳定图片封面，避免列表态反复探测视频资源)
+ * [OUTPUT]: 对外提供 VideoCard 可复用内容卡片组件 (支持默认信息卡与 Explore 瀑布流 Z 轴浮动卡；仅消费稳定图片封面，避免列表态反复探测视频资源)
  * [POS]: shared 的通用内容卡，被 explore/workspace 页面消费；Explore 以强视觉模式复用并承接底部操作条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,9 +10,19 @@
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
 import { useTranslations } from 'next-intl'
-import { Bookmark, Ellipsis, Heart, Play, Sparkles } from 'lucide-react'
+import { Bookmark, Download, Ellipsis, Flag, Heart, Play, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
+import { useCloneWorkflow, useReportWorkflow, useToggleFavorite, useToggleLike } from '@/hooks/use-explore'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 /* ─── Types ──────────────────────────────────────────── */
 
@@ -29,11 +39,15 @@ export interface VideoCardData {
     avatarUrl?: string
   }
   views?: number
+  likes?: number
+  favorites?: number
   createdAt?: string
   nodeTypes?: string[]
   description?: string
   categoryName?: string
   categorySlug?: string
+  favorited?: boolean
+  liked?: boolean
 }
 
 /* ─── Helpers ────────────────────────────────────────── */
@@ -67,13 +81,15 @@ function formatCreatedAt(value?: string): string {
   }).format(date)
 }
 
-function formatDuration(duration?: string) {
-  if (duration?.trim()) return duration
-  return '00:05'
-}
-
 function formatMetric(n?: number) {
   return formatViews(n) || '0'
+}
+
+function formatTypeLabel(
+  t: ReturnType<typeof useTranslations<'explore'>>,
+  contentType?: VideoCardData['contentType'],
+) {
+  return t(`type_${contentType ?? 'workflow'}`)
 }
 
 function renderPreviewMedia(
@@ -104,11 +120,9 @@ export function VideoCard({
   variant?: 'default' | 'masonry'
 }) {
   const t = useTranslations('explore')
+  const tDetail = useTranslations('exploreDetail')
   const authorName = getDisplayName(data.author.name)
-  const meta = [
-    data.views !== undefined ? `${formatViews(data.views)} views` : '',
-    formatCreatedAt(data.createdAt),
-  ]
+  const meta = [data.views !== undefined ? t('views', { count: data.views }) : '', formatCreatedAt(data.createdAt)]
     .filter(Boolean)
     .join(' · ')
 
@@ -119,6 +133,7 @@ export function VideoCard({
       meta={meta}
       variant={variant}
       t={t}
+      tDetail={tDetail}
     />
   )
 }
@@ -129,124 +144,78 @@ function CardWithPreview({
   meta,
   variant,
   t,
+  tDetail,
 }: {
   data: VideoCardData
   authorName: string
   meta: string
   variant: 'default' | 'masonry'
   t: ReturnType<typeof useTranslations<'explore'>>
+  tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
 }) {
   if (variant === 'masonry') {
-    const summary = data.description?.trim() || meta
-
     return (
       <Link href={`/explore/${data.id}`} className="group mb-6 block break-inside-avoid">
-        <article className="animate-explore-rise overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[transform,box-shadow,border-color] duration-300 group-hover:-translate-y-2 group-hover:border-stone-300 group-hover:shadow-[0_34px_88px_-42px_rgba(15,23,42,0.32)]">
-          <div className="relative overflow-hidden bg-stone-100">
-            {renderPreviewMedia(
-              data.thumbnailUrl,
-              data.title,
-              'h-auto w-full object-contain transition-transform duration-700 group-hover:scale-[1.03]',
-            ) ?? (
-              <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
-                <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                  {data.contentType ? t(`type_${data.contentType}`) : 'Preview'}
-                </span>
-              </div>
-            )}
+        <article className="animate-explore-rise overflow-visible rounded-[32px] transition-transform duration-300">
+          <div className="relative overflow-visible">
+            <div className="overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[transform,box-shadow,border-color,filter] duration-300 group-hover:z-10 group-hover:scale-[1.018] group-hover:border-stone-300 group-hover:shadow-[0_38px_96px_-46px_rgba(15,23,42,0.34)]">
+              <div className="relative overflow-hidden bg-stone-100">
+                {renderPreviewMedia(
+                  data.thumbnailUrl,
+                  data.title,
+                  'h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.035]',
+                ) ?? (
+                  <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
+                    <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                      {formatTypeLabel(t, data.contentType)}
+                    </span>
+                  </div>
+                )}
 
-            <div className="absolute left-3 top-3 right-3 flex items-start justify-between gap-2 sm:left-4 sm:top-4 sm:right-4">
-              <span className="rounded-full border border-white/80 bg-white/92 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-stone-700 uppercase backdrop-blur-sm">
-                {data.contentType ? t(`type_${data.contentType}`) : 'content'}
-              </span>
-              {data.categoryName ? (
-                <span className="rounded-full bg-black/58 px-3 py-1 text-[11px] font-medium text-white/92 backdrop-blur-sm">
-                  {data.categoryName}
-                </span>
-              ) : null}
-            </div>
-
-            {data.contentType === 'video' ? (
-              <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/40 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-                  <Play size={18} className="ml-0.5 fill-current" />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_48%,rgba(15,23,42,0.08)_72%,rgba(15,23,42,0.52)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-            <div className="absolute inset-x-3 bottom-3 translate-y-5 rounded-[24px] border border-white/45 bg-[rgba(255,255,255,0.9)] p-3 opacity-0 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:inset-x-4 sm:bottom-4 sm:p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-stone-200 bg-white/90">
-                  {data.author.avatarUrl ? (
-                    <img
-                      src={data.author.avatarUrl}
-                      alt={authorName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-brand-100 text-xs font-semibold text-brand-700">
-                      {getInitial(authorName)}
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-stone-900">
-                        {data.title}
-                      </h3>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-stone-500">
-                        <span className="truncate font-medium text-stone-700">{authorName}</span>
-                        <span>{formatCreatedAt(data.createdAt)}</span>
-                      </div>
-                    </div>
-                    <div className="rounded-full bg-stone-900 px-2.5 py-1 text-[11px] font-medium text-white">
-                      {formatDuration(data.duration)}
+                {data.contentType === 'video' ? (
+                  <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/40 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                      <Play size={18} className="ml-0.5 fill-current" />
                     </div>
                   </div>
-                  {summary ? (
-                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-stone-600">{summary}</p>
-                  ) : null}
-                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-stone-200/80 pt-3">
-                    <div className="flex items-center gap-2 text-[11px] text-stone-500">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
-                        <Heart size={12} className="text-rose-500" />
-                        {formatMetric(data.views)}
-                      </span>
-                      <span className="rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700">
-                        {t(`type_${data.contentType ?? 'workflow'}`)}
-                      </span>
+                ) : null}
+
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_44%,rgba(15,23,42,0.1)_70%,rgba(15,23,42,0.58)_100%)]" />
+
+                <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
+                  <div className="flex items-center gap-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <div className="h-10 w-10 overflow-hidden rounded-full border border-white/35 bg-white/20 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
+                      {data.author.avatarUrl ? (
+                        <img
+                          src={data.author.avatarUrl}
+                          alt={authorName}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-white/60 text-sm font-semibold text-stone-900">
+                          {getInitial(authorName)}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.2)]">
-                        <Sparkles size={15} />
-                      </span>
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.2)]">
-                        <Bookmark size={15} />
-                      </span>
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.2)]">
-                        <Ellipsis size={15} />
-                      </span>
-                    </div>
+                    <span className="max-w-[160px] truncate text-sm font-semibold text-white drop-shadow-[0_2px_10px_rgba(15,23,42,0.55)]">
+                      {authorName}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <MetricPill icon={<Heart size={12} className="text-rose-200" />} value={formatMetric(data.likes)} />
+                    <MetricPill icon={<Bookmark size={12} className="text-white/90" />} value={formatMetric(data.favorites)} />
+                    <MetricPill icon={<Play size={12} className="fill-current text-white/90" />} value={formatMetric(data.views)} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {data.entityType === 'workflow' && data.nodeTypes && data.nodeTypes.length > 0 ? (
-              <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-1.5 transition-opacity duration-300 group-hover:opacity-0">
-                {data.nodeTypes.slice(0, 3).map((nodeType) => (
-                  <span
-                    key={nodeType}
-                    className="rounded-full bg-black/58 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm"
-                  >
-                    {nodeType}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            <CardDetailPanel
+              data={data}
+              t={t}
+              tDetail={tDetail}
+            />
           </div>
         </article>
       </Link>
@@ -326,5 +295,223 @@ function CardWithPreview({
         </div>
       </div>
     </Link>
+  )
+}
+
+function CardDetailPanel({
+  data,
+  t,
+  tDetail,
+}: {
+  data: VideoCardData
+  t: ReturnType<typeof useTranslations<'explore'>>
+  tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
+}) {
+  const router = useRouter()
+  const { mutate: toggleLike } = useToggleLike()
+  const { mutate: toggleFavorite } = useToggleFavorite()
+  const { mutate: clone, isPending: cloning } = useCloneWorkflow()
+  const { mutate: report } = useReportWorkflow()
+  const liked = Boolean(data.liked)
+  const favorited = Boolean(data.favorited)
+
+  const handleClone = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    clone(
+      { id: data.id, entityType: data.entityType },
+      {
+        onSuccess: (result) => {
+          toast.success(tDetail('cloneSuccess'))
+          router.push(`/canvas/${result.id}`)
+        },
+        onError: () => toast.error(tDetail('cloneFailed')),
+      },
+    )
+  }
+
+  const handleLike = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    toggleLike(
+      { id: data.id, entityType: data.entityType },
+      {
+        onError: () => toast.error(tDetail('actionFailed')),
+      },
+    )
+  }
+
+  const handleFavorite = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    toggleFavorite(
+      { id: data.id, entityType: data.entityType },
+      {
+        onError: () => toast.error(tDetail('actionFailed')),
+      },
+    )
+  }
+
+  const handleDownload = (event: Event) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!data.mediaUrl && !data.thumbnailUrl) {
+      toast.error(tDetail('downloadUnavailable'))
+      return
+    }
+
+    const anchor = document.createElement('a')
+    anchor.href = data.mediaUrl ?? data.thumbnailUrl ?? '#'
+    anchor.target = '_blank'
+    anchor.rel = 'noreferrer'
+    anchor.download = ''
+    anchor.click()
+  }
+
+  const handleReport = (event: Event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    report(
+      {
+        id: data.id,
+        entityType: data.entityType,
+        reason: 'other',
+      },
+      {
+        onSuccess: () => toast.success(tDetail('reportSubmitted')),
+        onError: () => toast.error(tDetail('reportFailed')),
+      },
+    )
+  }
+
+  const tagItems = [
+    data.contentType ? formatTypeLabel(t, data.contentType) : null,
+    data.categoryName ?? null,
+    ...(data.nodeTypes?.slice(0, 3) ?? []),
+  ].filter(Boolean) as string[]
+
+  return (
+    <div className="relative -mt-3 px-3 pb-1 sm:px-4">
+      <div className="rounded-[28px] border border-white/40 bg-white/32 p-4 shadow-[0_24px_64px_-40px_rgba(15,23,42,0.42)] backdrop-blur-2xl transition-all duration-300 group-hover:bg-white/48">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            onClick={handleClone}
+            disabled={cloning}
+            className="h-10 rounded-full bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-900"
+          >
+            <Sparkles size={15} />
+            {cloning ? tDetail('generatePending') : tDetail('generateNow')}
+          </Button>
+          <IconButton
+            active={liked}
+            label={t('likes', { count: data.likes ?? 0 })}
+            onClick={handleLike}
+          >
+            <Heart size={16} className={cn(liked && 'fill-current')} />
+          </IconButton>
+          <IconButton
+            active={favorited}
+            label={favorited ? tDetail('favorited') : tDetail('favoriteNow')}
+            onClick={handleFavorite}
+          >
+            <Bookmark size={16} className={cn(favorited && 'fill-current')} />
+          </IconButton>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/58 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/72"
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                }}
+                aria-label={t('moreActions')}
+              >
+                <Ellipsis size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="rounded-2xl border-white/50 bg-white/72 p-2 backdrop-blur-2xl"
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              >
+              <DropdownMenuItem onSelect={handleReport}>
+                <Flag size={14} />
+                {tDetail('report')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleDownload}>
+                <Download size={14} />
+                {tDetail('download')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="mt-4">
+          <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 text-stone-950">
+            {data.title}
+          </h3>
+        </div>
+
+        {tagItems.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {tagItems.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-white/45 bg-white/42 px-3 py-1 text-[11px] font-medium text-stone-800 backdrop-blur-md"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function MetricPill({
+  icon,
+  value,
+}: {
+  icon: React.ReactNode
+  value: string
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/28 px-2.5 py-1 text-[11px] font-medium text-white/95 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
+      {icon}
+      {value}
+    </span>
+  )
+}
+
+function IconButton({
+  active = false,
+  label,
+  onClick,
+  children,
+}: {
+  active?: boolean
+  label: string
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={cn(
+        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/58 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/72',
+        active && 'border-rose-200/80 bg-rose-50/78 text-rose-600',
+      )}
+    >
+      {children}
+    </button>
   )
 }
