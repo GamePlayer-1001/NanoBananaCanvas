@@ -136,27 +136,32 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
               {workflow.name}
             </h1>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-stone-500">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 font-medium text-stone-700">
-                <Clapperboard size={14} />
-                {contentTypeLabel}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 font-medium text-stone-700">
-                <Sparkles size={14} />
-                {sourceBadge}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-stone-500">
-                <Eye size={14} />
-                {workflow.view_count ?? 0}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-stone-500">
-                <Heart size={14} />
-                {workflow.like_count ?? 0}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-stone-500">
-                <Bookmark size={14} />
-                {workflow.clone_count ?? 0}
-              </span>
+            <div className="mt-4 flex flex-col gap-3 text-sm text-stone-500 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-[12px] font-medium text-stone-700">
+                  <Clapperboard size={12} />
+                  {contentTypeLabel}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-[12px] font-medium text-stone-700">
+                  <Sparkles size={12} />
+                  {sourceBadge}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 lg:justify-end">
+                <span className="inline-flex items-center gap-1.5 text-stone-500">
+                  <Eye size={14} />
+                  {workflow.view_count ?? 0}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-stone-500">
+                  <Heart size={14} />
+                  {workflow.like_count ?? 0}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-stone-500">
+                  <Bookmark size={14} />
+                  {workflow.clone_count ?? 0}
+                </span>
+              </div>
             </div>
 
             {workflow.description ? (
