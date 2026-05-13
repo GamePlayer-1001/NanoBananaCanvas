@@ -105,7 +105,7 @@ export function ActionButtons({
     <>
       <div className="space-y-3">
         <Button
-          className="h-12 w-full rounded-2xl bg-[#c9c9c9] text-base font-semibold text-white shadow-none hover:bg-[#b9b9b9]"
+          className="h-12 w-full rounded-2xl bg-brand-600 text-base font-semibold text-white shadow-[0_16px_32px_-20px_rgba(79,70,229,0.85)] transition-colors hover:bg-brand-500"
           onClick={handleClone}
           disabled={cloning}
         >

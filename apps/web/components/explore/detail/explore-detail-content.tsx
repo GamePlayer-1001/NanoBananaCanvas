@@ -79,6 +79,7 @@ function buildDownloadFileName(workflow: WorkflowDetail) {
 export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) {
   const t = useTranslations('exploreDetail')
   const { data, isLoading } = useExploreDetail(workflowId)
+  const showSourceCard = false
 
   if (isLoading) {
     return (
@@ -119,7 +120,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   const downloadUrl = workflow.media_url || workflow.workflow_json_url
 
   return (
-    <div className="mx-auto w-full max-w-[1380px] px-6 py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto w-full max-w-[1560px] px-6 py-6 lg:px-8 lg:py-8">
       <Link
         href="/explore"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -128,7 +129,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
         {t('backToExplore')}
       </Link>
 
-      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(0,1.08fr)_380px]">
         <div>
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight text-stone-950 lg:text-[3rem]">
@@ -159,7 +160,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
             </div>
 
             {workflow.description ? (
-              <p className="mt-4 max-w-3xl text-base leading-7 text-stone-600">
+              <p className="mt-4 max-w-4xl text-base leading-7 text-stone-600">
                 {workflow.description}
               </p>
             ) : null}
@@ -226,7 +227,9 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
             </div>
           ) : null}
 
-          {isOutput && (workflow.source_url || sourceAuthorName || workflow.source_mode || workflow.source_type) ? (
+          {showSourceCard &&
+          isOutput &&
+          (workflow.source_url || sourceAuthorName || workflow.source_mode || workflow.source_type) ? (
             <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
               <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
                 {t('sourceTitle')}
