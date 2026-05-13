@@ -396,8 +396,10 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] rounded-b-[30px] rounded-t-none border border-white/60 border-t-0 bg-white/68 p-4 shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[34px] transition-transform duration-300 group-hover:translate-y-0">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/70 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(244,246,251,0.9))] shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[48px] transition-transform duration-300 group-hover:translate-y-0">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.18)_28%,rgba(255,255,255,0.3)_100%)] backdrop-blur-[72px]" />
+        <div className="relative p-4">
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             onClick={handleClone}
@@ -455,24 +457,25 @@ function CardDetailPanel({
           </DropdownMenu>
         </div>
 
-        <div className="mt-4">
-          <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 text-stone-950">
-            {data.title}
-          </h3>
-        </div>
-
-        {tagItems.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tagItems.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-white/55 bg-white/72 px-3 py-1 text-[11px] font-medium text-stone-800 backdrop-blur-xl"
-              >
-                {tag}
-              </span>
-            ))}
+          <div className="mt-4">
+            <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 text-stone-950">
+              {data.title}
+            </h3>
           </div>
-        ) : null}
+
+          {tagItems.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tagItems.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-white/65 bg-white/82 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-[32px]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          </div>
       </div>
     </div>
   )
@@ -510,8 +513,8 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88',
-        active && 'border-rose-200/90 bg-rose-50/88 text-rose-600',
+        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/86 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] backdrop-blur-[28px] transition hover:bg-white/94',
+        active && 'border-rose-200/95 bg-rose-50/92 text-rose-600',
       )}
     >
       {children}
