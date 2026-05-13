@@ -399,63 +399,63 @@ function CardDetailPanel({
       <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/70 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(244,246,251,0.9))] shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[48px] transition-transform duration-300 group-hover:translate-y-0">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.18)_28%,rgba(255,255,255,0.3)_100%)] backdrop-blur-[72px]" />
         <div className="relative p-4">
-          <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            onClick={handleClone}
-            disabled={cloning}
-            className="h-10 rounded-full bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-900"
-          >
-            <Sparkles size={15} />
-            {cloning ? tDetail('generatePending') : tDetail('generateNow')}
-          </Button>
-          <IconButton
-            active={liked}
-            label={t('likes', { count: data.likes ?? 0 })}
-            onClick={handleLike}
-          >
-            <Heart size={16} className={cn(liked && 'fill-current')} />
-          </IconButton>
-          <IconButton
-            active={favorited}
-            label={favorited ? tDetail('favorited') : tDetail('favoriteNow')}
-            onClick={handleFavorite}
-          >
-            <Star size={16} className={cn(favorited && 'fill-current')} />
-          </IconButton>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88"
+          <div className="grid grid-cols-[minmax(0,1fr)_44px_44px_44px] items-center gap-2">
+            <Button
+              type="button"
+              onClick={handleClone}
+              disabled={cloning}
+              className="h-11 w-full justify-center rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-stone-900"
+            >
+              <Sparkles size={15} />
+              {cloning ? tDetail('generatePending') : tDetail('generateNow')}
+            </Button>
+            <IconButton
+              active={liked}
+              label={t('likes', { count: data.likes ?? 0 })}
+              onClick={handleLike}
+            >
+              <Heart size={16} className={cn(liked && 'fill-current')} />
+            </IconButton>
+            <IconButton
+              active={favorited}
+              label={favorited ? tDetail('favorited') : tDetail('favoriteNow')}
+              onClick={handleFavorite}
+            >
+              <Star size={16} className={cn(favorited && 'fill-current')} />
+            </IconButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                  }}
+                  aria-label={t('moreActions')}
+                >
+                  <Ellipsis size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="rounded-2xl border-white/60 bg-white/84 p-2 backdrop-blur-[28px]"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
                 }}
-                aria-label={t('moreActions')}
-              >
-                <Ellipsis size={16} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="rounded-2xl border-white/60 bg-white/84 p-2 backdrop-blur-[28px]"
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-              }}
-              >
-              <DropdownMenuItem onSelect={handleReport}>
-                <Flag size={14} />
-                {tDetail('report')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={handleDownload}>
-                <Download size={14} />
-                {tDetail('download')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                >
+                <DropdownMenuItem onSelect={handleReport}>
+                  <Flag size={14} />
+                  {tDetail('report')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleDownload}>
+                  <Download size={14} />
+                  {tDetail('download')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           <div className="mt-4">
             <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 text-stone-950">
