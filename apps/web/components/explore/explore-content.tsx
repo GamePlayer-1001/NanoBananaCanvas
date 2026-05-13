@@ -274,7 +274,7 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
+        <section className="animate-explore-rise relative -mt-7 px-1 pt-10 sm:px-2 sm:pt-12 lg:px-3 lg:pt-14">
           <div className="relative h-[232px] overflow-visible sm:h-[304px] lg:h-[384px]">
             {BANNERS.map((banner, index) => {
               const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
