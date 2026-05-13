@@ -217,6 +217,18 @@ function renderPreviewMedia(
     )
   }
 
+  if (data.contentType === 'video' && data.mediaUrl) {
+    return (
+      <video
+        src={data.mediaUrl}
+        className={className}
+        muted
+        playsInline
+        preload="metadata"
+      />
+    )
+  }
+
   return null
 }
 

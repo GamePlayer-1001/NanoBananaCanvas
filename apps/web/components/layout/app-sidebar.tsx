@@ -500,7 +500,7 @@ export function AppSidebar() {
         </nav>
 
         {/* ── Bottom Links ──────────────────────────────── */}
-        <div className="border-border space-y-0.5 border-t px-2 pt-2 pb-2">
+        <div className="border-border space-y-0.5 border-t px-2 pt-2 pb-2 translate-y-[-18px]">
           {/* 联系我们 */}
           <Link
             href="/contact"
@@ -516,7 +516,7 @@ export function AppSidebar() {
         </div>
 
         {/* ── Footer ────────────────────────────────────── */}
-        <div className="border-border space-y-2 border-t px-3 pt-2 pb-2">
+        <div className="border-border space-y-2 border-t px-3 pt-2 pb-2 translate-y-[-18px]">
           <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">

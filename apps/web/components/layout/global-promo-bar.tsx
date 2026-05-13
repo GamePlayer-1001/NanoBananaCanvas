@@ -42,19 +42,28 @@ function formatCountdown(remainingMs: number) {
 export function GlobalPromoBar() {
   const t = useTranslations('explore')
   const locale = useLocale()
-  const [now, setNow] = useState(() => Date.now())
+  const [now, setNow] = useState(0)
   const [visible, setVisible] = useState(() => {
     if (typeof window === 'undefined') return true
     return window.sessionStorage.getItem(PROMO_STORAGE_KEY) !== '1'
   })
-  const countdownLabel = useMemo(() => formatCountdown(getRemainingMs(now)), [now])
+  const countdownLabel = useMemo(
+    () => (now > 0 ? formatCountdown(getRemainingMs(now)) : '--d : --h : --m : --s'),
+    [now],
+  )
 
   useEffect(() => {
+    const syncNow = window.setTimeout(() => {
+      setNow(Date.now())
+    }, 0)
     const timer = window.setInterval(() => {
       setNow(Date.now())
     }, 1000)
 
-    return () => window.clearInterval(timer)
+    return () => {
+      window.clearTimeout(syncNow)
+      window.clearInterval(timer)
+    }
   }, [])
 
   const handleClose = () => {
@@ -92,9 +101,6 @@ export function GlobalPromoBar() {
           <div className="hidden h-8 w-px bg-black/20 lg:block" />
           <div className="inline-flex shrink-0 items-center gap-3 rounded-2xl border border-black/20 bg-[#fff86d] px-4 py-2 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)]">
             <Clock3 size={18} className="shrink-0" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-700">
-              30 Days
-            </span>
             <span className="text-[22px] font-black tracking-[0.04em] text-stone-950 sm:text-[26px]">
               {countdownLabel}
             </span>

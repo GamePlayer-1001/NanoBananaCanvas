@@ -313,26 +313,25 @@ export function ExploreContent() {
                 </button>
               )
             })}
-          </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-0 top-1/2 z-40 inline-flex h-10 w-10 translate-y-[108px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/80 text-stone-700 opacity-50 shadow-sm transition hover:bg-white hover:opacity-80 sm:left-1"
-            aria-label={t('bannerPrev')}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-            className="absolute right-0 top-1/2 z-40 inline-flex h-10 w-10 translate-y-[108px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/80 text-stone-700 opacity-50 shadow-sm transition hover:bg-white hover:opacity-80 sm:right-1"
-            aria-label={t('bannerNext')}
-          >
-            <ChevronRight size={18} />
-          </button>
+            <button
+              type="button"
+              onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
+              className="absolute left-[6%] top-1/2 z-40 inline-flex h-10 w-10 translate-y-[128px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/80 text-stone-700 opacity-50 shadow-sm transition hover:bg-white hover:opacity-80"
+              aria-label={t('bannerPrev')}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
+              className="absolute right-[6%] top-1/2 z-40 inline-flex h-10 w-10 translate-y-[128px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/80 text-stone-700 opacity-50 shadow-sm transition hover:bg-white hover:opacity-80"
+              aria-label={t('bannerNext')}
+            >
+              <ChevronRight size={18} />
+            </button>
 
-          <div className="absolute inset-x-0 bottom-3 z-40 flex translate-y-[46px] justify-center gap-2 sm:bottom-4">
+            <div className="absolute inset-x-0 bottom-[12%] z-40 flex justify-center gap-2">
             {BANNERS.map((banner, dotIndex) => (
               <button
                 key={banner.image}
@@ -344,6 +343,7 @@ export function ExploreContent() {
                 aria-label={`${t('switchBanner')} ${dotIndex + 1}`}
               />
             ))}
+            </div>
           </div>
         </section>
 
