@@ -47,12 +47,65 @@ const OUTPUT_AUTHOR_AVATAR_SQL = `COALESCE(
   NULLIF(TRIM(u.avatar_url), '')
 )`
 
+interface ExploreSchemaSupport {
+  hasPublishedOutputsTable: boolean
+  hasPublishedOutputLikesTable: boolean
+  hasPublishedOutputFavoritesTable: boolean
+  hasPublishedOutputCategoryId: boolean
+}
+
 async function hasPublishedOutputsTable(db: Awaited<ReturnType<typeof getDb>>) {
   const row = await db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'published_outputs'")
     .first<{ name: string }>()
 
   return !!row?.name
+}
+
+async function hasTable(db: Awaited<ReturnType<typeof getDb>>, tableName: string) {
+  const row = await db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .bind(tableName)
+    .first<{ name: string }>()
+
+  return !!row?.name
+}
+
+async function hasColumn(
+  db: Awaited<ReturnType<typeof getDb>>,
+  tableName: string,
+  columnName: string,
+) {
+  const result = await db.prepare(`PRAGMA table_info(${tableName})`).all<{ name: string }>()
+  return (result.results ?? []).some((column) => column.name === columnName)
+}
+
+async function getExploreSchemaSupport(
+  db: Awaited<ReturnType<typeof getDb>>,
+): Promise<ExploreSchemaSupport> {
+  const publishedOutputsTableExists = await hasPublishedOutputsTable(db)
+  if (!publishedOutputsTableExists) {
+    return {
+      hasPublishedOutputsTable: false,
+      hasPublishedOutputLikesTable: false,
+      hasPublishedOutputFavoritesTable: false,
+      hasPublishedOutputCategoryId: false,
+    }
+  }
+
+  const [hasPublishedOutputLikesTable, hasPublishedOutputFavoritesTable, hasPublishedOutputCategoryId] =
+    await Promise.all([
+      hasTable(db, 'published_output_likes'),
+      hasTable(db, 'published_output_favorites'),
+      hasColumn(db, 'published_outputs', 'category_id'),
+    ])
+
+  return {
+    hasPublishedOutputsTable: true,
+    hasPublishedOutputLikesTable,
+    hasPublishedOutputFavoritesTable,
+    hasPublishedOutputCategoryId,
+  }
 }
 
 /* ─── GET /api/explore ──────────────────────────────── */
@@ -76,7 +129,7 @@ export async function GET(req: NextRequest) {
     const orderBy = SORT_MAP[sort] ?? 'published_at DESC'
     const auth = await optionalAuth()
     const db = await getDb()
-    const hasPublishedOutputs = await hasPublishedOutputsTable(db)
+    const schemaSupport = await getExploreSchemaSupport(db)
 
     // 构建查询
     const conditions: string[] = []
@@ -126,7 +179,7 @@ export async function GET(req: NextRequest) {
              po.clone_count,
              po.view_count,
              po.published_at,
-             po.category_id,
+             ${schemaSupport.hasPublishedOutputCategoryId ? 'po.category_id' : 'NULL'} AS category_id,
              ${OUTPUT_AUTHOR_NAME_SQL} as author_name,
              ${OUTPUT_AUTHOR_AVATAR_SQL} as author_avatar,
              po.media_type as content_type,
@@ -135,7 +188,7 @@ export async function GET(req: NextRequest) {
       JOIN users u ON u.id = po.user_id
       WHERE po.is_public = 1
     `
-    const publicItemsSql = hasPublishedOutputs
+    const publicItemsSql = schemaSupport.hasPublishedOutputsTable
       ? `${workflowItemsSql} UNION ALL ${outputItemsSql}`
       : workflowItemsSql
 
@@ -180,14 +233,14 @@ export async function GET(req: NextRequest) {
             `SELECT workflow_id AS target_id FROM favorites WHERE user_id = ? AND workflow_id IN (${workflowIds.map(() => '?').join(',')})`,
           ).bind(auth.userId, ...workflowIds).all()
           : Promise.resolve({ results: [] as Record<string, unknown>[] })
-        const likedOutputPromise = outputIds.length > 0
+        const likedOutputPromise = outputIds.length > 0 && schemaSupport.hasPublishedOutputLikesTable
           ? db.prepare(
             `SELECT published_output_id AS target_id
              FROM published_output_likes
              WHERE user_id = ? AND published_output_id IN (${outputIds.map(() => '?').join(',')})`,
           ).bind(auth.userId, ...outputIds).all()
           : Promise.resolve({ results: [] as Record<string, unknown>[] })
-        const favoritedOutputPromise = outputIds.length > 0
+        const favoritedOutputPromise = outputIds.length > 0 && schemaSupport.hasPublishedOutputFavoritesTable
           ? db.prepare(
             `SELECT published_output_id AS target_id
              FROM published_output_favorites
