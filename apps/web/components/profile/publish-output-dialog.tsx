@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 next-intl 的 useLocale，依赖 sonner 的 toast，依赖 @/hooks/use-explore 的 usePublishOutput，
  *          依赖 @/components/shared/image-upload，依赖 @/components/ui/dialog, @/components/ui/button
- * [OUTPUT]: 对外提供 PublishOutputDialog 生成作品公开弹窗（封面上传 + 真实分类选择）
+ * [OUTPUT]: 对外提供 PublishOutputDialog 生成作品公开弹窗（封面上传 + 视频缺省自动抓帧封面 + 真实分类选择）
  * [POS]: profile 的生成作品公开入口，被 works-tab.tsx 消费
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 
 import { usePublishOutput } from '@/hooks/use-explore'
 import { useCategories } from '@/hooks/use-categories'
+import { useUpload } from '@/hooks/use-upload'
 import { ImageUpload } from '@/components/shared/image-upload'
 import {
   Dialog,
@@ -30,9 +31,85 @@ interface PublishOutputDialogProps {
   defaultTitle: string
   defaultPrompt?: string
   defaultThumbnail?: string
+  defaultMediaUrl?: string
   mediaType?: 'image' | 'video'
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+async function captureVideoCoverFile(videoUrl: string, fileName: string) {
+  return new Promise<File | null>((resolve) => {
+    const video = document.createElement('video')
+    video.muted = true
+    video.playsInline = true
+    video.preload = 'auto'
+    video.src = videoUrl
+
+    const cleanup = () => {
+      video.pause()
+      video.removeAttribute('src')
+      video.load()
+    }
+
+    const fail = () => {
+      cleanup()
+      resolve(null)
+    }
+
+    const capture = () => {
+      try {
+        if (!video.videoWidth || !video.videoHeight) {
+          fail()
+          return
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const context = canvas.getContext('2d')
+
+        if (!context) {
+          fail()
+          return
+        }
+
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+        canvas.toBlob(
+          (blob) => {
+            cleanup()
+            if (!blob) {
+              resolve(null)
+              return
+            }
+
+            resolve(new File([blob], `${fileName}.jpg`, { type: 'image/jpeg' }))
+          },
+          'image/jpeg',
+          0.9,
+        )
+      } catch {
+        fail()
+      }
+    }
+
+    video.addEventListener(
+      'loadeddata',
+      () => {
+        if (video.readyState >= 2) {
+          capture()
+        }
+      },
+      { once: true },
+    )
+
+    video.addEventListener(
+      'error',
+      () => {
+        fail()
+      },
+      { once: true },
+    )
+  })
 }
 
 export function PublishOutputDialog({
@@ -40,6 +117,7 @@ export function PublishOutputDialog({
   defaultTitle,
   defaultPrompt,
   defaultThumbnail,
+  defaultMediaUrl,
   mediaType,
   open,
   onOpenChange,
@@ -53,31 +131,40 @@ export function PublishOutputDialog({
   const [sourceUrl, setSourceUrl] = useState('')
   const [thumbnail, setThumbnail] = useState<string | undefined>(undefined)
   const [categoryId, setCategoryId] = useState('')
-  const { mutate, isPending } = usePublishOutput()
+  const { mutateAsync, isPending } = usePublishOutput()
+  const { upload } = useUpload()
   const { data: categories = [] } = useCategories(locale)
   const previewValue = thumbnail || (mediaType === 'image' ? defaultThumbnail : undefined)
 
-  const handleSubmit = () => {
-    mutate(
-      {
+  const handleSubmit = async () => {
+    try {
+      let resolvedThumbnail = thumbnail
+
+      if (!resolvedThumbnail && mediaType === 'video' && defaultMediaUrl) {
+        const frameFile = await captureVideoCoverFile(defaultMediaUrl, `${taskId}-cover`)
+        if (frameFile) {
+          const uploadResult = await upload(frameFile)
+          if (uploadResult?.url) {
+            resolvedThumbnail = uploadResult.url
+          }
+        }
+      }
+
+      await mutateAsync({
         taskId,
         title: title.trim() || defaultTitle,
         description: description.trim() || undefined,
         prompt: prompt.trim() || undefined,
         sourceUrl: sourceUrl.trim() || undefined,
-        thumbnail,
+        thumbnail: resolvedThumbnail,
         categoryId: categoryId || undefined,
-      },
-      {
-        onSuccess: () => {
-          toast.success(t('publishOutputSuccess'))
-          onOpenChange(false)
-        },
-        onError: (error) => {
-          toast.error(error.message || t('publishOutputFailed'))
-        },
-      },
-    )
+      })
+
+      toast.success(t('publishOutputSuccess'))
+      onOpenChange(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('publishOutputFailed'))
+    }
   }
 
   return (
@@ -156,7 +243,7 @@ export function PublishOutputDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {tc('cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending || !title.trim()}>
+          <Button onClick={() => void handleSubmit()} disabled={isPending || !title.trim()}>
             {t('publishOutputAction')}
           </Button>
         </DialogFooter>

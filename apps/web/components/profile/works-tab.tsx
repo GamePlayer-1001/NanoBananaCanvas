@@ -835,6 +835,7 @@ export function WorksTab({
           defaultTitle={publishingItem.output?.fileName || publishingItem.modelId}
           defaultPrompt={String(publishingItem.input?.prompt ?? '')}
           defaultThumbnail={publishingItem.output?.url}
+          defaultMediaUrl={publishingItem.output?.url}
           mediaType={publishingItem.taskType === 'video_gen' ? 'video' : 'image'}
           open={!!publishingItem}
           onOpenChange={(open) => {
