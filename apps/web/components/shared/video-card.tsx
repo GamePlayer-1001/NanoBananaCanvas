@@ -92,9 +92,11 @@ function renderPreviewMedia(data: VideoCardData, title: string, className: strin
       <video
         src={data.mediaUrl}
         className={className}
+        autoPlay
+        loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
       />
     )
   }

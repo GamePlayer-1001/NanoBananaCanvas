@@ -11,7 +11,7 @@ landing-nav.tsx    — LandingNav Landing 全宽导航栏 (Logo + 功能首页�
 landing-footer.tsx — LandingFooter Landing 全宽页脚 (左侧应用信息 + 右侧右对齐的产品/资源/公司/法务链接 + 社媒入口 + 版权；“功能”已回落到首页锚点，其余落到真实公开子页面)
 app-sidebar.tsx    — AppSidebar 应用侧边栏 300px (导航/工作区/文件夹新建/重命名/删除弹窗 + 顶部积分余额/签到入口 + 整块账户入口 + 登录态仪表盘/升级入口；当前通过 `bootstrap/sidebar` 聚合接口把用户/积分/签到/文件夹 4 请求收口为 1 请求)
 mobile-header.tsx  — MobileHeader 移动端顶栏 (汉堡菜单 + Logo + Sheet 抽屉复用 AppSidebar，< lg 可见)
-global-promo-bar.tsx — GlobalPromoBar 全局顶部宣传条（工作台级横幅，可关闭并按会话记忆关闭状态；刷新、重登、重新进入站点后再次展示）
+global-promo-bar.tsx — GlobalPromoBar 全局顶部宣传条（工作台级横幅，含大字号促销文案、30 天循环倒计时、订阅跳转按钮与会话级关闭记忆；刷新、重登、重新进入站点后再次展示）
 ```
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

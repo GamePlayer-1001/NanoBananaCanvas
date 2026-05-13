@@ -6,7 +6,7 @@
  *          依赖 @/hooks/use-categories 的 useCategories，
  *          依赖 @/components/shared/video-card 的 VideoCardData，
  *          依赖 @/components/ui/button
- * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（居中纯图片轮播 Banner + 两行分类/排序 + 瀑布流内容卡片）
+ * [OUTPUT]: 对外提供 ExploreContent 客户端交互容器（向下偏移的纯图片轮播 Banner + 两行分类/排序 + 瀑布流内容卡片）
  * [POS]: explore 的客户端组合组件，被 explore/page.tsx 消费，是社区广场主展示层
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -293,7 +293,7 @@ export function ExploreContent() {
                   }`}
                   style={{
                     zIndex: isActive ? 30 : isSideCard ? 20 : 10,
-                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 34}%) scale(${
+                    transform: `translate(-50%, calc(-50% + 128px)) perspective(1400px) translateX(${offset * 34}%) scale(${
                       isActive ? 1 : 0.86
                     }) rotateY(${offset * -24}deg)`,
                     opacity: isActive ? 1 : isSideCard ? 0.72 : 0,
@@ -318,7 +318,7 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:left-1"
+            className="absolute left-0 top-1/2 z-40 inline-flex h-10 w-10 translate-y-[128px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:left-1"
             aria-label={t('bannerPrev')}
           >
             <ChevronLeft size={18} />
@@ -326,13 +326,13 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-            className="absolute right-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:right-1"
+            className="absolute right-0 top-1/2 z-40 inline-flex h-10 w-10 translate-y-[128px] -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:right-1"
             aria-label={t('bannerNext')}
           >
             <ChevronRight size={18} />
           </button>
 
-          <div className="absolute inset-x-0 bottom-3 z-40 flex justify-center gap-2 sm:bottom-4">
+          <div className="absolute inset-x-0 bottom-3 z-40 flex translate-y-[128px] justify-center gap-2 sm:bottom-4">
             {BANNERS.map((banner, dotIndex) => (
               <button
                 key={banner.image}

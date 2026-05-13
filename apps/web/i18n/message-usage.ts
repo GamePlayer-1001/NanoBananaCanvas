@@ -503,7 +503,7 @@ export const MESSAGE_USAGE_INDEX = {
   "components/layout/global-promo-bar.tsx": [
     "explore.closePromo",
     "explore.promoBody",
-    "explore.promoTitle"
+    "explore.promoCta"
   ],
   "components/layout/landing-footer.tsx": [
     "landing.footer.about",
@@ -1392,7 +1392,7 @@ export const USED_MESSAGE_LEAF_KEYS = [
   "explore.next",
   "explore.prev",
   "explore.promoBody",
-  "explore.promoTitle",
+  "explore.promoCta",
   "explore.switchBanner",
   "exploreDetail.actionFailed",
   "exploreDetail.author",
