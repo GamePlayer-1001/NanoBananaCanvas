@@ -413,7 +413,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <aside className="border-border bg-background flex h-screen w-[300px] flex-col border-r">
+      <aside className="border-border bg-background flex h-full min-h-0 w-[300px] flex-col border-r">
         {/* ── Header ────────────────────────────────────── */}
         <div className="px-4 pt-5 pb-2">
           <Link href="/explore" className="block">

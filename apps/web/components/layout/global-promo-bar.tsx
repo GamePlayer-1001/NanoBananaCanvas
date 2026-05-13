@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 react 的 useEffect/useMemo/useState，依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 Link，依赖 lucide-react 的 Clock3/X
  * [OUTPUT]: 对外提供 GlobalPromoBar 工作台宣传条组件（支持会话级关闭记忆、循环倒计时与订阅跳转）
- * [POS]: layout 的主内容列顶部横条，被 (app)/layout.tsx 消费，统一承接工作台级促销提示且不挤压桌面侧边栏
+ * [POS]: layout 的全局顶部横条，被 (app)/layout.tsx 消费；下方应用区用弹性高度适配有无通知条
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
