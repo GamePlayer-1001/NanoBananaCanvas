@@ -396,7 +396,7 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] rounded-b-[30px] rounded-t-none border border-stone-200/85 border-t-0 bg-white/38 p-4 shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[22px] transition-transform duration-300 group-hover:translate-y-0">
+      <div className="translate-y-[-10px] rounded-b-[30px] rounded-t-none border border-white/60 border-t-0 bg-white/68 p-4 shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[34px] transition-transform duration-300 group-hover:translate-y-0">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -425,7 +425,7 @@ function CardDetailPanel({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/58 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/72"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
@@ -437,7 +437,7 @@ function CardDetailPanel({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="rounded-2xl border-white/50 bg-white/72 p-2 backdrop-blur-2xl"
+              className="rounded-2xl border-white/60 bg-white/84 p-2 backdrop-blur-[28px]"
               onClick={(event) => {
                 event.preventDefault()
                 event.stopPropagation()
@@ -466,7 +466,7 @@ function CardDetailPanel({
             {tagItems.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-white/45 bg-white/42 px-3 py-1 text-[11px] font-medium text-stone-800 backdrop-blur-md"
+                className="rounded-full border border-white/55 bg-white/72 px-3 py-1 text-[11px] font-medium text-stone-800 backdrop-blur-xl"
               >
                 {tag}
               </span>
@@ -510,8 +510,8 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/58 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/72',
-        active && 'border-rose-200/80 bg-rose-50/78 text-rose-600',
+        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88',
+        active && 'border-rose-200/90 bg-rose-50/88 text-rose-600',
       )}
     >
       {children}
