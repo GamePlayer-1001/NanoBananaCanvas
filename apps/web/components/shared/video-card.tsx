@@ -161,7 +161,7 @@ function CardWithPreview({
       >
         <article className="animate-explore-rise overflow-visible rounded-[32px] transition-transform duration-300 group-hover:scale-[1.018]">
           <div className="relative overflow-visible">
-            <div className="overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[box-shadow,border-color,filter] duration-300 group-hover:border-stone-300 group-hover:shadow-[0_38px_96px_-46px_rgba(15,23,42,0.34)]">
+            <div className="overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[box-shadow,border-color,filter,border-radius] duration-300 group-hover:rounded-b-none group-hover:border-stone-300 group-hover:shadow-[0_38px_96px_-46px_rgba(15,23,42,0.34)]">
               <div className="relative overflow-hidden bg-stone-100">
                 {renderPreviewMedia(
                   data.thumbnailUrl,
@@ -396,83 +396,86 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] rounded-b-[30px] rounded-t-none border border-stone-200/85 border-t-0 bg-white/38 p-4 shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[22px] transition-transform duration-300 group-hover:translate-y-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            onClick={handleClone}
-            disabled={cloning}
-            className="h-10 rounded-full bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-900"
-          >
-            <Sparkles size={15} />
-            {cloning ? tDetail('generatePending') : tDetail('generateNow')}
-          </Button>
-          <IconButton
-            active={liked}
-            label={t('likes', { count: data.likes ?? 0 })}
-            onClick={handleLike}
-          >
-            <Heart size={16} className={cn(liked && 'fill-current')} />
-          </IconButton>
-          <IconButton
-            active={favorited}
-            label={favorited ? tDetail('favorited') : tDetail('favoriteNow')}
-            onClick={handleFavorite}
-          >
-            <Star size={16} className={cn(favorited && 'fill-current')} />
-          </IconButton>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/58 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/72"
+      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/70 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(244,246,251,0.9))] shadow-[0_28px_68px_-42px_rgba(15,23,42,0.46)] backdrop-blur-[48px] transition-transform duration-300 group-hover:translate-y-0">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.18)_28%,rgba(255,255,255,0.3)_100%)] backdrop-blur-[72px]" />
+        <div className="relative p-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_44px_44px_44px] items-center gap-2">
+            <Button
+              type="button"
+              onClick={handleClone}
+              disabled={cloning}
+              className="h-11 w-full justify-center rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-stone-900"
+            >
+              <Sparkles size={15} />
+              {cloning ? tDetail('generatePending') : tDetail('generateNow')}
+            </Button>
+            <IconButton
+              active={liked}
+              label={t('likes', { count: data.likes ?? 0 })}
+              onClick={handleLike}
+            >
+              <Heart size={16} className={cn(liked && 'fill-current')} />
+            </IconButton>
+            <IconButton
+              active={favorited}
+              label={favorited ? tDetail('favorited') : tDetail('favoriteNow')}
+              onClick={handleFavorite}
+            >
+              <Star size={16} className={cn(favorited && 'fill-current')} />
+            </IconButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                  }}
+                  aria-label={t('moreActions')}
+                >
+                  <Ellipsis size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="rounded-2xl border-white/60 bg-white/84 p-2 backdrop-blur-[28px]"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
                 }}
-                aria-label={t('moreActions')}
-              >
-                <Ellipsis size={16} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="rounded-2xl border-white/50 bg-white/72 p-2 backdrop-blur-2xl"
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-              }}
-              >
-              <DropdownMenuItem onSelect={handleReport}>
-                <Flag size={14} />
-                {tDetail('report')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={handleDownload}>
-                <Download size={14} />
-                {tDetail('download')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="mt-4">
-          <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 text-stone-950">
-            {data.title}
-          </h3>
-        </div>
-
-        {tagItems.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tagItems.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-white/45 bg-white/42 px-3 py-1 text-[11px] font-medium text-stone-800 backdrop-blur-md"
-              >
-                {tag}
-              </span>
-            ))}
+                >
+                <DropdownMenuItem onSelect={handleReport}>
+                  <Flag size={14} />
+                  {tDetail('report')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleDownload}>
+                  <Download size={14} />
+                  {tDetail('download')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        ) : null}
+
+          <div className="mt-4">
+            <h3 className="line-clamp-2 text-[17px] font-semibold leading-6 text-stone-950">
+              {data.title}
+            </h3>
+          </div>
+
+          {tagItems.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tagItems.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-white/65 bg-white/82 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-[32px]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          </div>
       </div>
     </div>
   )
@@ -510,8 +513,8 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/58 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/72',
-        active && 'border-rose-200/80 bg-rose-50/78 text-rose-600',
+        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/86 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] backdrop-blur-[28px] transition hover:bg-white/94',
+        active && 'border-rose-200/95 bg-rose-50/92 text-rose-600',
       )}
     >
       {children}
