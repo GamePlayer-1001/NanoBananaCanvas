@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Clock3, X } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 const PROMO_STORAGE_KEY = 'global-promo-bar:hidden:v2'
@@ -41,6 +41,7 @@ function formatCountdown(remainingMs: number) {
 
 export function GlobalPromoBar() {
   const t = useTranslations('explore')
+  const locale = useLocale()
   const [now, setNow] = useState(() => Date.now())
   const [visible, setVisible] = useState(() => {
     if (typeof window === 'undefined') return true
@@ -67,13 +68,36 @@ export function GlobalPromoBar() {
     <div className="border-b border-[#d9cf2f] bg-[#fbf44f] text-stone-900">
       <div className="mx-auto flex min-h-[60px] w-full max-w-[1920px] items-center justify-center gap-4 px-4 py-2 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 items-center justify-center gap-4">
-          <p className="truncate text-base font-medium leading-6 sm:text-[20px]">
-            {t('promoBody')}
+          <p className="truncate text-lg font-medium leading-7 sm:text-[24px]">
+            {locale === 'zh' ? (
+              <>
+                <strong className="font-black">{t('promoTitle')}</strong>
+                {' '}
+                价格狂欢：套餐首月
+                <strong className="font-black">免费</strong>
+                ！创作自由就现在！
+              </>
+            ) : (
+              <>
+                <strong className="font-black">GPT Image 2</strong>
+                {' '}
+                price carnival: first month
+                {' '}
+                <strong className="font-black">free</strong>
+                {' '}
+                on plans, and your next creative run starts now.
+              </>
+            )}
           </p>
           <div className="hidden h-8 w-px bg-black/20 lg:block" />
-          <div className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-black/20 bg-[#fff86d] px-4 py-2 text-[15px] font-semibold shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)]">
-            <Clock3 size={18} />
-            <span>{countdownLabel}</span>
+          <div className="inline-flex shrink-0 items-center gap-3 rounded-2xl border border-black/20 bg-[#fff86d] px-4 py-2 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)]">
+            <Clock3 size={18} className="shrink-0" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-700">
+              30 Days
+            </span>
+            <span className="text-[22px] font-black tracking-[0.04em] text-stone-950 sm:text-[26px]">
+              {countdownLabel}
+            </span>
           </div>
           <div className="hidden h-8 w-px bg-black/20 lg:block" />
           <Link
