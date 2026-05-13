@@ -38,6 +38,14 @@ const OUTPUT_AUTHOR_AVATAR_SQL = `COALESCE(
   NULLIF(TRIM(u.avatar_url), '')
 )`
 
+async function hasPublishedOutputsTable(db: Awaited<ReturnType<typeof getDb>>) {
+  const row = await db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'published_outputs'")
+    .first<{ name: string }>()
+
+  return !!row?.name
+}
+
 /* ─── GET /api/explore/search ───────────────────────── */
 
 export async function GET(req: NextRequest) {
@@ -59,8 +67,9 @@ export async function GET(req: NextRequest) {
     const keyword = `%${normalizedQuery}%`
     const exactKeyword = normalizedQuery
     const db = await getDb()
+    const hasPublishedOutputs = await hasPublishedOutputsTable(db)
 
-    const publicItemsSql = `
+    const workflowItemsSql = `
       SELECT 'workflow' AS entity_type,
              w.id,
              w.name,
@@ -80,9 +89,9 @@ export async function GET(req: NextRequest) {
       FROM workflows w
       JOIN users u ON u.id = w.user_id
       WHERE w.is_public = 1
+    `
 
-      UNION ALL
-
+    const outputItemsSql = `
       SELECT 'output' AS entity_type,
              po.id,
              po.title AS name,
@@ -103,6 +112,9 @@ export async function GET(req: NextRequest) {
       JOIN users u ON u.id = po.user_id
       WHERE po.is_public = 1
     `
+    const publicItemsSql = hasPublishedOutputs
+      ? `${workflowItemsSql} UNION ALL ${outputItemsSql}`
+      : workflowItemsSql
 
     const searchWhere = `
       WHERE name LIKE ?

@@ -45,18 +45,18 @@ export function ExploreTabs({
   const subcategories = SUBCATEGORY_TABS[activeType]
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    <div className="space-y-4 border-b border-stone-200 pb-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-wrap items-center gap-6">
           {TYPE_TABS.map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => onTypeChange(tab)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              className={`border-b-2 pb-2 text-base font-medium transition-all ${
                 activeType === tab
-                  ? 'bg-stone-900 text-white'
-                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-900'
+                  ? 'border-[#2d7ef7] text-stone-950'
+                  : 'border-transparent text-stone-500 hover:text-stone-900'
               }`}
             >
               {t(`type_${tab}`)}
@@ -69,7 +69,7 @@ export function ExploreTabs({
           <select
             value={activeSort}
             onChange={(event) => onSortChange(event.target.value as ExploreTab)}
-            className="h-10 rounded-full border border-stone-200 bg-white px-4 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
+            className="h-10 min-w-[116px] rounded-full border border-stone-200 bg-white px-4 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
           >
             {SORT_TABS.map((tab) => (
               <option key={tab} value={tab}>
@@ -80,16 +80,16 @@ export function ExploreTabs({
         </label>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-x-7 gap-y-3">
         {subcategories.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => onSubcategoryChange(tab)}
-            className={`rounded-full border px-4 py-2 text-sm transition-all ${
+            className={`text-sm transition-all ${
               activeSubcategory === tab
-                ? 'border-stone-900 bg-stone-900 text-white'
-                : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-900'
+                ? 'font-medium text-stone-950'
+                : 'text-stone-500 hover:text-stone-900'
             }`}
           >
             {t(`subcategory_${tab}`)}

@@ -259,10 +259,8 @@ export function ExploreContent() {
   return (
     <div className="min-h-full bg-[#f7f7f5]">
       <div className="mx-auto flex w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <section className="animate-explore-rise relative overflow-hidden rounded-[32px] border border-stone-200 bg-white px-3 py-4 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.14)] sm:px-5 sm:py-5 lg:px-7 lg:py-6">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(255,255,255,0))] sm:w-20" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-[linear-gradient(270deg,rgba(255,255,255,0.96),rgba(255,255,255,0))] sm:w-20" />
-          <div className="relative h-[220px] sm:h-[300px] lg:h-[360px]">
+        <section className="animate-explore-rise relative px-1 py-1 sm:px-2 lg:px-3">
+          <div className="relative h-[168px] overflow-visible sm:h-[248px] lg:h-[320px]">
             {BANNERS.map((banner, index) => {
               const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
               const isActive = offset === 0
@@ -275,15 +273,15 @@ export function ExploreContent() {
                   type="button"
                   onClick={() => setActiveBanner(index)}
                   aria-label={`${t('switchBanner')} ${index + 1}`}
-                  className={`absolute left-1/2 top-1/2 block h-[76%] w-[80%] -translate-y-1/2 overflow-hidden rounded-[28px] border border-stone-200 bg-stone-100 shadow-[0_24px_55px_-36px_rgba(15,23,42,0.32)] transition-all duration-500 ease-out sm:w-[70%] lg:h-[84%] lg:w-[60%] ${
+                  className={`absolute left-1/2 top-1/2 block h-[88%] w-[84%] -translate-y-1/2 overflow-hidden rounded-[24px] shadow-[0_24px_55px_-36px_rgba(15,23,42,0.28)] transition-all duration-500 ease-out sm:h-[90%] sm:w-[72%] lg:w-[60%] ${
                     hidden ? 'pointer-events-none opacity-0' : ''
                   }`}
                   style={{
                     zIndex: isActive ? 30 : isSideCard ? 20 : 10,
-                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 36}%) scale(${
-                      isActive ? 1 : 0.82
+                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 34}%) scale(${
+                      isActive ? 1 : 0.86
                     }) rotateY(${offset * -24}deg)`,
-                    opacity: isActive ? 1 : isSideCard ? 0.64 : 0,
+                    opacity: isActive ? 1 : isSideCard ? 0.72 : 0,
                     filter: isActive ? 'none' : 'saturate(0.9) brightness(0.92)',
                   }}
                 >
@@ -305,7 +303,7 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current - 1 + BANNERS.length) % BANNERS.length)}
-            className="absolute left-2 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/96 text-stone-700 shadow-sm transition hover:bg-white sm:left-4"
+            className="absolute left-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:left-1"
             aria-label={t('bannerPrev')}
           >
             <ChevronLeft size={18} />
@@ -313,7 +311,7 @@ export function ExploreContent() {
           <button
             type="button"
             onClick={() => setActiveBanner((current) => (current + 1) % BANNERS.length)}
-            className="absolute right-2 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/96 text-stone-700 shadow-sm transition hover:bg-white sm:right-4"
+            className="absolute right-0 top-1/2 z-40 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-white sm:right-1"
             aria-label={t('bannerNext')}
           >
             <ChevronRight size={18} />
@@ -334,33 +332,19 @@ export function ExploreContent() {
           </div>
         </section>
 
-        <section
-          className="animate-explore-rise rounded-[28px] border border-stone-200 bg-white px-4 py-4 shadow-[0_20px_50px_-34px_rgba(15,23,42,0.12)] sm:rounded-[32px] sm:px-6 sm:py-5 lg:px-7"
-          style={{ animationDelay: '120ms' }}
-        >
-          <div className="space-y-5">
-            <ExploreTabs
-              activeSort={activeSort}
-              activeType={activeType}
-              activeSubcategory={activeSubcategory}
-              onSortChange={handleSortChange}
-              onTypeChange={handleTypeChange}
-              onSubcategoryChange={handleSubcategoryChange}
-            />
-          </div>
+        <section className="animate-explore-rise px-1" style={{ animationDelay: '120ms' }}>
+          <ExploreTabs
+            activeSort={activeSort}
+            activeType={activeType}
+            activeSubcategory={activeSubcategory}
+            onSortChange={handleSortChange}
+            onTypeChange={handleTypeChange}
+            onSubcategoryChange={handleSubcategoryChange}
+          />
         </section>
 
-        <section
-          className="animate-explore-rise flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-          style={{ animationDelay: '180ms' }}
-        >
-          <div className="min-w-0">
-            <h3 className="text-[1.75rem] font-semibold tracking-tight text-stone-900 sm:text-[2rem]">
-              {t('sectionTitle')}
-            </h3>
-            <p className="mt-2 text-sm text-stone-500">{t('sectionSubtitle')}</p>
-          </div>
-          <p className="text-sm text-stone-500 sm:text-right">
+        <section className="animate-explore-rise flex justify-end px-1" style={{ animationDelay: '180ms' }}>
+          <p className="text-sm text-stone-500">
             {filteredVideos.length} {t('resultsCount')}
           </p>
         </section>
