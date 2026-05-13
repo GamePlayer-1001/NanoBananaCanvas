@@ -1210,6 +1210,8 @@
     "bannerAlt6": "Explore banner 6",
     "switchBanner": "Switch banner",
     "moreActions": "More actions",
+    "views": "{count} views",
+    "likes": "{count} likes",
     "bannerPrev": "Previous banner",
     "bannerNext": "Next banner",
     "typeLabel": "Content Type",
