@@ -28,7 +28,6 @@ export interface PublicBillingPlanPrice {
   unitAmount: number
   interval: 'month' | null
   monthlyCredits: number
-  storageGB: number
 }
 
 export interface PublicPricingPlansResult {
@@ -155,7 +154,6 @@ export async function getPublicPricingPlans(options: {
         unitAmount: displayed.unitAmount,
         interval: assertRecurringInterval(stripePrice),
         monthlyCredits: snapshot.monthlyCredits,
-        storageGB: snapshot.storageGB,
       }
     }),
   )

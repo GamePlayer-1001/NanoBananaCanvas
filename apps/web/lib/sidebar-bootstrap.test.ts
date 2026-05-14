@@ -54,7 +54,6 @@ describe('sidebar bootstrap', () => {
       totalSpent: 0,
       checkedInToday: true,
       currentPlanMonthlyCredits: 0,
-      storageGB: 1,
       updatedAt: null,
     })
 

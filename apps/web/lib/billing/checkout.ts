@@ -81,7 +81,6 @@ function buildCheckoutMetadata(input: CreateCheckoutSessionInput): Stripe.Metada
     purchaseMode: input.purchaseMode,
     preferredCurrency: input.preferredCurrency,
     monthlyCredits: String(snapshot.monthlyCredits),
-    storageGB: String(snapshot.storageGB),
     ...(isStandardTrialCheckout(input) ? { trialDays: String(STANDARD_TRIAL_DAYS) } : {}),
   }
 }

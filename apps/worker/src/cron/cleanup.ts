@@ -7,12 +7,33 @@
 
 const OUTPUT_RETENTION_DAYS = 7
 const TERMINAL_TASK_RETENTION_DAYS = 14
+const SNAPSHOT_RETENTION_DAYS = 1
 const CLEANUP_BATCH_SIZE = 200
 
 export interface CleanupExpiredOutputsResult {
   deleted: number
   errors: number
   prunedTasks: number
+  deletedSnapshots: number
+}
+
+function extractR2KeyFromFileUrl(url: string | null | undefined): string | null {
+  if (!url) {
+    return null
+  }
+
+  if (url.startsWith('/api/files/')) {
+    return url.slice('/api/files/'.length) || null
+  }
+
+  try {
+    const parsed = new URL(url)
+    const normalized = parsed.pathname.replace(/^\/+/, '')
+    return /^(uploads|outputs|thumbnails|task-inputs)\//.test(normalized) ? normalized : null
+  } catch {
+    const normalized = url.replace(/^\/+/, '')
+    return /^(uploads|outputs|thumbnails|task-inputs)\//.test(normalized) ? normalized : null
+  }
 }
 
 async function deleteExpiredTaskOutputs(
@@ -38,7 +59,9 @@ async function deleteExpiredTaskOutputs(
   for (const task of results) {
     try {
       const output = JSON.parse(task.output_data)
-      const r2Key = output.r2_key || output.url?.replace('/api/files/', '')
+      const r2Key =
+        output.r2_key ??
+        (typeof output.url === 'string' ? extractR2KeyFromFileUrl(output.url) : null)
       if (r2Key) {
         await r2.delete(r2Key)
         deleted++
@@ -78,6 +101,40 @@ async function pruneExpiredTerminalTasks(db: D1Database): Promise<number> {
   return ids.length
 }
 
+async function deleteExpiredTaskSnapshots(
+  db: D1Database,
+  r2: R2Bucket,
+): Promise<number> {
+  const rows = await db
+    .prepare(
+      `SELECT id, user_id
+       FROM async_tasks
+       WHERE (
+         status IN ('completed', 'failed', 'cancelled')
+         OR (
+           status IN ('pending', 'running')
+           AND created_at < datetime('now', ?)
+         )
+       )
+         AND COALESCE(completed_at, updated_at, created_at) < datetime('now', ?)
+       LIMIT ?`,
+    )
+    .bind(
+      `-${SNAPSHOT_RETENTION_DAYS} days`,
+      `-${SNAPSHOT_RETENTION_DAYS} days`,
+      CLEANUP_BATCH_SIZE,
+    )
+    .all<{ id: string; user_id: string }>()
+
+  let deletedSnapshots = 0
+  for (const row of rows.results ?? []) {
+    await r2.delete(`task-inputs/${row.user_id}/${row.id}.json`)
+    deletedSnapshots++
+  }
+
+  return deletedSnapshots
+}
+
 /** 清理过期的 AI 输出文件，并顺带修剪保留期外的终态任务 */
 export async function cleanupExpiredOutputs(
   db: D1Database,
@@ -85,9 +142,11 @@ export async function cleanupExpiredOutputs(
 ): Promise<CleanupExpiredOutputsResult> {
   const outputResult = await deleteExpiredTaskOutputs(db, r2)
   const prunedTasks = await pruneExpiredTerminalTasks(db)
+  const deletedSnapshots = await deleteExpiredTaskSnapshots(db, r2)
 
   return {
     ...outputResult,
     prunedTasks,
+    deletedSnapshots,
   }
 }

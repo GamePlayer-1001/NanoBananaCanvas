@@ -34,7 +34,6 @@ type SubscriptionColumn =
   | 'billing_period'
   | 'status'
   | 'monthly_credits'
-  | 'storage_gb'
   | 'created_at'
   | 'updated_at'
 
@@ -74,7 +73,6 @@ function buildSubscriptionInsertStatement(input: {
   pushValue('billing_period', 'monthly')
   pushValue('status', 'active')
   pushValue('monthly_credits', FREE_PLAN_SNAPSHOT.monthlyCredits)
-  pushValue('storage_gb', FREE_PLAN_SNAPSHOT.storageGB)
 
   if (!fieldNames.includes('id') || !fieldNames.includes('user_id')) {
     throw new BillingError(

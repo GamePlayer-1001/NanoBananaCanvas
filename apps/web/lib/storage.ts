@@ -46,20 +46,32 @@ export function toInternalFileUrl(key: string): string {
 
 export function extractR2KeyFromFileUrl(url: string): string | null {
   if (!url.startsWith(INTERNAL_FILE_PREFIX)) {
-    return null
+    try {
+      const parsed = new URL(url)
+      return normalizeKnownR2Key(parsed.pathname)
+    } catch {
+      return normalizeKnownR2Key(url)
+    }
   }
 
-  return url.slice(INTERNAL_FILE_PREFIX.length) || null
+  return normalizeKnownR2Key(url.slice(INTERNAL_FILE_PREFIX.length))
 }
 
 export interface CleanupExpiredOutputsResult {
   deleted: number
   errors: number
   prunedTasks: number
+  deletedSnapshots: number
 }
 
 const OUTPUT_RETENTION_DAYS = 7
 const TERMINAL_TASK_RETENTION_DAYS = 14
+const SNAPSHOT_RETENTION_DAYS = 1
+
+function normalizeKnownR2Key(value: string): string | null {
+  const normalized = value.replace(/^\/+/, '')
+  return /^(uploads|outputs|thumbnails|task-inputs)\//.test(normalized) ? normalized : null
+}
 
 export async function getPublicAssetBaseUrl(): Promise<string | null> {
   const directBaseUrl = (await getEnv('PUBLIC_ASSET_BASE_URL'))?.trim() ?? ''
@@ -139,9 +151,33 @@ export async function cleanupExpiredOutputs(): Promise<CleanupExpiredOutputsResu
       .run()
   }
 
+  const staleSnapshots = await db
+    .prepare(
+      `SELECT id, user_id
+       FROM async_tasks
+       WHERE (
+         status IN ('completed', 'failed', 'cancelled')
+         OR (
+           status IN ('pending', 'running')
+           AND created_at < datetime('now', ?)
+         )
+       )
+         AND COALESCE(completed_at, updated_at, created_at) < datetime('now', ?)
+       LIMIT 200`,
+    )
+    .bind(`-${SNAPSHOT_RETENTION_DAYS} days`, `-${SNAPSHOT_RETENTION_DAYS} days`)
+    .all<{ id: string; user_id: string }>()
+
+  let deletedSnapshots = 0
+  for (const row of staleSnapshots.results ?? []) {
+    await r2.delete(`task-inputs/${row.user_id}/${row.id}.json`)
+    deletedSnapshots++
+  }
+
   return {
     deleted,
     errors,
     prunedTasks: staleTaskIds.length,
+    deletedSnapshots,
   }
 }

@@ -33,7 +33,6 @@ function createGuestSubscription() {
     billingPeriod: 'monthly' as const,
     status: 'active',
     monthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
-    storageGB: FREE_PLAN_SNAPSHOT.storageGB,
     currentPeriodStart: null,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
@@ -63,7 +62,6 @@ function createGuestBalance() {
     totalSpent: 0,
     checkedInToday: false,
     currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
-    storageGB: FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: null,
   }
 }

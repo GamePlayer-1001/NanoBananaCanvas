@@ -27,7 +27,6 @@ type SubscriptionRow = {
   current_period_start: string | null
   current_period_end: string | null
   monthly_credits: number | null
-  storage_gb: number | null
   cancel_at_period_end: number | null
   created_at: string | null
   updated_at: string | null
@@ -43,7 +42,6 @@ export interface BillingSubscriptionSummary {
   billingPeriod: 'monthly' | 'one_time'
   status: string
   monthlyCredits: number
-  storageGB: number
   currentPeriodStart: string | null
   currentPeriodEnd: string | null
   cancelAtPeriodEnd: boolean
@@ -106,7 +104,6 @@ function canCancelSubscription(row: SubscriptionRow): boolean {
 function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary {
   const plan = row.plan ?? row.user_plan ?? 'free'
   const monthlyCredits = row.monthly_credits ?? FREE_PLAN_SNAPSHOT.monthlyCredits
-  const storageGB = row.storage_gb ?? FREE_PLAN_SNAPSHOT.storageGB
   const standardTrialActive =
     plan === 'standard' &&
     (row.status ?? 'active') === 'trialing' &&
@@ -120,7 +117,6 @@ function toSubscriptionSummary(row: SubscriptionRow): BillingSubscriptionSummary
     billingPeriod: row.billing_period === 'one_time' ? 'one_time' : 'monthly',
     status: row.status ?? 'active',
     monthlyCredits,
-    storageGB,
     currentPeriodStart: row.current_period_start,
     currentPeriodEnd: row.current_period_end,
     cancelAtPeriodEnd: Boolean(row.cancel_at_period_end),
@@ -147,7 +143,6 @@ function createFreeSubscriptionRow(userId: string): SubscriptionRow {
     current_period_start: null,
     current_period_end: null,
     monthly_credits: FREE_PLAN_SNAPSHOT.monthlyCredits,
-    storage_gb: FREE_PLAN_SNAPSHOT.storageGB,
     cancel_at_period_end: null,
     created_at: null,
     updated_at: null,
@@ -207,7 +202,6 @@ function buildSubscriptionQuery(
          ${subscriptionColumn(schema, 'current_period_start')},
          ${subscriptionColumn(schema, 'current_period_end')},
          ${subscriptionColumn(schema, 'monthly_credits')},
-         ${subscriptionColumn(schema, 'storage_gb')},
          ${subscriptionColumn(schema, 'cancel_at_period_end')},
          ${subscriptionColumn(schema, 'created_at')},
          ${subscriptionColumn(schema, 'updated_at')}`
@@ -221,7 +215,6 @@ function buildSubscriptionQuery(
          NULL AS current_period_start,
          NULL AS current_period_end,
          NULL AS monthly_credits,
-         NULL AS storage_gb,
          NULL AS cancel_at_period_end,
          NULL AS created_at,
          NULL AS updated_at`

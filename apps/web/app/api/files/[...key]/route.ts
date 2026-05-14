@@ -12,6 +12,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { apiError, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { getR2 } from '@/lib/r2'
+import { toPublicFileUrl } from '@/lib/storage'
 
 type Params = { params: Promise<{ key: string[] }> }
 type PublicMediaCacheEntry = { value: boolean; expiresAt: number }
@@ -56,15 +57,19 @@ async function isPublicExploreMediaKey(key: string): Promise<boolean> {
 
   const db = await getDb()
   const internalUrl = buildInternalFileUrl(key)
+  const publicUrl = await toPublicFileUrl(key)
   const row = await db
     .prepare(
       `SELECT id
        FROM published_outputs
        WHERE is_public = 1
-         AND (media_url = ? OR thumbnail = ? OR workflow_json_url = ?)
+         AND (
+           media_url = ? OR thumbnail = ? OR workflow_json_url = ?
+           OR media_url = ? OR thumbnail = ? OR workflow_json_url = ?
+         )
        LIMIT 1`,
     )
-    .bind(internalUrl, internalUrl, internalUrl)
+    .bind(internalUrl, internalUrl, internalUrl, publicUrl, publicUrl, publicUrl)
     .first<{ id: string }>()
 
   const isPublic = !!row

@@ -22,7 +22,6 @@ type CreditBalanceSummaryRow = {
   total_spent: number | null
   updated_at: string | null
   subscription_monthly_credits: number | null
-  storage_gb: number | null
 }
 
 export interface CreditBalanceSummary {
@@ -40,7 +39,6 @@ export interface CreditBalanceSummary {
   totalSpent: number
   checkedInToday: boolean
   currentPlanMonthlyCredits: number
-  storageGB: number
   updatedAt: string | null
 }
 
@@ -265,7 +263,6 @@ function toCreditBalanceSummary(row: CreditBalanceSummaryRow): CreditBalanceSumm
     totalSpent: row.total_spent ?? 0,
     checkedInToday: trialBalance > 0 && Boolean(row.trial_expires_at),
     currentPlanMonthlyCredits: row.subscription_monthly_credits ?? FREE_PLAN_SNAPSHOT.monthlyCredits,
-    storageGB: row.storage_gb ?? FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: row.updated_at,
   }
 }
@@ -290,7 +287,6 @@ function createFreeCreditBalanceSummary(userId: string): CreditBalanceSummary {
     totalSpent: 0,
     checkedInToday: false,
     currentPlanMonthlyCredits: FREE_PLAN_SNAPSHOT.monthlyCredits,
-    storageGB: FREE_PLAN_SNAPSHOT.storageGB,
     updatedAt: null,
   }
 }
@@ -332,10 +328,8 @@ function buildBalanceSummaryQuery(
         hasSubscriptionColumn(schema, 'monthly_credits')
           ? 's.monthly_credits'
           : 'NULL'
-      } AS subscription_monthly_credits,
-         ${hasSubscriptionColumn(schema, 'storage_gb') ? 's.storage_gb' : 'NULL AS storage_gb'}`
-    : `NULL AS subscription_monthly_credits,
-         NULL AS storage_gb`
+      } AS subscription_monthly_credits`
+    : `NULL AS subscription_monthly_credits`
   const balanceJoin = readableBalances
     ? 'LEFT JOIN credit_balances cb ON cb.user_id = u.id'
     : ''

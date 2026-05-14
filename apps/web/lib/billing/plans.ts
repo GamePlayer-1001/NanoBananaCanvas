@@ -10,7 +10,6 @@ import type { BillingPlan, CreditPackId } from './config'
 export interface BillingPlanSnapshot {
   plan: BillingPlan | 'free'
   monthlyCredits: number
-  storageGB: number
 }
 
 export interface CreditPackSnapshot {
@@ -23,24 +22,20 @@ export interface CreditPackSnapshot {
 export const FREE_PLAN_SNAPSHOT: BillingPlanSnapshot = {
   plan: 'free',
   monthlyCredits: 0,
-  storageGB: 1,
 }
 
 export const BILLING_PLAN_SNAPSHOTS: Record<BillingPlan, BillingPlanSnapshot> = {
   standard: {
     plan: 'standard',
     monthlyCredits: 1600,
-    storageGB: 10,
   },
   pro: {
     plan: 'pro',
     monthlyCredits: 5400,
-    storageGB: 50,
   },
   ultimate: {
     plan: 'ultimate',
     monthlyCredits: 17000,
-    storageGB: 200,
   },
 }
 

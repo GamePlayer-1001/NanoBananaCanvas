@@ -137,7 +137,6 @@ export async function syncUserPlanEntitlement(input: BillingSubscriptionEntitlem
              current_period_start = ?,
              current_period_end = ?,
              monthly_credits = ?,
-             storage_gb = ?,
              cancel_at_period_end = ?,
              updated_at = datetime('now')
          WHERE id = ?`,
@@ -152,7 +151,6 @@ export async function syncUserPlanEntitlement(input: BillingSubscriptionEntitlem
         input.currentPeriodStart,
         input.currentPeriodEnd,
         snapshot.monthlyCredits,
-        snapshot.storageGB,
         input.cancelAtPeriodEnd ? 1 : 0,
         existing.id,
       )
@@ -172,9 +170,8 @@ export async function syncUserPlanEntitlement(input: BillingSubscriptionEntitlem
            current_period_start,
            current_period_end,
            monthly_credits,
-           storage_gb,
            cancel_at_period_end
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         nanoid(),
@@ -188,7 +185,6 @@ export async function syncUserPlanEntitlement(input: BillingSubscriptionEntitlem
         input.currentPeriodStart,
         input.currentPeriodEnd,
         snapshot.monthlyCredits,
-        snapshot.storageGB,
         input.cancelAtPeriodEnd ? 1 : 0,
       )
       .run()

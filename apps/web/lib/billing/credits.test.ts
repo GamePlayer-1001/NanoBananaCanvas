@@ -89,7 +89,6 @@ function createDbMock(options: {
       'current_period_start',
       'current_period_end',
       'monthly_credits',
-      'storage_gb',
       'cancel_at_period_end',
       'created_at',
       'updated_at',
@@ -212,7 +211,6 @@ describe('getCreditBalanceSummary', () => {
           total_spent: 2370,
           updated_at: '2026-04-22 15:00:00',
           subscription_monthly_credits: 5400,
-          storage_gb: 100,
         },
       }),
     )
@@ -232,7 +230,6 @@ describe('getCreditBalanceSummary', () => {
       totalSpent: 2370,
       checkedInToday: false,
       currentPlanMonthlyCredits: 5400,
-      storageGB: 100,
       updatedAt: '2026-04-22 15:00:00',
     })
   })
@@ -255,7 +252,6 @@ describe('getCreditBalanceSummary', () => {
       totalSpent: 0,
       checkedInToday: false,
       currentPlanMonthlyCredits: 0,
-      storageGB: 1,
       updatedAt: null,
     })
   })
@@ -278,7 +274,6 @@ describe('getCreditBalanceSummary', () => {
           total_spent: 0,
           updated_at: null,
           subscription_monthly_credits: null,
-          storage_gb: null,
         },
         onSql: (sql) => capturedSql.push(sql),
       }),
@@ -299,7 +294,6 @@ describe('getCreditBalanceSummary', () => {
       totalSpent: 0,
       checkedInToday: false,
       currentPlanMonthlyCredits: 0,
-      storageGB: 1,
       updatedAt: null,
     })
 
@@ -327,7 +321,6 @@ describe('getCreditBalanceSummary', () => {
           total_spent: 0,
           updated_at: null,
           subscription_monthly_credits: null,
-          storage_gb: null,
         },
         onSql: (sql) => capturedSql.push(sql),
       }),
@@ -342,7 +335,6 @@ describe('getCreditBalanceSummary', () => {
       frozenCredits: 0,
       checkedInToday: false,
       currentPlanMonthlyCredits: 0,
-      storageGB: 1,
     })
 
     expect(capturedSql.some((sql) => sql.includes('INSERT OR IGNORE INTO credit_balances'))).toBe(false)

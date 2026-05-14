@@ -65,9 +65,11 @@ CREATE TABLE IF NOT EXISTS workflows (
 );
 
 CREATE INDEX IF NOT EXISTS idx_workflows_user_id ON workflows(user_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_user_updated ON workflows(user_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_workflows_public ON workflows(is_public, published_at);
 CREATE INDEX IF NOT EXISTS idx_workflows_category ON workflows(category_id);
 CREATE INDEX IF NOT EXISTS idx_workflows_folder ON workflows(folder_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_user_folder_updated ON workflows(user_id, folder_id, updated_at DESC);
 
 -- ── DB-007: folders ────────────────────────────
 -- 工作区文件夹（用户级组织单位，项目分组管理）
@@ -134,6 +136,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_created_desc ON notifications(user_id, created_at DESC);
 
 -- ============================================
 --  Stripe Billing Runtime (SPAY-300 ~ 308)
@@ -200,7 +203,6 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   current_period_start      TEXT,
   current_period_end        TEXT,
   monthly_credits           INTEGER NOT NULL DEFAULT 0,
-  storage_gb                INTEGER NOT NULL DEFAULT 1,
   cancel_at_period_end      INTEGER NOT NULL DEFAULT 0,
   created_at                TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at                TEXT NOT NULL DEFAULT (datetime('now'))
