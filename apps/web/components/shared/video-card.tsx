@@ -489,10 +489,10 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/50 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0.18)_26%,rgba(255,255,255,0.24)_100%)] shadow-[0_32px_72px_-42px_rgba(15,23,42,0.52)] backdrop-blur-[42px] transition-transform duration-300 group-hover:translate-y-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(255,189,214,0.28),transparent_28%),radial-gradient(circle_at_84%_16%,rgba(254,215,170,0.22),transparent_24%),radial-gradient(circle_at_52%_118%,rgba(99,102,241,0.26),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.08)_28%,rgba(255,255,255,0.14)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.26),rgba(255,255,255,0.06)_24%,rgba(15,23,42,0.12)_100%)] backdrop-blur-[72px]" />
-        <div className="absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" />
+      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/68 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(255,255,255,0.74)_24%,rgba(255,255,255,0.78)_100%)] shadow-[0_34px_78px_-40px_rgba(15,23,42,0.58)] backdrop-blur-[52px] transition-transform duration-300 group-hover:translate-y-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(255,189,214,0.2),transparent_26%),radial-gradient(circle_at_84%_16%,rgba(254,215,170,0.16),transparent_22%),radial-gradient(circle_at_52%_118%,rgba(99,102,241,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.18)_28%,rgba(255,255,255,0.22)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(255,255,255,0.28)_24%,rgba(255,255,255,0.34)_100%)] backdrop-blur-[96px]" />
+        <div className="absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(255,255,255,0))]" />
         <div className="relative p-4">
           <div className="grid grid-cols-[minmax(0,1fr)_44px_44px_44px] items-center gap-2">
             <Button
@@ -522,7 +522,7 @@ function CardDetailPanel({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/78 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] transition hover:bg-white/88"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/78 bg-white/92 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] backdrop-blur-[32px] transition hover:bg-white/96"
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
@@ -534,7 +534,7 @@ function CardDetailPanel({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="rounded-2xl border-white/60 bg-white/84 p-2 backdrop-blur-[28px]"
+                className="rounded-2xl border-white/75 bg-white/92 p-2 backdrop-blur-[34px]"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
@@ -563,7 +563,7 @@ function CardDetailPanel({
               {tagItems.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-white/45 bg-white/36 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] backdrop-blur-[24px]"
+                  className="rounded-full border border-white/62 bg-white/72 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.52)] backdrop-blur-[28px]"
                 >
                   {tag}
                 </span>
@@ -608,7 +608,7 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/86 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] backdrop-blur-[28px] transition hover:bg-white/94',
+        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/78 bg-white/92 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.4)] backdrop-blur-[32px] transition hover:bg-white/96',
         active && 'border-rose-200/95 bg-rose-50/92 text-rose-600',
       )}
     >
