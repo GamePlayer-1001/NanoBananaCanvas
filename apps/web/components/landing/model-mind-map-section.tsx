@@ -46,6 +46,8 @@ const MODEL_CORE_POSITION = {
   y: (MODEL_STAGE_CENTER.y / MODEL_STAGE.height) * 100,
 } as const
 
+const MODEL_CORE_OFFSET_X = -36
+
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
   inner: { x: 312, y: 120 },
   middle: { x: 448, y: 170 },
@@ -514,7 +516,7 @@ export function ModelMindMapSection() {
               <div
                 className="absolute z-40 h-[31.5vw] max-h-[251px] w-[31.5vw] max-w-[251px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,#fff5ff,#d388ff_30%,#914aff_56%,#4e18b6_78%,#0e0824_100%)] md:h-[237px] md:w-[237px]"
                 style={{
-                  left: `${MODEL_CORE_POSITION.x}%`,
+                  left: `calc(${MODEL_CORE_POSITION.x}% + ${MODEL_CORE_OFFSET_X}px)`,
                   top: `${MODEL_CORE_POSITION.y}%`,
                   transform: 'translate(-50%, -50%)',
                   animation: prefersReducedMotion
