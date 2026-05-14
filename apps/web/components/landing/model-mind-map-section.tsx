@@ -1,8 +1,8 @@
 /**
- * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，
+ * [INPUT]: 依赖 react 的 useEffect/useState，依赖 next-intl 的 useTranslations，
  *          依赖 lucide-react 的 Sparkles/ShieldCheck/Workflow/Zap
  * [OUTPUT]: 对外提供 ModelMindMapSection 模型生态云图展示区
- * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用；独立 `/models` 内容页已下线，模型入口统一回落到首页锚点，并负责星云/轨道/主星球的统一舞台居中
+ * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用；独立 `/models` 内容页已下线，模型入口统一回落到首页锚点，并负责星云/轨道/主星球的统一舞台居中与稳定首帧呈现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -10,7 +10,7 @@
 
 import { Sparkles, ShieldCheck, Workflow, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type ProviderTone = 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
 type ProviderSize = 'sm' | 'md' | 'lg'
@@ -29,12 +29,6 @@ type ModelProvider = {
   tone: ProviderTone
   iconScale?: number
   iconFilter?: string
-}
-
-type ModelMotionState = {
-  progress: number
-  reveal: number
-  drift: number
 }
 
 const MODEL_STAGE = {
@@ -339,12 +333,6 @@ const MODEL_STATS = [
   { key: 'team', icon: ShieldCheck },
 ] as const
 
-const INITIAL_MODEL_MOTION: ModelMotionState = { progress: 0, reveal: 0, drift: -1 }
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max)
-}
-
 function ProviderIcon({ provider }: { provider: ModelProvider }) {
   const tone = MODEL_TONE_STYLES[provider.tone]
   const dimension = MODEL_NODE_DIMENSIONS[provider.size]
@@ -373,9 +361,7 @@ function ProviderIcon({ provider }: { provider: ModelProvider }) {
 
 export function ModelMindMapSection() {
   const modelT = useTranslations('landing.sections.models')
-  const sectionRef = useRef<HTMLElement | null>(null)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-  const [motion, setMotion] = useState(INITIAL_MODEL_MOTION)
   const [orbitTime, setOrbitTime] = useState(0)
 
   useEffect(() => {
@@ -388,64 +374,6 @@ export function ModelMindMapSection() {
     mediaQuery.addEventListener('change', syncPreference)
 
     return () => mediaQuery.removeEventListener('change', syncPreference)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined
-
-    const section = sectionRef.current
-
-    if (!section) return undefined
-
-    let frame = 0
-
-    const measure = () => {
-      frame = 0
-
-      const rect = section.getBoundingClientRect()
-      const viewportHeight = window.innerHeight || 1
-      const progress = clamp(
-        (viewportHeight - rect.top) / (viewportHeight + rect.height),
-        0,
-        1,
-      )
-      const enter = clamp(
-        (viewportHeight * 0.9 - rect.top) / (viewportHeight * 0.62),
-        0,
-        1,
-      )
-      const leave = clamp(
-        (rect.bottom - viewportHeight * 0.1) / (viewportHeight * 0.52),
-        0,
-        1,
-      )
-      const reveal = clamp(Math.min(enter, leave), 0, 1)
-      const drift = clamp((progress - 0.5) * 2, -1, 1)
-
-      setMotion((previous) => {
-        const hasChanged =
-          Math.abs(previous.progress - progress) > 0.006 ||
-          Math.abs(previous.reveal - reveal) > 0.006 ||
-          Math.abs(previous.drift - drift) > 0.006
-
-        return hasChanged ? { progress, reveal, drift } : previous
-      })
-    }
-
-    const requestMeasure = () => {
-      if (frame) return
-      frame = window.requestAnimationFrame(measure)
-    }
-
-    requestMeasure()
-    window.addEventListener('scroll', requestMeasure, { passive: true })
-    window.addEventListener('resize', requestMeasure)
-
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', requestMeasure)
-      window.removeEventListener('resize', requestMeasure)
-    }
   }, [])
 
   useEffect(() => {
@@ -466,8 +394,6 @@ export function ModelMindMapSection() {
     }
   }, [prefersReducedMotion])
 
-  const revealProgress = prefersReducedMotion ? 1 : motion.reveal
-  const drift = prefersReducedMotion ? 0 : motion.drift
   const visibleOrbitTime = prefersReducedMotion ? 0 : orbitTime
   const vendorCount = new Set(
     MODEL_PROVIDERS.map((provider) => provider.vendor ?? provider.name),
@@ -475,7 +401,6 @@ export function ModelMindMapSection() {
 
   return (
     <section
-      ref={sectionRef}
       id="models"
       className="relative overflow-hidden bg-[#05070d] px-4 py-14 sm:px-6 lg:px-8 lg:py-16 xl:px-10"
     >
@@ -489,11 +414,7 @@ export function ModelMindMapSection() {
 
           <div className="relative mx-auto w-full max-w-[1100px]">
             <div
-              className="relative z-20 mx-auto flex max-w-[34rem] flex-col items-center text-center transition-[opacity,transform] duration-500 ease-out"
-              style={{
-                opacity: 0.18 + revealProgress * 0.82,
-                transform: `translate3d(0, ${12 * (1 - revealProgress)}px, 0)`,
-              }}
+              className="relative z-20 mx-auto flex max-w-[34rem] flex-col items-center text-center"
             >
               <h2 className="text-[2.15rem] leading-[0.95] font-semibold tracking-[-0.05em] text-white md:text-[3.35rem]">
                 <span className="text-white">{modelT('title')}</span>
@@ -504,10 +425,7 @@ export function ModelMindMapSection() {
             </div>
 
             <div
-              className="relative z-10 mt-6 transition-[opacity,transform] duration-500 ease-out lg:mt-4"
-              style={{
-                transform: `translate3d(0, ${18 * (1 - revealProgress) - drift * 10}px, 0)`,
-              }}
+              className="relative z-10 mt-6 lg:mt-4"
             >
               <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1100px]">
               <svg
@@ -516,8 +434,7 @@ export function ModelMindMapSection() {
                 fill="none"
                 aria-hidden="true"
                 style={{
-                  transform: `scale(${0.96 + revealProgress * 0.04}) rotate(${drift * 1.8}deg)`,
-                  opacity: 0.24 + revealProgress * 0.76,
+                  opacity: 0.9,
                 }}
               >
                 <ellipse
@@ -583,7 +500,7 @@ export function ModelMindMapSection() {
                       r={index % 3 === 0 ? 7 : 5.5}
                       fill={tone.ring}
                       style={{
-                        opacity: 0.18 + revealProgress * 0.82,
+                        opacity: 0.9,
                         animation: prefersReducedMotion
                           ? 'none'
                           : `sparkPulse ${3.2 + (index % 4) * 0.45}s ease-in-out infinite`,
@@ -599,9 +516,7 @@ export function ModelMindMapSection() {
                 style={{
                   left: `${MODEL_CORE_POSITION.x}%`,
                   top: `${MODEL_CORE_POSITION.y}%`,
-                  transform: `translate(-50%, -50%) scale(${
-                    0.9 + revealProgress * 0.1
-                  })`,
+                  transform: 'translate(-50%, -50%)',
                   animation: prefersReducedMotion
                     ? 'none'
                     : 'corePulse 6.2s ease-in-out infinite',
@@ -620,7 +535,7 @@ export function ModelMindMapSection() {
                 </div>
               </div>
 
-              {MODEL_PROVIDERS.map((provider, index) => {
+              {MODEL_PROVIDERS.map((provider) => {
                 const tone = MODEL_TONE_STYLES[provider.tone]
                 const dimension = MODEL_NODE_DIMENSIONS[provider.size]
                 const orbitRadii = MODEL_ORBIT_RADII[provider.orbit]
@@ -631,8 +546,7 @@ export function ModelMindMapSection() {
                   ((provider.angle + visibleOrbitTime * provider.speed) * Math.PI) / 180
                 const orbitDepth = (Math.sin(orbitAngle) + 1) / 2
                 const depthScale = 0.84 + orbitDepth * 0.24
-                const nodeOpacity =
-                  (0.24 + revealProgress * 0.76) * (0.72 + orbitDepth * 0.28)
+                const nodeOpacity = 0.78 + orbitDepth * 0.22
                 const nodeZIndex =
                   orbitDepth > 0.52
                     ? 42 + Math.round((orbitDepth - 0.52) * 28)
@@ -646,10 +560,6 @@ export function ModelMindMapSection() {
                 const currentY =
                   MODEL_CORE_POSITION.y +
                   (Math.sin(orbitAngle) * orbitRadiusY * 100) / MODEL_STAGE.height
-                const deltaX = currentX - MODEL_CORE_POSITION.x
-                const deltaY = currentY - MODEL_CORE_POSITION.y
-                const entryOffsetX = deltaX * 0.12
-                const entryOffsetY = 18 + deltaY * 0.08
                 const labelWidth =
                   provider.size === 'lg'
                     ? '4.6rem'
@@ -678,19 +588,14 @@ export function ModelMindMapSection() {
                 return (
                   <div
                     key={provider.name}
-                    className="absolute transition-[opacity,transform] duration-500 ease-out"
+                    className="absolute"
                     style={{
                       left: `${currentX}%`,
                       top: `${currentY}%`,
                       zIndex: nodeZIndex,
                       opacity: nodeOpacity,
                       filter: nodeDepthFilter,
-                      transform: `translate(-50%, -50%) translate(${entryOffsetX * (1 - revealProgress)}px, ${
-                        entryOffsetY * (1 - revealProgress)
-                      }px) scale(${(0.74 + revealProgress * 0.26) * depthScale})`,
-                      transitionDelay: prefersReducedMotion
-                        ? '0ms'
-                        : `${90 + index * 24}ms`,
+                      transform: `translate(-50%, -50%) scale(${depthScale})`,
                     }}
                   >
                     <div className="flex items-center justify-center">
@@ -730,10 +635,6 @@ export function ModelMindMapSection() {
 
           <div
             className="relative z-20 mt-1 xl:mt-0"
-            style={{
-              opacity: 0.18 + revealProgress * 0.82,
-              transform: `translate3d(0, ${24 * (1 - revealProgress)}px, 0)`,
-            }}
           >
             <div className="mx-auto flex w-full max-w-[980px] flex-col gap-4 border-t border-white/8 pt-6 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-5 xl:flex-nowrap">
               {MODEL_STATS.map((item, index) => {
