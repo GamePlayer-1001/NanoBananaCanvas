@@ -1,8 +1,8 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/response 的 apiError/handleApiError，
  *          依赖 @/lib/db 的 getDb，依赖 @/lib/r2 的 getR2，依赖 next/server 的 NextRequest/NextResponse
- * [OUTPUT]: 对外提供 GET /api/files/[...key] (R2 文件读取：缩略图公开，公开作品引用媒体可匿名读取，其余按用户隔离)
- * [POS]: api/files 的通用文件读取端点，被工作流缩略图、上传素材、任务输出与 Explore 公开作品消费
+ * [OUTPUT]: 对外提供 GET /api/files/[...key] (R2 文件读取：缩略图公开，公开作品引用的媒体/工作流 JSON 可匿名读取，其余按用户隔离)
+ * [POS]: api/files 的通用文件读取端点，被工作流缩略图、上传素材、任务输出与 Explore 公开作品消费，并承接导入作品的 workflow_json_url 匿名回读
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -61,10 +61,10 @@ async function isPublicExploreMediaKey(key: string): Promise<boolean> {
       `SELECT id
        FROM published_outputs
        WHERE is_public = 1
-         AND (media_url = ? OR thumbnail = ?)
+         AND (media_url = ? OR thumbnail = ? OR workflow_json_url = ?)
        LIMIT 1`,
     )
-    .bind(internalUrl, internalUrl)
+    .bind(internalUrl, internalUrl, internalUrl)
     .first<{ id: string }>()
 
   const isPublic = !!row

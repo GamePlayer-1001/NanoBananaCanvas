@@ -23,7 +23,7 @@ function FooterColumn({
   links: { label: string; href: string }[]
 }) {
   return (
-    <div className="min-w-[150px] text-left md:text-right">
+    <div className="min-w-[112px] text-left md:text-right">
       <h3 className="mb-4 text-sm font-medium text-white/80">{title}</h3>
       <ul className="space-y-3">
         {links.map((link) => (
@@ -112,7 +112,7 @@ export function LandingFooter() {
           </div>
 
           {/* Link Columns */}
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-2 lg:justify-items-end lg:text-right">
+          <div className="grid w-fit gap-x-12 gap-y-10 sm:grid-cols-2 lg:ml-auto lg:gap-x-16 lg:text-right">
             {columns.map((col) => (
               <FooterColumn key={col.title} title={col.title} links={col.links} />
             ))}
