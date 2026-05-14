@@ -46,7 +46,7 @@ const MODEL_CORE_POSITION = {
   y: (MODEL_STAGE_CENTER.y / MODEL_STAGE.height) * 100,
 } as const
 
-const MODEL_CORE_OFFSET_X = -36
+const MODEL_CORE_OFFSET_X = 128
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
   inner: { x: 312, y: 120 },
