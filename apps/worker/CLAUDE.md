@@ -22,7 +22,7 @@ package.json        — 包描述与脚本 (依赖 @nano-banana/shared)
 
 - `DB`: D1Database — 主数据库
 - `UPLOADS`: R2Bucket — 用户资源存储
-- `KV`: KVNamespace — 共享 KV (限流缓存/存储配额)
+- `KV`: KVNamespace — 共享 KV (限流缓存/轻量运行时缓存)
 
 ## Cron Triggers
 

@@ -48,10 +48,8 @@ import {
 } from '@/lib/platform-runtime'
 import { getR2 } from '@/lib/r2'
 import {
-  applyStorageUsageDelta,
   extractR2KeyFromFileUrl,
   generateOutputPath,
-  invalidateStorageCache,
   toPublicFileUrl,
   toInternalFileUrl,
 } from '@/lib/storage'
@@ -236,7 +234,6 @@ export interface TaskExecutionDispatch {
 export interface TaskServiceRuntime {
   requireEnv: (key: string) => Promise<string>
   getR2: () => Promise<R2Bucket>
-  invalidateStorageCache: (userId: string) => Promise<void>
   getPlatformSupplierApiKey?: (provider: PlatformSupplierId) => Promise<string>
   getPlatformKey?: (provider: string) => Promise<string>
   dispatchTask?: (message: TaskQueueMessage) => Promise<void>
@@ -246,7 +243,6 @@ export interface TaskServiceRuntime {
 const defaultTaskRuntime: TaskServiceRuntime = {
   requireEnv,
   getR2,
-  invalidateStorageCache,
   getPlatformSupplierApiKey,
 }
 
@@ -976,8 +972,6 @@ async function persistTaskOutput(
     },
   })
 
-  await applyStorageUsageDelta(userId, body.byteLength)
-  await runtime.invalidateStorageCache(userId)
   const dimensions =
     contentType.startsWith('image/')
       ? detectImageDimensions(body, contentType)
@@ -2503,11 +2497,7 @@ export async function deleteTasks(
         (typeof output.url === 'string' ? extractR2KeyFromFileUrl(output.url) : null)
 
       if (r2Key?.startsWith(`outputs/${userId}/`)) {
-        const object = await r2.head(r2Key)
         await r2.delete(r2Key)
-        if (object?.size) {
-          await applyStorageUsageDelta(userId, -object.size)
-        }
       }
     } catch (error) {
       log.warn('Failed to cleanup task output during delete', {
@@ -2523,8 +2513,6 @@ export async function deleteTasks(
     .prepare(`DELETE FROM async_tasks WHERE user_id = ? AND id IN (${placeholders})`)
     .bind(userId, ...deletedIds)
     .run()
-
-  await runtime.invalidateStorageCache(userId)
 
   return { deletedIds }
 }

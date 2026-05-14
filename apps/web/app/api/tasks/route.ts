@@ -106,10 +106,6 @@ export async function POST(req: Request) {
         const { getR2 } = await import('@/lib/r2')
         return getR2()
       },
-      invalidateStorageCache: async (targetUserId) => {
-        const { invalidateStorageCache } = await import('@/lib/storage')
-        await invalidateStorageCache(targetUserId)
-      },
       requireEnv: async (key) => {
         const { requireEnv } = await import('@/lib/env')
         return requireEnv(key)

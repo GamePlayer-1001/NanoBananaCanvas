@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @nano-banana/shared 的 AsyncTaskType/PageInfo,
  *          依赖 @/lib/query/keys 的 queryKeys, 依赖 @/lib/tasks 的 TaskDetail/ListTasksResult
  * [OUTPUT]: 对外提供 useTasks / useTask / useTaskPolling / useSubmitTask / useCancelTask
- * [POS]: hooks 的异步任务数据层，被 workspace/canvas 页面消费，并对高频任务轮询做前台固定退避
+ * [POS]: hooks 的异步任务数据层，被 workspace/canvas 页面消费，并对高频任务轮询做前台三段式退避
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -69,6 +69,10 @@ function getTaskPollInterval(task: TaskDetail | undefined): number | false {
   const baseline = Number.isFinite(startedAtMs) ? startedAtMs : createdAtMs
   const elapsedMs = Number.isFinite(baseline) ? Date.now() - baseline : 0
 
+  if (elapsedMs >= 180_000) {
+    return 15_000
+  }
+
   if (elapsedMs >= 60_000) {
     return 10_000
   }
@@ -109,7 +113,7 @@ export function useTaskPolling(taskId: string | undefined) {
     queryKey: queryKeys.tasks.detail(taskId ?? ''),
     queryFn: () => fetchJson(`/api/tasks/${taskId}`),
     enabled: !!taskId,
-    /* 动态轮询: 前 60s 每 15s，之后每 10s，终态即停 */
+    /* 动态轮询: 0-60s 每 15s，60-180s 每 10s，180s 后每 15s，终态即停 */
     refetchInterval: (query) => {
       return getTaskPollInterval(query.state.data)
     },

@@ -44,10 +44,8 @@ vi.mock('@/lib/r2', () => ({
 }))
 
 vi.mock('@/lib/storage', () => ({
-  applyStorageUsageDelta: vi.fn().mockResolvedValue(undefined),
   extractR2KeyFromFileUrl: vi.fn(() => null),
   generateOutputPath: vi.fn(() => 'outputs/user-1/task-1.png'),
-  invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
   toInternalFileUrl: vi.fn((key: string) => `/api/files/${key}`),
   toPublicFileUrl: vi.fn(async (key: string) => `/api/files/${key}`),
 }))
@@ -355,7 +353,6 @@ describe('submitTask', () => {
       {
         requireEnv: vi.fn(),
         getR2: vi.fn().mockResolvedValue(r2Mock),
-        invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       },
     )
 
@@ -411,7 +408,6 @@ describe('submitTask', () => {
     }, {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       getWorkflowStatus: vi.fn().mockResolvedValue({
         status: 'running',
@@ -841,7 +837,6 @@ describe('submitTask', () => {
     }, {
       requireEnv: vi.fn().mockRejectedValue(new Error('should not require env')),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockRejectedValue(new Error('should not require platform key')),
     })
 
@@ -919,7 +914,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, task.id, 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       dispatchTask,
     })
@@ -993,7 +987,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, task.id, 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       dispatchTask,
     })
@@ -1035,7 +1028,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, 'task-timeout-workflow', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       dispatchTask: vi.fn().mockResolvedValue(undefined),
     })
@@ -1080,7 +1072,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, 'task-workflow-errored', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       getWorkflowStatus: vi.fn().mockResolvedValue({
         status: 'errored',
@@ -1133,7 +1124,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, 'task-workflow-queued-stale', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       getWorkflowStatus: vi.fn().mockResolvedValue({
         status: 'queued',
@@ -1191,7 +1181,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, 'task-workflow-running-observe-only', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       getWorkflowStatus: vi.fn().mockResolvedValue({
         status: 'running',
@@ -1245,7 +1234,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, 'task-workflow-complete-pending', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       getWorkflowStatus: vi.fn().mockResolvedValue({
         status: 'complete',
@@ -1294,7 +1282,6 @@ describe('submitTask', () => {
     const detail = await checkTask(pollingDb, 'task-workflow-complete-running', 'user-1', {
       requireEnv: vi.fn(),
       getR2: vi.fn().mockResolvedValue(r2Mock),
-      invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
       getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       getWorkflowStatus: vi.fn().mockResolvedValue({
         status: 'complete',
@@ -1349,7 +1336,6 @@ describe('submitTask', () => {
       {
         requireEnv: vi.fn(),
         getR2: vi.fn().mockResolvedValue(r2Mock),
-        invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
         getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
       },
     )

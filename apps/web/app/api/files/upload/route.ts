@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/rate-limit 的 withRateLimit，
- *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/applyStorageUsageDelta/toPublicFileUrl，
+ *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/toPublicFileUrl，
  *          依赖 @/lib/validations/upload 的 validateUpload
  * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小校验)
- * [POS]: api/files 的上传端点，被前端 useUpload hook 消费，并把存储体积统计写回 D1 真相源
+ * [POS]: api/files 的上传端点，被前端 useUpload hook 消费，并把文件直接写入 R2
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -14,9 +14,7 @@ import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getR2 } from '@/lib/r2'
 import {
-  applyStorageUsageDelta,
   generateUploadPath,
-  invalidateStorageCache,
   toPublicFileUrl,
 } from '@/lib/storage'
 import { validateUpload } from '@/lib/validations/upload'
@@ -54,9 +52,6 @@ export async function POST(req: NextRequest) {
       customMetadata: { userId, originalName: file.name },
     })
 
-    await applyStorageUsageDelta(userId, file.size)
-    /* 主动失效存储配额缓存 */
-    await invalidateStorageCache(userId)
     const publicUrl = await toPublicFileUrl(key)
 
     return apiOk({

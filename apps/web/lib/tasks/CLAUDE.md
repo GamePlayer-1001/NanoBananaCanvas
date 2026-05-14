@@ -5,7 +5,7 @@ P2 异步任务执行核心 — D1 真相源 + Queue/Workflow 双轨编排 + 客
 
 ## 成员清单
 
-- `service.ts`: 核心服务层，7 大函数 (checkConcurrency/submitTask/processTaskDispatch/checkTask/cancelTask/listTasks/deleteTasks)，平台模式显式读 provider/model 并接回 `freeze/confirm/refund`，user_key 模式显式读 capability/configId 且不再写平台 credits 语义；图片任务现为“submit 先返回最小 dispatch 指令 + R2 持久化执行快照 + 按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue + Worker 真后台执行 + 完成后回写 D1/R2”，并额外在 `executeTaskRequest` 做原子认领、在 `checkTask` 仅对 legacy queue 任务做节流补投递，不在当前 HTTP 请求里同步执行，避免轮询请求被上游出图阻塞成 524；`processTaskDispatch()` 现在会把快照缺失、配置恢复失败、运行时凭据缺失等 Worker 黑洞显式收敛为 `failed`，不再让任务永远卡在 `pending`；任务列表恢复精确 `COUNT(*)` 总数，但只在进入页面/条件变化时需要刷新；任务产物写入后会同步增量维护 `storage_usage` 汇总，并优先回写公开资产域名 URL；现补充 submit/dispatch/check/fail/timeout 的结构化诊断日志，统一带出 `taskId/userId/taskType/provider/modelId/executionMode/workflowId/nodeId/orchestrator`，并为图片提交额外输出脱敏后的 key 指纹与 fallback provider 指纹，便于核对运行时真实鉴权上下文；后台图片执行现显式回放快照中的 `fallbackApiKey`，避免 DLAPI→Comfly 托底时误用主链 key
+- `service.ts`: 核心服务层，7 大函数 (checkConcurrency/submitTask/processTaskDispatch/checkTask/cancelTask/listTasks/deleteTasks)，平台模式显式读 provider/model 并接回 `freeze/confirm/refund`，user_key 模式显式读 capability/configId 且不再写平台 credits 语义；图片任务现为“submit 先返回最小 dispatch 指令 + R2 持久化执行快照 + 按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue + Worker 真后台执行 + 完成后回写 D1/R2”，并额外在 `executeTaskRequest` 做原子认领、在 `checkTask` 仅对 legacy queue 任务做节流补投递，不在当前 HTTP 请求里同步执行，避免轮询请求被上游出图阻塞成 524；`processTaskDispatch()` 现在会把快照缺失、配置恢复失败、运行时凭据缺失等 Worker 黑洞显式收敛为 `failed`，不再让任务永远卡在 `pending`；任务列表恢复精确 `COUNT(*)` 总数，但只在进入页面/条件变化时需要刷新；任务产物继续优先回写公开资产域名 URL；现补充 submit/dispatch/check/fail/timeout 的结构化诊断日志，统一带出 `taskId/userId/taskType/provider/modelId/executionMode/workflowId/nodeId/orchestrator`，并为图片提交额外输出脱敏后的 key 指纹与 fallback provider 指纹，便于核对运行时真实鉴权上下文；后台图片执行现显式回放快照中的 `fallbackApiKey`，避免 DLAPI→Comfly 托底时误用主链 key
 - `service.test.ts`: 服务层回归测试，验证平台前置失败会收敛为 TaskError，而不是漏成 UNKNOWN 500，并覆盖图片任务排队返回 / 后台完成回写 / data URL 清洗 / Queue 消费者从 R2+D1 重建执行上下文 / 轮询侧自愈补投递 / 分发黑洞失败收口，以及后台图片执行对 `fallbackApiKey` 的快照回放
 - `index.ts`: 桶文件，统一导出 service + processors 的公共 API
 - `processors/`: Provider 处理器子模块，详见 processors/CLAUDE.md
@@ -30,7 +30,6 @@ Browser → API Route → service.ts → D1 (状态持久化)
 - **超时检测**: checkTask 中比较 created_at vs timeoutMs，超时标记 failed；但 `workflow` 主编排任务已跳出 legacy timeout 裁决，避免被旧的 Queue/Cron 时钟误杀
 - **输出收口**: provider 返回的图片/视频/音频 URL 或 data URL 在 completed 分支统一写入账户私有 R2，再优先回写公开资产域名 URL；未配置资产域名时才回退站内 `/api/files/...`
 - **精确分页**: 任务列表保留精确 `COUNT(*)` 总数，配合页面进入时查询一次、翻页复用 total 的前端策略，兼顾页码准确性与查询频率
-- **存储账本**: 任务产物写入/删除时同步维护 `storage_usage` 汇总表，上传链与任务链默认读 D1 真相源，只有首个用户冷启动才回退到 `R2.list`
 - **图片真后台执行**: `image_gen` 不再在 submit 请求内同步等待上游出图，而是先返回 `pending` 与最小 dispatch 指令，把完整执行快照写入内部 `task-inputs/`，再按 orchestrator 进入 Cloudflare Workflow 或 legacy Queue，由 Worker 通过 `processTaskDispatch()` 重建上下文并补完执行，彻底规避 Cloudflare 524
 - **Workflow 主编排切流**: `image_gen` 现在可通过 `TASK_IMAGE_ORCHESTRATOR=workflow` 切到 Cloudflare Workflows，让长生命周期任务不再依赖 Queue/Cron 做主裁决；旧 Queue 仍保留为回滚兜底
 - **Workflow 状态观察**: `checkTask()` 对 workflow 任务会直接读取 Workflow 实例状态；若实例已 `errored/terminated`，D1 会立即收敛为 failed；若实例已进入运行态，D1 会从 pending 提升到 running
