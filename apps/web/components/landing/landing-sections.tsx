@@ -4,7 +4,7 @@
  *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；所有定价 CTA 已收口为“未登录进登录页、已登录进 Stripe Portal”
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；所有定价 CTA 已收口为“未登录进登录页、已登录进 Stripe Portal”，Features 桌面区用非被动 wheel 监听维持滚轮切换而不触发浏览器告警
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -123,6 +123,7 @@ export function FeaturesSection() {
   }))
   const [activeFeature, setActiveFeature] =
     useState<(typeof FEATURE_KEYS)[number]>('canvas')
+  const featureRailRef = useRef<HTMLDivElement | null>(null)
   const wheelCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeFeatureIndex = Math.max(
     featureItems.findIndex((item) => item.key === activeFeature),
@@ -139,30 +140,46 @@ export function FeaturesSection() {
     }
   }, [])
 
+  useEffect(() => {
+    const rail = featureRailRef.current
+    if (!rail) return undefined
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) < 18) return
+
+      if (wheelCooldownRef.current) {
+        event.preventDefault()
+        return
+      }
+
+      const direction = event.deltaY > 0 ? 1 : -1
+      const currentIndex = Math.max(
+        featureItems.findIndex((item) => item.key === activeFeature),
+        0,
+      )
+      const nextIndex = clamp(currentIndex + direction, 0, featureItems.length - 1)
+
+      if (nextIndex === currentIndex) {
+        return
+      }
+
+      event.preventDefault()
+      setActiveFeature(featureItems[nextIndex].key)
+      wheelCooldownRef.current = setTimeout(() => {
+        wheelCooldownRef.current = null
+      }, 420)
+    }
+
+    rail.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      rail.removeEventListener('wheel', handleWheel)
+    }
+  }, [activeFeature, featureItems])
+
   function activateFeature(index: number) {
     const nextIndex = clamp(index, 0, featureItems.length - 1)
     setActiveFeature(featureItems[nextIndex].key)
-  }
-
-  function handleFeatureWheel(event: React.WheelEvent<HTMLDivElement>) {
-    if (Math.abs(event.deltaY) < 18) return
-    if (wheelCooldownRef.current) {
-      event.preventDefault()
-      return
-    }
-
-    const direction = event.deltaY > 0 ? 1 : -1
-    const nextIndex = clamp(activeFeatureIndex + direction, 0, featureItems.length - 1)
-
-    if (nextIndex === activeFeatureIndex) {
-      return
-    }
-
-    event.preventDefault()
-    activateFeature(nextIndex)
-    wheelCooldownRef.current = setTimeout(() => {
-      wheelCooldownRef.current = null
-    }, 420)
   }
 
   return (
@@ -179,8 +196,8 @@ export function FeaturesSection() {
         </div>
 
         <div
+          ref={featureRailRef}
           className="hidden items-start gap-72 xl:grid xl:grid-cols-[minmax(0,0.3fr)_minmax(0,0.7fr)] 2xl:gap-88"
-          onWheel={handleFeatureWheel}
         >
           <div className="sticky top-24 min-w-0 self-start pt-4">
             <div className="space-y-5">
