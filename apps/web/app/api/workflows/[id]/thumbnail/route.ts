@@ -13,7 +13,7 @@ import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 import { getR2 } from '@/lib/r2'
-import { generateThumbnailPath } from '@/lib/storage'
+import { generateThumbnailPath, toPublicFileUrl } from '@/lib/storage'
 
 /* ─── Params ─────────────────────────────────────────── */
 
@@ -55,7 +55,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     })
 
     /* 更新 DB */
-    const thumbnailUrl = `/api/files/${r2Key}?v=${Date.now()}`
+    const publicThumbnailUrl = await toPublicFileUrl(r2Key)
+    const thumbnailUrl = `${publicThumbnailUrl}${publicThumbnailUrl.includes('?') ? '&' : '?'}v=${Date.now()}`
     await db
       .prepare(
         `UPDATE workflows SET thumbnail = ?, updated_at = datetime('now')

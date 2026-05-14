@@ -47,9 +47,6 @@ export function createWorkerTaskRuntime(env: WorkerTaskBindings): TaskServiceRun
   return {
     requireEnv: async (key) => requireBinding(env, key as keyof WorkerTaskBindings),
     getR2: async () => env.UPLOADS,
-    invalidateStorageCache: async (userId) => {
-      await env.KV.delete(`storage:${userId}:usage`)
-    },
     getPlatformKey: async (provider) => {
       const envKey = PLATFORM_ENV_KEY_MAP[provider]
       if (!envKey) {

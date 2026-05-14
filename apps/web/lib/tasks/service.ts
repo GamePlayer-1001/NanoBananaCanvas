@@ -13,6 +13,7 @@ import type {
   AsyncTaskStatus,
   AsyncTaskType,
   ExecutionMode,
+  PageInfo,
   TaskOrchestrator,
   TaskQueueMessage,
 } from '@nano-banana/shared'
@@ -49,7 +50,7 @@ import { getR2 } from '@/lib/r2'
 import {
   extractR2KeyFromFileUrl,
   generateOutputPath,
-  invalidateStorageCache,
+  toPublicFileUrl,
   toInternalFileUrl,
 } from '@/lib/storage'
 import {
@@ -178,6 +179,7 @@ export interface ListTasksResult {
   total: number
   page: number
   limit: number
+  pageInfo: PageInfo
 }
 
 export interface DeleteTasksResult {
@@ -232,7 +234,6 @@ export interface TaskExecutionDispatch {
 export interface TaskServiceRuntime {
   requireEnv: (key: string) => Promise<string>
   getR2: () => Promise<R2Bucket>
-  invalidateStorageCache: (userId: string) => Promise<void>
   getPlatformSupplierApiKey?: (provider: PlatformSupplierId) => Promise<string>
   getPlatformKey?: (provider: string) => Promise<string>
   dispatchTask?: (message: TaskQueueMessage) => Promise<void>
@@ -242,7 +243,6 @@ export interface TaskServiceRuntime {
 const defaultTaskRuntime: TaskServiceRuntime = {
   requireEnv,
   getR2,
-  invalidateStorageCache,
   getPlatformSupplierApiKey,
 }
 
@@ -972,7 +972,6 @@ async function persistTaskOutput(
     },
   })
 
-  await runtime.invalidateStorageCache(userId)
   const dimensions =
     contentType.startsWith('image/')
       ? detectImageDimensions(body, contentType)
@@ -984,7 +983,7 @@ async function persistTaskOutput(
     fileName,
     ...(dimensions ?? {}),
     r2_key: r2Key,
-    url: toInternalFileUrl(r2Key),
+    url: await toPublicFileUrl(r2Key),
   }
 }
 
@@ -2416,27 +2415,42 @@ export async function listTasks(
 
   const where = conditions.join(' AND ')
   const offset = (filters.page - 1) * filters.limit
+  const countResult = await db
+    .prepare(
+      `SELECT COUNT(*) as total
+       FROM async_tasks
+       WHERE ${where}`,
+    )
+    .bind(...binds)
+    .first<{ total: number }>()
+  const total = countResult?.total ?? 0
 
-  /* 并行查总数 + 分页数据 */
-  const [countResult, dataResult] = await Promise.all([
-    db
-      .prepare(`SELECT COUNT(*) as cnt FROM async_tasks WHERE ${where}`)
-      .bind(...binds)
-      .first<{ cnt: number }>(),
-    db
-      .prepare(
-        `SELECT * FROM async_tasks WHERE ${where}
-         ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      )
-      .bind(...binds, filters.limit, offset)
-      .all<TaskRow>(),
-  ])
+  const dataResult = await db
+    .prepare(
+      `SELECT id, task_type, provider, model_id, execution_mode, status, progress,
+              input_data, output_data, retry_count, workflow_id, node_id,
+              created_at, started_at, completed_at
+       FROM async_tasks
+       WHERE ${where}
+       ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    )
+    .bind(...binds, filters.limit, offset)
+    .all<TaskRow>()
+
+  const visibleRows = dataResult.results ?? []
+  const hasMore = offset + visibleRows.length < total
 
   return {
-    tasks: (dataResult.results ?? []).map(rowToDetail),
-    total: countResult?.cnt ?? 0,
+    tasks: visibleRows.map(rowToDetail),
+    total,
     page: filters.page,
     limit: filters.limit,
+    pageInfo: {
+      page: filters.page,
+      limit: filters.limit,
+      hasMore,
+      nextPage: hasMore ? filters.page + 1 : null,
+    },
   }
 }
 
@@ -2499,8 +2513,6 @@ export async function deleteTasks(
     .prepare(`DELETE FROM async_tasks WHERE user_id = ? AND id IN (${placeholders})`)
     .bind(userId, ...deletedIds)
     .run()
-
-  await runtime.invalidateStorageCache(userId)
 
   return { deletedIds }
 }

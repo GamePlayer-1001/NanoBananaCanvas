@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/rate-limit 的 withRateLimit，
- *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/getStorageUsage，
+ *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/toPublicFileUrl，
  *          依赖 @/lib/validations/upload 的 validateUpload
- * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小/配额检查)
- * [POS]: api/files 的上传端点，被前端 useUpload hook 消费
+ * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小校验)
+ * [POS]: api/files 的上传端点，被前端 useUpload hook 消费，并把文件直接写入 R2
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,7 +13,10 @@ import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getR2 } from '@/lib/r2'
-import { generateUploadPath, getStorageUsage, invalidateStorageCache } from '@/lib/storage'
+import {
+  generateUploadPath,
+  toPublicFileUrl,
+} from '@/lib/storage'
 import { validateUpload } from '@/lib/validations/upload'
 
 /* ─── POST /api/files/upload ────────────────────────── */
@@ -39,12 +42,6 @@ export async function POST(req: NextRequest) {
       return apiError('VALIDATION_FAILED', validation.reason, 400)
     }
 
-    /* ── Check storage quota (R2-004) ────────────────── */
-    const usage = await getStorageUsage(userId)
-    if (usage.usedBytes + file.size > usage.limitBytes) {
-      return apiError('QUOTA_EXCEEDED', `Storage quota exceeded (${usage.usedPercent}% used)`, 403)
-    }
-
     /* ── Upload to R2 (R2-001 path convention) ───────── */
     const ext = file.name.split('.').pop() ?? 'bin'
     const key = generateUploadPath(userId, ext)
@@ -55,12 +52,11 @@ export async function POST(req: NextRequest) {
       customMetadata: { userId, originalName: file.name },
     })
 
-    /* 主动失效存储配额缓存 */
-    await invalidateStorageCache(userId)
+    const publicUrl = await toPublicFileUrl(key)
 
     return apiOk({
       key,
-      url: `/api/files/${key}`,
+      url: publicUrl,
       size: file.size,
       type: file.type,
     }, 201)

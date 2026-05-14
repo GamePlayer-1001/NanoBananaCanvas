@@ -1,15 +1,14 @@
 /**
- * [INPUT]: 依赖 @/lib/r2 的 getR2，依赖 @/lib/nanoid 的 ID 生成，
- *          依赖 @/lib/db 的 getDb，依赖 @/lib/kv 的 getKV
- * [OUTPUT]: 对外提供 R2 存储路径生成 / 私有输出路径解析 / 配额检查(KV 缓存) / 文件清理 / 缓存失效工具
- * [POS]: lib 的存储服务层，被文件上传 API / 异步任务 / 发布流程消费，当前采用统一免费配额策略
+ * [INPUT]: 依赖 @/lib/db 的 getDb，依赖 @/lib/r2 的 getR2，依赖 @/lib/nanoid 的 ID 生成，依赖 @/lib/env 的 getEnv
+ * [OUTPUT]: 对外提供 R2 存储路径生成 / 公开资产 URL 生成 / 私有输出路径解析 / 文件清理工具
+ * [POS]: lib 的存储服务层，被文件上传 API / 异步任务 / 发布流程消费；只保留路径、URL 与清理职责
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { getDb } from '@/lib/db'
-import { getKV } from '@/lib/kv'
+import { getEnv } from '@/lib/env'
 import { nanoid } from '@/lib/nanoid'
 import { getR2 } from '@/lib/r2'
+import { getDb } from '@/lib/db'
 
 /* ============================================ */
 /*  Storage Path Convention                      */
@@ -53,73 +52,31 @@ export function extractR2KeyFromFileUrl(url: string): string | null {
   return url.slice(INTERNAL_FILE_PREFIX.length) || null
 }
 
-/* ─── Storage Quota ──────────────────────────── */
-
-export interface StorageUsage {
-  usedBytes: number
-  limitBytes: number
-  usedPercent: number
-  isOverQuota: boolean
-}
-
 export interface CleanupExpiredOutputsResult {
   deleted: number
   errors: number
   prunedTasks: number
 }
 
-const STORAGE_CACHE_TTL = 300 // 5 分钟 KV 缓存
-const FREE_STORAGE_LIMIT_BYTES = 1 * 1024 * 1024 * 1024
 const OUTPUT_RETENTION_DAYS = 7
 const TERMINAL_TASK_RETENTION_DAYS = 14
 
-/**
- * 计算用户存储使用量 (KV 缓存 5min → R2 list fallback)
- * 上传/删除后调用 invalidateStorageCache 主动失效
- */
-export async function getStorageUsage(userId: string): Promise<StorageUsage> {
-  const kv = await getKV()
-  const cacheKey = `storage:${userId}:usage`
-
-  /* KV 缓存命中 → 直接返回 */
-  const cached = await kv.get<{ usedBytes: number; limitBytes: number }>(cacheKey, 'json')
-  if (cached) {
-    const usedPercent = cached.limitBytes > 0 ? Math.round((cached.usedBytes / cached.limitBytes) * 100) : 0
-    return { ...cached, usedPercent, isOverQuota: cached.usedBytes >= cached.limitBytes }
+export async function getPublicAssetBaseUrl(): Promise<string | null> {
+  const directBaseUrl = (await getEnv('PUBLIC_ASSET_BASE_URL')).trim()
+  if (!directBaseUrl) {
+    return null
   }
 
-  /* 缓存未命中 → R2 list 计算 */
-  const r2 = await getR2()
-  const limitBytes = FREE_STORAGE_LIMIT_BYTES
-
-  let usedBytes = 0
-  const prefixes = [`uploads/${userId}/`, `outputs/${userId}/`]
-
-  for (const prefix of prefixes) {
-    let cursor: string | undefined
-    do {
-      const result = await r2.list({ prefix, cursor, limit: 1000 })
-      for (const obj of result.objects) {
-        usedBytes += obj.size
-      }
-      cursor = result.truncated ? result.cursor : undefined
-    } while (cursor)
-  }
-
-  /* 写入 KV 缓存 */
-  await kv.put(cacheKey, JSON.stringify({ usedBytes, limitBytes }), {
-    expirationTtl: STORAGE_CACHE_TTL,
-  })
-
-  const usedPercent = limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0
-
-  return { usedBytes, limitBytes, usedPercent, isOverQuota: usedBytes >= limitBytes }
+  return directBaseUrl.replace(/\/+$/, '')
 }
 
-/** 主动失效存储配额缓存 (上传/删除文件后调用) */
-export async function invalidateStorageCache(userId: string): Promise<void> {
-  const kv = await getKV()
-  await kv.delete(`storage:${userId}:usage`)
+export async function toPublicFileUrl(key: string): Promise<string> {
+  const assetBaseUrl = await getPublicAssetBaseUrl()
+  if (!assetBaseUrl) {
+    return toInternalFileUrl(key)
+  }
+
+  return `${assetBaseUrl}/${key}`
 }
 
 /**

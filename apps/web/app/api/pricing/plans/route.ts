@@ -5,7 +5,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withPublicCache } from '@/lib/api/response'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
 
 export async function GET(req: Request) {
@@ -17,7 +17,10 @@ export async function GET(req: Request) {
       countryCode: req.headers.get('cf-ipcountry'),
     })
 
-    return apiOk(result)
+    return withPublicCache(apiOk(result), {
+      sMaxAge: 900,
+      staleWhileRevalidate: 86_400,
+    })
   } catch (error) {
     return handleApiError(error)
   }

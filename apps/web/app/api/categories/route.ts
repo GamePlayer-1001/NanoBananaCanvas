@@ -8,7 +8,7 @@
 
 import { NextRequest } from 'next/server'
 
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withPublicCache } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { getLocalizedFieldMap, getLocalizedFieldValue } from '@/lib/l10n'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
@@ -40,7 +40,10 @@ export async function GET(req: NextRequest) {
       icon: row.icon,
     }))
 
-    return apiOk(items)
+    return withPublicCache(apiOk(items), {
+      sMaxAge: 1_800,
+      staleWhileRevalidate: 86_400,
+    })
   } catch (error) {
     return handleApiError(error)
   }

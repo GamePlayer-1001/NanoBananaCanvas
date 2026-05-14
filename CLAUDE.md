@@ -26,7 +26,7 @@ e2e/                 — Playwright E2E 测试
 | 异步任务 | D1 状态机 + Cloudflare Workflow/Queue 双轨编排 + Worker 分发桥 + 客户端轮询 |
 | 定时任务 | Cloudflare Worker Cron (*/10 * * * *)            |
 | 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
-| 缓存   | Cloudflare KV (限流/存储配额)                     |
+| 缓存   | Cloudflare KV (限流/轻量运行时缓存)               |
 | 存储   | Cloudflare R2                                     |
 | 认证   | Clerk 会话桥接已接回运行时，账户级资源绑定继续收口中 |
 | 支付   | Stripe 商业化主链与真实执行扣费链均已接回运行时；生产接线、正式部署与手测仍待完成 |

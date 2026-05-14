@@ -63,7 +63,7 @@ users/me/route.ts       — GET+PATCH 当前 actor 账户镜像与时区矫正�
 video-analysis/         — 视频分析 (1 端点)
   route.ts              — GET 账号历史 / POST 平台 Gemini 视频分析 (上传文件 -> 分镜表/剧本 JSON)
 files/                  — 文件上传与读取 (见子 CLAUDE.md)
-  upload/route.ts       — POST 文件上传 (R2 存储, 配额检查)
+  upload/route.ts       — POST 文件上传 (R2 存储, 类型/大小校验)
   [...key]/route.ts     — GET 读取 R2 文件 (thumbnails 公开；公开 Explore 作品引用的媒体做匿名放行 + 短 TTL 白名单缓存；其余 uploads/outputs 按用户隔离)
 
 admin/                  — 运维管理 (1 端点)
