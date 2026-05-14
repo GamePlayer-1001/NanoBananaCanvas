@@ -62,7 +62,7 @@ const OUTPUT_RETENTION_DAYS = 7
 const TERMINAL_TASK_RETENTION_DAYS = 14
 
 export async function getPublicAssetBaseUrl(): Promise<string | null> {
-  const directBaseUrl = (await getEnv('PUBLIC_ASSET_BASE_URL')).trim()
+  const directBaseUrl = (await getEnv('PUBLIC_ASSET_BASE_URL'))?.trim() ?? ''
   if (!directBaseUrl) {
     return null
   }

@@ -13,7 +13,6 @@ import type {
   AsyncTaskStatus,
   AsyncTaskType,
   ExecutionMode,
-  PageInfo,
   TaskOrchestrator,
   TaskQueueMessage,
 } from '@nano-banana/shared'
@@ -172,6 +171,13 @@ export interface TaskDetail {
   createdAt: string
   startedAt: string | null
   completedAt: string | null
+}
+
+export interface PageInfo {
+  page: number
+  limit: number
+  hasMore: boolean
+  nextPage: number | null
 }
 
 export interface ListTasksResult {

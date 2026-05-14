@@ -20,6 +20,7 @@ export type {
   SubmitTaskResult,
   TaskExecutionDispatch,
   TaskDetail,
+  PageInfo,
   ListTasksResult,
   DeleteTasksResult,
   TaskServiceRuntime,
