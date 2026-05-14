@@ -113,7 +113,8 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
   }
 
   const workflow = data as WorkflowDetail
-  const authorName = workflow.author_name?.trim() || workflow.source_author_name?.trim() || 'Unknown Creator'
+  const authorName =
+    workflow.author_name?.trim() || workflow.source_author_name?.trim() || t('unknownCreator')
   const isOutput = workflow.entity_type === 'output'
   const sourceAuthorName = workflow.source_author_name?.trim()
   const customThumbnail =

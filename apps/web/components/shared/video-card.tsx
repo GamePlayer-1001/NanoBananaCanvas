@@ -10,7 +10,7 @@
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Download, Ellipsis, Flag, Heart, Play, Sparkles, Star } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -53,12 +53,12 @@ export interface VideoCardData {
 
 /* ─── Helpers ────────────────────────────────────────── */
 
-function getDisplayName(name?: string): string {
-  return name?.trim() || 'Unknown Creator'
+function getDisplayName(name: string | undefined, fallback: string): string {
+  return name?.trim() || fallback
 }
 
-function getInitial(name?: string): string {
-  return getDisplayName(name).charAt(0).toUpperCase()
+function getInitial(name: string | undefined, fallback: string): string {
+  return getDisplayName(name, fallback).charAt(0).toUpperCase()
 }
 
 function formatViews(n?: number): string {
@@ -67,7 +67,7 @@ function formatViews(n?: number): string {
   return String(n)
 }
 
-function formatCreatedAt(value?: string): string {
+function formatCreatedAt(value: string | undefined, locale: string): string {
   if (!value) return ''
 
   const date = new Date(value)
@@ -75,7 +75,7 @@ function formatCreatedAt(value?: string): string {
     return value
   }
 
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -122,8 +122,13 @@ export function VideoCard({
 }) {
   const t = useTranslations('explore')
   const tDetail = useTranslations('exploreDetail')
-  const authorName = getDisplayName(data.author.name)
-  const meta = [data.views !== undefined ? t('views', { count: data.views }) : '', formatCreatedAt(data.createdAt)]
+  const locale = useLocale()
+  const unknownCreator = t('unknownCreator')
+  const authorName = getDisplayName(data.author.name, unknownCreator)
+  const meta = [
+    data.views !== undefined ? t('views', { count: data.views }) : '',
+    formatCreatedAt(data.createdAt, locale),
+  ]
     .filter(Boolean)
     .join(' · ')
 
@@ -135,6 +140,7 @@ export function VideoCard({
       variant={variant}
       t={t}
       tDetail={tDetail}
+      unknownCreator={unknownCreator}
     />
   )
 }
@@ -146,6 +152,7 @@ function CardWithPreview({
   variant,
   t,
   tDetail,
+  unknownCreator,
 }: {
   data: VideoCardData
   authorName: string
@@ -153,6 +160,7 @@ function CardWithPreview({
   variant: 'default' | 'masonry'
   t: ReturnType<typeof useTranslations<'explore'>>
   tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
+  unknownCreator: string
 }) {
   const [interactionState, setInteractionState] = useState(() => ({
     liked: Boolean(data.liked),
@@ -218,7 +226,7 @@ function CardWithPreview({
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-white/60 text-sm font-semibold text-stone-900">
-                          {getInitial(authorName)}
+                          {getInitial(authorName, unknownCreator)}
                         </div>
                       )}
                     </div>
@@ -262,7 +270,7 @@ function CardWithPreview({
         ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">
-              No Preview
+              {t('noPreview')}
             </span>
           </div>
         )}
@@ -311,7 +319,7 @@ function CardWithPreview({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-brand-100 text-sm font-medium text-brand-600">
-              {getInitial(authorName)}
+              {getInitial(authorName, unknownCreator)}
             </div>
           )}
         </div>

@@ -150,8 +150,9 @@ function toVideoCard(
   item: ExploreApiItem,
   categoryMap: Map<string, string>,
   categorySlugMap: Map<string, string>,
+  unknownCreator: string,
 ): VideoCardData {
-  const authorName = item.author_name?.trim() || 'Unknown Creator'
+  const authorName = item.author_name?.trim() || unknownCreator
   const thumbnailUrl =
     item.content_type === 'video' && item.thumbnail === item.media_url ? undefined : item.thumbnail
 
@@ -298,8 +299,11 @@ export function ExploreContent() {
   )
 
   const videos = useMemo(
-    () => dedupeVideoCards(allItems.map((item) => toVideoCard(item, categoryMap, categorySlugMap))),
-    [allItems, categoryMap, categorySlugMap],
+    () =>
+      dedupeVideoCards(
+        allItems.map((item) => toVideoCard(item, categoryMap, categorySlugMap, t('unknownCreator'))),
+      ),
+    [allItems, categoryMap, categorySlugMap, t],
   )
 
   const filteredVideos = useMemo(() => {

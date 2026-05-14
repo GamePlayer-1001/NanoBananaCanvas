@@ -1196,6 +1196,8 @@
     "latest": "最新",
     "myLiked": "点赞",
     "loading": "加载中...",
+    "unknownCreator": "未知创作者",
+    "noPreview": "暂无预览",
     "promoTitle": "GPT Image 2 价格狂欢",
     "promoBody": "GPT Image 2 价格狂欢：套餐首月免费！创作自由就现在！",
     "promoCta": "立享优惠",
@@ -1971,6 +1973,7 @@
   "exploreDetail": {
     "backToExplore": "返回广场",
     "notFound": "工作流不存在",
+    "unknownCreator": "未知创作者",
     "views": "{count} 浏览",
     "likes": "{count} 点赞",
     "clones": "{count} 克隆",

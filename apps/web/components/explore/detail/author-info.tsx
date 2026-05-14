@@ -9,7 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 动态头像来自运行时远程地址，这里不走 Next Image 优化链。 */
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Eye, Heart, Sparkles, Star } from 'lucide-react'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -25,8 +25,8 @@ interface AuthorInfoProps {
 
 /* ─── Component ──────────────────────────────────────── */
 
-function formatMetric(value?: number) {
-  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(
+function formatMetric(value: number | undefined, locale: string) {
+  return Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(
     Math.max(0, value ?? 0),
   )
 }
@@ -44,7 +44,8 @@ export function AuthorInfo({
   totalViews,
 }: AuthorInfoProps) {
   const t = useTranslations('exploreDetail')
-  const displayName = name?.trim() || 'Unknown Creator'
+  const locale = useLocale()
+  const displayName = name?.trim() || t('unknownCreator')
   const vip = isVipMembership(membershipStatus)
 
   return (
@@ -79,15 +80,15 @@ export function AuthorInfo({
           <div className="flex min-h-[30px] flex-wrap items-center gap-4 text-xs font-medium text-stone-500">
             <span className="inline-flex items-center gap-1.5">
               <Heart size={13} />
-              {formatMetric(totalLikes)}
+              {formatMetric(totalLikes, locale)}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Star size={13} />
-              {formatMetric(totalFavorites)}
+              {formatMetric(totalFavorites, locale)}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Eye size={13} />
-              {formatMetric(totalViews)}
+              {formatMetric(totalViews, locale)}
             </span>
           </div>
         </div>

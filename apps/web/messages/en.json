@@ -1196,6 +1196,8 @@
     "latest": "Latest",
     "myLiked": "Most Liked",
     "loading": "Loading...",
+    "unknownCreator": "Unknown Creator",
+    "noPreview": "No Preview",
     "promoTitle": "GPT Image 2 Price Carnival",
     "promoBody": "GPT Image 2 price carnival: first month free on plans, and your next creative run starts now.",
     "promoCta": "Claim offer",
@@ -1971,6 +1973,7 @@
   "exploreDetail": {
     "backToExplore": "Back to Explore",
     "notFound": "Workflow not found",
+    "unknownCreator": "Unknown Creator",
     "views": "{count} views",
     "likes": "{count} likes",
     "clones": "{count} clones",
