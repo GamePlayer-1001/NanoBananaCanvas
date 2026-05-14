@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/errors
  * [OUTPUT]: 对外提供 POST /api/explore/outputs/:id/clone
- * [POS]: 公开生成作品克隆端点，后台克隆来源工作流并返回新工作流 id
+ * [POS]: 公开生成作品克隆端点，优先克隆来源工作流；若导入作品缺失 workflow_id，则回退读取 workflow_json_url 重建工作流并返回新工作流 id
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -15,6 +15,27 @@ import { nanoid } from '@/lib/nanoid'
 
 type Params = { params: Promise<{ id: string }> }
 
+interface PublishedOutputSource {
+  workflow_id: string | null
+  workflow_json_url: string | null
+  name: string
+  description: string
+  data: string | null
+}
+
+async function readWorkflowJson(url: string) {
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    throw new NotFoundError('Workflow JSON', url)
+  }
+
+  const text = await response.text()
+  JSON.parse(text)
+
+  return text
+}
+
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
     const { userId } = await requireAuth()
@@ -23,16 +44,25 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     const source = await db
       .prepare(
-        `SELECT po.workflow_id, w.name, w.description, w.data
+        `SELECT po.workflow_id, po.workflow_json_url, COALESCE(w.name, po.title) AS name,
+                COALESCE(w.description, po.description, '') AS description, w.data
          FROM published_outputs po
-         JOIN workflows w ON w.id = po.workflow_id
+         LEFT JOIN workflows w ON w.id = po.workflow_id
          WHERE po.id = ? AND po.is_public = 1`,
       )
       .bind(id)
-      .first<{ workflow_id: string; name: string; description: string; data: string }>()
+      .first<PublishedOutputSource>()
 
     if (!source) {
       throw new NotFoundError('Published output', id)
+    }
+
+    const workflowData =
+      source.data ??
+      (source.workflow_json_url ? await readWorkflowJson(source.workflow_json_url) : null)
+
+    if (!workflowData) {
+      throw new NotFoundError('Published output workflow source', id)
     }
 
     const newId = nanoid()
@@ -41,7 +71,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         `INSERT INTO workflows (id, user_id, name, description, data, folder_id)
          VALUES (?, ?, ?, ?, ?, NULL)`,
       )
-      .bind(newId, userId, `${source.name} (Copy)`, source.description, source.data)
+      .bind(newId, userId, `${source.name} (Copy)`, source.description, workflowData)
       .run()
 
     await db.prepare('UPDATE published_outputs SET clone_count = clone_count + 1 WHERE id = ?')
