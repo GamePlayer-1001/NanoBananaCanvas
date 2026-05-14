@@ -26,6 +26,7 @@ migration-020-published-outputs.sql — 社区生成作品迁移 (published_outp
 migration-021-explore-import-compat.sql — Explore 作品兼容迁移 (published_outputs 从 task-only 升级为 task/import 双来源兼容，并重建 likes/favorites/reports 外键到新作品实体)
 migration-022-billing-production-compat.sql — 生产账单兼容迁移 (为旧生产库补齐 users.standard_trial_used_at、subscriptions.purchase_mode、subscriptions.storage_gb)
 migration-023-published-outputs-category.sql — Explore 作品分类真相源迁移 (为 published_outputs 增加 category_id，并用关联工作流分类回填历史公开作品)
+migration-024-explore-import-use-case-categories.sql — Explore 导入图库分类迁移 (为 Excel/外部图库导入补齐 Design/Photography/Concept Art/UI-UX/Illustration/Marketing/Product 七类可筛选分类)
 seed.sql                 — 分类种子数据 (8 个 AI 工作流分类，name_i18n JSON 真相源 + 历史兼容列)
 seed-models.sql          — 模型目录种子 (23 模型: 13 text + 6 image + 2 video + 2 audio，覆盖 openrouter/deepseek/gemini/openai/kling 的平台目录)
 seed-pricing.sql         — 商业化种子数据 (4 个积分包 + token 计费版 model_pricing)

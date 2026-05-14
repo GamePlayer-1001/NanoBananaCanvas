@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 Node.js fs/path/process/crypto，依赖 wrangler CLI，依赖 apps/web/db schema 与 manifest 文件
- * [OUTPUT]: 对外提供 Explore 批量导入脚本 (CSV/JSON manifest -> R2 上传 -> published_outputs upsert)
- * [POS]: scripts 的 Explore 导入运维入口，被内容运营与数据迁移复用，负责把本地/外部作品安全导入为公开作品实体
+ * [OUTPUT]: 对外提供 Explore 批量导入脚本 (CSV/JSON manifest -> R2 上传 -> published_outputs upsert，并支持 categoryId/categorySlug 分类映射)
+ * [POS]: scripts 的 Explore 导入运维入口，被内容运营与数据迁移复用，负责把本地/外部作品安全导入为公开作品实体并落入可筛选分类
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -39,8 +39,8 @@ function parseArgs(argv) {
     else if (token === '--fake-authors') args.fakeAuthors = true
   }
 
-  if (!args.manifest || !args.userId) {
-    throw new Error('Usage: node ./scripts/import-explore-works.mjs --manifest <file> --user-id <userId> [--local|--remote] [--dry-run] [--fake-authors]')
+  if (!args.manifest || (!args.userId && !args.fakeAuthors)) {
+    throw new Error('Usage: node ./scripts/import-explore-works.mjs --manifest <file> [--user-id <userId>] [--local|--remote] [--dry-run] [--fake-authors]')
   }
 
   return args
@@ -311,6 +311,17 @@ function fetchExistingPublishedOutputId(target, importKey) {
   return rows[0]?.id ?? ''
 }
 
+function fetchCategoryIdBySlug(target, slug) {
+  if (!slug) return ''
+
+  const rows = fetchJsonResults(
+    target,
+    `SELECT id FROM categories WHERE slug = ${quoteSql(slug)} LIMIT 1`,
+  )
+
+  return rows[0]?.id ?? ''
+}
+
 function buildFakeAuthorIdentity(authorName) {
   const normalizedName = String(authorName || '').trim()
   if (!normalizedName) {
@@ -426,6 +437,8 @@ function normalizeEntry(entry, manifestDir) {
     workflowJsonPath,
     mediaType: inferredMediaType,
     workflowId: normalizeOptionalText(entry.workflowId || entry.workflow_id || ''),
+    categoryId: normalizeOptionalText(entry.categoryId || entry.category_id || ''),
+    categorySlug: normalizeOptionalText(entry.categorySlug || entry.category_slug || ''),
     publishedAt: normalizeOptionalText(entry.publishedAt || entry.published_at || ''),
     isPublic: normalizeBoolean(entry.isPublic || entry.is_public, true),
   }
@@ -435,7 +448,7 @@ function main() {
   const args = parseArgs(process.argv.slice(2))
   const manifestPath = path.resolve(process.cwd(), args.manifest)
   const manifestDir = path.dirname(manifestPath)
-  if (!fetchUserExists(args.target, args.userId)) {
+  if (args.userId && !fetchUserExists(args.target, args.userId)) {
     throw new Error(`User not found in D1: ${args.userId}`)
   }
   const items = parseManifest(manifestPath).map((entry) => normalizeEntry(entry, manifestDir))
@@ -445,6 +458,8 @@ function main() {
   for (const item of items) {
     const ownerUserId = resolveOwnerUserId(args.target, item, args)
     const existingPublishedOutputId = fetchExistingPublishedOutputId(args.target, item.importKey)
+    const resolvedCategoryId =
+      item.categoryId || fetchCategoryIdBySlug(args.target, item.categorySlug)
 
     const mediaKey = buildR2Key('uploads', ownerUserId, item.mediaPath)
     const thumbnailKey = item.thumbnailPath
@@ -490,6 +505,7 @@ function main() {
           title = ${quoteSql(item.title)},
           description = ${quoteSql(item.description)},
           prompt = ${quoteSql(item.prompt)},
+          category_id = ${quoteSql(resolvedCategoryId || null)},
           source_url = ${quoteSql(item.sourceUrl)},
           thumbnail = ${quoteSql(thumbnailUrl || null)},
           media_url = ${quoteSql(mediaUrl)},
@@ -502,7 +518,7 @@ function main() {
       : `
         INSERT INTO published_outputs (
           id, user_id, workflow_id, source_mode, source_type, source_author_name,
-          source_author_avatar, import_key, workflow_json_url, title, description,
+          source_author_avatar, import_key, workflow_json_url, title, description, category_id,
           prompt, source_url, thumbnail, media_url, media_type, is_public,
           published_at, created_at, updated_at
         ) VALUES (
@@ -517,6 +533,7 @@ function main() {
           ${quoteSql(workflowJsonUrl)},
           ${quoteSql(item.title)},
           ${quoteSql(item.description)},
+          ${quoteSql(resolvedCategoryId || null)},
           ${quoteSql(item.prompt)},
           ${quoteSql(item.sourceUrl)},
           ${quoteSql(thumbnailUrl || null)},

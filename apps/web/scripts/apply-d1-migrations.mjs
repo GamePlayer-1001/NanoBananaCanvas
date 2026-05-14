@@ -33,6 +33,7 @@ const orderedMigrations = [
   'migration-execution-history.sql',
   'migration-020-published-outputs.sql',
   'migration-021-explore-import-compat.sql',
+  'migration-024-explore-import-use-case-categories.sql',
 ]
 
 function resolveTargetFlag(args) {
