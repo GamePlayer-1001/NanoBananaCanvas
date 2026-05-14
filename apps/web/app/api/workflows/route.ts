@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid, @/lib/validations/workflow
- * [OUTPUT]: 对外提供 GET /api/workflows (轻分页列表) + POST /api/workflows (创建/导入本地草稿/模板起手，并继承当前文件夹归属)
- * [POS]: api/workflows 的用户工作流 CRUD 入口，列表读取采用 limit+1 轻分页以降低 D1 读取
+ * [OUTPUT]: 对外提供 GET /api/workflows (精确总数分页列表) + POST /api/workflows (创建/导入本地草稿/模板起手，并继承当前文件夹归属)
+ * [POS]: api/workflows 的用户工作流 CRUD 入口，列表读取在进入页面时保留精确总数，并在翻页时复用 total 语义
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -30,6 +30,16 @@ export async function GET(req: Request) {
     const folderClause = folderId ? 'AND folder_id = ?' : ''
     const baseBinds = folderId ? [userId, folderId] : [userId]
 
+    const countRow = await db
+      .prepare(
+        `SELECT COUNT(*) as total
+         FROM workflows
+         WHERE user_id = ? ${folderClause}`,
+      )
+      .bind(...baseBinds)
+      .first<{ total: number }>()
+    const total = countRow?.total ?? 0
+
     const workflows = await db
       .prepare(
         `SELECT id, name, description, thumbnail, is_public, like_count,
@@ -37,16 +47,15 @@ export async function GET(req: Request) {
          FROM workflows WHERE user_id = ? ${folderClause}
          ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
       )
-      .bind(...baseBinds, limit + 1, offset)
+      .bind(...baseBinds, limit, offset)
       .all()
 
-    const rows = workflows.results ?? []
-    const hasMore = rows.length > limit
-    const items = hasMore ? rows.slice(0, limit) : rows
+    const items = workflows.results ?? []
+    const hasMore = offset + items.length < total
 
     return apiOk({
       items,
-      total: offset + items.length + (hasMore ? 1 : 0),
+      total,
       page,
       limit,
       hasMore,

@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/rate-limit 的 withRateLimit，
- *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/getStorageUsage/applyStorageUsageDelta/toPublicFileUrl，
+ *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/applyStorageUsageDelta/toPublicFileUrl，
  *          依赖 @/lib/validations/upload 的 validateUpload
- * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小/配额检查)
- * [POS]: api/files 的上传端点，被前端 useUpload hook 消费，并把配额统计写回 D1 真相源
+ * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小校验)
+ * [POS]: api/files 的上传端点，被前端 useUpload hook 消费，并把存储体积统计写回 D1 真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -16,7 +16,6 @@ import { getR2 } from '@/lib/r2'
 import {
   applyStorageUsageDelta,
   generateUploadPath,
-  getStorageUsage,
   invalidateStorageCache,
   toPublicFileUrl,
 } from '@/lib/storage'
@@ -43,12 +42,6 @@ export async function POST(req: NextRequest) {
     const validation = validateUpload(file)
     if (!validation.ok) {
       return apiError('VALIDATION_FAILED', validation.reason, 400)
-    }
-
-    /* ── Check storage quota (R2-004) ────────────────── */
-    const usage = await getStorageUsage(userId)
-    if (usage.usedBytes + file.size > usage.limitBytes) {
-      return apiError('QUOTA_EXCEEDED', `Storage quota exceeded (${usage.usedPercent}% used)`, 403)
     }
 
     /* ── Upload to R2 (R2-001 path convention) ───────── */

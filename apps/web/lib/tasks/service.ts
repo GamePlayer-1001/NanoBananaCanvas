@@ -2421,22 +2421,34 @@ export async function listTasks(
 
   const where = conditions.join(' AND ')
   const offset = (filters.page - 1) * filters.limit
+  const countResult = await db
+    .prepare(
+      `SELECT COUNT(*) as total
+       FROM async_tasks
+       WHERE ${where}`,
+    )
+    .bind(...binds)
+    .first<{ total: number }>()
+  const total = countResult?.total ?? 0
 
   const dataResult = await db
     .prepare(
-      `SELECT * FROM async_tasks WHERE ${where}
+      `SELECT id, task_type, provider, model_id, execution_mode, status, progress,
+              input_data, output_data, retry_count, workflow_id, node_id,
+              created_at, started_at, completed_at
+       FROM async_tasks
+       WHERE ${where}
        ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     )
-    .bind(...binds, filters.limit + 1, offset)
+    .bind(...binds, filters.limit, offset)
     .all<TaskRow>()
 
-  const rows = dataResult.results ?? []
-  const hasMore = rows.length > filters.limit
-  const visibleRows = hasMore ? rows.slice(0, filters.limit) : rows
+  const visibleRows = dataResult.results ?? []
+  const hasMore = offset + visibleRows.length < total
 
   return {
     tasks: visibleRows.map(rowToDetail),
-    total: offset + visibleRows.length + (hasMore ? 1 : 0),
+    total,
     page: filters.page,
     limit: filters.limit,
     pageInfo: {

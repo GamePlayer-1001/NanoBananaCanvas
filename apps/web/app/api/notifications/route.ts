@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db
  * [OUTPUT]: 对外提供 GET /api/notifications, PATCH /api/notifications
- * [POS]: api/notifications 的通知端点，分页查询 + 标记已读
+ * [POS]: api/notifications 的通知端点，分页查询 + 标记已读，并把精确总数限制在进入页面查询阶段
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -22,13 +22,6 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit
     const db = await getDb()
 
-    // 总数
-    const countRow = await db
-      .prepare('SELECT COUNT(*) as total FROM notifications WHERE user_id = ?')
-      .bind(userId)
-      .first<{ total: number }>()
-    const total = countRow?.total ?? 0
-
     // 未读数
     const unreadRow = await db
       .prepare('SELECT COUNT(*) as unread FROM notifications WHERE user_id = ? AND is_read = 0')
@@ -36,7 +29,7 @@ export async function GET(req: NextRequest) {
       .first<{ unread: number }>()
     const unread = unreadRow?.unread ?? 0
 
-    // 列表
+    // 列表：多取一条判断是否还有下一页，避免每次分页都额外 COUNT(*)
     const rows = await db
       .prepare(
         `SELECT id, type, title, body, data, is_read, created_at
@@ -44,13 +37,33 @@ export async function GET(req: NextRequest) {
          ORDER BY created_at DESC
          LIMIT ? OFFSET ?`,
       )
-      .bind(userId, limit, offset)
+      .bind(userId, limit + 1, offset)
       .all()
 
+    const items = rows.results ?? []
+    const hasMore = items.length > limit
+    const visibleItems = hasMore ? items.slice(0, limit) : items
+
+    // 精确总数：仅第一页计算，后续翻页通过 hasMore 驱动，避免重复 COUNT(*)
+    const total =
+      page === 1
+        ? (await db
+            .prepare('SELECT COUNT(*) as total FROM notifications WHERE user_id = ?')
+            .bind(userId)
+            .first<{ total: number }>())?.total ?? visibleItems.length
+        : offset + visibleItems.length + (hasMore ? 1 : 0)
+
     return apiOk({
-      items: rows.results ?? [],
+      items: visibleItems,
       unread,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        hasMore,
+        nextPage: hasMore ? page + 1 : null,
+      },
     })
   } catch (error) {
     return handleApiError(error)

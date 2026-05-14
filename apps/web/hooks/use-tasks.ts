@@ -1,14 +1,13 @@
 /**
- * [INPUT]: 依赖 @tanstack/react-query, 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/PageInfo,
+ * [INPUT]: 依赖 @tanstack/react-query, 依赖 @nano-banana/shared 的 AsyncTaskType/PageInfo,
  *          依赖 @/lib/query/keys 的 queryKeys, 依赖 @/lib/tasks 的 TaskDetail/ListTasksResult
  * [OUTPUT]: 对外提供 useTasks / useTask / useTaskPolling / useSubmitTask / useCancelTask
- * [POS]: hooks 的异步任务数据层，被 workspace/canvas 页面消费，并对高频任务轮询做前台退避
+ * [POS]: hooks 的异步任务数据层，被 workspace/canvas 页面消费，并对高频任务轮询做前台固定退避
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { TASK_CONFIG } from '@nano-banana/shared'
 import type { AsyncTaskStatus, AsyncTaskType, PageInfo } from '@nano-banana/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -56,30 +55,25 @@ function isTerminal(status: AsyncTaskStatus): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
 
-function getTaskPollInterval(task: TaskDetail | undefined, taskType: AsyncTaskType): number | false {
+function getTaskPollInterval(task: TaskDetail | undefined): number | false {
   if (!task) {
-    return Math.max(2_000, Math.floor(TASK_CONFIG[taskType].pollIntervalMs / 2))
+    return 15_000
   }
 
   if (isTerminal(task.status)) {
     return false
   }
 
-  const config = TASK_CONFIG[taskType]
   const startedAtMs = task.startedAt ? Date.parse(task.startedAt) : Number.NaN
   const createdAtMs = Date.parse(task.createdAt)
   const baseline = Number.isFinite(startedAtMs) ? startedAtMs : createdAtMs
   const elapsedMs = Number.isFinite(baseline) ? Date.now() - baseline : 0
 
-  if (elapsedMs >= 2 * 60_000) {
-    return Math.max(config.pollIntervalMs * 3, 15_000)
+  if (elapsedMs >= 60_000) {
+    return 10_000
   }
 
-  if (elapsedMs >= 30_000) {
-    return Math.max(config.pollIntervalMs * 2, 10_000)
-  }
-
-  return Math.max(2_000, Math.floor(config.pollIntervalMs / 2))
+  return 15_000
 }
 
 /* ─── 1. useTasks — 任务列表 ────────────────────────── */
@@ -110,14 +104,14 @@ export function useTask(taskId: string | undefined) {
 
 /* ─── 3. useTaskPolling — 核心轮询 Hook ─────────────── */
 
-export function useTaskPolling(taskId: string | undefined, taskType: AsyncTaskType) {
+export function useTaskPolling(taskId: string | undefined) {
   return useQuery<TaskDetail>({
     queryKey: queryKeys.tasks.detail(taskId ?? ''),
     queryFn: () => fetchJson(`/api/tasks/${taskId}`),
     enabled: !!taskId,
-    /* 动态轮询: 前台快、长任务慢、终态即停 */
+    /* 动态轮询: 前 60s 每 15s，之后每 10s，终态即停 */
     refetchInterval: (query) => {
-      return getTaskPollInterval(query.state.data, taskType)
+      return getTaskPollInterval(query.state.data)
     },
     /* 页面不可见时停止轮询，节省 Worker/D1 请求 */
     refetchIntervalInBackground: false,
