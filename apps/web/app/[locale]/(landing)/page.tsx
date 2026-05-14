@@ -1,11 +1,11 @@
 /**
  * [INPUT]: 依赖 next/headers 的 headers，依赖 next-intl/server 的 getTranslations/setRequestLocale，
  *          依赖 @/components/landing/hero-section，
- *          依赖 @/components/landing/deferred-model-mind-map，
+ *          依赖 @/components/landing/model-mind-map-section，
  *          依赖 @/components/landing/landing-sections，
  *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载；公开子页已收口，仅保留条款与隐私页
+ * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/模型云图/FAQ/Footer；公开子页已收口，仅保留条款与隐私页
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -14,11 +14,11 @@ import { auth } from '@clerk/nextjs/server'
 import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { DeferredModelMindMap } from '@/components/landing/deferred-model-mind-map'
 import { HeroSection } from '@/components/landing/hero-section'
 import {
   FaqSection,
   FeaturesSection,
+  ModelMindMapSection,
   PricingSection,
   TestimonialsSection,
 } from '@/components/landing/landing-sections'
@@ -157,7 +157,7 @@ export default async function LandingPage({
       <FeaturesSection />
       <PricingSection plans={pricing?.plans ?? []} isAuthenticated={Boolean(userId)} />
       <TestimonialsSection />
-      <DeferredModelMindMap />
+      <ModelMindMapSection />
       <FaqSection />
       <LandingFooter />
     </main>
