@@ -132,15 +132,15 @@
         "body": "Nano Banana Canvas 的价值，不只是生成内容，而是让你把整条 AI 生产链路保存为可读、可复用、可协作的流程。",
       "items": {
         "canvas": {
-            "title": "全链展现，灵感不散",
+            "title": "全链清晰，创意不断",
             "body": "提示词、参考图、分支判断、输出结果和交付节点尽在一张画布，少切换、多聚焦，让创意全程明朗。"
           },
           "models": {
-            "title": "模型比翼，风格成双",
+            "title": "多模型并行，风格可比",
             "body": "围绕同一创意方向，自由切换 GPT Image 2 与其他图像模型，风格质感、一致性与可接力性即时比对，最佳方案一眼可见。"
           },
           "outputs": {
-            "title": "静帧续影，创意连环",
+            "title": "静帧接动态，流程不断档",
             "body": "审核通过的图像、角色设定与镜头草图无缝衔接视频生成与后续编辑，每个输出都自然成为下一环的灵感源泉。"
           }
         }
@@ -156,49 +156,49 @@
         "pricePending": "$ --",
         "plans": {
           "free": {
-            "name": "Free Trial",
+            "name": "免费试用",
             "subtitle": "官方模型免费试用",
             "body": "",
             "planLabel": "试用版",
             "period": "$0 / 首月",
             "note": "0 元解锁 GPT 5.4 / 5.5 等主力模型",
-            "storageNote": "1600 积分/月，用完即止",
-            "supportNote": "30 天后自动续订 Standard，随时可取消",
+            "storageNote": "每月 1600 积分，用完即止",
+            "supportNote": "30 天后自动续订标准版，随时可取消",
             "cta": "免费试用"
           },
           "standard": {
-            "name": "Standard",
+            "name": "标准版",
             "subtitle": "超高性价比",
             "body": "",
             "planLabel": "标准版",
             "period": "/ 月",
             "note": "每月 1,600 积分",
-            "supportNote": "全系模型可用：GPT 5.4、GPT image 2、nano banana、GPT 5.5、Gemini 等",
+            "supportNote": "支持 GPT 5.4、GPT Image 2、Nano Banana、GPT 5.5、Gemini 等主力模型",
             "cta": "立即订阅",
-            "useCase": "适合日常办公 & 创作"
+            "useCase": "适合日常办公与创作"
           },
           "pro": {
-            "name": "Pro",
+            "name": "专业版",
             "subtitle": "生产力进阶",
             "body": "",
             "planLabel": "增强版",
             "period": "/ 月",
-            "note": "每月 5,400 积分（≈ 3.4 倍 Standard）",
-            "supportNote": "全系模型可用：GPT 5.4、GPT image 2、nano banana、GPT 5.5、Gemini 等",
+            "note": "每月 5,400 积分（约为标准版 3.4 倍）",
+            "supportNote": "支持 GPT 5.4、GPT Image 2、Nano Banana、GPT 5.5、Gemini 等主力模型",
             "cta": "立即订阅",
-            "useCase": "适合高频使用者 & 团队"
+            "useCase": "适合高频使用者与小团队"
           },
           "ultimate": {
-            "name": "Ultimate",
+            "name": "旗舰版",
             "subtitle": "尽情调用",
             "body": "",
             "planLabel": "旗舰版",
             "period": "/ 月",
-            "note": "每月 17,000 积分（≈ 10 倍 Standard）",
-            "supportNote": "全系模型可用：GPT 5.4、GPT image 2、nano banana、GPT 5.5、Gemini 等",
+            "note": "每月 17,000 积分（约为标准版 10 倍）",
+            "supportNote": "支持 GPT 5.4、GPT Image 2、Nano Banana、GPT 5.5、Gemini 等主力模型",
             "cta": "立即订阅",
             "priorityNote": "模型优先响应",
-            "useCase": "适合重度 AI 用户 & 商用场景",
+            "useCase": "适合重度 AI 用户与商用场景",
             "extra": "最高效 AI 工作站"
           }
         },
@@ -220,7 +220,7 @@
       },
       "testimonials": {
         "eyebrow": "真实评价",
-        "title": "用户评价",
+        "title": "真实评价",
         "body": "",
         "pixel": {
           "handle": "@StoryboardSurfer",
@@ -284,7 +284,7 @@
         }
       },
       "faq": {
-        "eyebrow": "FAQ",
+        "eyebrow": "常见问题",
         "title": "常见问题",
         "body": "这是创作者在评估 Nano Banana Canvas 是否适合真实图片、视频与工作流生产时最常问的问题。",
         "what": {
@@ -309,7 +309,7 @@
         },
         "api": {
           "question": "定价是怎么设计的？",
-          "answer": "当前公开定价分为 Free、循环订阅、一次性套餐和积分包几类，结账边界会在定价页里清楚说明，并由 Stripe 承接支付。"
+          "answer": "当前公开定价分为免费方案、循环订阅、一次性套餐和积分包几类，结账边界会在定价页里清楚说明，并由 Stripe 承接支付。"
         },
         "team": {
           "question": "它只适合个人创作者吗？",
@@ -325,7 +325,7 @@
         },
         "contact": {
           "question": "在哪里可以找到文档、社区或联系方式？",
-          "answer": "你可以通过顶部导航和 Footer 进入文档、社区和联系我们页面。它们都是独立公开页面，既方便搜索引擎收录，也方便团队直接进入对应语境。"
+          "answer": "你可以通过顶部导航和页脚进入文档、社区和联系我们页面。它们都是独立公开页面，既方便搜索引擎收录，也方便团队直接进入对应语境。"
         }
       }
     },
@@ -362,7 +362,7 @@
     "pricingUnavailable": "付费价格暂时无法从 Stripe 读取。你仍然可以使用 Free 入口；付费购买会在计费配置恢复后开放。",
     "freeEyebrow": "Free 是默认进入态",
     "freeTitle": "先从 Free 开始，只有当生产规模真的上来时再升级。",
-    "freeDescription": "Free Trial 需要先绑定信用卡，随后立即开启 30 天试用。试用到期后会自动转为 Standard 月度订阅。",
+    "freeDescription": "免费试用需要先绑定信用卡，随后立即开启 30 天试用。试用到期后会自动转为标准版月度订阅。",
     "freePriceLabel": "默认进入套餐",
     "freePriceValue": "¥0 / $0",
     "freeBadge": "无需结账",

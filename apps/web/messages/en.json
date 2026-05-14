@@ -100,7 +100,7 @@
         "eyebrow": "",
         "title": "Models",
         "highlight": "",
-        "body": "Switch between top models inside one workflow.",
+        "body": "Compare and switch models inside one workflow.",
         "cta": "Explore model capabilities",
         "centerBody": "Unified multi-model orchestration",
         "stats": {
@@ -221,7 +221,7 @@
       "testimonials": {
         "eyebrow": "Testimonials",
         "title": "Testimonials",
-        "body": "These notes point to the real value of Nano Banana Canvas: not another generation entry point, but a visible, reusable, collaborative operating layer for AI production.",
+        "body": "Real feedback from teams using Nano Banana Canvas in production.",
         "pixel": {
           "handle": "@StoryboardSurfer",
           "role": "Storyboard Animator",
