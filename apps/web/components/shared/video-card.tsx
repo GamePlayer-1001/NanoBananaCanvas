@@ -334,6 +334,7 @@ function CardDetailPanel({
   favorited,
   likeCount,
   favoriteCount,
+  setInteractionState,
   t,
   tDetail,
 }: {
