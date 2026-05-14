@@ -8,6 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import os from 'node:os'
 import process from 'node:process'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -15,7 +16,6 @@ import { fileURLToPath } from 'node:url'
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const appDir = path.resolve(scriptDir, '..')
 const databaseName = 'nano-banana-canvas-db'
-const wranglerCliPath = path.resolve(appDir, 'node_modules', 'wrangler', 'bin', 'wrangler.js')
 
 const ALLOWED_SOURCE_TYPES = new Set(['civitai', 'manual', 'other'])
 const ALLOWED_MEDIA_TYPES = new Set(['image', 'video'])
@@ -202,13 +202,30 @@ function quoteSql(value) {
 }
 
 function spawnCommand(command, args, options = {}) {
-  return spawnSync(command, args, {
+  const invocation = process.platform === 'win32'
+    ? {
+        command: 'cmd.exe',
+        args: ['/d', '/s', '/c', [command, ...args].map(quoteShellArg).join(' ')],
+      }
+    : {
+        command,
+        args,
+      }
+
+  return spawnSync(invocation.command, invocation.args, {
     cwd: appDir,
     encoding: 'utf8',
     stdio: 'pipe',
     env: process.env,
     ...options,
   })
+}
+
+function quoteShellArg(value) {
+  const text = String(value ?? '')
+  if (!text) return '""'
+  if (!/[ \t"&^<>|]/.test(text)) return text
+  return `"${text.replace(/(["\\])/g, '\\$1')}"`
 }
 
 function run(command, args, options = {}) {
@@ -237,16 +254,12 @@ function runAndCapture(command, args, options = {}) {
 }
 
 function getWranglerArgs(commandArgs) {
-  return [
-    '--no-warnings',
-    '--experimental-vm-modules',
-    wranglerCliPath,
-    ...commandArgs,
-  ]
+  return ['exec', 'wrangler', ...commandArgs]
 }
 
 function uploadFile(target, localPath, r2Key) {
-  run(process.execPath, getWranglerArgs([
+  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  run(command, getWranglerArgs([
     'r2',
     'object',
     'put',
@@ -258,14 +271,30 @@ function uploadFile(target, localPath, r2Key) {
 }
 
 function executeSql(target, sql) {
-  run(process.execPath, getWranglerArgs([
-    'd1',
-    'execute',
-    databaseName,
-    target,
-    '--command',
-    sql,
-  ]))
+  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  const tempSqlPath = writeTempSql(sql)
+
+  try {
+    run(command, getWranglerArgs([
+      'd1',
+      'execute',
+      databaseName,
+      target,
+      '--file',
+      tempSqlPath,
+    ]))
+  } finally {
+    safeUnlink(tempSqlPath)
+  }
+}
+
+function tryExecuteSql(target, sql) {
+  try {
+    executeSql(target, sql)
+    return { ok: true, error: null }
+  } catch (error) {
+    return { ok: false, error }
+  }
 }
 
 function fetchUserExists(target, userId) {
@@ -277,15 +306,17 @@ function fetchUserExists(target, userId) {
 }
 
 function fetchJsonResults(target, sql) {
-  const result = runAndCapture(process.execPath, getWranglerArgs([
-    'd1',
-    'execute',
-    databaseName,
-    target,
-    '--command',
-    sql,
-    '--json',
-  ]))
+  const result = process.platform === 'win32'
+    ? runAndCapturePowerShell(buildWranglerReadCommand(target, sql))
+    : runAndCapture('pnpm', getWranglerArgs([
+        'd1',
+        'execute',
+        databaseName,
+        target,
+        '--command',
+        sql,
+        '--json',
+      ]))
 
   if (result.stderr) process.stderr.write(result.stderr)
 
@@ -302,13 +333,35 @@ function fetchJsonResults(target, sql) {
   return payload?.[0]?.results ?? []
 }
 
-function fetchExistingPublishedOutputId(target, importKey) {
-  if (!importKey) return ''
-  const rows = fetchJsonResults(
-    target,
-    `SELECT id FROM published_outputs WHERE import_key = ${quoteSql(importKey)} LIMIT 1`,
-  )
-  return rows[0]?.id ?? ''
+function buildWranglerReadCommand(target, sql) {
+  const escapedSql = sql.replaceAll("'", "''")
+  return `pnpm exec wrangler d1 execute ${databaseName} ${target} --command '${escapedSql}' --json`
+}
+
+function runAndCapturePowerShell(commandText) {
+  return spawnSync('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    commandText,
+  ], {
+    cwd: appDir,
+    encoding: 'utf8',
+    stdio: 'pipe',
+    env: process.env,
+  })
+}
+
+function writeTempSql(sql) {
+  const filePath = path.join(os.tmpdir(), `nano-banana-import-${crypto.randomUUID()}.sql`)
+  fs.writeFileSync(filePath, sql, 'utf8')
+  return filePath
+}
+
+function safeUnlink(filePath) {
+  try {
+    fs.unlinkSync(filePath)
+  } catch {}
 }
 
 function fetchCategoryIdBySlug(target, slug) {
@@ -320,6 +373,88 @@ function fetchCategoryIdBySlug(target, slug) {
   )
 
   return rows[0]?.id ?? ''
+}
+
+function fetchCategoryIdMap(target) {
+  const rows = fetchJsonResults(
+    target,
+    'SELECT id, slug FROM categories',
+  )
+
+  return new Map(rows.map((row) => [String(row.slug ?? ''), String(row.id ?? '')]))
+}
+
+function fetchExistingImportKeyMap(target, importKeys) {
+  const normalizedKeys = importKeys.filter(Boolean)
+  if (normalizedKeys.length === 0) {
+    return new Map()
+  }
+
+  const chunks = chunkArray(normalizedKeys, 100)
+  const rows = []
+  for (const chunk of chunks) {
+    const sql = `SELECT id, import_key FROM published_outputs WHERE import_key IN (${chunk.map(quoteSql).join(',')})`
+    rows.push(...fetchJsonResults(target, sql))
+  }
+
+  return new Map(rows.map((row) => [String(row.import_key ?? ''), String(row.id ?? '')]))
+}
+
+function fetchExistingFakeAuthorMap(target, authorNames) {
+  const normalizedAuthorNames = authorNames.filter(Boolean)
+  if (normalizedAuthorNames.length === 0) {
+    return new Map()
+  }
+
+  const authorMap = new Map()
+
+  for (const authorName of normalizedAuthorNames) {
+    const identity = buildFakeAuthorIdentity(authorName)
+    const identityKey = `import:author:${identity.slug}`
+    const userId = fetchUserIdByClerkIdWithRetry(target, identityKey, 2)
+    if (userId) {
+      authorMap.set(authorName, userId)
+    }
+  }
+
+  return authorMap
+}
+
+function ensureFakeAuthorUsers(target, items, dryRun = false) {
+  const uniqueAuthors = [...new Set(items.map((item) => item.sourceAuthorName).filter(Boolean))]
+  let existingMap = fetchExistingFakeAuthorMap(target, uniqueAuthors)
+
+  for (const authorName of uniqueAuthors) {
+    if (existingMap.has(authorName)) {
+      continue
+    }
+
+    ensureFakeAuthorUser(target, authorName, '', dryRun)
+  }
+
+  if (dryRun) {
+    return new Map(
+      uniqueAuthors.map((authorName) => {
+        const identity = buildFakeAuthorIdentity(authorName)
+        return [authorName, `dryrun-${identity.slug}`.slice(0, 21)]
+      }),
+    )
+  }
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    existingMap = fetchExistingFakeAuthorMap(target, uniqueAuthors)
+    if (existingMap.size === uniqueAuthors.length) {
+      break
+    }
+
+    sleep(1000 * (attempt + 1))
+  }
+  const unresolvedAuthors = uniqueAuthors.filter((authorName) => !existingMap.has(authorName))
+  if (unresolvedAuthors.length > 0) {
+    throw new Error(`Failed to resolve fake author ids: ${unresolvedAuthors.join(', ')}`)
+  }
+
+  return existingMap
 }
 
 function buildFakeAuthorIdentity(authorName) {
@@ -337,12 +472,9 @@ function buildFakeAuthorIdentity(authorName) {
 function ensureFakeAuthorUser(target, authorName, avatarUrl = '', dryRun = false) {
   const { normalizedName, slug } = buildFakeAuthorIdentity(authorName)
   const identityKey = `import:author:${slug}`
-  const existingRows = fetchJsonResults(
-    target,
-    `SELECT id FROM users WHERE clerk_id = ${quoteSql(identityKey)} LIMIT 1`,
-  )
-  if (existingRows.length > 0) {
-    return existingRows[0].id
+  const existingUserId = fetchUserIdByClerkId(target, identityKey)
+  if (existingUserId) {
+    return existingUserId
   }
 
   if (dryRun) {
@@ -356,9 +488,9 @@ function ensureFakeAuthorUser(target, authorName, avatarUrl = '', dryRun = false
   const safeIdentity = identityKey.replaceAll("'", "''")
   const safeEmail = email.replaceAll("'", "''")
 
-  executeSql(
+  const insertResult = tryExecuteSql(
     target,
-    `INSERT INTO users (
+    `INSERT OR IGNORE INTO users (
       id, clerk_id, email, username, first_name, last_name, name, avatar_url, plan, membership_status, created_at, updated_at
     ) VALUES (
       '${userId}',
@@ -376,20 +508,60 @@ function ensureFakeAuthorUser(target, authorName, avatarUrl = '', dryRun = false
     )`,
   )
 
+  if (!insertResult.ok) {
+    throw insertResult.error
+  }
+
   return userId
 }
 
-function resolveOwnerUserId(target, item, args) {
+function fetchUserIdByClerkId(target, clerkId) {
+  const existingRows = fetchJsonResults(
+    target,
+    `SELECT id FROM users WHERE clerk_id = ${quoteSql(clerkId)} LIMIT 1`,
+  )
+
+  return existingRows[0]?.id ? String(existingRows[0].id) : ''
+}
+
+function fetchUserIdByClerkIdWithRetry(target, clerkId, attempts = 6) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const userId = fetchUserIdByClerkId(target, clerkId)
+    if (userId) {
+      return userId
+    }
+
+    sleep(500 * (attempt + 1))
+  }
+
+  return ''
+}
+
+function sleep(ms) {
+  const end = Date.now() + ms
+  while (Date.now() < end) {
+    // Busy wait keeps this script dependency-free and acceptable for short retry windows.
+  }
+}
+
+function resolveOwnerUserId(target, item, args, caches) {
   if (!args.fakeAuthors) {
     return args.userId
   }
 
-  return ensureFakeAuthorUser(
+  const cachedUserId = caches.fakeAuthorUserIdByName.get(item.sourceAuthorName)
+  if (cachedUserId) {
+    return cachedUserId
+  }
+
+  const userId = ensureFakeAuthorUser(
     target,
     item.sourceAuthorName,
     item.sourceAuthorAvatar,
     args.dryRun,
   )
+  caches.fakeAuthorUserIdByName.set(item.sourceAuthorName, userId)
+  return userId
 }
 
 function ensureFileExists(filePath, label) {
@@ -444,6 +616,14 @@ function normalizeEntry(entry, manifestDir) {
   }
 }
 
+function chunkArray(items, size) {
+  const chunks = []
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size))
+  }
+  return chunks
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2))
   const manifestPath = path.resolve(process.cwd(), args.manifest)
@@ -452,14 +632,28 @@ function main() {
     throw new Error(`User not found in D1: ${args.userId}`)
   }
   const items = parseManifest(manifestPath).map((entry) => normalizeEntry(entry, manifestDir))
+  const caches = {
+    fakeAuthorUserIdByName: args.fakeAuthors
+      ? ensureFakeAuthorUsers(
+          args.target,
+          items,
+          args.dryRun,
+        )
+      : new Map(),
+    existingOutputIdByImportKey: fetchExistingImportKeyMap(
+      args.target,
+      items.map((item) => item.importKey),
+    ),
+    categoryIdBySlug: fetchCategoryIdMap(args.target),
+  }
 
   console.log(`Loaded ${items.length} manifest items`)
 
   for (const item of items) {
-    const ownerUserId = resolveOwnerUserId(args.target, item, args)
-    const existingPublishedOutputId = fetchExistingPublishedOutputId(args.target, item.importKey)
+    const ownerUserId = resolveOwnerUserId(args.target, item, args, caches)
+    const existingPublishedOutputId = caches.existingOutputIdByImportKey.get(item.importKey) ?? ''
     const resolvedCategoryId =
-      item.categoryId || fetchCategoryIdBySlug(args.target, item.categorySlug)
+      item.categoryId || caches.categoryIdBySlug.get(item.categorySlug) || fetchCategoryIdBySlug(args.target, item.categorySlug)
 
     const mediaKey = buildR2Key('uploads', ownerUserId, item.mediaPath)
     const thumbnailKey = item.thumbnailPath
