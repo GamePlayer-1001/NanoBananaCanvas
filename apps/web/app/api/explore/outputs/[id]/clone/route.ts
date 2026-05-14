@@ -10,6 +10,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
+import { requireEnv } from '@/lib/env'
 import { NotFoundError } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
 
@@ -24,10 +25,13 @@ interface PublishedOutputSource {
 }
 
 async function readWorkflowJson(url: string) {
-  const response = await fetch(url)
+  const resolvedUrl = url.startsWith('http://') || url.startsWith('https://')
+    ? url
+    : new URL(url, await requireEnv('NEXT_PUBLIC_APP_URL')).toString()
+  const response = await fetch(resolvedUrl)
 
   if (!response.ok) {
-    throw new NotFoundError('Workflow JSON', url)
+    throw new NotFoundError('Workflow JSON', resolvedUrl)
   }
 
   const text = await response.text()
