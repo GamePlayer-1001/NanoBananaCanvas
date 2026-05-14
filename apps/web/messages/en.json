@@ -98,7 +98,7 @@
     "sections": {
       "models": {
         "eyebrow": "",
-        "title": "Works with the models you already love",
+        "title": "Models",
         "highlight": "",
         "body": "Switch between top models inside one workflow.",
         "cta": "Explore model capabilities",
@@ -220,7 +220,7 @@
       },
       "testimonials": {
         "eyebrow": "Testimonials",
-        "title": "People remember the clarity, not just the model list.",
+        "title": "Testimonials",
         "body": "These notes point to the real value of Nano Banana Canvas: not another generation entry point, but a visible, reusable, collaborative operating layer for AI production.",
         "pixel": {
           "handle": "@StoryboardSurfer",
