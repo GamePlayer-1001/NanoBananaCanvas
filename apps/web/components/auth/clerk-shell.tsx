@@ -21,6 +21,15 @@ const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
   process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/workspace'
 const CLERK_PROXY_URL = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
 
+function resolveClerkProxyUrl(proxyUrl?: string) {
+  if (!proxyUrl) {
+    return undefined
+  }
+
+  const normalizedProxyUrl = proxyUrl.trim()
+  return normalizedProxyUrl.startsWith('/') ? normalizedProxyUrl : undefined
+}
+
 interface ClerkShellProps {
   children: ReactNode
   locale: string
@@ -29,6 +38,7 @@ interface ClerkShellProps {
 
 export function ClerkShell({ children, locale, prefetchUI }: ClerkShellProps) {
   const localeDefinition = getLocaleDefinition(locale)
+  const clerkProxyUrl = resolveClerkProxyUrl(CLERK_PROXY_URL)
   const signInUrl = buildLocalizedPath(
     process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? '/sign-in',
     locale,
@@ -53,7 +63,7 @@ export function ClerkShell({ children, locale, prefetchUI }: ClerkShellProps) {
       signUpUrl={signUpUrl}
       signInFallbackRedirectUrl={signInFallbackRedirectUrl}
       signUpFallbackRedirectUrl={signUpFallbackRedirectUrl}
-      proxyUrl={CLERK_PROXY_URL}
+      proxyUrl={clerkProxyUrl}
       prefetchUI={prefetchUI}
       appearance={{ cssLayerName: 'clerk' }}
     >

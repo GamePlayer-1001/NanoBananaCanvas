@@ -11,6 +11,7 @@ backfill-agent-audit-r2.mjs: Agent 审计历史瘦身脚本，扫描远端/本�
 backfill-published-output-video-covers.mjs: 已发布视频封面批量回填脚本，扫描缺失 thumbnail 或误把视频地址写成 thumbnail 的公开视频，下载 R2 原视频并用 ffmpeg 抽首帧，上传封面图后回写 published_outputs.thumbnail
 test-dlapi-key.mjs: DLAPI 本地联调脚本，读取 `apps/web/.env.local` 的 `DLAPI_API_KEY` 发起直出图请求并输出去除 `base64` 字段后的完整响应，供手工验 key / 验网 / 验协议。
 import-explore-works.mjs: Explore 批量导入脚本，读取 CSV/JSON 清单，支持固定导入账号或 `--fake-authors` 自动建假作者 users 账号，上传本地媒体/工作流到 R2，并把外部或本地作品写入 published_outputs 为导入态公开作品；视频缺省不再把媒体文件误写入 thumbnail
+import-civitai-links.mjs: Civitai 链接批量导入脚本，读取链接文件，抓取图片页公开 API 与页面 JSON 中可得的标题/描述/提示词/作者信息，下载原图到本地临时目录，生成 manifest，并可继续串联 `import-explore-works.mjs` 完成 R2 + D1 导入
 export-explore-images-from-excel.mjs: Excel 嵌入图片导出脚本，解析 WPS/Excel 单元格内嵌图片、标题/提示词/Use case/workflow path，批量导出图片并生成带 categoryId/categorySlug 的 Explore JSON manifest
 explore-import-manifest.example.json: Explore 导入清单示例，演示 Civitai/本地素材字段映射与 JSON manifest 结构
 
