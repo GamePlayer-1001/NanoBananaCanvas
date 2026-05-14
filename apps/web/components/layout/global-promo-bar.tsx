@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Clock3, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
@@ -37,16 +37,31 @@ function formatCountdown(remainingMs: number) {
   return `${padTime(days)} : ${padTime(hours)} : ${padTime(minutes)} : ${padTime(seconds)}`
 }
 
+function subscribePromoVisibility(onStoreChange: () => void) {
+  const handler = () => onStoreChange()
+  window.addEventListener('storage', handler)
+  return () => window.removeEventListener('storage', handler)
+}
+
+function getPromoVisibleSnapshot() {
+  return window.sessionStorage.getItem(PROMO_STORAGE_KEY) !== '1'
+}
+
+function getPromoVisibleServerSnapshot() {
+  return true
+}
+
 /* ─── Component ──────────────────────────────────────── */
 
 export function GlobalPromoBar() {
   const t = useTranslations('explore')
   const locale = useLocale()
   const [now, setNow] = useState(0)
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return window.sessionStorage.getItem(PROMO_STORAGE_KEY) !== '1'
-  })
+  const visible = useSyncExternalStore(
+    subscribePromoVisibility,
+    getPromoVisibleSnapshot,
+    getPromoVisibleServerSnapshot,
+  )
   const countdownLabel = useMemo(
     () => (now > 0 ? formatCountdown(getRemainingMs(now)) : '-- : -- : -- : --'),
     [now],
@@ -68,7 +83,7 @@ export function GlobalPromoBar() {
 
   const handleClose = () => {
     window.sessionStorage.setItem(PROMO_STORAGE_KEY, '1')
-    setVisible(false)
+    window.dispatchEvent(new StorageEvent('storage', { key: PROMO_STORAGE_KEY }))
   }
 
   if (!visible) return null
