@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next-intl 的 useTranslations，
  *          依赖 lucide-react 的 Sparkles/ShieldCheck/Workflow/Zap
  * [OUTPUT]: 对外提供 ModelMindMapSection 模型生态云图展示区
- * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用；独立 `/models` 内容页已下线，模型入口统一回落到首页锚点
+ * [POS]: components/landing 的模型展示主视觉区，被 landing-sections.tsx 转发给首页使用；独立 `/models` 内容页已下线，模型入口统一回落到首页锚点，并负责星云/轨道/主星球的统一舞台居中
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -42,24 +42,14 @@ const MODEL_STAGE = {
   height: 820,
 } as const
 
-const MODEL_CORE_EMBED_OFFSET = {
-  x: 112,
-  y: 108,
-} as const
-
 const MODEL_STAGE_CENTER = {
-  x: 786 + MODEL_CORE_EMBED_OFFSET.x,
-  y: 414 + MODEL_CORE_EMBED_OFFSET.y,
+  x: MODEL_STAGE.width / 2,
+  y: MODEL_STAGE.height / 2,
 } as const
 
 const MODEL_CORE_POSITION = {
   x: (MODEL_STAGE_CENTER.x / MODEL_STAGE.width) * 100,
   y: (MODEL_STAGE_CENTER.y / MODEL_STAGE.height) * 100,
-} as const
-
-const MODEL_CORE_VISUAL_OFFSET = {
-  x: 136,
-  y: 64,
 } as const
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
@@ -609,7 +599,7 @@ export function ModelMindMapSection() {
                 style={{
                   left: `${MODEL_CORE_POSITION.x}%`,
                   top: `${MODEL_CORE_POSITION.y}%`,
-                  transform: `translate(calc(-50% + ${MODEL_CORE_VISUAL_OFFSET.x}px), calc(-50% + ${MODEL_CORE_VISUAL_OFFSET.y}px)) scale(${
+                  transform: `translate(-50%, -50%) scale(${
                     0.9 + revealProgress * 0.1
                   })`,
                   animation: prefersReducedMotion
