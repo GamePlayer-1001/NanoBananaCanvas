@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server'
 
 import { optionalAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError } from '@/lib/api/response'
+import { apiOk, handleApiError, withPublicCache } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { exploreQuerySchema } from '@/lib/validations/explore'
 
@@ -309,7 +309,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return apiOk({
+    const response = apiOk({
       items,
       pagination: {
         page,
@@ -317,6 +317,10 @@ export async function GET(req: NextRequest) {
         hasMore,
         nextPage: hasMore ? page + 1 : null,
       },
+    })
+    return withPublicCache(response, {
+      sMaxAge: auth ? 30 : 120,
+      staleWhileRevalidate: auth ? 120 : 600,
     })
   } catch (error) {
     return handleApiError(error)

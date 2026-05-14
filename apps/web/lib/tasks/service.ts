@@ -13,6 +13,7 @@ import type {
   AsyncTaskStatus,
   AsyncTaskType,
   ExecutionMode,
+  PageInfo,
   TaskOrchestrator,
   TaskQueueMessage,
 } from '@nano-banana/shared'
@@ -47,9 +48,11 @@ import {
 } from '@/lib/platform-runtime'
 import { getR2 } from '@/lib/r2'
 import {
+  applyStorageUsageDelta,
   extractR2KeyFromFileUrl,
   generateOutputPath,
   invalidateStorageCache,
+  toPublicFileUrl,
   toInternalFileUrl,
 } from '@/lib/storage'
 import {
@@ -178,6 +181,7 @@ export interface ListTasksResult {
   total: number
   page: number
   limit: number
+  pageInfo: PageInfo
 }
 
 export interface DeleteTasksResult {
@@ -972,6 +976,7 @@ async function persistTaskOutput(
     },
   })
 
+  await applyStorageUsageDelta(userId, body.byteLength)
   await runtime.invalidateStorageCache(userId)
   const dimensions =
     contentType.startsWith('image/')
@@ -984,7 +989,7 @@ async function persistTaskOutput(
     fileName,
     ...(dimensions ?? {}),
     r2_key: r2Key,
-    url: toInternalFileUrl(r2Key),
+    url: await toPublicFileUrl(r2Key),
   }
 }
 
@@ -2417,26 +2422,29 @@ export async function listTasks(
   const where = conditions.join(' AND ')
   const offset = (filters.page - 1) * filters.limit
 
-  /* 并行查总数 + 分页数据 */
-  const [countResult, dataResult] = await Promise.all([
-    db
-      .prepare(`SELECT COUNT(*) as cnt FROM async_tasks WHERE ${where}`)
-      .bind(...binds)
-      .first<{ cnt: number }>(),
-    db
-      .prepare(
-        `SELECT * FROM async_tasks WHERE ${where}
-         ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      )
-      .bind(...binds, filters.limit, offset)
-      .all<TaskRow>(),
-  ])
+  const dataResult = await db
+    .prepare(
+      `SELECT * FROM async_tasks WHERE ${where}
+       ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    )
+    .bind(...binds, filters.limit + 1, offset)
+    .all<TaskRow>()
+
+  const rows = dataResult.results ?? []
+  const hasMore = rows.length > filters.limit
+  const visibleRows = hasMore ? rows.slice(0, filters.limit) : rows
 
   return {
-    tasks: (dataResult.results ?? []).map(rowToDetail),
-    total: countResult?.cnt ?? 0,
+    tasks: visibleRows.map(rowToDetail),
+    total: offset + visibleRows.length + (hasMore ? 1 : 0),
     page: filters.page,
     limit: filters.limit,
+    pageInfo: {
+      page: filters.page,
+      limit: filters.limit,
+      hasMore,
+      nextPage: hasMore ? filters.page + 1 : null,
+    },
   }
 }
 
@@ -2483,7 +2491,11 @@ export async function deleteTasks(
         (typeof output.url === 'string' ? extractR2KeyFromFileUrl(output.url) : null)
 
       if (r2Key?.startsWith(`outputs/${userId}/`)) {
+        const object = await r2.head(r2Key)
         await r2.delete(r2Key)
+        if (object?.size) {
+          await applyStorageUsageDelta(userId, -object.size)
+        }
       }
     } catch (error) {
       log.warn('Failed to cleanup task output during delete', {

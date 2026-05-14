@@ -6,7 +6,7 @@
  */
 
 import { requireAuth } from '@/lib/api/auth'
-import { apiOk, handleApiError, withBodyLimit } from '@/lib/api/response'
+import { apiOk, handleApiError, withBodyLimit, withPublicCache } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
@@ -53,7 +53,10 @@ export async function GET() {
       .bind(userId)
       .all()
 
-    return apiOk({ items: rows.results ?? [] })
+    return withPublicCache(apiOk({ items: rows.results ?? [] }), {
+      sMaxAge: 120,
+      staleWhileRevalidate: 600,
+    })
   } catch (error) {
     return handleApiError(error)
   }

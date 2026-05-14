@@ -1,12 +1,13 @@
 /**
  * [INPUT]: 依赖 @/lib/r2 的 getR2，依赖 @/lib/nanoid 的 ID 生成，
- *          依赖 @/lib/db 的 getDb，依赖 @/lib/kv 的 getKV
- * [OUTPUT]: 对外提供 R2 存储路径生成 / 私有输出路径解析 / 配额检查(KV 缓存) / 文件清理 / 缓存失效工具
+ *          依赖 @/lib/db 的 getDb，依赖 @/lib/kv 的 getKV，依赖 @/lib/env 的 getEnv
+ * [OUTPUT]: 对外提供 R2 存储路径生成 / 公开资产 URL 生成 / 私有输出路径解析 / 配额检查(D1 真相源 + KV 缓存) / 文件清理 / 缓存失效工具
  * [POS]: lib 的存储服务层，被文件上传 API / 异步任务 / 发布流程消费，当前采用统一免费配额策略
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { getDb } from '@/lib/db'
+import { getEnv } from '@/lib/env'
 import { getKV } from '@/lib/kv'
 import { nanoid } from '@/lib/nanoid'
 import { getR2 } from '@/lib/r2'
@@ -62,6 +63,13 @@ export interface StorageUsage {
   isOverQuota: boolean
 }
 
+interface StorageUsageRow {
+  user_id: string
+  used_bytes: number | null
+  limit_bytes: number | null
+  updated_at: string | null
+}
+
 export interface CleanupExpiredOutputsResult {
   deleted: number
   errors: number
@@ -73,24 +81,87 @@ const FREE_STORAGE_LIMIT_BYTES = 1 * 1024 * 1024 * 1024
 const OUTPUT_RETENTION_DAYS = 7
 const TERMINAL_TASK_RETENTION_DAYS = 14
 
+function normalizeStorageUsage(usedBytes: number, limitBytes: number): StorageUsage {
+  const usedPercent = limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0
+  return {
+    usedBytes,
+    limitBytes,
+    usedPercent,
+    isOverQuota: usedBytes >= limitBytes,
+  }
+}
+
+async function ensureStorageUsageSchema(db: D1Database): Promise<void> {
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS storage_usage (
+      user_id TEXT PRIMARY KEY,
+      used_bytes INTEGER NOT NULL DEFAULT 0,
+      limit_bytes INTEGER NOT NULL DEFAULT ${FREE_STORAGE_LIMIT_BYTES},
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `)
+}
+
+export async function getPublicAssetBaseUrl(): Promise<string | null> {
+  const directBaseUrl = (await getEnv('PUBLIC_ASSET_BASE_URL')).trim()
+  if (!directBaseUrl) {
+    return null
+  }
+
+  return directBaseUrl.replace(/\/+$/, '')
+}
+
+export async function toPublicFileUrl(key: string): Promise<string> {
+  const assetBaseUrl = await getPublicAssetBaseUrl()
+  if (!assetBaseUrl) {
+    return toInternalFileUrl(key)
+  }
+
+  return `${assetBaseUrl}/${key}`
+}
+
 /**
- * 计算用户存储使用量 (KV 缓存 5min → R2 list fallback)
- * 上传/删除后调用 invalidateStorageCache 主动失效
+ * 计算用户存储使用量 (D1 真相源 → KV 5min 缓存 → R2 list 回填)
+ * 上传/删除后调用 invalidateStorageCache 主动失效，调用 applyStorageUsageDelta 保持汇总新鲜
  */
 export async function getStorageUsage(userId: string): Promise<StorageUsage> {
   const kv = await getKV()
+  const db = await getDb()
   const cacheKey = `storage:${userId}:usage`
+  const limitBytes = FREE_STORAGE_LIMIT_BYTES
 
   /* KV 缓存命中 → 直接返回 */
   const cached = await kv.get<{ usedBytes: number; limitBytes: number }>(cacheKey, 'json')
   if (cached) {
-    const usedPercent = cached.limitBytes > 0 ? Math.round((cached.usedBytes / cached.limitBytes) * 100) : 0
-    return { ...cached, usedPercent, isOverQuota: cached.usedBytes >= cached.limitBytes }
+    return normalizeStorageUsage(cached.usedBytes, cached.limitBytes)
   }
 
-  /* 缓存未命中 → R2 list 计算 */
+  await ensureStorageUsageSchema(db)
+  const usageRow = await db
+    .prepare(
+      `SELECT user_id, used_bytes, limit_bytes, updated_at
+       FROM storage_usage
+       WHERE user_id = ?`,
+    )
+    .bind(userId)
+    .first<StorageUsageRow>()
+
+  if (usageRow) {
+    const normalized = normalizeStorageUsage(
+      Math.max(usageRow.used_bytes ?? 0, 0),
+      usageRow.limit_bytes ?? limitBytes,
+    )
+    await kv.put(cacheKey, JSON.stringify({
+      usedBytes: normalized.usedBytes,
+      limitBytes: normalized.limitBytes,
+    }), {
+      expirationTtl: STORAGE_CACHE_TTL,
+    })
+    return normalized
+  }
+
+  /* 首次回填时才做 R2 list */
   const r2 = await getR2()
-  const limitBytes = FREE_STORAGE_LIMIT_BYTES
 
   let usedBytes = 0
   const prefixes = [`uploads/${userId}/`, `outputs/${userId}/`]
@@ -106,20 +177,71 @@ export async function getStorageUsage(userId: string): Promise<StorageUsage> {
     } while (cursor)
   }
 
+  await db
+    .prepare(
+      `INSERT INTO storage_usage (user_id, used_bytes, limit_bytes, updated_at)
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(user_id) DO UPDATE SET
+         used_bytes = excluded.used_bytes,
+         limit_bytes = excluded.limit_bytes,
+         updated_at = CURRENT_TIMESTAMP`,
+    )
+    .bind(userId, usedBytes, limitBytes)
+    .run()
+
   /* 写入 KV 缓存 */
   await kv.put(cacheKey, JSON.stringify({ usedBytes, limitBytes }), {
     expirationTtl: STORAGE_CACHE_TTL,
   })
 
-  const usedPercent = limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0
+  return normalizeStorageUsage(usedBytes, limitBytes)
+}
 
-  return { usedBytes, limitBytes, usedPercent, isOverQuota: usedBytes >= limitBytes }
+export async function applyStorageUsageDelta(userId: string, deltaBytes: number): Promise<void> {
+  const db = await getDb()
+  const kv = await getKV()
+  await ensureStorageUsageSchema(db)
+
+  const current = await db
+    .prepare(
+      `SELECT used_bytes, limit_bytes
+       FROM storage_usage
+       WHERE user_id = ?`,
+    )
+    .bind(userId)
+    .first<{ used_bytes: number | null; limit_bytes: number | null }>()
+
+  const nextUsedBytes = Math.max((current?.used_bytes ?? 0) + deltaBytes, 0)
+  const nextLimitBytes = current?.limit_bytes ?? FREE_STORAGE_LIMIT_BYTES
+
+  await db
+    .prepare(
+      `INSERT INTO storage_usage (user_id, used_bytes, limit_bytes, updated_at)
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(user_id) DO UPDATE SET
+         used_bytes = excluded.used_bytes,
+         limit_bytes = excluded.limit_bytes,
+         updated_at = CURRENT_TIMESTAMP`,
+    )
+    .bind(userId, nextUsedBytes, nextLimitBytes)
+    .run()
+
+  await kv.put(cacheKeyForUser(userId), JSON.stringify({
+    usedBytes: nextUsedBytes,
+    limitBytes: nextLimitBytes,
+  }), {
+    expirationTtl: STORAGE_CACHE_TTL,
+  })
 }
 
 /** 主动失效存储配额缓存 (上传/删除文件后调用) */
 export async function invalidateStorageCache(userId: string): Promise<void> {
   const kv = await getKV()
-  await kv.delete(`storage:${userId}:usage`)
+  await kv.delete(cacheKeyForUser(userId))
+}
+
+function cacheKeyForUser(userId: string): string {
+  return `storage:${userId}:usage`
 }
 
 /**

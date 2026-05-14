@@ -44,10 +44,12 @@ vi.mock('@/lib/r2', () => ({
 }))
 
 vi.mock('@/lib/storage', () => ({
+  applyStorageUsageDelta: vi.fn().mockResolvedValue(undefined),
   extractR2KeyFromFileUrl: vi.fn(() => null),
   generateOutputPath: vi.fn(() => 'outputs/user-1/task-1.png'),
   invalidateStorageCache: vi.fn().mockResolvedValue(undefined),
   toInternalFileUrl: vi.fn((key: string) => `/api/files/${key}`),
+  toPublicFileUrl: vi.fn(async (key: string) => `/api/files/${key}`),
 }))
 
 vi.mock('./processors', () => ({

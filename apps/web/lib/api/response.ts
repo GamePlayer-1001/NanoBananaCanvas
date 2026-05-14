@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next/server 的 NextResponse，依赖 @/lib/errors
- * [OUTPUT]: 对外提供 apiOk / apiError / handleApiError / withBodyLimit
- * [POS]: lib/api 的统一响应工具，被所有 API route handlers 消费
+ * [OUTPUT]: 对外提供 apiOk / apiError / handleApiError / withBodyLimit / withPublicCache
+ * [POS]: lib/api 的统一响应工具，被所有 API route handlers 消费，并统一公开接口缓存响应头
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -18,6 +18,22 @@ const log = createLogger('api')
 
 export function apiOk<T>(data: T, status = 200) {
   return NextResponse.json({ ok: true, data }, { status })
+}
+
+/* ─── Public Cache ──────────────────────────────────── */
+
+export interface PublicCacheOptions {
+  sMaxAge: number
+  staleWhileRevalidate?: number
+}
+
+export function withPublicCache(response: NextResponse, options: PublicCacheOptions): NextResponse {
+  const staleWhileRevalidate = options.staleWhileRevalidate ?? options.sMaxAge
+  response.headers.set(
+    'Cache-Control',
+    `public, s-maxage=${options.sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
+  )
+  return response
 }
 
 /* ─── Error ──────────────────────────────────────────── */

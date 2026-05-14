@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth, @/lib/api/response, @/lib/db, @/lib/nanoid, @/lib/validations/workflow
- * [OUTPUT]: 对外提供 GET /api/workflows (列表) + POST /api/workflows (创建/导入本地草稿/模板起手，并继承当前文件夹归属)
- * [POS]: api/workflows 的用户工作流 CRUD 入口
+ * [OUTPUT]: 对外提供 GET /api/workflows (轻分页列表) + POST /api/workflows (创建/导入本地草稿/模板起手，并继承当前文件夹归属)
+ * [POS]: api/workflows 的用户工作流 CRUD 入口，列表读取采用 limit+1 轻分页以降低 D1 读取
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -30,27 +30,27 @@ export async function GET(req: Request) {
     const folderClause = folderId ? 'AND folder_id = ?' : ''
     const baseBinds = folderId ? [userId, folderId] : [userId]
 
-    const [workflows, countRow] = await Promise.all([
-      db
-        .prepare(
-          `SELECT id, name, description, thumbnail, is_public, like_count,
-                  clone_count, view_count, folder_id, created_at, updated_at
-           FROM workflows WHERE user_id = ? ${folderClause}
-           ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
-        )
-        .bind(...baseBinds, limit, offset)
-        .all(),
-      db
-        .prepare(`SELECT COUNT(*) as total FROM workflows WHERE user_id = ? ${folderClause}`)
-        .bind(...baseBinds)
-        .first<{ total: number }>(),
-    ])
+    const workflows = await db
+      .prepare(
+        `SELECT id, name, description, thumbnail, is_public, like_count,
+                clone_count, view_count, folder_id, created_at, updated_at
+         FROM workflows WHERE user_id = ? ${folderClause}
+         ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+      )
+      .bind(...baseBinds, limit + 1, offset)
+      .all()
+
+    const rows = workflows.results ?? []
+    const hasMore = rows.length > limit
+    const items = hasMore ? rows.slice(0, limit) : rows
 
     return apiOk({
-      items: workflows.results,
-      total: countRow?.total ?? 0,
+      items,
+      total: offset + items.length + (hasMore ? 1 : 0),
       page,
       limit,
+      hasMore,
+      nextPage: hasMore ? page + 1 : null,
     })
   } catch (error) {
     return handleApiError(error)

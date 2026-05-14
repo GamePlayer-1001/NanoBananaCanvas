@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 @/lib/api/auth 的 requireAuth，依赖 @/lib/api/rate-limit 的 withRateLimit，
- *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/getStorageUsage，
+ *          依赖 @/lib/r2 的 getR2，依赖 @/lib/storage 的 generateUploadPath/getStorageUsage/applyStorageUsageDelta/toPublicFileUrl，
  *          依赖 @/lib/validations/upload 的 validateUpload
  * [OUTPUT]: 对外提供 POST /api/files/upload (multipart → R2, 含类型/大小/配额检查)
- * [POS]: api/files 的上传端点，被前端 useUpload hook 消费
+ * [POS]: api/files 的上传端点，被前端 useUpload hook 消费，并把配额统计写回 D1 真相源
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -13,7 +13,13 @@ import { requireAuth } from '@/lib/api/auth'
 import { withRateLimit } from '@/lib/api/rate-limit'
 import { apiError, apiOk, handleApiError } from '@/lib/api/response'
 import { getR2 } from '@/lib/r2'
-import { generateUploadPath, getStorageUsage, invalidateStorageCache } from '@/lib/storage'
+import {
+  applyStorageUsageDelta,
+  generateUploadPath,
+  getStorageUsage,
+  invalidateStorageCache,
+  toPublicFileUrl,
+} from '@/lib/storage'
 import { validateUpload } from '@/lib/validations/upload'
 
 /* ─── POST /api/files/upload ────────────────────────── */
@@ -55,12 +61,14 @@ export async function POST(req: NextRequest) {
       customMetadata: { userId, originalName: file.name },
     })
 
+    await applyStorageUsageDelta(userId, file.size)
     /* 主动失效存储配额缓存 */
     await invalidateStorageCache(userId)
+    const publicUrl = await toPublicFileUrl(key)
 
     return apiOk({
       key,
-      url: `/api/files/${key}`,
+      url: publicUrl,
       size: file.size,
       type: file.type,
     }, 201)

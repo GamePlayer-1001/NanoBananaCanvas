@@ -15,7 +15,7 @@ seo.ts       — SEO 语义层 (BASE_URL/metadata 工厂/多语言 canonical+hre
 l10n.ts      — 业务字段本地化工具 (name_i18n JSON 真相源优先 + name_en/name_zh 历史回退链)
 env.ts       — 统一环境变量获取入口 (getEnv/requireEnv → getCloudflareContext，消除 process.env 混用并净化 BOM 污染；共享任务逻辑现通过 runtime adapter 复用于 worker)
 r2.ts        — R2 对象存储访问入口 (getR2 → getCloudflareContext；任务快照/输出由共享 service 注入 runtime 后跨 web+worker 复用)
-storage.ts   — 存储路径/私有文件 URL 解析/配额缓存/输出清理与失效工具（任务系统额外使用内部 `task-inputs/` 快照，不计入用户配额）
+storage.ts   — 存储路径/公开资产 URL 生成/私有文件 URL 解析/配额缓存与 D1 汇总账本/输出清理与失效工具（任务系统额外使用内部 `task-inputs/` 快照，不计入用户配额）
 nanoid.ts    — 零依赖 ID 生成器 (CF Workers 兼容)
 timezones.ts — IANA 时区真相源 (白名单 + 校验 + 常用选项)，被签到账本与设置页复用
 api-key-crypto.ts   — API Key 服务端 AES-256-GCM 加密层 (encrypt/decrypt/mask)

@@ -172,7 +172,7 @@ export async function GET(req: Request) {
       taskType: params.taskType ?? null,
       page: params.page,
       limit: params.limit,
-      total: result.total,
+      hasMore: result.pageInfo.hasMore,
     })
     return apiOk(result)
   } catch (error) {
