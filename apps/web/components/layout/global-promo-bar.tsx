@@ -116,7 +116,7 @@ export function GlobalPromoBar() {
         <button
           type="button"
           onClick={handleClose}
-          className="ml-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-black/5 hover:text-stone-950 sm:ml-3 lg:ml-5 xl:ml-6"
+          className="ml-2 mr-[36px] inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-black/5 hover:text-stone-950 sm:ml-3 lg:ml-5"
           aria-label={t('closePromo')}
         >
           <X size={18} />

@@ -48,12 +48,16 @@ type GeneratedView = 'image' | 'video'
 const GENERATED_WORKS_LIMIT = 50
 
 interface WorkflowListItem {
+  entity_type?: 'workflow' | 'output'
   id: string
   name: string
   is_public: number
   updated_at?: string
   thumbnail?: string
   author_name?: string
+  description?: string
+  media_url?: string
+  media_type?: 'image' | 'video'
 }
 
 interface GeneratedOutputPayload {
@@ -126,7 +130,8 @@ function renderPublishedOutputPreview(item: PublishedOutputListItem) {
 
 type SelectionKind =
   | 'workflow'
-  | 'favorite'
+  | 'favorite-workflow'
+  | 'favorite-output'
   | 'generated'
   | 'published-workflow'
   | 'published-output'
@@ -183,8 +188,12 @@ function isAlreadyDeletedError(error: unknown) {
   return /not found/i.test(error.message)
 }
 
-async function toggleFavorite(workflowId: string) {
-  const res = await fetch(`/api/workflows/${workflowId}/favorite`, {
+async function toggleFavorite(input: { id: string; entityType?: 'workflow' | 'output' }) {
+  const route =
+    input.entityType === 'output'
+      ? `/api/explore/outputs/${input.id}/favorite`
+      : `/api/workflows/${input.id}/favorite`
+  const res = await fetch(route, {
     method: 'POST',
   })
   const payload = (await res.json()) as { error?: { message?: string } }
@@ -369,7 +378,9 @@ export function WorksTab({
           ...publishedOutputItems.map((item) => makeSelectionKey('published-output', item.id)),
         ]
       case 'favorites':
-        return favoriteItems.map((item) => makeSelectionKey('favorite', item.id))
+        return favoriteItems.map((item) =>
+          makeSelectionKey(item.entity_type === 'output' ? 'favorite-output' : 'favorite-workflow', item.id),
+        )
       case 'generated':
         return filteredGeneratedItems.map((item) => makeSelectionKey('generated', item.id))
       default:
@@ -400,7 +411,13 @@ export function WorksTab({
 
   const bulkFavoriteDelete = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map((id) => toggleFavorite(id)))
+      await Promise.all(
+        ids.map((rawId) => {
+          const isOutput = rawId.startsWith('output:')
+          const id = rawId.replace(/^(workflow|output):/, '')
+          return toggleFavorite({ id, entityType: isOutput ? 'output' : 'workflow' })
+        }),
+      )
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -482,7 +499,13 @@ export function WorksTab({
       }
 
       if (view === 'favorites') {
-        await bulkFavoriteDelete.mutateAsync(ids.map((id) => id.replace(/^favorite:/, '')))
+        await bulkFavoriteDelete.mutateAsync(
+          ids.map((id) =>
+            id.startsWith('favorite-output:')
+              ? `output:${id.replace(/^favorite-output:/, '')}`
+              : `workflow:${id.replace(/^favorite-workflow:/, '')}`,
+          ),
+        )
         return
       }
 
@@ -812,10 +835,26 @@ export function WorksTab({
                 key={item.id}
                 item={item}
                 selected={selectedIds.includes(
-                  makeSelectionKey(view === 'workflow' ? 'workflow' : 'favorite', item.id),
+                  makeSelectionKey(
+                    view === 'workflow'
+                      ? 'workflow'
+                      : item.entity_type === 'output'
+                        ? 'favorite-output'
+                        : 'favorite-workflow',
+                    item.id,
+                  ),
                 )}
                 onToggle={(id) =>
-                  handleToggleSelection(makeSelectionKey(view === 'workflow' ? 'workflow' : 'favorite', id))
+                  handleToggleSelection(
+                    makeSelectionKey(
+                      view === 'workflow'
+                        ? 'workflow'
+                        : item.entity_type === 'output'
+                          ? 'favorite-output'
+                          : 'favorite-workflow',
+                      id,
+                    ),
+                  )
                 }
                 href={view === 'favorites' ? `/explore/${item.id}` : `/workspace/${item.id}`}
                 meta={

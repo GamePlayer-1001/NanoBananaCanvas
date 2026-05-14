@@ -15,10 +15,10 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
-  Bookmark,
   Check,
   Clapperboard,
   Copy,
+  Files,
   Eye,
   Flag,
   Heart,
@@ -184,7 +184,7 @@ export function ExploreDetailContent({ workflowId }: ExploreDetailContentProps) 
                   {workflow.like_count ?? 0}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-stone-500">
-                  <Bookmark size={14} />
+                  <Files size={14} />
                   {workflow.clone_count ?? 0}
                 </span>
               </div>

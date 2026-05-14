@@ -447,7 +447,7 @@ export function PricingSection({
                   <>
                     <div className="pointer-events-none absolute inset-x-8 -top-px h-px bg-[linear-gradient(90deg,transparent,rgba(220,190,255,0.95),transparent)]" />
                     <div className="absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,#7c3aed,#c026d3,#f97316)] px-4 py-1 text-xs font-semibold tracking-[0.08em] text-white shadow-[0_0_28px_rgba(168,85,247,0.7)]">
-                      推荐试用
+                      {pricingT('popular')}
                     </div>
                   </>
                 ) : null}

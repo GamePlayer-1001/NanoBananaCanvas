@@ -127,7 +127,11 @@ export function AuthShell({
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.9),_transparent_32%),linear-gradient(180deg,_#f8f6f3_0%,_#f5f1ed_100%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-black/6" />
 
-          <div className="relative z-10 w-full max-w-[560px] lg:-translate-y-24">
+          <div
+            className={`relative z-10 w-full max-w-[560px] ${
+              isSignIn ? 'lg:-translate-y-[124px]' : 'lg:-translate-y-24'
+            }`}
+          >
             <div className="mb-8 flex items-center justify-between">
               <div className="lg:hidden">
                 <BrandMark withLogo className="text-lg text-black">

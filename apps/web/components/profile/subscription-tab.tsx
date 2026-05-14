@@ -88,7 +88,7 @@ function PlanRibbon({
   return (
     <div className="pointer-events-none absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 px-4">
       <span
-        className={`inline-flex min-h-9 min-w-[148px] items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase shadow-[0_10px_24px_rgba(15,23,42,0.08)] ${toneClassName}`}
+        className={`inline-flex min-h-9 min-w-fit whitespace-nowrap items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold tracking-[0.1em] uppercase shadow-[0_10px_24px_rgba(15,23,42,0.08)] ${toneClassName}`}
       >
         {label}
       </span>
