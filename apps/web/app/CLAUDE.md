@@ -24,19 +24,9 @@ zh/sitemap.ts               — 中文专属 sitemap.xml，显式暴露 `/zh/*` 
 [locale]/layout.tsx                         — 语言布局 (next-intl + QueryProvider + 全局脚本；公开页不再预载 Clerk，认证上下文下沉到受保护路由组)
 [locale]/not-found.tsx                     — locale 感知 404 页面 (消费 notFound 文案，覆盖全局英文兜底)
 [locale]/(landing)/layout.tsx               — Landing 深色布局 (landing-dark class)
-[locale]/(landing)/page.tsx                 — Landing 首页 (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer，CTA 召回区已移除)
-[locale]/(landing)/features/page.tsx       — 历史功能页兼容重定向 (旧 `/features` 链接统一回落到首页 `#features` 锚点，不再进入 sitemap)
-[locale]/(landing)/models/page.tsx         — 历史模型页兼容重定向 (旧 `/models` 链接统一回落到首页 `#models` 锚点，不再进入 sitemap)
-[locale]/(landing)/docs/page.tsx           — 公开文档导航页 (快速开始 + 产品地图 + 资源入口)
-[locale]/(landing)/community/page.tsx      — 社区说明页 (解释 Explore/Workflows 与公开分享层)
-[locale]/(landing)/about/page.tsx          — 关于我们页面 (产品原则/适用对象/品牌定位)
-[locale]/(landing)/pricing/page.tsx        — 定价页 (Stripe 动态价格 + 登录/Checkout CTA + Product/Offer/BreadcrumbList 结构化数据)
-[locale]/(landing)/contact/page.tsx        — 联系我们页面 (公开资源入口，复用 contact 组件)
+[locale]/(landing)/page.tsx                 — Landing 首页 (Hero + Features + Pricing 四档 + Testimonials + 模型动态脑图 + FAQ + Footer；定价 CTA 已直接按登录态分流到 `/sign-in` 或 Stripe Portal)
 [locale]/(landing)/privacy/page.tsx        — 隐私政策 (PrivacyContent)
 [locale]/(landing)/terms/page.tsx          — 服务条款 (TermsContent)
-[locale]/(landing)/refund-policy/page.tsx  — 退款政策页面
-[locale]/(landing)/acceptable-use/page.tsx — 合理使用政策页面
-[locale]/(landing)/cookies/page.tsx        — Cookie 设置说明页
 [locale]/(auth)/layout.tsx                  — 认证布局 (品牌双栏认证壳层 + ClerkShell，承载 Clerk 登录/注册页)
 [locale]/(auth)/sign-in/[[...sign-in]]/page.tsx — 登录页 (Landing 主 CTA 入口 + 真实 Clerk SignIn 卡片，对外暴露 /sign-in；已登录访问时服务端直跳目标页)
 [locale]/(auth)/sign-up/[[...sign-up]]/page.tsx — 注册页 (复用认证壳层 + 真实 Clerk SignUp 卡片，对外暴露 /sign-up；已登录访问时服务端直跳目标页)

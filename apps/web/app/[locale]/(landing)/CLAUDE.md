@@ -3,18 +3,8 @@
 
 成员清单
 layout.tsx: Landing 深色布局壳层，负责 `landing-dark` 风格边界，并保持公开页不注入认证运行时
-page.tsx: Landing 首页，默认静态输出 Hero、Features、人格分层 Pricing、Testimonials、FAQ 与页脚，并把模型动态图延后到客户端加载以换取更稳的首屏性能
-features/page.tsx: `/features` 历史兼容重定向页，旧链接统一回落到首页 `#features` 锚点，独立详情内容已下线
-models/page.tsx: `/models` 历史兼容重定向页，旧链接统一回落到首页 `#models` 锚点，独立详情内容已下线
-docs/page.tsx: `/docs` 公开文档导航页，承接资源菜单中的文档入口
-community/page.tsx: `/community` 公开社区说明页，引导到 Explore / Workflows / Contact
-about/page.tsx: `/about` 公开关于我们页面，说明产品定位、设计原则与适用人群
-pricing/page.tsx: 动态定价页，服务端读取 Stripe 套餐价格并按 `CF-IPCountry` 自动解析展示币种，失败时保留 Free 入口
-contact/page.tsx: `/contact` 公开联系我们页面，复用联系组件并承接资源入口
+page.tsx: Landing 首页，默认静态输出 Hero、Features、人格分层 Pricing、Testimonials、FAQ 与页脚，并把模型动态图延后到客户端加载以换取更稳的首屏性能；所有公开 CTA 已收口为首页锚点或登录/Stripe Portal 分流
 privacy/page.tsx: 隐私政策页面
 terms/page.tsx: 服务条款页面
-refund-policy/page.tsx: 退款政策页面，说明订阅/一次性套餐/积分包退款边界
-acceptable-use/page.tsx: 合理使用页面，说明允许、限制与公开传播边界
-cookies/page.tsx: Cookie 说明页面，解释必要、分析与偏好存储分类
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

@@ -1,10 +1,10 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
  *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的区块与交互图标，
- *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 Link，
+ *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；功能区已收口为首页锚点，不再导向独立 `/features` 子页
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；所有定价 CTA 已收口为“未登录进登录页、已登录进 Stripe Portal”
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -16,7 +16,7 @@ import { Check, ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
-import { Link } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
 export { ModelMindMapSection } from './model-mind-map-section'
 
 const FEATURE_KEYS = ['canvas', 'models', 'outputs'] as const
@@ -79,6 +79,18 @@ function clamp(value: number, min: number, max: number) {
 
 function formatLandingMoney(amount: number) {
   return `$${(amount / 100).toFixed(2)}`
+}
+
+function getLandingCtaLabel(
+  isRedirecting: boolean,
+  isAuthenticated: boolean,
+  defaultLabel: string,
+) {
+  if (isRedirecting) {
+    return isAuthenticated ? 'Opening billing…' : 'Redirecting…'
+  }
+
+  return defaultLabel
 }
 
 function getLandingPricingKey(
@@ -322,14 +334,48 @@ export function FeaturesSection() {
   )
 }
 
-export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
+export function PricingSection({
+  plans,
+  isAuthenticated,
+}: {
+  plans: PublicBillingPlanPrice[]
+  isAuthenticated: boolean
+}) {
   const pricingT = useTranslations('landing.sections.pricing')
+  const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const monthlyPlans = plans.filter(
     (plan) => plan.purchaseMode === 'plan_auto_monthly',
   )
   const monthlyPlanMap = Object.fromEntries(
     monthlyPlans.map((plan) => [plan.plan, plan]),
   ) as Partial<Record<'standard' | 'pro' | 'ultimate', PublicBillingPlanPrice>>
+
+  async function handlePricingAction() {
+    if (!isAuthenticated) {
+      router.push('/sign-in?redirect_url=/#pricing')
+      return
+    }
+
+    setIsRedirecting(true)
+
+    try {
+      const response = await fetch('/api/billing/portal', { method: 'POST' })
+      const payload = (await response.json()) as {
+        ok: boolean
+        data?: { portalUrl: string }
+        error?: { message?: string }
+      }
+
+      if (!response.ok || !payload.ok || !payload.data?.portalUrl) {
+        throw new Error(payload.error?.message ?? 'Portal failed')
+      }
+
+      window.location.assign(payload.data.portalUrl)
+    } finally {
+      setIsRedirecting(false)
+    }
+  }
 
   return (
     <section id="pricing" className="bg-[#09090d] px-4 py-24 sm:px-6 lg:px-8 xl:px-10">
@@ -469,16 +515,24 @@ export function PricingSection({ plans }: { plans: PublicBillingPlanPrice[] }) {
                   </div>
 
                   <div className="mt-auto pt-7">
-                    <Link
-                      href="/pricing"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handlePricingAction()
+                      }}
+                      disabled={isRedirecting}
                       className={`inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-4 text-sm font-semibold transition ${
                         isRecommended
                           ? 'border border-[#c084fc]/20 bg-[linear-gradient(90deg,#f8f5ff,#ffffff)] text-[#13081f] shadow-[0_16px_34px_rgba(168,85,247,0.24)] hover:shadow-[0_18px_42px_rgba(168,85,247,0.34)]'
                           : 'border border-white/10 bg-white text-black hover:bg-white/90'
                       }`}
                     >
-                      {pricingT(getLandingPricingKey(planKey, 'cta'))}
-                    </Link>
+                      {getLandingCtaLabel(
+                        isRedirecting,
+                        isAuthenticated,
+                        pricingT(getLandingPricingKey(planKey, 'cta')),
+                      )}
+                    </button>
                   </div>
                 </div>
               </article>

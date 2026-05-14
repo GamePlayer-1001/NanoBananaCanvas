@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 next-intl/server 的 getTranslations/setRequestLocale，依赖 @/components/legal/terms-content，
- *          依赖 @/components/landing/public-pages，依赖 @/lib/seo 的 buildPageMetadata
+ *          依赖 @/components/landing/public-pages 的返回首页按钮，依赖 @/lib/seo 的 buildPageMetadata
  * [OUTPUT]: 对外提供 TermsPage 服务条款页 (SSG) + SEO metadata + WebPage/BreadcrumbList 结构化数据
  * [POS]: (landing) 路由组的法律页面，承接公开服务条款与计费边界说明
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

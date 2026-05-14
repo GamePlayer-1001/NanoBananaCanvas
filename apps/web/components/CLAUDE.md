@@ -16,7 +16,7 @@ nodes/             — 节点组件 (BaseNode + 输入/AI/展示/控制流/合�
 edges/             — 连线组件 (CustomEdge 贝塞尔曲线)
 layout/            — 布局组件 (LandingNav + LandingFooter + AppSidebar)
 auth/              — 认证组件 (AuthShell 双栏认证壳 + ClerkShell 运行时认证壳，避免公开 landing 预载登录脚本)
-landing/           — Landing 页面组件 (HeroSection + 首页面叙事区块 + 公开子页面构件)
+landing/           — Landing 页面组件 (HeroSection + 首页面叙事区块 + 法务页返回首页构件)
 explore/           — 探索页组件 (ExploreContent + ExploreTabs + ExploreGrid)
 workflows/         — 工作流分享组件 (WorkflowsContent)
 video-analysis/    — 视频分析组件 (UploadArea + ModelSelector + AnalysisHistory)

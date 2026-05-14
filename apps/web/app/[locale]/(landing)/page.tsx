@@ -5,11 +5,12 @@
  *          依赖 @/components/landing/landing-sections，
  *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
  * [OUTPUT]: 对外提供 Landing Page 首页
- * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载；首页定价卡片由 Stripe 月付价格驱动
+ * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/FAQ/Footer，并将模型云图延后到客户端空闲期加载；公开子页已收口，仅保留条款与隐私页
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { Metadata } from 'next'
+import { auth } from '@clerk/nextjs/server'
 import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
@@ -27,7 +28,6 @@ import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import {
   BASE_URL,
   SITE_NAME,
-  buildAbsoluteUrl,
   buildPriorityKeywords,
   buildPageMetadata,
 } from '@/lib/seo'
@@ -60,6 +60,7 @@ export default async function LandingPage({
 }) {
   const { locale } = await params
   const requestHeaders = await headers()
+  const { userId } = await auth()
   setRequestLocale(locale)
   const seoT = await getTranslations({ locale, namespace: 'landingSeo' })
   const faqT = await getTranslations({ locale, namespace: 'landing.sections.faq' })
@@ -96,7 +97,7 @@ export default async function LandingPage({
         {
           '@type': 'ContactPoint',
           contactType: 'customer support',
-          url: buildAbsoluteUrl('/contact'),
+          url: BASE_URL,
           availableLanguage: AVAILABLE_LANGUAGE_CODES,
         },
       ],
@@ -154,7 +155,7 @@ export default async function LandingPage({
       />
       <HeroSection />
       <FeaturesSection />
-      <PricingSection plans={pricing?.plans ?? []} />
+      <PricingSection plans={pricing?.plans ?? []} isAuthenticated={Boolean(userId)} />
       <TestimonialsSection />
       <DeferredModelMindMap />
       <FaqSection />

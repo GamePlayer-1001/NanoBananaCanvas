@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，
  *          依赖 @/components/shared/brand-mark
  * [OUTPUT]: 对外提供 LandingFooter 组件
- * [POS]: components/layout 的 Landing 页脚，被 (landing)/page.tsx 消费
+ * [POS]: components/layout 的 Landing 页脚，被 (landing)/page.tsx 消费；公开入口已收口为首页锚点与法务页
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -52,24 +52,7 @@ export function LandingFooter() {
       links: [
         { label: t('features'), href: '/#features' },
         { label: t('models'), href: '/#models' },
-        { label: t('pricing'), href: '/pricing' },
-        { label: t('docs'), href: '/docs' },
-      ],
-    },
-    {
-      title: t('resources'),
-      links: [
-        { label: t('community'), href: '/community' },
-        { label: t('contactUs'), href: '/contact' },
-        { label: t('faq'), href: '/#faq' },
-      ],
-    },
-    {
-      title: t('company'),
-      links: [
-        { label: t('about'), href: '/about' },
-        { label: t('contactUs'), href: '/contact' },
-        { label: t('docs'), href: '/docs' },
+        { label: t('pricing'), href: '/#pricing' },
       ],
     },
     {
@@ -77,9 +60,6 @@ export function LandingFooter() {
       links: [
         { label: t('terms'), href: '/terms' },
         { label: t('privacy'), href: '/privacy' },
-        { label: t('refundPolicy'), href: '/refund-policy' },
-        { label: t('acceptableUse'), href: '/acceptable-use' },
-        { label: t('cookieSettings'), href: '/cookies' },
       ],
     },
   ]
@@ -96,23 +76,43 @@ export function LandingFooter() {
             </div>
             <p className="mb-4 text-sm text-white/64">{t('tagline')}</p>
             <div className="flex flex-wrap gap-3 text-sm text-white/58">
-              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
+              <a
+                href="https://t.me/nanobananacanvas"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center transition-colors hover:text-white/82"
+              >
                 Telegram
-              </Link>
-              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
+              </a>
+              <a
+                href="https://discord.gg/nanobananacanvas"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center transition-colors hover:text-white/82"
+              >
                 Discord
-              </Link>
-              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
+              </a>
+              <a
+                href="https://x.com/nanobananacanvas"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center transition-colors hover:text-white/82"
+              >
                 X
-              </Link>
-              <Link href="/contact" className="inline-flex min-h-11 items-center transition-colors hover:text-white/82">
+              </a>
+              <a
+                href="https://instagram.com/nanobananacanvas"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center transition-colors hover:text-white/82"
+              >
                 Instagram
-              </Link>
+              </a>
             </div>
           </div>
 
           {/* Link Columns */}
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:justify-items-end lg:text-right">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-2 lg:justify-items-end lg:text-right">
             {columns.map((col) => (
               <FooterColumn key={col.title} title={col.title} links={col.links} />
             ))}
