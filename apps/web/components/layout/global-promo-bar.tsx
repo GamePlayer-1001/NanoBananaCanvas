@@ -1,19 +1,18 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useMemo/useState，依赖 next-intl 的 useTranslations，
  *          依赖 @/i18n/navigation 的 Link，依赖 lucide-react 的 Clock3/X
- * [OUTPUT]: 对外提供 GlobalPromoBar 工作台宣传条组件（支持会话级关闭记忆、循环倒计时与订阅跳转）
- * [POS]: layout 的全局顶部横条，被 (app)/layout.tsx 消费；下方应用区用弹性高度适配有无通知条
+ * [OUTPUT]: 对外提供 GlobalPromoBar 工作台宣传条组件（支持当前页面实例关闭、循环倒计时与订阅跳转）
+ * [POS]: layout 的全局顶部横条，被 (app)/layout.tsx 消费；下方应用区用弹性高度适配有无通知条，关闭状态不跨刷新持久化，确保重载或重登后再次展示
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Clock3, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
-const PROMO_STORAGE_KEY = 'global-promo-bar:hidden:v2'
 const PROMO_CYCLE_MS = 30 * 24 * 60 * 60 * 1000
 const PROMO_EPOCH_UTC = Date.UTC(2026, 0, 1, 0, 0, 0)
 
@@ -37,31 +36,13 @@ function formatCountdown(remainingMs: number) {
   return `${padTime(days)} : ${padTime(hours)} : ${padTime(minutes)} : ${padTime(seconds)}`
 }
 
-function subscribePromoVisibility(onStoreChange: () => void) {
-  const handler = () => onStoreChange()
-  window.addEventListener('storage', handler)
-  return () => window.removeEventListener('storage', handler)
-}
-
-function getPromoVisibleSnapshot() {
-  return window.sessionStorage.getItem(PROMO_STORAGE_KEY) !== '1'
-}
-
-function getPromoVisibleServerSnapshot() {
-  return true
-}
-
 /* ─── Component ──────────────────────────────────────── */
 
 export function GlobalPromoBar() {
   const t = useTranslations('explore')
   const locale = useLocale()
   const [now, setNow] = useState(0)
-  const visible = useSyncExternalStore(
-    subscribePromoVisibility,
-    getPromoVisibleSnapshot,
-    getPromoVisibleServerSnapshot,
-  )
+  const [visible, setVisible] = useState(true)
   const countdownLabel = useMemo(
     () => (now > 0 ? formatCountdown(getRemainingMs(now)) : '-- : -- : -- : --'),
     [now],
@@ -82,8 +63,7 @@ export function GlobalPromoBar() {
   }, [])
 
   const handleClose = () => {
-    window.sessionStorage.setItem(PROMO_STORAGE_KEY, '1')
-    window.dispatchEvent(new StorageEvent('storage', { key: PROMO_STORAGE_KEY }))
+    setVisible(false)
   }
 
   if (!visible) return null
