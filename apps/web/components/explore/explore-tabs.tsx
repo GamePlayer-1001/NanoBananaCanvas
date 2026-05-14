@@ -1,13 +1,14 @@
 /**
- * [INPUT]: 依赖 next-intl 的 useTranslations
+ * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 lucide-react 的 ChevronDown
  * [OUTPUT]: 对外提供 ExploreTabs 顶部工具条（主类型 Tab + 条件二级分类 + 排序下拉）
- * [POS]: explore 的顶部工具区，被 explore/page.tsx 消费
+ * [POS]: explore 的顶部工具区，被 explore/page.tsx 消费，并负责排序下拉箭头的精确定位
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { ChevronDown } from 'lucide-react'
 
 /* ─── Tab Config ─────────────────────────────────────── */
 
@@ -65,11 +66,11 @@ export function ExploreTabs({
           ))}
         </div>
 
-        <label className="flex items-center text-sm text-stone-500">
+        <label className="relative flex items-center text-sm text-stone-500">
           <select
             value={activeSort}
             onChange={(event) => onSortChange(event.target.value as ExploreTab)}
-            className="h-10 min-w-[116px] rounded-full border border-stone-200 bg-white pl-4 pr-8 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
+            className="h-10 min-w-[116px] appearance-none rounded-full border border-stone-200 bg-white pl-4 pr-11 text-sm text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-stone-400"
           >
             {SORT_TABS.map((tab) => (
               <option key={tab} value={tab}>
@@ -77,6 +78,10 @@ export function ExploreTabs({
               </option>
             ))}
           </select>
+          <ChevronDown
+            aria-hidden="true"
+            className="pointer-events-none absolute right-8 size-4 text-stone-700"
+          />
         </label>
       </div>
 
