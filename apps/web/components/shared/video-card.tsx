@@ -9,7 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Download, Ellipsis, Flag, Heart, Play, Sparkles, Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -97,18 +97,13 @@ function renderPreviewMedia(
   imageUrl: string | undefined,
   title: string,
   className: string,
+  onError: () => void,
 ) {
-  if (imageUrl) {
-    return (
-      <img
-        src={imageUrl}
-        alt={title}
-        className={className}
-      />
-    )
+  if (!imageUrl) {
+    return null
   }
 
-  return null
+  return <img src={imageUrl} alt={title} className={className} onError={onError} />
 }
 
 /* ─── Component ──────────────────────────────────────── */
@@ -168,6 +163,29 @@ function CardWithPreview({
     likeCount: data.likes ?? 0,
     favoriteCount: data.favorites ?? 0,
   }))
+  const [previewUrl, setPreviewUrl] = useState(() => data.thumbnailUrl ?? data.mediaUrl)
+  const [avatarUrl, setAvatarUrl] = useState(() => data.author.avatarUrl)
+
+  useEffect(() => {
+    setPreviewUrl(data.thumbnailUrl ?? data.mediaUrl)
+  }, [data.mediaUrl, data.thumbnailUrl])
+
+  useEffect(() => {
+    setAvatarUrl(data.author.avatarUrl)
+  }, [data.author.avatarUrl])
+
+  const handlePreviewError = () => {
+    if (previewUrl && data.mediaUrl && previewUrl !== data.mediaUrl) {
+      setPreviewUrl(data.mediaUrl)
+      return
+    }
+
+    setPreviewUrl(undefined)
+  }
+
+  const handleAvatarError = () => {
+    setAvatarUrl(undefined)
+  }
 
   if (variant === 'masonry') {
     const cardState =
@@ -194,9 +212,10 @@ function CardWithPreview({
             <div className="overflow-hidden rounded-[30px] border border-stone-200/85 bg-white shadow-[0_22px_56px_-34px_rgba(15,23,42,0.22)] transition-[box-shadow,border-color,filter,border-radius] duration-300 group-hover:rounded-b-none group-hover:border-stone-300 group-hover:shadow-[0_38px_96px_-46px_rgba(15,23,42,0.34)]">
               <div className="relative overflow-hidden bg-stone-100">
                 {renderPreviewMedia(
-                  data.thumbnailUrl,
+                  previewUrl,
                   data.title,
                   'h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.035]',
+                  handlePreviewError,
                 ) ?? (
                   <div className="flex min-h-[240px] items-center justify-center bg-stone-100 px-6 py-14">
                     <span className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
@@ -218,11 +237,12 @@ function CardWithPreview({
                 <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex max-w-[148px] translate-y-1 items-center gap-2.5 transition-transform duration-300 group-hover:translate-y-0 sm:max-w-[176px]">
                     <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-white/35 bg-white/20 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
-                      {data.author.avatarUrl ? (
+                      {avatarUrl ? (
                         <img
-                          src={data.author.avatarUrl}
+                          src={avatarUrl}
                           alt={authorName}
                           className="h-full w-full object-cover"
+                          onError={handleAvatarError}
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-white/60 text-sm font-semibold text-stone-900">
@@ -264,9 +284,10 @@ function CardWithPreview({
     <Link href={`/explore/${data.id}`} className="group block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-[0_12px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_44px_-24px_rgba(99,102,241,0.35)]">
         {renderPreviewMedia(
-          data.thumbnailUrl,
+          previewUrl,
           data.title,
           'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]',
+          handlePreviewError,
         ) ?? (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.18),transparent_45%),linear-gradient(135deg,rgba(248,250,252,0.9),rgba(226,232,240,0.75))]">
             <span className="text-xs font-medium tracking-[0.12em] text-muted-foreground/80 uppercase">
@@ -311,11 +332,12 @@ function CardWithPreview({
 
       <div className="mt-4 flex gap-3 px-1">
         <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border/50 bg-muted">
-          {data.author.avatarUrl ? (
+          {avatarUrl ? (
             <img
-              src={data.author.avatarUrl}
+              src={avatarUrl}
               alt={authorName}
               className="h-full w-full object-cover"
+              onError={handleAvatarError}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-brand-100 text-sm font-medium text-brand-600">

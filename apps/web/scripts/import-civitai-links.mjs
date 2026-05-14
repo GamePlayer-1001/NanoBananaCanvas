@@ -256,7 +256,6 @@ function pickAuthorAvatar({ pageDetail, apiItem }) {
     const text = sanitizeText(candidate)
     if (!text) continue
     if (text.startsWith('http://') || text.startsWith('https://')) return text
-    return `https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/${text}/width=96/${text}.jpeg`
   }
 
   return ''

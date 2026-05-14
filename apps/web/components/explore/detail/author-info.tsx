@@ -9,6 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 动态头像来自运行时远程地址，这里不走 Next Image 优化链。 */
 
+import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Eye, Heart, Sparkles, Star } from 'lucide-react'
 
@@ -47,13 +48,23 @@ export function AuthorInfo({
   const locale = useLocale()
   const displayName = name?.trim() || t('unknownCreator')
   const vip = isVipMembership(membershipStatus)
+  const [avatarUrl, setAvatarUrl] = useState(avatar)
+
+  useEffect(() => {
+    setAvatarUrl(avatar)
+  }, [avatar])
 
   return (
     <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">
       <div className="flex items-stretch gap-4">
         <div className="h-[68px] w-[68px] flex-shrink-0 overflow-hidden rounded-[22px] bg-stone-100">
-          {avatar ? (
-            <img src={avatar} alt={displayName} className="h-full w-full object-cover" />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={displayName}
+              className="h-full w-full object-cover"
+              onError={() => setAvatarUrl('')}
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-brand-100 text-lg font-semibold text-brand-600">
               {displayName.charAt(0).toUpperCase()}
