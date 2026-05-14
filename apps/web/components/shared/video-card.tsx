@@ -490,10 +490,7 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/68 border-t-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(255,255,255,0.74)_24%,rgba(255,255,255,0.78)_100%)] shadow-[0_34px_78px_-40px_rgba(15,23,42,0.58)] backdrop-blur-[52px] transition-transform duration-300 group-hover:translate-y-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(255,189,214,0.2),transparent_26%),radial-gradient(circle_at_84%_16%,rgba(254,215,170,0.16),transparent_22%),radial-gradient(circle_at_52%_118%,rgba(99,102,241,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.18)_28%,rgba(255,255,255,0.22)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(255,255,255,0.28)_24%,rgba(255,255,255,0.34)_100%)] backdrop-blur-[96px]" />
-        <div className="absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(255,255,255,0))]" />
+      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/72 border-t-0 bg-white/82 shadow-[0_34px_78px_-40px_rgba(15,23,42,0.45)] backdrop-blur-[100px] transition-transform duration-300 group-hover:translate-y-0">
         <div className="relative p-4">
           <div className="grid grid-cols-[minmax(0,1fr)_44px_44px_44px] items-center gap-2">
             <Button
