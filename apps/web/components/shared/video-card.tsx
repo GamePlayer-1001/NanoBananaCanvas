@@ -490,7 +490,7 @@ function CardDetailPanel({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-full z-20 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/32 border-t-0 bg-white/34 shadow-[0_34px_78px_-40px_rgba(15,23,42,0.38)] backdrop-blur-[72px] transition-transform duration-300 group-hover:translate-y-0">
+      <div className="translate-y-[-10px] overflow-hidden rounded-b-[30px] rounded-t-none border border-white/22 border-t-0 bg-[rgba(226,214,205,0.52)] shadow-[0_30px_70px_-38px_rgba(15,23,42,0.42)] backdrop-blur-[36px] supports-[backdrop-filter]:bg-[rgba(226,214,205,0.42)] transition-transform duration-300 group-hover:translate-y-0">
         <div className="relative p-4">
           <div className="grid grid-cols-[minmax(0,1fr)_44px_44px_44px] items-center gap-2">
             <Button
@@ -520,7 +520,7 @@ function CardDetailPanel({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/34 bg-white/28 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.28)] backdrop-blur-[28px] transition hover:bg-white/38"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-[rgba(255,255,255,0.5)] text-stone-800 shadow-[0_10px_22px_-18px_rgba(15,23,42,0.24)] backdrop-blur-[18px] transition hover:bg-[rgba(255,255,255,0.62)]"
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
@@ -532,7 +532,7 @@ function CardDetailPanel({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="rounded-2xl border-white/36 bg-white/32 p-2 backdrop-blur-[28px]"
+                className="rounded-2xl border-white/24 bg-[rgba(236,228,221,0.74)] p-2 backdrop-blur-[22px]"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
@@ -561,7 +561,7 @@ function CardDetailPanel({
               {tagItems.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-white/32 bg-white/24 px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-[24px]"
+                  className="rounded-full border border-white/20 bg-[rgba(255,255,255,0.26)] px-3 py-1 text-[11px] font-medium text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-[14px]"
                 >
                   {tag}
                 </span>
@@ -606,7 +606,7 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/34 bg-white/28 text-stone-800 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.28)] backdrop-blur-[28px] transition hover:bg-white/38',
+        'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/24 bg-[rgba(255,255,255,0.5)] text-stone-800 shadow-[0_10px_22px_-18px_rgba(15,23,42,0.24)] backdrop-blur-[18px] transition hover:bg-[rgba(255,255,255,0.62)]',
         active && 'border-rose-200/95 bg-rose-50/92 text-rose-600',
       )}
     >
