@@ -9,7 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 动态头像来自运行时远程地址，这里不走 Next Image 优化链。 */
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Eye, Heart, Sparkles, Star } from 'lucide-react'
 
@@ -48,11 +48,43 @@ export function AuthorInfo({
   const locale = useLocale()
   const displayName = name?.trim() || t('unknownCreator')
   const vip = isVipMembership(membershipStatus)
-  const [avatarUrl, setAvatarUrl] = useState(avatar)
+  const avatarKey = avatar ?? '__empty__'
 
-  useEffect(() => {
-    setAvatarUrl(avatar)
-  }, [avatar])
+  return (
+    <AuthorInfoBody
+      key={avatarKey}
+      avatar={avatar}
+      displayName={displayName}
+      locale={locale}
+      totalLikes={totalLikes}
+      totalFavorites={totalFavorites}
+      totalViews={totalViews}
+      vip={vip}
+      t={t}
+    />
+  )
+}
+
+function AuthorInfoBody({
+  avatar,
+  displayName,
+  locale,
+  totalLikes,
+  totalFavorites,
+  totalViews,
+  vip,
+  t,
+}: {
+  avatar?: string
+  displayName: string
+  locale: string
+  totalLikes?: number
+  totalFavorites?: number
+  totalViews?: number
+  vip: boolean
+  t: ReturnType<typeof useTranslations<'exploreDetail'>>
+}) {
+  const [avatarUrl, setAvatarUrl] = useState(avatar)
 
   return (
     <div className="rounded-[28px] border border-stone-200/80 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.18)]">

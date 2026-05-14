@@ -9,7 +9,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图与头像都来自用户内容或运行时远程 URL，不适合额外域名约束。 */
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Download, Ellipsis, Flag, Heart, Play, Sparkles, Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -157,6 +157,28 @@ function CardWithPreview({
   tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
   unknownCreator: string
 }) {
+  const resetKey = `${data.id}:${data.thumbnailUrl ?? ''}:${data.mediaUrl ?? ''}:${data.author.avatarUrl ?? ''}`
+
+  return <CardWithPreviewState key={resetKey} data={data} authorName={authorName} meta={meta} variant={variant} t={t} tDetail={tDetail} unknownCreator={unknownCreator} />
+}
+
+function CardWithPreviewState({
+  data,
+  authorName,
+  meta,
+  variant,
+  t,
+  tDetail,
+  unknownCreator,
+}: {
+  data: VideoCardData
+  authorName: string
+  meta: string
+  variant: 'default' | 'masonry'
+  t: ReturnType<typeof useTranslations<'explore'>>
+  tDetail: ReturnType<typeof useTranslations<'exploreDetail'>>
+  unknownCreator: string
+}) {
   const [interactionState, setInteractionState] = useState(() => ({
     liked: Boolean(data.liked),
     favorited: Boolean(data.favorited),
@@ -165,14 +187,6 @@ function CardWithPreview({
   }))
   const [previewUrl, setPreviewUrl] = useState(() => data.thumbnailUrl ?? data.mediaUrl)
   const [avatarUrl, setAvatarUrl] = useState(() => data.author.avatarUrl)
-
-  useEffect(() => {
-    setPreviewUrl(data.thumbnailUrl ?? data.mediaUrl)
-  }, [data.mediaUrl, data.thumbnailUrl])
-
-  useEffect(() => {
-    setAvatarUrl(data.author.avatarUrl)
-  }, [data.author.avatarUrl])
 
   const handlePreviewError = () => {
     if (previewUrl && data.mediaUrl && previewUrl !== data.mediaUrl) {
