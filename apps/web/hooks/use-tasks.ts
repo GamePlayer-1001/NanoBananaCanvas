@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 @tanstack/react-query, 依赖 @nano-banana/shared 的 AsyncTaskType，
- *          依赖 @/lib/query/keys 的 queryKeys, 依赖 @/lib/tasks 的 TaskDetail/ListTasksResult/PageInfo
+ *          依赖 @/lib/query/keys 的 queryKeys, 依赖 @/lib/tasks 的 TaskDetail/ListTasksResult
  * [OUTPUT]: 对外提供 useTasks / useTask / useTaskPolling / useSubmitTask / useCancelTask
  * [POS]: hooks 的异步任务数据层，被 workspace/canvas 页面消费，并对高频任务轮询做前台三段式退避
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,7 +12,7 @@ import type { AsyncTaskStatus, AsyncTaskType } from '@nano-banana/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/lib/query/keys'
-import type { ListTasksResult, PageInfo, TaskDetail } from '@/lib/tasks'
+import type { ListTasksResult, TaskDetail } from '@/lib/tasks'
 
 /* ─── Fetcher ───────────────────────────────────────── */
 
@@ -33,10 +33,6 @@ interface TaskListParams {
   taskType?: AsyncTaskType
   page?: number
   limit?: number
-}
-
-interface TaskListResponse extends ListTasksResult {
-  pageInfo?: PageInfo
 }
 
 interface SubmitTaskInput {
@@ -90,7 +86,7 @@ export function useTasks(params?: TaskListParams) {
   if (params?.limit) qs.set('limit', String(params.limit))
   const query = qs.toString()
 
-  return useQuery<TaskListResponse>({
+  return useQuery<ListTasksResult>({
     queryKey: queryKeys.tasks.list(params),
     queryFn: () => fetchJson(`/api/tasks${query ? `?${query}` : ''}`),
   })
