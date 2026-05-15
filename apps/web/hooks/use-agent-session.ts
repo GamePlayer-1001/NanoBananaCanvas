@@ -57,6 +57,19 @@ type ChatFillIntent =
       imageName?: string
       nodeLabel?: string
     }
+type ChatFillResolution =
+  | {
+      status: 'ready'
+      intent: ChatFillIntent
+    }
+  | {
+      status: 'ambiguous'
+      kind: 'text' | 'image'
+    }
+  | {
+      status: 'missing-target'
+      kind: 'text' | 'image'
+    }
 type WorkflowReferenceKind = 'workflow_reference' | 'content_reference' | 'uncertain'
 
 export function useAgentSession({
@@ -441,6 +454,7 @@ export function useAgentSession({
         canvasSummary,
         locale,
         assistantRuntime,
+        workflowReference: workflowAttachmentContext.kind,
         attachments,
       })
       const plan = 'plan' in planned ? planned.plan : planned
@@ -662,13 +676,14 @@ export function useAgentSession({
     assistantRuntime?: AgentAssistantRuntime
     attachments: AgentComposerAttachment[]
   }) {
-    const chatFillIntent = detectChatFillIntent({
+    const chatFillResolution = detectChatFillIntent({
       userMessage: input.userMessage,
       attachments: input.attachments,
       canvasSummary: input.canvasSummary,
     })
 
-    if (chatFillIntent) {
+    if (chatFillResolution?.status === 'ready') {
+      const chatFillIntent = chatFillResolution.intent
       if (chatFillIntent.kind === 'text') {
         fillTextInputNode(chatFillIntent.nodeId, chatFillIntent.text)
         appendMessage({
@@ -697,6 +712,34 @@ export function useAgentSession({
           chatOnly: true,
           fillKind: chatFillIntent.kind,
         },
+      })
+      setStatus('idle')
+      return
+    }
+
+    if (chatFillResolution?.status === 'ambiguous') {
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text:
+          chatFillResolution.kind === 'text'
+            ? '我知道你是想把文字写进节点里，但当前有多个文本输入节点。你可以先选中目标节点，或者告诉我要放到哪一个文本节点。'
+            : '我知道你是想把图片放进节点里，但当前有多个图片输入节点。你可以先选中目标节点，或者告诉我要放到哪一个图片节点。',
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
+    if (chatFillResolution?.status === 'missing-target') {
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text:
+          chatFillResolution.kind === 'text'
+            ? '我理解你想把文字放进节点里，但当前画板里没有可直接写入的文本输入节点。我先不自动建流；如果你需要，我可以继续帮你放进指定节点，或者你用 /Workflow 让我搭一个。'
+            : '我理解你想把图片放进节点里，但当前画板里没有可直接写入的图片输入节点。我先不自动建流；如果你需要，我可以继续帮你放进指定节点，或者你用 /Workflow 让我搭一个。',
+        createdAt: new Date().toISOString(),
       })
       setStatus('idle')
       return
@@ -1538,7 +1581,7 @@ function detectChatFillIntent(input: {
   userMessage: string
   attachments: AgentComposerAttachment[]
   canvasSummary: ReturnType<typeof summarizeCanvas>
-}): ChatFillIntent | null {
+}): ChatFillResolution | null {
   const normalized = normalizeIntentText(input.userMessage)
   const flowState = useFlowStore.getState()
   const selectedNodeId = input.canvasSummary.selectionContext?.nodeId
@@ -1550,16 +1593,21 @@ function detectChatFillIntent(input: {
       fallbackNodeType: 'image-input',
       nodes: flowState.nodes,
     })
-    if (!imageNode) {
-      return null
+    if (imageNode.status !== 'ready') {
+      return imageNode.status === 'ambiguous'
+        ? { status: 'ambiguous', kind: 'image' }
+        : { status: 'missing-target', kind: 'image' }
     }
 
     return {
-      kind: 'image',
-      nodeId: imageNode.id,
-      imageUrl: input.attachments[0].url,
-      imageName: input.attachments[0].name,
-      nodeLabel: extractNodeLabel(imageNode.data),
+      status: 'ready',
+      intent: {
+        kind: 'image',
+        nodeId: imageNode.node.id,
+        imageUrl: input.attachments[0].url,
+        imageName: input.attachments[0].name,
+        nodeLabel: extractNodeLabel(imageNode.node.data),
+      },
     }
   }
 
@@ -1573,15 +1621,20 @@ function detectChatFillIntent(input: {
     fallbackNodeType: 'text-input',
     nodes: flowState.nodes,
   })
-  if (!textNode) {
-    return null
+  if (textNode.status !== 'ready') {
+    return textNode.status === 'ambiguous'
+      ? { status: 'ambiguous', kind: 'text' }
+      : { status: 'missing-target', kind: 'text' }
   }
 
   return {
-    kind: 'text',
-    nodeId: textNode.id,
-    text: extractTextFillContent(input.userMessage),
-    nodeLabel: extractNodeLabel(textNode.data),
+    status: 'ready',
+    intent: {
+      kind: 'text',
+      nodeId: textNode.node.id,
+      text: extractTextFillContent(input.userMessage),
+      nodeLabel: extractNodeLabel(textNode.node.data),
+    },
   }
 }
 
@@ -1594,16 +1647,31 @@ function resolveSingleTargetNode(input: {
   if (input.selectedNodeId) {
     const selectedNode = input.nodes.find((node) => node.id === input.selectedNodeId)
     if (selectedNode?.type === input.candidateNodeType) {
-      return selectedNode
+      return {
+        status: 'ready' as const,
+        node: selectedNode,
+      }
     }
-    return null
+    return {
+      status: 'missing-target' as const,
+    }
   }
 
   const candidates = input.nodes.filter((node) => node.type === input.fallbackNodeType)
-  if (candidates.length !== 1) {
-    return null
+  if (candidates.length === 0) {
+    return {
+      status: 'missing-target' as const,
+    }
   }
-  return candidates[0]
+  if (candidates.length > 1) {
+    return {
+      status: 'ambiguous' as const,
+    }
+  }
+  return {
+    status: 'ready' as const,
+    node: candidates[0],
+  }
 }
 
 function fillTextInputNode(nodeId: string, text: string) {

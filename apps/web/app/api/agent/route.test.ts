@@ -167,6 +167,47 @@ describe('POST /api/agent/*', () => {
     })
   })
 
+  it('treats workflow-reference images as structure-oriented planning instead of image-to-image generation', async () => {
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '参考这张工作流图给我搭一个类似的流程',
+          mode: 'create',
+          locale: 'zh',
+          workflowReference: 'workflow_reference',
+          attachments: [
+            {
+              kind: 'image',
+              url: 'https://example.com/workflow-reference.png',
+              name: 'workflow-reference.png',
+            },
+          ],
+          canvasSummary: createCanvasSummary(),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'create',
+          summary: expect.stringContaining('参考工作流图'),
+          reasons: expect.arrayContaining([
+            expect.stringContaining('附图更像结构参考'),
+          ]),
+          operations: expect.not.arrayContaining([
+            expect.objectContaining({ type: 'add_node', nodeType: 'image-input' }),
+          ]),
+        },
+      },
+    })
+  })
+
   it('treats missing image-input requests as structural workflow changes instead of prompt confirmation', async () => {
     const response = await planPost(
       new Request('http://localhost/api/agent/plan', {

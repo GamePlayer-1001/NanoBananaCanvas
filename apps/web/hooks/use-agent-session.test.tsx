@@ -525,6 +525,13 @@ describe('useAgentSession', () => {
     expect(useFlowStore.getState().nodes.find((node) => node.id === 'text-2')?.data.config.text).toBe(
       '',
     )
+    expect(
+      useAgentStore.getState().messages.some(
+        (message) =>
+          message.role === 'assistant' &&
+          message.text.includes('当前有多个文本输入节点'),
+      ),
+    ).toBe(true)
   })
 
   it('answers around the selected node in chat mode when the user asks about that node', async () => {
@@ -595,8 +602,34 @@ describe('useAgentSession', () => {
 
     expect(buildAgentPlan).toHaveBeenCalledWith(
       expect.objectContaining({
+        workflowReference: 'workflow_reference',
         userMessage: expect.stringContaining('我上传了一张工作流参考图'),
       }),
     )
+  })
+
+  it('explains missing text-input targets instead of silently falling back to small talk', async () => {
+    useFlowStore.getState().setFlow([createNode('image-existing', 'image-gen')], [])
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('把这段文案放进文本输入节点：这里只有图片节点')
+    })
+
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+    expect(
+      useAgentStore.getState().messages.some(
+        (message) =>
+          message.role === 'assistant' &&
+          message.text.includes('当前画板里没有可直接写入的文本输入节点'),
+      ),
+    ).toBe(true)
   })
 })

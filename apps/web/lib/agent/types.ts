@@ -382,6 +382,7 @@ export interface AgentPlanRequest {
   canvasSummary: CanvasSummary
   locale: string
   assistantRuntime?: AgentAssistantRuntime
+  workflowReference?: 'workflow_reference' | 'content_reference' | 'uncertain'
   attachments?: Array<{
     kind: 'image'
     url: string

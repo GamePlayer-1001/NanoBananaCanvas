@@ -281,6 +281,7 @@ export const agentPlanRequestSchema = z.object({
   mode: z.enum(['create', 'update', 'repair', 'diagnose', 'optimize', 'extend', 'template']),
   locale: z.string().trim().min(1),
   assistantRuntime: agentAssistantRuntimeSchema.optional(),
+  workflowReference: z.enum(['workflow_reference', 'content_reference', 'uncertain']).optional(),
   attachments: z.array(agentAttachmentSchema).optional(),
   canvasSummary: z.object({
     workflowId: z.string().min(1),

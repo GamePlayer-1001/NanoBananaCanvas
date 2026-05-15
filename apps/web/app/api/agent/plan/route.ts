@@ -62,8 +62,13 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
   const goal = input.userMessage.trim()
   const normalized = goal.toLowerCase()
   const canvas = input.canvasSummary
+  const workflowReferenceRequest = isWorkflowReferenceRequest(
+    normalized,
+    input.workflowReference,
+  )
   const aiIntent = await inferIntentWithAssistant(input).catch(() => null)
-  const workflowKind = aiIntent?.workflowKind ?? inferWorkflowKind(goal, input.attachments)
+  const workflowKind =
+    aiIntent?.workflowKind ?? inferWorkflowKind(goal, input.attachments, input.workflowReference)
   const inferredMode =
     aiIntent?.mode ?? inferModeFromMessage(input.mode, normalized, canvas.nodeCount)
   const intent =
@@ -99,7 +104,7 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
     intent,
     summary:
       aiIntent?.summary?.trim() ||
-      buildSummary(normalized, canvas, inferredMode, operations),
+      buildSummary(normalized, canvas, inferredMode, operations, workflowReferenceRequest),
     reasons: aiIntent?.reasons?.length ? aiIntent.reasons.slice(0, 3) : reasons,
     requiresConfirmation,
     operations,
@@ -140,6 +145,7 @@ async function inferIntentWithAssistant(input: AgentPlanRequest) {
       `当前节点数：${input.canvasSummary.nodeCount}`,
       `当前是否有成功图片结果：${input.canvasSummary.latestSuccessfulAsset?.kind === 'image' ? '是' : '否'}`,
       `是否附带图片：${input.attachments?.length ? '是' : '否'}`,
+      `附图语义：${input.workflowReference ?? 'content_reference'}`,
       `当前模式：${input.mode}`,
     ].join('\n'),
   })
@@ -149,6 +155,10 @@ function buildCreationMessage(
   normalized: string,
   workflowKind?: 'image' | 'image_to_image' | 'video' | 'audio' | 'text',
 ) {
+  if (workflowKind === 'text') {
+    return `${normalized} 工作流参考`
+  }
+
   if (workflowKind === 'image_to_image') {
     return `${normalized} 图生图`
   }
@@ -171,8 +181,13 @@ function buildCreationMessage(
 function inferWorkflowKind(
   userMessage: string,
   attachments: AgentPlanRequest['attachments'],
+  workflowReference?: AgentPlanRequest['workflowReference'],
 ): 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | undefined {
   const normalized = userMessage.trim().toLowerCase()
+
+  if (workflowReference === 'workflow_reference') {
+    return 'text'
+  }
 
   if (attachments?.length) {
     return 'image_to_image'
@@ -502,6 +517,7 @@ function buildSummary(
   canvas: CanvasSummary,
   mode: AgentPlan['mode'],
   operations: WorkflowOperation[],
+  workflowReferenceRequest = false,
 ) {
   if (mode === 'diagnose') {
     if (canvas.latestExecution?.failedReason) {
@@ -511,6 +527,10 @@ function buildSummary(
   }
 
   if (canvas.nodeCount === 0) {
+    if (workflowReferenceRequest) {
+      return '我准备先按参考工作流图整理出一版可落到画板里的结构提案，而不是把图片当成普通参考素材。'
+    }
+
     if (normalized.includes('图') || normalized.includes('图片') || normalized.includes('海报')) {
       return '我准备先搭出“输入提示词 -> 图片生成 -> 结果展示”的最小工作流提案。'
     }
@@ -576,6 +596,10 @@ function buildReasons(
     reasons.push(`当前画板已有 ${canvas.nodeCount} 个节点，先做局部提案更安全。`)
   }
 
+  if (isWorkflowReferenceRequest(normalized)) {
+    reasons.push('这次附图更像结构参考，我会优先复用图里的流程意图，而不是把它只当内容素材。')
+  }
+
   if (canvas.displayMissingForNodeIds.length > 0) {
     reasons.push(`我发现有 ${canvas.displayMissingForNodeIds.length} 个 AI 节点还没有明显结果承接。`)
   }
@@ -621,6 +645,22 @@ function buildReasons(
   }
 
   return reasons.slice(0, 3)
+}
+
+function isWorkflowReferenceRequest(
+  normalized: string,
+  workflowReference?: AgentPlanRequest['workflowReference'],
+) {
+  if (workflowReference === 'workflow_reference') {
+    return true
+  }
+
+  return (
+    normalized.includes('工作流参考图') ||
+    normalized.includes('参考这张工作流图') ||
+    normalized.includes('复刻画板工作流') ||
+    normalized.includes('参考这个流程图')
+  )
 }
 
 function buildPlanAlternatives(plan: AgentPlan, canvas: CanvasSummary): AgentPlan[] | undefined {
