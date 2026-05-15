@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useTranslations } from 'next-intl'
 
 interface AgentPromptCompareCardProps {
+  variant?: 'confirmation' | 'result'
   payloadId?: string
   originalIntent: string
   visualProposal: string
@@ -22,6 +23,7 @@ interface AgentPromptCompareCardProps {
 }
 
 export function AgentPromptCompareCard({
+  variant = 'confirmation',
   payloadId,
   originalIntent,
   visualProposal,
@@ -43,7 +45,7 @@ export function AgentPromptCompareCard({
     <div className="w-full space-y-3 rounded-[22px] border border-black/6 bg-white px-5 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
       <div className="space-y-1">
         <p className="text-[11px] font-medium tracking-[0.08em] text-slate-400 uppercase">
-          {t('promptCardTitle')}
+          {variant === 'result' ? t('promptCardResultTitle') : t('promptCardTitle')}
         </p>
         {payloadId ? (
           <p className="text-[11px] text-slate-400">{payloadId}</p>
@@ -84,43 +86,54 @@ export function AgentPromptCompareCard({
             </p>
             <div className="flex flex-wrap gap-2">
               {styleOptions.map((style) => (
-                <Button
-                  key={style}
-                  type="button"
-                  variant="secondary"
-                  className="h-8 rounded-full px-3 text-xs transition-colors motion-reduce:transition-none"
-                  onClick={() => onStyleSelect?.(style)}
-                >
-                  {style}
-                </Button>
+                variant === 'result' ? (
+                  <span
+                    key={style}
+                    className="inline-flex h-8 items-center rounded-full border border-slate-200 bg-slate-50 px-3 text-xs text-slate-600"
+                  >
+                    {style}
+                  </span>
+                ) : (
+                  <Button
+                    key={style}
+                    type="button"
+                    variant="secondary"
+                    className="h-8 rounded-full px-3 text-xs transition-colors motion-reduce:transition-none"
+                    onClick={() => onStyleSelect?.(style)}
+                  >
+                    {style}
+                  </Button>
+                )
               ))}
             </div>
           </div>
         ) : null}
 
-      <div className="flex flex-wrap gap-2 pt-1">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          className="rounded-full px-4 transition-colors motion-reduce:transition-none"
-          onClick={onRegenerate}
-        >
-          {t('promptRegenerate')}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="rounded-full px-4 transition-colors motion-reduce:transition-none"
-          onClick={onManualEdit}
-        >
-          {t('promptManualEdit')}
-        </Button>
-      </div>
+      {variant === 'confirmation' ? (
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+            onClick={onRegenerate}
+          >
+            {t('promptRegenerate')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="rounded-full px-4 transition-colors motion-reduce:transition-none"
+            onClick={onManualEdit}
+          >
+            {t('promptManualEdit')}
+          </Button>
+        </div>
+      ) : null}
 
       <p className="whitespace-pre-wrap text-[12px] leading-5 text-slate-500">
-        {t('promptConfirmHint')}
+        {variant === 'result' ? t('promptResultHint') : t('promptConfirmHint')}
       </p>
     </div>
   )

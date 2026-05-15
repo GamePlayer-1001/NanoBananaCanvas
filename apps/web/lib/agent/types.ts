@@ -311,6 +311,13 @@ export type AgentMessage =
     }
   | {
       id: string
+      role: 'prompt-result'
+      payloadId: string
+      payload: PromptConfirmationPayload
+      createdAt: string
+    }
+  | {
+      id: string
       role: 'diagnosis'
       text: string
       severity: 'info' | 'warning' | 'error'

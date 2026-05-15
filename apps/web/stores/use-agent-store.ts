@@ -58,7 +58,7 @@ interface AgentStoreState {
   resetSession: () => void
 }
 
-const INITIAL_MODE: AgentMode = 'create'
+const INITIAL_MODE: AgentMode = 'update'
 const INITIAL_STATUS: AgentSessionStatus = 'idle'
 
 export const useAgentStore = create<AgentStoreState>((set) => ({

@@ -15,6 +15,7 @@ import type { WorkflowNodeData } from '@/types'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
+import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
 
 const executeMock = vi.fn(async () => undefined)
 const executeFromNodeMock = vi.fn(async () => undefined)
@@ -110,6 +111,7 @@ describe('useAgentSession', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     useAgentStore.getState().resetSession()
+    useAgentStore.getState().setMode('update')
     useFlowStore.getState().setFlow(
       [
         createNode('text-existing', 'text-input', { text: '' }),
@@ -157,6 +159,16 @@ describe('useAgentSession', () => {
       },
     })
     vi.mocked(buildAgentPlan).mockReset()
+    vi.mocked(refinePromptConfirmation).mockReset()
+    vi.mocked(refinePromptConfirmation).mockResolvedValue({
+      id: 'prompt-refined-1',
+      originalIntent: '帮我生成一张小猫的图片',
+      visualProposal: '一只可爱的小猫，主体清晰，光线柔和。',
+      executionPrompt: '生成一张主体为小猫的高质量图片，强调毛发细节、柔和光线和干净背景。',
+      styleOptions: [
+        { id: 'realistic', label: '更写实', promptDelta: '强调真实摄影与材质' },
+      ],
+    })
   })
 
   it('waits for workflow confirmation before showing prompt confirmation on create plans', async () => {
@@ -196,7 +208,7 @@ describe('useAgentSession', () => {
     )
 
     await act(async () => {
-      await result.current.sendMessage('帮我生成一张小猫的图片')
+      await result.current.sendMessage('/Workflow 帮我生成一张小猫的图片')
     })
 
     const storeState = useAgentStore.getState()
@@ -368,19 +380,6 @@ describe('useAgentSession', () => {
   it('does not mistake normal follow-up chat for a confirmation command', async () => {
     useAgentStore.getState().setStatus('awaiting-prompt-confirmation')
     const previousMessageCount = useAgentStore.getState().messages.length
-    vi.mocked(buildAgentPlan).mockResolvedValue({
-      plan: {
-        id: 'plan-follow-up-chat',
-        goal: '好了，现在你再给我看看你润色的文案？',
-        mode: 'update',
-        intent: 'add_step',
-        summary: '我先把注意力聚焦到最相关的节点范围，再给你一个可检查的修改方向。',
-        reasons: ['这是继续追问润色结果，不是确认执行。'],
-        requiresConfirmation: false,
-        operations: [{ type: 'focus_nodes', nodeIds: ['text-existing'] }],
-      },
-      alternatives: [],
-    })
 
     const { result } = renderHook(() =>
       useAgentSession({
@@ -395,12 +394,54 @@ describe('useAgentSession', () => {
     })
 
     expect(executeFromNodeMock).not.toHaveBeenCalled()
-    expect(buildAgentPlan).toHaveBeenCalled()
+    expect(buildAgentPlan).not.toHaveBeenCalled()
     expect(useAgentStore.getState().messages.length).toBeGreaterThan(previousMessageCount)
     expect(
       useAgentStore
         .getState()
         .messages.some((message) => message.role === 'assistant' || message.role === 'proposal'),
     ).toBe(true)
+  })
+
+  it('uses /Prompt as a pure prompt workshop command without building a workflow plan', async () => {
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('/Prompt 帮我生成一张小猫的图片')
+    })
+
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+    expect(refinePromptConfirmation).toHaveBeenCalled()
+    expect(
+      useAgentStore.getState().messages.some((message) => message.role === 'prompt-result'),
+    ).toBe(true)
+    expect(useAgentStore.getState().pendingPlan).toBeNull()
+    expect(useAgentStore.getState().status).toBe('idle')
+  })
+
+  it('keeps plain chat in chat mode and does not generate workflow plans', async () => {
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('你好，今天我们先聊聊这个项目该怎么推进')
+    })
+
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+    expect(
+      useAgentStore.getState().messages.some((message) => message.role === 'assistant'),
+    ).toBe(true)
+    expect(useAgentStore.getState().pendingPlan).toBeNull()
   })
 })

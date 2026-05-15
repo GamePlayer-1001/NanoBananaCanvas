@@ -41,6 +41,9 @@ interface UseAgentSessionOptions {
   locale: string
 }
 
+type AgentCommandMode = 'workflow' | 'prompt' | 'chat'
+type AgentRequestKind = 'plan' | 'diagnose' | 'explain' | 'optimize'
+
 export function useAgentSession({
   workflowId,
   workflowName,
@@ -144,7 +147,8 @@ export function useAgentSession({
     assistantRuntime?: AgentAssistantRuntime,
     attachments: AgentComposerAttachment[] = [],
   ) {
-    const value = rawValue.trim()
+    const normalizedInput = normalizeAgentInput(rawValue)
+    const value = normalizedInput.message
     if ((!value && attachments.length === 0) || isSubmitting) return
 
     if (value) {
@@ -162,14 +166,16 @@ export function useAgentSession({
     appendMessage({
       id: crypto.randomUUID(),
       role: 'user',
-      text: value,
+      text: normalizedInput.displayText,
       attachments,
       createdAt: new Date().toISOString(),
     })
 
     try {
       setStatus('understanding')
-      const createLikeMessage = requestKindMatchesCreateLikeMessage(value)
+      const createLikeMessage =
+        normalizedInput.commandMode === 'workflow' ||
+        requestKindMatchesCreateLikeMessage(value)
       if (!createLikeMessage) {
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
       }
@@ -195,13 +201,35 @@ export function useAgentSession({
       void safeRecordAudit({
         eventType: 'message_sent',
         mode,
-        userMessage: value,
+        userMessage: normalizedInput.displayText,
         canvasSummary,
         targetNodeId: canvasSummary.selectionContext?.nodeId,
         metadata: {
           attachmentCount: attachments.length,
+          commandMode: normalizedInput.commandMode,
         },
       })
+
+      if (normalizedInput.commandMode === 'prompt') {
+        await handlePromptCommand({
+          userMessage: value,
+          displayText: normalizedInput.displayText,
+          canvasSummary,
+          assistantRuntime,
+          attachments,
+        })
+        return
+      }
+
+      if (normalizedInput.commandMode === 'chat') {
+        await handleChatMessage({
+          userMessage: value,
+          displayText: normalizedInput.displayText,
+          canvasSummary,
+          assistantRuntime,
+        })
+        return
+      }
 
       const requestKind = resolveRequestKind(value, mode)
 
@@ -246,7 +274,7 @@ export function useAgentSession({
         if (diagnosis.suggestedOperations?.length) {
           const nextPlan: AgentPlan = {
             id: crypto.randomUUID(),
-            goal: value,
+            goal: normalizedInput.displayText,
             mode: 'diagnose',
             summary: diagnosis.summary,
             reasons: [diagnosis.rootCause, diagnosis.repairSuggestion],
@@ -309,7 +337,7 @@ export function useAgentSession({
         if (diagnosis.suggestedOperations?.length) {
           const nextPlan: AgentPlan = {
             id: crypto.randomUUID(),
-            goal: value,
+            goal: normalizedInput.displayText,
             mode: 'optimize',
             intent:
               diagnosis.dimension === 'speed'
@@ -383,7 +411,7 @@ export function useAgentSession({
 
       const planned = await planBuilder({
         userMessage: value,
-        mode,
+        mode: resolveWorkflowMode(mode, canvasSummary.nodeCount),
         canvasSummary,
         locale,
         assistantRuntime,
@@ -427,7 +455,7 @@ export function useAgentSession({
       setPendingPlanAlternatives([nextPlan, ...alternatives])
       rememberConversationTurn({
         id: crypto.randomUUID(),
-        userMessage: value,
+        userMessage: normalizedInput.displayText,
         summary: nextPlan.summary,
         selectedNodeId: selectionContext?.nodeId,
         selectedNodeLabel: selectionContext?.nodeLabel,
@@ -436,7 +464,7 @@ export function useAgentSession({
       void safeRecordAudit({
         eventType: 'plan_generated',
         mode: nextPlan.mode,
-        userMessage: value,
+        userMessage: normalizedInput.displayText,
         canvasSummary,
         plan: nextPlan,
         alternatives,
@@ -556,6 +584,122 @@ export function useAgentSession({
       text,
       createdAt: new Date().toISOString(),
     })
+  }
+
+  async function handlePromptCommand(input: {
+    userMessage: string
+    displayText: string
+    canvasSummary: ReturnType<typeof summarizeCanvas>
+    assistantRuntime?: AgentAssistantRuntime
+    attachments: AgentComposerAttachment[]
+  }) {
+    setStatus('planning')
+    appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
+
+    const payload = await refinePromptConfirmation({
+      originalIntent: input.userMessage,
+      styleDirection: inferPromptStyleDirection(input.userMessage),
+      attachedImageUrls: input.attachments.map((item) => item.url),
+    })
+
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: tAgent('messagePromptReady'),
+      createdAt: new Date().toISOString(),
+    })
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'prompt-result',
+      payloadId: payload.id,
+      payload,
+      createdAt: new Date().toISOString(),
+    })
+    void safeRecordAudit({
+      eventType: 'plan_generated',
+      mode: 'update',
+      userMessage: input.displayText,
+      canvasSummary: input.canvasSummary,
+      metadata: {
+        commandMode: 'prompt',
+        attachmentCount: input.attachments.length,
+      },
+    })
+    setStatus('idle')
+  }
+
+  async function handleChatMessage(input: {
+    userMessage: string
+    displayText: string
+    canvasSummary: ReturnType<typeof summarizeCanvas>
+    assistantRuntime?: AgentAssistantRuntime
+  }) {
+    if (looksLikeExplainSelectionQuestion(input.userMessage, input.canvasSummary)) {
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
+      const answer = await explainCanvas({
+        userMessage: input.userMessage,
+        canvasSummary: input.canvasSummary,
+        locale,
+        assistantRuntime: input.assistantRuntime,
+      })
+      const aiAnswer =
+        (await runAssistantModel(
+          input.assistantRuntime,
+          [
+            '请基于下面这份节点解释，用自然、简洁、对话化的中文回答用户。',
+            '要求：',
+            '1. 只围绕当前选中节点回答。',
+            '2. 不要主动生成工作流提案。',
+            '3. 保持友好、准确。',
+            '',
+            answer,
+          ].join('\n'),
+        )) ?? answer
+
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: aiAnswer,
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
+    const chatReply =
+      (await runAssistantModel(
+        input.assistantRuntime,
+        [
+          '你现在处于 Nano Banana Canvas 的闲聊模式。',
+          '约束：',
+          '1. 只回答用户问题，不生成工作流提案。',
+          '2. 不要建议已经执行的修改。',
+          '3. 可以结合当前画板上下文，但不要伪造细节。',
+          `当前节点数：${input.canvasSummary.nodeCount}`,
+          input.canvasSummary.selectionContext?.nodeLabel
+            ? `当前选中节点：${input.canvasSummary.selectionContext.nodeLabel}`
+            : '当前没有选中节点。',
+          `用户消息：${input.userMessage}`,
+        ].join('\n'),
+      )) ?? tAgent('messageChatFallback')
+
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: chatReply,
+      createdAt: new Date().toISOString(),
+    })
+    void safeRecordAudit({
+      eventType: 'message_sent',
+      mode: 'update',
+      userMessage: input.displayText,
+      canvasSummary: input.canvasSummary,
+      metadata: {
+        commandMode: 'chat',
+        chatOnly: true,
+      },
+    })
+    setStatus('idle')
   }
 
   async function applyPendingPlan(
@@ -1036,6 +1180,75 @@ function requestKindMatchesCreateLikeMessage(value: string) {
   )
 }
 
+function normalizeAgentInput(rawValue: string) {
+  const trimmed = rawValue.trim()
+  const normalizedSlash = trimmed.replace(/^／/, '/')
+  const match = normalizedSlash.match(/^\/(workflow|prompt)\b/i)
+
+  if (!match) {
+    return {
+      commandMode: 'chat' as AgentCommandMode,
+      message: trimmed,
+      displayText: trimmed,
+    }
+  }
+
+  const command = match[1].toLowerCase() as 'workflow' | 'prompt'
+  const message = normalizedSlash.slice(match[0].length).trim()
+  return {
+    commandMode: command,
+    message,
+    displayText: normalizedSlash,
+  }
+}
+
+function resolveWorkflowMode(mode: AgentMode, nodeCount: number): AgentMode {
+  if (mode === 'template') {
+    return 'template'
+  }
+
+  if (nodeCount === 0) {
+    return 'create'
+  }
+
+  return mode === 'create' ? 'update' : mode
+}
+
+function looksLikeExplainSelectionQuestion(
+  value: string,
+  canvasSummary: ReturnType<typeof summarizeCanvas>,
+) {
+  if (!canvasSummary.selectionContext?.nodeId) {
+    return false
+  }
+
+  const normalized = value.trim().toLowerCase()
+  return (
+    normalized.includes('这个节点') ||
+    normalized.includes('这里') ||
+    normalized.includes('这个参数') ||
+    normalized.includes('这个 prompt') ||
+    normalized.includes('这个模型') ||
+    normalized.includes('它为什么') ||
+    normalized.includes('它是干嘛') ||
+    normalized.includes('它在做什么') ||
+    normalized.includes('什么意思')
+  )
+}
+
+function inferPromptStyleDirection(value: string) {
+  if (value.includes('写实') || value.includes('真实')) {
+    return '更写实'
+  }
+  if (value.includes('动漫') || value.includes('二次元')) {
+    return '更动漫'
+  }
+  if (value.includes('商业') || value.includes('广告')) {
+    return '更商业'
+  }
+  return undefined
+}
+
 function extractFocusNodeIds(plan: AgentPlan) {
   return plan.operations
     .filter((operation): operation is Extract<typeof plan.operations[number], { type: 'focus_nodes' }> =>
@@ -1172,7 +1385,7 @@ function resolvePromptTargetWithNodeMap(
 function resolveRequestKind(
   userMessage: string,
   mode: AgentMode,
-): 'plan' | 'diagnose' | 'explain' | 'optimize' {
+): AgentRequestKind {
   const normalized = userMessage.trim().toLowerCase()
 
   if (mode === 'diagnose') {

@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useAgentStore } from './use-agent-store'
 
 const initialState = {
-  mode: 'create' as const,
+  mode: 'update' as const,
   status: 'idle' as const,
   messages: [],
   pendingPlan: null,
@@ -182,5 +182,28 @@ describe('useAgentStore', () => {
         createdAt: '2026-04-30T00:00:00.000Z',
       },
     ])
+  })
+
+  it('supports prompt-result snapshots without mutating promptConfirmation state', () => {
+    const payload = createPromptPayload()
+
+    useAgentStore.getState().appendMessage({
+      id: 'msg-prompt-result-1',
+      role: 'prompt-result',
+      payloadId: payload.id,
+      payload,
+      createdAt: '2026-04-30T00:00:00.000Z',
+    })
+
+    expect(useAgentStore.getState().messages).toEqual([
+      {
+        id: 'msg-prompt-result-1',
+        role: 'prompt-result',
+        payloadId: payload.id,
+        payload,
+        createdAt: '2026-04-30T00:00:00.000Z',
+      },
+    ])
+    expect(useAgentStore.getState().promptConfirmation).toBeNull()
   })
 })
