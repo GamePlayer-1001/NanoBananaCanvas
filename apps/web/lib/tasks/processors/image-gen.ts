@@ -60,7 +60,7 @@ interface OpenRouterChatImageResponse {
   }>
 }
 
-interface DlapiFailureDiagnostics {
+interface DlapiFailureDiagnostics extends Record<string, unknown> {
   stage: 'submit'
   requestedProvider: 'dlapi'
   requestedModel: string

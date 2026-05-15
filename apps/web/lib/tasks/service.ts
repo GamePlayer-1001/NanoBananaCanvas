@@ -1520,6 +1520,7 @@ export async function submitTask(
     progress: initialProgress,
     input,
     output: persistedOutput,
+    diagnostics: null,
     retryCount: 0,
     workflowId: workflowId ?? null,
     nodeId: nodeId ?? null,
@@ -1577,7 +1578,7 @@ async function deleteTaskExecutionSnapshot(
 
 export async function processTaskDispatch(
   db: D1Database,
-  message: TaskQueueMessage,
+  message: TaskQueueMessage | TaskExecutionDispatch,
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
   log.info('Task dispatch started', {
