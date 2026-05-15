@@ -15,7 +15,9 @@ import type { WorkflowNodeData } from '@/types'
 import { useAgentStore } from '@/stores/use-agent-store'
 import { useFlowStore } from '@/stores/use-flow-store'
 import { buildAgentPlan } from '@/lib/agent/build-agent-plan'
+import { explainCanvas } from '@/lib/agent/explain-canvas'
 import { refinePromptConfirmation } from '@/lib/agent/prompt-confirmation'
+import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
 
 const executeMock = vi.fn(async () => undefined)
 const executeFromNodeMock = vi.fn(async () => undefined)
@@ -443,5 +445,158 @@ describe('useAgentSession', () => {
       useAgentStore.getState().messages.some((message) => message.role === 'assistant'),
     ).toBe(true)
     expect(useAgentStore.getState().pendingPlan).toBeNull()
+  })
+
+  it('fills the only text-input node in chat mode when the user explicitly asks to write text', async () => {
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('把这段文案放到文本输入节点："今天主打夏日清爽感海报"')
+    })
+
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+    expect(useFlowStore.getState().nodes.find((node) => node.id === 'text-existing')?.data.config.text).toBe(
+      '今天主打夏日清爽感海报',
+    )
+  })
+
+  it('fills the only image-input node in chat mode when the user explicitly asks to place an image', async () => {
+    useFlowStore.getState().setFlow(
+      [
+        createNode('image-input-existing', 'image-input', { imageUrl: '' }),
+        createNode('image-existing', 'image-gen'),
+      ],
+      [createEdge('image-input-existing', 'image-existing', 'image-out', 'image-in')],
+    )
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage(
+        '把这张图放到图片输入节点',
+        undefined,
+        [{ kind: 'image', url: 'https://example.com/chat-fill.png', name: 'chat-fill.png' }],
+      )
+    })
+
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+    expect(
+      useFlowStore.getState().nodes.find((node) => node.id === 'image-input-existing')?.data.config
+        .imageUrl,
+    ).toBe('https://example.com/chat-fill.png')
+  })
+
+  it('does not fill text-input nodes in chat mode when multiple candidates make the target ambiguous', async () => {
+    useFlowStore.getState().setFlow(
+      [
+        createNode('text-1', 'text-input', { text: '' }),
+        createNode('text-2', 'text-input', { text: '' }),
+      ],
+      [],
+    )
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('把这段文案放进去：双节点时不要乱填')
+    })
+
+    expect(useFlowStore.getState().nodes.find((node) => node.id === 'text-1')?.data.config.text).toBe(
+      '',
+    )
+    expect(useFlowStore.getState().nodes.find((node) => node.id === 'text-2')?.data.config.text).toBe(
+      '',
+    )
+  })
+
+  it('answers around the selected node in chat mode when the user asks about that node', async () => {
+    vi.mocked(summarizeCanvas).mockReturnValueOnce({
+      workflowId: 'workflow-1',
+      nodeCount: 3,
+      edgeCount: 2,
+      nodes: [],
+      disconnectedNodeIds: [],
+      displayMissingForNodeIds: [],
+      latestExecution: { status: 'idle' },
+      selectionContext: {
+        nodeId: 'image-existing',
+        nodeType: 'image-gen',
+        nodeLabel: '主图生成',
+      },
+    })
+    vi.mocked(explainCanvas).mockResolvedValue('当前选中的节点是主图生成，负责根据 prompt 产出图片。')
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('主图生成这个节点是做什么的？')
+    })
+
+    expect(explainCanvas).toHaveBeenCalled()
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+  })
+
+  it('routes workflow-image references into the workflow planner with reference semantics', async () => {
+    vi.mocked(buildAgentPlan).mockResolvedValue({
+      plan: {
+        id: 'plan-from-reference',
+        goal: '参考这张工作流图给我搭一个类似的流程',
+        mode: 'create',
+        intent: 'create_workflow',
+        summary: '按参考图搭基础工作流',
+        reasons: ['用户明确要求参考工作流图'],
+        requiresConfirmation: true,
+        operations: [{ type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' }],
+      },
+      alternatives: [],
+    })
+    useAgentStore.getState().resetSession()
+    useFlowStore.getState().setFlow([], [])
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage(
+        '/Workflow 参考这张工作流图给我搭一个类似的流程',
+        undefined,
+        [{ kind: 'image', url: 'https://example.com/workflow-reference.png', name: 'workflow-reference.png' }],
+      )
+    })
+
+    expect(buildAgentPlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userMessage: expect.stringContaining('我上传了一张工作流参考图'),
+      }),
+    )
   })
 })

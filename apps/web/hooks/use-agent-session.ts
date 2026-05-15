@@ -43,6 +43,21 @@ interface UseAgentSessionOptions {
 
 type AgentCommandMode = 'workflow' | 'prompt' | 'chat'
 type AgentRequestKind = 'plan' | 'diagnose' | 'explain' | 'optimize'
+type ChatFillIntent =
+  | {
+      kind: 'text'
+      nodeId: string
+      text: string
+      nodeLabel?: string
+    }
+  | {
+      kind: 'image'
+      nodeId: string
+      imageUrl: string
+      imageName?: string
+      nodeLabel?: string
+    }
+type WorkflowReferenceKind = 'workflow_reference' | 'content_reference' | 'uncertain'
 
 export function useAgentSession({
   workflowId,
@@ -227,17 +242,28 @@ export function useAgentSession({
           displayText: normalizedInput.displayText,
           canvasSummary,
           assistantRuntime,
+          attachments,
         })
         return
       }
 
-      const requestKind = resolveRequestKind(value, mode)
+      const workflowAttachmentContext = await classifyWorkflowReferenceInput({
+        userMessage: value,
+        attachments,
+        assistantRuntime,
+      })
+      const workflowUserMessage = buildWorkflowUserMessage(
+        value,
+        workflowAttachmentContext.kind,
+        attachments,
+      )
+      const requestKind = resolveRequestKind(workflowUserMessage, mode)
 
       if (requestKind === 'diagnose') {
         setStatus('diagnosing')
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.diagnosing))
         const diagnosis = await diagnoseCanvas({
-          userMessage: value,
+          userMessage: workflowUserMessage,
           canvasSummary,
           locale,
           assistantRuntime,
@@ -300,7 +326,7 @@ export function useAgentSession({
         setStatus('optimizing')
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.diagnosing))
         const diagnosis = await optimizeCanvas({
-          userMessage: value,
+          userMessage: workflowUserMessage,
           canvasSummary,
           locale,
           assistantRuntime,
@@ -371,7 +397,7 @@ export function useAgentSession({
       if (requestKind === 'explain') {
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
         const answer = await explainCanvas({
-          userMessage: value,
+          userMessage: workflowUserMessage,
           canvasSummary,
           locale,
           assistantRuntime,
@@ -410,7 +436,7 @@ export function useAgentSession({
           : buildAgentPlan
 
       const planned = await planBuilder({
-        userMessage: value,
+        userMessage: workflowUserMessage,
         mode: resolveWorkflowMode(mode, canvasSummary.nodeCount),
         canvasSummary,
         locale,
@@ -472,6 +498,7 @@ export function useAgentSession({
         targetNodeId: canvasSummary.selectionContext?.nodeId,
         metadata: {
           alternativeCount: alternatives.length,
+          workflowReferenceKind: workflowAttachmentContext.kind,
         },
       })
 
@@ -633,7 +660,48 @@ export function useAgentSession({
     displayText: string
     canvasSummary: ReturnType<typeof summarizeCanvas>
     assistantRuntime?: AgentAssistantRuntime
+    attachments: AgentComposerAttachment[]
   }) {
+    const chatFillIntent = detectChatFillIntent({
+      userMessage: input.userMessage,
+      attachments: input.attachments,
+      canvasSummary: input.canvasSummary,
+    })
+
+    if (chatFillIntent) {
+      if (chatFillIntent.kind === 'text') {
+        fillTextInputNode(chatFillIntent.nodeId, chatFillIntent.text)
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: `已把这段文本放入${formatNodeLabel(chatFillIntent.nodeLabel, '文本输入节点')}。`,
+          createdAt: new Date().toISOString(),
+        })
+      } else {
+        fillImageInputNode(chatFillIntent.nodeId, chatFillIntent.imageUrl)
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: `已把图片放入${formatNodeLabel(chatFillIntent.nodeLabel, '图片输入节点')}。`,
+          createdAt: new Date().toISOString(),
+        })
+      }
+      void safeRecordAudit({
+        eventType: 'message_sent',
+        mode: 'update',
+        userMessage: input.displayText,
+        canvasSummary: input.canvasSummary,
+        targetNodeId: chatFillIntent.nodeId,
+        metadata: {
+          commandMode: 'chat',
+          chatOnly: true,
+          fillKind: chatFillIntent.kind,
+        },
+      })
+      setStatus('idle')
+      return
+    }
+
     if (looksLikeExplainSelectionQuestion(input.userMessage, input.canvasSummary)) {
       appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
       const answer = await explainCanvas({
@@ -1180,6 +1248,27 @@ function requestKindMatchesCreateLikeMessage(value: string) {
   )
 }
 
+async function classifyWorkflowReferenceInput(input: {
+  userMessage: string
+  attachments: AgentComposerAttachment[]
+  assistantRuntime?: AgentAssistantRuntime
+}): Promise<{ kind: WorkflowReferenceKind }> {
+  if (input.attachments.length === 0) {
+    return { kind: 'content_reference' }
+  }
+
+  const normalized = normalizeIntentText(input.userMessage)
+  if (mentionsWorkflowDiagramReference(normalized)) {
+    return { kind: 'workflow_reference' }
+  }
+
+  if (!input.assistantRuntime) {
+    return { kind: 'content_reference' }
+  }
+
+  return { kind: 'content_reference' }
+}
+
 function normalizeAgentInput(rawValue: string) {
   const trimmed = rawValue.trim()
   const normalizedSlash = trimmed.replace(/^／/, '/')
@@ -1222,17 +1311,34 @@ function looksLikeExplainSelectionQuestion(
     return false
   }
 
-  const normalized = value.trim().toLowerCase()
+  const normalized = normalizeIntentText(value)
+  const nodeLabel = normalizeIntentText(canvasSummary.selectionContext.nodeLabel ?? '')
   return (
     normalized.includes('这个节点') ||
+    normalized.includes('当前节点') ||
+    normalized.includes('选中的节点') ||
     normalized.includes('这里') ||
     normalized.includes('这个参数') ||
+    normalized.includes('这个配置') ||
     normalized.includes('这个 prompt') ||
+    normalized.includes('这个prompt') ||
     normalized.includes('这个模型') ||
+    normalized.includes('这个节点是做什么') ||
+    normalized.includes('这个节点怎么用') ||
+    normalized.includes('这个节点有什么用') ||
+    normalized.includes('为什么这么连') ||
+    normalized.includes('为什么这样连') ||
     normalized.includes('它为什么') ||
     normalized.includes('它是干嘛') ||
     normalized.includes('它在做什么') ||
-    normalized.includes('什么意思')
+    normalized.includes('什么意思') ||
+    (nodeLabel.length > 0 &&
+      (normalized.includes(nodeLabel) &&
+        (normalized.includes('为什么') ||
+          normalized.includes('做什么') ||
+          normalized.includes('干嘛') ||
+          normalized.includes('作用') ||
+          normalized.includes('意思'))))
   )
 }
 
@@ -1386,7 +1492,7 @@ function resolveRequestKind(
   userMessage: string,
   mode: AgentMode,
 ): AgentRequestKind {
-  const normalized = userMessage.trim().toLowerCase()
+  const normalized = normalizeIntentText(userMessage)
 
   if (mode === 'diagnose') {
     return 'diagnose'
@@ -1426,4 +1532,196 @@ function resolveRequestKind(
   }
 
   return 'plan'
+}
+
+function detectChatFillIntent(input: {
+  userMessage: string
+  attachments: AgentComposerAttachment[]
+  canvasSummary: ReturnType<typeof summarizeCanvas>
+}): ChatFillIntent | null {
+  const normalized = normalizeIntentText(input.userMessage)
+  const flowState = useFlowStore.getState()
+  const selectedNodeId = input.canvasSummary.selectionContext?.nodeId
+
+  if (input.attachments.length > 0 && mentionsImageFillIntent(normalized)) {
+    const imageNode = resolveSingleTargetNode({
+      selectedNodeId,
+      candidateNodeType: 'image-input',
+      fallbackNodeType: 'image-input',
+      nodes: flowState.nodes,
+    })
+    if (!imageNode) {
+      return null
+    }
+
+    return {
+      kind: 'image',
+      nodeId: imageNode.id,
+      imageUrl: input.attachments[0].url,
+      imageName: input.attachments[0].name,
+      nodeLabel: extractNodeLabel(imageNode.data),
+    }
+  }
+
+  if (!input.userMessage.trim() || !mentionsTextFillIntent(normalized)) {
+    return null
+  }
+
+  const textNode = resolveSingleTargetNode({
+    selectedNodeId,
+    candidateNodeType: 'text-input',
+    fallbackNodeType: 'text-input',
+    nodes: flowState.nodes,
+  })
+  if (!textNode) {
+    return null
+  }
+
+  return {
+    kind: 'text',
+    nodeId: textNode.id,
+    text: extractTextFillContent(input.userMessage),
+    nodeLabel: extractNodeLabel(textNode.data),
+  }
+}
+
+function resolveSingleTargetNode(input: {
+  selectedNodeId?: string
+  candidateNodeType: string
+  fallbackNodeType: string
+  nodes: ReturnType<typeof useFlowStore.getState>['nodes']
+}) {
+  if (input.selectedNodeId) {
+    const selectedNode = input.nodes.find((node) => node.id === input.selectedNodeId)
+    if (selectedNode?.type === input.candidateNodeType) {
+      return selectedNode
+    }
+    return null
+  }
+
+  const candidates = input.nodes.filter((node) => node.type === input.fallbackNodeType)
+  if (candidates.length !== 1) {
+    return null
+  }
+  return candidates[0]
+}
+
+function fillTextInputNode(nodeId: string, text: string) {
+  const { nodes, updateNodeData } = useFlowStore.getState()
+  const node = nodes.find((item) => item.id === nodeId)
+  const currentConfig = isRecord(node?.data?.config) ? node.data.config : {}
+  updateNodeData(nodeId, {
+    config: {
+      ...currentConfig,
+      text,
+    },
+  })
+}
+
+function fillImageInputNode(nodeId: string, imageUrl: string) {
+  const { nodes, updateNodeData } = useFlowStore.getState()
+  const node = nodes.find((item) => item.id === nodeId)
+  const currentConfig = isRecord(node?.data?.config) ? node.data.config : {}
+  updateNodeData(nodeId, {
+    config: {
+      ...currentConfig,
+      imageUrl,
+    },
+  })
+}
+
+function mentionsTextFillIntent(normalized: string) {
+  return (
+    normalized.includes('放进') ||
+    normalized.includes('填到') ||
+    normalized.includes('填入') ||
+    normalized.includes('写入') ||
+    normalized.includes('放到') ||
+    normalized.includes('放入')
+  )
+}
+
+function mentionsImageFillIntent(normalized: string) {
+  return mentionsTextFillIntent(normalized) || normalized.includes('用这张图')
+}
+
+function mentionsWorkflowDiagramReference(normalized: string) {
+  return (
+    normalized.includes('参考这个工作流') ||
+    normalized.includes('参考这张工作流图') ||
+    normalized.includes('参考这个流程图') ||
+    normalized.includes('照着这个工作流') ||
+    normalized.includes('复刻这个工作流') ||
+    normalized.includes('按这个流程图') ||
+    normalized.includes('按照这张工作流图') ||
+    normalized.includes('根据这张工作流图')
+  )
+}
+
+function extractTextFillContent(userMessage: string) {
+  const trimmed = userMessage.trim()
+  const quotedMatches = [
+    ...trimmed.matchAll(/["“](.*?)["”]/g),
+    ...trimmed.matchAll(/[「『](.*?)[」』]/g),
+  ]
+  const quotedText = quotedMatches
+    .map((match) => match[1]?.trim())
+    .find((value) => Boolean(value))
+  if (quotedText) {
+    return quotedText
+  }
+
+  const separators = ['：', ':', '为', '成']
+  for (const separator of separators) {
+    const index = trimmed.indexOf(separator)
+    if (index >= 0) {
+      const candidate = trimmed.slice(index + separator.length).trim()
+      if (candidate) {
+        return candidate
+      }
+    }
+  }
+
+  return trimmed
+}
+
+function buildWorkflowUserMessage(
+  userMessage: string,
+  referenceKind: WorkflowReferenceKind,
+  attachments: AgentComposerAttachment[],
+) {
+  const trimmed = userMessage.trim()
+  if (referenceKind === 'workflow_reference') {
+    const suffix =
+      attachments.length > 0
+        ? '我上传了一张工作流参考图，请优先按这张图的结构来生成或复刻画板工作流提案。'
+        : ''
+    return [trimmed, suffix].filter(Boolean).join('\n')
+  }
+
+  if (!trimmed && attachments.length > 0) {
+    return '请基于我上传的参考图片生成合适的工作流提案，并把图片视为内容参考输入。'
+  }
+
+  return trimmed
+}
+
+function formatNodeLabel(nodeLabel: string | undefined, fallback: string) {
+  if (!nodeLabel) {
+    return fallback
+  }
+
+  return `节点「${nodeLabel}」`
+}
+
+function extractNodeLabel(data: unknown) {
+  if (!isRecord(data)) {
+    return undefined
+  }
+
+  return typeof data.label === 'string' ? data.label : undefined
+}
+
+function normalizeIntentText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, '')
 }
