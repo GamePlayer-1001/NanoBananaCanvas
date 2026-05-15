@@ -359,6 +359,7 @@ CREATE TABLE IF NOT EXISTS async_tasks (
   execution_mode    TEXT NOT NULL CHECK(execution_mode IN ('platform','user_key')),
   input_data        TEXT NOT NULL DEFAULT '{}',
   output_data       TEXT,
+  diagnostics_data  TEXT,
   status            TEXT NOT NULL DEFAULT 'pending'
                     CHECK(status IN ('pending','running','completed','failed','cancelled')),
   progress          INTEGER NOT NULL DEFAULT 0,

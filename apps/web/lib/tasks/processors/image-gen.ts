@@ -60,6 +60,31 @@ interface OpenRouterChatImageResponse {
   }>
 }
 
+interface DlapiFailureDiagnostics extends Record<string, unknown> {
+  stage: 'submit'
+  requestedProvider: 'dlapi'
+  requestedModel: string
+  fallbackProvider: 'comfly'
+  fallbackModel: string
+  endpoint: string
+  status?: number
+  responsePreview?: string
+  errorMessage: string
+  failureKind:
+    | 'gateway'
+    | 'auth'
+    | 'empty_payload'
+    | 'non_json'
+    | 'invalid_json'
+    | 'direct_response'
+    | 'other'
+  sizePreset: string
+  resolvedSize: string
+  aspectRatio: string
+  hasReferenceImage: boolean
+  elapsedMs?: number
+}
+
 const IMAGE_PROVIDER_FALLBACK_MODEL_MAP: Record<string, Record<string, string>> = {
   dlapi: {
     'gpt-image-2': 'gpt-image-2-all',
@@ -324,6 +349,51 @@ function buildDlapiAuthFallbackFailureMessage(error: unknown): string {
     `Check DLAPI_API_KEY or configure COMFLY_API_KEY as the platform image fallback. ` +
     `Upstream detail: ${detail}`
   )
+}
+
+function inferDlapiFailureKind(error: unknown): DlapiFailureDiagnostics['failureKind'] {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+
+  if (isRetriableImageProviderError(error)) return 'gateway'
+  if (isDlapiAuthError(error)) return 'auth'
+  if (message.includes('returned neither url nor b64_json image data')) return 'empty_payload'
+  if (message.includes('returned non-json content')) return 'non_json'
+  if (message.includes('returned invalid json')) return 'invalid_json'
+  if (isDlapiDirectResponseError(error) || isDlapiAsyncProtocolError(error)) return 'direct_response'
+  return 'other'
+}
+
+function extractDlapiFailureStatus(error: unknown): number | undefined {
+  const message = error instanceof Error ? error.message : String(error)
+  const match =
+    /\bDLAPI image API (\d{3})\b/i.exec(message) ??
+    /\bOpenAI-compatible image API (\d{3})\b/i.exec(message)
+
+  if (!match) return undefined
+
+  const status = Number(match[1])
+  return Number.isFinite(status) ? status : undefined
+}
+
+function extractDlapiResponsePreview(error: unknown): string | undefined {
+  const message = error instanceof Error ? error.message : String(error)
+  const previewMatch = /Response preview:\s*(.+)$/i.exec(message)
+  if (previewMatch?.[1]) {
+    return summarizeResponseBody(previewMatch[1])
+  }
+
+  const statusBodyMatch = /\bDLAPI image API \d{3}:\s*(.+)$/i.exec(message)
+  if (statusBodyMatch?.[1]) {
+    return summarizeResponseBody(statusBodyMatch[1])
+  }
+
+  const gatewayBodyMatch =
+    /\bOpenAI-compatible image API \d{3} from .*?:\s*(.+?)\.\s+This usually means/i.exec(message)
+  if (gatewayBodyMatch?.[1]) {
+    return summarizeResponseBody(gatewayBodyMatch[1])
+  }
+
+  return undefined
 }
 
 function measurePromptSize(prompt: string): { chars: number; bytes: number } {
@@ -762,6 +832,15 @@ async function submitWithComflyFallback(
   input: SubmitInput,
   apiKey: string,
 ): Promise<SubmitResult> {
+  const sizePreset = (input.params.size as string) ?? '1k'
+  const aspectRatio = (input.params.aspectRatio as string) ?? '1:1'
+  const referenceImageUrl = readReferenceImageUrl(input.params)
+  const resolvedSize = resolveOpenAICompatibleRequestSize('dlapi', sizePreset, aspectRatio)
+  const endpoint = referenceImageUrl
+    ? `${DLAPI_IMAGE_BASE_URL}/images/edits`
+    : `${DLAPI_IMAGE_BASE_URL}/images/generations`
+  const startedAt = Date.now()
+
   try {
     return await dlapiSubmit(input, apiKey)
   } catch (error) {
@@ -789,6 +868,23 @@ async function submitWithComflyFallback(
     const fallbackModel =
       IMAGE_PROVIDER_FALLBACK_MODEL_MAP.dlapi[input.model] ?? input.model
     const fallbackApiKey = input.fallbackApiKey ?? apiKey
+    const diagnostics: DlapiFailureDiagnostics = {
+      stage: 'submit',
+      requestedProvider: 'dlapi',
+      requestedModel: input.model,
+      fallbackProvider: 'comfly',
+      fallbackModel,
+      endpoint,
+      status: extractDlapiFailureStatus(error),
+      responsePreview: extractDlapiResponsePreview(error),
+      errorMessage: error instanceof Error ? error.message : String(error),
+      failureKind: inferDlapiFailureKind(error),
+      sizePreset,
+      resolvedSize,
+      aspectRatio,
+      hasReferenceImage: Boolean(referenceImageUrl),
+      elapsedMs: Date.now() - startedAt,
+    }
     const result = await openAICompatibleSubmit(
       {
         ...input,
@@ -807,6 +903,7 @@ async function submitWithComflyFallback(
       },
       providerOverride: 'comfly',
       modelOverride: fallbackModel,
+      diagnostics,
     }
   }
 }

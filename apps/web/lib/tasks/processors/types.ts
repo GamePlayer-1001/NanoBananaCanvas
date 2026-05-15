@@ -33,6 +33,8 @@ export interface SubmitResult {
   providerOverride?: string
   /** 实际执行时若切换了模型，则显式回写 */
   modelOverride?: string
+  /** 可选的诊断信息，供 service 层持久化到任务记录 */
+  diagnostics?: Record<string, unknown>
 }
 
 /* ─── Check ─────────────────────────────────────────── */

@@ -145,14 +145,17 @@ function createDbMock(
             }
           }
 
-          if (taskRow && sql.includes("SET status = 'completed'")) {
+          if (taskRow && sql.includes("status = 'completed'")) {
             return {
               run: vi.fn().mockImplementation(async () => {
                 taskRow.status = 'completed'
                 taskRow.progress = 100
-                taskRow.output_data = String(args[1] ?? args[0] ?? null)
-                taskRow.completed_at = String(args[2] ?? args[1] ?? new Date().toISOString())
-                taskRow.updated_at = String(args[4] ?? args[2] ?? new Date().toISOString())
+                taskRow.output_data = String(args[3] ?? null)
+                if (typeof args[7] !== 'undefined') {
+                  taskRow.diagnostics_data = String(args[7] ?? null)
+                }
+                taskRow.completed_at = String(args[4] ?? new Date().toISOString())
+                taskRow.updated_at = String(args[6] ?? new Date().toISOString())
                 return { meta: { changes: 1 } }
               }),
             }
@@ -290,6 +293,15 @@ describe('submitTask', () => {
     const submit = vi.fn().mockResolvedValue({
       externalTaskId: null,
       initialStatus: 'completed',
+      diagnostics: {
+        requestedProvider: 'dlapi',
+        requestedModel: 'gpt-image-2',
+        fallbackProvider: 'comfly',
+        fallbackModel: 'gpt-image-2-all',
+        status: 524,
+        responsePreview: 'upstream timed out',
+        failureKind: 'gateway',
+      },
       result: {
         type: 'url',
         url: 'https://example.com/fallback-success.png',
@@ -315,6 +327,7 @@ describe('submitTask', () => {
       execution_mode: 'platform',
       input_data: JSON.stringify({ prompt: 'draw cat' }),
       output_data: null,
+      diagnostics_data: null,
       status: 'pending',
       progress: 0,
       retry_count: 0,
@@ -363,6 +376,16 @@ describe('submitTask', () => {
       }),
       'dlapi-key',
     )
+    expect(taskRow.diagnostics_data).toBeTruthy()
+    expect(JSON.parse(String(taskRow.diagnostics_data))).toMatchObject({
+      requestedProvider: 'dlapi',
+      requestedModel: 'gpt-image-2',
+      fallbackProvider: 'comfly',
+      fallbackModel: 'gpt-image-2-all',
+      status: 524,
+      responsePreview: 'upstream timed out',
+      failureKind: 'gateway',
+    })
   })
 
   it('reuses the latest active task when the same workflow node is rerun', async () => {
