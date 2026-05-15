@@ -66,6 +66,9 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
     normalized,
     input.workflowReference,
   )
+  const workflowReferenceSketch = workflowReferenceRequest
+    ? await inferWorkflowReferenceSketch(input).catch(() => null)
+    : null
   const aiIntent = await inferIntentWithAssistant(input).catch(() => null)
   const workflowKind =
     aiIntent?.workflowKind ?? inferWorkflowKind(goal, input.attachments, input.workflowReference)
@@ -76,11 +79,21 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
   const operations =
     inferredMode === 'diagnose'
       ? buildDiagnoseOperations(canvas)
+      : workflowReferenceRequest && canvas.nodeCount === 0
+        ? buildWorkflowReferenceOperations(workflowReferenceSketch)
       : canvas.nodeCount === 0
         ? buildCreationOperations(buildCreationMessage(normalized, workflowKind))
         : buildIncrementalOperations(normalized, canvas, intent)
 
-  const reasons = buildReasons(normalized, canvas, inferredMode, operations, intent)
+  const reasons = buildReasons(
+    normalized,
+    canvas,
+    inferredMode,
+    operations,
+    intent,
+    workflowReferenceRequest,
+    workflowReferenceSketch,
+  )
   const safeCreationPlan = isSafeCreationPlan(inferredMode, canvas.nodeCount, operations)
   const requiresConfirmation =
     !safeCreationPlan &&
@@ -104,7 +117,14 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
     intent,
     summary:
       aiIntent?.summary?.trim() ||
-      buildSummary(normalized, canvas, inferredMode, operations, workflowReferenceRequest),
+      buildSummary(
+        normalized,
+        canvas,
+        inferredMode,
+        operations,
+        workflowReferenceRequest,
+        workflowReferenceSketch,
+      ),
     reasons: aiIntent?.reasons?.length ? aiIntent.reasons.slice(0, 3) : reasons,
     requiresConfirmation,
     operations,
@@ -151,6 +171,36 @@ async function inferIntentWithAssistant(input: AgentPlanRequest) {
   })
 }
 
+async function inferWorkflowReferenceSketch(input: AgentPlanRequest) {
+  if (!input.attachments?.length) {
+    return null
+  }
+
+  return callAgentAssistantJson<{
+    workflowKind?: 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | 'mixed'
+    nodes?: Array<{
+      nodeType: 'text-input' | 'image-input' | 'image-gen' | 'video-gen' | 'audio-gen' | 'llm' | 'display'
+      label?: string
+    }>
+    summary?: string
+    notes?: string[]
+  }>({
+    assistantRuntime: input.assistantRuntime,
+    imageUrls: input.attachments.map((item) => item.url),
+    prompt: [
+      '你正在查看一张工作流参考图，请判断这张图更像哪一类画板工作流，并只返回 JSON。',
+      '允许的 nodeType: text-input,image-input,image-gen,video-gen,audio-gen,llm,display',
+      '允许的 workflowKind: image,image_to_image,video,audio,text,mixed',
+      '要求：',
+      '1. nodes 最多返回 6 个，按主链顺序排列。',
+      '2. 如果图里明显有参考图片输入，请包含 image-input。',
+      '3. 如果无法确定，用最小可行主链，不要编造复杂节点。',
+      'JSON 格式：{"workflowKind":"image","nodes":[{"nodeType":"text-input","label":"提示词"},{"nodeType":"image-gen","label":"图片生成"},{"nodeType":"display","label":"结果展示"}],"summary":"...","notes":["..."]}',
+      `用户补充：${input.userMessage}`,
+    ].join('\n'),
+  })
+}
+
 function buildCreationMessage(
   normalized: string,
   workflowKind?: 'image' | 'image_to_image' | 'video' | 'audio' | 'text',
@@ -176,6 +226,45 @@ function buildCreationMessage(
   }
 
   return normalized
+}
+
+function buildWorkflowReferenceOperations(
+  sketch: Awaited<ReturnType<typeof inferWorkflowReferenceSketch>>,
+): WorkflowOperation[] {
+  const normalizedNodes = normalizeWorkflowReferenceNodes(sketch)
+  if (normalizedNodes.length === 0) {
+    return buildCreationOperations('工作流参考图 图片')
+  }
+
+  const operations: WorkflowOperation[] = []
+
+  for (const node of normalizedNodes) {
+    operations.push({
+      type: 'add_node',
+      nodeId: node.id,
+      nodeType: node.nodeType,
+      initialData: node.label
+        ? {
+            label: node.label,
+          }
+        : undefined,
+    })
+  }
+
+  for (let index = 0; index < normalizedNodes.length - 1; index += 1) {
+    const source = normalizedNodes[index]
+    const target = normalizedNodes[index + 1]
+    const handles = resolveReferenceHandles(source.nodeType, target.nodeType)
+    operations.push({
+      type: 'connect',
+      source: source.id,
+      sourceHandle: handles.sourceHandle,
+      target: target.id,
+      targetHandle: handles.targetHandle,
+    })
+  }
+
+  return operations
 }
 
 function inferWorkflowKind(
@@ -518,6 +607,7 @@ function buildSummary(
   mode: AgentPlan['mode'],
   operations: WorkflowOperation[],
   workflowReferenceRequest = false,
+  workflowReferenceSketch?: Awaited<ReturnType<typeof inferWorkflowReferenceSketch>> | null,
 ) {
   if (mode === 'diagnose') {
     if (canvas.latestExecution?.failedReason) {
@@ -528,7 +618,9 @@ function buildSummary(
 
   if (canvas.nodeCount === 0) {
     if (workflowReferenceRequest) {
-      return '我准备先按参考工作流图整理出一版可落到画板里的结构提案，而不是把图片当成普通参考素材。'
+      return workflowReferenceSketch?.summary?.trim()
+        ? `我先按参考工作流图还原出一版主链提案：${workflowReferenceSketch.summary.trim()}`
+        : '我准备先按参考工作流图整理出一版可落到画板里的结构提案，而不是把图片当成普通参考素材。'
     }
 
     if (normalized.includes('图') || normalized.includes('图片') || normalized.includes('海报')) {
@@ -587,6 +679,8 @@ function buildReasons(
   mode: AgentPlan['mode'],
   operations: WorkflowOperation[],
   intent: AgentPlanIntent,
+  workflowReferenceRequest = false,
+  workflowReferenceSketch?: Awaited<ReturnType<typeof inferWorkflowReferenceSketch>> | null,
 ) {
   const reasons = []
 
@@ -596,8 +690,12 @@ function buildReasons(
     reasons.push(`当前画板已有 ${canvas.nodeCount} 个节点，先做局部提案更安全。`)
   }
 
-  if (isWorkflowReferenceRequest(normalized)) {
+  if (workflowReferenceRequest || isWorkflowReferenceRequest(normalized)) {
     reasons.push('这次附图更像结构参考，我会优先复用图里的流程意图，而不是把它只当内容素材。')
+  }
+
+  if (workflowReferenceSketch?.notes?.length) {
+    reasons.push(workflowReferenceSketch.notes[0] as string)
   }
 
   if (canvas.displayMissingForNodeIds.length > 0) {
@@ -661,6 +759,69 @@ function isWorkflowReferenceRequest(
     normalized.includes('复刻画板工作流') ||
     normalized.includes('参考这个流程图')
   )
+}
+
+function normalizeWorkflowReferenceNodes(
+  sketch: Awaited<ReturnType<typeof inferWorkflowReferenceSketch>>,
+) {
+  const fallback = [
+    { id: 'draft-text-input', nodeType: 'text-input', label: '提示词输入' },
+    { id: 'draft-image-gen', nodeType: 'image-gen', label: '图片生成' },
+    { id: 'draft-display', nodeType: 'display', label: '结果展示' },
+  ] as const
+
+  const nodes = sketch?.nodes?.filter((node) =>
+    ['text-input', 'image-input', 'image-gen', 'video-gen', 'audio-gen', 'llm', 'display'].includes(
+      node.nodeType,
+    ),
+  )
+  if (!nodes?.length) {
+    return [...fallback]
+  }
+
+  return nodes.slice(0, 6).map((node, index) => ({
+    id: `draft-ref-${index + 1}`,
+    nodeType: node.nodeType,
+    label: node.label?.trim() || defaultReferenceNodeLabel(node.nodeType),
+  }))
+}
+
+function defaultReferenceNodeLabel(nodeType: string) {
+  if (nodeType === 'text-input') return '提示词输入'
+  if (nodeType === 'image-input') return '参考图输入'
+  if (nodeType === 'image-gen') return '图片生成'
+  if (nodeType === 'video-gen') return '视频生成'
+  if (nodeType === 'audio-gen') return '音频生成'
+  if (nodeType === 'llm') return '文本处理'
+  return '结果展示'
+}
+
+function resolveReferenceHandles(sourceType: string, targetType: string) {
+  if (sourceType === 'text-input' && ['image-gen', 'video-gen', 'llm'].includes(targetType)) {
+    return { sourceHandle: 'text-out', targetHandle: 'prompt-in' }
+  }
+
+  if (sourceType === 'text-input' && targetType === 'audio-gen') {
+    return { sourceHandle: 'text-out', targetHandle: 'text-in' }
+  }
+
+  if (sourceType === 'image-input' && ['image-gen', 'video-gen', 'llm'].includes(targetType)) {
+    return { sourceHandle: 'image-out', targetHandle: 'image-in' }
+  }
+
+  if (sourceType === 'image-gen') {
+    return { sourceHandle: 'image-out', targetHandle: 'content-in' }
+  }
+
+  if (sourceType === 'video-gen') {
+    return { sourceHandle: 'video-out', targetHandle: 'content-in' }
+  }
+
+  if (sourceType === 'audio-gen') {
+    return { sourceHandle: 'audio-out', targetHandle: 'content-in' }
+  }
+
+  return { sourceHandle: 'text-out', targetHandle: 'content-in' }
 }
 
 function buildPlanAlternatives(plan: AgentPlan, canvas: CanvasSummary): AgentPlan[] | undefined {

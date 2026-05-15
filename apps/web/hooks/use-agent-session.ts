@@ -745,6 +745,39 @@ export function useAgentSession({
       return
     }
 
+    if (looksLikeNodeScopedCollaboration(input.userMessage, input.canvasSummary)) {
+      const nodeScopedReply =
+        (await runAssistantModel(
+          input.assistantRuntime,
+          [
+            '你现在处于 Nano Banana Canvas 的节点协作模式。',
+            '要求：',
+            '1. 只围绕当前选中节点给建议，不要生成工作流提案。',
+            '2. 不要假装已经修改节点。',
+            '3. 给用户局部可执行建议，比如该调什么、该看什么、下一句该怎么写。',
+            input.canvasSummary.selectionContext?.nodeLabel
+              ? `当前选中节点：${input.canvasSummary.selectionContext.nodeLabel}`
+              : '当前没有节点标签。',
+            input.canvasSummary.selectionContext?.nodeType
+              ? `节点类型：${input.canvasSummary.selectionContext.nodeType}`
+              : '',
+            `用户消息：${input.userMessage}`,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        )) ??
+        '我先只围绕当前选中节点和你一起看，不动图。你可以继续问我这个节点该怎么调、为什么这么接、或者这一步更适合写什么。'
+
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: nodeScopedReply,
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
     if (looksLikeExplainSelectionQuestion(input.userMessage, input.canvasSummary)) {
       appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
       const answer = await explainCanvas({
@@ -1382,6 +1415,28 @@ function looksLikeExplainSelectionQuestion(
           normalized.includes('干嘛') ||
           normalized.includes('作用') ||
           normalized.includes('意思'))))
+  )
+}
+
+function looksLikeNodeScopedCollaboration(
+  value: string,
+  canvasSummary: ReturnType<typeof summarizeCanvas>,
+) {
+  if (!canvasSummary.selectionContext?.nodeId) {
+    return false
+  }
+
+  const normalized = normalizeIntentText(value)
+  return (
+    normalized.includes('怎么调') ||
+    normalized.includes('怎么改') ||
+    normalized.includes('怎么写') ||
+    normalized.includes('这里填什么') ||
+    normalized.includes('这个节点适合') ||
+    normalized.includes('这一格填什么') ||
+    normalized.includes('这个参数怎么设') ||
+    normalized.includes('这个节点下一步') ||
+    normalized.includes('帮我看看这个节点')
   )
 }
 

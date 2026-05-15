@@ -567,6 +567,41 @@ describe('useAgentSession', () => {
     expect(buildAgentPlan).not.toHaveBeenCalled()
   })
 
+  it('keeps selected-node collaboration in scoped chat mode without generating workflow plans', async () => {
+    vi.mocked(summarizeCanvas).mockReturnValueOnce({
+      workflowId: 'workflow-1',
+      nodeCount: 3,
+      edgeCount: 2,
+      nodes: [],
+      disconnectedNodeIds: [],
+      displayMissingForNodeIds: [],
+      latestExecution: { status: 'idle' },
+      selectionContext: {
+        nodeId: 'text-existing',
+        nodeType: 'text-input',
+        nodeLabel: '提示词输入',
+      },
+    })
+
+    const { result } = renderHook(() =>
+      useAgentSession({
+        workflowId: 'workflow-1',
+        workflowName: 'Workflow 1',
+        locale: 'zh',
+      }),
+    )
+
+    await act(async () => {
+      await result.current.sendMessage('这个节点怎么调会更稳定一点？')
+    })
+
+    expect(explainCanvas).not.toHaveBeenCalled()
+    expect(buildAgentPlan).not.toHaveBeenCalled()
+    expect(
+      useAgentStore.getState().messages.some((message) => message.role === 'assistant'),
+    ).toBe(true)
+  })
+
   it('routes workflow-image references into the workflow planner with reference semantics', async () => {
     vi.mocked(buildAgentPlan).mockResolvedValue({
       plan: {
