@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS async_tasks (
   -- 输入/输出 (JSON)
   input_data        TEXT NOT NULL DEFAULT '{}',
   output_data       TEXT,
+  diagnostics_data  TEXT,
 
   -- 状态机 (5 态: pending → running → completed/failed/cancelled)
   status            TEXT NOT NULL DEFAULT 'pending'

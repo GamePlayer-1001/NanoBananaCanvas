@@ -625,6 +625,15 @@ describe('ImageGenProcessor', () => {
       initialStatus: 'completed',
       providerOverride: 'comfly',
       modelOverride: 'gpt-image-2-all',
+      diagnostics: {
+        requestedProvider: 'dlapi',
+        requestedModel: 'gpt-image-2',
+        fallbackProvider: 'comfly',
+        fallbackModel: 'gpt-image-2-all',
+        status: 524,
+        responsePreview: '//api.dlapi.xyz: upstream timed out',
+        failureKind: 'gateway',
+      },
       result: {
         type: 'url',
         url: 'https://example.com/comfly.png',
@@ -686,6 +695,16 @@ describe('ImageGenProcessor', () => {
       initialStatus: 'completed',
       providerOverride: 'comfly',
       modelOverride: 'gpt-image-2-all',
+      diagnostics: {
+        requestedProvider: 'dlapi',
+        requestedModel: 'gpt-image-2',
+        fallbackProvider: 'comfly',
+        fallbackModel: 'gpt-image-2-all',
+        status: 401,
+        responsePreview:
+          '{"error":{"code":"invalid_request","message":"无效的令牌 [sk-test]","type":"new_api_error"}}',
+        failureKind: 'auth',
+      },
       result: {
         type: 'url',
         url: 'https://example.com/comfly-auth-fallback.png',
@@ -815,6 +834,13 @@ describe('ImageGenProcessor', () => {
       initialStatus: 'completed',
       providerOverride: 'comfly',
       modelOverride: 'gpt-image-2-all',
+      diagnostics: {
+        requestedProvider: 'dlapi',
+        requestedModel: 'gpt-image-2',
+        fallbackProvider: 'comfly',
+        fallbackModel: 'gpt-image-2-all',
+        failureKind: 'empty_payload',
+      },
       result: {
         type: 'url',
         url: 'https://example.com/comfly-sync-fallback.png',

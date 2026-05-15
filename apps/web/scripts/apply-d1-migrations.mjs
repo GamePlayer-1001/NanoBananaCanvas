@@ -35,6 +35,7 @@ const orderedMigrations = [
   'migration-021-explore-import-compat.sql',
   'migration-023-published-outputs-category.sql',
   'migration-024-explore-import-use-case-categories.sql',
+  'migration-026-async-task-diagnostics.sql',
 ]
 
 function resolveTargetFlag(args) {

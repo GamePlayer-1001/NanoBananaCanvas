@@ -81,6 +81,7 @@ interface TaskRow {
   execution_mode: ExecutionMode
   input_data: string
   output_data: string | null
+  diagnostics_data: string | null
   status: AsyncTaskStatus
   progress: number
   retry_count: number
@@ -155,6 +156,10 @@ interface TaskExecutionSnapshot {
   runtimeMeta?: PersistedTaskRuntimeMeta
 }
 
+export interface TaskDiagnostics {
+  [key: string]: unknown
+}
+
 export interface TaskDetail {
   id: string
   taskType: AsyncTaskType
@@ -165,6 +170,7 @@ export interface TaskDetail {
   progress: number
   input: Record<string, unknown>
   output: unknown | null
+  diagnostics: TaskDiagnostics | null
   retryCount: number
   workflowId: string | null
   nodeId: string | null
@@ -266,6 +272,7 @@ function rowToDetail(row: TaskRow): TaskDetail {
     progress: row.progress,
     input: stripPersistedTaskRuntimeMeta(persistedInput),
     output: row.output_data ? JSON.parse(row.output_data) : null,
+    diagnostics: row.diagnostics_data ? JSON.parse(row.diagnostics_data) : null,
     retryCount: row.retry_count,
     workflowId: row.workflow_id,
     nodeId: row.node_id,
@@ -1435,8 +1442,9 @@ export async function submitTask(
           id, user_id, task_type, provider, model_id,
           external_task_id, execution_mode, input_data,
           status, progress, retry_count, max_retries, workflow_id, node_id,
-          created_at, started_at, completed_at, output_data, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          created_at, started_at, completed_at, output_data, updated_at,
+          diagnostics_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         taskId, userId, taskType, persistedProvider, persistedModelId,
@@ -1444,6 +1452,7 @@ export async function submitTask(
         initialStatus, initialProgress,
         config.maxRetries, workflowId ?? null, nodeId ?? null,
         now, startedAt, completedAt, persistedOutput ? JSON.stringify(persistedOutput) : null, now,
+        submitResult?.diagnostics ? JSON.stringify(submitResult.diagnostics) : null,
       )
       .run()
 
@@ -1794,7 +1803,7 @@ async function executeTaskRequest(
         .prepare(
           `UPDATE async_tasks
            SET provider = ?, model_id = ?, status = 'completed', progress = 100, external_task_id = ?,
-               output_data = ?, completed_at = ?, last_checked_at = ?, updated_at = ?
+               output_data = ?, completed_at = ?, last_checked_at = ?, updated_at = ?, diagnostics_data = ?
            WHERE id = ? AND user_id = ?`,
         )
         .bind(
@@ -1805,6 +1814,7 @@ async function executeTaskRequest(
           completedAt,
           completedAt,
           completedAt,
+          submitResult.diagnostics ? JSON.stringify(submitResult.diagnostics) : null,
           taskId,
           userId,
         )
@@ -1819,7 +1829,8 @@ async function executeTaskRequest(
     await db
       .prepare(
         `UPDATE async_tasks
-         SET provider = ?, model_id = ?, status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?
+         SET provider = ?, model_id = ?, status = ?, progress = ?, external_task_id = ?, last_checked_at = ?, updated_at = ?,
+             diagnostics_data = ?
          WHERE id = ? AND user_id = ?`,
       )
       .bind(
@@ -1830,6 +1841,7 @@ async function executeTaskRequest(
         submitResult.externalTaskId,
         runningAt,
         runningAt,
+        submitResult.diagnostics ? JSON.stringify(submitResult.diagnostics) : null,
         taskId,
         userId,
       )
@@ -2434,7 +2446,7 @@ export async function listTasks(
   const dataResult = await db
     .prepare(
       `SELECT id, task_type, provider, model_id, execution_mode, status, progress,
-              input_data, output_data, retry_count, workflow_id, node_id,
+              input_data, output_data, diagnostics_data, retry_count, workflow_id, node_id,
               created_at, started_at, completed_at
        FROM async_tasks
        WHERE ${where}
