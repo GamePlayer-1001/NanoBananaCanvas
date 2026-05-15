@@ -1,10 +1,10 @@
 /**
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
  *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的区块与交互图标，
- *          依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 useRouter，
+ *          依赖 sonner 的 toast，依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 useRouter，
  *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；所有定价 CTA 已收口为“未登录进登录页、已登录进 Stripe Portal”，Features 桌面区用非被动 wheel 监听维持滚轮切换而不触发浏览器告警
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；定价 CTA 当前收口为“Free 走正常入口、付费卡未登录先进登录并回到账户订阅页、已登录直接进入对应 Stripe Checkout”，Features 桌面区用非被动 wheel 监听维持滚轮切换而不触发浏览器告警
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -14,6 +14,7 @@ import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Sparkles, Workflow, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
 import { useRouter } from '@/i18n/navigation'
@@ -82,11 +83,11 @@ function formatLandingMoney(amount: number) {
 }
 
 function getLandingCtaLabel(
-  isRedirecting: boolean,
+  isPending: boolean,
   isAuthenticated: boolean,
   defaultLabel: string,
 ) {
-  if (isRedirecting) {
+  if (isPending) {
     return isAuthenticated ? 'Opening billing…' : 'Redirecting…'
   }
 
@@ -360,7 +361,7 @@ export function PricingSection({
 }) {
   const pricingT = useTranslations('landing.sections.pricing')
   const router = useRouter()
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
   const monthlyPlans = plans.filter(
     (plan) => plan.purchaseMode === 'plan_auto_monthly',
   )
@@ -368,29 +369,52 @@ export function PricingSection({
     monthlyPlans.map((plan) => [plan.plan, plan]),
   ) as Partial<Record<'standard' | 'pro' | 'ultimate', PublicBillingPlanPrice>>
 
-  async function handlePricingAction() {
-    if (!isAuthenticated) {
-      router.push('/sign-in?redirect_url=/#pricing')
+  async function handlePricingAction(
+    planKey: (typeof LANDING_PERSONA_ITEMS)[number],
+    livePlan: PublicBillingPlanPrice | null,
+  ) {
+    if (planKey === 'free') {
+      router.push('/workspace')
       return
     }
 
-    setIsRedirecting(true)
+    if (!livePlan) {
+      toast.error(pricingT('pricePending'))
+      return
+    }
+
+    if (!isAuthenticated) {
+      router.push('/sign-in?redirect_url=/account?tab=subscription')
+      return
+    }
+
+    setPendingKey(planKey)
 
     try {
-      const response = await fetch('/api/billing/portal', { method: 'POST' })
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: livePlan.plan,
+          purchaseMode: livePlan.purchaseMode,
+          currency: livePlan.currency,
+        }),
+      })
       const payload = (await response.json()) as {
         ok: boolean
-        data?: { portalUrl: string }
+        data?: { checkoutUrl: string }
         error?: { message?: string }
       }
 
-      if (!response.ok || !payload.ok || !payload.data?.portalUrl) {
-        throw new Error(payload.error?.message ?? 'Portal failed')
+      if (!response.ok || !payload.ok || !payload.data?.checkoutUrl) {
+        throw new Error(payload.error?.message ?? pricingT('pricePending'))
       }
 
-      window.location.assign(payload.data.portalUrl)
+      window.location.assign(payload.data.checkoutUrl)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : pricingT('pricePending'))
     } finally {
-      setIsRedirecting(false)
+      setPendingKey(null)
     }
   }
 
@@ -410,7 +434,8 @@ export function PricingSection({
         <div className="mt-14 grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
           {LANDING_PERSONA_ITEMS.map((planKey) => {
             const livePlan =
-              planKey === 'free' ? null : monthlyPlanMap[planKey]
+              planKey === 'free' ? null : (monthlyPlanMap[planKey] ?? null)
+            const isPending = pendingKey === planKey
             const priceParts =
               planKey === 'free'
                 ? {
@@ -535,9 +560,9 @@ export function PricingSection({
                     <button
                       type="button"
                       onClick={() => {
-                        void handlePricingAction()
+                        void handlePricingAction(planKey, livePlan)
                       }}
-                      disabled={isRedirecting}
+                      disabled={isPending}
                       className={`inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-4 text-sm font-semibold transition ${
                         isRecommended
                           ? 'border border-[#c084fc]/20 bg-[linear-gradient(90deg,#f8f5ff,#ffffff)] text-[#13081f] shadow-[0_16px_34px_rgba(168,85,247,0.24)] hover:shadow-[0_18px_42px_rgba(168,85,247,0.34)]'
@@ -545,7 +570,7 @@ export function PricingSection({
                       }`}
                     >
                       {getLandingCtaLabel(
-                        isRedirecting,
+                        isPending,
                         isAuthenticated,
                         pricingT(getLandingPricingKey(planKey, 'cta')),
                       )}
