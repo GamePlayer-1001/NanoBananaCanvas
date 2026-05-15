@@ -228,7 +228,18 @@ describe('POST /api/agent/*', () => {
           ]),
           operations: expect.arrayContaining([
             expect.objectContaining({ type: 'add_node', nodeType: 'image-input' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'text-input' }),
             expect.objectContaining({ type: 'add_node', nodeType: 'image-gen' }),
+            expect.objectContaining({
+              type: 'connect',
+              sourceHandle: 'image-out',
+              targetHandle: 'image-in',
+            }),
+            expect.objectContaining({
+              type: 'connect',
+              sourceHandle: 'text-out',
+              targetHandle: 'prompt-in',
+            }),
           ]),
         },
       },

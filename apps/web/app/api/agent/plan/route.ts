@@ -251,16 +251,14 @@ function buildWorkflowReferenceOperations(
     })
   }
 
-  for (let index = 0; index < normalizedNodes.length - 1; index += 1) {
-    const source = normalizedNodes[index]
-    const target = normalizedNodes[index + 1]
-    const handles = resolveReferenceHandles(source.nodeType, target.nodeType)
+  const referenceConnections = buildWorkflowReferenceConnections(normalizedNodes)
+  for (const connection of referenceConnections) {
     operations.push({
       type: 'connect',
-      source: source.id,
-      sourceHandle: handles.sourceHandle,
-      target: target.id,
-      targetHandle: handles.targetHandle,
+      source: connection.source.id,
+      sourceHandle: connection.sourceHandle,
+      target: connection.target.id,
+      targetHandle: connection.targetHandle,
     })
   }
 
@@ -784,6 +782,135 @@ function normalizeWorkflowReferenceNodes(
     nodeType: node.nodeType,
     label: node.label?.trim() || defaultReferenceNodeLabel(node.nodeType),
   }))
+}
+
+function buildWorkflowReferenceConnections(
+  nodes: Array<{ id: string; nodeType: string; label: string }>,
+) {
+  const connections: Array<{
+    source: { id: string; nodeType: string; label: string }
+    target: { id: string; nodeType: string; label: string }
+    sourceHandle?: string
+    targetHandle?: string
+  }> = []
+
+  const displayNode = nodes.find((node) => node.nodeType === 'display')
+  const imageGenNode = nodes.find((node) => node.nodeType === 'image-gen')
+  const videoGenNode = nodes.find((node) => node.nodeType === 'video-gen')
+  const audioGenNode = nodes.find((node) => node.nodeType === 'audio-gen')
+  const llmNode = nodes.find((node) => node.nodeType === 'llm')
+  const promptSource =
+    nodes.find((node) => node.nodeType === 'text-input') ??
+    nodes.find((node) => node.nodeType === 'llm')
+  const imageInputNode = nodes.find((node) => node.nodeType === 'image-input')
+
+  if (promptSource && imageGenNode) {
+    connections.push({
+      source: promptSource,
+      target: imageGenNode,
+      sourceHandle: 'text-out',
+      targetHandle: 'prompt-in',
+    })
+  }
+
+  if (imageInputNode && imageGenNode) {
+    connections.push({
+      source: imageInputNode,
+      target: imageGenNode,
+      sourceHandle: 'image-out',
+      targetHandle: 'image-in',
+    })
+  }
+
+  if (promptSource && videoGenNode) {
+    connections.push({
+      source: promptSource,
+      target: videoGenNode,
+      sourceHandle: 'text-out',
+      targetHandle: 'prompt-in',
+    })
+  }
+
+  if (imageInputNode && videoGenNode) {
+    connections.push({
+      source: imageInputNode,
+      target: videoGenNode,
+      sourceHandle: 'image-out',
+      targetHandle: 'image-in',
+    })
+  }
+
+  if (promptSource && audioGenNode) {
+    connections.push({
+      source: promptSource,
+      target: audioGenNode,
+      sourceHandle: 'text-out',
+      targetHandle: 'text-in',
+    })
+  }
+
+  if (promptSource && llmNode && !imageGenNode && !videoGenNode && !audioGenNode) {
+    connections.push({
+      source: promptSource,
+      target: llmNode,
+      sourceHandle: 'text-out',
+      targetHandle: 'prompt-in',
+    })
+  }
+
+  const terminalNode = imageGenNode ?? videoGenNode ?? audioGenNode ?? llmNode
+  if (terminalNode && displayNode) {
+    const handles = resolveReferenceHandles(terminalNode.nodeType, displayNode.nodeType)
+    connections.push({
+      source: terminalNode,
+      target: displayNode,
+      sourceHandle: handles.sourceHandle,
+      targetHandle: handles.targetHandle,
+    })
+  }
+
+  if (connections.length > 0) {
+    return dedupeReferenceConnections(connections)
+  }
+
+  const linearConnections: typeof connections = []
+  for (let index = 0; index < nodes.length - 1; index += 1) {
+    const source = nodes[index]
+    const target = nodes[index + 1]
+    const handles = resolveReferenceHandles(source.nodeType, target.nodeType)
+    linearConnections.push({
+      source,
+      target,
+      sourceHandle: handles.sourceHandle,
+      targetHandle: handles.targetHandle,
+    })
+  }
+
+  return dedupeReferenceConnections(linearConnections)
+}
+
+function dedupeReferenceConnections(
+  connections: Array<{
+    source: { id: string }
+    target: { id: string }
+    sourceHandle?: string
+    targetHandle?: string
+  }>,
+) {
+  const seen = new Set<string>()
+  return connections.filter((connection) => {
+    const key = [
+      connection.source.id,
+      connection.sourceHandle ?? '',
+      connection.target.id,
+      connection.targetHandle ?? '',
+    ].join(':')
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
 }
 
 function defaultReferenceNodeLabel(nodeType: string) {

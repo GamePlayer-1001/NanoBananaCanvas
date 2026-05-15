@@ -598,7 +598,13 @@ describe('useAgentSession', () => {
     expect(explainCanvas).not.toHaveBeenCalled()
     expect(buildAgentPlan).not.toHaveBeenCalled()
     expect(
-      useAgentStore.getState().messages.some((message) => message.role === 'assistant'),
+      useAgentStore
+        .getState()
+        .messages.some(
+          (message) =>
+            message.role === 'assistant' &&
+            message.text.includes('主体/任务 -> 场景 -> 风格 -> 细节要求 -> 限制条件'),
+        ),
     ).toBe(true)
   })
 

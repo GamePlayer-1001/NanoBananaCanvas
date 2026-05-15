@@ -747,7 +747,8 @@ export function useAgentSession({
 
     if (looksLikeNodeScopedCollaboration(input.userMessage, input.canvasSummary)) {
       const nodeScopedReply =
-        (await runAssistantModel(
+        buildNodeScopedReply(input.userMessage, input.canvasSummary) ??
+        ((await runAssistantModel(
           input.assistantRuntime,
           [
             '你现在处于 Nano Banana Canvas 的节点协作模式。',
@@ -766,7 +767,7 @@ export function useAgentSession({
             .filter(Boolean)
             .join('\n'),
         )) ??
-        '我先只围绕当前选中节点和你一起看，不动图。你可以继续问我这个节点该怎么调、为什么这么接、或者这一步更适合写什么。'
+          '我先只围绕当前选中节点和你一起看，不动图。你可以继续问我这个节点该怎么调、为什么这么接、或者这一步更适合写什么。')
 
       appendMessage({
         id: crypto.randomUUID(),
@@ -1438,6 +1439,47 @@ function looksLikeNodeScopedCollaboration(
     normalized.includes('这个节点下一步') ||
     normalized.includes('帮我看看这个节点')
   )
+}
+
+function buildNodeScopedReply(
+  userMessage: string,
+  canvasSummary: ReturnType<typeof summarizeCanvas>,
+) {
+  const selection = canvasSummary.selectionContext
+  if (!selection?.nodeId || !selection.nodeType) {
+    return null
+  }
+
+  const normalized = normalizeIntentText(userMessage)
+  const nodeLabel = selection.nodeLabel ? `节点「${selection.nodeLabel}」` : '这个节点'
+
+  if (selection.nodeType === 'text-input') {
+    if (normalized.includes('怎么调') || normalized.includes('怎么写') || normalized.includes('填什么')) {
+      return `${nodeLabel}更适合先把目标说清楚，再补风格和约束。一个稳定顺序是：主体/任务 -> 场景 -> 风格 -> 细节要求 -> 限制条件。你可以先把一句核心目标写短一点，我再陪你往下收。`
+    }
+    return `${nodeLabel}主要决定下游拿到的原始意图。这里优先保证信息完整、句子别太散，先把“想生成什么”和“最重要的限制”写稳。`
+  }
+
+  if (selection.nodeType === 'image-gen' || selection.nodeType === 'video-gen') {
+    if (normalized.includes('怎么调') || normalized.includes('参数')) {
+      return `${nodeLabel}优先看三件事：输入 prompt 是否够清楚、模型/质量档位是否匹配目标、输入参考图有没有接对。想先稳结果，就先少改参数，先把 prompt 和输入链路对齐。`
+    }
+    return `${nodeLabel}是主生成节点，最容易受上游 prompt、参考图和模型规格影响。这里先别同时改很多参数，最好一次只动一类变量。`
+  }
+
+  if (selection.nodeType === 'image-input') {
+    return `${nodeLabel}主要影响参考图约束。这里先确认放进去的是不是你真想参考的那一张，再看下游生成节点有没有正确接到 image-in。`
+  }
+
+  if (selection.nodeType === 'llm') {
+    return `${nodeLabel}更适合拆清“输入是什么、要产出什么格式、口吻要不要固定”。如果你觉得结果飘，通常先收紧输出格式和任务边界会更稳。`
+  }
+
+  if (selection.nodeType === 'display') {
+    return `${nodeLabel}本身不决定生成质量，它主要帮助你检查上游有没有把结果正确传下来。如果这里没东西，优先回头看上游连线和输出句柄。`
+  }
+
+  return null
 }
 
 function inferPromptStyleDirection(value: string) {
