@@ -223,6 +223,11 @@ describe('POST /api/agent/*', () => {
         plan: {
           mode: 'create',
           summary: expect.stringContaining('先接参考图'),
+          metadata: {
+            workflowReferenceKind: 'workflow_reference',
+            workflowReferenceSummary: expect.stringContaining('先接参考图'),
+            workflowReferenceNodeTypes: expect.arrayContaining(['image-input', 'image-gen']),
+          },
           reasons: expect.arrayContaining([
             expect.stringContaining('参考图里明显存在图片输入'),
           ]),

@@ -136,6 +136,11 @@ async function buildPlannerResponse(input: AgentPlanRequest): Promise<{ plan: Ag
               operation.type === 'request_prompt_confirmation',
           )?.payload
         : undefined,
+    metadata: {
+      workflowReferenceKind: input.workflowReference,
+      workflowReferenceSummary: workflowReferenceSketch?.summary?.trim() || undefined,
+      workflowReferenceNodeTypes: workflowReferenceSketch?.nodes?.map((node) => node.nodeType) ?? undefined,
+    },
   }
 
   const alternatives = buildPlanAlternatives(plan, canvas)

@@ -257,6 +257,11 @@ export interface AgentPlan {
   operations: WorkflowOperation[]
   promptConfirmation?: PromptConfirmationPayload
   templateContext?: TemplateConversationSummary
+  metadata?: {
+    workflowReferenceKind?: 'workflow_reference' | 'content_reference' | 'uncertain'
+    workflowReferenceSummary?: string
+    workflowReferenceNodeTypes?: string[]
+  }
 }
 
 export type AgentMessage =
