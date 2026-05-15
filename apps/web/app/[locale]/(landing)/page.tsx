@@ -3,7 +3,7 @@
  *          依赖 @/components/landing/hero-section，
  *          依赖 @/components/landing/model-mind-map-section，
  *          依赖 @/components/landing/landing-sections，
- *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing
+ *          依赖 @/components/layout/landing-footer，依赖 @/lib/billing/pricing 与 @/lib/billing/subscription
  * [OUTPUT]: 对外提供 Landing Page 首页
  * [POS]: (landing) 路由组的首页，默认静态输出 Hero/功能/人格分层定价/评价/模型云图/FAQ/Footer；公开子页已收口，仅保留条款与隐私页
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -24,6 +24,7 @@ import {
 } from '@/components/landing/landing-sections'
 import { LandingFooter } from '@/components/layout/landing-footer'
 import { getPublicPricingPlans } from '@/lib/billing/pricing'
+import { getBillingSubscription } from '@/lib/billing/subscription'
 import { AVAILABLE_LANGUAGE_CODES } from '@/i18n/config'
 import {
   BASE_URL,
@@ -70,6 +71,12 @@ export default async function LandingPage({
     console.error('[landing] Failed to load Stripe prices', error)
     return null
   })
+  const subscription = userId
+    ? await getBillingSubscription(userId).catch((error: unknown) => {
+        console.error('[landing] Failed to load billing subscription', error)
+        return null
+      })
+    : null
 
   const faqItems = [
     'what',
@@ -155,7 +162,11 @@ export default async function LandingPage({
       />
       <HeroSection />
       <FeaturesSection />
-      <PricingSection plans={pricing?.plans ?? []} isAuthenticated={Boolean(userId)} />
+      <PricingSection
+        plans={pricing?.plans ?? []}
+        isAuthenticated={Boolean(userId)}
+        subscription={subscription}
+      />
       <TestimonialsSection />
       <ModelMindMapSection />
       <FaqSection />

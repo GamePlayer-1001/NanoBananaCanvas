@@ -2,9 +2,9 @@
  * [INPUT]: 依赖 react 的 useEffect/useRef/useState，依赖 next/image 的本地营销素材渲染，
  *          依赖 next-intl 的 useTranslations，依赖 lucide-react 的区块与交互图标，
  *          依赖 sonner 的 toast，依赖 ./model-mind-map-section，依赖 @/i18n/navigation 的 useRouter，
- *          依赖 @/lib/billing/pricing 类型与首页服务端注入的 Stripe 动态月付价格
+ *          依赖 @/lib/billing/pricing 与 @/lib/billing/subscription 类型，依赖首页服务端注入的 Stripe 动态月付价格与订阅摘要
  * [OUTPUT]: 对外提供 ModelMindMapSection、FeaturesSection、PricingSection、TestimonialsSection、FaqSection
- * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；定价 CTA 当前收口为“Free 走正常入口、付费卡未登录先进登录并回到账户订阅页、已登录直接进入对应 Stripe Checkout”，Features 桌面区用非被动 wheel 监听维持滚轮切换而不触发浏览器告警
+ * [POS]: components/landing 的首页内容区集合，负责承接首页除 Hero 外的模型/功能/人格分层定价/评价/FAQ 叙事区块；定价 CTA 当前收口为“Free 走正常入口、当前套餐禁点、已订阅用户点其他付费套餐导到账户订阅页、未订阅登录用户直进对应 Stripe Checkout”，Features 桌面区用非被动 wheel 监听维持滚轮切换而不触发浏览器告警
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import type { PublicBillingPlanPrice } from '@/lib/billing/pricing'
+import type { BillingSubscriptionSummary } from '@/lib/billing/subscription'
 import { useRouter } from '@/i18n/navigation'
 export { ModelMindMapSection } from './model-mind-map-section'
 
@@ -85,8 +86,13 @@ function formatLandingMoney(amount: number) {
 function getLandingCtaLabel(
   isPending: boolean,
   isAuthenticated: boolean,
+  isCurrentPlan: boolean,
   defaultLabel: string,
 ) {
+  if (isCurrentPlan) {
+    return 'Current plan'
+  }
+
   if (isPending) {
     return isAuthenticated ? 'Opening billing…' : 'Redirecting…'
   }
@@ -355,9 +361,11 @@ export function FeaturesSection() {
 export function PricingSection({
   plans,
   isAuthenticated,
+  subscription,
 }: {
   plans: PublicBillingPlanPrice[]
   isAuthenticated: boolean
+  subscription: BillingSubscriptionSummary | null
 }) {
   const pricingT = useTranslations('landing.sections.pricing')
   const router = useRouter()
@@ -368,6 +376,11 @@ export function PricingSection({
   const monthlyPlanMap = Object.fromEntries(
     monthlyPlans.map((plan) => [plan.plan, plan]),
   ) as Partial<Record<'standard' | 'pro' | 'ultimate', PublicBillingPlanPrice>>
+  const hasPaidSubscription = Boolean(
+    subscription &&
+      subscription.plan !== 'free' &&
+      subscription.purchaseMode === 'plan_auto_monthly',
+  )
 
   async function handlePricingAction(
     planKey: (typeof LANDING_PERSONA_ITEMS)[number],
@@ -385,6 +398,11 @@ export function PricingSection({
 
     if (!isAuthenticated) {
       router.push('/sign-in?redirect_url=/account?tab=subscription')
+      return
+    }
+
+    if (hasPaidSubscription) {
+      router.push('/account?tab=subscription')
       return
     }
 
@@ -436,6 +454,10 @@ export function PricingSection({
             const livePlan =
               planKey === 'free' ? null : (monthlyPlanMap[planKey] ?? null)
             const isPending = pendingKey === planKey
+            const isCurrentPlan =
+              planKey !== 'free' &&
+              subscription?.purchaseMode === 'plan_auto_monthly' &&
+              subscription.plan === planKey
             const priceParts =
               planKey === 'free'
                 ? {
@@ -562,7 +584,7 @@ export function PricingSection({
                       onClick={() => {
                         void handlePricingAction(planKey, livePlan)
                       }}
-                      disabled={isPending}
+                      disabled={isPending || isCurrentPlan}
                       className={`inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-4 text-sm font-semibold transition ${
                         isRecommended
                           ? 'border border-[#c084fc]/20 bg-[linear-gradient(90deg,#f8f5ff,#ffffff)] text-[#13081f] shadow-[0_16px_34px_rgba(168,85,247,0.24)] hover:shadow-[0_18px_42px_rgba(168,85,247,0.34)]'
@@ -572,6 +594,7 @@ export function PricingSection({
                       {getLandingCtaLabel(
                         isPending,
                         isAuthenticated,
+                        Boolean(isCurrentPlan),
                         pricingT(getLandingPricingKey(planKey, 'cta')),
                       )}
                     </button>
