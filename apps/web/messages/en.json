@@ -76,6 +76,13 @@
         }
       }
     },
+    "announcement": {
+      "badge": "Platform Update",
+      "title": "System Announcement",
+      "closeBtn": "Close",
+      "notTodayBtn": "Don't show today",
+      "body": "🎉 [GPT Image 2 Now Live] Major Model Update & Credit Benefits Upgrade\n\nThank you for your continued support!\n\nTo bring you a more powerful AI image creation experience, Nano Banana Canvas has completed a major version upgrade. This update is not just about feature improvements — we have redesigned the core architecture of the entire creative workflow.\n\n✅ New Models & Credit Adjustments: All newly purchased plans now support the latest frontier models including Claude 3 Opus 4.7, GPT-5.5, and GPT Image 2 high-precision multimodal models. To maximize your creative potential, we have optimized pricing and credit ratios:\n\n● GPT Image 2 starting from: as low as $0.12 / generation\n● GPT-5.5 starting from: as low as $0.85 / 10K tokens\n\nWith powerful model support and competitive launch pricing, your creations will stand out. Activate the models now!\n\n📮 Support: If you encounter any issues, data anomalies, or benefit discrepancies, please contact us through the available channels.\n\nThank you for your trust and support! Experience the new interface and enjoy the updated pricing — start creating on the platform today!"
+    },
     "hero": {
       "heading": "Nano Banana Canvas",
       "tagline": "Shape it in one stroke,\nkeep every idea in motion.",

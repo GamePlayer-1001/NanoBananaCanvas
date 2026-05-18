@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 next-intl 的 useTranslations，依赖 @/i18n/navigation 的 Link，依赖 @/components/locale-switcher，
- *          依赖 @/components/shared/brand-mark
- * [OUTPUT]: 对外提供 LandingNav 导航栏组件
+ *          依赖 @/components/shared/brand-mark，依赖 @/components/layout/global-promo-bar 的 GlobalPromoBar
+ * [OUTPUT]: 对外提供 LandingNav 导航栏组件（含顶部推广气泡 GlobalPromoBar）
  * [POS]: components/layout 的 Landing 导航栏，被 (landing)/layout.tsx 消费；公开导航已收口为首页锚点 + 登录入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -11,6 +11,7 @@
 import { useTranslations } from 'next-intl'
 
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { GlobalPromoBar } from '@/components/layout/global-promo-bar'
 import { BrandMark } from '@/components/shared/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
@@ -21,7 +22,9 @@ export function LandingNav() {
   const t = useTranslations('landing')
 
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-b border-white/10 bg-black/28 backdrop-blur-md">
+    <header className="fixed top-0 right-0 left-0 z-50">
+      <GlobalPromoBar />
+      <div className="border-b border-white/10 bg-black/28 backdrop-blur-md">
       <nav className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
         <Link href="/" className="text-white">
           <BrandMark withLogo className="text-xl text-white md:text-[1.4rem]" />
@@ -57,6 +60,7 @@ export function LandingNav() {
           </Link>
         </div>
       </nav>
+      </div>
     </header>
   )
 }

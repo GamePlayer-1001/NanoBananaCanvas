@@ -452,7 +452,7 @@ export function HeroSection() {
   }, [])
 
   return (
-    <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#0a0a0a] pt-16">
+    <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#0a0a0a] pt-[114px]">
       <div
         className="pointer-events-none absolute inset-0 opacity-20"
         style={{
