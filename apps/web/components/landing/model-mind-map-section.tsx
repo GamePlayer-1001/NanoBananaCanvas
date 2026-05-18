@@ -262,9 +262,9 @@ const MODEL_PROVIDERS: ModelProvider[] = [
 ]
 
 const MODEL_NODE_DIMENSIONS = {
-  sm: { orb: 76, icon: 22 },
-  md: { orb: 92, icon: 28 },
-  lg: { orb: 110, icon: 34 },
+  sm: { orb: 108, icon: 46 },
+  md: { orb: 130, icon: 56 },
+  lg: { orb: 156, icon: 68 },
 } as const
 
 const MODEL_TONE_STYLES: Record<
@@ -337,23 +337,20 @@ const MODEL_STATS = [
 
 function ProviderIcon({ provider }: { provider: ModelProvider }) {
   const tone = MODEL_TONE_STYLES[provider.tone]
-  const dimension = MODEL_NODE_DIMENSIONS[provider.size]
 
   return (
     <span
       aria-hidden="true"
-      className="flex items-center justify-center rounded-full font-semibold tracking-[0.08em]"
+      className="flex items-center justify-center font-bold leading-none tracking-[-0.02em]"
       style={{
-        height: `${dimension.icon}px`,
-        width: `${dimension.icon}px`,
-        background: tone.fallbackBg,
         color: tone.text,
         fontSize:
           provider.size === 'lg'
-            ? '0.98rem'
+            ? '2.4rem'
             : provider.size === 'md'
-              ? '0.85rem'
-              : '0.74rem',
+              ? '1.9rem'
+              : '1.5rem',
+        textShadow: `0 0 20px ${tone.ring}, 0 0 40px ${tone.glow}`,
       }}
     >
       {provider.fallback}
@@ -435,41 +432,52 @@ export function ModelMindMapSection() {
                 viewBox={`0 0 ${MODEL_STAGE.width} ${MODEL_STAGE.height}`}
                 fill="none"
                 aria-hidden="true"
-                style={{
-                  opacity: 0.9,
-                }}
+                style={{ opacity: 0.95 }}
               >
+                <defs>
+                  <filter id="orbit-glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
                   rx={MODEL_ORBIT_RADII.outer.x + 34}
                   ry={MODEL_ORBIT_RADII.outer.y + 14}
-                  stroke="rgba(98, 111, 180, 0.34)"
-                  strokeWidth="1"
+                  stroke="rgba(88, 108, 220, 0.55)"
+                  strokeWidth="1.5"
+                  filter="url(#orbit-glow)"
                 />
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
                   rx={MODEL_ORBIT_RADII.outer.x}
                   ry={MODEL_ORBIT_RADII.outer.y}
-                  stroke="rgba(111, 89, 255, 0.28)"
-                  strokeWidth="0.96"
+                  stroke="rgba(120, 86, 255, 0.60)"
+                  strokeWidth="1.5"
+                  filter="url(#orbit-glow)"
                 />
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
                   rx={MODEL_ORBIT_RADII.middle.x}
                   ry={MODEL_ORBIT_RADII.middle.y}
-                  stroke="rgba(144, 109, 255, 0.22)"
-                  strokeWidth="0.92"
+                  stroke="rgba(148, 110, 255, 0.52)"
+                  strokeWidth="1.3"
+                  filter="url(#orbit-glow)"
                 />
                 <ellipse
                   cx={MODEL_STAGE_CENTER.x}
                   cy={MODEL_STAGE_CENTER.y}
                   rx={MODEL_ORBIT_RADII.inner.x}
                   ry={MODEL_ORBIT_RADII.inner.y}
-                  stroke="rgba(125, 108, 255, 0.18)"
-                  strokeWidth="0.86"
+                  stroke="rgba(140, 112, 255, 0.44)"
+                  strokeWidth="1.1"
+                  filter="url(#orbit-glow)"
                 />
 
                 <path
@@ -514,25 +522,29 @@ export function ModelMindMapSection() {
               </svg>
 
               <div
-                className="absolute z-40 h-[31.5vw] max-h-[251px] w-[31.5vw] max-w-[251px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c590ff]/26 bg-[radial-gradient(circle_at_50%_18%,#fff5ff,#d388ff_30%,#914aff_56%,#4e18b6_78%,#0e0824_100%)] md:h-[237px] md:w-[237px]"
+                className="absolute z-40 h-[37vw] max-h-[292px] w-[37vw] max-w-[292px] rounded-full border border-[#c590ff]/30 bg-[radial-gradient(circle_at_50%_18%,#fff5ff,#d388ff_30%,#914aff_56%,#4e18b6_78%,#0e0824_100%)] md:h-[272px] md:w-[272px]"
                 style={{
                   left: `calc(${MODEL_CORE_POSITION.x}% + ${MODEL_CORE_OFFSET_X}px)`,
                   top: `${MODEL_CORE_POSITION.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  animation: prefersReducedMotion
-                    ? 'none'
-                    : 'corePulse 6.2s ease-in-out infinite',
+                  animation: prefersReducedMotion ? 'none' : 'corePulse 6.2s ease-in-out infinite',
                 }}
               >
-                <div className="absolute inset-[14px] rounded-full border border-white/12" />
-                <div className="absolute inset-[-16px] rounded-full border border-[#9567ff]/14" />
-                <div className="absolute inset-[-42px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.28),transparent_64%)] blur-2xl" />
-                <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
-                  <p className="text-[1.125rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white md:text-[1.35rem]">
+                <div className="absolute inset-[16px] rounded-full border border-white/12" />
+                <div className="absolute inset-[-18px] rounded-full border border-[#9567ff]/16" />
+                <div className="absolute inset-[-52px] rounded-full bg-[radial-gradient(circle,rgba(162,101,255,0.34),transparent_62%)] blur-2xl" />
+                <div className="relative flex h-full flex-col items-center justify-center px-5 text-center">
+                  <svg className="mb-1.5 h-8 w-8 text-white/72" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
+                  </svg>
+                  <p className="text-[1.05rem] leading-[1.02] font-semibold tracking-[-0.04em] text-white md:text-[1.26rem]">
                     Nano Banana
                   </p>
-                  <p className="mt-1 text-[1.125rem] leading-[1.02] font-semibold tracking-[-0.05em] text-white/94 md:text-[1.35rem]">
+                  <p className="mt-0.5 text-[1.05rem] leading-[1.02] font-semibold tracking-[-0.04em] text-white/94 md:text-[1.26rem]">
                     Canvas
+                  </p>
+                  <p className="mt-2 text-[0.58rem] font-medium tracking-[0.12em] text-white/55 uppercase">
+                    多模型统一调度
                   </p>
                 </div>
               </div>
@@ -562,31 +574,6 @@ export function ModelMindMapSection() {
                 const currentY =
                   MODEL_CORE_POSITION.y +
                   (Math.sin(orbitAngle) * orbitRadiusY * 100) / MODEL_STAGE.height
-                const labelWidth =
-                  provider.size === 'lg'
-                    ? '4.6rem'
-                    : provider.size === 'md'
-                      ? '4.2rem'
-                      : '3.85rem'
-                const nameSize =
-                  provider.size === 'lg'
-                    ? '0.66rem'
-                    : provider.size === 'md'
-                      ? '0.61rem'
-                      : '0.56rem'
-                const contentGap =
-                  provider.size === 'lg'
-                    ? '0.38rem'
-                    : provider.size === 'md'
-                      ? '0.3rem'
-                      : '0.22rem'
-                const orbPaddingTop =
-                  provider.size === 'lg'
-                    ? '1rem'
-                    : provider.size === 'md'
-                      ? '0.84rem'
-                      : '0.72rem'
-
                 return (
                   <div
                     key={provider.name}
@@ -600,7 +587,7 @@ export function ModelMindMapSection() {
                       transform: `translate(-50%, -50%) scale(${depthScale})`,
                     }}
                   >
-                    <div className="flex items-center justify-center">
+                    <div className="relative flex flex-col items-center">
                       <div
                         className="relative shrink-0 rounded-full border"
                         style={{
@@ -608,25 +595,20 @@ export function ModelMindMapSection() {
                           width: `${dimension.orb}px`,
                           borderColor: tone.ring,
                           background: tone.fill,
-                          boxShadow: `0 0 0 5px ${tone.glow}, 0 14px 34px rgba(0,0,0,0.28)`,
+                          boxShadow: `0 0 0 8px ${tone.glow}, 0 18px 44px rgba(0,0,0,0.32)`,
                         }}
                       >
-                        <div className="absolute inset-[7px] rounded-full border border-white/9" />
-                        <div
-                          className="flex h-full flex-col items-center text-center"
-                          style={{ gap: contentGap, paddingTop: orbPaddingTop }}
-                        >
+                        <div className="absolute inset-[8px] rounded-full border border-white/10" />
+                        <div className="flex h-full items-center justify-center">
                           <ProviderIcon provider={provider} />
-                          <div style={{ width: labelWidth }}>
-                            <p
-                              className="line-clamp-2 leading-tight font-medium text-white/88"
-                              style={{ fontSize: nameSize }}
-                            >
-                              {provider.name}
-                            </p>
-                          </div>
                         </div>
                       </div>
+                      <p
+                        className="mt-2 whitespace-nowrap text-center font-medium text-white/90"
+                        style={{ fontSize: provider.size === 'lg' ? '0.74rem' : '0.66rem' }}
+                      >
+                        {provider.name}
+                      </p>
                     </div>
                   </div>
                 )
