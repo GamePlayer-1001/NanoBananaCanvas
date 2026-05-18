@@ -19,7 +19,7 @@ tests/agent-result-followup.spec.ts — Agent 基于结果建议下一步 E2E
 tests/agent-multi-proposal.spec.ts — Agent 多提案比较与切换 E2E
 tests/agent-optimize-apply.spec.ts — Agent 优化建议生成与应用入口 E2E
 tests/helpers/agent.ts  — Agent E2E helper，负责先建立浏览器匿名会话，再在同一页面上下文里补测试积分、创建空白项目、图片工作流与带结果资产场景，避免 APIRequestContext 与页面访客身份漂移
-playwright.config.ts     — Playwright 配置 (chromium, 固定 3000 端口, 串行稳定运行，启动时调用 `apps/web` 的自重置 + 自初始化 `dev:e2e`)
+playwright.config.ts     — Playwright 配置 (chromium, 固定 3000 端口, 串行稳定运行，启动时调用 `apps/web` 的自重置 + 自初始化 `dev:e2e`；CI 显式关闭 Playwright 默认的 git commit/diff 元数据采集，避免 GitHub Actions 浅克隆环境触发 `/usr/bin/git` 128)
 tsconfig.json            — TypeScript 配置
 package.json             — 包描述与脚本
 ```
