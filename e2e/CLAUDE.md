@@ -10,7 +10,7 @@ Playwright E2E 测试 · 面向 apps/web 的端到端验证
 tests/health.spec.ts     — 健康检查端点冒烟测试
 tests/landing.spec.ts    — Landing 页面渲染、导航链接、性能预算
 tests/navigation.spec.ts — 公开路由可达性与匿名主链稳定性 (landing/pricing/legal/404)
-tests/api-public.spec.ts — API 烟雾测试 (health + 匿名请求守卫，依赖 `apps/web` 在 `dev:e2e` 启动前自动重置并重建本地 D1 schema)
+tests/api-public.spec.ts — API 烟雾测试 (health + 匿名请求守卫，依赖 `apps/web` 在 `dev:e2e` 启动前自动重置并重建本地 D1 schema，且 Wrangler/OpenNext 共用同一 versioned persist path)
 tests/seo.spec.ts        — SEO 基础设施 (robots.txt/sitemap.xml/OG/meta)
 tests/agent-create-workflow.spec.ts — Agent 工作流创建主链 E2E，覆盖 workspace 新建项目 + 一句话生成提案
 tests/agent-template-adapt.spec.ts — Agent 模板改造链路 E2E
@@ -19,7 +19,7 @@ tests/agent-result-followup.spec.ts — Agent 基于结果建议下一步 E2E
 tests/agent-multi-proposal.spec.ts — Agent 多提案比较与切换 E2E
 tests/agent-optimize-apply.spec.ts — Agent 优化建议生成与应用入口 E2E
 tests/helpers/agent.ts  — Agent E2E helper，负责先建立浏览器匿名会话，再在同一页面上下文里补测试积分、创建空白项目、图片工作流与带结果资产场景，避免 APIRequestContext 与页面访客身份漂移
-playwright.config.ts     — Playwright 配置 (chromium, 固定 3000 端口, 串行稳定运行，启动时调用 `apps/web` 的自重置 + 自初始化 `dev:e2e`；CI 显式关闭 Playwright 默认的 git commit/diff 元数据采集，避免 GitHub Actions 浅克隆环境触发 `/usr/bin/git` 128)
+playwright.config.ts     — Playwright 配置 (chromium, 固定 3000 端口, 串行稳定运行，启动时调用 `apps/web` 的自重置 + 自初始化 `dev:e2e`；CI 显式关闭 Playwright 默认的 git commit/diff 元数据采集，避免 GitHub Actions 浅克隆环境触发 `/usr/bin/git` 128；同时依赖 `dev:e2e` 正确复用同一 D1 persist path，避免 API 冒烟阶段读到空库)
 tsconfig.json            — TypeScript 配置
 package.json             — 包描述与脚本
 ```

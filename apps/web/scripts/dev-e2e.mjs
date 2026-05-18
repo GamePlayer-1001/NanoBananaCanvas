@@ -12,8 +12,9 @@ import { spawn, spawnSync } from 'node:child_process'
 /* ─── Shared Persist Path ────────────────────────────── */
 
 const projectRoot = process.cwd()
-const persistRoot = path.join(projectRoot, '.wrangler', 'e2e-state', 'v3')
-const d1PersistPath = path.join(persistRoot, 'd1')
+const persistRoot = path.join(projectRoot, '.wrangler', 'e2e-state')
+const stateVersion = 'v3'
+const d1PersistPath = path.join(persistRoot, stateVersion, 'd1')
 
 function run(command, args, extraEnv = {}) {
   const result = spawnSync(command, args, {
@@ -56,7 +57,7 @@ const server = spawn('next', ['dev', '--turbopack', '--port', '3000'], {
   cwd: projectRoot,
   env: {
     ...process.env,
-    NEXT_DEV_CF_PERSIST_PATH: persistRoot,
+    NEXT_DEV_CF_PERSIST_PATH: path.join(persistRoot, stateVersion),
   },
   stdio: 'inherit',
   shell: process.platform === 'win32',

@@ -27,7 +27,7 @@ scripts/            — 项目级脚本 (Cloudflare 部署包装 + D1 迁移编�
 ```
 next.config.ts      — Next.js 构建配置 (OpenNext Cloudflare dev init + next-intl 插件)
 middleware.ts       — Edge 路由中间件 (Clerk 会话注入 + 可开关 Frontend API 代理 + 裸域规范化 + next-intl locale 检测/重写，外部 URL 隐藏语言前缀)
-package.json        — 前端脚本入口 (`dev:e2e` 现改走 `scripts/dev-e2e.mjs`，为 Playwright 统一分配独立 Wrangler persist path 并先重建本地 D1 schema，避免默认 `.wrangler/state` 锁冲突；`db:migrate:local` / `db:migrate:remote` 统一编排 D1 运行时迁移；`build` 默认保留 Next/Turbo 增量缓存，`build:clean` 才显式冷构建；显式声明 `@swc/helpers` / `styled-jsx` 作为 OpenNext 打包期所需运行时依赖；所有 D1/Cloudflare 相关脚本统一走项目内 `pnpm exec wrangler`，确保 Playwright 与 CI 不依赖机器全局环境)
+package.json        — 前端脚本入口 (`dev:e2e` 现改走 `scripts/dev-e2e.mjs`，为 Playwright 统一分配独立 Wrangler persist path 并先重建本地 D1 schema；Wrangler 写入根目录与 OpenNext dev 读取的 `<version>` 子目录保持严格一致，避免默认 `.wrangler/state` 锁冲突与 schema 初始化落在错误目录；`db:migrate:local` / `db:migrate:remote` 统一编排 D1 运行时迁移；`build` 默认保留 Next/Turbo 增量缓存，`build:clean` 才显式冷构建；显式声明 `@swc/helpers` / `styled-jsx` 作为 OpenNext 打包期所需运行时依赖；所有 D1/Cloudflare 相关脚本统一走项目内 `pnpm exec wrangler`，确保 Playwright 与 CI 不依赖机器全局环境)
 tsconfig.json       — TypeScript 配置
 eslint.config.mjs   — ESLint 9 flat config + Prettier
 postcss.config.mjs  — PostCSS (@tailwindcss/postcss)

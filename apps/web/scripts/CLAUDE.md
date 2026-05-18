@@ -7,7 +7,7 @@ apply-d1-migrations.mjs: D1 迁移编排器，按固定顺序逐条执行 apps/w
 cloudflare-deploy.mjs: Cloudflare 生产构建与部署包装器，调用 OpenNext 内部 build API，并补齐 OpenNext 配置产物/平台兼容兜底；Windows 下若缺失 `open-next.config.edge.mjs`，会从根级 `open-next.config.ts` 生成 ESM 桥接文件避免打包阶段断裂。
 grant-user-entitlements.mjs: 账户授权运维脚本，按 email 向 D1 本地或远端授予指定套餐镜像，并把永久积分提升到超大值以表达人工无限额度
 i18n-tools.mjs: i18n/L10N 运维脚本，负责生成 message-index/message-usage、自动抽取声明式动态 key、合并 manifest 兜底 key、校验 locale key 对称性与代码引用、同步缺失 key、清理未使用 key、创建新 locale 脚手架。
-dev-e2e.mjs: Playwright/E2E 专用启动编排器，先清理并重建独立的本地 D1 持久化目录，再以同一 persist path 启动 `next dev`，避免默认 `.wrangler/state` 共享锁导致 `SQLITE_BUSY`
+dev-e2e.mjs: Playwright/E2E 专用启动编排器，先清理并重建独立的本地 D1 持久化目录；Wrangler 固定写入 `.wrangler/e2e-state/<version>/d1`，再把 `NEXT_DEV_CF_PERSIST_PATH` 指向同一 `<version>` 目录启动 `next dev`，避免默认 `.wrangler/state` 共享锁与 persist path 双重嵌套导致的 `SQLITE_BUSY` / `no such table`
 backfill-agent-audit-r2.mjs: Agent 审计历史瘦身脚本，扫描远端/本地 D1 中尚未迁移的大 JSON，上传到 R2 后把 D1 回写成索引/摘要形态
 backfill-published-output-video-covers.mjs: 已发布视频封面批量回填脚本，扫描缺失 thumbnail 或误把视频地址写成 thumbnail 的公开视频，下载 R2 原视频并用 ffmpeg 抽首帧，上传封面图后回写 published_outputs.thumbnail
 test-dlapi-key.mjs: DLAPI 本地联调脚本，读取 `apps/web/.env.local` 的 `DLAPI_API_KEY` 发起直出图请求并输出去除 `base64` 字段后的完整响应，供手工验 key / 验网 / 验协议。
