@@ -18,6 +18,8 @@
 SEO 与 Open Graph 策略.md: SEO、OG、Sitemap 与结构化数据策略  
 Landing Page 视觉策略.md: Landing 页视觉语言与动效策略  
 SEO 检测与执行清单.md: 基于当前代码与 SEO 资料的站点诊断与分阶段执行清单
+Google-SEOs.skill/: Google SEO 技能知识库，现已作为主仓库普通目录托管，包含 `SKILL.md`、官方 SEO references 与辅助脚本
+value-realization/: 价值实现分析技能知识库，现已作为主仓库普通目录托管，包含 `SKILL*.md` 与价值判断参考材料
 explore-import-manifest-template.csv: Explore 批量导入 CSV 模板，按标准字段填写本地作品、来源链接、作者信息与媒体路径，供导入脚本直接消费
 
 ## 常引用归档
@@ -58,7 +60,8 @@ archive/seo.txt: 外部 SEO 资料汇总底稿，非当前项目真相源
 3. 当前阶段状态与剩余任务归 项目规划清单.md
 4. 开发流程、验证与回环归 项目执行规范.md
 5. archive 文档默认不视为当前真相源，除非主文档明确指向
-6. “常引用归档”表示仍有参考价值，但仍需以代码现实和主文档口径为准
+6. archive 下若出现失效 gitlink 或伪子模块目录，应直接回收或删除，不保留无法映射 `.gitmodules` 的孤立历史残留
+7. “常引用归档”表示仍有参考价值，但仍需以代码现实和主文档口径为准
 
 ## 执行约束
 

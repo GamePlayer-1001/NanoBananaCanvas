@@ -1,0 +1,113 @@
+# 暂停或停用网站 | Google 搜索中心  |  Documentation  |  Google for Developers
+
+> 原文链接: https://developers.google.com/search/docs/crawling-indexing/pause-online-business?hl=zh-cn
+
+---
+
+  # 暂时关闭或停用网站
+
+    如果您无法履行订单或许多商品缺货，您可能会考虑暂时关闭在线商家。如果这种情况是暂时的，也就是说您预计在未来几个星期或几个月内就能够销售商品，我们建议您采取措施，尽量使您的网站在 Google 搜索中的排名保持不变。本指南将介绍如何安全地暂停在线商家。
+
+## 
+    限制网站的功能（推荐做法）
+
+    如果上述情况是暂时的，您也打算让在线商家重新开张，我们建议您让网站保持在线状态，并限制网站功能。我们之所以推荐这种方法，是因为它能够尽量避免网站在 Google 搜索中的显示情况受到负面影响。用户仍然可以找到您的商品、查看评价或添加心愿单，以便日后购买商品。我们建议您采取以下做法：
+
+- **停用购物车功能**：停用购物车功能是最简单的方法，并且不会对您的网站在 Google 搜索中的显示情况产生任何影响。
+- **显示横幅或弹出式窗口**：通过在所有网页（包括着陆页）中显示横幅或弹出式窗口 div，您能够快速地向用户说明相关状况。说明所有已知和异常的延迟、送货时间、取货或送货方式，这样用户就不会在后续操作中抱有过高的预期。
+      为了防止横幅或弹出式窗口中的内容显示在 Google 搜索结果摘要中，请使用 [data-nosnippet HTML 属性](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag?hl=zh-cn#data-nosnippet-attr)。
+      请务必遵循我们[关于弹出式窗口和横幅的指南](https://developers.google.com/search/docs/appearance/avoid-intrusive-interstitials?hl=zh-cn)。
+- **更新结构化数据**：如果您的网站使用结构化数据（例如 [Product](https://developers.google.com/search/docs/appearance/structured-data/product?hl=zh-cn)、[Book](https://developers.google.com/search/docs/appearance/structured-data/book?hl=zh-cn)、[Event](https://developers.google.com/search/docs/appearance/structured-data/event?hl=zh-cn)），请务必进行适当调整（反映当前的商品库存状况，或将活动状态更改为已取消）。如果您的商家有实体店面，请更新[本地商家结构化数据](https://developers.google.com/search/docs/appearance/structured-data/local-business?hl=zh-cn)，使其反映当前营业时间。
+- **检查 Merchant Center Feed**：如果您使用 Merchant Center，请遵循[关于库存状况属性的最佳做法](https://support.google.com/merchants/answer/6324448?hl=zh-cn)。
+- **将您的更新告知 Google**：如需让 Google 重新抓取有限数量的网页（例如，首页），请使用 [Search Console](https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl?hl=zh-cn)。如果要重新抓取的网页数量较多（例如，所有商品页面），请使用[站点地图](https://developers.google.com/search/docs/guides/submit-URLs?hl=zh-cn)。
+
+## 不推荐的做法：停用整个网站
+
+  警告**：Google 系统采用了可靠的设计，可以帮助网站从暂时性问题中恢复正常。不过，从 Google 索引中彻底移除网站是一项重大变更，需要相当长的一段时间才能恢复。彻底移除后的恢复过程所需的时间是不固定的，也没有加速完成此过程的机制。因此，我们强烈建议您限制网站功能，而不要从 Google 搜索中移除网站。
+
+    您可以决定停用整个网站。这种极端措施应该限制在极短的时间内（最多执行几天时间），否则即使在正确实施的情况下，也会在 Google 搜索中对网站产生**重大影响**。
+
+    请务必慎重考虑停用整个网站将会产生的以下负面影响：
+
+- 如果客户在网上根本找不到您的商家，就无法搞清楚您的商家发生了什么情况。
+- 客户无法查找或查看与您的商家有关的第一手信息，也无法查找相关的示例、评价、规格、维修指南或手册。第三方信息可能不会像您提供的信息那样正确或全面。这往往也会影响未来的购买决定。
+- 知识面板可能会丢失联系电话号码和网站徽标等信息。
+- Search Console 验证将会失败，您将无法访问 Google 搜索中与您的商家相关的信息。Search Console 中的汇总报告将会丢失数据，因为相关网页已从索引中移除。
+- 如果网站需要先重新编入索引，那么在较长的时期后重新恢复将会变得非常困难。此外，我们也无法确定此过程需要多长时间，以及之后网站能否以与之前类似的排名显示在 Google 搜索中。
+
+如果您确定要执行此操作（重申下，**我们不推荐这种做法**），可以采用以下方案：
+
+- 如果您需要将网站紧急停用 1-2 天，应该返回包含 [503 HTTP 响应状态代码](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503)（而不是所有内容）的信息性错误页面。请务必遵循[关于停用网站的最佳做法](#best-practices-disabling-site)。
+- 如果您需要将网站停用更长时间，应该使用 200 HTTP 状态代码提供一个可编入索引的首页作为占位符，供用户在 Google 搜索中查找。
+- 如果您需要快速在 Google 搜索中隐藏您的网站，然后再考虑应该选择上述哪个方案，可以[暂时从 Google 搜索中移除网站](https://support.google.com/webmasters/answer/9689846?hl=zh-cn)。
+
+### 
+      关于停用网站的最佳做法
+
+    **警告**：请注意，如果网页返回了 503 HTTP 响应状态代码，Google 系统无法刷新网站中包含的标题、说明、元数据或结构化数据。
+
+    虽然我们不建议您停用网站，但如果您决定执行此操作，请遵循以下最佳做法：
+
+- 通过 robots.txt 文件继续允许抓取。**不要针对 robots.txt 文件返回 503 HTTP 响应状态代码，因为这样做会屏蔽所有抓取**。
+- 使用 [curl](https://curl.haxx.se/docs/manpage.html) 或类似工具在本地确认 503 HTTP 响应状态代码。例如：
+
+```
+
+curl -I -X GET "https://www.example.com/"
+HTTP/1.1 503 Service Unavailable
+Mime-Version: 1.0
+Content-Type: text/html
+(...)
+```
+- 为了尽量降低 503 错误页面的服务器端和客户端负载，请遵循以下最佳做法：
+
+      使用 [retry-afterHTTP 标头](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After)注明您会争取在哪一天恢复或问题可能会持续多长时间。
+- 使用静态 HTML。
+- 尽量减少页外资源；使用内嵌 CSS 样式表和 base-64 编码图片。
+
+    在错误页面的内容中向用户提供关于后续步骤的明确指南。其中可以包括：
+
+- 指向详细信息的链接
+- 预计网站恢复在线状态的日期或信息的更新日期
+- 如何与客户服务人员联系
+
+    不要在 robots.txt 文件中禁止所有抓取操作。如果返回禁止所有抓取操作的有效 robots.txt 文件，网站的内容（甚至其网址）可能会从 Google 搜索中移除。
+    不要通过返回 403、404、410 HTTP 状态代码，或者使用 noindex robots meta 标记或 x-robots-tag HTTP 标头屏蔽网站。这样做会从 Google 搜索中移除网站的网址。
+    如果要歇业，请不要在 Search Console 中使用临时网站移除工具。这样做会导致用户无法找到您的网站以了解相关状况。此外，商家商品的潜在转销商或关联商户可能会继续显示在 Google 搜索中。
+    不要使用 503 HTTP 响应状态代码屏蔽 robots.txt 文件。
+
+## 
+      常见问题解答
+
+### 
+          如果我只将网站关闭几个星期，会怎样？
+
+              即使只将网站彻底关闭几个星期，Google 对网站的索引编制也会受到负面影响。我们建议您改为[限制网站的功能](#limit-site)。请注意，即使您目前没有销售任何商品，用户也有可能想要查找与您的商品、服务和公司相关的信息。
+
+### 
+          如果我想排除所有非必需商品，该怎么办？
+
+              没问题。您可以通过[限制网站的功能](#limit-site)，确保用户无法购买非必需商品。
+
+### 
+          我能否请求 Google 在我的网站暂时关闭后降低抓取频率？
+
+              能，您可以[降低 Googlebot 抓取速度](https://developers.google.com/search/docs/guides/reduce-crawl-rate?hl=zh-cn)，但大多数情况下不建议这样做。这可能会对 Google 搜索结果的新鲜度产生一定影响。例如，Google 搜索可能需要更长时间才能反映您的所有商品目前均已无法购买。但是，如果 Googlebot 的抓取导致服务器资源出现严重问题，这就是一种有效的方法了。我们建议您设置提醒，在您准备好重新开展业务时提醒自己重置抓取速度。
+
+### 
+          如何才能让网页更快速地编入索引或获得更新？
+
+              如需让 Google 重新抓取有限数量的网页（例如，首页），请使用 [Search Console](https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl?hl=zh-cn)。
+              如果要重新抓取的网页数量较多（例如，所有商品页面），请使用[站点地图](https://developers.google.com/search/docs/guides/submit-URLs?hl=zh-cn)。
+
+### 
+          如果我禁止某一特定地区的用户访问我的网站，会出现什么情况？
+
+              Google 通常会从美国展开抓取。如果您屏蔽的是美国用户，Google 搜索便彻底无法访问您的网站。我们不建议您暂时禁止整个区域的用户访问您的网站；而是建议您针对该地区[限制网站的功能](#limit-site)。
+
+### 
+          我是否应该使用[“移除”工具](https://support.google.com/webmasters/answer/9689846?hl=zh-cn)移除缺货的商品？
+
+              不可以。如果您这样做，客户将无法在 Google 搜索中找到与您的商品有关的第一手信息，并且商品可能仍存在不正确或不完整的第三方信息。最好继续允许用户访问商品页，并将其标记为缺货。这样一来，即使用户无法购买商品，也仍然可以了解所发生的情况。如果您将商品从 Google 搜索中移除，用户便无法了解搜索不到此商品的原因。
+
+如未另行说明，那么本页面中的内容已根据[知识共享署名 4.0 许可](https://creativecommons.org/licenses/by/4.0/)获得了许可，并且代码示例已根据 [Apache 2.0 许可](https://www.apache.org/licenses/LICENSE-2.0)获得了许可。有关详情，请参阅 [Google 开发者网站政策](https://developers.google.com/site-policies?hl=zh-cn)。

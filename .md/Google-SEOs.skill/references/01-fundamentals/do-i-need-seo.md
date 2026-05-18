@@ -1,0 +1,127 @@
+# 什么是 SEO 专家？| Google 搜索中心  |  Documentation  |  Google for Developers
+
+> 原文链接: https://developers.google.com/search/docs/fundamentals/do-i-need-seo?hl=zh-cn
+
+---
+
+# 您需要 SEO 吗？
+
+SEO 是“Search Engine Optimization”（搜索引擎优化）或“Search Engine Optimizer”（搜索引擎优化服务商）的首字母缩写。聘用 SEO 是一项重大决定，这有可能改善您的网站并节省时间，但也存在破坏网站和声誉受损的风险。在调研聘用 SEO 带来的潜在益处的同时，也请务必评估，如果 SEO 不负责，可能给您的网站带来哪些损害。很多 SEO 及其他代理机构和顾问会为网站所有者提供实用的服务，包括：
+
+- 网站内容或结构审核
+- 网站开发技术建议：如托管、重定向、错误页、JavaScript 的使用
+- 内容开发
+- 线上业务发展活动管理
+- 关键字研究
+- SEO 培训
+- 有关特定市场和地理区域的专业知识。
+
+通过 Google 刊登广告对您的网站在我们的搜索结果中的显示情况没有任何影响。
+  Google 绝不会针对将网站纳入我们的搜索结果或改变网站在搜索结果中的排名而收费，网站显示在我们的自然搜索结果中无需支付任何费用。[Search Console](https://search.google.com/search-console?hl=zh-cn)、官方的 [Google 搜索中心博客](https://developers.google.com/search/blog?hl=zh-cn)和我们的[论坛](https://support.google.com/webmasters/community?hl=zh-cn)等资源可为您提供大量关于如何针对自然搜索优化网站的信息。
+
+## SEO 使用入门
+
+如果您经营的是小型本地商家，您应该可以自己完成大部分工作。以下是一些很好的资源：
+
+- 观看我们的[视频系列](https://www.youtube.com/playlist?list=PLKoqnv2vTMUOHPb5IJIn-7egNRmsvbPIE&hl=zh-cn)，了解如何提高商家在线影响力。
+- [搜索要素](https://developers.google.com/search/docs/essentials?hl=zh-cn)
+- [Google 如何抓取网页、将网页编入索引和呈现网页](https://developers.google.com/search/docs/fundamentals/how-search-works?hl=zh-cn)。
+- [SEO 入门指南](https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=zh-cn)描述了 SEO 将为您做些什么。如果您聘用了专业人士为您打点一切，则无需详细了解此指南，但是，熟悉这些技术很有帮助，这样您就可以了解，SEO 是否想要使用某种不受推荐甚至是强烈禁止的技术。
+
+请注意，您需要一段时间才能看到效果：通常从您开始进行更改后的四个月至一年后，才能看到其优势。
+
+如果您觉得仍然需要来自专业人士的额外帮助，请继续阅读以了解如何选择 SEO。
+
+## 选择 SEO
+
+如果您考虑聘用 SEO，那么越早聘用越好。打算重新设计网站或启动新网站时是聘用 SEO 的最佳时机。这样，您和您的 SEO 就能确保整个网站自下而上都便于搜索引擎进行处理了。此外，优秀的 SEO 还能帮助您改进现有网站。
+
+1. **致力于实施建议的更改。**落实 SEO 建议的更改需要时间和精力；如果您不打算花时间进行这些更改，那么不值得聘用专业人士。
+2. **面试可能胜任的 SEO。**以下是可以询问 SEO 的一些实用问题：
+
+- 你们能否提供以前的案例供我参考，或提供一些成功案例？
+- 您是否遵循了 Google Search Essentials 指南？
+- 在随机搜索业务之外，您是否还提供任何在线营销或顾问服务？
+- 你们预计会有什么样的成果，需要多久时间？你们如何评估成果？
+- 对于我所在的行业，你们有哪些经验？
+- 对于我所在的国家/地区和城市，你们有哪些经验？
+- 对于开发国际性网站，你们有哪些经验？
+- 你们最重要的 SEO 技术是什么？
+- 你们在这个领域服务的时间有多久？
+- 我将来要如何与您沟通？你们是否会告知我将对我的网站做出的所有更改，并提供与建议以及建议背后的原因相关的详细信息？
+- 看看这个 SEO 是否对您和您的业务感兴趣。如果不感兴趣，则寻找其他感兴趣的 SEO。您的 SEO 应当询问以下问题：
+
+        是什么让您的业务或服务对客户来说独特而有价值？
+- 您的客户是谁？
+- 您的盈利模式是什么，以及搜索结果对此有何帮助？
+- 您使用了其他哪些广告渠道？
+- 您有哪些竞争对手？
+3. **查看 SEO 的商业参考资料。**询问以往的客户是否认为该 SEO 提供了有用的服务、是否合作轻松，并产生了积极的结果。
+4. **要求该 SEO 对您的网站进行技术和搜索审核**，了解他们认为需要做什么工作，为什么要这么做，以及预期的结果应该是什么。您可能需要为此付费。您可能必须在 Search Console 中为他们授予对您网站的只读访问权限。
+  （在此阶段，请勿授予他们写入访问权限）。可能胜任的 SEO 应可提供实事求是的网站改进效果预估，以及估计要涉及的工作。如果该 SEO 向您保证其更改会让您的网站在搜索结果中排名第一，请勿轻信，另寻其他 SEO。
+5. **决定是否要聘用该 SEO。**
+
+### 注意事项
+
+虽然 SEO 可为客户提供有价值的服务，但也有一些不道德的 SEO 采用过于激进的市场营销手段，并试图暗箱操纵搜索引擎结果，结果损害了这个行业的声誉。如有任何违反[我们的垃圾内容政策](https://developers.google.com/search/docs/essentials/spam-policies?hl=zh-cn)的做法，我们可能会对您的网站在 Google 中的显示情况进行消极调整，甚至还会将网站从我们的索引中移除。
+
+当 SEO 为您的网站提供了一系列建议时，要求他们用可信的来源证实这些建议，比如 Search Console 帮助页面、Google 搜索中心博客文章或是[论坛](https://support.google.com/webmasters/community?hl=zh-cn)中经 Google 认可的回复。
+
+请注意以下事项：
+
+- 一种常见的欺骗手段是创建“影子”域名，使用欺骗性的重定向功能将用户链接到某个网站。这些影子域名通常为那些声称为客户工作的 SEO 所有。但是，如果双方关系恶化，SEO 可能会将该域名指向另外一个网站，甚至指向竞争对手的域名。此时，客户等于付费开发了一个完全由 SEO 所有的竞争网站。
+- 另外一种违禁做法是，在客户网站的某个位置放置充斥着关键字的“门页”。SEO 承诺这种方法会增强网页的相关性，从而可以匹配更多的查询。这种观点根本就是错误的，因为单个网页几乎不可能与大量的关键字都相关，但更大的隐患是这些门页还常常包含指向 SEO 其他客户的隐藏链接。这些门页会将网站的链接流行度分流到 SEO 及它的其他客户那里，其中可能包含一些提供令人厌恶或非法内容的网站。
+- 最后，避免参与[链接操纵](https://developers.google.com/search/docs/essentials/spam-policies?hl=zh-cn#link-spam)，例如从其他网站购买链接以提高排名。这违反了 Google 的垃圾内容政策，可能会导致我们[针对网站的部分或全部内容采取人工处置措施](https://support.google.com/webmasters/answer/9044175?ref_topic=7440006&hl=zh-cn#unnatural-links-to-your-site&zippy=,unnatural-links-to-your-site)，这将对网站排名产生负面影响。
+
+如果您认为 SEO 以某种方式欺骗了您，您可以向我们举报。
+
+在美国，联邦贸易委员会 (FTC) 负责受理有关欺诈性或不正当商业行为的投诉。如需提交投诉，请访问 [https://www.ftc.gov/](https://www.ftc.gov/) 并点击“File a Complaint Online”（在线提交投诉），也可以致电 1-877-FTC-HELP，或将投诉信寄往以下地址：
+
+Federal Trade Commission
+
+CRC-240
+
+Washington, D.C. 20580
+
+如果您投诉的是美国境外的公司，请通过以下网址进行投诉：[https://www.econsumer.gov/](https://www.econsumer.gov/)。
+
+## 实用指南
+
+- **对突然向您发送电子邮件的 SEO 公司和网络顾问或代理机构应保持警惕。**
+
+令人吃惊的是，连我们都会收到这类垃圾邮件：
+
+“尊敬的 google.com：
+
+    我访问了贵网站，发现大多数主要的搜索引擎和目录都没有将贵公司列入其中…”**
+
+不要轻易相信那些涉及搜索引擎的垃圾邮件，它们就像宣传“夜间燃脂”的减肥药丸和帮助下台的独裁者转移资金的请求一样可疑。
+- **没有人可以保证能在 Google 搜索结果中排名第一。**
+
+    如果 SEO 宣称可以保证排名，声称与 Google 有“特殊关系”，或可以优先向 Google 提交您的网站，千万不要相信。Google 从来都没有优先提交一说。实际上，直接[向 Google 提交网站](https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl?hl=zh-cn)的唯一方式是通过[网址检查工具](https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl?hl=zh-cn#use-the-url-inspection-tool-just-a-few-urls)提交[站点地图](https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview?hl=zh-cn)，或利用 [Google Indexing API](https://developers.google.com/search/apis/indexing-api/v3/quickstart?hl=zh-cn) 提交更具体的内容。您可以自行采取上述任一做法。
+- **如果一家公司遮遮掩掩，或不明确说明自己的意图，请多加小心。**
+
+如果有任何不明白之处，应当要求对方解释。如果 SEO 为您制作了一些欺骗性或误导性内容，如门页或“一次性”域名，您的网站可能会从 Google 索引中被彻底移除。归根结底，您要对所雇用公司的全部行为负责，因此，您最好弄清楚他们打算如何“帮助”您。如果 SEO 可以通过 FTP 访问您的服务器，则他们应该乐于向您解释对您的网站所做的所有更改。
+- **您完全不必链接到 SEO。**
+
+请远离那些宣传链接流行度方案或将您的网站提交给数千个搜索引擎的 SEO。因为这些做法通常是徒劳无益的，并不会影响您在各大搜索引擎结果中的排名，至少不会产生您期望的正面影响。
+- **请慎重选择。**
+
+在考虑是否要与某 SEO 合作时，您应当对该行业做一些调查。Google 当然可以提供这方面的信息。尽管 Google 不会对具体的公司加以评论，但我们确实遇到了一些自称是 SEO 而其行为却违背了合理的商业行为准则的公司。请务必小心。
+- **请务必了解资金去向。**
+
+虽然 Google 从未出售搜索结果中的靠前排名，但其他一些搜索引擎会在其常规的网页搜索结果中按点击次数或纳入结果的次数进行收费。一些 SEO 会承诺让您在搜索引擎中居于靠前的位置，但其实是将您放在广告部分而非搜索结果中。还有少数 SEO 甚至会实时更改他们的出价，制造出他们可以“控制”其他搜索引擎并随意进入理想版块的假象。这些伎俩在 Google 是行不通的，因为我们的广告内容已明确标示，并与搜索结果相互独立；但是对于任何 SEO，您一定要问清楚哪些费用用于将您永久性地纳入搜索结果，哪些费用用于短时间的广告宣传。
+- **还需要注意哪些事项？**
+
+您可以通过某些迹象判断是否正在与不道德的 SEO 打交道。下面列出的只是其中很少的一部分，因此，只要有任何疑虑，您都应当相信直觉：
+
+      拥有影子域名
+- 在门页上放置指向其他客户的链接
+- 提议在地址栏出售关键字
+- 对搜索结果页中出现的实际搜索结果和广告不加区分
+- 保证排名，但只依靠随意可得的晦涩冗长的关键字词组
+- 使用多个别名或伪造的 WHOIS 信息
+- 从“虚假的”搜索引擎、间谍软件或变脸软件获取流量
+- 自身的域名已从 Google 索引中被移除，或者没有列入 Google 索引中
+
+如未另行说明，那么本页面中的内容已根据[知识共享署名 4.0 许可](https://creativecommons.org/licenses/by/4.0/)获得了许可，并且代码示例已根据 [Apache 2.0 许可](https://www.apache.org/licenses/LICENSE-2.0)获得了许可。有关详情，请参阅 [Google 开发者网站政策](https://developers.google.com/site-policies?hl=zh-cn)。
