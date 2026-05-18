@@ -10,7 +10,17 @@ import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare'
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
-initOpenNextCloudflareForDev()
+const devPersistPath = process.env.NEXT_DEV_CF_PERSIST_PATH
+
+initOpenNextCloudflareForDev(
+  devPersistPath
+    ? {
+        persist: {
+          path: devPersistPath,
+        },
+      }
+    : undefined,
+)
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
