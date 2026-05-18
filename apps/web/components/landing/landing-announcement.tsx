@@ -25,14 +25,17 @@ export function LandingAnnouncement() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    try {
-      const dismissed = localStorage.getItem(STORAGE_KEY)
-      if (dismissed !== getTodayString()) {
+    const id = window.setTimeout(() => {
+      try {
+        const dismissed = localStorage.getItem(STORAGE_KEY)
+        if (dismissed !== getTodayString()) {
+          setOpen(true)
+        }
+      } catch {
         setOpen(true)
       }
-    } catch {
-      setOpen(true)
-    }
+    }, 0)
+    return () => window.clearTimeout(id)
   }, [])
 
   const handleClose = () => {
