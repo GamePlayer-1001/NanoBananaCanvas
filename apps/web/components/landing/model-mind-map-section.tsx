@@ -10,7 +10,6 @@
 
 import { Sparkles, ShieldCheck, Workflow, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
 
 type ProviderTone = 'azure' | 'violet' | 'teal' | 'amber' | 'rose'
 type ProviderSize = 'sm' | 'md' | 'lg'
@@ -46,7 +45,7 @@ const MODEL_CORE_POSITION = {
   y: (MODEL_STAGE_CENTER.y / MODEL_STAGE.height) * 100,
 } as const
 
-const MODEL_CORE_OFFSET_X = 128
+const MODEL_CORE_OFFSET_X = 0
 
 const MODEL_ORBIT_RADII: Record<ProviderOrbit, { x: number; y: number }> = {
   inner: { x: 312, y: 120 },
@@ -314,6 +313,13 @@ const MODEL_TONE_STYLES: Record<
   },
 }
 
+const MODEL_STATS = [
+  { key: 'vendors', icon: Workflow },
+  { key: 'coverage', icon: Sparkles },
+  { key: 'routing', icon: Zap },
+  { key: 'team', icon: ShieldCheck },
+] as const
+
 const MODEL_SPARKS = [
   { x: 8, y: 52, tone: 'azure' },
   { x: 18, y: 22, tone: 'violet' },
@@ -326,13 +332,6 @@ const MODEL_SPARKS = [
   { x: 80, y: 79, tone: 'teal' },
   { x: 51, y: 96, tone: 'violet' },
   { x: 22, y: 83, tone: 'azure' },
-] as const
-
-const MODEL_STATS = [
-  { key: 'vendors', icon: Workflow },
-  { key: 'coverage', icon: Sparkles },
-  { key: 'routing', icon: Zap },
-  { key: 'team', icon: ShieldCheck },
 ] as const
 
 function renderBrandSvg(name: string, color: string, size: number) {
@@ -448,40 +447,7 @@ function ProviderIcon({ provider }: { provider: ModelProvider }) {
 
 export function ModelMindMapSection() {
   const modelT = useTranslations('landing.sections.models')
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-  const [orbitTime, setOrbitTime] = useState(0)
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches)
-
-    syncPreference()
-    mediaQuery.addEventListener('change', syncPreference)
-
-    return () => mediaQuery.removeEventListener('change', syncPreference)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || prefersReducedMotion) return undefined
-
-    let frame = 0
-    const startedAt = window.performance.now()
-
-    const tick = (now: number) => {
-      setOrbitTime((now - startedAt) / 1000)
-      frame = window.requestAnimationFrame(tick)
-    }
-
-    frame = window.requestAnimationFrame(tick)
-
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame)
-    }
-  }, [prefersReducedMotion])
-
-  const visibleOrbitTime = prefersReducedMotion ? 0 : orbitTime
+  const visibleOrbitTime = 0
   const vendorCount = new Set(
     MODEL_PROVIDERS.map((provider) => provider.vendor ?? provider.name),
   ).size
@@ -500,21 +466,25 @@ export function ModelMindMapSection() {
           <div className="pointer-events-none absolute right-[7%] bottom-[10%] h-[14rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgba(52,110,255,0.08),transparent_68%)] blur-3xl" />
 
           <div className="relative mx-auto w-full max-w-[1100px]">
-            <div
-              className="relative z-20 mx-auto flex max-w-[34rem] flex-col items-center text-center"
-            >
-              <h2 className="text-[2.15rem] leading-[0.95] font-semibold tracking-[-0.05em] text-white md:text-[3.35rem]">
-                <span className="text-white">{modelT('title')}</span>
-              </h2>
-              <p className="mt-4 max-w-[29rem] text-[0.98rem] leading-7 text-white/56 md:text-[1.02rem] md:leading-8">
-                {modelT('body')}
-              </p>
-            </div>
-
-            <div
-              className="relative z-10 mt-6 lg:mt-4"
-            >
+            <div className="relative z-10">
               <div className="relative mx-auto aspect-[1400/820] w-full max-w-[1100px]">
+
+              {/* Title overlay — top-left */}
+              <div className="absolute top-[6%] left-[3%] z-50 hidden max-w-[26%] lg:block">
+                <h2 className="text-[clamp(1.4rem,2.6vw,2.9rem)] font-semibold leading-[1.02] tracking-[-0.05em] text-white">
+                  {modelT('title')}
+                </h2>
+                <p className="mt-3 text-[clamp(0.64rem,0.82vw,0.84rem)] leading-[1.68] text-white/54">
+                  {modelT('body')}
+                </p>
+                <a
+                  href="#models"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/6 px-4 py-2 text-[0.72rem] font-medium text-white/80 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Sparkles size={11} />
+                  {modelT('cta')}
+                </a>
+              </div>
               <svg
                 className="absolute inset-0 h-full w-full"
                 viewBox={`0 0 ${MODEL_STAGE.width} ${MODEL_STAGE.height}`}
@@ -597,13 +567,7 @@ export function ModelMindMapSection() {
                       cy={(spark.y / 100) * MODEL_STAGE.height}
                       r={index % 3 === 0 ? 7 : 5.5}
                       fill={tone.ring}
-                      style={{
-                        opacity: 0.9,
-                        animation: prefersReducedMotion
-                          ? 'none'
-                          : `sparkPulse ${3.2 + (index % 4) * 0.45}s ease-in-out infinite`,
-                        animationDelay: `${index * 0.18}s`,
-                      }}
+                      style={{ opacity: 0.65 }}
                     />
                   )
                 })}
@@ -615,7 +579,6 @@ export function ModelMindMapSection() {
                   left: `calc(${MODEL_CORE_POSITION.x}% + ${MODEL_CORE_OFFSET_X}px)`,
                   top: `${MODEL_CORE_POSITION.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  animation: prefersReducedMotion ? 'none' : 'corePulse 6.2s ease-in-out infinite',
                 }}
               >
                 <div className="absolute inset-[16px] rounded-full border border-white/12" />
@@ -632,7 +595,7 @@ export function ModelMindMapSection() {
                     Canvas
                   </p>
                   <p className="mt-2 text-[0.58rem] font-medium tracking-[0.12em] text-white/55 uppercase">
-                    多模型统一调度
+                    {modelT('centerBody')}
                   </p>
                 </div>
               </div>
@@ -703,6 +666,16 @@ export function ModelMindMapSection() {
               })}
               </div>
             </div>
+
+            {/* Mobile title — shown below canvas on small screens */}
+            <div className="relative z-30 px-4 pb-4 pt-6 lg:hidden">
+              <h2 className="text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-white">
+                {modelT('title')}
+              </h2>
+              <p className="mt-3 text-[0.9rem] leading-7 text-white/54">
+                {modelT('body')}
+              </p>
+            </div>
           </div>
 
           <div
@@ -742,34 +715,6 @@ export function ModelMindMapSection() {
             </div>
           </div>
         </div>
-
-        <style jsx>{`
-          @keyframes sparkPulse {
-            0%,
-            100% {
-              transform: scale(1);
-              opacity: 0.35;
-            }
-            50% {
-              transform: scale(1.18);
-              opacity: 1;
-            }
-          }
-
-          @keyframes corePulse {
-            0%,
-            100% {
-              box-shadow:
-                0 0 0 16px rgba(126, 88, 255, 0.05),
-                0 0 140px rgba(126, 88, 255, 0.22);
-            }
-            50% {
-              box-shadow:
-                0 0 0 24px rgba(126, 88, 255, 0.08),
-                0 0 180px rgba(126, 88, 255, 0.28);
-            }
-          }
-        `}</style>
       </div>
     </section>
   )

@@ -43,12 +43,12 @@ export function LandingNav() {
           >
             {t('nav.pricing')}
           </Link>
-          <Link
+          {/* <Link
             href="/#models"
             className="inline-flex min-h-11 items-center text-sm text-white/82 transition-colors hover:text-white"
           >
             {t('nav.models')}
-          </Link>
+          </Link> */}
         </div>
 
         <div className="flex items-center gap-3">

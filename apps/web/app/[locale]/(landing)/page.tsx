@@ -168,7 +168,7 @@ export default async function LandingPage({
         subscription={subscription}
       />
       <TestimonialsSection />
-      <ModelMindMapSection />
+      {/* <ModelMindMapSection /> */}
       <FaqSection />
       <LandingFooter />
     </main>
