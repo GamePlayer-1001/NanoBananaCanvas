@@ -1,0 +1,55 @@
+name: Setup pnpm
+description: Install Node, enable Corepack pnpm, restore cache, and run pnpm install
+
+inputs:
+  node-version:
+    description: Node.js version
+    required: false
+    default: '24'
+  pnpm-version:
+    description: pnpm version
+    required: false
+    default: '10.26.2'
+  restore-turbo-cache:
+    description: Whether to restore Turbo cache alongside pnpm store cache
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}
+        package-manager-cache: false
+
+    - name: Enable Corepack pnpm
+      shell: bash
+      run: |
+        corepack enable
+        corepack prepare pnpm@${{ inputs.pnpm-version }} --activate
+
+    - name: Configure pnpm store
+      shell: bash
+      run: pnpm config set store-dir .pnpm-store
+
+    - name: Restore pnpm store cache
+      uses: actions/cache@v4
+      with:
+        path: .pnpm-store
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Restore Turbo cache
+      if: ${{ inputs.restore-turbo-cache == 'true' }}
+      uses: actions/cache@v4
+      with:
+        path: .turbo
+        key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'package.json', 'apps/**/package.json', 'packages/**/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

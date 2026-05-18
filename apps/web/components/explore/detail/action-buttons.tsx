@@ -16,7 +16,7 @@ import { Copy, Download, Star } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useRouter } from '@/i18n/navigation'
-import { useToggleFavorite, useCloneWorkflow } from '@/hooks/use-explore'
+import { useToggleFavorite, useCloneWorkflow, ApiError } from '@/hooks/use-explore'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -77,7 +77,13 @@ export function ActionButtons({
           toast.success(t('cloneSuccess'))
           router.push(`/canvas/${data.id}`)
         },
-        onError: () => toast.error(t('cloneFailed')),
+        onError: (error) => {
+          if (error instanceof ApiError && error.status === 401) {
+            router.push('/sign-in')
+            return
+          }
+          toast.error(t('cloneFailed'))
+        },
       },
     )
   }

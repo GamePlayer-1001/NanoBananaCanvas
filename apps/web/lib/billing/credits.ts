@@ -513,22 +513,18 @@ function toUsageDailyItem(row: CreditUsageDailyRow): CreditUsageDailyItem {
   }
 }
 
-export async function getCreditUsage(
-  userId: string,
-  options?: { windowDays?: number },
-): Promise<CreditUsageResult> {
-  const windowDays = normalizePositiveInt(options?.windowDays, 30, 365)
-  const schema = await getBillingSchemaInfo()
+type UsageQueryFragments = {
+  pricingJoin: string
+  successCountSql: string
+  failedCountSql: string
+  totalInputTokensSql: string
+  totalOutputTokensSql: string
+  estimatedCreditsSql: string
+}
 
-  if (!canReadCreditUsage(schema)) {
-    return {
-      windowDays,
-      summary: toUsageSummary(null),
-      byModel: [],
-      daily: [],
-    }
-  }
-
+function buildUsageQueryFragments(
+  schema: Awaited<ReturnType<typeof getBillingSchemaInfo>>,
+): UsageQueryFragments {
   const hasStatus = hasAiUsageLogColumn(schema, 'status')
   const hasInputTokens = hasAiUsageLogColumn(schema, 'input_tokens')
   const hasOutputTokens = hasAiUsageLogColumn(schema, 'output_tokens')
@@ -571,6 +567,41 @@ export async function getCreditUsage(
   } else if (hasEstimatedCredits) {
     estimatedCreditsSql = 'SUM(COALESCE(u.estimated_credits, 0))'
   }
+
+  return {
+    pricingJoin,
+    successCountSql,
+    failedCountSql,
+    totalInputTokensSql,
+    totalOutputTokensSql,
+    estimatedCreditsSql,
+  }
+}
+
+export async function getCreditUsage(
+  userId: string,
+  options?: { windowDays?: number },
+): Promise<CreditUsageResult> {
+  const windowDays = normalizePositiveInt(options?.windowDays, 30, 365)
+  const schema = await getBillingSchemaInfo()
+
+  if (!canReadCreditUsage(schema)) {
+    return {
+      windowDays,
+      summary: toUsageSummary(null),
+      byModel: [],
+      daily: [],
+    }
+  }
+
+  const {
+    pricingJoin,
+    successCountSql,
+    failedCountSql,
+    totalInputTokensSql,
+    totalOutputTokensSql,
+    estimatedCreditsSql,
+  } = buildUsageQueryFragments(schema)
 
   const db = await getDb()
 

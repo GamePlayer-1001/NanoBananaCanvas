@@ -13,40 +13,55 @@ import type {
   WorkflowOperation,
 } from './types'
 
-function isImageToImageRequest(normalized: string) {
+/* ─── Keywords ────────────────────────────────────────────────────────────── */
+
+const KW_DIAGNOSE = ['为什么', '诊断', '报错'] as const
+const KW_REPAIR = ['修复', '补救'] as const
+const KW_OPTIMIZE = ['优化', '省钱', '更快'] as const
+const KW_TEMPLATE = ['模板'] as const
+const KW_EXTEND = ['继续', '延伸', '追加分支'] as const
+const KW_CREATE = ['新建', '搭建', '创建'] as const
+const KW_REPAIR_INTENT = ['修复', '跑不通'] as const
+const KW_REPLACE_MODEL = ['换成', '替换模型', '更便宜的模型'] as const
+const KW_CHANGE_OUTPUT_COUNT = ['4个变体', '四个变体', '多个变体', '输出改成'] as const
+const KW_ADD_BRANCH = ['分支', '变体支线'] as const
+const KW_IMAGE_TO_IMAGE = ['图生图', '以图生图', '参考图', '垫图', '图片修改', '改图'] as const
+const KW_STRUCTURE_ADJUST = [
+  '工作流不太对', '流程不太对', '节点不太对',
+  '还需要把图片输入进去', '加一个图片输入', '补一个图片输入',
+  '增加图片输入', '接入图片输入', '把图片输入进去',
+  '把图接进去', '接一张图', '补输入节点',
+] as const
+const KW_VIDEO = ['视频'] as const
+const KW_AUDIO = ['音频', '配音', '语音'] as const
+const KW_IMAGE = ['图', '海报', '图片'] as const
+const KW_PROMPT_EDIT = ['提示词', 'prompt', '更写实', '更真实'] as const
+const KW_CHEAPER = ['更便宜'] as const
+const KW_FASTER = ['更快'] as const
+const KW_REALISTIC = ['更写实', '更真实'] as const
+
+function matchesAny(str: string, keywords: readonly string[]): boolean {
+  return keywords.some((kw) => str.includes(kw))
+}
+
+/* ─── Predicates ──────────────────────────────────────────────────────────── */
+
+function isImageToImageRequest(normalized: string): boolean {
   return (
-    normalized.includes('图生图') ||
-    normalized.includes('以图生图') ||
-    normalized.includes('参考图') ||
-    normalized.includes('垫图') ||
-    normalized.includes('图片修改') ||
-    normalized.includes('改图') ||
+    matchesAny(normalized, KW_IMAGE_TO_IMAGE) ||
     (normalized.includes('修改') && normalized.includes('图片'))
   )
 }
 
-function isStructureAdjustmentRequest(normalized: string) {
-  return (
-    normalized.includes('工作流不太对') ||
-    normalized.includes('流程不太对') ||
-    normalized.includes('节点不太对') ||
-    normalized.includes('还需要把图片输入进去') ||
-    normalized.includes('加一个图片输入') ||
-    normalized.includes('补一个图片输入') ||
-    normalized.includes('增加图片输入') ||
-    normalized.includes('接入图片输入') ||
-    normalized.includes('把图片输入进去') ||
-    normalized.includes('把图接进去') ||
-    normalized.includes('接一张图') ||
-    normalized.includes('补输入节点')
-  )
+function isStructureAdjustmentRequest(normalized: string): boolean {
+  return matchesAny(normalized, KW_STRUCTURE_ADJUST)
 }
 
 export function isSafeCreationPlan(
   mode: AgentPlan['mode'],
   canvasNodeCount: number,
   operations: WorkflowOperation[],
-) {
+): boolean {
   return (
     mode === 'create' &&
     canvasNodeCount === 0 &&
@@ -59,34 +74,13 @@ export function inferModeFromMessage(
   normalized: string,
   nodeCount: number,
 ): AgentPlan['mode'] {
-  if (normalized.includes('为什么') || normalized.includes('诊断') || normalized.includes('报错')) {
-    return 'diagnose'
-  }
-
-  if (normalized.includes('修复') || normalized.includes('补救')) {
-    return 'repair'
-  }
-
-  if (normalized.includes('优化') || normalized.includes('省钱') || normalized.includes('更快')) {
-    return 'optimize'
-  }
-
-  if (nodeCount === 0) {
-    return 'create'
-  }
-
-  if (normalized.includes('模板')) {
-    return 'template'
-  }
-
-  if (normalized.includes('继续') || normalized.includes('延伸') || normalized.includes('追加分支')) {
-    return 'extend'
-  }
-
-  if (normalized.includes('新建') || normalized.includes('搭建') || normalized.includes('创建')) {
-    return 'create'
-  }
-
+  if (matchesAny(normalized, KW_DIAGNOSE)) return 'diagnose'
+  if (matchesAny(normalized, KW_REPAIR)) return 'repair'
+  if (matchesAny(normalized, KW_OPTIMIZE)) return 'optimize'
+  if (nodeCount === 0) return 'create'
+  if (matchesAny(normalized, KW_TEMPLATE)) return 'template'
+  if (matchesAny(normalized, KW_EXTEND)) return 'extend'
+  if (matchesAny(normalized, KW_CREATE)) return 'create'
   return inputMode === 'create' && nodeCount > 0 ? 'update' : inputMode
 }
 
@@ -103,7 +97,7 @@ export function inferIntentFromMessage(
     return 'create_workflow'
   }
 
-  if (mode === 'repair' || normalized.includes('修复') || normalized.includes('跑不通')) {
+  if (mode === 'repair' || matchesAny(normalized, KW_REPAIR_INTENT)) {
     return 'repair_flow'
   }
 
@@ -119,22 +113,9 @@ export function inferIntentFromMessage(
     return 'split_step'
   }
 
-  if (normalized.includes('换成') || normalized.includes('替换模型') || normalized.includes('更便宜的模型')) {
-    return 'replace_model'
-  }
-
-  if (
-    normalized.includes('4个变体') ||
-    normalized.includes('四个变体') ||
-    normalized.includes('多个变体') ||
-    normalized.includes('输出改成')
-  ) {
-    return 'change_output_count'
-  }
-
-  if (normalized.includes('分支') || normalized.includes('变体支线')) {
-    return 'add_branch'
-  }
+  if (matchesAny(normalized, KW_REPLACE_MODEL)) return 'replace_model'
+  if (matchesAny(normalized, KW_CHANGE_OUTPUT_COUNT)) return 'change_output_count'
+  if (matchesAny(normalized, KW_ADD_BRANCH)) return 'add_branch'
 
   return 'add_step'
 }
@@ -144,7 +125,7 @@ export function shouldBuildPromptConfirmation(
   intent: AgentPlanIntent,
   workflowKind: 'image' | 'image_to_image' | 'video' | 'audio' | 'text' | undefined,
   canvasNodeCount: number,
-) {
+): boolean {
   if (workflowKind !== 'image' && workflowKind !== 'image_to_image') {
     return false
   }
@@ -165,7 +146,7 @@ export function shouldBuildPromptConfirmation(
 }
 
 export function buildCreationOperations(normalized: string): WorkflowOperation[] {
-  if (normalized.includes('视频')) {
+  if (matchesAny(normalized, KW_VIDEO)) {
     return [
       { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
       { type: 'add_node', nodeId: 'draft-video-gen', nodeType: 'video-gen' },
@@ -187,7 +168,7 @@ export function buildCreationOperations(normalized: string): WorkflowOperation[]
     ]
   }
 
-  if (normalized.includes('音频') || normalized.includes('配音') || normalized.includes('语音')) {
+  if (matchesAny(normalized, KW_AUDIO)) {
     return [
       { type: 'add_node', nodeId: 'draft-text-input', nodeType: 'text-input' },
       { type: 'add_node', nodeId: 'draft-audio-gen', nodeType: 'audio-gen' },
@@ -209,7 +190,7 @@ export function buildCreationOperations(normalized: string): WorkflowOperation[]
     ]
   }
 
-  if (normalized.includes('图') || normalized.includes('海报') || normalized.includes('图片')) {
+  if (matchesAny(normalized, KW_IMAGE)) {
     if (isImageToImageRequest(normalized)) {
       return [
         { type: 'add_node', nodeId: 'draft-image-input', nodeType: 'image-input' },
@@ -282,9 +263,9 @@ export function buildCreationOperations(normalized: string): WorkflowOperation[]
   ]
 }
 
-export function shouldPatchSelectedNodePrompt(normalized: string, selectedNode: CanvasSummaryNode) {
+export function shouldPatchSelectedNodePrompt(normalized: string, selectedNode: CanvasSummaryNode): boolean {
   return (
-    (normalized.includes('提示词') || normalized.includes('prompt') || normalized.includes('更写实') || normalized.includes('更真实')) &&
+    matchesAny(normalized, KW_PROMPT_EDIT) &&
     ['text-input', 'llm', 'image-gen', 'video-gen'].includes(selectedNode.type)
   )
 }
@@ -314,8 +295,8 @@ export function buildSelectedNodePromptOperations(normalized: string, selectedNo
   ]
 }
 
-export function shouldOptimizeSelectedNode(normalized: string) {
-  return normalized.includes('更便宜') || normalized.includes('更快')
+export function shouldOptimizeSelectedNode(normalized: string): boolean {
+  return matchesAny(normalized, KW_CHEAPER) || matchesAny(normalized, KW_FASTER)
 }
 
 export function buildSelectedNodeOptimizationOperations(
@@ -325,12 +306,12 @@ export function buildSelectedNodeOptimizationOperations(
   const patch: Record<string, unknown> = {}
   const noteParts: string[] = []
 
-  if (normalized.includes('更便宜')) {
+  if (matchesAny(normalized, KW_CHEAPER)) {
     patch.platformModel = inferLowerCostModel(selectedNode)
     noteParts.push('切到更省钱的模型')
   }
 
-  if (normalized.includes('更快')) {
+  if (matchesAny(normalized, KW_FASTER)) {
     patch.platformModel = inferFasterModel(selectedNode, patch.platformModel)
     patch.quality = 'fast'
     noteParts.push('收缩到更快的执行规格')
@@ -364,15 +345,15 @@ export function buildSelectedNodePromptDraft(normalized: string, selectedNode: C
       selectedNode.label,
     ).trim() || selectedNode.label
 
-  if (normalized.includes('更写实') || normalized.includes('更真实')) {
+  if (matchesAny(normalized, KW_REALISTIC)) {
     return `${basePrompt}，强调真实摄影质感、自然光、材质细节与镜头语言`
   }
 
-  if (normalized.includes('更快')) {
+  if (matchesAny(normalized, KW_FASTER)) {
     return `${basePrompt}，收缩画面复杂度，减少主体数量，优先稳定快速出图`
   }
 
-  if (normalized.includes('更便宜')) {
+  if (matchesAny(normalized, KW_CHEAPER)) {
     return `${basePrompt}，保持核心构图，弱化高成本细节，优先低成本稳定生成`
   }
 

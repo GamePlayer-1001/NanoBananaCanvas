@@ -15,7 +15,7 @@ import { Download, Ellipsis, Flag, Heart, Play, Sparkles, Star } from 'lucide-re
 import { toast } from 'sonner'
 
 import { Link, useRouter } from '@/i18n/navigation'
-import { useCloneWorkflow, useReportWorkflow, useToggleFavorite, useToggleLike } from '@/hooks/use-explore'
+import { ApiError, useCloneWorkflow, useReportWorkflow, useToggleFavorite, useToggleLike } from '@/hooks/use-explore'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -414,7 +414,13 @@ function CardDetailPanel({
           toast.success(tDetail('cloneSuccess'))
           router.push(`/canvas/${result.id}`)
         },
-        onError: () => toast.error(tDetail('cloneFailed')),
+        onError: (error) => {
+          if (error instanceof ApiError && error.status === 401) {
+            router.push('/sign-in')
+            return
+          }
+          toast.error(tDetail('cloneFailed'))
+        },
       },
     )
   }

@@ -33,15 +33,27 @@ interface ExploreListResponse<TItem = unknown> {
 
 /* ─── Fetcher ────────────────────────────────────────── */
 
+class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error?.message ?? `Request failed: ${res.status}`)
+    throw new ApiError(body.error?.message ?? `Request failed: ${res.status}`, res.status)
   }
   const json = await res.json()
   return json.data as T
 }
+
+export { ApiError }
 
 /* ─── Hooks ──────────────────────────────────────────── */
 

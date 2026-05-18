@@ -125,7 +125,7 @@ function buildInsertStatement(identityKey: string, profile: UserProfileInput, co
   }
 
   return {
-    sql: `INSERT INTO users (${fieldNames.join(', ')}) VALUES (${placeholders.join(', ')})`,
+    sql: `INSERT OR IGNORE INTO users (${fieldNames.join(', ')}) VALUES (${placeholders.join(', ')})`,
     values,
   }
 }

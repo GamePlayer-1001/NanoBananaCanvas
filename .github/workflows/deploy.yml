@@ -29,36 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false
-
-      - name: Enable Corepack pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@${{ env.PNPM_VERSION }} --activate
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir .pnpm-store
-
-      - name: Restore pnpm store cache
-        uses: actions/cache@v4
-        with:
-          path: .pnpm-store
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Restore Turbo cache
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'package.json', 'apps/**/package.json', 'packages/**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
-      - run: pnpm install --frozen-lockfile
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          restore-turbo-cache: 'true'
 
       - run: pnpm lint
 
@@ -118,34 +94,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false
-
-      - name: Enable Corepack pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@${{ env.PNPM_VERSION }} --activate
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir .pnpm-store
-
-      - name: Restore pnpm store cache
-        uses: actions/cache@v4
-        with:
-          path: .pnpm-store
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          pnpm-version: ${{ env.PNPM_VERSION }}
 
       - name: Download OpenNext artifact
         uses: actions/download-artifact@v4
         with:
           name: web-open-next
           path: apps/web/.open-next
-
-      - run: pnpm install --frozen-lockfile
 
       - name: Apply D1 schema migrations
         working-directory: apps/web

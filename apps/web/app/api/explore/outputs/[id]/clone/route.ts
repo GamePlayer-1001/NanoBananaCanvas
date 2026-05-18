@@ -7,7 +7,7 @@
 
 import { NextRequest } from 'next/server'
 
-import { requireAuth } from '@/lib/api/auth'
+import { requireAuthenticatedAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { requireEnv } from '@/lib/env'
@@ -24,25 +24,24 @@ interface PublishedOutputSource {
   data: string | null
 }
 
-async function readWorkflowJson(url: string) {
-  const resolvedUrl = url.startsWith('http://') || url.startsWith('https://')
-    ? url
-    : new URL(url, await requireEnv('NEXT_PUBLIC_APP_URL')).toString()
-  const response = await fetch(resolvedUrl)
-
-  if (!response.ok) {
-    throw new NotFoundError('Workflow JSON', resolvedUrl)
+async function readWorkflowJson(url: string): Promise<string | null> {
+  try {
+    const resolvedUrl = url.startsWith('http://') || url.startsWith('https://')
+      ? url
+      : new URL(url, await requireEnv('NEXT_PUBLIC_APP_URL')).toString()
+    const response = await fetch(resolvedUrl)
+    if (!response.ok) return null
+    const text = await response.text()
+    JSON.parse(text)
+    return text
+  } catch {
+    return null
   }
-
-  const text = await response.text()
-  JSON.parse(text)
-
-  return text
 }
 
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
-    const { userId } = await requireAuth()
+    const { userId } = await requireAuthenticatedAuth()
     const { id } = await params
     const db = await getDb()
 
@@ -62,12 +61,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
     }
 
     const workflowData =
-      source.data ??
-      (source.workflow_json_url ? await readWorkflowJson(source.workflow_json_url) : null)
-
-    if (!workflowData) {
-      throw new NotFoundError('Published output workflow source', id)
-    }
+      source.data ||
+      (source.workflow_json_url?.trim()
+        ? await readWorkflowJson(source.workflow_json_url.trim())
+        : null) ||
+      '{}'
 
     const newId = nanoid()
     await db

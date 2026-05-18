@@ -7,7 +7,7 @@
 
 import { NextRequest } from 'next/server'
 
-import { requireAuth } from '@/lib/api/auth'
+import { requireAuthenticatedAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
@@ -21,7 +21,7 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
-    const { userId } = await requireAuth()
+    const { userId } = await requireAuthenticatedAuth()
     const { id } = await params
     const db = await getDb()
 
@@ -39,10 +39,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const newId = nanoid()
     await db
       .prepare(
-        `INSERT INTO workflows (id, user_id, name, description, data)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO workflows (id, user_id, name, description, data, folder_id)
+         VALUES (?, ?, ?, ?, ?, NULL)`,
       )
-      .bind(newId, userId, `${source.name} (Copy)`, source.description, source.data)
+      .bind(newId, userId, `${source.name} (Copy)`, source.description, source.data || '{}')
       .run()
 
     // 原作品 clone_count++
