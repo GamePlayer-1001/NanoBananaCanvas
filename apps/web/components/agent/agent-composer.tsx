@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useRef, useState, type ClipboardEvent, type DragEvent } from 'react'
+import { useCallback, useMemo, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react'
 import { ArrowUp, Bot, Coins, ExternalLink, ImagePlus, KeyRound, Sparkles, X } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -24,6 +24,7 @@ import { useUpload } from '@/hooks/use-upload'
 import { validateUpload } from '@/lib/validations/upload'
 import type { AgentComposerAttachment } from '@/lib/agent/types'
 import type { PlatformModelVisualOption } from '@/lib/platform-models'
+import { AgentSlashCommandMenu, type SlashCommand } from './agent-slash-command-menu'
 
 export type AgentComposerExecutionMode = 'platform' | 'user_key'
 
@@ -66,7 +67,65 @@ export function AgentComposer({
   const [value, setValue] = useState('')
   const [attachments, setAttachments] = useState<AgentComposerAttachment[]>([])
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const { upload, uploading } = useUpload()
+
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false)
+  const [slashMenuIndex, setSlashMenuIndex] = useState(0)
+  const [slashStartIndex, setSlashStartIndex] = useState(0)
+  const [slashQuery, setSlashQuery] = useState('')
+
+  const allSlashCommands = useMemo<SlashCommand[]>(
+    () => [
+      {
+        command: '/Workflow',
+        label: t('slashWorkflowLabel'),
+        description: t('slashWorkflowDesc'),
+      },
+      {
+        command: '/Prompt',
+        label: t('slashPromptLabel'),
+        description: t('slashPromptDesc'),
+      },
+    ],
+    [t],
+  )
+
+  const filteredSlashCommands = useMemo(() => {
+    if (!slashQuery) return allSlashCommands
+    const q = slashQuery.toLowerCase()
+    return allSlashCommands.filter((cmd) => cmd.command.toLowerCase().slice(1).startsWith(q))
+  }, [allSlashCommands, slashQuery])
+
+  function getSlashContext(
+    text: string,
+    cursorPos: number,
+  ): { startIndex: number; query: string } | null {
+    const before = text.slice(0, cursorPos)
+    const match = /(^|[\s\n])(\/\w*)$/.exec(before)
+    if (!match) return null
+    const startIndex = match.index + match[1].length
+    return { startIndex, query: match[2].slice(1) }
+  }
+
+  const handleSlashSelect = useCallback(
+    (cmd: SlashCommand) => {
+      const after = value.slice(slashStartIndex)
+      const wordEnd = after.search(/[\s\n]/)
+      const rest = wordEnd === -1 ? '' : after.slice(wordEnd)
+      const before = value.slice(0, slashStartIndex)
+      const nextValue = before + cmd.command + (rest.startsWith(' ') || rest === '' ? rest || ' ' : ' ' + rest)
+      setValue(nextValue)
+      setSlashMenuOpen(false)
+      const newCursor = before.length + cmd.command.length + 1
+      setTimeout(() => {
+        if (!textareaRef.current) return
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(newCursor, newCursor)
+      }, 0)
+    },
+    [value, slashStartIndex],
+  )
 
   async function handleSubmit() {
     const nextValue = value.trim()
@@ -74,6 +133,7 @@ export function AgentComposer({
     onSubmit?.(nextValue, attachments)
     setValue('')
     setAttachments([])
+    setSlashMenuOpen(false)
   }
 
   const selectedModelLabel =
@@ -135,7 +195,16 @@ export function AgentComposer({
 
   return (
     <div className="space-y-2.5" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
-      <div className="overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+      <div className="relative">
+        {slashMenuOpen && filteredSlashCommands.length > 0 ? (
+          <AgentSlashCommandMenu
+            commands={filteredSlashCommands}
+            activeIndex={slashMenuIndex}
+            onSelect={handleSlashSelect}
+            onDismiss={() => setSlashMenuOpen(false)}
+          />
+        ) : null}
+        <div className="overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2.5">
           {executionMode === 'platform' ? (
             <div className="min-w-[172px]">
@@ -253,14 +322,53 @@ export function AgentComposer({
           <div className="flex items-end gap-3">
             <div className="relative flex-1">
               <textarea
+                ref={textareaRef}
                 value={value}
                 disabled={disabled}
                 rows={1}
                 placeholder={resolvedPlaceholder}
                 className="max-h-36 min-h-[72px] w-full resize-none border-0 bg-transparent pr-18 pb-8 text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-                onChange={(event) => setValue(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                  const nextValue = event.target.value
+                  setValue(nextValue)
+                  const cursorPos = event.target.selectionStart ?? nextValue.length
+                  const slashCtx = getSlashContext(nextValue, cursorPos)
+                  if (slashCtx) {
+                    setSlashStartIndex(slashCtx.startIndex)
+                    setSlashQuery(slashCtx.query)
+                    setSlashMenuOpen(true)
+                    setSlashMenuIndex(0)
+                  } else {
+                    setSlashMenuOpen(false)
+                  }
+                }}
                 onPaste={(event) => void handlePaste(event)}
-                onKeyDown={(event) => {
+                onBlur={() => setSlashMenuOpen(false)}
+                onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+                  if (slashMenuOpen && filteredSlashCommands.length > 0) {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault()
+                      setSlashMenuIndex((i) => (i + 1) % filteredSlashCommands.length)
+                      return
+                    }
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault()
+                      setSlashMenuIndex(
+                        (i) => (i - 1 + filteredSlashCommands.length) % filteredSlashCommands.length,
+                      )
+                      return
+                    }
+                    if (event.key === 'Tab' || (event.key === 'Enter' && !event.shiftKey)) {
+                      event.preventDefault()
+                      handleSlashSelect(filteredSlashCommands[slashMenuIndex])
+                      return
+                    }
+                    if (event.key === 'Escape') {
+                      event.preventDefault()
+                      setSlashMenuOpen(false)
+                      return
+                    }
+                  }
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault()
                     void handleSubmit()
@@ -311,6 +419,7 @@ export function AgentComposer({
         </div>
       </div>
 
+      </div>
       <p className="px-1 text-[11px] leading-5 text-slate-400">{resolvedHint}</p>
     </div>
   )
