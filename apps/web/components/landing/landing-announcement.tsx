@@ -70,7 +70,7 @@ export function LandingAnnouncement() {
       />
 
       {/* Panel */}
-      <div className="relative z-10 flex w-full max-w-[520px] flex-col rounded-2xl bg-white shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+      <div className="relative z-10 flex w-full max-w-[780px] flex-col rounded-2xl bg-white shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
           <div className="flex items-center gap-2.5">
