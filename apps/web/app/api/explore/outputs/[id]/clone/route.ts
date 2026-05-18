@@ -10,8 +10,8 @@ import { NextRequest } from 'next/server'
 import { requireAuthenticatedAuth } from '@/lib/api/auth'
 import { apiOk, handleApiError } from '@/lib/api/response'
 import { getDb } from '@/lib/db'
-import { requireEnv } from '@/lib/env'
 import { NotFoundError } from '@/lib/errors'
+import { getR2 } from '@/lib/r2'
 import { nanoid } from '@/lib/nanoid'
 
 type Params = { params: Promise<{ id: string }> }
@@ -24,16 +24,27 @@ interface PublishedOutputSource {
   data: string | null
 }
 
+const INTERNAL_FILES_PREFIX = '/api/files/'
+
 async function readWorkflowJson(url: string): Promise<string | null> {
   try {
-    const resolvedUrl = url.startsWith('http://') || url.startsWith('https://')
-      ? url
-      : new URL(url, await requireEnv('NEXT_PUBLIC_APP_URL')).toString()
-    const response = await fetch(resolvedUrl)
-    if (!response.ok) return null
-    const text = await response.text()
-    JSON.parse(text)
-    return text
+    if (url.startsWith(INTERNAL_FILES_PREFIX)) {
+      const key = url.slice(INTERNAL_FILES_PREFIX.length)
+      const r2 = await getR2()
+      const object = await r2.get(key)
+      if (!object) return null
+      const text = await object.text()
+      JSON.parse(text)
+      return text
+    }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const response = await fetch(url)
+      if (!response.ok) return null
+      const text = await response.text()
+      JSON.parse(text)
+      return text
+    }
+    return null
   } catch {
     return null
   }
