@@ -20,7 +20,6 @@ concurrency:
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '10.26.2'
-  PLAYWRIGHT_CACHE_DIR: ~/.cache/ms-playwright
 
 jobs:
   # ── CI: 代码质量检查 (每次 push/PR) ────────
@@ -61,19 +60,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Restore Playwright browser cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PLAYWRIGHT_CACHE_DIR }}
-          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml', 'e2e/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - run: pnpm --filter @nano-banana/e2e exec playwright install --with-deps chromium
-
       - run: pnpm lint
 
-      - run: pnpm test
+      - run: pnpm turbo run test --filter='!@nano-banana/e2e'
         env:
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
