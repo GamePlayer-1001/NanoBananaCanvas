@@ -35,6 +35,7 @@ type ConversationItem =
   | {
       id: string
       type: 'prompt-confirmation'
+      variant?: 'confirmation' | 'result'
       payloadId?: string
       originalIntent: string
       visualProposal: string
@@ -218,6 +219,7 @@ export function AgentConversation({
           return (
             <AgentPromptCompareCard
               key={promptItem.id}
+              variant={promptItem.variant}
               payloadId={promptItem.payloadId}
               originalIntent={promptItem.originalIntent}
               visualProposal={promptItem.visualProposal}

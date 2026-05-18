@@ -257,6 +257,11 @@ export interface AgentPlan {
   operations: WorkflowOperation[]
   promptConfirmation?: PromptConfirmationPayload
   templateContext?: TemplateConversationSummary
+  metadata?: {
+    workflowReferenceKind?: 'workflow_reference' | 'content_reference' | 'uncertain'
+    workflowReferenceSummary?: string
+    workflowReferenceNodeTypes?: string[]
+  }
 }
 
 export type AgentMessage =
@@ -305,6 +310,13 @@ export type AgentMessage =
   | {
       id: string
       role: 'prompt-confirmation'
+      payloadId: string
+      payload: PromptConfirmationPayload
+      createdAt: string
+    }
+  | {
+      id: string
+      role: 'prompt-result'
       payloadId: string
       payload: PromptConfirmationPayload
       createdAt: string
@@ -375,6 +387,7 @@ export interface AgentPlanRequest {
   canvasSummary: CanvasSummary
   locale: string
   assistantRuntime?: AgentAssistantRuntime
+  workflowReference?: 'workflow_reference' | 'content_reference' | 'uncertain'
   attachments?: Array<{
     kind: 'image'
     url: string

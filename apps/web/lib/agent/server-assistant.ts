@@ -9,6 +9,7 @@
 import { AIServiceError, ErrorCode } from '@/lib/errors'
 import { resolvePlatformRuntimeModel } from '@/lib/platform-runtime'
 import { createPlatformTextProvider, getPlatformSupplierApiKey } from '@/services/ai'
+import type { ContentPart } from '@/services/ai/types'
 import type { AgentAssistantRuntime } from './types'
 
 const SYSTEM_PROMPT =
@@ -17,6 +18,7 @@ const SYSTEM_PROMPT =
 export async function callAgentAssistantText(options: {
   prompt: string
   assistantRuntime?: AgentAssistantRuntime
+  imageUrls?: string[]
 }) {
   const runtimeModel = resolvePlatformRuntimeModel({
     category: 'text',
@@ -25,6 +27,7 @@ export async function callAgentAssistantText(options: {
   })
   const provider = createPlatformTextProvider(runtimeModel.supplierId)
   const apiKey = await getPlatformSupplierApiKey(runtimeModel.supplierId)
+  const userContent = buildUserContent(options.prompt, options.imageUrls)
   const result = await provider.chat({
     model: runtimeModel.modelId,
     apiKey,
@@ -32,7 +35,7 @@ export async function callAgentAssistantText(options: {
     maxTokens: 1400,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: options.prompt },
+      { role: 'user', content: userContent },
     ],
   })
 
@@ -42,6 +45,7 @@ export async function callAgentAssistantText(options: {
 export async function callAgentAssistantJson<T>(options: {
   prompt: string
   assistantRuntime?: AgentAssistantRuntime
+  imageUrls?: string[]
 }): Promise<T | null> {
   const text = await callAgentAssistantText(options)
   const normalized = unwrapJsonFence(text)
@@ -64,6 +68,22 @@ function unwrapJsonFence(value: string) {
     .replace(/^```\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim()
+}
+
+function buildUserContent(prompt: string, imageUrls?: string[]) {
+  if (!imageUrls?.length) {
+    return prompt
+  }
+
+  const parts: ContentPart[] = [{ type: 'text', text: prompt }]
+  for (const imageUrl of imageUrls) {
+    parts.push({
+      type: 'image_url',
+      image_url: { url: imageUrl },
+    })
+  }
+
+  return parts
 }
 
 export function ensureAgentJson<T>(

@@ -41,6 +41,37 @@ interface UseAgentSessionOptions {
   locale: string
 }
 
+type AgentCommandMode = 'workflow' | 'prompt' | 'chat'
+type AgentRequestKind = 'plan' | 'diagnose' | 'explain' | 'optimize'
+type ChatFillIntent =
+  | {
+      kind: 'text'
+      nodeId: string
+      text: string
+      nodeLabel?: string
+    }
+  | {
+      kind: 'image'
+      nodeId: string
+      imageUrl: string
+      imageName?: string
+      nodeLabel?: string
+    }
+type ChatFillResolution =
+  | {
+      status: 'ready'
+      intent: ChatFillIntent
+    }
+  | {
+      status: 'ambiguous'
+      kind: 'text' | 'image'
+    }
+  | {
+      status: 'missing-target'
+      kind: 'text' | 'image'
+    }
+type WorkflowReferenceKind = 'workflow_reference' | 'content_reference' | 'uncertain'
+
 export function useAgentSession({
   workflowId,
   workflowName,
@@ -144,7 +175,8 @@ export function useAgentSession({
     assistantRuntime?: AgentAssistantRuntime,
     attachments: AgentComposerAttachment[] = [],
   ) {
-    const value = rawValue.trim()
+    const normalizedInput = normalizeAgentInput(rawValue)
+    const value = normalizedInput.message
     if ((!value && attachments.length === 0) || isSubmitting) return
 
     if (value) {
@@ -162,14 +194,16 @@ export function useAgentSession({
     appendMessage({
       id: crypto.randomUUID(),
       role: 'user',
-      text: value,
+      text: normalizedInput.displayText,
       attachments,
       createdAt: new Date().toISOString(),
     })
 
     try {
       setStatus('understanding')
-      const createLikeMessage = requestKindMatchesCreateLikeMessage(value)
+      const createLikeMessage =
+        normalizedInput.commandMode === 'workflow' ||
+        requestKindMatchesCreateLikeMessage(value)
       if (!createLikeMessage) {
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
       }
@@ -195,21 +229,54 @@ export function useAgentSession({
       void safeRecordAudit({
         eventType: 'message_sent',
         mode,
-        userMessage: value,
+        userMessage: normalizedInput.displayText,
         canvasSummary,
         targetNodeId: canvasSummary.selectionContext?.nodeId,
         metadata: {
           attachmentCount: attachments.length,
+          commandMode: normalizedInput.commandMode,
         },
       })
 
-      const requestKind = resolveRequestKind(value, mode)
+      if (normalizedInput.commandMode === 'prompt') {
+        await handlePromptCommand({
+          userMessage: value,
+          displayText: normalizedInput.displayText,
+          canvasSummary,
+          assistantRuntime,
+          attachments,
+        })
+        return
+      }
+
+      if (normalizedInput.commandMode === 'chat') {
+        await handleChatMessage({
+          userMessage: value,
+          displayText: normalizedInput.displayText,
+          canvasSummary,
+          assistantRuntime,
+          attachments,
+        })
+        return
+      }
+
+      const workflowAttachmentContext = await classifyWorkflowReferenceInput({
+        userMessage: value,
+        attachments,
+        assistantRuntime,
+      })
+      const workflowUserMessage = buildWorkflowUserMessage(
+        value,
+        workflowAttachmentContext.kind,
+        attachments,
+      )
+      const requestKind = resolveRequestKind(workflowUserMessage, mode)
 
       if (requestKind === 'diagnose') {
         setStatus('diagnosing')
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.diagnosing))
         const diagnosis = await diagnoseCanvas({
-          userMessage: value,
+          userMessage: workflowUserMessage,
           canvasSummary,
           locale,
           assistantRuntime,
@@ -246,7 +313,7 @@ export function useAgentSession({
         if (diagnosis.suggestedOperations?.length) {
           const nextPlan: AgentPlan = {
             id: crypto.randomUUID(),
-            goal: value,
+            goal: normalizedInput.displayText,
             mode: 'diagnose',
             summary: diagnosis.summary,
             reasons: [diagnosis.rootCause, diagnosis.repairSuggestion],
@@ -272,7 +339,7 @@ export function useAgentSession({
         setStatus('optimizing')
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.diagnosing))
         const diagnosis = await optimizeCanvas({
-          userMessage: value,
+          userMessage: workflowUserMessage,
           canvasSummary,
           locale,
           assistantRuntime,
@@ -309,7 +376,7 @@ export function useAgentSession({
         if (diagnosis.suggestedOperations?.length) {
           const nextPlan: AgentPlan = {
             id: crypto.randomUUID(),
-            goal: value,
+            goal: normalizedInput.displayText,
             mode: 'optimize',
             intent:
               diagnosis.dimension === 'speed'
@@ -343,7 +410,7 @@ export function useAgentSession({
       if (requestKind === 'explain') {
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
         const answer = await explainCanvas({
-          userMessage: value,
+          userMessage: workflowUserMessage,
           canvasSummary,
           locale,
           assistantRuntime,
@@ -382,11 +449,12 @@ export function useAgentSession({
           : buildAgentPlan
 
       const planned = await planBuilder({
-        userMessage: value,
-        mode,
+        userMessage: workflowUserMessage,
+        mode: resolveWorkflowMode(mode, canvasSummary.nodeCount),
         canvasSummary,
         locale,
         assistantRuntime,
+        workflowReference: workflowAttachmentContext.kind,
         attachments,
       })
       const plan = 'plan' in planned ? planned.plan : planned
@@ -427,7 +495,7 @@ export function useAgentSession({
       setPendingPlanAlternatives([nextPlan, ...alternatives])
       rememberConversationTurn({
         id: crypto.randomUUID(),
-        userMessage: value,
+        userMessage: normalizedInput.displayText,
         summary: nextPlan.summary,
         selectedNodeId: selectionContext?.nodeId,
         selectedNodeLabel: selectionContext?.nodeLabel,
@@ -436,7 +504,7 @@ export function useAgentSession({
       void safeRecordAudit({
         eventType: 'plan_generated',
         mode: nextPlan.mode,
-        userMessage: value,
+        userMessage: normalizedInput.displayText,
         canvasSummary,
         plan: nextPlan,
         alternatives,
@@ -444,6 +512,7 @@ export function useAgentSession({
         targetNodeId: canvasSummary.selectionContext?.nodeId,
         metadata: {
           alternativeCount: alternatives.length,
+          workflowReferenceKind: workflowAttachmentContext.kind,
         },
       })
 
@@ -556,6 +625,226 @@ export function useAgentSession({
       text,
       createdAt: new Date().toISOString(),
     })
+  }
+
+  async function handlePromptCommand(input: {
+    userMessage: string
+    displayText: string
+    canvasSummary: ReturnType<typeof summarizeCanvas>
+    assistantRuntime?: AgentAssistantRuntime
+    attachments: AgentComposerAttachment[]
+  }) {
+    setStatus('planning')
+    appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
+
+    const payload = await refinePromptConfirmation({
+      originalIntent: input.userMessage,
+      styleDirection: inferPromptStyleDirection(input.userMessage),
+      attachedImageUrls: input.attachments.map((item) => item.url),
+    })
+
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: tAgent('messagePromptReady'),
+      createdAt: new Date().toISOString(),
+    })
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'prompt-result',
+      payloadId: payload.id,
+      payload,
+      createdAt: new Date().toISOString(),
+    })
+    void safeRecordAudit({
+      eventType: 'plan_generated',
+      mode: 'update',
+      userMessage: input.displayText,
+      canvasSummary: input.canvasSummary,
+      metadata: {
+        commandMode: 'prompt',
+        attachmentCount: input.attachments.length,
+      },
+    })
+    setStatus('idle')
+  }
+
+  async function handleChatMessage(input: {
+    userMessage: string
+    displayText: string
+    canvasSummary: ReturnType<typeof summarizeCanvas>
+    assistantRuntime?: AgentAssistantRuntime
+    attachments: AgentComposerAttachment[]
+  }) {
+    const chatFillResolution = detectChatFillIntent({
+      userMessage: input.userMessage,
+      attachments: input.attachments,
+      canvasSummary: input.canvasSummary,
+    })
+
+    if (chatFillResolution?.status === 'ready') {
+      const chatFillIntent = chatFillResolution.intent
+      if (chatFillIntent.kind === 'text') {
+        fillTextInputNode(chatFillIntent.nodeId, chatFillIntent.text)
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: `已把这段文本放入${formatNodeLabel(chatFillIntent.nodeLabel, '文本输入节点')}。`,
+          createdAt: new Date().toISOString(),
+        })
+      } else {
+        fillImageInputNode(chatFillIntent.nodeId, chatFillIntent.imageUrl)
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: `已把图片放入${formatNodeLabel(chatFillIntent.nodeLabel, '图片输入节点')}。`,
+          createdAt: new Date().toISOString(),
+        })
+      }
+      void safeRecordAudit({
+        eventType: 'message_sent',
+        mode: 'update',
+        userMessage: input.displayText,
+        canvasSummary: input.canvasSummary,
+        targetNodeId: chatFillIntent.nodeId,
+        metadata: {
+          commandMode: 'chat',
+          chatOnly: true,
+          fillKind: chatFillIntent.kind,
+        },
+      })
+      setStatus('idle')
+      return
+    }
+
+    if (chatFillResolution?.status === 'ambiguous') {
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text:
+          chatFillResolution.kind === 'text'
+            ? '我知道你是想把文字写进节点里，但当前有多个文本输入节点。你可以先选中目标节点，或者告诉我要放到哪一个文本节点。'
+            : '我知道你是想把图片放进节点里，但当前有多个图片输入节点。你可以先选中目标节点，或者告诉我要放到哪一个图片节点。',
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
+    if (chatFillResolution?.status === 'missing-target') {
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text:
+          chatFillResolution.kind === 'text'
+            ? '我理解你想把文字放进节点里，但当前画板里没有可直接写入的文本输入节点。我先不自动建流；如果你需要，我可以继续帮你放进指定节点，或者你用 /Workflow 让我搭一个。'
+            : '我理解你想把图片放进节点里，但当前画板里没有可直接写入的图片输入节点。我先不自动建流；如果你需要，我可以继续帮你放进指定节点，或者你用 /Workflow 让我搭一个。',
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
+    if (looksLikeNodeScopedCollaboration(input.userMessage, input.canvasSummary)) {
+      const nodeScopedReply =
+        buildNodeScopedReply(input.userMessage, input.canvasSummary) ??
+        ((await runAssistantModel(
+          input.assistantRuntime,
+          [
+            '你现在处于 Nano Banana Canvas 的节点协作模式。',
+            '要求：',
+            '1. 只围绕当前选中节点给建议，不要生成工作流提案。',
+            '2. 不要假装已经修改节点。',
+            '3. 给用户局部可执行建议，比如该调什么、该看什么、下一句该怎么写。',
+            input.canvasSummary.selectionContext?.nodeLabel
+              ? `当前选中节点：${input.canvasSummary.selectionContext.nodeLabel}`
+              : '当前没有节点标签。',
+            input.canvasSummary.selectionContext?.nodeType
+              ? `节点类型：${input.canvasSummary.selectionContext.nodeType}`
+              : '',
+            `用户消息：${input.userMessage}`,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        )) ??
+          '我先只围绕当前选中节点和你一起看，不动图。你可以继续问我这个节点该怎么调、为什么这么接、或者这一步更适合写什么。')
+
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: nodeScopedReply,
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
+    if (looksLikeExplainSelectionQuestion(input.userMessage, input.canvasSummary)) {
+      appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.explaining))
+      const answer = await explainCanvas({
+        userMessage: input.userMessage,
+        canvasSummary: input.canvasSummary,
+        locale,
+        assistantRuntime: input.assistantRuntime,
+      })
+      const aiAnswer =
+        (await runAssistantModel(
+          input.assistantRuntime,
+          [
+            '请基于下面这份节点解释，用自然、简洁、对话化的中文回答用户。',
+            '要求：',
+            '1. 只围绕当前选中节点回答。',
+            '2. 不要主动生成工作流提案。',
+            '3. 保持友好、准确。',
+            '',
+            answer,
+          ].join('\n'),
+        )) ?? answer
+
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: aiAnswer,
+        createdAt: new Date().toISOString(),
+      })
+      setStatus('idle')
+      return
+    }
+
+    const chatReply =
+      (await runAssistantModel(
+        input.assistantRuntime,
+        [
+          '你现在处于 Nano Banana Canvas 的闲聊模式。',
+          '约束：',
+          '1. 只回答用户问题，不生成工作流提案。',
+          '2. 不要建议已经执行的修改。',
+          '3. 可以结合当前画板上下文，但不要伪造细节。',
+          `当前节点数：${input.canvasSummary.nodeCount}`,
+          input.canvasSummary.selectionContext?.nodeLabel
+            ? `当前选中节点：${input.canvasSummary.selectionContext.nodeLabel}`
+            : '当前没有选中节点。',
+          `用户消息：${input.userMessage}`,
+        ].join('\n'),
+      )) ?? tAgent('messageChatFallback')
+
+    appendMessage({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: chatReply,
+      createdAt: new Date().toISOString(),
+    })
+    void safeRecordAudit({
+      eventType: 'message_sent',
+      mode: 'update',
+      userMessage: input.displayText,
+      canvasSummary: input.canvasSummary,
+      metadata: {
+        commandMode: 'chat',
+        chatOnly: true,
+      },
+    })
+    setStatus('idle')
   }
 
   async function applyPendingPlan(
@@ -1036,6 +1325,176 @@ function requestKindMatchesCreateLikeMessage(value: string) {
   )
 }
 
+async function classifyWorkflowReferenceInput(input: {
+  userMessage: string
+  attachments: AgentComposerAttachment[]
+  assistantRuntime?: AgentAssistantRuntime
+}): Promise<{ kind: WorkflowReferenceKind }> {
+  if (input.attachments.length === 0) {
+    return { kind: 'content_reference' }
+  }
+
+  const normalized = normalizeIntentText(input.userMessage)
+  if (mentionsWorkflowDiagramReference(normalized)) {
+    return { kind: 'workflow_reference' }
+  }
+
+  if (!input.assistantRuntime) {
+    return { kind: 'content_reference' }
+  }
+
+  return { kind: 'content_reference' }
+}
+
+function normalizeAgentInput(rawValue: string) {
+  const trimmed = rawValue.trim()
+  const normalizedSlash = trimmed.replace(/^／/, '/')
+  const match = normalizedSlash.match(/^\/(workflow|prompt)\b/i)
+
+  if (!match) {
+    return {
+      commandMode: 'chat' as AgentCommandMode,
+      message: trimmed,
+      displayText: trimmed,
+    }
+  }
+
+  const command = match[1].toLowerCase() as 'workflow' | 'prompt'
+  const message = normalizedSlash.slice(match[0].length).trim()
+  return {
+    commandMode: command,
+    message,
+    displayText: normalizedSlash,
+  }
+}
+
+function resolveWorkflowMode(mode: AgentMode, nodeCount: number): AgentMode {
+  if (mode === 'template') {
+    return 'template'
+  }
+
+  if (nodeCount === 0) {
+    return 'create'
+  }
+
+  return mode === 'create' ? 'update' : mode
+}
+
+function looksLikeExplainSelectionQuestion(
+  value: string,
+  canvasSummary: ReturnType<typeof summarizeCanvas>,
+) {
+  if (!canvasSummary.selectionContext?.nodeId) {
+    return false
+  }
+
+  const normalized = normalizeIntentText(value)
+  const nodeLabel = normalizeIntentText(canvasSummary.selectionContext.nodeLabel ?? '')
+  return (
+    normalized.includes('这个节点') ||
+    normalized.includes('当前节点') ||
+    normalized.includes('选中的节点') ||
+    normalized.includes('这里') ||
+    normalized.includes('这个参数') ||
+    normalized.includes('这个配置') ||
+    normalized.includes('这个 prompt') ||
+    normalized.includes('这个prompt') ||
+    normalized.includes('这个模型') ||
+    normalized.includes('这个节点是做什么') ||
+    normalized.includes('这个节点怎么用') ||
+    normalized.includes('这个节点有什么用') ||
+    normalized.includes('为什么这么连') ||
+    normalized.includes('为什么这样连') ||
+    normalized.includes('它为什么') ||
+    normalized.includes('它是干嘛') ||
+    normalized.includes('它在做什么') ||
+    normalized.includes('什么意思') ||
+    (nodeLabel.length > 0 &&
+      (normalized.includes(nodeLabel) &&
+        (normalized.includes('为什么') ||
+          normalized.includes('做什么') ||
+          normalized.includes('干嘛') ||
+          normalized.includes('作用') ||
+          normalized.includes('意思'))))
+  )
+}
+
+function looksLikeNodeScopedCollaboration(
+  value: string,
+  canvasSummary: ReturnType<typeof summarizeCanvas>,
+) {
+  if (!canvasSummary.selectionContext?.nodeId) {
+    return false
+  }
+
+  const normalized = normalizeIntentText(value)
+  return (
+    normalized.includes('怎么调') ||
+    normalized.includes('怎么改') ||
+    normalized.includes('怎么写') ||
+    normalized.includes('这里填什么') ||
+    normalized.includes('这个节点适合') ||
+    normalized.includes('这一格填什么') ||
+    normalized.includes('这个参数怎么设') ||
+    normalized.includes('这个节点下一步') ||
+    normalized.includes('帮我看看这个节点')
+  )
+}
+
+function buildNodeScopedReply(
+  userMessage: string,
+  canvasSummary: ReturnType<typeof summarizeCanvas>,
+) {
+  const selection = canvasSummary.selectionContext
+  if (!selection?.nodeId || !selection.nodeType) {
+    return null
+  }
+
+  const normalized = normalizeIntentText(userMessage)
+  const nodeLabel = selection.nodeLabel ? `节点「${selection.nodeLabel}」` : '这个节点'
+
+  if (selection.nodeType === 'text-input') {
+    if (normalized.includes('怎么调') || normalized.includes('怎么写') || normalized.includes('填什么')) {
+      return `${nodeLabel}更适合先把目标说清楚，再补风格和约束。一个稳定顺序是：主体/任务 -> 场景 -> 风格 -> 细节要求 -> 限制条件。你可以先把一句核心目标写短一点，我再陪你往下收。`
+    }
+    return `${nodeLabel}主要决定下游拿到的原始意图。这里优先保证信息完整、句子别太散，先把“想生成什么”和“最重要的限制”写稳。`
+  }
+
+  if (selection.nodeType === 'image-gen' || selection.nodeType === 'video-gen') {
+    if (normalized.includes('怎么调') || normalized.includes('参数')) {
+      return `${nodeLabel}优先看三件事：输入 prompt 是否够清楚、模型/质量档位是否匹配目标、输入参考图有没有接对。想先稳结果，就先少改参数，先把 prompt 和输入链路对齐。`
+    }
+    return `${nodeLabel}是主生成节点，最容易受上游 prompt、参考图和模型规格影响。这里先别同时改很多参数，最好一次只动一类变量。`
+  }
+
+  if (selection.nodeType === 'image-input') {
+    return `${nodeLabel}主要影响参考图约束。这里先确认放进去的是不是你真想参考的那一张，再看下游生成节点有没有正确接到 image-in。`
+  }
+
+  if (selection.nodeType === 'llm') {
+    return `${nodeLabel}更适合拆清“输入是什么、要产出什么格式、口吻要不要固定”。如果你觉得结果飘，通常先收紧输出格式和任务边界会更稳。`
+  }
+
+  if (selection.nodeType === 'display') {
+    return `${nodeLabel}本身不决定生成质量，它主要帮助你检查上游有没有把结果正确传下来。如果这里没东西，优先回头看上游连线和输出句柄。`
+  }
+
+  return null
+}
+
+function inferPromptStyleDirection(value: string) {
+  if (value.includes('写实') || value.includes('真实')) {
+    return '更写实'
+  }
+  if (value.includes('动漫') || value.includes('二次元')) {
+    return '更动漫'
+  }
+  if (value.includes('商业') || value.includes('广告')) {
+    return '更商业'
+  }
+  return undefined
+}
+
 function extractFocusNodeIds(plan: AgentPlan) {
   return plan.operations
     .filter((operation): operation is Extract<typeof plan.operations[number], { type: 'focus_nodes' }> =>
@@ -1172,8 +1631,8 @@ function resolvePromptTargetWithNodeMap(
 function resolveRequestKind(
   userMessage: string,
   mode: AgentMode,
-): 'plan' | 'diagnose' | 'explain' | 'optimize' {
-  const normalized = userMessage.trim().toLowerCase()
+): AgentRequestKind {
+  const normalized = normalizeIntentText(userMessage)
 
   if (mode === 'diagnose') {
     return 'diagnose'
@@ -1213,4 +1672,221 @@ function resolveRequestKind(
   }
 
   return 'plan'
+}
+
+function detectChatFillIntent(input: {
+  userMessage: string
+  attachments: AgentComposerAttachment[]
+  canvasSummary: ReturnType<typeof summarizeCanvas>
+}): ChatFillResolution | null {
+  const normalized = normalizeIntentText(input.userMessage)
+  const flowState = useFlowStore.getState()
+  const selectedNodeId = input.canvasSummary.selectionContext?.nodeId
+
+  if (input.attachments.length > 0 && mentionsImageFillIntent(normalized)) {
+    const imageNode = resolveSingleTargetNode({
+      selectedNodeId,
+      candidateNodeType: 'image-input',
+      fallbackNodeType: 'image-input',
+      nodes: flowState.nodes,
+    })
+    if (imageNode.status !== 'ready') {
+      return imageNode.status === 'ambiguous'
+        ? { status: 'ambiguous', kind: 'image' }
+        : { status: 'missing-target', kind: 'image' }
+    }
+
+    return {
+      status: 'ready',
+      intent: {
+        kind: 'image',
+        nodeId: imageNode.node.id,
+        imageUrl: input.attachments[0].url,
+        imageName: input.attachments[0].name,
+        nodeLabel: extractNodeLabel(imageNode.node.data),
+      },
+    }
+  }
+
+  if (!input.userMessage.trim() || !mentionsTextFillIntent(normalized)) {
+    return null
+  }
+
+  const textNode = resolveSingleTargetNode({
+    selectedNodeId,
+    candidateNodeType: 'text-input',
+    fallbackNodeType: 'text-input',
+    nodes: flowState.nodes,
+  })
+  if (textNode.status !== 'ready') {
+    return textNode.status === 'ambiguous'
+      ? { status: 'ambiguous', kind: 'text' }
+      : { status: 'missing-target', kind: 'text' }
+  }
+
+  return {
+    status: 'ready',
+    intent: {
+      kind: 'text',
+      nodeId: textNode.node.id,
+      text: extractTextFillContent(input.userMessage),
+      nodeLabel: extractNodeLabel(textNode.node.data),
+    },
+  }
+}
+
+function resolveSingleTargetNode(input: {
+  selectedNodeId?: string
+  candidateNodeType: string
+  fallbackNodeType: string
+  nodes: ReturnType<typeof useFlowStore.getState>['nodes']
+}) {
+  if (input.selectedNodeId) {
+    const selectedNode = input.nodes.find((node) => node.id === input.selectedNodeId)
+    if (selectedNode?.type === input.candidateNodeType) {
+      return {
+        status: 'ready' as const,
+        node: selectedNode,
+      }
+    }
+    return {
+      status: 'missing-target' as const,
+    }
+  }
+
+  const candidates = input.nodes.filter((node) => node.type === input.fallbackNodeType)
+  if (candidates.length === 0) {
+    return {
+      status: 'missing-target' as const,
+    }
+  }
+  if (candidates.length > 1) {
+    return {
+      status: 'ambiguous' as const,
+    }
+  }
+  return {
+    status: 'ready' as const,
+    node: candidates[0],
+  }
+}
+
+function fillTextInputNode(nodeId: string, text: string) {
+  const { nodes, updateNodeData } = useFlowStore.getState()
+  const node = nodes.find((item) => item.id === nodeId)
+  const currentConfig = isRecord(node?.data?.config) ? node.data.config : {}
+  updateNodeData(nodeId, {
+    config: {
+      ...currentConfig,
+      text,
+    },
+  })
+}
+
+function fillImageInputNode(nodeId: string, imageUrl: string) {
+  const { nodes, updateNodeData } = useFlowStore.getState()
+  const node = nodes.find((item) => item.id === nodeId)
+  const currentConfig = isRecord(node?.data?.config) ? node.data.config : {}
+  updateNodeData(nodeId, {
+    config: {
+      ...currentConfig,
+      imageUrl,
+    },
+  })
+}
+
+function mentionsTextFillIntent(normalized: string) {
+  return (
+    normalized.includes('放进') ||
+    normalized.includes('填到') ||
+    normalized.includes('填入') ||
+    normalized.includes('写入') ||
+    normalized.includes('放到') ||
+    normalized.includes('放入')
+  )
+}
+
+function mentionsImageFillIntent(normalized: string) {
+  return mentionsTextFillIntent(normalized) || normalized.includes('用这张图')
+}
+
+function mentionsWorkflowDiagramReference(normalized: string) {
+  return (
+    normalized.includes('参考这个工作流') ||
+    normalized.includes('参考这张工作流图') ||
+    normalized.includes('参考这个流程图') ||
+    normalized.includes('照着这个工作流') ||
+    normalized.includes('复刻这个工作流') ||
+    normalized.includes('按这个流程图') ||
+    normalized.includes('按照这张工作流图') ||
+    normalized.includes('根据这张工作流图')
+  )
+}
+
+function extractTextFillContent(userMessage: string) {
+  const trimmed = userMessage.trim()
+  const quotedMatches = [
+    ...trimmed.matchAll(/["“](.*?)["”]/g),
+    ...trimmed.matchAll(/[「『](.*?)[」』]/g),
+  ]
+  const quotedText = quotedMatches
+    .map((match) => match[1]?.trim())
+    .find((value) => Boolean(value))
+  if (quotedText) {
+    return quotedText
+  }
+
+  const separators = ['：', ':', '为', '成']
+  for (const separator of separators) {
+    const index = trimmed.indexOf(separator)
+    if (index >= 0) {
+      const candidate = trimmed.slice(index + separator.length).trim()
+      if (candidate) {
+        return candidate
+      }
+    }
+  }
+
+  return trimmed
+}
+
+function buildWorkflowUserMessage(
+  userMessage: string,
+  referenceKind: WorkflowReferenceKind,
+  attachments: AgentComposerAttachment[],
+) {
+  const trimmed = userMessage.trim()
+  if (referenceKind === 'workflow_reference') {
+    const suffix =
+      attachments.length > 0
+        ? '我上传了一张工作流参考图，请优先按这张图的结构来生成或复刻画板工作流提案。'
+        : ''
+    return [trimmed, suffix].filter(Boolean).join('\n')
+  }
+
+  if (!trimmed && attachments.length > 0) {
+    return '请基于我上传的参考图片生成合适的工作流提案，并把图片视为内容参考输入。'
+  }
+
+  return trimmed
+}
+
+function formatNodeLabel(nodeLabel: string | undefined, fallback: string) {
+  if (!nodeLabel) {
+    return fallback
+  }
+
+  return `节点「${nodeLabel}」`
+}
+
+function extractNodeLabel(data: unknown) {
+  if (!isRecord(data)) {
+    return undefined
+  }
+
+  return typeof data.label === 'string' ? data.label : undefined
+}
+
+function normalizeIntentText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, '')
 }

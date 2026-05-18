@@ -7,6 +7,16 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/lib/agent/server-assistant', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/agent/server-assistant')>(
+    '@/lib/agent/server-assistant',
+  )
+  return {
+    ...actual,
+    callAgentAssistantJson: vi.fn(),
+  }
+})
+
 vi.mock('@/lib/api/auth', () => ({
   requireAuth: vi.fn(),
 }))
@@ -16,6 +26,7 @@ vi.mock('@/lib/nanoid', () => ({
 }))
 
 import { requireAuth } from '@/lib/api/auth'
+import { callAgentAssistantJson } from '@/lib/agent/server-assistant'
 import { nanoid } from '@/lib/nanoid'
 
 import { POST as diagnosePost } from './diagnose/route'
@@ -45,6 +56,7 @@ describe('POST /api/agent/*', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(requireAuth).mockResolvedValue({ userId: 'user_agent_1' } as never)
+    vi.mocked(callAgentAssistantJson).mockResolvedValue(null)
     vi.mocked(nanoid)
       .mockReturnValueOnce('plan-seed')
       .mockReturnValueOnce('prompt-seed')
@@ -160,6 +172,78 @@ describe('POST /api/agent/*', () => {
               source: 'draft-image-input',
               target: 'draft-image-gen',
               targetHandle: 'image-in',
+            }),
+          ]),
+        },
+      },
+    })
+  })
+
+  it('treats workflow-reference images as structure-oriented planning instead of image-to-image generation', async () => {
+    vi.mocked(callAgentAssistantJson)
+      .mockResolvedValueOnce({
+        workflowKind: 'image',
+        nodes: [
+          { nodeType: 'image-input', label: '参考图输入' },
+          { nodeType: 'text-input', label: '提示词补充' },
+          { nodeType: 'image-gen', label: '主图生成' },
+          { nodeType: 'display', label: '结果展示' },
+        ],
+        summary: '先接参考图，再补提示词，最后生成并展示结果。',
+        notes: ['参考图里明显存在图片输入到生成节点的主链。'],
+      })
+      .mockResolvedValueOnce(null)
+
+    const response = await planPost(
+      new Request('http://localhost/api/agent/plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '参考这张工作流图给我搭一个类似的流程',
+          mode: 'create',
+          locale: 'zh',
+          workflowReference: 'workflow_reference',
+          attachments: [
+            {
+              kind: 'image',
+              url: 'https://example.com/workflow-reference.png',
+              name: 'workflow-reference.png',
+            },
+          ],
+          canvasSummary: createCanvasSummary(),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      data: {
+        plan: {
+          mode: 'create',
+          summary: expect.stringContaining('先接参考图'),
+          metadata: {
+            workflowReferenceKind: 'workflow_reference',
+            workflowReferenceSummary: expect.stringContaining('先接参考图'),
+            workflowReferenceNodeTypes: expect.arrayContaining(['image-input', 'image-gen']),
+          },
+          reasons: expect.arrayContaining([
+            expect.stringContaining('参考图里明显存在图片输入'),
+          ]),
+          operations: expect.arrayContaining([
+            expect.objectContaining({ type: 'add_node', nodeType: 'image-input' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'text-input' }),
+            expect.objectContaining({ type: 'add_node', nodeType: 'image-gen' }),
+            expect.objectContaining({
+              type: 'connect',
+              sourceHandle: 'image-out',
+              targetHandle: 'image-in',
+            }),
+            expect.objectContaining({
+              type: 'connect',
+              sourceHandle: 'text-out',
+              targetHandle: 'prompt-in',
             }),
           ]),
         },

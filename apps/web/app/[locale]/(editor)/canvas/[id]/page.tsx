@@ -292,6 +292,21 @@ export default function CanvasPage({
           return {
             id: message.id,
             type: 'prompt-confirmation' as const,
+            variant: 'confirmation' as const,
+            payloadId: message.payloadId,
+            originalIntent: message.payload.originalIntent,
+            visualProposal: message.payload.visualProposal,
+            executionPrompt: message.payload.executionPrompt,
+            styleOptions: message.payload.styleOptions?.map((item) => item.label) ?? [],
+            expanded: expandedPromptId === message.payloadId,
+          }
+        }
+
+        if (message.role === 'prompt-result') {
+          return {
+            id: message.id,
+            type: 'prompt-confirmation' as const,
+            variant: 'result' as const,
             payloadId: message.payloadId,
             originalIntent: message.payload.originalIntent,
             visualProposal: message.payload.visualProposal,
@@ -341,10 +356,9 @@ export default function CanvasPage({
       : []),
   ]
   const heroActions = [
-    { id: 'hero-cat-image', label: tAgent('heroCatImage'), accent: 'hero' as const },
-    { id: 'hero-realistic-edit', label: tAgent('heroRealisticEdit'), accent: 'hero' as const },
-    { id: 'hero-diagnose', label: tAgent('heroDiagnose'), accent: 'hero' as const },
-    { id: 'hero-explain', label: tAgent('heroExplain'), accent: 'hero' as const },
+    { id: 'hero-workflow', label: tAgent('heroWorkflowCommand'), accent: 'hero' as const },
+    { id: 'hero-prompt', label: tAgent('heroPromptCommand'), accent: 'hero' as const },
+    { id: 'hero-chat', label: tAgent('heroChatMode'), accent: 'hero' as const },
   ]
   /* ── 从 API 数据注入 FlowStore ──────────────────────── */
   useEffect(() => {
@@ -638,10 +652,9 @@ export default function CanvasPage({
                   }
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
-                      'hero-cat-image': tAgent('heroCatImageAsk'),
-                      'hero-realistic-edit': tAgent('heroRealisticEditAsk'),
-                      'hero-diagnose': tAgent('heroDiagnoseAsk'),
-                      'hero-explain': tAgent('heroExplainAsk'),
+                      'hero-workflow': tAgent('heroWorkflowCommandAsk'),
+                      'hero-prompt': tAgent('heroPromptCommandAsk'),
+                      'hero-chat': tAgent('heroChatModeAsk'),
                       'continue-from-result': tAgent('quickContinueFromResultAsk', {
                         asset:
                           resultAwareSummary.latestSuccessfulAsset?.kind === 'image'
@@ -659,10 +672,6 @@ export default function CanvasPage({
                         name: template?.name ?? '当前模板',
                       }),
                     }
-                    if (actionId === 'hero-cat-image') setMode('create')
-                    if (actionId === 'hero-realistic-edit') setMode('update')
-                    if (actionId === 'hero-diagnose') setMode('diagnose')
-                    if (actionId === 'hero-explain') setMode('update')
                     if (actionId === 'diagnose') setMode('diagnose')
                     if (actionId === 'optimize') setMode('optimize')
                     if (actionId === 'explain') setMode('update')

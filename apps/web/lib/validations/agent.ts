@@ -274,6 +274,13 @@ export const agentPlanSchema = z.object({
   operations: z.array(workflowOperationSchema),
   promptConfirmation: promptConfirmationPayloadSchema.optional(),
   templateContext: templateConversationSummarySchema.optional(),
+  metadata: z
+    .object({
+      workflowReferenceKind: z.enum(['workflow_reference', 'content_reference', 'uncertain']).optional(),
+      workflowReferenceSummary: z.string().min(1).optional(),
+      workflowReferenceNodeTypes: z.array(z.string().min(1)).optional(),
+    })
+    .optional(),
 })
 
 export const agentPlanRequestSchema = z.object({
@@ -281,6 +288,7 @@ export const agentPlanRequestSchema = z.object({
   mode: z.enum(['create', 'update', 'repair', 'diagnose', 'optimize', 'extend', 'template']),
   locale: z.string().trim().min(1),
   assistantRuntime: agentAssistantRuntimeSchema.optional(),
+  workflowReference: z.enum(['workflow_reference', 'content_reference', 'uncertain']).optional(),
   attachments: z.array(agentAttachmentSchema).optional(),
   canvasSummary: z.object({
     workflowId: z.string().min(1),
