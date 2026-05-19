@@ -23,7 +23,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { CANVAS_TOOLBAR_ENTRIES, type ToolbarEntry, type NodeEntryItem } from './node-entry-config'
+import { CANVAS_TOOLBAR_ENTRIES, type ToolbarEntry } from './node-entry-config'
 
 /* ─── Drag Data Type ──────────────────────────────────── */
 
