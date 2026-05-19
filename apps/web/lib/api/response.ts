@@ -91,30 +91,43 @@ export function handleApiError(error: unknown) {
 
 /* ─── Status Mapping ─────────────────────────────────── */
 
+const EXACT_CODE_STATUS = new Map<string, number>([
+  ['AUTH_FORBIDDEN', 403],
+  ['AI_RATE_LIMITED', 429],
+  ['AI_QUOTA_EXCEEDED', 402],
+  ['AI_MODEL_UNAVAILABLE', 503],
+  ['AI_PROVIDER_ERROR', 503],
+  ['UPLOAD_TOO_LARGE', 413],
+  ['TASK_CONCURRENCY_EXCEEDED', 429],
+  ['TASK_NOT_FOUND', 404],
+  ['BILLING_RATE_LIMITED', 429],
+  ['BILLING_PAYMENT_DECLINED', 402],
+  ['BILLING_CREDITS_INSUFFICIENT', 402],
+  ['BILLING_TRIAL_ALREADY_USED', 409],
+  ['BILLING_SUBSCRIPTION_ALREADY_ACTIVE', 409],
+  ['BILLING_NETWORK_ERROR', 503],
+  ['BILLING_PROVIDER_ERROR', 502],
+  ['BILLING_PRICE_NOT_CONFIGURED', 503],
+  ['NOT_FOUND', 404],
+  ['CONFLICT', 409],
+])
+
+const PREFIX_STATUS: [string, number][] = [
+  ['AUTH_', 401],
+  ['VALIDATION_', 400],
+  ['AI_', 502],
+  ['UPLOAD_', 400],
+  ['TASK_', 400],
+  ['BILLING_', 400],
+]
+
 function errorCodeToStatus(code: string): number {
-  if (code === 'AUTH_FORBIDDEN') return 403
-  if (code.startsWith('AUTH_')) return 401
-  if (code.startsWith('VALIDATION_')) return 400
-  if (code === 'AI_RATE_LIMITED') return 429
-  if (code === 'AI_QUOTA_EXCEEDED') return 402
-  if (code === 'AI_MODEL_UNAVAILABLE') return 503
-  if (code === 'AI_PROVIDER_ERROR') return 503
-  if (code.startsWith('AI_')) return 502
-  if (code === 'UPLOAD_TOO_LARGE') return 413
-  if (code.startsWith('UPLOAD_')) return 400
-  if (code === 'TASK_CONCURRENCY_EXCEEDED') return 429
-  if (code === 'TASK_NOT_FOUND') return 404
-  if (code.startsWith('TASK_')) return 400
-  if (code === 'BILLING_RATE_LIMITED') return 429
-  if (code === 'BILLING_PAYMENT_DECLINED') return 402
-  if (code === 'BILLING_CREDITS_INSUFFICIENT') return 402
-  if (code === 'BILLING_TRIAL_ALREADY_USED') return 409
-  if (code === 'BILLING_SUBSCRIPTION_ALREADY_ACTIVE') return 409
-  if (code === 'BILLING_NETWORK_ERROR') return 503
-  if (code === 'BILLING_PROVIDER_ERROR') return 502
-  if (code === 'BILLING_PRICE_NOT_CONFIGURED') return 503
-  if (code.startsWith('BILLING_')) return 400
-  if (code === 'NOT_FOUND') return 404
-  if (code === 'CONFLICT') return 409
+  const exact = EXACT_CODE_STATUS.get(code)
+  if (exact !== undefined) return exact
+
+  for (const [prefix, status] of PREFIX_STATUS) {
+    if (code.startsWith(prefix)) return status
+  }
+
   return 500
 }

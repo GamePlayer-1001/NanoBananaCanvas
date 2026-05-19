@@ -12,6 +12,7 @@ import { auth } from '@clerk/nextjs/server'
 import { headers } from 'next/headers'
 import { setRequestLocale } from 'next-intl/server'
 
+import { createLogger } from '@/lib/logger'
 import { AccountContent } from '@/components/profile/account-content'
 import { requireAuth } from '@/lib/api/auth'
 import { getCreditBalanceSummary } from '@/lib/billing/credits'
@@ -20,6 +21,8 @@ import { FREE_PLAN_SNAPSHOT } from '@/lib/billing/plans'
 import { getBillingSubscription } from '@/lib/billing/subscription'
 import { NO_INDEX_METADATA } from '@/lib/seo'
 import type { UserProfile } from '@/hooks/use-user'
+
+const log = createLogger('account')
 
 export const metadata: Metadata = NO_INDEX_METADATA
 export const dynamic = 'force-dynamic'
@@ -74,7 +77,7 @@ async function loadOptionalAccountData<T>(
   try {
     return await loader()
   } catch (error: unknown) {
-    console.error(`[account] Failed to load ${label}`, error)
+    log.error(`Failed to load ${label}`, error)
     return fallback
   }
 }
@@ -152,7 +155,7 @@ export default async function AccountPage({
     getPublicPricingPlans({
       countryCode: requestHeaders.get('cf-ipcountry'),
     }).catch((error: unknown) => {
-      console.error('[account] Failed to load Stripe prices', error)
+      log.error('Failed to load Stripe prices', error)
       return null
     }),
   ])

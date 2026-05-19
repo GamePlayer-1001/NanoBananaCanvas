@@ -13,6 +13,7 @@ import {
   shouldOptimizeSelectedNode,
   shouldPatchSelectedNodePrompt,
 } from './plan-rules'
+import { matchesAny } from './constants'
 import type { WorkflowReferenceSketch } from './intent-resolver'
 import type { AgentPlanIntent, CanvasSummary, CanvasSummaryNode, WorkflowOperation } from './types'
 
@@ -29,10 +30,6 @@ const KEYWORDS_VIDEO_FOLLOW_UP = ['视频', '动起来', '动态'] as const
 const KEYWORDS_COPY_FOLLOW_UP = ['标题', '正文', '文案'] as const
 const KEYWORDS_RUN_WORKFLOW = ['运行', '执行'] as const
 const KEYWORDS_RUN_FROM_NODE = ['从这个节点', '当前节点', '选中节点'] as const
-
-function matchesAny(str: string, keywords: readonly string[]): boolean {
-  return keywords.some((kw) => str.includes(kw))
-}
 
 /* ─── Public: Diagnose ────────────────────────────────── */
 

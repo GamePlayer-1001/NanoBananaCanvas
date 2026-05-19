@@ -30,6 +30,16 @@ export interface TaskTypeConfig {
   timeoutMs: number
 }
 
+/* ============================================ */
+/*  Task Concurrency Limits (by plan tier)      */
+/* ============================================ */
+
+export const TASK_CONCURRENCY_LIMITS = {
+  free: 1,
+  standard: 3,
+  pro: 5,
+} as const
+
 export const TASK_CONFIG: Record<AsyncTaskType, TaskTypeConfig> = {
   video_gen: {
     maxRetries: 2,

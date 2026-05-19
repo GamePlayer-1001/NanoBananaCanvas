@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无运行时外部依赖，仅依赖 Agent 计划链路的设计约束
- * [OUTPUT]: 对外提供 Agent 常量、批量改动阈值、过程消息 key 与配置压缩白名单
+ * [OUTPUT]: 对外提供 Agent 常量、批量改动阈值、过程消息 key、配置压缩白名单与关键词匹配工具
  * [POS]: lib/agent 的常量真相源，被摘要器、校验器、会话 hook 与 API planner 共享
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -77,3 +77,9 @@ export const AGENT_PROCESS_MESSAGE_KEYS = {
 } as const
 
 export const AGENT_ERROR_FALLBACK_KEY = 'errorFallback'
+
+/* ─── Keyword Matching ───────────────────────────────── */
+
+export function matchesAny(str: string, keywords: readonly string[]): boolean {
+  return keywords.some((kw) => str.includes(kw))
+}

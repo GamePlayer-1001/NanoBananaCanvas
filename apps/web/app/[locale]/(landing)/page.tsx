@@ -14,6 +14,7 @@ import { auth } from '@clerk/nextjs/server'
 import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { createLogger } from '@/lib/logger'
 import { HeroSection } from '@/components/landing/hero-section'
 import {
   FaqSection,
@@ -32,6 +33,8 @@ import {
   buildPriorityKeywords,
   buildPageMetadata,
 } from '@/lib/seo'
+
+const log = createLogger('landing')
 
 export async function generateMetadata({
   params,
@@ -68,12 +71,12 @@ export default async function LandingPage({
   const pricing = await getPublicPricingPlans({
     countryCode: requestHeaders.get('cf-ipcountry'),
   }).catch((error: unknown) => {
-    console.error('[landing] Failed to load Stripe prices', error)
+    log.error('Failed to load Stripe prices', error)
     return null
   })
   const subscription = userId
     ? await getBillingSubscription(userId).catch((error: unknown) => {
-        console.error('[landing] Failed to load billing subscription', error)
+        log.error('Failed to load billing subscription', error)
         return null
       })
     : null
@@ -168,6 +171,7 @@ export default async function LandingPage({
         subscription={subscription}
       />
       <TestimonialsSection />
+      {/* TODO: 轨道动画性能待优化后重新上线 — visibleOrbitTime 已硬编码为 0 */}
       {/* <ModelMindMapSection /> */}
       <FaqSection />
       <LandingFooter />

@@ -8,7 +8,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { TASK_CONFIG } from '@nano-banana/shared'
+import { TASK_CONFIG, TASK_CONCURRENCY_LIMITS } from '@nano-banana/shared'
 import type {
   AsyncTaskStatus,
   AsyncTaskType,
@@ -66,7 +66,7 @@ import { getProcessor } from './processors'
 import type { TaskOutput, TaskProcessor } from './processors'
 
 const log = createLogger('task:service')
-const FREE_TASK_CONCURRENCY_LIMIT = 1
+const FREE_TASK_CONCURRENCY_LIMIT = TASK_CONCURRENCY_LIMITS.free
 const WORKFLOW_STARTUP_GRACE_MS = 60_000
 
 /* ─── D1 Row Shape ──────────────────────────────────── */

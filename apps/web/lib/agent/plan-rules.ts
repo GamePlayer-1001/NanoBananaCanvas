@@ -5,6 +5,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 import { getDefaultPlatformRuntimeModel } from '@/lib/platform-runtime'
+import { matchesAny } from './constants'
 import type {
   AgentPlan,
   AgentPlanIntent,
@@ -39,10 +40,6 @@ const KW_PROMPT_EDIT = ['提示词', 'prompt', '更写实', '更真实'] as cons
 const KW_CHEAPER = ['更便宜'] as const
 const KW_FASTER = ['更快'] as const
 const KW_REALISTIC = ['更写实', '更真实'] as const
-
-function matchesAny(str: string, keywords: readonly string[]): boolean {
-  return keywords.some((kw) => str.includes(kw))
-}
 
 /* ─── Predicates ──────────────────────────────────────────────────────────── */
 
