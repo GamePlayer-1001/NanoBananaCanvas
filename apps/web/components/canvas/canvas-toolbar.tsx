@@ -13,7 +13,10 @@ import { type DragEvent, forwardRef, useCallback, useEffect, useRef, useState } 
 import { useTranslations } from 'next-intl'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronUp, Hand, MousePointer2 } from 'lucide-react'
+import { useReactFlow } from '@xyflow/react'
 import { useCanvasToolStore, type CanvasTool } from '@/stores/use-canvas-tool-store'
+import { useFlowStore } from '@/stores/use-flow-store'
+import { createNode } from '@/lib/utils/create-node'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -64,20 +67,33 @@ export function CanvasToolbar() {
     })
   }, [])
 
-  const handleDirectClick = useCallback(
+  const { getViewport } = useReactFlow()
+  const addNode = useFlowStore((s) => s.addNode)
+
+  const addNodeToCenter = useCallback(
     (nodeType: string) => {
-      setActiveTool(nodeType as CanvasTool)
+      const { x, y, zoom } = getViewport()
+      const centerX = (-x + window.innerWidth / 2) / zoom
+      const centerY = (-y + window.innerHeight / 2) / zoom
+      const node = createNode(nodeType, { x: centerX, y: centerY })
+      addNode(node)
       setOpenGroupId(null)
     },
-    [setActiveTool],
+    [getViewport, addNode],
+  )
+
+  const handleDirectClick = useCallback(
+    (nodeType: string) => {
+      addNodeToCenter(nodeType)
+    },
+    [addNodeToCenter],
   )
 
   const handleSubItemClick = useCallback(
     (nodeType: string) => {
-      setActiveTool(nodeType as CanvasTool)
-      setOpenGroupId(null)
+      addNodeToCenter(nodeType)
     },
-    [setActiveTool],
+    [addNodeToCenter],
   )
 
   useEffect(() => {
