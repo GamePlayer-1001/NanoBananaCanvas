@@ -21,11 +21,11 @@ describe('filterNodeEntryGroupsByPort', () => {
 
     expect(groups.flatMap((group) => group.items.map((item) => item.type))).toEqual([
       'llm',
-      'text-merge',
       'image-gen',
       'video-gen',
       'audio-gen',
       'display',
+      'text-merge',
       'conditional',
       'loop',
     ])
@@ -41,6 +41,7 @@ describe('filterNodeEntryGroupsByPort', () => {
     expect(groups.flatMap((group) => group.items.map((item) => item.type))).toEqual([
       'image-input',
       'image-gen',
+      'image-compare',
       'conditional',
       'loop',
     ])
