@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "name": "workflow",
+  "nodes": [
+    {
+      "id": "26216204-f6c2-43e2-b67b-c13d395a0ca6",
+      "type": "image-input",
+      "position": {
+        "x": 1080,
+        "y": 20
+      },
+      "data": {
+        "label": "Image Input",
+        "type": "input",
+        "config": {
+          "imageUrl": ""
+        },
+        "status": "idle"
+      }
+    },
+    {
+      "id": "8b5ce9c7-c8d9-4b64-869f-7e62b5565a07",
+      "type": "video-gen",
+      "position": {
+        "x": 1700,
+        "y": -300
+      },
+      "data": {
+        "label": "Video Gen",
+        "type": "ai-model",
+        "config": {
+          "platformProvider": "kling",
+          "platformModel": "kling-v2-0",
+          "duration": "5",
+          "aspectRatio": "16:9",
+          "mode": "std",
+          "showPreview": false,
+          "executionMode": "user_key"
+        },
+        "status": "idle"
+      }
+    },
+    {
+      "id": "1f92c77c-4b80-4f11-8d73-95e35d36b614",
+      "type": "text-input",
+      "position": {
+        "x": 100,
+        "y": -700
+      },
+      "data": {
+        "label": "Text Input",
+        "type": "input",
+        "config": {
+          "text": ""
+        },
+        "status": "idle"
+      }
+    },
+    {
+      "id": "524fb0c6-b01a-40f5-9001-3bb42a54b431",
+      "type": "llm",
+      "position": {
+        "x": 1120,
+        "y": -640
+      },
+      "data": {
+        "label": "LLM",
+        "type": "ai-model",
+        "config": {
+          "platformProvider": "comfly",
+          "platformModel": "gpt-5.4",
+          "temperature": 0.7,
+          "showPreview": false
+        },
+        "status": "idle"
+      }
+    },
+    {
+      "id": "eccab7fe-5923-4fff-8fb2-754f15472ea4",
+      "type": "display",
+      "position": {
+        "x": 2340,
+        "y": -280
+      },
+      "data": {
+        "label": "output",
+        "type": "output",
+        "config": {},
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "xy-edge__1f92c77c-4b80-4f11-8d73-95e35d36b614text-out-524fb0c6-b01a-40f5-9001-3bb42a54b431prompt-in",
+      "source": "1f92c77c-4b80-4f11-8d73-95e35d36b614",
+      "target": "524fb0c6-b01a-40f5-9001-3bb42a54b431",
+      "sourceHandle": "text-out",
+      "targetHandle": "prompt-in",
+      "type": "custom"
+    },
+    {
+      "id": "xy-edge__524fb0c6-b01a-40f5-9001-3bb42a54b431text-out-8b5ce9c7-c8d9-4b64-869f-7e62b5565a07prompt-in",
+      "source": "524fb0c6-b01a-40f5-9001-3bb42a54b431",
+      "target": "8b5ce9c7-c8d9-4b64-869f-7e62b5565a07",
+      "sourceHandle": "text-out",
+      "targetHandle": "prompt-in",
+      "type": "custom"
+    },
+    {
+      "id": "xy-edge__8b5ce9c7-c8d9-4b64-869f-7e62b5565a07video-out-eccab7fe-5923-4fff-8fb2-754f15472ea4content-in",
+      "source": "8b5ce9c7-c8d9-4b64-869f-7e62b5565a07",
+      "target": "eccab7fe-5923-4fff-8fb2-754f15472ea4",
+      "sourceHandle": "video-out",
+      "targetHandle": "content-in",
+      "type": "custom"
+    },
+    {
+      "id": "xy-edge__26216204-f6c2-43e2-b67b-c13d395a0ca6image-out-8b5ce9c7-c8d9-4b64-869f-7e62b5565a07image-in",
+      "source": "26216204-f6c2-43e2-b67b-c13d395a0ca6",
+      "target": "8b5ce9c7-c8d9-4b64-869f-7e62b5565a07",
+      "sourceHandle": "image-out",
+      "targetHandle": "image-in",
+      "type": "custom"
+    }
+  ],
+  "viewport": {
+    "x": 517.196490571583,
+    "y": 575.8439819744661,
+    "zoom": 0.5946035682489514
+  },
+  "savedAt": "2026-05-11T09:52:43.715Z"
+}

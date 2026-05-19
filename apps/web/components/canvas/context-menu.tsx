@@ -107,6 +107,7 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
                   'hover:bg-accent hover:text-accent-foreground',
                   'cursor-pointer transition-colors',
                 )}
+                onMouseEnter={() => setSubmenuPosition(null)}
                 onClick={() => {
                   onAddNode(singleItem.type)
                   onClose()
@@ -127,6 +128,7 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
                 onMouseEnter={(e) => openGroup(group, e.currentTarget)}
                 onClick={(e) => openGroup(group, e.currentTarget)}
               >
+                <group.icon className="h-4 w-4 opacity-60" />
                 <span>{t(group.labelKey)}</span>
                 <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
               </button>

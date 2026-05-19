@@ -9,7 +9,7 @@
 
 'use client'
 
-import { type DragEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { type DragEvent, forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronUp, Hand, MousePointer2 } from 'lucide-react'
@@ -35,6 +35,7 @@ export function CanvasToolbar() {
   const { activeTool, setActiveTool } = useCanvasToolStore()
   const [openGroupId, setOpenGroupId] = useState<string | null>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
+  const groupButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
   const onDragStart = useCallback(
     (e: DragEvent<HTMLButtonElement>, nodeType: string) => {
@@ -88,12 +89,14 @@ export function CanvasToolbar() {
               onSelect={handleSubItemClick}
               onDragStart={onDragStart}
               activeTool={activeTool}
+              anchorRef={groupButtonRefs.current.get(entry.id) ?? null}
             />
           ) : null,
         )}
 
         {/* ── 主工具栏 ────────────────────────────────── */}
         <div
+          data-toolbar-bar
           className={cn(
             'bg-card/95 border-border relative',
             'flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg backdrop-blur-sm',
@@ -122,6 +125,10 @@ export function CanvasToolbar() {
                 isOpen={openGroupId === entry.id}
                 isActive={entry.items.some((item) => activeTool === item.type)}
                 onClick={() => handleGroupToggle(entry.id)}
+                ref={(el) => {
+                  if (el) groupButtonRefs.current.set(entry.id, el)
+                  else groupButtonRefs.current.delete(entry.id)
+                }}
               />
             ) : (
               <ToolButton
@@ -148,18 +155,35 @@ interface PopoverMenuProps {
   onSelect: (nodeType: string) => void
   onDragStart: (e: DragEvent<HTMLButtonElement>, nodeType: string) => void
   activeTool: CanvasTool
+  anchorRef: HTMLButtonElement | null
 }
 
-function PopoverMenu({ entry, onSelect, onDragStart, activeTool }: PopoverMenuProps) {
+function PopoverMenu({ entry, onSelect, onDragStart, activeTool, anchorRef }: PopoverMenuProps) {
   const tCtx = useTranslations('contextMenu')
+
+  // 计算相对于触发按钮的水平偏移
+  const anchorOffset = (() => {
+    if (!anchorRef) return undefined
+    const toolbar = anchorRef.closest('[data-toolbar-bar]') as HTMLElement | null
+    if (!toolbar) return undefined
+    const toolbarRect = toolbar.getBoundingClientRect()
+    const btnRect = anchorRef.getBoundingClientRect()
+    const centerX = btnRect.left + btnRect.width / 2 - toolbarRect.left
+    return centerX
+  })()
 
   return (
     <div
       className={cn(
-        'bg-card/95 border-border absolute bottom-full left-1/2 mb-2 -translate-x-1/2',
+        'bg-card/95 border-border absolute bottom-full mb-2',
         'min-w-[160px] rounded-xl border py-1.5 shadow-xl backdrop-blur-sm',
         'animate-in fade-in-0 slide-in-from-bottom-2 duration-150',
       )}
+      style={
+        anchorOffset != null
+          ? { left: anchorOffset, transform: 'translateX(-50%)' }
+          : { left: '50%', transform: 'translateX(-50%)' }
+      }
     >
       {entry.items!.map(({ type, labelKey, icon: Icon }) => (
         <button
@@ -191,38 +215,41 @@ interface GroupButtonProps {
   onClick: () => void
 }
 
-function GroupButton({ entry, isOpen, isActive, onClick }: GroupButtonProps) {
-  const t = useTranslations('toolbar')
-  const Icon = entry.icon
+const GroupButton = forwardRef<HTMLButtonElement, GroupButtonProps>(
+  function GroupButton({ entry, isOpen, isActive, onClick }, ref) {
+    const t = useTranslations('toolbar')
+    const Icon = entry.icon
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={cn(
-            'relative rounded-full transition-colors',
-            (isOpen || isActive) && 'bg-[var(--brand-500)] text-white hover:bg-[var(--brand-500)]/90 hover:text-white',
-          )}
-          onClick={onClick}
-        >
-          <Icon size={16} />
-          <ChevronUp
-            size={8}
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            ref={ref}
+            variant="ghost"
+            size="icon-sm"
             className={cn(
-              'absolute -top-0.5 right-0 transition-transform',
-              isOpen ? 'rotate-0' : 'rotate-180',
+              'relative rounded-full transition-colors',
+              (isOpen || isActive) && 'bg-[var(--brand-500)] text-white hover:bg-[var(--brand-500)]/90 hover:text-white',
             )}
-          />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={8}>
-        {t(entry.labelKey)}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
+            onClick={onClick}
+          >
+            <Icon size={16} />
+            <ChevronUp
+              size={8}
+              className={cn(
+                'absolute -top-0.5 right-0 transition-transform',
+                isOpen ? 'rotate-0' : 'rotate-180',
+              )}
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={8}>
+          {t(entry.labelKey)}
+        </TooltipContent>
+      </Tooltip>
+    )
+  },
+)
 
 /* ─── ToolButton ──────────────────────────────────────── */
 

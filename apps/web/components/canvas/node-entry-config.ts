@@ -66,6 +66,7 @@ type NodeEntryGroupLabelKey =
 export interface NodeEntryGroup {
   id: string
   labelKey: NodeEntryGroupLabelKey
+  icon: LucideIcon
   items: NodeEntryItem[]
 }
 
@@ -129,6 +130,7 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   {
     id: 'inputs',
     labelKey: 'groupInputs',
+    icon: PenLine,
     items: [
       { type: 'text-input', labelKey: 'addTextInput', icon: Type },
       { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
@@ -137,31 +139,37 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   {
     id: 'text-gen',
     labelKey: 'groupTextGen',
+    icon: BrainCircuit,
     items: [{ type: 'llm', labelKey: 'addLLM', icon: BrainCircuit }],
   },
   {
     id: 'image-gen',
     labelKey: 'groupImageGen',
+    icon: ImageIcon,
     items: [{ type: 'image-gen', labelKey: 'addImageGen', icon: ImageIcon }],
   },
   {
     id: 'video-gen',
     labelKey: 'groupVideoGen',
+    icon: Video,
     items: [{ type: 'video-gen', labelKey: 'addVideoGen', icon: Video }],
   },
   {
     id: 'audio-gen',
     labelKey: 'groupAudioGen',
+    icon: Music,
     items: [{ type: 'audio-gen', labelKey: 'addAudioGen', icon: Music }],
   },
   {
     id: 'display',
     labelKey: 'groupDisplay',
+    icon: MonitorPlay,
     items: [{ type: 'display', labelKey: 'addDisplay', icon: MonitorPlay }],
   },
   {
     id: 'tools',
     labelKey: 'groupTools',
+    icon: Wrench,
     items: [
       { type: 'text-merge', labelKey: 'addTextMerge', icon: Combine },
       { type: 'image-merge', labelKey: 'addImageMerge', icon: Images },
@@ -174,6 +182,7 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   {
     id: 'group',
     labelKey: 'groupGroup',
+    icon: Group,
     items: [{ type: 'group', labelKey: 'addGroup', icon: Group }],
   },
 ]
