@@ -23,12 +23,8 @@ interface AgentSlashCommandMenuProps {
   onDismiss: () => void
 }
 
-export function AgentSlashCommandMenu({
-  commands,
-  activeIndex,
-  onSelect,
-  onDismiss: _onDismiss,
-}: AgentSlashCommandMenuProps) {
+export function AgentSlashCommandMenu(props: AgentSlashCommandMenuProps) {
+  const { commands, activeIndex, onSelect } = props
   const activeRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
