@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  Columns2,
   Combine,
   GitBranch,
   Group,
@@ -227,6 +228,22 @@ register({
   },
   defaults: {},
   toolbar: { labelKey: 'imageMerge' },
+})
+
+register({
+  type: 'image-compare',
+  category: 'transform',
+  label: 'Image Compare',
+  icon: Columns2,
+  ports: {
+    inputs: [
+      { id: 'image-a-in', label: 'Image A', type: 'image', required: true },
+      { id: 'image-b-in', label: 'Image B', type: 'image', required: true },
+    ],
+    outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+  },
+  defaults: { compareMode: 'slider' },
+  toolbar: { labelKey: 'imageCompare' },
 })
 
 register({

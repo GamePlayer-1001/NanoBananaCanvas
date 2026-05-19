@@ -94,22 +94,44 @@ export function CanvasContextMenu({ x, y, groups, onAddNode, onClose }: CanvasCo
         style={{ left: adjustedX, top: adjustedY }}
       >
         {groups.length > 0 ? (
-          groups.map((group) => (
-            <button
-              key={group.id}
-              className={cn(
-                'flex w-full items-center gap-3 px-3 py-2 text-sm',
-                'hover:bg-accent hover:text-accent-foreground',
-                'cursor-pointer transition-colors',
-                resolvedActiveGroupId === group.id && 'bg-accent text-accent-foreground',
-              )}
-              onMouseEnter={(e) => openGroup(group, e.currentTarget)}
-              onClick={(e) => openGroup(group, e.currentTarget)}
-            >
-              <span>{t(group.labelKey)}</span>
-              <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
-            </button>
-          ))
+          groups.map((group) => {
+            const isSingle = group.items.length === 1
+            const singleItem = isSingle ? group.items[0] : null
+            const SingleIcon = singleItem?.icon ?? null
+
+            return isSingle && singleItem ? (
+              <button
+                key={group.id}
+                className={cn(
+                  'flex w-full items-center gap-3 px-3 py-2 text-sm',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'cursor-pointer transition-colors',
+                )}
+                onClick={() => {
+                  onAddNode(singleItem.type)
+                  onClose()
+                }}
+              >
+                {SingleIcon ? <SingleIcon className="h-4 w-4 opacity-60" /> : null}
+                <span>{t(group.labelKey)}</span>
+              </button>
+            ) : (
+              <button
+                key={group.id}
+                className={cn(
+                  'flex w-full items-center gap-3 px-3 py-2 text-sm',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'cursor-pointer transition-colors',
+                  resolvedActiveGroupId === group.id && 'bg-accent text-accent-foreground',
+                )}
+                onMouseEnter={(e) => openGroup(group, e.currentTarget)}
+                onClick={(e) => openGroup(group, e.currentTarget)}
+              >
+                <span>{t(group.labelKey)}</span>
+                <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
+              </button>
+            )
+          })
         ) : (
           <div className="text-muted-foreground px-3 py-2 text-sm">{t('noCompatibleNodes')}</div>
         )}

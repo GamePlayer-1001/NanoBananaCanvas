@@ -1,19 +1,18 @@
 /**
  * [INPUT]: 依赖 @/stores/use-canvas-tool-store 的 activeTool/setActiveTool，
- *          依赖 @/components/nodes/plugin-registry 的 getAllNodeMetas，
+ *          依赖 @/components/canvas/node-entry-config 的 CANVAS_TOOLBAR_ENTRIES，
  *          依赖 @/components/ui 的 Button/Tooltip，依赖 next-intl 的 useTranslations
- * [OUTPUT]: 对外提供 CanvasToolbar 底部浮动工具栏组件
- * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，保留画布操作工具与主链路节点拖拽入口
+ * [OUTPUT]: 对外提供 CanvasToolbar 底部浮动工具栏组件（含上拉菜单）
+ * [POS]: components/canvas 的交互工具栏，被 Canvas 内嵌使用，支持分组上拉菜单与单节点拖拽入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 'use client'
 
-import { type DragEvent, useCallback } from 'react'
+import { type DragEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { LucideIcon } from 'lucide-react'
-import { Hand, MousePointer2 } from 'lucide-react'
-import { getAllNodeMetas } from '@/components/nodes/plugin-registry'
+import { ChevronUp, Hand, MousePointer2 } from 'lucide-react'
 import { useCanvasToolStore, type CanvasTool } from '@/stores/use-canvas-tool-store'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -24,36 +23,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { CANVAS_TOOLBAR_NODE_GROUPS, flattenNodeEntryGroups } from './node-entry-config'
-
-/* ─── Types ───────────────────────────────────────────── */
-
-interface ToolDef {
-  id: CanvasTool
-  labelKey: string
-  icon: LucideIcon
-  /** 是否为节点工具 (支持拖拽创建) */
-  nodeType?: string
-}
-
-const POINTER_TOOLS: ToolDef[] = [
-  { id: 'select', labelKey: 'select', icon: MousePointer2 },
-  { id: 'hand', labelKey: 'hand', icon: Hand },
-]
-
-/* 节点工具从 plugin-registry 派生，再按画布交互优先级显式排序 */
-const rawNodeTools: ToolDef[] = getAllNodeMetas().map((meta) => ({
-  id: meta.type as CanvasTool,
-  labelKey: meta.toolbar.labelKey,
-  icon: meta.icon,
-  nodeType: meta.type,
-}))
-
-const orderedNodeToolIds = flattenNodeEntryGroups(CANVAS_TOOLBAR_NODE_GROUPS).map((item) => item.type)
-
-const NODE_TOOLS: ToolDef[] = orderedNodeToolIds.flatMap((toolId) =>
-  rawNodeTools.filter((tool) => tool.id === toolId),
-)
+import { CANVAS_TOOLBAR_ENTRIES, type ToolbarEntry, type NodeEntryItem } from './node-entry-config'
 
 /* ─── Drag Data Type ──────────────────────────────────── */
 
@@ -63,63 +33,210 @@ export const DRAG_DATA_TYPE = 'application/reactflow'
 
 export function CanvasToolbar() {
   const { activeTool, setActiveTool } = useCanvasToolStore()
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
 
   const onDragStart = useCallback(
     (e: DragEvent<HTMLButtonElement>, nodeType: string) => {
       e.dataTransfer.setData(DRAG_DATA_TYPE, nodeType)
       e.dataTransfer.effectAllowed = 'move'
+      setOpenGroupId(null)
     },
     [],
   )
 
+  const handleGroupToggle = useCallback((id: string) => {
+    setOpenGroupId((prev) => (prev === id ? null : id))
+  }, [])
+
+  const handleDirectClick = useCallback(
+    (nodeType: string) => {
+      setActiveTool(nodeType as CanvasTool)
+      setOpenGroupId(null)
+    },
+    [setActiveTool],
+  )
+
+  const handleSubItemClick = useCallback(
+    (nodeType: string) => {
+      setActiveTool(nodeType as CanvasTool)
+      setOpenGroupId(null)
+    },
+    [setActiveTool],
+  )
+
+  useEffect(() => {
+    if (!openGroupId) return
+    const onClickOutside = (e: MouseEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as HTMLElement)) {
+        setOpenGroupId(null)
+      }
+    }
+    window.addEventListener('mousedown', onClickOutside)
+    return () => window.removeEventListener('mousedown', onClickOutside)
+  }, [openGroupId])
+
   return (
     <TooltipProvider>
-      <div
-        className={cn(
-          'bg-card/95 border-border absolute bottom-4 left-1/2 z-50 -translate-x-1/2',
-          'flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg backdrop-blur-sm',
+      <div ref={toolbarRef} className="absolute bottom-4 left-1/2 z-50 -translate-x-1/2">
+        {/* ── 上拉菜单 ────────────────────────────────── */}
+        {CANVAS_TOOLBAR_ENTRIES.map((entry) =>
+          entry.items && openGroupId === entry.id ? (
+            <PopoverMenu
+              key={entry.id}
+              entry={entry}
+              onSelect={handleSubItemClick}
+              onDragStart={onDragStart}
+              activeTool={activeTool}
+            />
+          ) : null,
         )}
-      >
-        {POINTER_TOOLS.map((tool) => (
-          <ToolButton
-            key={tool.id}
-            tool={tool}
-            isActive={activeTool === tool.id}
-            onClick={() => setActiveTool(tool.id)}
-          />
-        ))}
 
-        <Separator orientation="vertical" className="mx-1 !h-6" />
-
-        {/* ── Node Tools (支持拖拽) ────────────────────── */}
-        {NODE_TOOLS.map((tool) => (
+        {/* ── 主工具栏 ────────────────────────────────── */}
+        <div
+          className={cn(
+            'bg-card/95 border-border relative',
+            'flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg backdrop-blur-sm',
+          )}
+        >
           <ToolButton
-            key={tool.id}
-            tool={tool}
-            isActive={activeTool === tool.id}
-            onClick={() => setActiveTool(tool.id)}
-            draggable
-            onDragStart={(e) => onDragStart(e, tool.nodeType!)}
+            icon={MousePointer2}
+            labelKey="select"
+            isActive={activeTool === 'select'}
+            onClick={() => { setActiveTool('select'); setOpenGroupId(null) }}
           />
-        ))}
+          <ToolButton
+            icon={Hand}
+            labelKey="hand"
+            isActive={activeTool === 'hand'}
+            onClick={() => { setActiveTool('hand'); setOpenGroupId(null) }}
+          />
+
+          <Separator orientation="vertical" className="mx-1 !h-6" />
+
+          {CANVAS_TOOLBAR_ENTRIES.map((entry) =>
+            entry.items ? (
+              <GroupButton
+                key={entry.id}
+                entry={entry}
+                isOpen={openGroupId === entry.id}
+                isActive={entry.items.some((item) => activeTool === item.type)}
+                onClick={() => handleGroupToggle(entry.id)}
+              />
+            ) : (
+              <ToolButton
+                key={entry.id}
+                icon={entry.icon}
+                labelKey={entry.labelKey}
+                isActive={activeTool === entry.nodeType}
+                onClick={() => handleDirectClick(entry.nodeType!)}
+                draggable
+                onDragStart={(e) => onDragStart(e, entry.nodeType!)}
+              />
+            ),
+          )}
+        </div>
       </div>
     </TooltipProvider>
+  )
+}
+
+/* ─── PopoverMenu (上拉菜单) ──────────────────────────── */
+
+interface PopoverMenuProps {
+  entry: ToolbarEntry
+  onSelect: (nodeType: string) => void
+  onDragStart: (e: DragEvent<HTMLButtonElement>, nodeType: string) => void
+  activeTool: CanvasTool
+}
+
+function PopoverMenu({ entry, onSelect, onDragStart, activeTool }: PopoverMenuProps) {
+  const tCtx = useTranslations('contextMenu')
+
+  return (
+    <div
+      className={cn(
+        'bg-card/95 border-border absolute bottom-full left-1/2 mb-2 -translate-x-1/2',
+        'min-w-[160px] rounded-xl border py-1.5 shadow-xl backdrop-blur-sm',
+        'animate-in fade-in-0 slide-in-from-bottom-2 duration-150',
+      )}
+    >
+      {entry.items!.map(({ type, labelKey, icon: Icon }) => (
+        <button
+          key={type}
+          className={cn(
+            'flex w-full items-center gap-2.5 px-3 py-2 text-sm',
+            'hover:bg-accent hover:text-accent-foreground',
+            'cursor-pointer transition-colors',
+            activeTool === type && 'bg-accent text-accent-foreground',
+          )}
+          onClick={() => onSelect(type)}
+          draggable
+          onDragStart={(e) => onDragStart(e, type)}
+        >
+          <Icon className="h-4 w-4 opacity-60" />
+          <span>{tCtx(labelKey)}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* ─── GroupButton (展开按钮) ──────────────────────────── */
+
+interface GroupButtonProps {
+  entry: ToolbarEntry
+  isOpen: boolean
+  isActive: boolean
+  onClick: () => void
+}
+
+function GroupButton({ entry, isOpen, isActive, onClick }: GroupButtonProps) {
+  const t = useTranslations('toolbar')
+  const Icon = entry.icon
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className={cn(
+            'relative rounded-full transition-colors',
+            (isOpen || isActive) && 'bg-[var(--brand-500)] text-white hover:bg-[var(--brand-500)]/90 hover:text-white',
+          )}
+          onClick={onClick}
+        >
+          <Icon size={16} />
+          <ChevronUp
+            size={8}
+            className={cn(
+              'absolute -top-0.5 right-0 transition-transform',
+              isOpen ? 'rotate-0' : 'rotate-180',
+            )}
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        {t(entry.labelKey)}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
 /* ─── ToolButton ──────────────────────────────────────── */
 
 interface ToolButtonProps {
-  tool: ToolDef
+  icon: LucideIcon
+  labelKey: string
   isActive: boolean
   onClick: () => void
   draggable?: boolean
   onDragStart?: (e: DragEvent<HTMLButtonElement>) => void
 }
 
-function ToolButton({ tool, isActive, onClick, draggable, onDragStart }: ToolButtonProps) {
+function ToolButton({ icon: Icon, labelKey, isActive, onClick, draggable, onDragStart }: ToolButtonProps) {
   const t = useTranslations('toolbar')
-  const Icon = tool.icon
 
   return (
     <Tooltip>
@@ -139,7 +256,7 @@ function ToolButton({ tool, isActive, onClick, draggable, onDragStart }: ToolBut
         </Button>
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={8}>
-        {t(tool.labelKey)}
+        {t(labelKey)}
       </TooltipContent>
     </Tooltip>
   )

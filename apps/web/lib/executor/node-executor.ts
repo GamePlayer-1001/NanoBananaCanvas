@@ -61,6 +61,7 @@ const executors: Record<string, NodeExecutorFn> = {
   loop: executeLoop,
   'text-merge': executeTextMerge,
   'image-merge': executeImageMerge,
+  'image-compare': executeImageCompare,
 }
 
 /* ─── Main Entry ─────────────────────────────────────── */
@@ -130,6 +131,34 @@ async function executeImageMerge(
   )
 
   return { outputs: { 'images-out': images } }
+}
+
+async function executeImageCompare(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
+  const imageA = ctx.inputs['image-a-in']
+  const imageB = ctx.inputs['image-b-in']
+
+  if (typeof imageA !== 'string' || !imageA) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Image Compare requires Image A input',
+      { nodeId: ctx.nodeId },
+    )
+  }
+  if (typeof imageB !== 'string' || !imageB) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Image Compare requires Image B input',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  ctx.onTaskStateChange?.({
+    configPatch: { imageA, imageB },
+  })
+
+  return { outputs: { 'image-out': imageA } }
 }
 
 function collectInputValues(ctx: NodeExecutionContext): unknown[] {

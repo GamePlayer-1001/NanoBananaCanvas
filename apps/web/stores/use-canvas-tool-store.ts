@@ -25,6 +25,7 @@ export type CanvasTool =
   | 'loop'
   | 'text-merge'
   | 'image-merge'
+  | 'image-compare'
 
 interface CanvasToolState {
   activeTool: CanvasTool

@@ -18,6 +18,7 @@ import { GroupNode } from './group-node'
 import { ConditionalNode } from './conditional-node'
 import { LoopNode } from './loop-node'
 import { TextMergeNode, ImageMergeNode } from './merge-node'
+import { ImageCompareNode } from './image-compare-node'
 
 export const NODE_TYPES: NodeTypes = {
   'text-input': TextInputNode,
@@ -33,4 +34,5 @@ export const NODE_TYPES: NodeTypes = {
   loop: LoopNode,
   'text-merge': TextMergeNode,
   'image-merge': ImageMergeNode,
+  'image-compare': ImageCompareNode,
 }
