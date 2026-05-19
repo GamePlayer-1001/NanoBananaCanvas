@@ -477,6 +477,25 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     closeMenu()
   }, [closeMenu])
 
+  /* ── CANVAS-013: Toolbar click-to-place node ────────── */
+  const handlePaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      handleContextMenuClose()
+
+      const tool = useCanvasToolStore.getState().activeTool
+      if (tool === 'select' || tool === 'hand') return
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
+      const node = createNode(tool, position)
+      addNode(node)
+      resetTool()
+    },
+    [handleContextMenuClose, screenToFlowPosition, addNode, resetTool],
+  )
+
   const effectiveTool = isSpacePanning ? 'hand' : activeTool
   const isHandTool = effectiveTool === 'hand'
   const isSelectTool = effectiveTool === 'select'
@@ -512,7 +531,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         </div>
       ) : null}
       <ReactFlow
-        className={isHandTool ? 'relative z-10 [&_svg]:cursor-grab [&_.react-flow__pane]:cursor-grab [&_.react-flow__node]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing active:[&_.react-flow__node]:cursor-grabbing' : 'relative z-10 [&_.react-flow__pane]:cursor-default'}
+        className={isHandTool ? 'relative z-10 [&_svg]:cursor-grab [&_.react-flow__pane]:cursor-grab [&_.react-flow__node]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing active:[&_.react-flow__node]:cursor-grabbing' : !isSelectTool ? 'relative z-10 [&_.react-flow__pane]:cursor-crosshair' : 'relative z-10 [&_.react-flow__pane]:cursor-default'}
         nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}
@@ -526,7 +545,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         /* ── 右键菜单事件 ────────────────────────────── */
         onPaneContextMenu={handlePaneContextMenu}
         onNodeContextMenu={handleNodeContextMenu}
-        onPaneClick={handleContextMenuClose}
+        onPaneClick={handlePaneClick}
         /* ── 拖拽连线事件 (MENU-005) ─────────────────── */
         onConnectStart={handleConnectStart}
         onConnectEnd={handleConnectEnd}
