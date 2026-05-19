@@ -27,7 +27,7 @@ export function AgentSlashCommandMenu({
   commands,
   activeIndex,
   onSelect,
-  onDismiss,
+  onDismiss: _onDismiss,
 }: AgentSlashCommandMenuProps) {
   const activeRef = useRef<HTMLButtonElement | null>(null)
 

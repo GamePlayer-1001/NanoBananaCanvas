@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
+import { useCallback, useRef, useState, type MouseEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 
@@ -107,6 +107,7 @@ function SliderCompare({ imageA, imageB, labelA = 'A', labelB = 'B' }: SliderCom
       onMouseDown={onMouseDown}
     >
       {/* Image B (full background) */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageB}
         alt="B"
@@ -115,6 +116,7 @@ function SliderCompare({ imageA, imageB, labelA = 'A', labelB = 'B' }: SliderCom
       />
 
       {/* Image A (clipped by slider position) */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageA}
         alt="A"
@@ -172,6 +174,7 @@ function SideBySideCompare({ imageA, imageB, labelA = 'A', labelB = 'B' }: Slide
   return (
     <div className="flex h-36 gap-1 overflow-hidden rounded-md border">
       <div className="relative flex-1 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageA} alt="A" className="h-full w-full object-cover" draggable={false} />
         <div className="absolute top-1.5 left-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white">
           {labelA}
@@ -179,6 +182,7 @@ function SideBySideCompare({ imageA, imageB, labelA = 'A', labelB = 'B' }: Slide
       </div>
       <div className="bg-border w-px" />
       <div className="relative flex-1 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageB} alt="B" className="h-full w-full object-cover" draggable={false} />
         <div className="absolute top-1.5 right-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white">
           {labelB}

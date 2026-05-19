@@ -19,7 +19,6 @@ import { HeroSection } from '@/components/landing/hero-section'
 import {
   FaqSection,
   FeaturesSection,
-  ModelMindMapSection,
   PricingSection,
   TestimonialsSection,
 } from '@/components/landing/landing-sections'
