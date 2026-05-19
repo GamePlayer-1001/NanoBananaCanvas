@@ -115,18 +115,13 @@ function SliderCompare({ imageA, imageB, labelA = 'A', labelB = 'B' }: SliderCom
       />
 
       {/* Image A (clipped by slider position) */}
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ width: `${position}%` }}
-      >
-        <img
-          src={imageA}
-          alt="A"
-          className="h-full w-full object-cover"
-          style={{ width: containerRef.current?.offsetWidth ?? '100%' }}
-          draggable={false}
-        />
-      </div>
+      <img
+        src={imageA}
+        alt="A"
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
+        draggable={false}
+      />
 
       {/* Slider Line */}
       <div
