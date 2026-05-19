@@ -34,6 +34,7 @@ export const DRAG_DATA_TYPE = 'application/reactflow'
 export function CanvasToolbar() {
   const { activeTool, setActiveTool } = useCanvasToolStore()
   const [openGroupId, setOpenGroupId] = useState<string | null>(null)
+  const [popoverOffset, setPopoverOffset] = useState<number | undefined>(undefined)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const groupButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
@@ -47,7 +48,20 @@ export function CanvasToolbar() {
   )
 
   const handleGroupToggle = useCallback((id: string) => {
-    setOpenGroupId((prev) => (prev === id ? null : id))
+    setOpenGroupId((prev) => {
+      if (prev === id) return null
+      // 读 ref 在事件回调中合法
+      const btn = groupButtonRefs.current.get(id)
+      const toolbar = btn?.closest('[data-toolbar-bar]') as HTMLElement | null
+      if (btn && toolbar) {
+        const toolbarRect = toolbar.getBoundingClientRect()
+        const btnRect = btn.getBoundingClientRect()
+        setPopoverOffset(btnRect.left + btnRect.width / 2 - toolbarRect.left)
+      } else {
+        setPopoverOffset(undefined)
+      }
+      return id
+    })
   }, [])
 
   const handleDirectClick = useCallback(
@@ -89,7 +103,7 @@ export function CanvasToolbar() {
               onSelect={handleSubItemClick}
               onDragStart={onDragStart}
               activeTool={activeTool}
-              anchorRef={groupButtonRefs.current.get(entry.id) ?? null}
+              anchorOffset={popoverOffset}
             />
           ) : null,
         )}
@@ -155,22 +169,11 @@ interface PopoverMenuProps {
   onSelect: (nodeType: string) => void
   onDragStart: (e: DragEvent<HTMLButtonElement>, nodeType: string) => void
   activeTool: CanvasTool
-  anchorRef: HTMLButtonElement | null
+  anchorOffset?: number
 }
 
-function PopoverMenu({ entry, onSelect, onDragStart, activeTool, anchorRef }: PopoverMenuProps) {
+function PopoverMenu({ entry, onSelect, onDragStart, activeTool, anchorOffset }: PopoverMenuProps) {
   const tCtx = useTranslations('contextMenu')
-
-  // 计算相对于触发按钮的水平偏移
-  const anchorOffset = (() => {
-    if (!anchorRef) return undefined
-    const toolbar = anchorRef.closest('[data-toolbar-bar]') as HTMLElement | null
-    if (!toolbar) return undefined
-    const toolbarRect = toolbar.getBoundingClientRect()
-    const btnRect = anchorRef.getBoundingClientRect()
-    const centerX = btnRect.left + btnRect.width / 2 - toolbarRect.left
-    return centerX
-  })()
 
   return (
     <div
