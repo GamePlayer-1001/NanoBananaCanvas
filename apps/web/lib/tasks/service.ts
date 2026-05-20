@@ -1,8 +1,11 @@
 /**
- * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/AsyncTaskType/AsyncTaskStatus/ExecutionMode,
- *          依赖 @/lib/api-key-crypto 的 decryptApiKey，依赖 @/lib/billing/ledger 与 @/lib/billing/metering,
- *          依赖 @/lib/platform-runtime, @/lib/user-model-config, @/lib/tasks/processors 的 getProcessor,
- *          依赖 @/lib/nanoid, @/lib/logger, @/lib/errors, @/lib/env, @/lib/r2, @/lib/storage
+ * [INPUT]: 依赖 @nano-banana/shared 的 TASK_CONFIG/TASK_CONCURRENCY_LIMITS,
+ *          依赖 @/lib/tasks/service-types（全部类型），
+ *          依赖 @/lib/tasks/service-output（输出持久化），
+ *          依赖 @/lib/tasks/service-billing（积分结算），
+ *          依赖 @/lib/tasks/service-keys（密钥与配置解析），
+ *          依赖 @/lib/billing/ledger 的 confirmFrozenCredits/freezeCredits,
+ *          依赖 @/lib/tasks/processors 的 getProcessor
  * [OUTPUT]: 对外提供 checkConcurrency / submitTask / processTaskDispatch / checkTask / cancelTask / listTasks / deleteTasks，并在平台模式下接回任务冻结/确认/退款与 orchestrator 持久化
  * [POS]: lib/tasks 的核心服务层 — 整个异步任务系统的心脏，编排 D1 + Processor + Queue/Workflow 双轨 + 平台 Key / 账号级模型槽位协作
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -12,245 +15,80 @@ import { TASK_CONFIG, TASK_CONCURRENCY_LIMITS } from '@nano-banana/shared'
 import type {
   AsyncTaskStatus,
   AsyncTaskType,
-  ExecutionMode,
   TaskOrchestrator,
   TaskQueueMessage,
 } from '@nano-banana/shared'
 
-import { decryptApiKey, encryptApiKey } from '@/lib/api-key-crypto'
 import {
   confirmFrozenCredits,
   freezeCredits,
-  refundFrozenCredits,
 } from '@/lib/billing/ledger'
-import {
-  estimateBillableUnits,
-  estimateCreditsFromUsage,
-  getModelPricing,
-  type BillableUsageEstimate,
-} from '@/lib/billing/metering'
-import { getWorkflowImagePriceForSize } from '@/lib/billing/workflow-pricing'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import {
-  finalizeLearnedImageCapabilities,
   getStaticImageModelCapabilities,
-  learnImageCapabilitiesFromError,
   mergeImageModelCapabilities,
   type ImageModelCapabilities,
 } from '@/lib/image-model-capabilities'
 import { createLogger } from '@/lib/logger'
 import { nanoid } from '@/lib/nanoid'
-import {
-  resolvePlatformRuntimeModel,
-  type PlatformSupplierId,
-} from '@/lib/platform-runtime'
+import { resolvePlatformRuntimeModel } from '@/lib/platform-runtime'
 import { getR2 } from '@/lib/r2'
-import {
-  extractR2KeyFromFileUrl,
-  generateOutputPath,
-  toPublicFileUrl,
-  toInternalFileUrl,
-} from '@/lib/storage'
-import {
-  deserializeUserModelConfig,
-  serializeUserModelConfig,
-  toRuntimeUserModelConfig,
-  type UserModelConfigPayload,
-  type UserModelRuntimeConfig,
-} from '@/lib/user-model-config'
+import { extractR2KeyFromFileUrl } from '@/lib/storage'
+import type { UserModelRuntimeConfig } from '@/lib/user-model-config'
 import type { NodeCapability } from '@/lib/ai-node-config'
 import { getPlatformSupplierApiKey } from '@/services/ai'
 
 import { getProcessor } from './processors'
 import type { TaskOutput, TaskProcessor } from './processors'
+import {
+  estimateTaskBillingDraft,
+  getReservedTaskCredits,
+  refundTaskCredits,
+  settleCompletedPlatformImageTask,
+} from './service-billing'
+import {
+  getUserTaskRuntimeConfig,
+  getTaskPlatformKey,
+  learnUserImageCapabilitiesFromTaskError,
+  taskTypeToPlatformCategory,
+} from './service-keys'
+import { persistTaskOutput } from './service-output'
+import type {
+  DeleteTasksResult,
+  ListTasksResult,
+  PageInfo,
+  PersistedDataUrlDescriptor,
+  PersistedTaskRuntimeMeta,
+  SubmitTaskParams,
+  SubmitTaskResult,
+  TaskDetail,
+  TaskDiagnostics,
+  TaskExecutionDispatch,
+  TaskExecutionRequest,
+  TaskExecutionSnapshot,
+  TaskRow,
+  TaskServiceRuntime,
+  WorkflowRuntimeStatus,
+} from './service-types'
 
 const log = createLogger('task:service')
 const FREE_TASK_CONCURRENCY_LIMIT = TASK_CONCURRENCY_LIMITS.free
 const WORKFLOW_STARTUP_GRACE_MS = 60_000
 
-/* ─── D1 Row Shape ──────────────────────────────────── */
+/* ─── Re-exports (barrel compatibility) ─────────────── */
 
-interface TaskRow {
-  id: string
-  user_id: string
-  task_type: AsyncTaskType
-  provider: string
-  model_id: string
-  external_task_id: string | null
-  execution_mode: ExecutionMode
-  input_data: string
-  output_data: string | null
-  diagnostics_data: string | null
-  status: AsyncTaskStatus
-  progress: number
-  retry_count: number
-  max_retries: number
-  last_checked_at: string | null
-  workflow_id: string | null
-  node_id: string | null
-  created_at: string
-  started_at: string | null
-  completed_at: string | null
-  updated_at: string
-}
-
-/* ─── Public Types ──────────────────────────────────── */
-
-export interface SubmitTaskParams {
-  userId: string
-  taskType: AsyncTaskType
-  provider?: string
-  capability?: NodeCapability
-  modelId?: string
-  configId?: string
-  executionMode: ExecutionMode
-  input: Record<string, unknown>
-  workflowId?: string
-  nodeId?: string
-  orchestrator?: TaskOrchestrator
-}
-
-interface ReservedTaskBillingDraft {
-  mode: 'reserved'
-  inputTokens: null
-  outputTokens: null
-  billableUnits: number | null
-  estimatedCredits: number | null
-  category: string | null
-  unitLabel: string | null
-  basis: string | null
-}
-
-interface TaskBillingInput extends Record<string, unknown> {
-  billingDraft?: ReservedTaskBillingDraft
-}
-
-interface PersistedDataUrlDescriptor {
-  __type: 'omitted-data-url'
-  mediaType: string
-  length: number
-}
-
-interface PersistedTaskRuntimeMeta {
-  userConfigId?: string
-  orchestrator?: TaskOrchestrator
-}
-
-interface MediaDimensions {
-  width: number
-  height: number
-}
-
-interface TaskExecutionSnapshot {
-  taskType: AsyncTaskType
-  requestProvider: string
-  resolvedProvider: string
-  resolvedModelId: string
-  executionMode: ExecutionMode
-  resolvedInput: Record<string, unknown>
-  originalInput: Record<string, unknown>
-  apiKey?: string
-  fallbackApiKey?: string
-  runtimeConfig?: UserModelRuntimeConfig | null
-  runtimeMeta?: PersistedTaskRuntimeMeta
-}
-
-export interface TaskDiagnostics {
-  [key: string]: unknown
-}
-
-export interface TaskDetail {
-  id: string
-  taskType: AsyncTaskType
-  provider: string
-  modelId: string
-  executionMode: ExecutionMode
-  status: AsyncTaskStatus
-  progress: number
-  input: Record<string, unknown>
-  output: unknown | null
-  diagnostics: TaskDiagnostics | null
-  retryCount: number
-  workflowId: string | null
-  nodeId: string | null
-  createdAt: string
-  startedAt: string | null
-  completedAt: string | null
-}
-
-export interface PageInfo {
-  page: number
-  limit: number
-  hasMore: boolean
-  nextPage: number | null
-}
-
-export interface ListTasksResult {
-  tasks: TaskDetail[]
-  total: number
-  page: number
-  limit: number
-  pageInfo: PageInfo
-}
-
-export interface DeleteTasksResult {
-  deletedIds: string[]
-}
-
-interface TaskExecutionRequest {
-  taskId: string
-  userId: string
-  taskType: AsyncTaskType
-  requestProvider: string
-  initialResolvedProvider: string
-  resolvedModelId: string
-  executionMode: ExecutionMode
-  resolvedInput: Record<string, unknown>
-  originalInput: Record<string, unknown>
-  apiKey: string
-  fallbackApiKey?: string
-  reservedPlatformCredits: number
-  runtimeConfig: UserModelRuntimeConfig | null
-  orchestrator: TaskOrchestrator
-}
-
-interface WorkflowRuntimeStatus {
-  status:
-    | 'queued'
-    | 'running'
-    | 'paused'
-    | 'errored'
-    | 'terminated'
-    | 'complete'
-    | 'waitingForPause'
-    | 'waiting'
-    | 'unknown'
-  error?: {
-    name: string
-    message: string
-  }
-  output?: unknown
-}
-
-export interface SubmitTaskResult extends TaskDetail {
-  dispatch?: TaskExecutionDispatch
-}
-
-export interface TaskExecutionDispatch {
-  taskId: string
-  userId: string
-  orchestrator: TaskOrchestrator
-}
-
-export interface TaskServiceRuntime {
-  requireEnv: (key: string) => Promise<string>
-  getR2: () => Promise<R2Bucket>
-  getPlatformSupplierApiKey?: (provider: PlatformSupplierId) => Promise<string>
-  getPlatformKey?: (provider: string) => Promise<string>
-  dispatchTask?: (message: TaskQueueMessage) => Promise<void>
-  getWorkflowStatus?: (instanceId: string) => Promise<WorkflowRuntimeStatus | null>
-}
+export type {
+  DeleteTasksResult,
+  ListTasksResult,
+  PageInfo,
+  SubmitTaskParams,
+  SubmitTaskResult,
+  TaskDetail,
+  TaskDiagnostics,
+  TaskExecutionDispatch,
+  TaskServiceRuntime,
+} from './service-types'
 
 const defaultTaskRuntime: TaskServiceRuntime = {
   requireEnv,
@@ -515,17 +353,6 @@ async function observeWorkflowTaskState(
   return null
 }
 
-function getReservedTaskCredits(input: Record<string, unknown>): number {
-  const billingDraft = (input as TaskBillingInput).billingDraft
-  const estimatedCredits = billingDraft?.estimatedCredits
-
-  if (typeof estimatedCredits !== 'number' || !Number.isFinite(estimatedCredits) || estimatedCredits <= 0) {
-    return 0
-  }
-
-  return Math.round(estimatedCredits)
-}
-
 function buildTaskExecutionSnapshotKey(userId: string, taskId: string): string {
   return `task-inputs/${userId}/${taskId}.json`
 }
@@ -536,216 +363,6 @@ function buildTaskDispatch(
   orchestrator: TaskOrchestrator,
 ): TaskExecutionDispatch {
   return { taskId, userId, orchestrator }
-}
-
-async function refundTaskCredits(input: {
-  userId: string
-  referenceId: string
-  source: string
-  description: string
-  requestedCredits?: number
-  db?: D1Database
-}) {
-  await refundFrozenCredits({
-    userId: input.userId,
-    referenceId: input.referenceId,
-    requestedCredits: input.requestedCredits,
-    source: input.source,
-    description: input.description,
-    db: input.db,
-  })
-}
-
-async function resolveCompletedImageTaskCredits(
-  db: D1Database,
-  input: {
-    provider: string
-    modelId: string
-    taskInput: Record<string, unknown>
-    output: TaskOutput
-  },
-): Promise<number | null> {
-  const requestedSize =
-    typeof input.taskInput.size === 'string' ? input.taskInput.size : 'auto'
-  const pricing = await getModelPricing(db, {
-    provider: input.provider,
-    modelId: input.modelId,
-    activeOnly: false,
-  })
-
-  if (requestedSize !== 'auto') {
-    return getWorkflowImagePriceForSize({
-      modelId: input.modelId,
-      modelName: pricing?.modelName,
-      size: requestedSize as '1k' | '2k' | '4k' | '8k',
-    })
-  }
-
-  const actualTier = resolveImagePriceTierFromOutput(input.output)
-  if (!actualTier) {
-    return null
-  }
-
-  return getWorkflowImagePriceForSize({
-    modelId: input.modelId,
-    modelName: pricing?.modelName,
-    size: actualTier,
-  })
-}
-
-async function settleCompletedPlatformImageTask(input: {
-  db: D1Database
-  userId: string
-  taskId: string
-  provider: string
-  modelId: string
-  taskInput: Record<string, unknown>
-  output: TaskOutput
-}) {
-  const reservedCredits = getReservedTaskCredits(input.taskInput)
-  const actualCredits = await resolveCompletedImageTaskCredits(input.db, {
-    provider: input.provider,
-    modelId: input.modelId,
-    taskInput: input.taskInput,
-    output: input.output,
-  })
-
-  if (actualCredits == null) {
-    if (reservedCredits > 0) {
-      await confirmFrozenCredits({
-        userId: input.userId,
-        referenceId: input.taskId,
-        requestedCredits: reservedCredits,
-        source: 'task_platform_confirm',
-        description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
-        db: input.db,
-      })
-    }
-    return
-  }
-
-  if (actualCredits > reservedCredits) {
-    await freezeCredits({
-      userId: input.userId,
-      requestedCredits: actualCredits - reservedCredits,
-      referenceId: input.taskId,
-      source: 'task_platform_adjust',
-      description: `Freeze additional credits for completed image task ${input.provider}/${input.modelId}`,
-      db: input.db,
-    })
-  }
-
-  await confirmFrozenCredits({
-    userId: input.userId,
-    referenceId: input.taskId,
-    requestedCredits: actualCredits,
-    source: 'task_platform_confirm',
-    description: `Confirm async task billing image_gen ${input.provider}/${input.modelId}`,
-    db: input.db,
-  })
-
-  if (actualCredits < reservedCredits) {
-    await refundTaskCredits({
-      userId: input.userId,
-      referenceId: input.taskId,
-      requestedCredits: reservedCredits - actualCredits,
-      source: 'task_platform_refund',
-      description: `Refund unused reserved credits for completed image task ${input.provider}/${input.modelId}`,
-      db: input.db,
-    })
-  }
-}
-
-async function estimateTaskBillingDraft(
-  db: D1Database,
-  input: {
-    provider: string
-    modelId: string
-    taskType: AsyncTaskType
-    taskInput: Record<string, unknown>
-  },
-): Promise<ReservedTaskBillingDraft> {
-  if (input.taskType === 'image_gen') {
-    const pricing = await getModelPricing(db, {
-      provider: input.provider,
-      modelId: input.modelId,
-      activeOnly: false,
-    })
-    const size = typeof input.taskInput.size === 'string' ? input.taskInput.size : 'auto'
-    const estimatedCredits = getWorkflowImagePriceForSize({
-      modelId: input.modelId,
-      modelName: pricing?.modelName,
-      size: size as 'auto' | '1k' | '2k' | '4k' | '8k',
-    })
-
-    return {
-      mode: 'reserved',
-      inputTokens: null,
-      outputTokens: null,
-      billableUnits: null,
-      estimatedCredits,
-      category: 'image',
-      unitLabel: null,
-      basis: size === 'auto' ? 'image_size_auto' : 'image_size_preset',
-    }
-  }
-
-  const pricing = await getModelPricing(db, {
-    provider: input.provider,
-    modelId: input.modelId,
-    activeOnly: false,
-  })
-
-  const estimate = estimateTaskBillableUnits(input.taskType, pricing?.category, input.taskInput)
-  return {
-    mode: 'reserved',
-    inputTokens: null,
-    outputTokens: null,
-    billableUnits: estimate.billableUnits,
-    estimatedCredits:
-      pricing
-        ? estimateCreditsFromUsage({
-            billableUnits: estimate.billableUnits,
-            creditsPer1kUnits: pricing.creditsPer1kUnits,
-          })
-        : null,
-    category: estimate.category,
-    unitLabel: estimate.unitLabel,
-    basis: estimate.basis,
-  }
-}
-
-function estimateTaskBillableUnits(
-  taskType: AsyncTaskType,
-  pricingCategory: string | undefined,
-  taskInput: Record<string, unknown>,
-): BillableUsageEstimate {
-  if (taskType === 'image_gen') {
-    return estimateBillableUnits({
-      category: (pricingCategory as 'image' | undefined) ?? 'image',
-      outputCount:
-        typeof taskInput.count === 'number'
-          ? taskInput.count
-          : typeof taskInput.n === 'number'
-            ? taskInput.n
-            : 1,
-    })
-  }
-
-  if (taskType === 'video_gen') {
-    return estimateBillableUnits({
-      category: (pricingCategory as 'video' | undefined) ?? 'video',
-      durationSeconds:
-        typeof taskInput.duration === 'string' || typeof taskInput.duration === 'number'
-          ? taskInput.duration
-          : 5,
-    })
-  }
-
-  return estimateBillableUnits({
-    category: (pricingCategory as 'audio' | undefined) ?? 'audio',
-    text: typeof taskInput.text === 'string' ? taskInput.text : '',
-  })
 }
 
 function toTaskProviderError(
@@ -759,245 +376,6 @@ function toTaskProviderError(
 
   const message = error instanceof Error ? error.message : fallbackMessage
   return new TaskError(ErrorCode.TASK_PROVIDER_ERROR, message, meta)
-}
-
-const CONTENT_TYPE_EXTENSION_MAP: Record<string, string> = {
-  'audio/mpeg': 'mp3',
-  'audio/mp3': 'mp3',
-  'audio/wav': 'wav',
-  'audio/x-wav': 'wav',
-  'audio/ogg': 'ogg',
-  'audio/webm': 'webm',
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'video/mp4': 'mp4',
-  'video/quicktime': 'mov',
-  'video/webm': 'webm',
-}
-
-function isUrlOutput(output: TaskOutput | undefined): output is TaskOutput & { url: string } {
-  return output?.type === 'url' && typeof output.url === 'string' && output.url.trim().length > 0
-}
-
-function inferExtensionFromContentType(contentType: string | null | undefined): string | null {
-  if (!contentType) {
-    return null
-  }
-
-  const normalized = contentType.split(';', 1)[0]?.trim().toLowerCase()
-  return normalized ? CONTENT_TYPE_EXTENSION_MAP[normalized] ?? null : null
-}
-
-function inferExtensionFromUrl(url: string): string | null {
-  if (url.startsWith('data:')) {
-    const match = /^data:([^;,]+)/i.exec(url)
-    return inferExtensionFromContentType(match?.[1] ?? null)
-  }
-
-  try {
-    const parsed = new URL(url)
-    const match = /\.([a-z0-9]+)$/i.exec(parsed.pathname)
-    return match?.[1]?.toLowerCase() ?? null
-  } catch {
-    return null
-  }
-}
-
-function inferOutputExtension(output: TaskOutput): string {
-  return (
-    inferExtensionFromContentType(output.contentType) ??
-    (output.url ? inferExtensionFromUrl(output.url) : null) ??
-    'bin'
-  )
-}
-
-function inferOutputFileName(taskId: string, output: TaskOutput): string {
-  const ext = inferOutputExtension(output)
-  return `${taskId}.${ext}`
-}
-
-function readPngDimensions(bytes: Uint8Array): MediaDimensions | null {
-  if (bytes.length < 24) return null
-  const pngHeader = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-  if (!pngHeader.every((value, index) => bytes[index] === value)) return null
-
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  return {
-    width: view.getUint32(16),
-    height: view.getUint32(20),
-  }
-}
-
-function readJpegDimensions(bytes: Uint8Array): MediaDimensions | null {
-  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
-
-  let offset = 2
-  while (offset + 9 < bytes.length) {
-    if (bytes[offset] !== 0xff) {
-      offset += 1
-      continue
-    }
-
-    const marker = bytes[offset + 1]
-    const length = (bytes[offset + 2] << 8) | bytes[offset + 3]
-    if (length < 2) return null
-
-    const isSof =
-      marker >= 0xc0 &&
-      marker <= 0xcf &&
-      ![0xc4, 0xc8, 0xcc].includes(marker)
-
-    if (isSof && offset + 8 < bytes.length) {
-      return {
-        height: (bytes[offset + 5] << 8) | bytes[offset + 6],
-        width: (bytes[offset + 7] << 8) | bytes[offset + 8],
-      }
-    }
-
-    offset += 2 + length
-  }
-
-  return null
-}
-
-function readWebpDimensions(bytes: Uint8Array): MediaDimensions | null {
-  if (bytes.length < 30) return null
-  const riff = String.fromCharCode(...bytes.slice(0, 4))
-  const webp = String.fromCharCode(...bytes.slice(8, 12))
-  if (riff !== 'RIFF' || webp !== 'WEBP') return null
-
-  const chunk = String.fromCharCode(...bytes.slice(12, 16))
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-
-  if (chunk === 'VP8X' && bytes.length >= 30) {
-    const width = 1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16)
-    const height = 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16)
-    return { width, height }
-  }
-
-  if (chunk === 'VP8 ' && bytes.length >= 30) {
-    return {
-      width: view.getUint16(26, true) & 0x3fff,
-      height: view.getUint16(28, true) & 0x3fff,
-    }
-  }
-
-  if (chunk === 'VP8L' && bytes.length >= 25) {
-    const b0 = bytes[21]
-    const b1 = bytes[22]
-    const b2 = bytes[23]
-    const b3 = bytes[24]
-    const width = 1 + (((b1 & 0x3f) << 8) | b0)
-    const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6))
-    return { width, height }
-  }
-
-  return null
-}
-
-function detectImageDimensions(body: ArrayBuffer, contentType: string): MediaDimensions | null {
-  const bytes = new Uint8Array(body)
-  const normalized = contentType.split(';', 1)[0]?.trim().toLowerCase()
-
-  if (normalized === 'image/png') return readPngDimensions(bytes)
-  if (normalized === 'image/jpeg' || normalized === 'image/jpg') return readJpegDimensions(bytes)
-  if (normalized === 'image/webp') return readWebpDimensions(bytes)
-
-  return null
-}
-
-function resolveImagePriceTierFromOutput(output: TaskOutput): '1k' | '2k' | '4k' | '8k' | null {
-  const width = output.width ?? 0
-  const height = output.height ?? 0
-  const longEdge = Math.max(width, height)
-  if (longEdge <= 0) return null
-  if (longEdge <= 1920) return '1k'
-  if (longEdge <= 2560) return '2k'
-  if (longEdge <= 3840) return '4k'
-  return '8k'
-}
-
-function normalizeInternalOutput(taskId: string, output: TaskOutput, r2Key: string): TaskOutput {
-  return {
-    ...output,
-    url: toInternalFileUrl(r2Key),
-    r2_key: r2Key,
-    fileName: output.fileName ?? inferOutputFileName(taskId, output),
-  }
-}
-
-async function fetchOutputPayload(output: TaskOutput): Promise<{
-  body: ArrayBuffer
-  contentType: string
-}> {
-  if (!isUrlOutput(output)) {
-    throw new Error('Task output is not a valid URL payload')
-  }
-
-  const response = await fetch(output.url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch task output: ${response.status} ${response.statusText}`)
-  }
-
-  const body = await response.arrayBuffer()
-  const contentType =
-    response.headers.get('content-type') ??
-    output.contentType ??
-    'application/octet-stream'
-
-  return { body, contentType }
-}
-
-async function persistTaskOutput(
-  taskId: string,
-  userId: string,
-  output: TaskOutput,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-): Promise<TaskOutput> {
-  if (!isUrlOutput(output)) {
-    return output
-  }
-
-  const existingKey =
-    output.r2_key ??
-    (output.url ? extractR2KeyFromFileUrl(output.url) : null)
-
-  if (existingKey?.startsWith(`outputs/${userId}/`)) {
-    return normalizeInternalOutput(taskId, output, existingKey)
-  }
-
-  const { body, contentType } = await fetchOutputPayload(output)
-  const ext =
-    inferExtensionFromContentType(contentType) ??
-    inferOutputExtension({ ...output, contentType }) ??
-    'bin'
-  const r2Key = generateOutputPath(userId, taskId, ext)
-  const fileName = output.fileName ?? `${taskId}.${ext}`
-  const r2 = await runtime.getR2()
-
-  await r2.put(r2Key, body, {
-    httpMetadata: {
-      contentType,
-      contentDisposition: `inline; filename="${fileName}"`,
-    },
-  })
-
-  const dimensions =
-    contentType.startsWith('image/')
-      ? detectImageDimensions(body, contentType)
-      : null
-
-  return {
-    ...output,
-    contentType,
-    fileName,
-    ...(dimensions ?? {}),
-    r2_key: r2Key,
-    url: await toPublicFileUrl(r2Key),
-  }
 }
 
 /* ─── 1. Concurrency Check ──────────────────────────── */
@@ -1910,177 +1288,6 @@ async function executeTaskRequest(
       executionMode,
       orchestrator: deferred.orchestrator,
     })
-  }
-}
-
-async function getUserTaskRuntimeConfig(
-  db: D1Database,
-  userId: string,
-  capability: NodeCapability,
-  configId?: string,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-): Promise<UserModelRuntimeConfig> {
-  try {
-    const keyRow = await findUserConfigRow(db, userId, capability, configId, runtime)
-
-    if (!keyRow) {
-      throw new TaskError(
-        ErrorCode.TASK_PROVIDER_ERROR,
-        `No API key configured for capability: ${capability}`,
-        { capability },
-      )
-    }
-
-    const encryptionKey = await runtime.requireEnv('ENCRYPTION_KEY')
-    const decrypted = await decryptApiKey(keyRow.encrypted_key, encryptionKey)
-    const payload = deserializeUserModelConfig(keyRow.configId, decrypted)
-    return toRuntimeUserModelConfig(keyRow.configId, payload)
-  } catch (error) {
-    throw toTaskProviderError(error, { userId, capability, configId })
-  }
-}
-
-async function learnUserImageCapabilitiesFromTaskError(
-  db: D1Database,
-  userId: string,
-  runtimeConfig: UserModelRuntimeConfig,
-  input: Record<string, unknown>,
-  error: unknown,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-) {
-  const message = error instanceof Error ? error.message : String(error)
-  const learned = learnImageCapabilitiesFromError(message)
-
-  if (!learned) {
-    return
-  }
-
-  const finalized = finalizeLearnedImageCapabilities(
-    learned,
-    typeof input.size === 'string' ? input.size : 'auto',
-    typeof input.aspectRatio === 'string' ? input.aspectRatio : '1:1',
-    message,
-  )
-
-  await updateStoredUserImageCapabilities(db, userId, runtimeConfig.configId, finalized, runtime)
-}
-
-async function updateStoredUserImageCapabilities(
-  db: D1Database,
-  userId: string,
-  configId: string,
-  learned: ImageModelCapabilities,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-) {
-  const encryptionKey = await runtime.requireEnv('ENCRYPTION_KEY')
-  const row = await db
-    .prepare(
-      `SELECT encrypted_key
-       FROM user_api_keys
-       WHERE user_id = ? AND provider = ? AND is_active = 1`,
-    )
-    .bind(userId, configId)
-    .first<{ encrypted_key: string }>()
-
-  if (!row) {
-    return
-  }
-
-  const decrypted = await decryptApiKey(row.encrypted_key, encryptionKey)
-  const payload = deserializeUserModelConfig(configId, decrypted)
-  const nextPayload: UserModelConfigPayload = {
-    ...payload,
-    version: 4,
-    imageCapabilities: mergeImageModelCapabilities(payload.imageCapabilities, learned),
-  }
-  const encrypted = await encryptApiKey(
-    serializeUserModelConfig(nextPayload),
-    encryptionKey,
-  )
-
-  await db
-    .prepare(
-      `UPDATE user_api_keys
-       SET encrypted_key = ?, updated_at = datetime('now')
-       WHERE user_id = ? AND provider = ?`,
-    )
-    .bind(encrypted, userId, configId)
-    .run()
-}
-
-async function findUserConfigRow(
-  db: D1Database,
-  userId: string,
-  capability: string,
-  configId?: string,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-): Promise<{ encrypted_key: string; configId: string } | null> {
-  if (configId) {
-    const row = await db
-      .prepare(
-        `SELECT encrypted_key FROM user_api_keys
-         WHERE user_id = ? AND provider = ? AND is_active = 1`,
-      )
-      .bind(userId, configId)
-      .first<{ encrypted_key: string }>()
-
-    if (row) {
-      return { ...row, configId }
-    }
-    return null
-  }
-
-  const encryptionKey = await runtime.requireEnv('ENCRYPTION_KEY')
-  const rows = await db
-    .prepare(
-      `SELECT provider, encrypted_key FROM user_api_keys
-       WHERE user_id = ? AND is_active = 1
-       ORDER BY created_at ASC`,
-    )
-    .bind(userId)
-    .all<{ provider: string; encrypted_key: string }>()
-
-  for (const row of rows.results ?? []) {
-    const decrypted = await decryptApiKey(String(row.encrypted_key), encryptionKey)
-    const payload = deserializeUserModelConfig(String(row.provider), decrypted)
-    if (payload.capability === capability) {
-      return { encrypted_key: String(row.encrypted_key), configId: String(row.provider) }
-    }
-  }
-
-  return null
-}
-
-async function getTaskPlatformKey(
-  providerHint: string,
-  taskType: AsyncTaskType,
-  modelId: string,
-  runtime: TaskServiceRuntime = defaultTaskRuntime,
-): Promise<string> {
-  const provider = resolvePlatformRuntimeModel({
-    category: taskTypeToPlatformCategory(taskType),
-    modelId,
-    supplierHint: providerHint,
-  }).supplierId
-
-  try {
-    return await (runtime.getPlatformSupplierApiKey ??
-      defaultTaskRuntime.getPlatformSupplierApiKey!)(provider)
-  } catch (error) {
-    throw toTaskProviderError(error, { provider })
-  }
-}
-
-function taskTypeToPlatformCategory(
-  taskType: AsyncTaskType,
-): 'image' | 'video' | 'audio' {
-  switch (taskType) {
-    case 'image_gen':
-      return 'image'
-    case 'video_gen':
-      return 'video'
-    case 'audio_gen':
-      return 'audio'
   }
 }
 
