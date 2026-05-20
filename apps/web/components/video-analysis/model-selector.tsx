@@ -15,7 +15,7 @@ import { ChevronDown } from 'lucide-react'
 
 const MODELS = [
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview' },
+  { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
 ] as const
 
 export type VideoAnalysisModelId = (typeof MODELS)[number]['id']

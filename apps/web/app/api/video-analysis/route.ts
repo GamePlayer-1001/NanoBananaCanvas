@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @/lib/api/auth、@/lib/api/rate-limit、@/lib/api/response、@/lib/db、@/lib/env、
  *          @/lib/errors、@/lib/billing/ledger、@/lib/billing/metering、@/lib/billing/subscription、@/lib/nanoid、
  *          @/components/video-analysis/video-analysis-prompts
- * [OUTPUT]: 对外提供 GET/POST /api/video-analysis（历史读取 + Pro 权限闸门 + 当前 Gemini 平台分析实现）
+ * [OUTPUT]: 对外提供 GET/POST /api/video-analysis（历史读取 + Pro 权限闸门 + Comfly → Gemini 视频分析）
  * [POS]: api/video-analysis 的服务端分析端点，承接历史持久化、权限控制、视频上传、分析调用与平台积分结算
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -24,25 +24,11 @@ import {
   normalizeVideoAnalysisResult,
 } from '@/components/video-analysis/video-analysis-prompts'
 
-const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
-const GEMINI_UPLOAD_URL = 'https://generativelanguage.googleapis.com/upload/v1beta/files'
-const ACTIVE_STATE = 'ACTIVE'
-const FAILED_STATE = 'FAILED'
-const PROCESSING_POLL_INTERVAL_MS = 2000
-const PROCESSING_MAX_POLLS = 30
+const COMFLY_BASE_URL = 'https://ai.comfly.chat/v1'
 
 const VIDEO_ANALYSIS_PRICING_FALLBACK: Record<string, number> = {
   'gemini-2.5-flash': 30,
-  'gemini-3-pro-preview': 120,
-}
-
-type GeminiFileUploadResponse = {
-  file?: {
-    name?: string
-    uri?: string
-    mimeType?: string
-    state?: string
-  }
+  'gemini-3.1-pro-preview': 120,
 }
 
 type VideoAnalysisHistoryRow = {
@@ -105,171 +91,88 @@ async function hasVideoAnalysisHistoryTable(db: D1Database): Promise<boolean> {
   return Boolean(row?.name)
 }
 
-async function startGeminiResumableUpload(apiKey: string, file: File) {
-  const response = await fetch(`${GEMINI_UPLOAD_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Upload-Protocol': 'resumable',
-      'X-Goog-Upload-Command': 'start',
-      'X-Goog-Upload-Header-Content-Length': String(file.size),
-      'X-Goog-Upload-Header-Content-Type': file.type || 'video/mp4',
-    },
-    body: JSON.stringify({
-      file: {
-        display_name: file.name,
-      },
-    }),
-  })
-
-  if (!response.ok) {
-    throw new AIServiceError(
-      ErrorCode.AI_PROVIDER_ERROR,
-      `Failed to start Gemini upload (${response.status})`,
-    )
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 8192
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.byteLength))
+    binary += String.fromCharCode(...chunk)
   }
-
-  const uploadUrl = response.headers.get('x-goog-upload-url')
-  if (!uploadUrl) {
-    throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Gemini upload URL is missing')
-  }
-
-  return uploadUrl
-}
-
-async function uploadGeminiFile(uploadUrl: string, file: File) {
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Length': String(file.size),
-      'X-Goog-Upload-Offset': '0',
-      'X-Goog-Upload-Command': 'upload, finalize',
-    },
-    body: file.stream(),
-    duplex: 'half',
-  } as RequestInit)
-
-  if (!response.ok) {
-    throw new AIServiceError(
-      ErrorCode.AI_PROVIDER_ERROR,
-      `Failed to upload Gemini file (${response.status})`,
-    )
-  }
-
-  const payload = (await response.json()) as GeminiFileUploadResponse
-  if (!payload.file?.name || !payload.file?.uri) {
-    throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Gemini file response is incomplete')
-  }
-
-  return {
-    name: payload.file.name,
-    uri: payload.file.uri,
-    mimeType: payload.file.mimeType || file.type || 'video/mp4',
-    state: payload.file.state || '',
-  }
-}
-
-async function waitForGeminiFileActive(apiKey: string, fileName: string) {
-  for (let attempt = 0; attempt < PROCESSING_MAX_POLLS; attempt += 1) {
-    const response = await fetch(`${GEMINI_BASE_URL}/${fileName}?key=${apiKey}`)
-    if (!response.ok) {
-      throw new AIServiceError(
-        ErrorCode.AI_PROVIDER_ERROR,
-        `Failed to poll Gemini file state (${response.status})`,
-      )
-    }
-
-    const payload = (await response.json()) as GeminiFileUploadResponse
-    const state = payload.file?.state || ''
-    const uri = payload.file?.uri || ''
-    const mimeType = payload.file?.mimeType || 'video/mp4'
-
-    if (state === ACTIVE_STATE) {
-      return { uri, mimeType }
-    }
-
-    if (state === FAILED_STATE) {
-      throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Gemini file processing failed')
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, PROCESSING_POLL_INTERVAL_MS))
-  }
-
-  throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Gemini file processing timed out')
-}
-
-async function deleteGeminiFile(apiKey: string, fileName: string) {
-  try {
-    await fetch(`${GEMINI_BASE_URL}/${fileName}?key=${apiKey}`, {
-      method: 'DELETE',
-    })
-  } catch {
-    // 清理失败不阻塞主链路
-  }
+  return btoa(binary)
 }
 
 async function generateAnalysisResult(input: {
   apiKey: string
-  fileUri: string
+  videoBase64: string
   mimeType: string
   model: string
   fileName: string
   durationSeconds: number
-}) {
-  const response = await fetch(
-    `${GEMINI_BASE_URL}/models/${input.model}:generateContent?key=${input.apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: buildVideoAnalysisSystemPrompt({ targetDurationSeconds: input.durationSeconds }) }],
-        },
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { file_data: { mime_type: input.mimeType, file_uri: input.fileUri } },
-              { text: buildVideoAnalysisUserPrompt(input.fileName, { targetDurationSeconds: input.durationSeconds }) },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
-        },
-      }),
+}): Promise<VideoAnalysisResult> {
+  const response = await fetch(`${COMFLY_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${input.apiKey}`,
     },
-  )
+    body: JSON.stringify({
+      model: input.model,
+      messages: [
+        {
+          role: 'system',
+          content: buildVideoAnalysisSystemPrompt({ targetDurationSeconds: input.durationSeconds }),
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${input.mimeType};base64,${input.videoBase64}`,
+              },
+            },
+            {
+              type: 'text',
+              text: buildVideoAnalysisUserPrompt(input.fileName, { targetDurationSeconds: input.durationSeconds }),
+            },
+          ],
+        },
+      ],
+      temperature: 0.2,
+      max_tokens: 8192,
+      response_format: { type: 'json_object' },
+    }),
+  })
 
   if (!response.ok) {
     const body = await response.text().catch(() => '')
     throw new AIServiceError(
       ErrorCode.AI_PROVIDER_ERROR,
-      `Gemini analysis request failed (${response.status})`,
+      `Video analysis request failed (${response.status})`,
       { body: body.slice(0, 300) },
     )
   }
 
   const payload = (await response.json()) as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{ text?: string }>
+    choices?: Array<{
+      message?: {
+        content?: string
       }
     }>
   }
 
-  const rawText = payload.candidates?.[0]?.content?.parts?.[0]?.text
+  const rawText = payload.choices?.[0]?.message?.content
   if (!rawText) {
-    throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Gemini returned an empty analysis result')
+    throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Analysis returned an empty result')
   }
 
   let parsed: unknown
   try {
     parsed = JSON.parse(rawText)
   } catch {
-    throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Gemini returned invalid JSON for analysis')
+    throw new AIServiceError(ErrorCode.AI_PROVIDER_ERROR, 'Analysis returned invalid JSON')
   }
 
   return normalizeVideoAnalysisResult(parsed)
@@ -333,10 +236,10 @@ export async function POST(req: Request) {
     const db = await getDb()
     const hasHistoryTable = await hasVideoAnalysisHistoryTable(db)
     const pricing =
-      (await getModelPricing(db, { provider: 'gemini', modelId: model, activeOnly: false })) ??
+      (await getModelPricing(db, { provider: 'comfly', modelId: model, activeOnly: false })) ??
       {
         id: `fallback_${model}`,
-        provider: 'gemini',
+        provider: 'comfly',
         modelId: model,
         modelName: model,
         category: 'video' as const,
@@ -356,8 +259,6 @@ export async function POST(req: Request) {
     })
     const referenceId = `video_analysis_${nanoid()}`
     const historyId = nanoid()
-
-    let geminiFileName = ''
 
     try {
       if (hasHistoryTable) {
@@ -389,16 +290,13 @@ export async function POST(req: Request) {
         })
       }
 
-      const apiKey = await requireEnv('GEMINI_API_KEY')
-      const uploadUrl = await startGeminiResumableUpload(apiKey, file)
-      const uploadedFile = await uploadGeminiFile(uploadUrl, file)
-      geminiFileName = uploadedFile.name
-      const readyFile = await waitForGeminiFileActive(apiKey, uploadedFile.name)
+      const apiKey = await requireEnv('COMFLY_API_KEY')
+      const videoBase64 = await fileToBase64(file)
 
       const result = await generateAnalysisResult({
         apiKey,
-        fileUri: readyFile.uri,
-        mimeType: readyFile.mimeType,
+        videoBase64,
+        mimeType: file.type || 'video/mp4',
         model,
         fileName: file.name,
         durationSeconds,
@@ -441,10 +339,6 @@ export async function POST(req: Request) {
             .first<VideoAnalysisHistoryRow>()
         : null
 
-      if (geminiFileName) {
-        void deleteGeminiFile(apiKey, geminiFileName)
-      }
-
       return apiOk({
         result,
         historyItem: historyRow ? serializeHistoryRow(historyRow) : null,
@@ -482,11 +376,6 @@ export async function POST(req: Request) {
           .bind(message, historyId, userId)
           .run()
           .catch(() => undefined)
-      }
-
-      if (geminiFileName) {
-        const apiKey = await requireEnv('GEMINI_API_KEY').catch(() => '')
-        if (apiKey) void deleteGeminiFile(apiKey, geminiFileName)
       }
 
       throw error
