@@ -23,7 +23,10 @@ function findPort(
 
 function areTypesCompatible(sourceType: string, targetType: string): boolean {
   if (sourceType === 'any' || targetType === 'any') return true
-  return sourceType === targetType
+  if (sourceType === targetType) return true
+  /* image-list 可以连接到 image 端口 (合并→生成等场景) */
+  if (sourceType === 'image-list' && targetType === 'image') return true
+  return false
 }
 
 function normalizeHandleId(handleId: string | null | undefined): string | null {

@@ -16,9 +16,9 @@ import { getLocaleDefinition } from '@/i18n/config'
 import { buildLocalizedPath } from '@/lib/seo'
 
 const CLERK_SIGN_IN_FALLBACK_REDIRECT_URL =
-  process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ?? '/workspace'
+  process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ?? '/explore'
 const CLERK_SIGN_UP_FALLBACK_REDIRECT_URL =
-  process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/workspace'
+  process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ?? '/explore'
 const CLERK_PROXY_URL = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
 
 function resolveClerkProxyUrl(proxyUrl?: string) {

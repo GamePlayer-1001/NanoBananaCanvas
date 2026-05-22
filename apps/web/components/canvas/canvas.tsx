@@ -99,7 +99,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const connectingFrom = useRef<PendingConnection | null>(null)
   const t = useTranslations('canvas.shortcutsHint')
   const tCanvas = useTranslations('canvas')
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setViewport, addNode, removeNode } =
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onReconnect, setViewport, addNode, removeNode } =
     useFlowStore()
   const isExecuting = useExecutionStore((state) => state.isExecuting)
   const activeTool = useCanvasToolStore((s) => s.activeTool)
@@ -518,6 +518,8 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
+        onReconnect={onReconnect}
+        edgesReconnectable={!isExecuting}
         isValidConnection={validateConnection}
         onInit={onInit}
         onMoveEnd={(_, viewport) => setViewport(viewport)}

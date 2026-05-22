@@ -37,6 +37,7 @@ export interface FlowState {
   onNodesChange: (changes: NodeChange<Node<WorkflowNodeData>>[]) => void
   onEdgesChange: (changes: EdgeChange<Edge>[]) => void
   onConnect: (connection: Connection) => void
+  onReconnect: (oldEdge: Edge, newConnection: Connection) => void
   setViewport: (viewport: Viewport) => void
 
   /* ── Node CRUD ───────────────────────────────────────── */
@@ -148,6 +149,29 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       edges: addEdge(
         { ...connection, type: 'custom' },
         state.edges.filter((edge) => !hasSameTargetHandle(edge, connection)),
+      ),
+    }))
+  },
+
+  onReconnect: (oldEdge, newConnection) => {
+    log.debug('Edge reconnected', { oldEdgeId: oldEdge.id, source: newConnection.source, target: newConnection.target })
+    const edgesWithoutOld = get().edges.filter((e) => e.id !== oldEdge.id)
+    if (!isValidConnection(newConnection, get().nodes, edgesWithoutOld)) {
+      log.debug('Rejected invalid reconnection', {
+        source: newConnection.source,
+        target: newConnection.target,
+        sourceHandle: newConnection.sourceHandle,
+        targetHandle: newConnection.targetHandle,
+      })
+      return
+    }
+    pushSnapshot()
+    set((state) => ({
+      edges: addEdge(
+        { ...newConnection, type: 'custom' },
+        state.edges
+          .filter((e) => e.id !== oldEdge.id)
+          .filter((edge) => !hasSameTargetHandle(edge, newConnection)),
       ),
     }))
   },

@@ -49,7 +49,7 @@ function isAllowedPath(pathname: string) {
 }
 
 export function getDefaultWorkspaceRedirect(locale: string) {
-  return localizePath(locale, '/workspace')
+  return localizePath(locale, '/explore')
 }
 
 export function getDefaultSignOutRedirect(locale: string) {
