@@ -38,6 +38,12 @@ export function LandingNav() {
             {t('nav.features')}
           </Link>
           <Link
+            href="/showcase"
+            className="inline-flex min-h-11 items-center text-sm text-white/82 transition-colors hover:text-white"
+          >
+            {t('nav.explore')}
+          </Link>
+          <Link
             href="/#pricing"
             className="inline-flex min-h-11 items-center text-sm text-white/82 transition-colors hover:text-white"
           >

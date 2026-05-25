@@ -59,6 +59,7 @@
       "models": "模型",
       "features": "功能",
       "pricing": "定价",
+      "explore": "探索",
       "resources": "资源",
       "startCreating": "立即创作",
       "resourcesItems": {
@@ -82,6 +83,14 @@
       "closeBtn": "关闭公告",
       "notTodayBtn": "今日不再",
       "body": "🚀 GPT Image 2 来了！首月全免\n\n🎨 一张画布，搞定 GPT Image 2 + GPT-5.5\n\n从灵感到成品，一气呵成——无限画布创作、工作流保存、Explore 社区发布，全在一个地方。\n\n💰 限时福利：新开套餐首月完全免费\n立即开通，即刻解锁全部高级功能，包括无限画布、工作流复用、社区发布与 AI 视频分析。\n\n📌 如遇积分异常、权益不符或任何问题，请通过页面底部联系方式与我们取得联系，我们将在第一时间为您处理。\n\n✨ 立即开通，在画布上见！"
+    },
+    "showcase": {
+      "title": "探索社区作品",
+      "subtitle": "来自全球创作者的 AI 工作流与生成作品",
+      "loading": "加载中...",
+      "noResults": "暂无内容",
+      "cta": "登录解锁全部功能",
+      "unknownCreator": "匿名创作者"
     },
     "hero": {
       "heading": "Nano Banana Canvas",

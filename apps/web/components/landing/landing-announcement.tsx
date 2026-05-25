@@ -70,12 +70,12 @@ export function LandingAnnouncement() {
       />
 
       {/* Panel */}
-      <div className="relative z-10 flex w-full max-w-[780px] flex-col rounded-2xl bg-white shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+      <div className="relative z-10 flex w-full max-w-[920px] flex-col rounded-2xl bg-white shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-stone-100 px-8 py-5">
           <div className="flex items-center gap-2.5">
-            <Megaphone size={18} className="shrink-0 text-stone-700" />
-            <span id="announcement-title" className="text-base font-semibold text-stone-900">
+            <Megaphone size={20} className="shrink-0 text-stone-700" />
+            <span id="announcement-title" className="text-lg font-semibold text-stone-900">
               {t('title')}
             </span>
             <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600">
@@ -93,8 +93,8 @@ export function LandingAnnouncement() {
         </div>
 
         {/* Body */}
-        <div className="max-h-[400px] overflow-y-auto overscroll-contain px-6 py-5">
-          <div className="space-y-3 text-[14px] leading-7 text-stone-700">
+        <div className="max-h-[520px] overflow-y-auto overscroll-contain px-8 py-7">
+          <div className="space-y-4 text-[15px] leading-8 text-stone-700">
             {bodyLines.map((line, i) => {
               if (line.trim() === '') return <div key={i} className="h-1" />
               return (
@@ -107,7 +107,7 @@ export function LandingAnnouncement() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-stone-100 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-stone-100 px-8 py-5">
           <button
             type="button"
             onClick={handleNotToday}

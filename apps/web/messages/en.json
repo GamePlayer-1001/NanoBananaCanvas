@@ -59,6 +59,7 @@
       "models": "Models",
       "features": "Features",
       "pricing": "Pricing",
+      "explore": "Explore",
       "resources": "Resources",
       "startCreating": "Start Creating",
       "resourcesItems": {
@@ -82,6 +83,14 @@
       "closeBtn": "Close",
       "notTodayBtn": "Don't show today",
       "body": "🚀 GPT Image 2 is here — first month completely free!\n\n🎨 One canvas. GPT Image 2 + GPT-5.5. Done.\n\nFrom spark to finished piece, all in one flow — infinite canvas creation, workflow saving, and Explore community publishing.\n\n💰 Limited-time offer: First month free on any new plan\nSign up now and unlock every premium feature — unlimited canvas, workflow reuse, community publishing, and AI video analysis.\n\n📌 If you run into any issues with credits, plan benefits, or anything else, reach out via the contact link at the bottom of the page. We respond promptly.\n\n✨ Get started now — see you on the canvas!"
+    },
+    "showcase": {
+      "title": "Explore Community Creations",
+      "subtitle": "AI workflows and generated works from creators worldwide",
+      "loading": "Loading...",
+      "noResults": "No content yet",
+      "cta": "Sign in to unlock all features",
+      "unknownCreator": "Anonymous Creator"
     },
     "hero": {
       "heading": "Nano Banana Canvas",
