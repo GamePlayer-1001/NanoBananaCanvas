@@ -10,6 +10,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图来自动态远程地址，不适合 Next Image 域名约束 */
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Heart, Play, Eye } from 'lucide-react'
@@ -62,6 +63,24 @@ function writeCache(items: ShowcaseItem[]) {
   } catch {
     // ignore
   }
+}
+
+/* ─── Banner ─────────────────────────────────────────── */
+
+const BANNERS = [
+  { image: '/explore/banners/01.png', altKey: 'bannerAlt1' as const, ratio: 1915 / 821 },
+  { image: '/explore/banners/02.png', altKey: 'bannerAlt2' as const, ratio: 1915 / 821 },
+  { image: '/explore/banners/03.png', altKey: 'bannerAlt3' as const, ratio: 1915 / 821 },
+  { image: '/explore/banners/04.png', altKey: 'bannerAlt4' as const, ratio: 1915 / 821 },
+  { image: '/explore/banners/05.png', altKey: 'bannerAlt5' as const, ratio: 1915 / 821 },
+  { image: '/explore/banners/06.png', altKey: 'bannerAlt6' as const, ratio: 1915 / 821 },
+] as const
+
+function getCarouselOffset(index: number, activeIndex: number, total: number) {
+  const rawOffset = index - activeIndex
+  if (rawOffset > total / 2) return rawOffset - total
+  if (rawOffset < -total / 2) return rawOffset + total
+  return rawOffset
 }
 
 /* ─── Helpers ────────────────────────────────────────── */
@@ -179,8 +198,17 @@ const GRID_CLASS = 'columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4'
 
 export function ShowcaseContent() {
   const t = useTranslations('landing.showcase')
+  const tExplore = useTranslations('explore')
   const [items, setItems] = useState<ShowcaseItem[]>(() => readCache() ?? [])
   const [loading, setLoading] = useState(() => !readCache())
+  const [activeBanner, setActiveBanner] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveBanner((c) => (c + 1) % BANNERS.length)
+    }, 4800)
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const cached = readCache()
@@ -201,7 +229,7 @@ export function ShowcaseContent() {
     <div className="min-h-screen pt-28 pb-20">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-12 text-center">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             {t('title')}
           </h1>
@@ -209,6 +237,64 @@ export function ShowcaseContent() {
             {t('subtitle')}
           </p>
         </div>
+
+        {/* Banner Carousel */}
+        <section className="relative mb-10 px-1 sm:px-2 lg:px-3">
+          <div className="relative h-[200px] overflow-visible sm:h-[264px] lg:h-[340px]">
+            {BANNERS.map((banner, index) => {
+              const offset = getCarouselOffset(index, activeBanner, BANNERS.length)
+              const isActive = offset === 0
+              const isSideCard = Math.abs(offset) === 1
+              const hidden = Math.abs(offset) > 1
+
+              return (
+                <button
+                  key={banner.image}
+                  type="button"
+                  onClick={() => setActiveBanner(index)}
+                  aria-label={`${tExplore('switchBanner')} ${index + 1}`}
+                  className={`absolute left-1/2 top-1/2 block h-[88%] max-w-[84%] -translate-y-1/2 overflow-hidden rounded-[24px] shadow-[0_24px_55px_-36px_rgba(0,0,0,0.6)] transition-all duration-500 ease-out sm:h-[90%] sm:max-w-[72%] lg:max-w-[60%] ${
+                    hidden ? 'pointer-events-none opacity-0' : ''
+                  }`}
+                  style={{
+                    zIndex: isActive ? 30 : isSideCard ? 20 : 10,
+                    aspectRatio: String(banner.ratio),
+                    transform: `translate(-50%, -50%) perspective(1400px) translateX(${offset * 34}%) scale(${
+                      isActive ? 1 : 0.86
+                    }) rotateY(${offset * -24}deg)`,
+                    opacity: isActive ? 1 : isSideCard ? 0.72 : 0,
+                    filter: isActive ? 'none' : 'saturate(0.9) brightness(0.82)',
+                  }}
+                >
+                  <div className="relative h-full w-full bg-[radial-gradient(circle_at_top,#1a1a2e_0%,#16162a_26%,#0f0f1a_100%)]">
+                    <Image
+                      src={banner.image}
+                      alt={tExplore(banner.altKey)}
+                      fill
+                      sizes="(max-width: 1024px) 88vw, 980px"
+                      className="object-contain object-center"
+                      priority={isActive}
+                    />
+                  </div>
+                </button>
+              )
+            })}
+
+            <div className="absolute inset-x-0 bottom-2 z-40 flex justify-center gap-2">
+              {BANNERS.map((banner, dotIndex) => (
+                <button
+                  key={banner.image}
+                  type="button"
+                  onClick={() => setActiveBanner(dotIndex)}
+                  className={`h-2.5 rounded-full transition-all ${
+                    dotIndex === activeBanner ? 'w-8 bg-white/80' : 'w-2.5 bg-white/25'
+                  }`}
+                  aria-label={`${tExplore('switchBanner')} ${dotIndex + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Grid */}
         {loading ? (
