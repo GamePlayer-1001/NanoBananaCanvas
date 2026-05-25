@@ -13,7 +13,7 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Heart, Play, Eye } from 'lucide-react'
+import { Heart, Play, Star } from 'lucide-react'
 
 import { Link } from '@/i18n/navigation'
 
@@ -109,6 +109,17 @@ function CardSkeleton() {
   )
 }
 
+/* ─── MetricPill ─────────────────────────────────────── */
+
+function MetricPill({ icon, value }: { icon: React.ReactNode; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/28 px-2.5 py-1 text-[11px] font-medium text-white/95 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
+      {icon}
+      {value}
+    </span>
+  )
+}
+
 /* ─── Card ───────────────────────────────────────────── */
 
 function ShowcaseCard({ item, unknownCreator }: { item: ShowcaseItem; unknownCreator: string }) {
@@ -120,74 +131,83 @@ function ShowcaseCard({ item, unknownCreator }: { item: ShowcaseItem; unknownCre
   return (
     <Link
       href="/sign-in"
-      className="group relative mb-5 block break-inside-avoid overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.04] transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.06] hover:shadow-[0_20px_64px_-20px_rgba(99,102,241,0.18)]"
+      className="group relative z-0 mb-6 block break-inside-avoid overflow-visible transition-[z-index] duration-300 hover:z-30 focus-visible:z-30"
     >
-      {/* Image */}
-      <div className="relative overflow-hidden bg-white/[0.03]">
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={item.name}
-            loading="lazy"
-            decoding="async"
-            className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div className="flex min-h-[200px] items-center justify-center">
-            <span className="text-[11px] font-medium tracking-[0.18em] uppercase text-white/30">
-              {item.content_type ?? 'workflow'}
-            </span>
-          </div>
-        )}
-
-        {item.content_type === 'video' && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-              <Play size={16} className="ml-0.5 fill-current" />
-            </div>
-          </div>
-        )}
-
-        {/* Gradient overlay */}
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_50%,rgba(0,0,0,0.6)_100%)]" />
-
-        {/* Bottom overlay: author + stats */}
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="h-6 w-6 flex-shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/10 backdrop-blur-md">
-              {item.author_avatar ? (
-                <img src={item.author_avatar} alt={authorName} className="h-full w-full object-cover" loading="lazy" />
+      <article className="animate-explore-rise overflow-visible rounded-[32px] transition-transform duration-300 group-hover:scale-[1.018]">
+        <div className="relative overflow-visible">
+          <div className="overflow-hidden rounded-[30px] border border-white/[0.08] bg-white/[0.03] shadow-[0_22px_56px_-34px_rgba(0,0,0,0.5)] transition-[box-shadow,border-color,filter,border-radius] duration-300 group-hover:border-white/[0.14] group-hover:shadow-[0_38px_96px_-46px_rgba(0,0,0,0.7)]">
+            <div className="relative overflow-hidden bg-white/[0.02]">
+              {/* Preview image */}
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt={item.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.035]"
+                />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-white/80">
-                  {getInitial(authorName)}
+                <div className="flex min-h-[240px] items-center justify-center px-6 py-14">
+                  <span className="text-xs font-semibold tracking-[0.18em] uppercase text-white/30">
+                    {item.content_type ?? 'workflow'}
+                  </span>
                 </div>
               )}
+
+              {/* Video play button */}
+              {item.content_type === 'video' && (
+                <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/40 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                    <Play size={18} className="ml-0.5 fill-current" />
+                  </div>
+                </div>
+              )}
+
+              {/* Gradient overlay */}
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_44%,rgba(15,23,42,0.1)_70%,rgba(15,23,42,0.58)_100%)]" />
+
+              {/* Bottom overlay: author + metrics */}
+              <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex max-w-[148px] translate-y-1 items-center gap-2.5 transition-transform duration-300 group-hover:translate-y-0 sm:max-w-[176px]">
+                  <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-white/35 bg-white/20 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.7)] backdrop-blur-md">
+                    {item.author_avatar ? (
+                      <img
+                        src={item.author_avatar}
+                        alt={authorName}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-white/60 text-sm font-semibold text-stone-900">
+                        {getInitial(authorName)}
+                      </div>
+                    )}
+                  </div>
+                  <span className="min-w-0 truncate text-[13px] font-semibold text-white drop-shadow-[0_2px_10px_rgba(15,23,42,0.55)]">
+                    {authorName}
+                  </span>
+                </div>
+
+                <div className="flex flex-shrink-0 items-center gap-1.5">
+                  <MetricPill icon={<Heart size={12} className="text-rose-200" />} value={formatMetric(item.like_count)} />
+                  <MetricPill icon={<Star size={12} className="text-white/90" />} value={formatMetric(item.favorite_count)} />
+                  <MetricPill icon={<Play size={12} className="fill-current text-white/90" />} value={formatMetric(item.view_count)} />
+                </div>
+              </div>
             </div>
-            <span className="min-w-0 truncate text-xs font-medium text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
-              {authorName}
-            </span>
           </div>
 
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <span className="flex items-center gap-1 text-[11px] text-white/70">
-              <Heart size={11} />
-              {formatMetric(item.like_count)}
-            </span>
-            <span className="flex items-center gap-1 text-[11px] text-white/70">
-              <Eye size={11} />
-              {formatMetric(item.view_count)}
-            </span>
+          {/* Title + Category (always visible, replaces hover detail panel) */}
+          <div className="mt-3 px-2">
+            <h3 className="line-clamp-2 text-[15px] font-semibold leading-6 text-white/90">
+              {item.name}
+            </h3>
+            {item.description && (
+              <p className="mt-1 truncate text-xs text-white/40">{item.description}</p>
+            )}
           </div>
         </div>
-      </div>
-
-      {/* Info */}
-      <div className="p-3.5">
-        <h3 className="truncate text-sm font-medium text-white/90">{item.name}</h3>
-        {item.description && (
-          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-white/45">{item.description}</p>
-        )}
-      </div>
+      </article>
     </Link>
   )
 }
