@@ -10,7 +10,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 缩略图来自动态远程地址，不适合 Next Image 域名约束 */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Heart, Play, Eye } from 'lucide-react'
 
@@ -179,20 +179,12 @@ const GRID_CLASS = 'columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4'
 
 export function ShowcaseContent() {
   const t = useTranslations('landing.showcase')
-  const [items, setItems] = useState<ShowcaseItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const fetchedRef = useRef(false)
+  const [items, setItems] = useState<ShowcaseItem[]>(() => readCache() ?? [])
+  const [loading, setLoading] = useState(() => !readCache())
 
   useEffect(() => {
-    if (fetchedRef.current) return
-    fetchedRef.current = true
-
     const cached = readCache()
-    if (cached) {
-      setItems(cached)
-      setLoading(false)
-      return
-    }
+    if (cached) return
 
     fetch('/api/explore?limit=60&sort=popular')
       .then((res) => res.json())
