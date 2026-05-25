@@ -248,16 +248,6 @@ export function ShowcaseContent() {
   return (
     <div className="min-h-screen pt-28 pb-20">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            {t('title')}
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl text-base text-white/50">
-            {t('subtitle')}
-          </p>
-        </div>
-
         {/* Banner Carousel */}
         <section className="relative mb-10 px-1 sm:px-2 lg:px-3">
           <div className="relative h-[200px] overflow-visible sm:h-[264px] lg:h-[340px]">
