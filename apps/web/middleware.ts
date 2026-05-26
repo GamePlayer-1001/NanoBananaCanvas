@@ -19,6 +19,7 @@ const CANONICAL_HOST = 'nanobananacanvas.com'
 const WWW_HOST = `www.${CANONICAL_HOST}`
 const CLERK_PROXY_PATH = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
 const METADATA_ROUTE_PREFIXES = ['/icon', '/apple-icon']
+const PROTECTED_ROUTES = /^\/(account|billing|workspace)(\/|$)/
 
 function resolveClerkProxyPath() {
   if (!CLERK_PROXY_PATH) {
@@ -41,7 +42,7 @@ function isMetadataRoute(pathname: string) {
 /* ─── Combined Middleware ────────────────────────────── */
 
 export default clerkMiddleware(
-  async (_auth, req: NextRequest) => {
+  async (auth, req: NextRequest) => {
     if (req.nextUrl.hostname === WWW_HOST) {
       const url = req.nextUrl.clone()
       url.hostname = CANONICAL_HOST
@@ -68,6 +69,21 @@ export default clerkMiddleware(
 
     if (req.nextUrl.pathname.startsWith('/api/')) {
       return NextResponse.next()
+    }
+
+    // Auth guard for protected routes: redirect unauthenticated users to sign-in
+    const pathnameNoLocale = req.nextUrl.pathname.replace(/^\/(zh|en)(\/|$)/, '/')
+    if (PROTECTED_ROUTES.test(pathnameNoLocale)) {
+      const { userId } = await auth()
+      if (!userId) {
+        const signInUrl = req.nextUrl.clone()
+        // Detect locale from pathname
+        const localeMatch = req.nextUrl.pathname.match(/^\/(zh|en)(\/|$)/)
+        const locale = localeMatch?.[1] ?? 'en'
+        signInUrl.pathname = `/${locale}/sign-in`
+        signInUrl.searchParams.set('redirect_url', req.nextUrl.pathname)
+        return NextResponse.redirect(signInUrl, 308)
+      }
     }
 
     return intlMiddleware(req)
