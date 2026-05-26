@@ -16,7 +16,7 @@ import {
 export const BASE_URL = 'https://nanobananacanvas.com'
 export const SITE_NAME = 'Nano Banana Canvas'
 export const SITE_DESCRIPTION =
-  'Visual AI workflow builder for creators and teams. Build, share, and run multimodal workflows from prompt to storyboard.'
+  'Free visual AI workflow builder — the cloud-based ComfyUI alternative. Drag-and-drop GPT Image 2, FLUX, DeepSeek & more into executable pipelines. No GPU required.'
 export const GPT_IMAGE_PRIORITY_KEYWORDS = [
   'gpt image',
   'gpt image workflow',
@@ -24,7 +24,18 @@ export const GPT_IMAGE_PRIORITY_KEYWORDS = [
   'gpt image 2',
 ]
 const LOCALE_SUPPORT_KEYWORDS: Record<(typeof ACTIVE_LOCALES)[number], string[]> = {
-  en: [],
+  en: [
+    'ComfyUI alternative',
+    'AI workflow builder online',
+    'no-code AI pipeline',
+    'cloud AI workflow',
+    'visual AI tool',
+    'AI image generator workflow',
+    'GPT Image 2 workflow tool',
+    'FLUX image workflow',
+    'Midjourney alternative workflow',
+    'AI content creation pipeline',
+  ],
   zh: [
     'gpt图片',
     'gpt图片工作流',
@@ -32,6 +43,10 @@ const LOCALE_SUPPORT_KEYWORDS: Record<(typeof ACTIVE_LOCALES)[number], string[]>
     '图像生成工作流',
     '多模态工作流',
     '提示词工作流',
+    'ComfyUI替代品',
+    '可视化AI工具',
+    '在线AI工作流',
+    '无代码AI工具',
   ],
 }
 

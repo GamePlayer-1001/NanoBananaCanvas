@@ -14,10 +14,36 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/'],
+        disallow: [
+          '/api/',
+          '/*?lang=*',
+          '/*?*lang=*',
+          '/canvas/',
+          '/_next/',
+        ],
+      },
+      {
+        userAgent: 'GPTBot',
+        allow: '/',
+        disallow: ['/api/', '/canvas/'],
+      },
+      {
+        userAgent: 'ClaudeBot',
+        allow: '/',
+        disallow: ['/api/', '/canvas/'],
+      },
+      {
+        userAgent: 'PerplexityBot',
+        allow: '/',
+        disallow: ['/api/', '/canvas/'],
+      },
+      {
+        userAgent: 'Google-Extended',
+        allow: '/',
+        disallow: ['/api/', '/canvas/'],
       },
     ],
-    host: 'nanobananacanvas.com',
+    host: 'https://nanobananacanvas.com',
     sitemap: [`${BASE_URL}/sitemap.xml`, `${BASE_URL}/zh/sitemap.xml`],
   }
 }

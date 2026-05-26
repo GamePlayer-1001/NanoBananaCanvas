@@ -48,6 +48,20 @@ export default clerkMiddleware(
       return NextResponse.redirect(url, 308)
     }
 
+    // 301 redirect legacy ?lang= parameter URLs to proper locale paths
+    const langParam = req.nextUrl.searchParams.get('lang')
+    if (langParam) {
+      const url = req.nextUrl.clone()
+      url.searchParams.delete('lang')
+      // Map supported locales to prefix path, discard unsupported ones
+      const SUPPORTED_LANG_MAP: Record<string, string> = { zh: '/zh', en: '' }
+      const prefix = SUPPORTED_LANG_MAP[langParam] ?? ''
+      if (prefix && !url.pathname.startsWith(prefix)) {
+        url.pathname = `${prefix}${url.pathname}`
+      }
+      return NextResponse.redirect(url, 301)
+    }
+
     if (isMetadataRoute(req.nextUrl.pathname)) {
       return NextResponse.next()
     }

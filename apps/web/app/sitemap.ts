@@ -12,11 +12,13 @@ import { DEFAULT_LOCALE, type AppLocale } from '@/i18n/config'
 import { buildLanguageAlternates, buildLocalizedUrl } from '@/lib/seo'
 
 // ─── 常量 ───────────────────────────────────────────────
-const STATIC_LAST_MODIFIED_AT = '2026-04-27T00:00:00.000Z'
+const STATIC_LAST_MODIFIED_AT = '2026-05-26T00:00:00.000Z'
 const STATIC_ROUTES = [
   { path: '/', changeFrequency: 'weekly' as const, priority: 1.0 },
   { path: '/explore', changeFrequency: 'daily' as const, priority: 0.9 },
   { path: '/workflows', changeFrequency: 'daily' as const, priority: 0.8 },
+  { path: '/showcase', changeFrequency: 'weekly' as const, priority: 0.7 },
+  { path: '/contact', changeFrequency: 'monthly' as const, priority: 0.5 },
   { path: '/terms', changeFrequency: 'yearly' as const, priority: 0.3 },
   { path: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },
 ]

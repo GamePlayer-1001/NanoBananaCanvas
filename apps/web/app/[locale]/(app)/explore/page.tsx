@@ -35,6 +35,10 @@ export async function generateMetadata({
       'gpt image templates',
       'image generation workflows',
       'creator workflow library',
+      'free AI workflow templates',
+      'ComfyUI workflow templates',
+      'AI art workflow gallery',
+      'ready-made AI pipelines',
     ]),
   })
 }

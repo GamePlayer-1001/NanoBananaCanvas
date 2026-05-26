@@ -1,0 +1,137 @@
+# Nano Banana Canvas — Complete Product Documentation
+
+> Visual AI workflow builder for creators and teams. The cloud-based ComfyUI alternative that requires no GPU.
+
+## Product Overview
+
+Nano Banana Canvas is a browser-based visual AI workflow builder. Users drag and drop AI model nodes onto a canvas, connect them with edges, configure parameters, and execute the entire pipeline in the cloud. It replaces local tools like ComfyUI with a zero-install, GPU-free cloud experience.
+
+**Website**: https://nanobananacanvas.com
+**Category**: AI Tools / Creative Tools / Workflow Automation
+
+## Core Value Proposition
+
+1. **No GPU Required**: All AI model execution happens on cloud infrastructure
+2. **Visual Interface**: Drag-and-drop canvas (ReactFlow) instead of code or CLI
+3. **Multi-Model**: Supports GPT Image 2, FLUX, DeepSeek, Gemini, and OpenRouter models in a single workflow
+4. **Instant Start**: Sign up and start building — no installation, no dependencies
+5. **Community**: Share workflows publicly, fork others' templates
+
+## Supported AI Models
+
+### Image Generation
+- GPT Image 2 (OpenAI) — highest quality text-to-image
+- FLUX (Black Forest Labs) — fast, high-quality open model
+- Stable Diffusion variants via OpenRouter
+
+### Language Models
+- DeepSeek (V3, R1)
+- GPT-4o, GPT-4.1
+- Gemini Pro/Flash
+- Claude (via OpenRouter)
+
+### Video & Multimodal
+- Video analysis pipelines
+- Multi-step image-to-video workflows
+
+## Feature List
+
+- **Canvas Editor**: Infinite canvas with zoom, pan, minimap, node grouping
+- **Node Types**: Text input, image input, AI model, output, conditional, loop
+- **Execution Engine**: Async cloud execution with real-time progress
+- **Template Library**: Pre-built workflow templates for common use cases
+- **Version History**: Track changes to workflows over time
+- **Collaboration**: Share workflows with team members
+- **API Access**: Programmatic workflow execution via REST API
+- **Credit System**: Flexible pay-per-use with free daily credits
+- **Multi-language**: English and Chinese interfaces
+
+## Pricing
+
+- **Free Tier**: Daily sign-in credits, access to all models
+- **Pro Subscription**: Monthly credit allowance + priority execution
+- **Credit Packs**: One-time purchase, never expire
+
+## Use Cases
+
+### For Content Creators
+- Generate consistent character designs across multiple images
+- Build storyboards from text descriptions
+- Create social media content pipelines (prompt → image → caption → post)
+
+### For Marketers
+- Ad creative generation at scale
+- A/B test visual variants automatically
+- Brand-consistent image generation with style nodes
+
+### For Developers
+- Prototype AI features visually before coding
+- Test different model outputs side-by-side
+- Build and share internal AI tools
+
+### For Educators & Researchers
+- Visualize AI model behavior
+- Create reproducible experiment pipelines
+- Document AI workflows for papers
+
+## Comparison with Alternatives
+
+### vs ComfyUI
+- ComfyUI requires local GPU and technical setup
+- Nano Banana Canvas runs entirely in browser, no installation
+- Nano Banana Canvas supports multiple AI providers (not just Stable Diffusion)
+- ComfyUI is free but requires hardware investment
+- Nano Banana Canvas has a free tier with cloud execution
+
+### vs Midjourney
+- Midjourney is single-model, single-step (prompt → image)
+- Nano Banana Canvas supports multi-step workflows with branching
+- Nano Banana Canvas supports multiple models in one workflow
+- Midjourney has no visual workflow builder
+
+### vs n8n / Make.com
+- n8n/Make.com are general automation tools
+- Nano Banana Canvas is purpose-built for AI creative workflows
+- Better UX for image/video generation pipelines
+- Native AI model integration without custom API setup
+
+## Technical Architecture
+
+- **Frontend**: Next.js 16 + React 19 + Tailwind CSS v4
+- **Canvas**: ReactFlow v12
+- **State**: Zustand v5 + TanStack Query v5
+- **Auth**: Clerk
+- **Payments**: Stripe
+- **Database**: Cloudflare D1 (SQLite at edge)
+- **Storage**: Cloudflare R2
+- **Cache**: Cloudflare KV
+- **Deployment**: Cloudflare Workers (global edge)
+- **i18n**: next-intl
+
+## Contact & Community
+
+- Website: https://nanobananacanvas.com
+- Email: via contact page
+- Telegram: https://t.me/nanobananacanvas
+- Discord: https://discord.gg/nanobananacanvas
+- Twitter/X: https://x.com/nanobananacanvas
+
+## FAQ
+
+**Q: Do I need a GPU to use Nano Banana Canvas?**
+A: No. All AI model execution runs on cloud servers. You only need a browser.
+
+**Q: What AI models are supported?**
+A: GPT Image 2, FLUX, DeepSeek, Gemini, and any model available through OpenRouter.
+
+**Q: Is there a free tier?**
+A: Yes. Sign in daily to receive free credits. All models are accessible on the free tier.
+
+**Q: Can I use my own API keys?**
+A: The platform manages API access for you. Credits are used per execution.
+
+**Q: Can I share my workflows?**
+A: Yes. Publish workflows to the community Explore page. Others can fork and customize them.
+
+**Q: What makes this different from ComfyUI?**
+A: Cloud-based (no GPU needed), multi-model (not just Stable Diffusion), instant setup (no installation), and built-in community sharing.

@@ -50,16 +50,20 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
     shortcut: ['/favicon.ico'],
   },
+
+  other: {
+    'llms.txt': `${BASE_URL}/llms.txt`,
+  },
   openGraph: {
     siteName: SITE_NAME,
     type: 'website',
     url: BASE_URL,
-    title: SITE_NAME,
+    title: `${SITE_NAME} — Free Visual AI Workflow Builder`,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: SITE_NAME,
+    title: `${SITE_NAME} — Free Visual AI Workflow Builder`,
     description: SITE_DESCRIPTION,
   },
   appleWebApp: {

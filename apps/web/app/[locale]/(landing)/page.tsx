@@ -49,9 +49,22 @@ export async function generateMetadata({
     locale,
     keywords: buildPriorityKeywords(locale, [
       'AI workflow builder',
+      'visual AI workflow builder',
+      'AI workflow automation',
       'image generation workflow',
       'visual AI canvas',
       'multimodal production',
+      'ComfyUI alternative',
+      'ComfyUI alternative cloud',
+      'ComfyUI alternative no GPU',
+      'AI image generation tool',
+      'drag and drop AI builder',
+      'no-code AI pipeline',
+      'AI creative workflow',
+      'GPT Image 2 tool',
+      'FLUX workflow builder',
+      'AI storyboard generator',
+      'AI ad creative tool',
     ]),
   })
 }

@@ -1,0 +1,50 @@
+# Nano Banana Canvas
+
+> Visual AI workflow builder for creators and teams. Build, share, and run multimodal workflows from prompt to storyboard.
+
+## What is Nano Banana Canvas?
+
+Nano Banana Canvas is a cloud-based visual AI workflow builder that lets users design, connect, and execute multimodal AI pipelines through an intuitive drag-and-drop canvas interface. It supports GPT Image 2, FLUX, Midjourney-style models, video generation, and more — all orchestrated visually without writing code.
+
+## Key Features
+
+- **Visual Workflow Canvas**: Drag-and-drop node editor powered by ReactFlow. Connect AI models, prompts, and tools into executable pipelines.
+- **Multi-Model Support**: GPT Image 2, DeepSeek, Gemini, OpenRouter, FLUX, and more. Switch models per node.
+- **Cloud Execution**: No local GPU required. All workflows run on cloud infrastructure.
+- **Template Marketplace**: Browse, fork, and share community workflows in the Explore hub.
+- **Credit-Based Pricing**: Free tier with daily sign-in credits. Subscription and one-time credit packs available.
+- **Multilingual**: English and Chinese interfaces with full i18n support.
+- **Real-Time Collaboration**: Share workflows with team members and the community.
+
+## Use Cases
+
+- AI image generation pipelines (prompt → image → upscale → output)
+- Storyboard creation with sequential AI image generation
+- Ad creative workflows combining text and visual AI
+- Video analysis and generation pipelines
+- Multi-step AI content production (blog → image → social post)
+
+## Technical Details
+
+- Built with Next.js, React, and Tailwind CSS
+- Deployed on Cloudflare Workers for global edge performance
+- Uses Cloudflare D1 (SQLite), R2 (storage), and KV (cache)
+- Authentication via Clerk, payments via Stripe
+
+## Links
+
+- Website: https://nanobananacanvas.com
+- Explore Workflows: https://nanobananacanvas.com/explore
+- Pricing: https://nanobananacanvas.com/#pricing
+- Contact: https://nanobananacanvas.com/contact
+
+## Comparison
+
+| Feature | Nano Banana Canvas | ComfyUI | Midjourney |
+|---|---|---|---|
+| Cloud-based | Yes | No (local) | Yes |
+| Visual workflow | Yes | Yes | No |
+| Multi-model | Yes | Stable Diffusion only | Midjourney only |
+| No GPU needed | Yes | No | Yes |
+| Free tier | Yes | Free (self-hosted) | No |
+| API integration | Yes | Community | No |
