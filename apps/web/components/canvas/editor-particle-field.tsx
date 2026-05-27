@@ -30,8 +30,9 @@ interface CanvasMetrics {
 
 const WORLD_GAP = 28
 const WORLD_RADIUS = 0.75
-const MIN_SCREEN_GAP = 4
+const MIN_SCREEN_GAP = 14
 const MAX_SCREEN_GAP = 200
+const FADE_SCREEN_GAP = 20
 const MIN_SCREEN_RADIUS = 0.3
 const MAX_SCREEN_RADIUS = 4.0
 const INTERACTION_RADIUS = 160
@@ -106,7 +107,9 @@ export function EditorParticleField({ hostRef }: EditorParticleFieldProps) {
 
       const { x: viewportX, y: viewportY, zoom } = viewportRef.current
       const safeZoom = zoom > 0 ? zoom : 1
-      const screenGap = clamp(WORLD_GAP * safeZoom, MIN_SCREEN_GAP, MAX_SCREEN_GAP)
+      const rawScreenGap = WORLD_GAP * safeZoom
+      const screenGap = clamp(rawScreenGap, MIN_SCREEN_GAP, MAX_SCREEN_GAP)
+      const zoomFade = rawScreenGap <= MIN_SCREEN_GAP ? 0 : rawScreenGap < FADE_SCREEN_GAP ? (rawScreenGap - MIN_SCREEN_GAP) / (FADE_SCREEN_GAP - MIN_SCREEN_GAP) : 1
       const offsetX = ((viewportX % screenGap) + screenGap) % screenGap
       const offsetY = ((viewportY % screenGap) + screenGap) % screenGap
       const baseRadius = clamp(WORLD_RADIUS * safeZoom, MIN_SCREEN_RADIUS, MAX_SCREEN_RADIUS)
@@ -115,31 +118,33 @@ export function EditorParticleField({ hostRef }: EditorParticleFieldProps) {
       context.setTransform(dpr, 0, 0, dpr, 0, 0)
       context.clearRect(0, 0, width, height)
 
-      for (let screenX = offsetX - screenGap; screenX <= width + screenGap; screenX += screenGap) {
-        for (let screenY = offsetY - screenGap; screenY <= height + screenGap; screenY += screenGap) {
-          let influence = 0
+      if (zoomFade > 0.001) {
+        for (let screenX = offsetX - screenGap; screenX <= width + screenGap; screenX += screenGap) {
+          for (let screenY = offsetY - screenGap; screenY <= height + screenGap; screenY += screenGap) {
+            let influence = 0
 
-          if (nextStrength > 0.001) {
-            const dx = screenX - pointerRef.current.x
-            const dy = screenY - pointerRef.current.y
-            const distance = Math.hypot(dx, dy)
-            const falloff = 1 - smoothstep(INTERACTION_RADIUS * 0.15, INTERACTION_RADIUS, distance)
-            influence = falloff * nextStrength
+            if (nextStrength > 0.001) {
+              const dx = screenX - pointerRef.current.x
+              const dy = screenY - pointerRef.current.y
+              const distance = Math.hypot(dx, dy)
+              const falloff = 1 - smoothstep(INTERACTION_RADIUS * 0.15, INTERACTION_RADIUS, distance)
+              influence = falloff * nextStrength
+            }
+
+            const pulse =
+              prefersReducedMotionRef.current || influence <= 0
+                ? 0
+                : Math.sin(time * 0.007 + screenX * 0.045 + screenY * 0.03) * 0.5 + 0.5
+
+            const lift = influence * (3.0 + pulse * 4.2)
+            const radius = baseRadius + influence * (1.1 + pulse * 0.8)
+            const alpha = (0.09 + influence * 0.35) * zoomFade
+
+            context.beginPath()
+            context.fillStyle = `rgba(15, 23, 42, ${alpha})`
+            context.arc(screenX, screenY - lift, radius, 0, Math.PI * 2)
+            context.fill()
           }
-
-          const pulse =
-            prefersReducedMotionRef.current || influence <= 0
-              ? 0
-              : Math.sin(time * 0.007 + screenX * 0.045 + screenY * 0.03) * 0.5 + 0.5
-
-          const lift = influence * (3.0 + pulse * 4.2)
-          const radius = baseRadius + influence * (1.1 + pulse * 0.8)
-          const alpha = 0.09 + influence * 0.35
-
-          context.beginPath()
-          context.fillStyle = `rgba(15, 23, 42, ${alpha})`
-          context.arc(screenX, screenY - lift, radius, 0, Math.PI * 2)
-          context.fill()
         }
       }
 
