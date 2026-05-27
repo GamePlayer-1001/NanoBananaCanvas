@@ -250,7 +250,8 @@ export function InputNode(props: NodeProps) {
       data={data}
       icon={<CircleArrowRight size={14} />}
       minHeight={196}
-      bodyClassName="min-h-0 gap-2 pb-3"
+      heightMode="content"
+      bodyClassName="gap-2 pb-3"
     >
       {/* ── Textarea ───────────────────────────────────── */}
       <textarea
