@@ -50,9 +50,18 @@ export interface OpenAICompatibleImageResponse {
   }>
 }
 
-export interface OpenRouterChatImageResponse {
+export interface ChatCompletionsImageContentPart {
+  type?: string
+  text?: string
+  image_url?: {
+    url?: string
+  }
+}
+
+export interface ChatCompletionsImageResponse {
   choices?: Array<{
     message?: {
+      content?: string | ChatCompletionsImageContentPart[]
       images?: Array<{
         image_url?: {
           url?: string
@@ -61,6 +70,8 @@ export interface OpenRouterChatImageResponse {
     }
   }>
 }
+
+export type OpenRouterChatImageResponse = ChatCompletionsImageResponse
 
 export interface DlapiFailureDiagnostics extends Record<string, unknown> {
   stage: 'submit'
@@ -130,8 +141,73 @@ export function extractOpenAICompatibleImageUrl(
 export function extractOpenRouterChatImageUrl(
   payload: OpenRouterChatImageResponse,
 ): string | null {
-  const first = payload.choices?.[0]?.message?.images?.[0]?.image_url?.url
-  return typeof first === 'string' && first.trim() ? first.trim() : null
+  return extractChatCompletionsImageUrl(payload)
+}
+
+const MARKDOWN_IMAGE_URL_REGEX = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/i
+const STANDALONE_IMAGE_URL_REGEX =
+  /https?:\/\/[^\s)\]'"<>]+\.(?:png|jpe?g|gif|webp|bmp)(?:\?[^\s)\]'"<>]*)?/i
+const DATA_IMAGE_URL_REGEX = /data:image\/[\w+.-]+;base64,[A-Za-z0-9+/=]+/i
+
+export function extractChatCompletionsImageUrl(
+  payload: ChatCompletionsImageResponse,
+): string | null {
+  const message = payload.choices?.[0]?.message
+  if (!message) return null
+
+  const fromImagesArray = message.images?.[0]?.image_url?.url
+  if (typeof fromImagesArray === 'string' && fromImagesArray.trim()) {
+    return fromImagesArray.trim()
+  }
+
+  const content = message.content
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue
+      const partUrl = part.image_url?.url
+      if (typeof partUrl === 'string' && partUrl.trim()) {
+        return partUrl.trim()
+      }
+    }
+
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue
+      if (typeof part.text === 'string') {
+        const fromText = extractImageUrlFromText(part.text)
+        if (fromText) return fromText
+      }
+    }
+
+    return null
+  }
+
+  if (typeof content === 'string') {
+    return extractImageUrlFromText(content)
+  }
+
+  return null
+}
+
+function extractImageUrlFromText(text: string): string | null {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+
+  const dataMatch = DATA_IMAGE_URL_REGEX.exec(trimmed)
+  if (dataMatch) {
+    return dataMatch[0]
+  }
+
+  const markdownMatch = MARKDOWN_IMAGE_URL_REGEX.exec(trimmed)
+  if (markdownMatch?.[1]) {
+    return markdownMatch[1].trim()
+  }
+
+  const directMatch = STANDALONE_IMAGE_URL_REGEX.exec(trimmed)
+  if (directMatch) {
+    return directMatch[0]
+  }
+
+  return null
 }
 
 export function readReferenceImageUrl(params: Record<string, unknown>): string | undefined {

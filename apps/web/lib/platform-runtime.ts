@@ -13,6 +13,12 @@ export type PlatformSupplierId =
   | 'kling'
   | 'openai-compatible'
 
+/**
+ * 暂时禁用的供应商集合 — 运行时查询将跳过这些供应商的模型条目，
+ * 自动使用同 logicalKey 的替代供应商。配置数据保留，恢复时只需清空此集合。
+ */
+const TEMPORARILY_DISABLED_SUPPLIERS: ReadonlySet<PlatformSupplierId> = new Set(['dlapi'])
+
 export interface PlatformRuntimeModel {
   supplierId: PlatformSupplierId
   modelId: string
@@ -69,6 +75,7 @@ const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
     category: 'image',
     tier: 'premium',
     logicalKey: 'gpt-image-2',
+    aliases: ['gpt-image-2', 'gpt image 2', 'gpt image 2 all'],
   },
   {
     supplierId: 'dlapi',
@@ -104,7 +111,7 @@ const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
     category: 'image',
     tier: 'premium',
     logicalKey: 'nano-banana-pro',
-    aliases: ['nano-banana-pro', 'nano banana pro'],
+    aliases: ['nano-banana-pro', 'nano banana pro', 'gemini-3-pro-image-preview'],
   },
   {
     supplierId: 'dlapi',
@@ -151,13 +158,21 @@ const PLATFORM_RUNTIME_MODELS: readonly PlatformRuntimeModel[] = [
 export function listPlatformRuntimeModels(
   category?: PlatformModelCategory,
 ): PlatformRuntimeModel[] {
-  return PLATFORM_RUNTIME_MODELS.filter((item) => !category || item.category === category)
+  return PLATFORM_RUNTIME_MODELS.filter(
+    (item) =>
+      (!category || item.category === category) &&
+      !TEMPORARILY_DISABLED_SUPPLIERS.has(item.supplierId),
+  )
 }
 
 export function getDefaultPlatformRuntimeModel(
   category: PlatformModelCategory,
 ): PlatformRuntimeModel {
-  const first = PLATFORM_RUNTIME_MODELS.find((item) => item.category === category)
+  const first = PLATFORM_RUNTIME_MODELS.find(
+    (item) =>
+      item.category === category &&
+      !TEMPORARILY_DISABLED_SUPPLIERS.has(item.supplierId),
+  )
   if (!first) {
     throw new Error(`No platform runtime model configured for category: ${category}`)
   }
@@ -169,8 +184,16 @@ export function resolvePlatformRuntimeModel(input: {
   modelId?: string
   supplierHint?: string
 }): PlatformRuntimeModel {
+  const effectiveHint =
+    input.supplierHint &&
+    TEMPORARILY_DISABLED_SUPPLIERS.has(input.supplierHint as PlatformSupplierId)
+      ? undefined
+      : input.supplierHint
+
   const candidates = PLATFORM_RUNTIME_MODELS.filter(
-    (item) => item.category === input.category,
+    (item) =>
+      item.category === input.category &&
+      !TEMPORARILY_DISABLED_SUPPLIERS.has(item.supplierId),
   )
   const normalizedModelId = input.modelId?.trim().toLowerCase()
 
@@ -178,7 +201,7 @@ export function resolvePlatformRuntimeModel(input: {
     ? candidates.find(
         (item) =>
           item.modelId.toLowerCase() === normalizedModelId &&
-          (!input.supplierHint || item.supplierId === input.supplierHint),
+          (!effectiveHint || item.supplierId === effectiveHint),
       )
     : null
 
@@ -190,7 +213,7 @@ export function resolvePlatformRuntimeModel(input: {
     ? candidates.find(
         (item) =>
           item.aliases?.some((alias) => alias.toLowerCase() === normalizedModelId) &&
-          (!input.supplierHint || item.supplierId === input.supplierHint),
+          (!effectiveHint || item.supplierId === effectiveHint),
       )
     : null
 

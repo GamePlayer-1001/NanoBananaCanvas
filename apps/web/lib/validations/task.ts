@@ -18,6 +18,7 @@ function matchesTaskType(provider: string, modelId: string, taskType: 'image_gen
   if (taskType === 'image_gen') {
     return (
       normalizedProvider === 'dlapi' ||
+      normalizedProvider === 'comfly' ||
       normalizedModel.includes('image') ||
       normalizedModel.includes('dall-e') ||
       normalizedModel.includes('imagen') ||

@@ -12,10 +12,10 @@ import {
   buildGatewayFailureMessage,
   buildMultipartImageEditRequestInit,
   DLAPI_IMAGE_BASE_URL,
+  extractChatCompletionsImageUrl,
   extractDlapiFailureStatus,
   extractDlapiResponsePreview,
   extractOpenAICompatibleImageUrl,
-  extractOpenRouterChatImageUrl,
   IMAGE_PROVIDER_FALLBACK_MODEL_MAP,
   inferDlapiFailureKind,
   inferImageContentType,
@@ -36,31 +36,51 @@ import {
   validateImageSelection,
 } from './image-gen-helpers'
 import type {
+  ChatCompletionsImageResponse,
   DlapiFailureDiagnostics,
   DlapiImageTaskCheckResponse,
   OpenAICompatibleImageResponse,
-  OpenRouterChatImageResponse,
 } from './image-gen-helpers'
 
 export { normalizeImagePromptForApi, assertOpenAICompatiblePromptSafety } from './image-gen-helpers'
 export { resolveImageGenerationSize, resolveOpenAICompatibleRequestSize } from './image-gen-helpers'
 
-async function openRouterChatImageSubmit(
+async function chatCompletionsImageSubmit(
   input: SubmitInput,
   apiKey: string,
+  provider: string,
 ): Promise<{ url: string }> {
   const { model, params } = input
   const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const referenceImageUrl = readReferenceImageUrl(params)
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
-  const baseUrl = resolveOpenAICompatibleBaseUrl('openrouter', params)
-  const imageConfig =
-    sizePreset === 'auto'
-      ? { aspect_ratio: aspectRatio }
-      : { aspect_ratio: aspectRatio, image_size: sizePreset }
+  const baseUrl = resolveOpenAICompatibleBaseUrl(provider, params)
 
   assertOpenAICompatiblePromptSafety(prompt, baseUrl)
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: [
+      {
+        role: 'user',
+        content: referenceImageUrl
+          ? [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: referenceImageUrl } },
+            ]
+          : prompt,
+      },
+    ],
+  }
+
+  if (provider === 'openrouter') {
+    body.modalities = ['image', 'text']
+    body.image_config =
+      sizePreset === 'auto'
+        ? { aspect_ratio: aspectRatio }
+        : { aspect_ratio: aspectRatio, image_size: sizePreset }
+  }
 
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
@@ -68,41 +88,26 @@ async function openRouterChatImageSubmit(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'user',
-          content: referenceImageUrl
-            ? [
-                { type: 'text', text: prompt },
-                { type: 'image_url', image_url: { url: referenceImageUrl } },
-              ]
-            : prompt,
-        },
-      ],
-      modalities: ['image', 'text'],
-      image_config: imageConfig,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     if (statusIsGatewayLikeFailure(res.status)) {
-      throw new Error(buildGatewayFailureMessage(res.status, 'openrouter', baseUrl, text))
+      throw new Error(buildGatewayFailureMessage(res.status, provider, baseUrl, text))
     }
-    throw new Error(`OpenRouter chat image API ${res.status}: ${text}`)
+    throw new Error(`${provider} chat image API ${res.status}: ${text}`)
   }
 
-  const data = await parseJsonResponse<OpenRouterChatImageResponse>(
+  const data = await parseJsonResponse<ChatCompletionsImageResponse>(
     res,
-    'OpenRouter chat image API',
+    `${provider} chat image API`,
   )
-  const url = extractOpenRouterChatImageUrl(data)
+  const url = extractChatCompletionsImageUrl(data)
 
   if (!url) {
     throw new Error(
-      'OpenRouter chat image API returned no assistant image data',
+      `${provider} chat image API returned no assistant image data`,
     )
   }
 
@@ -138,41 +143,41 @@ async function openAICompatibleSubmit(
   assertOpenAICompatiblePromptSafety(prompt, baseUrl)
 
   if (provider === 'openrouter' && referenceImageUrl) {
-    return openRouterChatImageSubmit(input, apiKey)
+    return chatCompletionsImageSubmit(input, apiKey, 'openrouter')
+  }
+
+  if (provider === 'comfly' && referenceImageUrl) {
+    return chatCompletionsImageSubmit(input, apiKey, 'comfly')
   }
 
   if (shouldUseOpenRouterChatImageApi(provider, model)) {
-    return openRouterChatImageSubmit(input, apiKey)
+    return chatCompletionsImageSubmit(input, apiKey, 'openrouter')
   }
 
   const requestPath = referenceImageUrl ? '/images/edits' : '/images/generations'
   const requestInit =
-    provider === 'comfly' && referenceImageUrl
-      ? await buildMultipartImageEditRequestInit(
-          apiKey,
-          model,
-          prompt,
-          size,
-          referenceImageUrl,
-          input.loadInternalReferenceImageAsset,
-        )
+    referenceImageUrl
+      ? {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            prompt,
+            size,
+            images: [{ image_url: referenceImageUrl }],
+            n: 1,
+          }),
+        }
       : {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
           },
-          body: JSON.stringify(
-            referenceImageUrl
-              ? {
-                  model,
-                  prompt,
-                  size,
-                  images: [{ image_url: referenceImageUrl }],
-                  n: 1,
-                }
-              : { model, prompt, size, aspect_ratio: aspectRatio, n: 1 },
-          ),
+          body: JSON.stringify({ model, prompt, size, aspect_ratio: aspectRatio, n: 1 }),
         }
 
   const res = await fetch(`${baseUrl}${requestPath}`, requestInit)

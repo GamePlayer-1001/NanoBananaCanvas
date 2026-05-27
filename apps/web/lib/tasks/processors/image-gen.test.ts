@@ -321,28 +321,29 @@ describe('ImageGenProcessor', () => {
     )
   })
 
-  it('submits comfly image edits as multipart form data when a reference image is provided', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'image/png' }),
-        blob: async () => new Blob(['fake-image'], { type: 'image/png' }),
-      } satisfies Partial<Response>)
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'application/json' }),
-        text: async () =>
-          JSON.stringify({
-            data: [{ url: 'https://example.com/comfly-edit.png' }],
-          }),
-      } satisfies Partial<Response>)
+  it('submits comfly image edits via chat-completions when a reference image is provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                role: 'assistant',
+                content:
+                  '已根据参考图重新绘制：![generated](https://example.com/comfly-edit.png)',
+              },
+            },
+          ],
+        }),
+    } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
 
     const processor = new ImageGenProcessor('comfly')
     const result = await processor.submit(
       {
-        model: 'gpt-image-2',
+        model: 'gpt-image-2-all',
         params: {
           prompt: '参考图增强质感',
           imageUrl: 'https://example.com/reference.png',
@@ -352,27 +353,32 @@ describe('ImageGenProcessor', () => {
       'platform-key',
     )
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://example.com/reference.png')
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://ai.comfly.chat/v1/images/edits',
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ai.comfly.chat/v1/chat/completions',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
+          'Content-Type': 'application/json',
           Authorization: 'Bearer platform-key',
         }),
-        body: expect.any(FormData),
+        body: JSON.stringify({
+          model: 'gpt-image-2-all',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: '参考图增强质感' },
+                {
+                  type: 'image_url',
+                  image_url: { url: 'https://example.com/reference.png' },
+                },
+              ],
+            },
+          ],
+        }),
       }),
     )
-
-    const secondCall = fetchMock.mock.calls[1]
-    const requestInit = secondCall?.[1] as RequestInit
-    const formData = requestInit.body as FormData
-    expect(formData.get('model')).toBe('gpt-image-2')
-    expect(formData.get('prompt')).toBe('参考图增强质感')
-    expect(formData.get('size')).toBe('1024x1024')
-    expect(formData.get('n')).toBe('1')
-    expect(formData.get('image')).toBeInstanceOf(File)
     expect(result).toMatchObject({
       initialStatus: 'completed',
       result: {
@@ -382,66 +388,70 @@ describe('ImageGenProcessor', () => {
     })
   })
 
-  it('normalizes internal relative reference images before comfly fetches them', async () => {
-    const r2GetMock = vi.fn().mockResolvedValue({
-      httpMetadata: { contentType: 'image/png' },
-      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
-    })
-    getR2Mock.mockResolvedValue({
-      get: r2GetMock,
-    })
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'application/json' }),
-        text: async () =>
-          JSON.stringify({
-            data: [{ url: 'https://example.com/comfly-edit.png' }],
-          }),
-      } satisfies Partial<Response>)
+  it('parses comfly chat content arrays with image_url parts', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                role: 'assistant',
+                content: [
+                  { type: 'text', text: 'done' },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: 'data:image/png;base64,Y29tZmx5LWVkaXQ=',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+    } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
 
     const processor = new ImageGenProcessor('comfly')
-    await processor.submit(
+    const result = await processor.submit(
       {
-        model: 'gpt-image-2',
+        model: 'gpt-image-2-all',
         params: {
-          prompt: '参考图增强质感',
-          imageUrl: '/api/files/uploads/demo/reference.png',
-          size: '1024x1024',
+          prompt: '基于参考图增强质感',
+          imageUrl: 'https://example.com/reference.png',
         },
       },
       'platform-key',
     )
 
-    expect(r2GetMock).toHaveBeenCalledWith('uploads/demo/reference.png')
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://ai.comfly.chat/v1/images/edits',
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.any(FormData),
-      }),
-    )
+    expect(result.result).toEqual({
+      type: 'url',
+      url: 'data:image/png;base64,Y29tZmx5LWVkaXQ=',
+      contentType: 'image/png',
+    })
   })
 
-  it('loads internal absolute reference images from R2 instead of the private file api', async () => {
-    const r2GetMock = vi.fn().mockResolvedValue({
-      httpMetadata: { contentType: 'image/png' },
-      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
-    })
+  it('does not pre-fetch internal reference images for comfly chat-completions', async () => {
+    const r2GetMock = vi.fn()
     getR2Mock.mockResolvedValue({
       get: r2GetMock,
     })
 
-    const fetchMock = vi.fn().mockResolvedValue({
+    const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       headers: new Headers({ 'content-type': 'application/json' }),
       text: async () =>
         JSON.stringify({
-          data: [{ url: 'https://example.com/comfly-edit.png' }],
+          choices: [
+            {
+              message: {
+                role: 'assistant',
+                content: 'https://example.com/comfly-edit.png',
+              },
+            },
+          ],
         }),
     } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
@@ -449,7 +459,7 @@ describe('ImageGenProcessor', () => {
     const processor = new ImageGenProcessor('comfly')
     await processor.submit(
       {
-        model: 'gpt-image-2',
+        model: 'gpt-image-2-all',
         params: {
           prompt: '参考图增强质感',
           imageUrl: 'https://nanobananacanvas.com/api/files/uploads/demo/reference.png',
@@ -459,13 +469,15 @@ describe('ImageGenProcessor', () => {
       'platform-key',
     )
 
-    expect(r2GetMock).toHaveBeenCalledWith('uploads/demo/reference.png')
+    expect(r2GetMock).not.toHaveBeenCalled()
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://ai.comfly.chat/v1/images/edits',
+      'https://ai.comfly.chat/v1/chat/completions',
       expect.objectContaining({
         method: 'POST',
-        body: expect.any(FormData),
+        body: expect.stringContaining(
+          '"url":"https://nanobananacanvas.com/api/files/uploads/demo/reference.png"',
+        ),
       }),
     )
   })
