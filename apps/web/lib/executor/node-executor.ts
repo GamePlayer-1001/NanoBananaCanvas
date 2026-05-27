@@ -118,15 +118,17 @@ async function executeImageInput(
 async function executeImageMask(
   ctx: NodeExecutionContext,
 ): Promise<NodeExecutionResult> {
-  const upstream = ctx.inputs['image-in']
-  const baseImage = typeof upstream === 'string' ? upstream : ''
+  const imageUrl =
+    typeof ctx.data.config.imageUrl === 'string'
+      ? (ctx.data.config.imageUrl as string)
+      : ''
   const maskUrl =
     typeof ctx.data.config.maskUrl === 'string' ? (ctx.data.config.maskUrl as string) : ''
 
-  if (!baseImage) {
+  if (!imageUrl) {
     throw new WorkflowError(
       ErrorCode.WORKFLOW_NODE_ERROR,
-      'Image mask node requires an upstream image',
+      'Image mask node has no image uploaded yet',
       { nodeId: ctx.nodeId },
     )
   }
@@ -141,8 +143,7 @@ async function executeImageMask(
 
   return {
     outputs: {
-      'image-out': baseImage,
-      'mask-out': maskUrl,
+      'image-out': { imageUrl, maskUrl },
     },
   }
 }
@@ -238,7 +239,7 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
     messages.push({ role: 'system', content: systemPrompt })
   }
 
-  const imageUrl = inputs['image-in'] as string | undefined
+  const { referenceImage: imageUrl } = unpackImageMaskInput(inputs['image-in'])
   if (imageUrl) {
     const parts: ContentPart[] = [
       { type: 'text', text: promptText },
@@ -302,6 +303,25 @@ async function executeLLM(ctx: NodeExecutionContext): Promise<NodeExecutionResul
 
 /* ─── ImageGen: 提交图片生成任务 ─────────────────────── */
 
+function unpackImageMaskInput(value: unknown): {
+  referenceImage: string | undefined
+  maskImage: string | undefined
+} {
+  if (typeof value === 'string') {
+    return { referenceImage: value || undefined, maskImage: undefined }
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const imageUrl = typeof record.imageUrl === 'string' ? record.imageUrl : ''
+    const maskUrl = typeof record.maskUrl === 'string' ? record.maskUrl : ''
+    return {
+      referenceImage: imageUrl || undefined,
+      maskImage: maskUrl || undefined,
+    }
+  }
+  return { referenceImage: undefined, maskImage: undefined }
+}
+
 async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
   const { data, inputs, signal } = ctx
   const config = data.config
@@ -310,8 +330,8 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const aspectRatio = (config.aspectRatio as string) ?? '1:1'
   const executionMode = target.executionMode
   const prompt = (inputs['prompt-in'] as string) ?? ''
-  const referenceImage = (inputs['image-in'] as string) || undefined
-  const maskImage = (inputs['mask-in'] as string) || undefined
+  const referenceInput = inputs['image-in']
+  const { referenceImage, maskImage } = unpackImageMaskInput(referenceInput)
 
   if (!prompt) {
     throw new WorkflowError(
@@ -365,7 +385,7 @@ async function executeVideoGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const target = resolveNodeExecutionTarget('video-gen', config)
   const executionMode = target.executionMode
   const prompt = (inputs['prompt-in'] as string) ?? ''
-  const imageUrl = (inputs['image-in'] as string) || undefined
+  const { referenceImage: imageUrl } = unpackImageMaskInput(inputs['image-in'])
 
   if (!prompt && !imageUrl) {
     throw new WorkflowError(

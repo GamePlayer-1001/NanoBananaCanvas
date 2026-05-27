@@ -89,6 +89,8 @@ function PortHandle({
         className={cn(
           'pointer-events-none absolute z-10 flex -translate-y-1/2 items-center gap-1',
           'bg-background/95 text-muted-foreground rounded-md border px-1.5 py-0.5 text-[10px] leading-none shadow-sm',
+          'opacity-0 transition-opacity duration-150',
+          'group-hover/node:opacity-100 group-[.selected]/node:opacity-100',
           isInput
             ? 'right-[calc(100%_+_10px)] text-right'
             : 'left-[calc(100%_+_10px)] text-left',
@@ -162,7 +164,7 @@ export function BaseNode({
       onMouseMove={updateResizeHover}
       onMouseLeave={hideResizer}
       style={containerStyle}
-      className="relative"
+      className={cn('group/node relative', selected && 'selected')}
     >
       {resizable ? (
         <NodeResizer

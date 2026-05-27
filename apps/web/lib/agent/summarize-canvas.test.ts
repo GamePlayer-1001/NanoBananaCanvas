@@ -138,7 +138,7 @@ describe('summarizeCanvas', () => {
       label: 'Prompt Writer',
       type: 'text-input',
     })
-    expect(summary.nodes[1]?.inputs.map((item) => item.id)).toEqual(['prompt-in', 'image-in', 'mask-in'])
+    expect(summary.nodes[1]?.inputs.map((item) => item.id)).toEqual(['prompt-in', 'image-in'])
     expect(summary.nodes[1]?.outputs.map((item) => item.id)).toEqual(['image-out'])
     expect(summary.subchains?.[0]?.summary).toContain('Prompt Writer -> Poster Image')
   })
