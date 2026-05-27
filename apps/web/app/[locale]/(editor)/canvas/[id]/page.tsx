@@ -15,7 +15,7 @@
 
 import { use, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { CheckCircle2, ChevronDown, History, Loader2, Monitor, Sparkles, XCircle } from 'lucide-react'
+import { CheckCircle2, ChevronDown, History, Loader2, Sparkles, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ReactFlowProvider } from '@xyflow/react'
 import { AgentComposer } from '@/components/agent/agent-composer'
@@ -583,11 +583,8 @@ export default function CanvasPage({
 
   return (
     <>
-      {/* 移动端提示 (< lg) */}
-      <MobileGuard />
-
-      {/* 画布编辑器 (lg+) */}
-      <div className="hidden h-full lg:block">
+      {/* 画布编辑器 (全屏幕尺寸) */}
+      <div className="h-full">
         <ReactFlowProvider>
           <div className="relative h-full">
             <Canvas workflowId={id} canEdit={canEdit} />
@@ -890,16 +887,3 @@ function formatHistoryTimestamp(value: string) {
   })
 }
 
-/* ─── Mobile Guard ──────────────────────────────────── */
-
-function MobileGuard() {
-  const t = useTranslations('canvas')
-
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center lg:hidden">
-      <Monitor size={48} className="text-muted-foreground" />
-      <h2 className="text-lg font-medium">{t('desktopOnly')}</h2>
-      <p className="text-sm text-muted-foreground">{t('desktopOnlyDesc')}</p>
-    </div>
-  )
-}

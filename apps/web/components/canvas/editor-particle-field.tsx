@@ -2,7 +2,8 @@
  * [INPUT]: 依赖 react 的 useEffect/useRef，依赖 @xyflow/react 的 useStoreApi (零 re-render imperative 订阅)，
  *          依赖外层 Canvas 容器 ref 作为尺寸与鼠标事件宿主
  * [OUTPUT]: 对外提供 EditorParticleField 交互粒子背景组件
- * [POS]: components/canvas 的画布背景渲染层，替代 ReactFlow 默认静态点阵，为真实编辑画布提供随鼠标浮起、加粗、波动的粒子反馈
+ * [POS]: components/canvas 的画布背景渲染层，替代 ReactFlow 默认静态点阵，为真实编辑画布提供随鼠标浮起、加粗、波动的粒子反馈，
+ *         点阵以世界坐标为基准随画布缩放/平移整体收放，形成与节点同坐标系的呼吸式底纹
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -27,9 +28,12 @@ interface CanvasMetrics {
   dpr: number
 }
 
-const BASE_GAP = 22
-const MIN_SCREEN_GAP = 16
-const MAX_SCREEN_GAP = 30
+const WORLD_GAP = 28
+const WORLD_RADIUS = 0.75
+const MIN_SCREEN_GAP = 4
+const MAX_SCREEN_GAP = 200
+const MIN_SCREEN_RADIUS = 0.3
+const MAX_SCREEN_RADIUS = 4.0
 const INTERACTION_RADIUS = 160
 const HOVER_EASE_IN = 0.12
 const HOVER_EASE_OUT = 0.05
@@ -101,11 +105,11 @@ export function EditorParticleField({ hostRef }: EditorParticleFieldProps) {
       hoverStrengthRef.current = nextStrength
 
       const { x: viewportX, y: viewportY, zoom } = viewportRef.current
-      const effectiveZoom = clamp(zoom || 1, 0.5, 1.8)
-      const screenGap = clamp(BASE_GAP * effectiveZoom, MIN_SCREEN_GAP, MAX_SCREEN_GAP)
+      const safeZoom = zoom > 0 ? zoom : 1
+      const screenGap = clamp(WORLD_GAP * safeZoom, MIN_SCREEN_GAP, MAX_SCREEN_GAP)
       const offsetX = ((viewportX % screenGap) + screenGap) % screenGap
       const offsetY = ((viewportY % screenGap) + screenGap) % screenGap
-      const baseRadius = clamp(1.5 * effectiveZoom, 1.3, 2.1)
+      const baseRadius = clamp(WORLD_RADIUS * safeZoom, MIN_SCREEN_RADIUS, MAX_SCREEN_RADIUS)
 
       context.save()
       context.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -130,7 +134,7 @@ export function EditorParticleField({ hostRef }: EditorParticleFieldProps) {
 
           const lift = influence * (3.0 + pulse * 4.2)
           const radius = baseRadius + influence * (1.1 + pulse * 0.8)
-          const alpha = 0.42 + influence * 0.4
+          const alpha = 0.09 + influence * 0.35
 
           context.beginPath()
           context.fillStyle = `rgba(15, 23, 42, ${alpha})`
