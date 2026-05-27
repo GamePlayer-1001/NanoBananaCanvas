@@ -63,9 +63,15 @@ describe('resolveAutoConnectSourceHandle', () => {
     ).toBe('image-out')
   })
 
-  it('returns null when no compatible output exists', () => {
+  it('returns text-out when input node connects to audio-gen text-in', () => {
     expect(
       resolveAutoConnectSourceHandle('audio-gen', 'text-in', 'image-input'),
+    ).toBe('text-out')
+  })
+
+  it('returns null when no compatible output exists', () => {
+    expect(
+      resolveAutoConnectSourceHandle('image-gen', 'image-in', 'note'),
     ).toBeNull()
   })
 })

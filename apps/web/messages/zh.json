@@ -1896,6 +1896,7 @@
   "toolbar": {
     "select": "选择",
     "hand": "拖动画布",
+    "input": "输入",
     "groupInputs": "输入",
     "textGen": "文本生成",
     "imageGen": "图片生成",
@@ -1916,8 +1917,7 @@
     "groupDisplay": "展示结果",
     "groupTools": "工具",
     "groupGroup": "分组",
-    "addTextInput": "文本输入",
-    "addImageInput": "图片输入",
+    "addInput": "输入",
     "addImageMask": "蒙版",
     "addTextMerge": "文本合并",
     "addImageMerge": "图片合并",
@@ -1935,6 +1935,8 @@
   },
   "nodes": {
     "enterText": "输入文本...",
+    "inputPlaceholder": "输入提示词，或输入 \"/\" 选择预设提示词",
+    "inputMedia": "上传媒体",
     "textLengthCounter": "{current}/{max} 字",
     "textLengthRemaining": "剩余 {count} 字",
     "imageInputHint": "上传一张图片，作为后续节点的输入源",

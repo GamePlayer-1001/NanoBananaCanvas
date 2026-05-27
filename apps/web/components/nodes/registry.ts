@@ -6,8 +6,7 @@
  */
 
 import type { NodeTypes } from '@xyflow/react'
-import { TextInputNode } from './text-input-node'
-import { ImageInputNode } from './image-input-node'
+import { InputNode } from './input-node'
 import { ImageMaskNode } from './image-mask-node'
 import { LLMNode } from './llm-node'
 import { DisplayNode } from './display-node'
@@ -22,8 +21,9 @@ import { TextMergeNode, ImageMergeNode } from './merge-node'
 import { ImageCompareNode } from './image-compare-node'
 
 export const NODE_TYPES: NodeTypes = {
-  'text-input': TextInputNode,
-  'image-input': ImageInputNode,
+  'input': InputNode,
+  'text-input': InputNode,
+  'image-input': InputNode,
   'image-mask': ImageMaskNode,
   llm: LLMNode,
   display: DisplayNode,

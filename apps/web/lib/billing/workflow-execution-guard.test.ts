@@ -61,7 +61,7 @@ describe('workflow execution guard', () => {
     expect(estimate.textLengthViolations).toEqual([
       {
         nodeId: textNode.id,
-        label: 'Text Input',
+        label: 'Input',
         actualLength: TEXT_INPUT_MAX_LENGTH + 1,
         maxLength: TEXT_INPUT_MAX_LENGTH,
       },

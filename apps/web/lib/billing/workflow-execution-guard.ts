@@ -65,7 +65,7 @@ function estimateTextNodeCredits(node: WorkflowNode): number {
 }
 
 function collectTextLengthViolation(node: WorkflowNode): WorkflowTextLengthViolation | null {
-  if (node.type !== 'text-input') {
+  if (node.type !== 'input' && node.type !== 'text-input') {
     return null
   }
 

@@ -52,8 +52,9 @@ type NodeExecutorFn = (ctx: NodeExecutionContext) => Promise<NodeExecutionResult
 const executeNoop: NodeExecutorFn = async () => ({ outputs: {} })
 
 const executors: Record<string, NodeExecutorFn> = {
-  'text-input': executeTextInput,
-  'image-input': executeImageInput,
+  'input': executeUnifiedInput,
+  'text-input': executeUnifiedInput,
+  'image-input': executeUnifiedInput,
   'image-mask': executeImageMask,
   llm: executeLLM,
   display: executeDisplay,
@@ -88,29 +89,41 @@ export async function executeNode(
   return executor(ctx)
 }
 
-/* ─── TextInput: 直接输出文本 ────────────────────────── */
+/* ─── UnifiedInput: 统一输入节点 (文本 + 媒体) ────────── */
 
-async function executeTextInput(ctx: NodeExecutionContext): Promise<NodeExecutionResult> {
-  const raw = ctx.data.config.text
-  const text = typeof raw === 'string' ? raw : raw == null ? '' : String(raw)
-  return { outputs: { 'text-out': text } }
+interface MediaFileConfig {
+  id: string
+  url: string
+  type: 'image' | 'video'
+  name?: string
 }
 
-async function executeImageInput(
+async function executeUnifiedInput(
   ctx: NodeExecutionContext,
 ): Promise<NodeExecutionResult> {
-  const raw = ctx.data.config.imageUrl
-  const imageUrl = typeof raw === 'string' ? raw : ''
+  const config = ctx.data.config
 
-  if (!imageUrl) {
-    throw new WorkflowError(
-      ErrorCode.WORKFLOW_NODE_ERROR,
-      'Image input node received no image',
-      { nodeId: ctx.nodeId },
-    )
+  /* ── text output ─────────────────────────────────── */
+  const rawText = config.text
+  const text = typeof rawText === 'string' ? rawText : rawText == null ? '' : String(rawText)
+
+  /* ── image output (first media file, or legacy imageUrl) ── */
+  const mediaFiles = Array.isArray(config.mediaFiles)
+    ? (config.mediaFiles as MediaFileConfig[])
+    : []
+  let imageUrl = mediaFiles.find((f) => f.type === 'image')?.url ?? ''
+
+  // backward compat: legacy image-input nodes stored imageUrl directly
+  if (!imageUrl && typeof config.imageUrl === 'string') {
+    imageUrl = config.imageUrl
   }
 
-  return { outputs: { 'image-out': imageUrl } }
+  return {
+    outputs: {
+      'text-out': text,
+      'image-out': imageUrl || null,
+    },
+  }
 }
 
 /* ─── ImageMask: 笔刷蒙版节点 ────────────────────────── */

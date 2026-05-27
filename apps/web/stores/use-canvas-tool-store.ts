@@ -12,6 +12,7 @@ import { create } from 'zustand'
 export type CanvasTool =
   | 'select'
   | 'hand'
+  | 'input'
   | 'text-input'
   | 'image-input'
   | 'image-mask'

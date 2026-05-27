@@ -264,7 +264,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     const source = nodes.find((n) => n.id === menu.nodeId)
     if (!source) return
 
-    const node = createNode(source.type ?? 'text-input', {
+    const node = createNode(source.type ?? 'input', {
       x: source.position.x + DUPLICATE_OFFSET,
       y: source.position.y + DUPLICATE_OFFSET,
     })

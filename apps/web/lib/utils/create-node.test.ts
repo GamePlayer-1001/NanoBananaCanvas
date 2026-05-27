@@ -16,18 +16,26 @@ describe('createNode', () => {
     const node = createNode('text-input', { x: 100, y: 200 })
     expect(node.type).toBe('text-input')
     expect(node.position).toEqual({ x: 100, y: 200 })
-    expect(node.data.label).toBe('Text Input')
+    expect(node.data.label).toBe('Input')
     expect(node.data.type).toBe('input')
-    expect(node.data.config).toEqual({ text: '' })
+    expect(node.data.config).toEqual({ text: '', mediaFiles: [] })
     expect(node.data.status).toBe('idle')
   })
 
   it('creates image-input with correct defaults', () => {
     const node = createNode('image-input', { x: 80, y: 60 })
     expect(node.type).toBe('image-input')
-    expect(node.data.label).toBe('Image Input')
+    expect(node.data.label).toBe('Input')
     expect(node.data.type).toBe('input')
-    expect(node.data.config).toEqual({ imageUrl: '' })
+    expect(node.data.config).toEqual({ text: '', mediaFiles: [] })
+  })
+
+  it('creates unified input with correct defaults', () => {
+    const node = createNode('input', { x: 0, y: 0 })
+    expect(node.type).toBe('input')
+    expect(node.data.label).toBe('Input')
+    expect(node.data.type).toBe('input')
+    expect(node.data.config).toEqual({ text: '', mediaFiles: [] })
   })
 
   it('creates llm with correct defaults', () => {

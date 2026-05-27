@@ -263,7 +263,7 @@ export function buildCreationOperations(normalized: string): WorkflowOperation[]
 export function shouldPatchSelectedNodePrompt(normalized: string, selectedNode: CanvasSummaryNode): boolean {
   return (
     matchesAny(normalized, KW_PROMPT_EDIT) &&
-    ['text-input', 'llm', 'image-gen', 'video-gen'].includes(selectedNode.type)
+    ['input', 'text-input', 'llm', 'image-gen', 'video-gen'].includes(selectedNode.type)
   )
 }
 
@@ -275,7 +275,7 @@ export function buildSelectedNodePromptOperations(normalized: string, selectedNo
       type: 'update_node_data',
       nodeId: selectedNode.id,
       patch: {
-        config: selectedNode.type === 'text-input'
+        config: (selectedNode.type === 'input' || selectedNode.type === 'text-input')
           ? { text: promptValue }
           : { prompt: promptValue },
       },

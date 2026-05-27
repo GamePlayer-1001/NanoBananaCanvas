@@ -8,20 +8,18 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  CircleArrowRight,
   Columns2,
   Combine,
   GitBranch,
   Group,
   ImageIcon,
-  ImagePlus,
   Images,
   MonitorPlay,
   Music,
   Pencil,
-  PenLine,
   Repeat,
   StickyNote,
-  Type,
   Video,
   Wrench,
 } from 'lucide-react'
@@ -31,8 +29,7 @@ import type { CanvasTool } from '@/stores/use-canvas-tool-store'
 /* ─── Sub-item Types ─────────────────────────────────── */
 
 type NodeEntryLabelKey =
-  | 'addTextInput'
-  | 'addImageInput'
+  | 'addInput'
   | 'addImageMask'
   | 'addTextMerge'
   | 'addImageMerge'
@@ -75,6 +72,7 @@ export interface NodeEntryGroup {
 /* ─── Toolbar Entry Types ────────────────────────────── */
 
 type ToolbarLabelKey =
+  | 'input'
   | 'groupInputs'
   | 'textGen'
   | 'imageGen'
@@ -97,15 +95,7 @@ export interface ToolbarEntry {
 /* ─── Toolbar Config ─────────────────────────────────── */
 
 export const CANVAS_TOOLBAR_ENTRIES: ToolbarEntry[] = [
-  {
-    id: 'inputs',
-    labelKey: 'groupInputs',
-    icon: PenLine,
-    items: [
-      { type: 'text-input', labelKey: 'addTextInput', icon: Type },
-      { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
-    ],
-  },
+  { id: 'input', labelKey: 'input', icon: CircleArrowRight, nodeType: 'input' },
   { id: 'llm', labelKey: 'textGen', icon: BrainCircuit, nodeType: 'llm' },
   { id: 'image-gen', labelKey: 'imageGen', icon: ImageIcon, nodeType: 'image-gen' },
   { id: 'video-gen', labelKey: 'videoGen', icon: Video, nodeType: 'video-gen' },
@@ -132,10 +122,9 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
   {
     id: 'inputs',
     labelKey: 'groupInputs',
-    icon: PenLine,
+    icon: CircleArrowRight,
     items: [
-      { type: 'text-input', labelKey: 'addTextInput', icon: Type },
-      { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
+      { type: 'input', labelKey: 'addInput', icon: CircleArrowRight },
       { type: 'image-mask', labelKey: 'addImageMask', icon: Pencil },
     ],
   },

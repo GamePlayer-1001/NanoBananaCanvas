@@ -1896,6 +1896,7 @@
   "toolbar": {
     "select": "Select",
     "hand": "Hand tool",
+    "input": "Input",
     "groupInputs": "Input",
     "textGen": "Text Gen",
     "imageGen": "Image Gen",
@@ -1916,8 +1917,7 @@
     "groupDisplay": "Display",
     "groupTools": "Tools",
     "groupGroup": "Group",
-    "addTextInput": "Text Input",
-    "addImageInput": "Image Input",
+    "addInput": "Input",
     "addImageMask": "Mask",
     "addTextMerge": "Text Merge",
     "addImageMerge": "Image Merge",
@@ -1935,6 +1935,8 @@
   },
   "nodes": {
     "enterText": "Enter text...",
+    "inputPlaceholder": "Type a prompt, or type \"/\" to select your prompt",
+    "inputMedia": "Input Media",
     "textLengthCounter": "{current}/{max} chars",
     "textLengthRemaining": "{count} left",
     "imageInputHint": "Upload an image to use as an input source for downstream nodes",

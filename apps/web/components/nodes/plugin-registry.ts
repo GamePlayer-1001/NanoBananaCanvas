@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  CircleArrowRight,
   Columns2,
   Combine,
   GitBranch,
@@ -71,29 +72,53 @@ export function getNodePorts(type: string) {
 /* ─── Node Definitions ───────────────────────────────── */
 
 register({
-  type: 'text-input',
+  type: 'input',
   category: 'input',
-  label: 'Text Input',
-  icon: Type,
+  label: 'Input',
+  icon: CircleArrowRight,
   ports: {
     inputs: [],
-    outputs: [{ id: 'text-out', label: 'Text', type: 'string' }],
+    outputs: [
+      { id: 'text-out', label: 'Text', type: 'string' },
+      { id: 'image-out', label: 'Image', type: 'image' },
+    ],
   },
-  defaults: { text: '' },
-  toolbar: { labelKey: 'textInput' },
+  defaults: { text: '', mediaFiles: [] },
+  toolbar: { labelKey: 'input' },
+})
+
+/* ── Legacy aliases (backward compat for saved workflows) ── */
+
+register({
+  type: 'text-input',
+  category: 'input',
+  label: 'Input',
+  icon: CircleArrowRight,
+  ports: {
+    inputs: [],
+    outputs: [
+      { id: 'text-out', label: 'Text', type: 'string' },
+      { id: 'image-out', label: 'Image', type: 'image' },
+    ],
+  },
+  defaults: { text: '', mediaFiles: [] },
+  toolbar: { labelKey: 'input' },
 })
 
 register({
   type: 'image-input',
   category: 'input',
-  label: 'Image Input',
-  icon: ImagePlus,
+  label: 'Input',
+  icon: CircleArrowRight,
   ports: {
     inputs: [],
-    outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+    outputs: [
+      { id: 'text-out', label: 'Text', type: 'string' },
+      { id: 'image-out', label: 'Image', type: 'image' },
+    ],
   },
-  defaults: { imageUrl: '' },
-  toolbar: { labelKey: 'imageInput' },
+  defaults: { text: '', mediaFiles: [] },
+  toolbar: { labelKey: 'input' },
 })
 
 register({

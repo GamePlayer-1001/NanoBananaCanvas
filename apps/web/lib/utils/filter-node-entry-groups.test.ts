@@ -39,7 +39,7 @@ describe('filterNodeEntryGroupsByPort', () => {
     })
 
     expect(groups.flatMap((group) => group.items.map((item) => item.type))).toEqual([
-      'image-input',
+      'input',
       'image-mask',
       'image-gen',
       'image-compare',
