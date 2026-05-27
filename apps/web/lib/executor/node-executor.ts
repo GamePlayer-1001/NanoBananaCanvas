@@ -54,6 +54,7 @@ const executeNoop: NodeExecutorFn = async () => ({ outputs: {} })
 const executors: Record<string, NodeExecutorFn> = {
   'text-input': executeTextInput,
   'image-input': executeImageInput,
+  'image-mask': executeImageMask,
   llm: executeLLM,
   display: executeDisplay,
   'image-gen': executeImageGen,
@@ -110,6 +111,40 @@ async function executeImageInput(
   }
 
   return { outputs: { 'image-out': imageUrl } }
+}
+
+/* ─── ImageMask: 笔刷蒙版节点 ────────────────────────── */
+
+async function executeImageMask(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
+  const upstream = ctx.inputs['image-in']
+  const baseImage = typeof upstream === 'string' ? upstream : ''
+  const maskUrl =
+    typeof ctx.data.config.maskUrl === 'string' ? (ctx.data.config.maskUrl as string) : ''
+
+  if (!baseImage) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Image mask node requires an upstream image',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  if (!maskUrl) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Image mask node has no mask painted yet',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  return {
+    outputs: {
+      'image-out': baseImage,
+      'mask-out': maskUrl,
+    },
+  }
 }
 
 /* ─── Merge: 显式多输入汇聚 ─────────────────────────── */
@@ -276,6 +311,7 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
   const executionMode = target.executionMode
   const prompt = (inputs['prompt-in'] as string) ?? ''
   const referenceImage = (inputs['image-in'] as string) || undefined
+  const maskImage = (inputs['mask-in'] as string) || undefined
 
   if (!prompt) {
     throw new WorkflowError(
@@ -302,7 +338,13 @@ async function executeImageGen(ctx: NodeExecutionContext): Promise<NodeExecution
     modelId: target.modelId,
     configId: target.configId,
     executionMode,
-    input: { prompt, size, aspectRatio, imageUrl: referenceImage },
+    input: {
+      prompt,
+      size,
+      aspectRatio,
+      imageUrl: referenceImage,
+      maskUrl: maskImage,
+    },
     outputType: 'image',
     signal,
     onStateChange: ctx.onTaskStateChange,

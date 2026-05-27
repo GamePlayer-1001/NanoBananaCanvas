@@ -14,6 +14,7 @@ export type CanvasTool =
   | 'hand'
   | 'text-input'
   | 'image-input'
+  | 'image-mask'
   | 'llm'
   | 'display'
   | 'image-gen'

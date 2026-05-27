@@ -11,6 +11,7 @@ import {
   buildDlapiAuthFallbackFailureMessage,
   buildGatewayFailureMessage,
   buildMultipartImageEditRequestInit,
+  COMFLY_IMAGE_BASE_URL,
   DLAPI_IMAGE_BASE_URL,
   extractChatCompletionsImageUrl,
   extractDlapiFailureStatus,
@@ -27,6 +28,7 @@ import {
   normalizeImagePromptForApi,
   parseJsonResponse,
   readImageCapabilities,
+  readMaskImageUrl,
   readReferenceImageUrl,
   resolveOpenAICompatibleBaseUrl,
   resolveOpenAICompatibleRequestSize,
@@ -114,6 +116,54 @@ async function chatCompletionsImageSubmit(
   return { url }
 }
 
+async function comflyMaskEditSubmit(
+  input: SubmitInput,
+  apiKey: string,
+  referenceImageUrl: string,
+  maskImageUrl: string,
+): Promise<{ url: string }> {
+  const { model, params } = input
+  const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
+  const sizePreset = (params.size as string) ?? '1k'
+  const aspectRatio = (params.aspectRatio as string) ?? '1:1'
+  const size = resolveOpenAICompatibleRequestSize('comfly', sizePreset, aspectRatio)
+  const baseUrl = COMFLY_IMAGE_BASE_URL
+  const endpoint = `${baseUrl}/images/edits`
+
+  assertOpenAICompatiblePromptSafety(prompt, baseUrl)
+
+  const requestInit = await buildMultipartImageEditRequestInit(
+    apiKey,
+    model,
+    prompt,
+    size,
+    referenceImageUrl,
+    input.loadInternalReferenceImageAsset,
+    maskImageUrl,
+  )
+
+  const res = await fetch(endpoint, requestInit)
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    if (statusIsGatewayLikeFailure(res.status)) {
+      throw new Error(buildGatewayFailureMessage(res.status, 'comfly', endpoint, text))
+    }
+    throw new Error(`Comfly mask edit API ${res.status}: ${text}`)
+  }
+
+  const data = await parseJsonResponse<OpenAICompatibleImageResponse>(
+    res,
+    'Comfly mask edit API',
+  )
+
+  const url = extractOpenAICompatibleImageUrl(data)
+  if (!url) {
+    throw new Error('Comfly mask edit API returned neither url nor b64_json image data')
+  }
+  return { url }
+}
+
 /* ─── OpenAI-compatible Image API ────────────────────── */
 
 async function openAICompatibleSubmit(
@@ -126,6 +176,7 @@ async function openAICompatibleSubmit(
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
   const referenceImageUrl = readReferenceImageUrl(params)
+  const maskImageUrl = readMaskImageUrl(params)
   const capabilities = readImageCapabilities(params)
   const violation = validateImageSelection(sizePreset, aspectRatio, capabilities)
 
@@ -141,6 +192,10 @@ async function openAICompatibleSubmit(
   }
 
   assertOpenAICompatiblePromptSafety(prompt, baseUrl)
+
+  if (provider === 'comfly' && referenceImageUrl && maskImageUrl) {
+    return comflyMaskEditSubmit(input, apiKey, referenceImageUrl, maskImageUrl)
+  }
 
   if (provider === 'openrouter' && referenceImageUrl) {
     return chatCompletionsImageSubmit(input, apiKey, 'openrouter')
@@ -213,6 +268,7 @@ async function dlapiSubmit(
   const sizePreset = (params.size as string) ?? '1k'
   const aspectRatio = (params.aspectRatio as string) ?? '1:1'
   const referenceImageUrl = readReferenceImageUrl(params)
+  const maskImageUrl = readMaskImageUrl(params)
   const capabilities = readImageCapabilities(params)
   const violation = validateImageSelection(sizePreset, aspectRatio, capabilities)
 
@@ -235,6 +291,7 @@ async function dlapiSubmit(
           size,
           referenceImageUrl,
           input.loadInternalReferenceImageAsset,
+          maskImageUrl,
         )
       })()
     : {

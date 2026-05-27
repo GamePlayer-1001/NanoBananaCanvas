@@ -18,6 +18,7 @@ import {
   Images,
   MonitorPlay,
   Music,
+  Pencil,
   Repeat,
   StickyNote,
   Type,
@@ -96,6 +97,22 @@ register({
 })
 
 register({
+  type: 'image-mask',
+  category: 'input',
+  label: 'Mask',
+  icon: Pencil,
+  ports: {
+    inputs: [{ id: 'image-in', label: 'Image', type: 'image', required: true }],
+    outputs: [
+      { id: 'image-out', label: 'Image', type: 'image' },
+      { id: 'mask-out', label: 'Mask', type: 'image' },
+    ],
+  },
+  defaults: { maskUrl: '', brushSize: 32 },
+  toolbar: { labelKey: 'imageMask' },
+})
+
+register({
   type: 'llm',
   category: 'ai-model',
   label: 'LLM',
@@ -138,6 +155,7 @@ register({
     inputs: [
       { id: 'prompt-in', label: 'Prompt', type: 'string', required: true },
       { id: 'image-in', label: 'Reference Image', type: 'image' },
+      { id: 'mask-in', label: 'Mask', type: 'image' },
     ],
     outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },

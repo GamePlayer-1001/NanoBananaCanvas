@@ -236,6 +236,32 @@ export function readReferenceImageUrl(params: Record<string, unknown>): string |
   return value
 }
 
+export function readMaskImageUrl(params: Record<string, unknown>): string | undefined {
+  const raw = params.maskUrl
+  if (typeof raw !== 'string') {
+    return undefined
+  }
+
+  const value = raw.trim()
+  if (!value) {
+    return undefined
+  }
+
+  if (value.startsWith('data:')) {
+    return value
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value
+  }
+
+  if (value.startsWith('/')) {
+    return new URL(value, BASE_URL).toString()
+  }
+
+  return value
+}
+
 export function readImageCapabilities(params: Record<string, unknown>): ImageModelCapabilities | undefined {
   const raw = params.imageCapabilities
   return raw && typeof raw === 'object'
@@ -332,6 +358,7 @@ export async function buildMultipartImageEditRequestInit(
   loadInternalReferenceImageAsset?: (
     r2Key: string,
   ) => Promise<{ blob: Blob; filename: string }>,
+  maskImageUrl?: string,
 ): Promise<RequestInit> {
   const { blob, filename } = await fetchReferenceImageAsset(
     referenceImageUrl,
@@ -343,6 +370,14 @@ export async function buildMultipartImageEditRequestInit(
   formData.append('size', size)
   formData.append('n', '1')
   formData.append('image', blob, filename)
+
+  if (maskImageUrl) {
+    const maskAsset = await fetchReferenceImageAsset(
+      maskImageUrl,
+      loadInternalReferenceImageAsset,
+    )
+    formData.append('mask', maskAsset.blob, maskAsset.filename)
+  }
 
   return {
     method: 'POST',

@@ -17,6 +17,7 @@ import {
   Images,
   MonitorPlay,
   Music,
+  Pencil,
   PenLine,
   Repeat,
   StickyNote,
@@ -32,6 +33,7 @@ import type { CanvasTool } from '@/stores/use-canvas-tool-store'
 type NodeEntryLabelKey =
   | 'addTextInput'
   | 'addImageInput'
+  | 'addImageMask'
   | 'addTextMerge'
   | 'addImageMerge'
   | 'addImageCompare'
@@ -134,6 +136,7 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
     items: [
       { type: 'text-input', labelKey: 'addTextInput', icon: Type },
       { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
+      { type: 'image-mask', labelKey: 'addImageMask', icon: Pencil },
     ],
   },
   {
