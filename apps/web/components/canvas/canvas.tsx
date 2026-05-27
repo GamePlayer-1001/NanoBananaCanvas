@@ -18,8 +18,6 @@ import { toast } from 'sonner'
 import {
   type Connection,
   type HandleType,
-  Background,
-  BackgroundVariant,
   MiniMap,
   type NodeChange,
   type OnConnectStartParams,
@@ -50,6 +48,7 @@ import { CanvasControls } from './canvas-controls'
 import { CANVAS_CONTEXT_MENU_GROUPS } from './node-entry-config'
 import { CanvasToolbar, DRAG_DATA_TYPE } from './canvas-toolbar'
 import { CanvasTopToolbar } from './canvas-top-toolbar'
+import { EditorParticleField } from './editor-particle-field'
 import { HelperLines } from './helper-lines'
 import { CanvasContextMenu } from './context-menu'
 import { NodeContextMenu } from './node-context-menu'
@@ -95,6 +94,7 @@ interface CanvasProps {
 /* ─── Inner Component (needs ReactFlowProvider context) ─ */
 
 function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
+  const canvasHostRef = useRef<HTMLDivElement | null>(null)
   const rfInstance = useRef<FlowInstance | null>(null)
   const connectingFrom = useRef<PendingConnection | null>(null)
   const t = useTranslations('canvas.shortcutsHint')
@@ -492,7 +492,8 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   ]
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-white">
+    <div ref={canvasHostRef} className="relative h-full w-full overflow-hidden bg-white">
+      <EditorParticleField hostRef={canvasHostRef} />
       {showShortcutHint ? (
         <div className="pointer-events-none absolute bottom-5 left-5 z-0 max-w-[22rem] text-[13px] leading-6 text-black/36">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-black/24">
@@ -552,12 +553,6 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         defaultEdgeOptions={{ type: 'custom', animated: false }}
         connectionLineStyle={{ stroke: 'var(--brand-400)', strokeWidth: 2 }}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1}
-          color="rgba(15, 23, 42, 0.18)"
-        />
         <HelperLines horizontal={helperLines.horizontal} vertical={helperLines.vertical} />
         <MiniMap
           position="bottom-right"
