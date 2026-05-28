@@ -263,25 +263,18 @@ export function InputNode(props: NodeProps) {
   const CONTENT_PADDING = 26 // card border 2px + body padding 24px
   const THUMB = 48
   const GAP = 6 // gap-1.5
-  const ICON_BTN_W = 48
-  const TEXT_BTN_W = 120
+  const MIN_INLINE_BTN_W = 72 // 内联按钮最小可读宽度（图标 + "上传媒体" 文案）
   const hasMedia = mediaFiles.length > 0
 
   const rawWidth = typeof props.width === 'number' && Number.isFinite(props.width) ? props.width : MIN_WIDTH
   const nodeWidth = Math.max(rawWidth, MIN_WIDTH)
   const contentWidth = nodeWidth - CONTENT_PADDING
 
-  let buttonMode: 'text' | 'icon' | 'newline' = 'text'
+  let buttonMode: 'inline' | 'newline' = 'inline'
   if (hasMedia) {
     const thumbsWidth = mediaFiles.length * THUMB + (mediaFiles.length - 1) * GAP
     const remaining = contentWidth - thumbsWidth - GAP
-    if (remaining >= TEXT_BTN_W) {
-      buttonMode = 'text'
-    } else if (remaining >= ICON_BTN_W) {
-      buttonMode = 'icon'
-    } else {
-      buttonMode = 'newline'
-    }
+    buttonMode = remaining >= MIN_INLINE_BTN_W ? 'inline' : 'newline'
   }
 
   return (
@@ -337,35 +330,29 @@ export function InputNode(props: NodeProps) {
             </DndContext>
           ) : null}
 
-          {/* Inline button (text or icon mode) */}
-          {buttonMode !== 'newline' && (
+          {/* Inline button: 无媒体时整行；有媒体时 flex-1 自适应填满剩余宽度 */}
+          {buttonMode === 'inline' && (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed text-xs transition-colors ${
+              className={`flex h-12 ${
+                hasMedia ? 'min-w-0 flex-1' : 'w-full'
+              } items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2.5 py-2 text-xs transition-colors ${
                 dragOver
                   ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
                   : 'border-border text-muted-foreground hover:border-foreground/30'
-              } ${
-                buttonMode === 'icon'
-                  ? 'h-12 w-12 flex-shrink-0 px-0'
-                  : hasMedia
-                    ? 'h-12 flex-shrink-0 px-2.5 py-2'
-                    : 'h-12 w-full px-2.5 py-2'
               }`}
             >
               {uploading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  {buttonMode !== 'icon' && <span>{progress}%</span>}
+                  <span>{progress}%</span>
                 </>
-              ) : buttonMode === 'icon' ? (
-                <Paperclip size={16} />
               ) : (
                 <>
                   <Paperclip size={14} />
-                  <span>{t('inputMedia')}</span>
+                  <span className="truncate">{t('inputMedia')}</span>
                 </>
               )}
             </button>
