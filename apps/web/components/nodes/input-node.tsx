@@ -258,23 +258,24 @@ export function InputNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
-  /* ── Determine button mode based on node width (pixel-precise) ── */
+  /* ── Determine button label visibility based on remaining inline width ── */
   const MIN_WIDTH = 290
   const CONTENT_PADDING = 26 // card border 2px + body padding 24px
   const THUMB = 48
   const GAP = 6 // gap-1.5
-  const MIN_INLINE_BTN_W = 72 // 内联按钮最小可读宽度（图标 + "上传媒体" 文案）
+  const TEXT_BTN_W = 110 // 容纳 "📎 上传媒体" 完整文案所需的最小按钮宽度（含 padding）
   const hasMedia = mediaFiles.length > 0
 
   const rawWidth = typeof props.width === 'number' && Number.isFinite(props.width) ? props.width : MIN_WIDTH
   const nodeWidth = Math.max(rawWidth, MIN_WIDTH)
   const contentWidth = nodeWidth - CONTENT_PADDING
 
-  let buttonMode: 'inline' | 'newline' = 'inline'
+  /* 永远 inline，不换行：剩余宽度不足时只显示图标 */
+  let showLabel = true
   if (hasMedia) {
     const thumbsWidth = mediaFiles.length * THUMB + (mediaFiles.length - 1) * GAP
     const remaining = contentWidth - thumbsWidth - GAP
-    buttonMode = remaining >= MIN_INLINE_BTN_W ? 'inline' : 'newline'
+    showLabel = remaining >= TEXT_BTN_W
   }
 
   return (
@@ -330,60 +331,35 @@ export function InputNode(props: NodeProps) {
             </DndContext>
           ) : null}
 
-          {/* Inline button: 无媒体时整行；有媒体时 flex-1 自适应填满剩余宽度 */}
-          {buttonMode === 'inline' && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className={`flex h-12 ${
-                hasMedia ? 'min-w-0 flex-1' : 'w-full'
-              } items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2.5 py-2 text-xs transition-colors ${
-                dragOver
-                  ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
-                  : 'border-border text-muted-foreground hover:border-foreground/30'
-              }`}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>{progress}%</span>
-                </>
-              ) : (
-                <>
-                  <Paperclip size={14} />
-                  <span className="truncate">{t('inputMedia')}</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
-
-        {/* Full-width button on new line (newline mode) */}
-        {buttonMode === 'newline' && (
+          {/* 上传按钮始终内联：无媒体时占满整行；有媒体时 flex-1 填满缩略图右侧剩余宽度，
+              空间不足时自动隐藏文字仅显示图标 */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className={`flex w-full items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2.5 py-2 text-xs transition-colors ${
+            className={`flex h-12 ${
+              hasMedia ? 'min-w-0 flex-1' : 'w-full'
+            } items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 py-2 text-xs transition-colors ${
               dragOver
                 ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
                 : 'border-border text-muted-foreground hover:border-foreground/30'
             }`}
+            title={t('inputMedia')}
+            aria-label={t('inputMedia')}
           >
             {uploading ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>{progress}%</span>
+                <Loader2 size={16} className="animate-spin shrink-0" />
+                {showLabel && <span>{progress}%</span>}
               </>
             ) : (
               <>
-                <Paperclip size={14} />
-                <span>{t('inputMedia')}</span>
+                <Paperclip size={14} className="shrink-0" />
+                {showLabel && <span>{t('inputMedia')}</span>}
               </>
             )}
           </button>
-        )}
+        </div>
 
         <input
           ref={fileInputRef}
