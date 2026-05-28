@@ -300,7 +300,7 @@ export function InputNode(props: NodeProps) {
       {...props}
       data={data}
       icon={<CircleArrowRight size={14} />}
-      minWidth={320}
+      minWidth={290}
       minHeight={240}
       bodyClassName="gap-2 pb-3"
     >
