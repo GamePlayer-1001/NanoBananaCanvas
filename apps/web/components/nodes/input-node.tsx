@@ -313,7 +313,7 @@ export function InputNode(props: NodeProps) {
       {/* ── Media strip + upload button ────────────────── */}
       <div
         ref={mediaStripRef}
-        className="nodrag nowheel flex flex-wrap items-center gap-1.5"
+        className="nodrag nowheel flex flex-col gap-1.5"
         onDragOver={(e) => {
           e.preventDefault()
           setDragOver(true)
@@ -321,61 +321,92 @@ export function InputNode(props: NodeProps) {
         onDragLeave={() => setDragOver(false)}
         onDrop={onMediaDrop}
       >
-        {hasMedia ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={mediaFiles.map((f) => f.id)}
-              strategy={horizontalListSortingStrategy}
+        {/* Row: thumbnails + inline button (when not newline) */}
+        <div className={`flex items-center gap-1.5 ${buttonMode === 'newline' ? 'flex-wrap' : ''}`}>
+          {hasMedia ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              {mediaFiles.map((file) => (
-                <SortableMediaThumb
-                  key={file.id}
-                  file={file}
-                  onRemove={removeMedia}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        ) : null}
+              <SortableContext
+                items={mediaFiles.map((f) => f.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {mediaFiles.map((file) => (
+                  <SortableMediaThumb
+                    key={file.id}
+                    file={file}
+                    onRemove={removeMedia}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          ) : null}
 
-        {/* ── Upload button: 右对齐，动态模式轮换 ───────────── */}
-        {buttonMode !== 'newline' && hasMedia && <div className="flex-1" />}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed text-xs transition-colors ${
-            dragOver
-              ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
-              : 'border-border text-muted-foreground hover:border-foreground/30'
-          } ${
-            buttonMode === 'newline'
-              ? 'h-10 w-full px-2.5 py-2'
-              : buttonMode === 'icon'
-                ? 'h-12 w-12 flex-shrink-0 px-0'
-                : hasMedia
-                  ? 'h-12 flex-shrink-0 px-2.5 py-2'
-                  : 'h-12 w-full px-2.5 py-2'
-          }`}
-        >
-          {uploading ? (
+          {/* Inline button (text or icon mode) */}
+          {buttonMode !== 'newline' && (
             <>
-              <Loader2 size={16} className="animate-spin" />
-              {buttonMode !== 'icon' && <span>{progress}%</span>}
-            </>
-          ) : buttonMode === 'icon' ? (
-            <Paperclip size={16} />
-          ) : (
-            <>
-              <Paperclip size={14} />
-              <span>{t('inputMedia')}</span>
+              {hasMedia && <div className="flex-1" />}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed text-xs transition-colors ${
+                  dragOver
+                    ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
+                    : 'border-border text-muted-foreground hover:border-foreground/30'
+                } ${
+                  buttonMode === 'icon'
+                    ? 'h-12 w-12 flex-shrink-0 px-0'
+                    : hasMedia
+                      ? 'h-12 flex-shrink-0 px-2.5 py-2'
+                      : 'h-12 w-full px-2.5 py-2'
+                }`}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    {buttonMode !== 'icon' && <span>{progress}%</span>}
+                  </>
+                ) : buttonMode === 'icon' ? (
+                  <Paperclip size={16} />
+                ) : (
+                  <>
+                    <Paperclip size={14} />
+                    <span>{t('inputMedia')}</span>
+                  </>
+                )}
+              </button>
             </>
           )}
-        </button>
+        </div>
+
+        {/* Full-width button on new line (newline mode) */}
+        {buttonMode === 'newline' && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className={`flex w-full items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2.5 py-2 text-xs transition-colors ${
+              dragOver
+                ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
+                : 'border-border text-muted-foreground hover:border-foreground/30'
+            }`}
+          >
+            {uploading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>{progress}%</span>
+              </>
+            ) : (
+              <>
+                <Paperclip size={14} />
+                <span>{t('inputMedia')}</span>
+              </>
+            )}
+          </button>
+        )}
 
         <input
           ref={fileInputRef}

@@ -9,8 +9,17 @@
 
 /* ─── ReactFlow 品牌色覆盖 ────────────────────────────── */
 
+/* 所有节点由 BaseNode 自定义渲染，去掉 ReactFlow 默认 border/padding/bg */
 .react-flow__node {
   border-radius: var(--radius);
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node.selected {
+  box-shadow: none !important;
 }
 
 .react-flow__edge-path {
