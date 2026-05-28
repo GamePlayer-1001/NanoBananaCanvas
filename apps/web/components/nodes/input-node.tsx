@@ -11,7 +11,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 上传预览可能是 blob/data/签名 URL，需要保留原始 img 行为。 */
 
-import { useCallback, useRef, useState, useEffect, type ChangeEvent } from 'react'
+import { useCallback, useRef, useState, useEffect, useLayoutEffect, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { CircleArrowRight, Paperclip, X, Loader2 } from 'lucide-react'
@@ -258,11 +258,37 @@ export function InputNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
-  /* ── Determine button mode ─────────────────────────── */
+  /* ── Measure container for dynamic button mode ────── */
+  const mediaStripRef = useRef<HTMLDivElement>(null)
+  const [stripWidth, setStripWidth] = useState(0)
+
+  useLayoutEffect(() => {
+    const el = mediaStripRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setStripWidth(entry.contentRect.width)
+      }
+    })
+    ro.observe(el)
+    setStripWidth(el.clientWidth)
+    return () => ro.disconnect()
+  }, [])
+
+  /* ── Determine button mode based on available width ── */
+  const SLOT_WIDTH = 60 // 48px thumb + 12px effective spacing
+  const capacity = Math.max(2, Math.floor(stripWidth / SLOT_WIDTH))
   const hasMedia = mediaFiles.length > 0
-  // 当缩略图 >= 4 个时，按钮换行后恢复完整显示；< 4 个时右对齐缩减
-  const buttonOnNewLine = mediaFiles.length >= 4
-  const showIconOnly = hasMedia && !buttonOnNewLine
+  // capacity - 2: text button; capacity - 1: icon button; >= capacity: new line
+  const textMax = capacity - 2
+  const iconMax = capacity - 1
+  const buttonMode: 'text' | 'icon' | 'newline' = !hasMedia
+    ? 'text'
+    : mediaFiles.length <= textMax
+      ? 'text'
+      : mediaFiles.length <= iconMax
+        ? 'icon'
+        : 'newline'
 
   return (
     <BaseNode
@@ -286,6 +312,7 @@ export function InputNode(props: NodeProps) {
 
       {/* ── Media strip + upload button ────────────────── */}
       <div
+        ref={mediaStripRef}
         className="nodrag nowheel flex flex-wrap items-center gap-1.5"
         onDragOver={(e) => {
           e.preventDefault()
@@ -315,8 +342,8 @@ export function InputNode(props: NodeProps) {
           </DndContext>
         ) : null}
 
-        {/* ── Upload button: 右对齐，有媒体时缩减，满行后换行恢复完整 ── */}
-        {hasMedia && !buttonOnNewLine && <div className="flex-1" />}
+        {/* ── Upload button: 右对齐，动态模式轮换 ───────────── */}
+        {buttonMode !== 'newline' && hasMedia && <div className="flex-1" />}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -325,14 +352,22 @@ export function InputNode(props: NodeProps) {
             dragOver
               ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
               : 'border-border text-muted-foreground hover:border-foreground/30'
-          } ${buttonOnNewLine ? 'h-10 w-full px-2.5 py-2' : hasMedia ? 'h-12 w-12 flex-shrink-0 px-0' : 'h-12 w-full px-2.5 py-2'}`}
+          } ${
+            buttonMode === 'newline'
+              ? 'h-10 w-full px-2.5 py-2'
+              : buttonMode === 'icon'
+                ? 'h-12 w-12 flex-shrink-0 px-0'
+                : hasMedia
+                  ? 'h-12 flex-shrink-0 px-2.5 py-2'
+                  : 'h-12 w-full px-2.5 py-2'
+          }`}
         >
           {uploading ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              {!showIconOnly && <span>{progress}%</span>}
+              {buttonMode !== 'icon' && <span>{progress}%</span>}
             </>
-          ) : showIconOnly ? (
+          ) : buttonMode === 'icon' ? (
             <Paperclip size={16} />
           ) : (
             <>
