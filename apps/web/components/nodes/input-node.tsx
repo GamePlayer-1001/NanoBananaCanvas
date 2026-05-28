@@ -275,20 +275,25 @@ export function InputNode(props: NodeProps) {
     return () => ro.disconnect()
   }, [])
 
-  /* ── Determine button mode based on available width ── */
-  const SLOT_WIDTH = 60 // 48px thumb + 12px effective spacing
-  const capacity = Math.max(2, Math.floor(stripWidth / SLOT_WIDTH))
+  /* ── Determine button mode based on available width (pixel-precise) ── */
+  const THUMB = 48
+  const GAP = 6
+  const ICON_BTN_W = 48
+  const TEXT_BTN_W = 100
   const hasMedia = mediaFiles.length > 0
-  // capacity - 2: text button; capacity - 1: icon button; >= capacity: new line
-  const textMax = capacity - 2
-  const iconMax = capacity - 1
-  const buttonMode: 'text' | 'icon' | 'newline' = !hasMedia
-    ? 'text'
-    : mediaFiles.length <= textMax
-      ? 'text'
-      : mediaFiles.length <= iconMax
-        ? 'icon'
-        : 'newline'
+
+  let buttonMode: 'text' | 'icon' | 'newline' = 'text'
+  if (hasMedia && stripWidth > 0) {
+    const thumbsWidth = mediaFiles.length * THUMB + (mediaFiles.length - 1) * GAP
+    const remaining = stripWidth - thumbsWidth - GAP
+    if (remaining >= TEXT_BTN_W) {
+      buttonMode = 'text'
+    } else if (remaining >= ICON_BTN_W) {
+      buttonMode = 'icon'
+    } else {
+      buttonMode = 'newline'
+    }
+  }
 
   return (
     <BaseNode
@@ -296,8 +301,7 @@ export function InputNode(props: NodeProps) {
       data={data}
       icon={<CircleArrowRight size={14} />}
       minWidth={320}
-      minHeight={0}
-      heightMode="content"
+      minHeight={240}
       bodyClassName="gap-2 pb-3"
     >
       {/* ── Textarea ───────────────────────────────────── */}
