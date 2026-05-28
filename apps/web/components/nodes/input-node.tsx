@@ -270,12 +270,12 @@ export function InputNode(props: NodeProps) {
   const nodeWidth = Math.max(rawWidth, MIN_WIDTH)
   const contentWidth = nodeWidth - CONTENT_PADDING
 
-  /* 永远 inline，不换行：剩余宽度不足时只显示图标 */
-  let showLabel = true
+  /* 剩余空间不足容纳完整文字按钮 -> 换行整行展示 */
+  let layout: 'inline' | 'newline' = 'inline'
   if (hasMedia) {
     const thumbsWidth = mediaFiles.length * THUMB + (mediaFiles.length - 1) * GAP
     const remaining = contentWidth - thumbsWidth - GAP
-    showLabel = remaining >= TEXT_BTN_W
+    layout = remaining >= TEXT_BTN_W ? 'inline' : 'newline'
   }
 
   return (
@@ -331,15 +331,44 @@ export function InputNode(props: NodeProps) {
             </DndContext>
           ) : null}
 
-          {/* 上传按钮始终内联：无媒体时占满整行；有媒体时 flex-1 填满缩略图右侧剩余宽度，
-              空间不足时自动隐藏文字仅显示图标 */}
+          {/* 内联按钮：无媒体时占满整行；有媒体且剩余空间足够 -> flex-1 填满剩余宽度 */}
+          {layout === 'inline' && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className={`flex h-12 ${
+                hasMedia ? 'min-w-0 flex-1' : 'w-full'
+              } items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 py-2 text-xs transition-colors ${
+                dragOver
+                  ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
+                  : 'border-border text-muted-foreground hover:border-foreground/30'
+              }`}
+              title={t('inputMedia')}
+              aria-label={t('inputMedia')}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin shrink-0" />
+                  <span>{progress}%</span>
+                </>
+              ) : (
+                <>
+                  <Paperclip size={14} className="shrink-0" />
+                  <span>{t('inputMedia')}</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* 缩略图行装不下完整文字按钮 -> 换行整行展示 */}
+        {layout === 'newline' && (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className={`flex h-12 ${
-              hasMedia ? 'min-w-0 flex-1' : 'w-full'
-            } items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 py-2 text-xs transition-colors ${
+            className={`flex h-12 w-full items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 py-2 text-xs transition-colors ${
               dragOver
                 ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
                 : 'border-border text-muted-foreground hover:border-foreground/30'
@@ -350,16 +379,16 @@ export function InputNode(props: NodeProps) {
             {uploading ? (
               <>
                 <Loader2 size={16} className="animate-spin shrink-0" />
-                {showLabel && <span>{progress}%</span>}
+                <span>{progress}%</span>
               </>
             ) : (
               <>
                 <Paperclip size={14} className="shrink-0" />
-                {showLabel && <span>{t('inputMedia')}</span>}
+                <span>{t('inputMedia')}</span>
               </>
             )}
           </button>
-        </div>
+        )}
 
         <input
           ref={fileInputRef}
