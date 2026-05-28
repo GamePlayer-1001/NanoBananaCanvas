@@ -11,7 +11,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 上传预览可能是 blob/data/签名 URL，需要保留原始 img 行为。 */
 
-import { useCallback, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useRef, useState, useEffect, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { CircleArrowRight, Paperclip, X, Loader2 } from 'lucide-react'
@@ -117,6 +117,8 @@ export function InputNode(props: NodeProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { uploading, progress, upload, reset: resetUpload } = useUpload()
   const [dragOver, setDragOver] = useState(false)
+  const uploadQueueRef = useRef<File[]>([])
+  const isProcessingRef = useRef(false)
 
   /* ── Derived state ─────────────────────────────────── */
   const textValue = (data.config.text as string) ?? ''
@@ -127,14 +129,17 @@ export function InputNode(props: NodeProps) {
 
   /* backward compat: migrate legacy imageUrl into mediaFiles */
   const legacyImageUrl = data.config.imageUrl as string | undefined
-  if (legacyImageUrl && mediaFiles.length === 0) {
-    const migrated: MediaFile[] = [
-      { id: crypto.randomUUID(), url: legacyImageUrl, type: 'image' },
-    ]
-    updateNodeData(props.id, {
-      config: { ...data.config, mediaFiles: migrated, imageUrl: '' },
-    })
-  }
+  useEffect(() => {
+    if (legacyImageUrl && mediaFiles.length === 0) {
+      const migrated: MediaFile[] = [
+        { id: crypto.randomUUID(), url: legacyImageUrl, type: 'image' },
+      ]
+      updateNodeData(props.id, {
+        config: { ...data.config, mediaFiles: migrated, imageUrl: '' },
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyImageUrl])
 
   /* ── Text change ───────────────────────────────────── */
   const onTextChange = useCallback(
@@ -146,14 +151,15 @@ export function InputNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
-  /* ── Media upload ──────────────────────────────────── */
-  const handleFile = useCallback(
-    async (file: File) => {
+  /* ── Media upload (sequential queue for multi-file) ── */
+  const processQueue = useCallback(async () => {
+    if (isProcessingRef.current) return
+    isProcessingRef.current = true
+
+    while (uploadQueueRef.current.length > 0) {
+      const file = uploadQueueRef.current.shift()!
       const check = validateUpload(file)
-      if (!check.ok) {
-        resetUpload()
-        return
-      }
+      if (!check.ok) continue
 
       const result = await upload(file)
       if (result) {
@@ -164,27 +170,40 @@ export function InputNode(props: NodeProps) {
           type: fileType as 'image' | 'video',
           name: file.name,
         }
-        const current = Array.isArray(data.config.mediaFiles)
-          ? (data.config.mediaFiles as MediaFile[])
+        // Read latest state from store to avoid stale closure
+        const latestNodes = useFlowStore.getState().nodes
+        const latestNode = latestNodes.find((n) => n.id === props.id)
+        const latestConfig = (latestNode?.data as WorkflowNodeData | undefined)?.config ?? {}
+        const current = Array.isArray(latestConfig.mediaFiles)
+          ? (latestConfig.mediaFiles as MediaFile[])
           : []
         updateNodeData(props.id, {
-          config: { ...data.config, mediaFiles: [...current, newMedia] },
+          config: { ...latestConfig, mediaFiles: [...current, newMedia] },
         })
       }
+    }
+
+    isProcessingRef.current = false
+    resetUpload()
+  }, [upload, resetUpload, props.id, updateNodeData])
+
+  const enqueueFiles = useCallback(
+    (files: FileList | File[]) => {
+      const arr = Array.from(files)
+      uploadQueueRef.current.push(...arr)
+      processQueue()
     },
-    [upload, resetUpload, props.id, data.config, updateNodeData],
+    [processQueue],
   )
 
   const onFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files
-      if (!files) return
-      for (let i = 0; i < files.length; i++) {
-        handleFile(files[i])
-      }
+      if (!files || files.length === 0) return
+      enqueueFiles(files)
       e.target.value = ''
     },
-    [handleFile],
+    [enqueueFiles],
   )
 
   const onMediaDrop = useCallback(
@@ -192,12 +211,11 @@ export function InputNode(props: NodeProps) {
       e.preventDefault()
       e.stopPropagation()
       setDragOver(false)
-      const files = e.dataTransfer.files
-      for (let i = 0; i < files.length; i++) {
-        handleFile(files[i])
+      if (e.dataTransfer.files.length > 0) {
+        enqueueFiles(e.dataTransfer.files)
       }
     },
-    [handleFile],
+    [enqueueFiles],
   )
 
   /* ── Remove media ──────────────────────────────────── */
@@ -242,14 +260,17 @@ export function InputNode(props: NodeProps) {
 
   /* ── Determine button mode ─────────────────────────── */
   const hasMedia = mediaFiles.length > 0
-  const showIconOnly = mediaFiles.length >= 3
+  // 当缩略图 >= 4 个时，按钮换行后恢复完整显示；< 4 个时右对齐缩减
+  const buttonOnNewLine = mediaFiles.length >= 4
+  const showIconOnly = hasMedia && !buttonOnNewLine
 
   return (
     <BaseNode
       {...props}
       data={data}
       icon={<CircleArrowRight size={14} />}
-      minHeight={196}
+      minWidth={320}
+      minHeight={0}
       heightMode="content"
       bodyClassName="gap-2 pb-3"
     >
@@ -294,16 +315,17 @@ export function InputNode(props: NodeProps) {
           </DndContext>
         ) : null}
 
-        {/* ── Upload button ──────────────────────────── */}
+        {/* ── Upload button: 右对齐，有媒体时缩减，满行后换行恢复完整 ── */}
+        {hasMedia && !buttonOnNewLine && <div className="flex-1" />}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2.5 py-2 text-xs transition-colors ${
+          className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed text-xs transition-colors ${
             dragOver
               ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
               : 'border-border text-muted-foreground hover:border-foreground/30'
-          } ${hasMedia ? (showIconOnly ? 'h-12 w-12 flex-shrink-0 px-0' : 'h-12 flex-shrink-0') : 'h-12 w-full'}`}
+          } ${buttonOnNewLine ? 'h-10 w-full px-2.5 py-2' : hasMedia ? 'h-12 w-12 flex-shrink-0 px-0' : 'h-12 w-full px-2.5 py-2'}`}
         >
           {uploading ? (
             <>
