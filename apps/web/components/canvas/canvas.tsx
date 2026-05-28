@@ -25,6 +25,7 @@ import {
   type ReactFlowInstance,
   SelectionMode,
   useReactFlow,
+  type Viewport,
 } from '@xyflow/react'
 import type { WorkflowNode, WorkflowEdge } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
@@ -216,25 +217,39 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     rfInstance.current = instance
   }, [])
 
+  const handleMoveEnd = useCallback((_: unknown, viewport: Viewport) => {
+    setViewport(viewport)
+  }, [setViewport])
+
   /* ── 连接验证 (EDGE-003) ──────────────────────────── */
   const validateConnection = useCallback(
-    (edge: WorkflowEdge | Connection) =>
-      isValidConnection(
+    (edge: WorkflowEdge | Connection) => {
+      const { nodes: currentNodes, edges: currentEdges } = useFlowStore.getState()
+      return isValidConnection(
         {
           source: edge.source,
           target: edge.target,
           sourceHandle: edge.sourceHandle ?? null,
           targetHandle: edge.targetHandle ?? null,
         },
-        nodes,
-        edges,
-      ),
-    [nodes, edges],
+        currentNodes,
+        currentEdges,
+      )
+    },
+    [],
   )
 
   const notifyDeleteBlocked = useCallback(() => {
     toast.info(tCanvas('deleteBlockedWhileRunning'))
   }, [tCanvas])
+
+  /* ── Stable refs — 避免回调重建导致 ReactFlow 内部 store 循环更新 ── */
+  const isExecutingRef = useRef(isExecuting)
+  const notifyDeleteBlockedRef = useRef(notifyDeleteBlocked)
+  useEffect(() => {
+    isExecutingRef.current = isExecuting
+    notifyDeleteBlockedRef.current = notifyDeleteBlocked
+  }, [isExecuting, notifyDeleteBlocked])
 
   /* ── 画布空白区右键 → 打开 Pane 菜单 ──────────────── */
   const handlePaneContextMenu = useCallback(
@@ -343,8 +358,8 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const handleNodesChange = useCallback(
     (changes: WfNodeChange[]) => {
       const hasRemove = changes.some((change) => change.type === 'remove')
-      if (hasRemove && isExecuting) {
-        notifyDeleteBlocked()
+      if (hasRemove && isExecutingRef.current) {
+        notifyDeleteBlockedRef.current()
         return
       }
 
@@ -385,20 +400,20 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
 
       onNodesChange(changes)
     },
-    [isExecuting, notifyDeleteBlocked, onNodesChange],
+    [onNodesChange],
   )
 
   const handleEdgesChange = useCallback(
     (changes: Parameters<typeof onEdgesChange>[0]) => {
       const hasRemove = changes.some((change) => change.type === 'remove')
-      if (hasRemove && isExecuting) {
-        notifyDeleteBlocked()
+      if (hasRemove && isExecutingRef.current) {
+        notifyDeleteBlockedRef.current()
         return
       }
 
       onEdgesChange(changes)
     },
-    [isExecuting, notifyDeleteBlocked, onEdgesChange],
+    [onEdgesChange],
   )
 
   /* ── CANVAS-012: Toolbar drag & drop to create node ── */
@@ -524,7 +539,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         edgesReconnectable={!isExecuting}
         isValidConnection={validateConnection}
         onInit={onInit}
-        onMoveEnd={(_, viewport) => setViewport(viewport)}
+        onMoveEnd={handleMoveEnd}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         /* ── 右键菜单事件 ────────────────────────────── */
