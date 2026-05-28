@@ -174,9 +174,6 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
   const { execute, abort, isExecuting } = useWorkflowExecutor(workflowId)
   const status = useCloudSaveStatus((s) => s.status)
   const hasUnsavedChanges = useCloudSaveStatus((s) => s.hasUnsavedChanges)
-  const nodes = useFlowStore((s) => s.nodes)
-  const edges = useFlowStore((s) => s.edges)
-  const viewport = useFlowStore((s) => s.viewport)
   const setFlow = useFlowStore((s) => s.setFlow)
   const canUndo = useHistoryStore((s) => s.canUndo)
   const canRedo = useHistoryStore((s) => s.canRedo)
@@ -189,6 +186,7 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
       return
     }
 
+    const { nodes } = useFlowStore.getState()
     if (nodes.length === 0) {
       toast.warning(t('addNodesFirst'))
       return
@@ -221,38 +219,41 @@ export function CanvasTopToolbar({ workflowId }: CanvasTopToolbarProps) {
 
     toast.info(t('runningWorkflow'))
     await execute()
-  }, [isExecuting, nodes, execute, abort, t, balance])
+  }, [isExecuting, execute, abort, t, balance])
 
   /* ── Export ──────────────────────────────────────────── */
   const handleExport = useCallback(() => {
+    const { nodes, edges, viewport } = useFlowStore.getState()
     if (nodes.length === 0) {
       toast.warning(t('nothingToExport'))
       return
     }
     exportWorkflow(nodes, edges, viewport)
     toast.success(t('workflowExported'))
-  }, [nodes, edges, viewport, t])
+  }, [t])
 
   /* ── Undo / Redo ────────────────────────────────────── */
   const handleUndo = useCallback(() => {
     const snapshot = useHistoryStore.getState().undo()
     if (snapshot) {
+      const { nodes, edges } = useFlowStore.getState()
       useHistoryStore.setState((s) => ({
         future: [...s.future, { nodes, edges }],
       }))
       setFlow(snapshot.nodes, snapshot.edges)
     }
-  }, [nodes, edges, setFlow])
+  }, [setFlow])
 
   const handleRedo = useCallback(() => {
     const snapshot = useHistoryStore.getState().redo()
     if (snapshot) {
+      const { nodes, edges } = useFlowStore.getState()
       useHistoryStore.setState((s) => ({
         past: [...s.past, { nodes, edges }],
       }))
       setFlow(snapshot.nodes, snapshot.edges)
     }
-  }, [nodes, edges, setFlow])
+  }, [setFlow])
 
   /* ── Import ──────────────────────────────────────────── */
   const handleImport = useCallback(async () => {

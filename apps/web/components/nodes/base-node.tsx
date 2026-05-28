@@ -128,7 +128,7 @@ export function BaseNode({
   const inputPorts = inputs ?? registryPorts.inputs
   const outputPorts = outputs ?? registryPorts.outputs
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const [showResizer, setShowResizer] = useState(false)
+  const [hoverEdge, setHoverEdge] = useState(false)
 
   const updateResizeHover = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (!resizable) return
@@ -136,21 +136,23 @@ export function BaseNode({
     const bounds = containerRef.current?.getBoundingClientRect()
     if (!bounds) return
 
-    const threshold = 12
+    const threshold = selected ? 24 : 12
     const localX = event.clientX - bounds.left
     const localY = event.clientY - bounds.top
     const nearHorizontal = localX <= threshold || localX >= bounds.width - threshold
     const nearVertical = localY <= threshold || localY >= bounds.height - threshold
     const nextVisible = nearHorizontal || nearVertical
 
-    setShowResizer((current) => (current === nextVisible ? current : nextVisible))
-  }, [resizable])
+    setHoverEdge((current) => (current === nextVisible ? current : nextVisible))
+  }, [resizable, selected])
 
   const hideResizer = useCallback(() => {
-    setShowResizer(false)
+    setHoverEdge(false)
   }, [])
 
-  const resolvedWidth = typeof width === 'number' ? width : minWidth
+  const showResizer = resizable && hoverEdge
+
+  const resolvedWidth = Math.max(typeof width === 'number' && Number.isFinite(width) ? width : minWidth, minWidth)
   const resolvedHeight = typeof height === 'number' ? height : minHeight
   const isContentHeight = heightMode === 'content'
   const containerStyle =

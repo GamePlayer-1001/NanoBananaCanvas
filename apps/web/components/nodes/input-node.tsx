@@ -264,10 +264,11 @@ export function InputNode(props: NodeProps) {
   const THUMB = 48
   const GAP = 6 // gap-1.5
   const ICON_BTN_W = 48
-  const TEXT_BTN_W = 100
+  const TEXT_BTN_W = 120
   const hasMedia = mediaFiles.length > 0
 
-  const nodeWidth = typeof props.width === 'number' ? props.width : MIN_WIDTH
+  const rawWidth = typeof props.width === 'number' && Number.isFinite(props.width) ? props.width : MIN_WIDTH
+  const nodeWidth = Math.max(rawWidth, MIN_WIDTH)
   const contentWidth = nodeWidth - CONTENT_PADDING
 
   let buttonMode: 'text' | 'icon' | 'newline' = 'text'
