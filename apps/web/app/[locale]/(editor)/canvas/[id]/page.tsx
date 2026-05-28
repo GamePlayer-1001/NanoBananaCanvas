@@ -125,8 +125,8 @@ export default function CanvasPage({
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const template = useWorkflowMetadataStore((state) => state.template)
   const auditTrail = useWorkflowMetadataStore((state) => state.auditTrail)
-  const nodes = useFlowStore((state) => state.nodes)
-  const edges = useFlowStore((state) => state.edges)
+  const nodeCount = useFlowStore((state) => state.nodes.length)
+  const edgeCount = useFlowStore((state) => state.edges.length)
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null)
   const [isChangeLogOpen, setIsChangeLogOpen] = useState(false)
   const [changeLogItems, setChangeLogItems] = useState<string[]>([])
@@ -161,12 +161,10 @@ export default function CanvasPage({
       summarizeCanvas({
         workflowId: id,
         workflowName,
-        nodes,
-        edges,
         template: template ?? undefined,
         auditTrail,
       }),
-    [auditTrail, edges, id, nodes, template, workflowName],
+    [auditTrail, edgeCount, id, nodeCount, template, workflowName],
   )
   const platformModelOptions = useMemo(() => getAgentPlatformModelOptions(), [])
   const modelOptions = useMemo(() => {
