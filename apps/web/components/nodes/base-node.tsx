@@ -155,7 +155,11 @@ export function BaseNode({
   const isContentHeight = heightMode === 'content'
   const containerStyle =
     isContentHeight
-      ? { width: resolvedWidth, minWidth, minHeight }
+      ? {
+          width: resolvedWidth,
+          minWidth,
+          minHeight: typeof height === 'number' ? Math.max(height, minHeight) : minHeight,
+        }
       : { width: resolvedWidth, height: resolvedHeight, minWidth, minHeight }
 
   return (
@@ -164,7 +168,7 @@ export function BaseNode({
       onMouseMove={updateResizeHover}
       onMouseLeave={hideResizer}
       style={containerStyle}
-      className={cn('group/node relative', selected && 'selected')}
+      className={cn('group/node relative flex flex-col', selected && 'selected')}
     >
       {resizable ? (
         <NodeResizer
@@ -178,8 +182,7 @@ export function BaseNode({
 
       <div
         className={cn(
-          'bg-card relative flex w-full flex-col overflow-hidden rounded-lg border shadow-sm',
-          isContentHeight ? 'h-auto' : 'h-full',
+          'bg-card relative flex w-full flex-1 flex-col overflow-hidden rounded-lg border shadow-sm',
           'transition-shadow duration-150',
           selected ? SELECTED_NODE_CLASS : 'border-border',
         )}
@@ -195,8 +198,7 @@ export function BaseNode({
         {/* ── Body ─────────────────────────────────────── */}
         <div
           className={cn(
-            'flex flex-col p-3',
-            isContentHeight ? 'h-auto' : 'min-h-0 flex-1',
+            'flex min-h-0 flex-1 flex-col p-3',
             bodyClassName,
           )}
         >

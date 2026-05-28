@@ -302,6 +302,7 @@ export function InputNode(props: NodeProps) {
       icon={<CircleArrowRight size={14} />}
       minWidth={290}
       minHeight={240}
+      heightMode="content"
       bodyClassName="gap-2 pb-3"
     >
       {/* ── Textarea ───────────────────────────────────── */}
@@ -311,7 +312,7 @@ export function InputNode(props: NodeProps) {
         placeholder={t('inputPlaceholder')}
         rows={3}
         maxLength={TEXT_INPUT_MAX_LENGTH}
-        className="nodrag nowheel border-input bg-background h-[96px] max-h-[96px] w-full flex-shrink-0 resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
+        className="nodrag nowheel border-input bg-background w-full min-h-[96px] grow shrink-0 resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />
 
       {/* ── Media strip + upload button ────────────────── */}
