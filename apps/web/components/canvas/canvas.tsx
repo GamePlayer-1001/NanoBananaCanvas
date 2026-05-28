@@ -73,6 +73,7 @@ const MIN_ZOOM = 0.1
 const MAX_ZOOM = 2
 const DUPLICATE_OFFSET = 50
 const MAX_SHORTCUT_HINT_VIEWS = 3
+const EMPTY_HELPER_LINES: { horizontal?: number; vertical?: number } = {}
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -353,7 +354,8 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
       )
 
       if (positionChange) {
-        const result = getHelperLines(positionChange, nodes)
+        const currentNodes = useFlowStore.getState().nodes
+        const result = getHelperLines(positionChange, currentNodes)
         setHelperLines({
           horizontal: result.horizontal,
           vertical: result.vertical,
@@ -377,13 +379,13 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
           return
         }
       } else {
-        /* 非拖拽操作时清除辅助线 */
-        setHelperLines({})
+        /* 非拖拽操作时清除辅助线 — 使用稳定引用避免无限重渲染 */
+        setHelperLines(EMPTY_HELPER_LINES)
       }
 
       onNodesChange(changes)
     },
-    [isExecuting, nodes, notifyDeleteBlocked, onNodesChange],
+    [isExecuting, notifyDeleteBlocked, onNodesChange],
   )
 
   const handleEdgesChange = useCallback(
