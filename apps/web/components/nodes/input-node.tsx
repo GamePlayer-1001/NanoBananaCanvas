@@ -11,7 +11,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 上传预览可能是 blob/data/签名 URL，需要保留原始 img 行为。 */
 
-import { useCallback, useRef, useState, useEffect, useLayoutEffect, type ChangeEvent } from 'react'
+import { useCallback, useRef, useState, useEffect, type ChangeEvent } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { useTranslations } from 'next-intl'
 import { CircleArrowRight, Paperclip, X, Loader2 } from 'lucide-react'
@@ -258,34 +258,22 @@ export function InputNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
-  /* ── Measure container for dynamic button mode ────── */
-  const mediaStripRef = useRef<HTMLDivElement>(null)
-  const [stripWidth, setStripWidth] = useState(0)
-
-  useLayoutEffect(() => {
-    const el = mediaStripRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setStripWidth(entry.contentRect.width)
-      }
-    })
-    ro.observe(el)
-    setStripWidth(el.clientWidth)
-    return () => ro.disconnect()
-  }, [])
-
-  /* ── Determine button mode based on available width (pixel-precise) ── */
+  /* ── Determine button mode based on node width (pixel-precise) ── */
+  const MIN_WIDTH = 290
+  const CONTENT_PADDING = 26 // card border 2px + body padding 24px
   const THUMB = 48
-  const GAP = 6
+  const GAP = 6 // gap-1.5
   const ICON_BTN_W = 48
   const TEXT_BTN_W = 100
   const hasMedia = mediaFiles.length > 0
 
+  const nodeWidth = typeof props.width === 'number' ? props.width : MIN_WIDTH
+  const contentWidth = nodeWidth - CONTENT_PADDING
+
   let buttonMode: 'text' | 'icon' | 'newline' = 'text'
-  if (hasMedia && stripWidth > 0) {
+  if (hasMedia) {
     const thumbsWidth = mediaFiles.length * THUMB + (mediaFiles.length - 1) * GAP
-    const remaining = stripWidth - thumbsWidth - GAP
+    const remaining = contentWidth - thumbsWidth - GAP
     if (remaining >= TEXT_BTN_W) {
       buttonMode = 'text'
     } else if (remaining >= ICON_BTN_W) {
@@ -317,7 +305,6 @@ export function InputNode(props: NodeProps) {
 
       {/* ── Media strip + upload button ────────────────── */}
       <div
-        ref={mediaStripRef}
         className="nodrag nowheel flex flex-col gap-1.5"
         onDragOver={(e) => {
           e.preventDefault()
