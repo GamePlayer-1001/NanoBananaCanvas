@@ -22,7 +22,6 @@ import { BaseNode } from './base-node'
 export function ImageInputNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
-  const nodes = useFlowStore((s) => s.nodes)
   const updateNodeInternals = useUpdateNodeInternals()
   const t = useTranslations('nodes')
   const imageUrl = (data.config.imageUrl as string | undefined) ?? undefined
@@ -47,7 +46,9 @@ export function ImageInputNode(props: NodeProps) {
   }, [imageUrl, props.id, updateNodeInternals])
 
   useEffect(() => {
-    const currentNode = nodes.find((node) => node.id === props.id)
+    const currentNode = useFlowStore
+      .getState()
+      .nodes.find((node) => node.id === props.id)
     const currentHeight = currentNode?.height
     const currentStyleHeight =
       typeof currentNode?.style?.height === 'number' ? currentNode.style.height : undefined
@@ -62,7 +63,6 @@ export function ImageInputNode(props: NodeProps) {
       height: minNodeHeight,
     }
 
-    updateNodeData(props.id, {})
     useFlowStore.setState((state) => ({
       nodes: state.nodes.map((node) =>
         node.id === props.id ? { ...node, style: nextStyle } : node,
@@ -74,7 +74,7 @@ export function ImageInputNode(props: NodeProps) {
     })
 
     return () => cancelAnimationFrame(rafId)
-  }, [minNodeHeight, nodes, props.id, updateNodeData, updateNodeInternals])
+  }, [minNodeHeight, props.id, updateNodeInternals])
 
   return (
     <BaseNode

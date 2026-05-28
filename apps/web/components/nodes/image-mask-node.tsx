@@ -157,9 +157,11 @@ export function ImageMaskNode(props: NodeProps) {
     }
   }, [imageUrl])
 
-  /* ── Stable node min size ───────────────────────────── */
+  /* ── Stable node min size (initialize once via getState; do NOT depend on `nodes`) ── */
   useEffect(() => {
-    const currentNode = nodes.find((node) => node.id === props.id)
+    const currentNode = useFlowStore
+      .getState()
+      .nodes.find((node) => node.id === props.id)
     const currentHeight = currentNode?.height
     const currentStyleHeight =
       typeof currentNode?.style?.height === 'number' ? currentNode.style.height : undefined
@@ -190,7 +192,7 @@ export function ImageMaskNode(props: NodeProps) {
 
     const rafId = requestAnimationFrame(() => updateNodeInternals(props.id))
     return () => cancelAnimationFrame(rafId)
-  }, [nodes, props.id, updateNodeInternals])
+  }, [props.id, updateNodeInternals])
 
   /* ── Render strokes onto canvas in image pixel space ── */
   useLayoutEffect(() => {
