@@ -22,6 +22,11 @@
   box-shadow: none !important;
 }
 
+/* 确保 resize 控件在节点内容之上 */
+.react-flow__resize-control {
+  z-index: 10 !important;
+}
+
 .react-flow__edge-path {
   stroke: var(--brand-400);
   stroke-width: 2;

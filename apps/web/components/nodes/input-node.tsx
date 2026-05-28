@@ -327,7 +327,7 @@ export function InputNode(props: NodeProps) {
         onDrop={onMediaDrop}
       >
         {/* Row: thumbnails + inline button (when not newline) */}
-        <div className={`flex items-center gap-1.5 ${buttonMode === 'newline' ? 'flex-wrap' : ''}`}>
+        <div className="flex items-center gap-1.5">
           {hasMedia ? (
             <DndContext
               sensors={sensors}
@@ -351,39 +351,36 @@ export function InputNode(props: NodeProps) {
 
           {/* Inline button (text or icon mode) */}
           {buttonMode !== 'newline' && (
-            <>
-              {hasMedia && <div className="flex-1" />}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed text-xs transition-colors ${
-                  dragOver
-                    ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
-                    : 'border-border text-muted-foreground hover:border-foreground/30'
-                } ${
-                  buttonMode === 'icon'
-                    ? 'h-12 w-12 flex-shrink-0 px-0'
-                    : hasMedia
-                      ? 'h-12 flex-shrink-0 px-2.5 py-2'
-                      : 'h-12 w-full px-2.5 py-2'
-                }`}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    {buttonMode !== 'icon' && <span>{progress}%</span>}
-                  </>
-                ) : buttonMode === 'icon' ? (
-                  <Paperclip size={16} />
-                ) : (
-                  <>
-                    <Paperclip size={14} />
-                    <span>{t('inputMedia')}</span>
-                  </>
-                )}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className={`flex items-center justify-center gap-1.5 rounded-md border-2 border-dashed text-xs transition-colors ${
+                dragOver
+                  ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
+                  : 'border-border text-muted-foreground hover:border-foreground/30'
+              } ${
+                buttonMode === 'icon'
+                  ? 'h-12 w-12 flex-shrink-0 px-0'
+                  : hasMedia
+                    ? 'h-12 flex-shrink-0 px-2.5 py-2'
+                    : 'h-12 w-full px-2.5 py-2'
+              }`}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {buttonMode !== 'icon' && <span>{progress}%</span>}
+                </>
+              ) : buttonMode === 'icon' ? (
+                <Paperclip size={16} />
+              ) : (
+                <>
+                  <Paperclip size={14} />
+                  <span>{t('inputMedia')}</span>
+                </>
+              )}
+            </button>
           )}
         </div>
 
