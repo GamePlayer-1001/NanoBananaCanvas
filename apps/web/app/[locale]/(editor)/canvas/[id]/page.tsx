@@ -2,6 +2,7 @@
  * [INPUT]: 依赖 next/dynamic 的客户端动态导入，依赖 @/components/canvas/canvas，
  *          依赖 @/components/agent/* 的 Agent 面板组件，
  *          依赖 @/hooks/use-agent-session 与 @/hooks/use-agent-task-summary，
+ *          依赖 @/hooks/use-lock-page-zoom 锁死浏览器整页缩放，
  *          依赖 @/hooks/use-workflows 的 useWorkflow 数据获取，
  *          依赖 @/stores/use-flow-store / use-agent-store / use-workflow-metadata-store，
  *          依赖 @/services/storage/serializer 的反序列化，
@@ -38,6 +39,7 @@ import { useAgentSelectionContext } from '@/hooks/use-agent-selection-context'
 import { useAgentSession } from '@/hooks/use-agent-session'
 import { useAgentTaskSummary } from '@/hooks/use-agent-task-summary'
 import { primeCloudSaveBaseline } from '@/hooks/use-auto-save'
+import { useLockPageZoom } from '@/hooks/use-lock-page-zoom'
 import { useWorkflow } from '@/hooks/use-workflows'
 import { fetchLatestAgentReplay } from '@/lib/agent/agent-audit'
 import { summarizeCanvas } from '@/lib/agent/summarize-canvas'
@@ -106,6 +108,7 @@ export default function CanvasPage({
 }: {
   params: Promise<{ locale: string; id: string }>
 }) {
+  useLockPageZoom()
   const { locale, id } = use(params)
   const t = useTranslations('canvas')
   const tAgent = useTranslations('agentPanel')
