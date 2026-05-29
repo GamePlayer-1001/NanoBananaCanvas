@@ -10,6 +10,7 @@ import { InputNode } from './input-node'
 import { TextNode } from './text-node'
 import { ImageInputNode } from './image-input-node'
 import { ImageMaskNode } from './image-mask-node'
+import { PaintNode } from './paint-node'
 import { LLMNode } from './llm-node'
 import { DisplayNode } from './display-node'
 import { ImageGenNode } from './image-gen-node'
@@ -28,6 +29,7 @@ export const NODE_TYPES: NodeTypes = {
   'image-input': ImageInputNode,
   text: TextNode,
   'image-mask': ImageMaskNode,
+  paint: PaintNode,
   llm: LLMNode,
   display: DisplayNode,
   'image-gen': ImageGenNode,

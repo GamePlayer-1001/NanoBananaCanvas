@@ -17,6 +17,7 @@ export type CanvasTool =
   | 'text-input'
   | 'image-input'
   | 'image-mask'
+  | 'paint'
   | 'llm'
   | 'display'
   | 'image-gen'

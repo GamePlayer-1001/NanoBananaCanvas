@@ -42,6 +42,7 @@ describe('filterNodeEntryGroupsByPort', () => {
       'input',
       'image-input',
       'image-mask',
+      'paint',
       'image-gen',
       'image-compare',
       'conditional',

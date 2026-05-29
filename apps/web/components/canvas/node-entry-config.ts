@@ -8,6 +8,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  Brush,
   CircleArrowRight,
   Columns2,
   Combine,
@@ -35,6 +36,7 @@ type NodeEntryLabelKey =
   | 'addText'
   | 'addImageInput'
   | 'addImageMask'
+  | 'addPaint'
   | 'addTextMerge'
   | 'addImageMerge'
   | 'addImageCompare'
@@ -79,6 +81,7 @@ type ToolbarLabelKey =
   | 'input'
   | 'text'
   | 'imageInput'
+  | 'paint'
   | 'groupInputs'
   | 'textGen'
   | 'imageGen'
@@ -104,6 +107,7 @@ export const CANVAS_TOOLBAR_ENTRIES: ToolbarEntry[] = [
   { id: 'input', labelKey: 'input', icon: CircleArrowRight, nodeType: 'input' },
   { id: 'text', labelKey: 'text', icon: Type, nodeType: 'text' },
   { id: 'image-input', labelKey: 'imageInput', icon: ImagePlus, nodeType: 'image-input' },
+  { id: 'paint', labelKey: 'paint', icon: Brush, nodeType: 'paint' },
   { id: 'llm', labelKey: 'textGen', icon: BrainCircuit, nodeType: 'llm' },
   { id: 'image-gen', labelKey: 'imageGen', icon: ImageIcon, nodeType: 'image-gen' },
   { id: 'video-gen', labelKey: 'videoGen', icon: Video, nodeType: 'video-gen' },
@@ -136,6 +140,7 @@ export const CANVAS_CONTEXT_MENU_GROUPS: NodeEntryGroup[] = [
       { type: 'text', labelKey: 'addText', icon: Type },
       { type: 'image-input', labelKey: 'addImageInput', icon: ImagePlus },
       { type: 'image-mask', labelKey: 'addImageMask', icon: Pencil },
+      { type: 'paint', labelKey: 'addPaint', icon: Brush },
     ],
   },
   {

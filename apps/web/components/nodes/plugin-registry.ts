@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   BrainCircuit,
+  Brush,
   CircleArrowRight,
   Columns2,
   Combine,
@@ -148,6 +149,25 @@ register({
   },
   defaults: { imageUrl: '', maskUrl: '', brushSize: 32 },
   toolbar: { labelKey: 'imageMask' },
+})
+
+register({
+  type: 'paint',
+  category: 'input',
+  label: 'Paint',
+  icon: Brush,
+  ports: {
+    inputs: [],
+    outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
+  },
+  defaults: {
+    imageUrl: '',
+    aspectRatio: '1:1',
+    brushSize: 6,
+    brushColor: '#111827',
+  },
+  toolbar: { labelKey: 'paint' },
+  initialWidth: 280,
 })
 
 register({
