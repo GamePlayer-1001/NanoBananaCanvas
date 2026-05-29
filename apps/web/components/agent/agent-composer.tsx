@@ -319,86 +319,85 @@ export function AgentComposer({
             </div>
           ) : null}
 
-          <div className="flex items-end gap-3">
-            <div className="relative flex-1">
-              <textarea
-                ref={textareaRef}
-                value={value}
-                disabled={disabled}
-                rows={1}
-                placeholder={resolvedPlaceholder}
-                className="max-h-36 min-h-[72px] w-full resize-none border-0 bg-transparent pr-18 pb-8 text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
-                  const nextValue = event.target.value
-                  setValue(nextValue)
-                  const cursorPos = event.target.selectionStart ?? nextValue.length
-                  const slashCtx = getSlashContext(nextValue, cursorPos)
-                  if (slashCtx) {
-                    setSlashStartIndex(slashCtx.startIndex)
-                    setSlashQuery(slashCtx.query)
-                    setSlashMenuOpen(true)
-                    setSlashMenuIndex(0)
-                  } else {
-                    setSlashMenuOpen(false)
-                  }
-                }}
-                onPaste={(event) => void handlePaste(event)}
-                onBlur={() => setSlashMenuOpen(false)}
-                onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
-                  if (slashMenuOpen && filteredSlashCommands.length > 0) {
-                    if (event.key === 'ArrowDown') {
-                      event.preventDefault()
-                      setSlashMenuIndex((i) => (i + 1) % filteredSlashCommands.length)
-                      return
-                    }
-                    if (event.key === 'ArrowUp') {
-                      event.preventDefault()
-                      setSlashMenuIndex(
-                        (i) => (i - 1 + filteredSlashCommands.length) % filteredSlashCommands.length,
-                      )
-                      return
-                    }
-                    if (event.key === 'Tab' || (event.key === 'Enter' && !event.shiftKey)) {
-                      event.preventDefault()
-                      handleSlashSelect(filteredSlashCommands[slashMenuIndex])
-                      return
-                    }
-                    if (event.key === 'Escape') {
-                      event.preventDefault()
-                      setSlashMenuOpen(false)
-                      return
-                    }
-                  }
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault()
-                    void handleSubmit()
-                  }
-                }}
-              />
+          <textarea
+            ref={textareaRef}
+            value={value}
+            disabled={disabled}
+            rows={1}
+            placeholder={resolvedPlaceholder}
+            className="max-h-36 min-h-[60px] w-full resize-none border-0 bg-transparent text-[15px] leading-7 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+            onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+              const nextValue = event.target.value
+              setValue(nextValue)
+              const cursorPos = event.target.selectionStart ?? nextValue.length
+              const slashCtx = getSlashContext(nextValue, cursorPos)
+              if (slashCtx) {
+                setSlashStartIndex(slashCtx.startIndex)
+                setSlashQuery(slashCtx.query)
+                setSlashMenuOpen(true)
+                setSlashMenuIndex(0)
+              } else {
+                setSlashMenuOpen(false)
+              }
+            }}
+            onPaste={(event) => void handlePaste(event)}
+            onBlur={() => setSlashMenuOpen(false)}
+            onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+              if (slashMenuOpen && filteredSlashCommands.length > 0) {
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault()
+                  setSlashMenuIndex((i) => (i + 1) % filteredSlashCommands.length)
+                  return
+                }
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  setSlashMenuIndex(
+                    (i) => (i - 1 + filteredSlashCommands.length) % filteredSlashCommands.length,
+                  )
+                  return
+                }
+                if (event.key === 'Tab' || (event.key === 'Enter' && !event.shiftKey)) {
+                  event.preventDefault()
+                  handleSlashSelect(filteredSlashCommands[slashMenuIndex])
+                  return
+                }
+                if (event.key === 'Escape') {
+                  event.preventDefault()
+                  setSlashMenuOpen(false)
+                  return
+                }
+              }
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                void handleSubmit()
+              }
+            }}
+          />
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  if (!event.target.files?.length) return
-                  void handleFiles(event.target.files)
-                  event.target.value = ''
-                }}
-              />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              if (!event.target.files?.length) return
+              void handleFiles(event.target.files)
+              event.target.value = ''
+            }}
+          />
 
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
-                className="absolute left-0 bottom-0 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <ImagePlus size={12} />
                 <span>{t('composerAddImage')}</span>
               </button>
-
               {executionMode === 'platform' ? (
-                <span className="pointer-events-none absolute right-0 bottom-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                   <Coins size={11} />
                   <span>{selectedModel?.credits ?? '-'}</span>
                 </span>
@@ -407,12 +406,12 @@ export function AgentComposer({
 
             <Button
               type="button"
-              size="icon-lg"
-              className="mb-1 rounded-full"
+              size="icon-sm"
+              className="size-9 shrink-0 rounded-full"
               disabled={disabled || uploading || (value.trim().length === 0 && attachments.length === 0)}
               onClick={() => void handleSubmit()}
             >
-              <ArrowUp size={18} />
+              <ArrowUp size={16} />
               <span className="sr-only">{resolvedSubmitLabel}</span>
             </Button>
           </div>

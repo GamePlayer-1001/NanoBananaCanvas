@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode/useEffect/useRef/useState，依赖 lucide-react 的面板控制图标，
+ *          依赖 @/stores/use-agent-panel-store 的共享面板状态 (mode/open/dockedWidth)，
  *          依赖宿主布局传入的 Header / Conversation / Quick Actions / Composer 槽位
- * [OUTPUT]: 对外提供 AgentPanel 组件，作为 Agent 卡片壳，支持「悬浮」与「右侧固定」两种展示方式，
- *          以及右上角小方形对话图标按钮的折叠/唤起入口（与画布工具栏风格统一，避免遮挡 MiniMap）
+ * [OUTPUT]: 对外提供 AgentPanel 组件，作为 Agent 卡片壳，支持「悬浮」与「右侧固定」两种展示方式；
+ *          折叠态不再单独渲染浮标，由 CanvasControls 胶囊接管 (置于 Fit View 之后)，避免遮挡 MiniMap
  * [POS]: components/agent 的顶层容器，被编辑器页接入，用于承载 Agent 各分区但不持有业务编排逻辑
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -11,15 +12,14 @@
 
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Minimize2, MessageCircle, PanelRight, Sparkles, X } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Minimize2, PanelRight, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import {
+  AGENT_PANEL_DOCKED_MAX_WIDTH,
+  AGENT_PANEL_DOCKED_MIN_WIDTH,
+  useAgentPanelStore,
+} from '@/stores/use-agent-panel-store'
 
 type PanelMode = 'floating' | 'docked'
 type ResizeTarget =
@@ -33,10 +33,7 @@ type ResizeTarget =
   | 'se'
   | 'sw'
 
-const STORAGE_KEY_MODE = 'nbc:agent-panel-mode'
-const STORAGE_KEY_OPEN = 'nbc:agent-panel-open'
-
-/* ── 默认尺寸为原来 75% ────────────────────────────────── */
+/* ── 默认尺寸为原来 75% ─────────────────────────────── */
 const DEFAULT_WIDTH = 450
 const MIN_WIDTH = 380
 const MAX_WIDTH = 630
@@ -44,32 +41,8 @@ const DEFAULT_HEIGHT = 855
 const MIN_HEIGHT = 390
 const MAX_HEIGHT = 960
 
-/* ── 右侧固定模式宽度 ─────────────────────────────────── */
-const DOCKED_WIDTH = 420
-const DOCKED_MIN_WIDTH = 360
-const DOCKED_MAX_WIDTH = 560
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
-}
-
-function readStoredMode(): PanelMode {
-  if (typeof window === 'undefined') return 'floating'
-  try {
-    const value = window.localStorage.getItem(STORAGE_KEY_MODE)
-    return value === 'docked' ? 'docked' : 'floating'
-  } catch {
-    return 'floating'
-  }
-}
-
-function readStoredOpen(): boolean {
-  if (typeof window === 'undefined') return true
-  try {
-    return window.localStorage.getItem(STORAGE_KEY_OPEN) !== '0'
-  } catch {
-    return true
-  }
 }
 
 function getDefaultPosition(width: number, height: number) {
@@ -117,11 +90,15 @@ export function AgentPanel({
   composer,
   className,
 }: AgentPanelProps) {
-  const [mode, setMode] = useState<PanelMode>(() => readStoredMode())
-  const [isOpen, setIsOpen] = useState<boolean>(() => readStoredOpen())
+  const mode = useAgentPanelStore((state) => state.mode)
+  const isOpen = useAgentPanelStore((state) => state.isOpen)
+  const dockedWidth = useAgentPanelStore((state) => state.dockedWidth)
+  const setMode = useAgentPanelStore((state) => state.setMode)
+  const setOpen = useAgentPanelStore((state) => state.setOpen)
+  const setDockedWidth = useAgentPanelStore((state) => state.setDockedWidth)
+
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const [height, setHeight] = useState(DEFAULT_HEIGHT)
-  const [dockedWidth, setDockedWidth] = useState(DOCKED_WIDTH)
   const [position, setPosition] = useState<{ x: number; y: number }>(() =>
     typeof window === 'undefined' ? { x: 0, y: 0 } : getDefaultPosition(DEFAULT_WIDTH, DEFAULT_HEIGHT),
   )
@@ -143,25 +120,6 @@ export function AgentPanel({
     startPosX: number
     startPosY: number
   } | null>(null)
-
-  /* ── 写入持久化偏好 ──────────────────────────────────── */
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      window.localStorage.setItem(STORAGE_KEY_MODE, mode)
-    } catch {
-      /* ignore */
-    }
-  }, [mode])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      window.localStorage.setItem(STORAGE_KEY_OPEN, isOpen ? '1' : '0')
-    } catch {
-      /* ignore */
-    }
-  }, [isOpen])
 
   /* ── 拖拽 / 调整尺寸 ─────────────────────────────────── */
   useEffect(() => {
@@ -186,7 +144,11 @@ export function AgentPanel({
 
         if (r.target === 'docked-left') {
           const delta = r.startX - event.clientX
-          const next = clamp(r.startWidth + delta, DOCKED_MIN_WIDTH, DOCKED_MAX_WIDTH)
+          const next = clamp(
+            r.startWidth + delta,
+            AGENT_PANEL_DOCKED_MIN_WIDTH,
+            AGENT_PANEL_DOCKED_MAX_WIDTH,
+          )
           setDockedWidth(next)
           return
         }
@@ -200,20 +162,16 @@ export function AgentPanel({
         let nextX = r.startPosX
         let nextY = r.startPosY
 
-        // 横向: e/ne/se 拉东边 → width 加 dx，左边不动
         if (target === 'e' || target === 'ne' || target === 'se') {
           nextWidth = clamp(r.startWidth + dx, MIN_WIDTH, MAX_WIDTH)
         }
-        // 横向: w/nw/sw 拉西边 → width 减 dx，左边跟着鼠标走
         if (target === 'w' || target === 'nw' || target === 'sw') {
           nextWidth = clamp(r.startWidth - dx, MIN_WIDTH, MAX_WIDTH)
           nextX = r.startPosX + (r.startWidth - nextWidth)
         }
-        // 纵向: s/se/sw 拉南边 → height 加 dy，上边不动
         if (target === 's' || target === 'se' || target === 'sw') {
           nextHeight = clamp(r.startHeight + dy, MIN_HEIGHT, MAX_HEIGHT)
         }
-        // 纵向: n/ne/nw 拉北边 → height 减 dy，上边跟着鼠标走
         if (target === 'n' || target === 'ne' || target === 'nw') {
           nextHeight = clamp(r.startHeight - dy, MIN_HEIGHT, MAX_HEIGHT)
           nextY = r.startPosY + (r.startHeight - nextHeight)
@@ -241,7 +199,7 @@ export function AgentPanel({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [height, mode, width])
+  }, [height, mode, setDockedWidth, width])
 
   useEffect(() => {
     function handleWindowResize() {
@@ -284,30 +242,9 @@ export function AgentPanel({
     }
   }
 
-  /* ── 折叠：渲染右下角对话图标 ──────────────────────── */
+  /* ── 折叠态：浮标交给 CanvasControls 胶囊渲染 ────────── */
   if (!isOpen) {
-    return (
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Open agent assistant"
-              onClick={() => setIsOpen(true)}
-              className={cn(
-                'fixed top-4 right-4 z-50 hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
-                className,
-              )}
-            >
-              <MessageCircle size={16} strokeWidth={2} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left" sideOffset={6}>
-            打开 Agent 助手
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )
+    return null
   }
 
   /* ── 右侧固定展示 ────────────────────────────────────── */
@@ -342,7 +279,7 @@ export function AgentPanel({
             <PanelHeader
               mode={mode}
               onToggleMode={() => setMode('floating')}
-              onCollapse={() => setIsOpen(false)}
+              onCollapse={() => setOpen(false)}
             />
           </div>
 
@@ -463,7 +400,7 @@ export function AgentPanel({
           <PanelHeader
             mode={mode}
             onToggleMode={() => setMode('docked')}
-            onCollapse={() => setIsOpen(false)}
+            onCollapse={() => setOpen(false)}
           />
         </div>
 

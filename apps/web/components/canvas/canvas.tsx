@@ -31,6 +31,7 @@ import {
 } from '@xyflow/react'
 import type { WorkflowNode, WorkflowEdge } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
+import { useAgentPanelStore } from '@/stores/use-agent-panel-store'
 import { useCanvasToolStore } from '@/stores/use-canvas-tool-store'
 import { useContextMenu } from '@/hooks/use-context-menu'
 import { createNode } from '@/lib/utils/create-node'
@@ -108,6 +109,9 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const isExecuting = useExecutionStore((state) => state.isExecuting)
   const activeTool = useCanvasToolStore((s) => s.activeTool)
   const resetTool = useCanvasToolStore((s) => s.resetTool)
+  const agentPanelMode = useAgentPanelStore((state) => state.mode)
+  const agentPanelOpen = useAgentPanelStore((state) => state.isOpen)
+  const agentDockedWidth = useAgentPanelStore((state) => state.dockedWidth)
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
   const { screenToFlowPosition } = useReactFlow()
   const { upload } = useUpload()
@@ -621,7 +625,13 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         <HelperLines horizontal={helperLines.horizontal} vertical={helperLines.vertical} />
         <MiniMap
           position="bottom-right"
-          className="!bottom-20 !right-3"
+          className="!bottom-20"
+          style={{
+            right:
+              agentPanelOpen && agentPanelMode === 'docked'
+                ? agentDockedWidth + 12
+                : 12,
+          }}
           pannable
           zoomable
           nodeColor="var(--brand-400)"
