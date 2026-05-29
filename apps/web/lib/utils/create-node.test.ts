@@ -25,9 +25,9 @@ describe('createNode', () => {
   it('creates image-input with correct defaults', () => {
     const node = createNode('image-input', { x: 80, y: 60 })
     expect(node.type).toBe('image-input')
-    expect(node.data.label).toBe('Input')
+    expect(node.data.label).toBe('Image')
     expect(node.data.type).toBe('input')
-    expect(node.data.config).toEqual({ text: '', mediaFiles: [] })
+    expect(node.data.config).toEqual({ imageUrl: '' })
   })
 
   it('creates unified input with correct defaults', () => {
