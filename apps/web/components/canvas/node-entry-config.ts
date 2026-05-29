@@ -105,8 +105,6 @@ export interface ToolbarEntry {
 
 export const CANVAS_TOOLBAR_ENTRIES: ToolbarEntry[] = [
   { id: 'input', labelKey: 'input', icon: CircleArrowRight, nodeType: 'input' },
-  { id: 'text', labelKey: 'text', icon: Type, nodeType: 'text' },
-  { id: 'image-input', labelKey: 'imageInput', icon: ImagePlus, nodeType: 'image-input' },
   { id: 'paint', labelKey: 'paint', icon: Brush, nodeType: 'paint' },
   { id: 'llm', labelKey: 'textGen', icon: BrainCircuit, nodeType: 'llm' },
   { id: 'image-gen', labelKey: 'imageGen', icon: ImageIcon, nodeType: 'image-gen' },
@@ -125,7 +123,6 @@ export const CANVAS_TOOLBAR_ENTRIES: ToolbarEntry[] = [
       { type: 'loop', labelKey: 'addLoop', icon: Repeat },
     ],
   },
-  { id: 'group', labelKey: 'group', icon: Group, nodeType: 'group' },
 ]
 
 /* ─── Context Menu Config ────────────────────────────── */
