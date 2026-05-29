@@ -24,11 +24,11 @@ export type CanvasTool =
   | 'audio-gen'
   | 'note'
   | 'group'
-  | 'conditional'
-  | 'loop'
   | 'text-merge'
   | 'image-merge'
   | 'image-compare'
+  | 'conditional'
+  | 'loop'
 
 interface CanvasToolState {
   activeTool: CanvasTool

@@ -42,6 +42,7 @@ export function TextNode(props: NodeProps) {
       data={data}
       icon={<Type size={14} />}
       minHeight={160}
+      heightMode="content"
       bodyClassName="min-h-0 gap-2 pb-4"
     >
       <textarea
@@ -50,7 +51,7 @@ export function TextNode(props: NodeProps) {
         placeholder={t('typeSomething')}
         rows={4}
         maxLength={TEXT_INPUT_MAX_LENGTH}
-        className="nodrag nowheel border-input bg-background h-full min-h-[112px] w-full resize-none rounded-md border px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
+        className="nodrag nowheel border-input bg-background min-h-[112px] w-full resize-none rounded-md border px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />
       <div className="text-muted-foreground text-right text-[11px] leading-none">
         {t('textLengthCounter', { current: textValue.length, max: TEXT_INPUT_MAX_LENGTH })}

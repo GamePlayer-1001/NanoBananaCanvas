@@ -110,7 +110,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const resetTool = useCanvasToolStore((s) => s.resetTool)
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
   const { screenToFlowPosition } = useReactFlow()
-  const { upload, uploading } = useUpload()
+  const { upload } = useUpload()
   /* ── 自动保存 (localStorage + 云端双轨) ────────────── */
   useAutoSave(workflowId, canEdit)
 
@@ -434,7 +434,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     async (e: DragEvent) => {
       e.preventDefault()
 
-      /* 优先处理图片文件拖拽 */
+      /* 优先处理图片文件拖拽，创建 image-input 节点 */
       const files = e.dataTransfer.files
       if (files && files.length > 0) {
         const file = files[0]
@@ -455,21 +455,15 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
           y: e.clientY,
         })
 
-        /* 创建 input 节点 */
-        const node = createNode('input', position)
+        /* 创建 image-input 节点 */
+        const node = createNode('image-input', position)
         addNode(node)
 
         /* 上传图片并填充到节点 */
         const result = await upload(file)
         if (result) {
-          const mediaFile = {
-            id: crypto.randomUUID(),
-            url: result.url,
-            type: 'image' as const,
-            name: file.name,
-          }
           updateNodeData(node.id, {
-            config: { ...node.data.config, mediaFiles: [mediaFile] },
+            config: { ...node.data.config, imageUrl: result.url },
           })
           toast.success(tCanvas('imageUploaded'))
         } else {

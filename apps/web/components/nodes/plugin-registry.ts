@@ -126,18 +126,15 @@ register({
 register({
   type: 'image-input',
   category: 'input',
-  label: 'Input',
-  icon: CircleArrowRight,
+  label: 'Image',
+  icon: ImagePlus,
   ports: {
     inputs: [],
-    outputs: [
-      { id: 'text-out', label: 'Text', type: 'string' },
-      { id: 'image-out', label: 'Image', type: 'image' },
-    ],
+    outputs: [{ id: 'image-out', label: 'Image', type: 'image' }],
   },
-  defaults: { text: '', mediaFiles: [] },
-  toolbar: { labelKey: 'input' },
-  initialWidth: 290,
+  defaults: { imageUrl: '' },
+  toolbar: { labelKey: 'imageInput' },
+  initialWidth: 280,
 })
 
 register({
