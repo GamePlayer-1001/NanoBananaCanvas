@@ -295,11 +295,11 @@ export function AgentPanel({
               aria-label="Open agent assistant"
               onClick={() => setIsOpen(true)}
               className={cn(
-                'fixed top-4 right-4 z-50 hidden h-4 w-4 items-center justify-center rounded-md border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
+                'fixed top-4 right-4 z-50 hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
                 className,
               )}
             >
-              <MessageCircle size={11} strokeWidth={2} />
+              <MessageCircle size={16} strokeWidth={2} />
             </button>
           </TooltipTrigger>
           <TooltipContent side="left" sideOffset={6}>
