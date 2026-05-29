@@ -75,7 +75,7 @@ function SortableMediaThumb({
     <div
       ref={setNodeRef}
       style={style}
-      className="nodrag nowheel group/thumb relative h-12 w-12 flex-shrink-0 cursor-grab overflow-hidden rounded-md border border-border active:cursor-grabbing"
+      className="nodrag nowheel group/thumb relative aspect-square w-full cursor-grab overflow-hidden rounded-md border border-border active:cursor-grabbing"
       {...attributes}
       {...listeners}
     >
@@ -292,13 +292,14 @@ export function InputNode(props: NodeProps) {
         onDrop={onMediaDrop}
       >
         {hasMedia ? (
-          /* DndContext 提升到 flex 容器外，避免其 Accessibility 内联元素占用 flex slot */
+          /* DndContext 提升到 grid 外，避免 Accessibility 内联元素干扰 grid 布局 */
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex flex-wrap gap-1.5">
+            {/* 4列 grid：每行4个格，缩略图固定，上传按钮占剩余列数 */}
+            <div className="grid grid-cols-4 gap-[6px]">
               <SortableContext
                 items={mediaFiles.map((f) => f.id)}
                 strategy={rectSortingStrategy}
@@ -312,12 +313,15 @@ export function InputNode(props: NodeProps) {
                 ))}
               </SortableContext>
 
-              {/* flex-1 min-w-12：同行时填充剩余空间，独占行时全宽文字按钮 */}
+              {/* 上传按钮：占当前行剩余的所有列，col-span 由 (4 - count%4) 决定 */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className={`flex flex-1 min-w-12 h-12 items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 transition-colors ${
+                style={{
+                  gridColumn: `span ${mediaFiles.length % 4 === 0 ? 4 : 4 - (mediaFiles.length % 4)} / span ${mediaFiles.length % 4 === 0 ? 4 : 4 - (mediaFiles.length % 4)}`,
+                }}
+                className={`flex h-12 w-full items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 transition-colors ${
                   dragOver
                     ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 text-[var(--brand-500)]'
                     : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/70'
@@ -333,7 +337,10 @@ export function InputNode(props: NodeProps) {
                 ) : (
                   <>
                     <Paperclip size={14} className="shrink-0" />
-                    <span className="min-w-0 truncate text-xs">{t('inputMedia')}</span>
+                    {/* 剩余列>=2时显示文字，否则只显示图标 */}
+                    {(mediaFiles.length % 4 === 0 || 4 - (mediaFiles.length % 4) >= 2) && (
+                      <span className="min-w-0 truncate text-xs">{t('inputMedia')}</span>
+                    )}
                   </>
                 )}
               </button>

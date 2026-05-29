@@ -41,5 +41,10 @@ export function createNode(
     node.style = meta.style
   }
 
+  /* 为有 minWidth 限制的节点设置初始 width，避免框选时因 measured 未就绪而只命中半个节点 */
+  if (meta?.initialWidth) {
+    node.width = meta.initialWidth
+  }
+
   return node
 }

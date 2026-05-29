@@ -39,6 +39,8 @@ export interface NodePluginMeta {
   toolbar: { labelKey: string }
   /** 节点初始样式 (如 group 的尺寸) */
   style?: CSSProperties
+  /** 节点创建时预设 width，避免框选时 measured 未就绪而命中区域错误 */
+  initialWidth?: number
 }
 
 /* ─── Registry ───────────────────────────────────────── */
@@ -85,6 +87,7 @@ register({
   },
   defaults: { text: '', mediaFiles: [] },
   toolbar: { labelKey: 'input' },
+  initialWidth: 290,
 })
 
 /* ── Legacy aliases (backward compat for saved workflows) ── */
@@ -103,6 +106,7 @@ register({
   },
   defaults: { text: '', mediaFiles: [] },
   toolbar: { labelKey: 'input' },
+  initialWidth: 290,
 })
 
 register({
@@ -119,6 +123,7 @@ register({
   },
   defaults: { text: '', mediaFiles: [] },
   toolbar: { labelKey: 'input' },
+  initialWidth: 290,
 })
 
 register({
