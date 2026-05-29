@@ -56,6 +56,7 @@ const executors: Record<string, NodeExecutorFn> = {
   'text-input': executeUnifiedInput,
   'image-input': executeUnifiedInput,
   'image-mask': executeImageMask,
+  paint: executePaint,
   llm: executeLLM,
   display: executeDisplay,
   'image-gen': executeImageGen,
@@ -159,6 +160,27 @@ async function executeImageMask(
       'image-out': { imageUrl, maskUrl },
     },
   }
+}
+
+/* ─── Paint: 手绘输入节点 ──────────────────────────── */
+
+async function executePaint(
+  ctx: NodeExecutionContext,
+): Promise<NodeExecutionResult> {
+  const imageUrl =
+    typeof ctx.data.config.imageUrl === 'string'
+      ? (ctx.data.config.imageUrl as string)
+      : ''
+
+  if (!imageUrl) {
+    throw new WorkflowError(
+      ErrorCode.WORKFLOW_NODE_ERROR,
+      'Paint node has no drawing saved yet',
+      { nodeId: ctx.nodeId },
+    )
+  }
+
+  return { outputs: { 'image-out': imageUrl } }
 }
 
 /* ─── Merge: 显式多输入汇聚 ─────────────────────────── */
