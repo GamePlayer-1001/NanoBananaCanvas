@@ -42,6 +42,8 @@ export interface NodePluginMeta {
   style?: CSSProperties
   /** 节点创建时预设 width，避免框选时 measured 未就绪而命中区域错误 */
   initialWidth?: number
+  /** 节点创建时预设 height，避免节点首次渲染时高度过小或撑不开内部区域 */
+  initialHeight?: number
 }
 
 /* ─── Registry ───────────────────────────────────────── */
@@ -136,6 +138,7 @@ register({
   defaults: { imageUrl: '' },
   toolbar: { labelKey: 'imageInput' },
   initialWidth: 280,
+  initialHeight: 240,
 })
 
 register({

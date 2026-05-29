@@ -46,5 +46,10 @@ export function createNode(
     node.width = meta.initialWidth
   }
 
+  /* 同步预设 height，让默认渲染高度匹配节点视觉权重，避免首次渲染过矮 */
+  if (meta?.initialHeight) {
+    node.height = meta.initialHeight
+  }
+
   return node
 }
