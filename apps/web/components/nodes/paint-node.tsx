@@ -122,7 +122,6 @@ export function PaintNode(props: NodeProps) {
         {...props}
         data={data}
         icon={<Brush size={14} />}
-        minWidth={NODE_MIN_WIDTH}
         minHeight={NODE_MIN_HEIGHT}
         bodyClassName="min-h-0"
       >
