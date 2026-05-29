@@ -292,13 +292,13 @@ export function InputNode(props: NodeProps) {
         onDrop={onMediaDrop}
       >
         {hasMedia ? (
-          /* 九宫格：缩略图 + 末位方形图标上传按钮，flex-wrap 自动换行 */
-          <div className="flex flex-wrap gap-1.5">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
+          /* DndContext 提升到 flex 容器外，避免其 Accessibility 内联元素占用 flex slot */
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex flex-wrap gap-1.5">
               <SortableContext
                 items={mediaFiles.map((f) => f.id)}
                 strategy={rectSortingStrategy}
@@ -311,27 +311,34 @@ export function InputNode(props: NodeProps) {
                   />
                 ))}
               </SortableContext>
-            </DndContext>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border-2 border-dashed transition-colors ${
-                dragOver
-                  ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 text-[var(--brand-500)]'
-                  : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/70'
-              }`}
-              title={t('inputMedia')}
-              aria-label={t('inputMedia')}
-            >
-              {uploading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Paperclip size={16} />
-              )}
-            </button>
-          </div>
+              {/* flex-1 min-w-12：同行时填充剩余空间，独占行时全宽文字按钮 */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className={`flex flex-1 min-w-12 h-12 items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 transition-colors ${
+                  dragOver
+                    ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 text-[var(--brand-500)]'
+                    : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/70'
+                }`}
+                title={t('inputMedia')}
+                aria-label={t('inputMedia')}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin shrink-0" />
+                    <span className="min-w-0 truncate text-xs">{progress}%</span>
+                  </>
+                ) : (
+                  <>
+                    <Paperclip size={14} className="shrink-0" />
+                    <span className="min-w-0 truncate text-xs">{t('inputMedia')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </DndContext>
         ) : (
           /* 空状态：整行虚线大按钮带文案 */
           <button
