@@ -26,7 +26,6 @@ export function ImageInputNode(props: NodeProps) {
   const t = useTranslations('nodes')
   const imageUrl = (data.config.imageUrl as string | undefined) ?? undefined
   const hasImage = Boolean(imageUrl)
-  const minNodeHeight = hasImage ? 240 : 250
 
   const onChange = useCallback(
     (url: string | undefined) => {
@@ -45,43 +44,12 @@ export function ImageInputNode(props: NodeProps) {
     return () => cancelAnimationFrame(rafId)
   }, [imageUrl, props.id, updateNodeInternals])
 
-  useEffect(() => {
-    const currentNode = useFlowStore
-      .getState()
-      .nodes.find((node) => node.id === props.id)
-    const currentHeight = currentNode?.height
-    const currentStyleHeight =
-      typeof currentNode?.style?.height === 'number' ? currentNode.style.height : undefined
-    const effectiveHeight = currentHeight ?? currentStyleHeight
-
-    if (typeof effectiveHeight === 'number' && effectiveHeight >= minNodeHeight) {
-      return
-    }
-
-    const nextStyle = {
-      ...(currentNode?.style ?? {}),
-      height: minNodeHeight,
-    }
-
-    useFlowStore.setState((state) => ({
-      nodes: state.nodes.map((node) =>
-        node.id === props.id ? { ...node, style: nextStyle } : node,
-      ),
-    }))
-
-    const rafId = requestAnimationFrame(() => {
-      updateNodeInternals(props.id)
-    })
-
-    return () => cancelAnimationFrame(rafId)
-  }, [minNodeHeight, props.id, updateNodeInternals])
-
   return (
     <BaseNode
       {...props}
       data={data}
       icon={<ImagePlus size={14} />}
-      minHeight={minNodeHeight}
+      minHeight={180}
       heightMode="content"
       bodyClassName="min-h-0"
     >
@@ -93,7 +61,7 @@ export function ImageInputNode(props: NodeProps) {
           className={
             hasImage
               ? 'min-h-0 flex-1 overflow-hidden rounded-lg'
-              : 'min-h-[160px] overflow-hidden rounded-lg'
+              : 'min-h-[140px] overflow-hidden rounded-lg'
           }
         >
           <ImageUpload value={imageUrl} onChange={onChange} className="h-full w-full" />
