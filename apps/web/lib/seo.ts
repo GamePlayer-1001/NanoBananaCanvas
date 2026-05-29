@@ -96,16 +96,13 @@ export function buildLocalizedUrl(path = '/', locale?: string | null) {
   return buildAbsoluteUrl(buildLocalizedPath(path, locale))
 }
 
-export function buildLanguageAlternates(
-  path = '/',
-  locales: readonly (typeof ACTIVE_LOCALES)[number][] = ACTIVE_LOCALES,
-) {
-  const languages = locales.reduce<Record<string, string>>((acc, locale) => {
+export function buildLanguageAlternates(path = '/') {
+  const languages = ACTIVE_LOCALES.reduce<Record<string, string>>((acc, locale) => {
     acc[locale] = buildLocalizedUrl(path, locale)
     return acc
   }, {})
 
-  languages['x-default'] = buildLocalizedUrl(path, resolveLocale(locales[0] ?? DEFAULT_LOCALE))
+  languages['x-default'] = buildLocalizedUrl(path, DEFAULT_LOCALE)
 
   return languages
 }

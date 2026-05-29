@@ -31,7 +31,7 @@ function buildStaticEntries(locales: readonly AppLocale[]): MetadataRoute.Sitema
       changeFrequency: route.changeFrequency,
       priority: route.priority,
       alternates: {
-        languages: buildLanguageAlternates(route.path, locales),
+        languages: buildLanguageAlternates(route.path),
       },
     })),
   )
@@ -58,7 +58,7 @@ async function buildDynamicEntries(
         changeFrequency: 'weekly' as const,
         priority: 0.6,
         alternates: {
-          languages: buildLanguageAlternates(`/explore/${row.id}`, locales),
+          languages: buildLanguageAlternates(`/explore/${row.id}`),
         },
       })),
     )

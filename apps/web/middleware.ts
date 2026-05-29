@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 @clerk/nextjs/server 的 clerkMiddleware，
  *          依赖 next-intl/middleware 的 createMiddleware，
  *          依赖 @/i18n/routing 的 routing 配置
- * [OUTPUT]: 对外提供 Next.js Edge Middleware (Clerk 会话注入 + 可开关 Frontend API 代理 + 裸域规范化 + 本地化语言检测 + URL 前缀重写)
+ * [OUTPUT]: 对外提供 Next.js Edge Middleware (Clerk 会话注入 + 可开关 Frontend API 代理 + 强制 HTTPS + 裸域规范化 + 默认 locale 前缀去除 308 永久重定向 + 本地化语言检测 + URL 前缀重写)
  * [POS]: 项目根级 Edge Middleware 入口，负责为服务端 auth() 提供 Clerk 会话上下文，同时保持现有 OpenNext Cloudflare 兼容边界
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -20,6 +20,15 @@ const WWW_HOST = `www.${CANONICAL_HOST}`
 const CLERK_PROXY_PATH = process.env.NEXT_PUBLIC_CLERK_PROXY_URL
 const METADATA_ROUTE_PREFIXES = ['/icon', '/apple-icon']
 const PROTECTED_ROUTES = /^\/(account|billing|workspace)(\/|$)/
+const DEFAULT_LOCALE_PREFIX_RE = new RegExp(`^/${routing.defaultLocale}(/|$)`)
+
+function resolveForwardedProto(req: NextRequest) {
+  const forwarded = req.headers.get('x-forwarded-proto')
+  if (forwarded) {
+    return forwarded.split(',')[0]?.trim().toLowerCase() ?? null
+  }
+  return req.nextUrl.protocol.replace(':', '').toLowerCase()
+}
 
 function resolveClerkProxyPath() {
   if (!CLERK_PROXY_PATH) {
@@ -43,9 +52,22 @@ function isMetadataRoute(pathname: string) {
 
 export default clerkMiddleware(
   async (auth, req: NextRequest) => {
+    if (resolveForwardedProto(req) === 'http' && req.nextUrl.hostname !== 'localhost') {
+      const httpsUrl = req.nextUrl.clone()
+      httpsUrl.protocol = 'https:'
+      httpsUrl.hostname = req.nextUrl.hostname === WWW_HOST ? CANONICAL_HOST : req.nextUrl.hostname
+      return NextResponse.redirect(httpsUrl, 308)
+    }
+
     if (req.nextUrl.hostname === WWW_HOST) {
       const url = req.nextUrl.clone()
       url.hostname = CANONICAL_HOST
+      return NextResponse.redirect(url, 308)
+    }
+
+    if (DEFAULT_LOCALE_PREFIX_RE.test(req.nextUrl.pathname)) {
+      const url = req.nextUrl.clone()
+      url.pathname = req.nextUrl.pathname.replace(DEFAULT_LOCALE_PREFIX_RE, '/')
       return NextResponse.redirect(url, 308)
     }
 
