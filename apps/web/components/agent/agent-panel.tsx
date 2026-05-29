@@ -264,11 +264,11 @@ export function AgentPanel({
               aria-label="Open agent assistant"
               onClick={() => setIsOpen(true)}
               className={cn(
-                'fixed top-4 right-4 z-50 hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
+                'fixed top-4 right-4 z-50 hidden h-7 w-7 items-center justify-center rounded-lg border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
                 className,
               )}
             >
-              <MessageCircle size={15} strokeWidth={2} />
+              <MessageCircle size={13} strokeWidth={2} />
             </button>
           </TooltipTrigger>
           <TooltipContent side="left" sideOffset={6}>
@@ -298,9 +298,14 @@ export function AgentPanel({
             type="button"
             data-agent-panel-action="true"
             aria-label="Resize agent panel"
-            className="absolute inset-y-0 -left-1.5 z-10 hidden w-3 cursor-ew-resize lg:block"
+            className="group absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-ew-resize lg:block"
             onPointerDown={(event) => startResize(event, 'docked-left')}
-          />
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-2 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
+            />
+          </button>
 
           <div className="border-b border-black/6">
             <PanelHeader
@@ -345,16 +350,26 @@ export function AgentPanel({
           type="button"
           data-agent-panel-action="true"
           aria-label="Resize agent panel width"
-          className="absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block"
+          className="group absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block"
           onPointerDown={(event) => startResize(event, 'left')}
-        />
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-6 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
+          />
+        </button>
         <button
           type="button"
           data-agent-panel-action="true"
           aria-label="Resize agent panel height"
-          className="absolute -top-3 inset-x-8 hidden h-6 cursor-ns-resize lg:block"
+          className="group absolute -top-3 inset-x-8 hidden h-6 cursor-ns-resize lg:block"
           onPointerDown={(event) => startResize(event, 'top')}
-        />
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-6 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
+          />
+        </button>
         <button
           type="button"
           data-agent-panel-action="true"
