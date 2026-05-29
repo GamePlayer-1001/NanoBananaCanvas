@@ -50,7 +50,7 @@ export const TASK_CONFIG: Record<AsyncTaskType, TaskTypeConfig> = {
   image_gen: {
     maxRetries: 2,
     pollIntervalMs: 5_000,
-    providerCheckThrottleMs: 10_000,
+    providerCheckThrottleMs: 3_000,
     timeoutMs: 15 * 60 * 1_000,
   },
   audio_gen: {

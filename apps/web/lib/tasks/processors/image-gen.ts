@@ -44,8 +44,14 @@ import type {
   OpenAICompatibleImageResponse,
 } from './image-gen-helpers'
 
-export { normalizeImagePromptForApi, assertOpenAICompatiblePromptSafety } from './image-gen-helpers'
-export { resolveImageGenerationSize, resolveOpenAICompatibleRequestSize } from './image-gen-helpers'
+export {
+  normalizeImagePromptForApi,
+  assertOpenAICompatiblePromptSafety,
+} from './image-gen-helpers'
+export {
+  resolveImageGenerationSize,
+  resolveOpenAICompatibleRequestSize,
+} from './image-gen-helpers'
 
 async function chatCompletionsImageSubmit(
   input: SubmitInput,
@@ -108,9 +114,7 @@ async function chatCompletionsImageSubmit(
   const url = extractChatCompletionsImageUrl(data)
 
   if (!url) {
-    throw new Error(
-      `${provider} chat image API returned no assistant image data`,
-    )
+    throw new Error(`${provider} chat image API returned no assistant image data`)
   }
 
   return { url }
@@ -210,37 +214,43 @@ async function openAICompatibleSubmit(
   }
 
   const requestPath = referenceImageUrl ? '/images/edits' : '/images/generations'
-  const requestInit =
-    referenceImageUrl
-      ? {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            prompt,
-            size,
-            images: [{ image_url: referenceImageUrl }],
-            n: 1,
-          }),
-        }
-      : {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ model, prompt, size, aspect_ratio: aspectRatio, n: 1 }),
-        }
+  const requestInit = referenceImageUrl
+    ? {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          size,
+          images: [{ image_url: referenceImageUrl }],
+          n: 1,
+        }),
+      }
+    : {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model, prompt, size, aspect_ratio: aspectRatio, n: 1 }),
+      }
 
   const res = await fetch(`${baseUrl}${requestPath}`, requestInit)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     if (statusIsGatewayLikeFailure(res.status)) {
-      throw new Error(buildGatewayFailureMessage(res.status, provider, `${baseUrl}${requestPath}`, text))
+      throw new Error(
+        buildGatewayFailureMessage(
+          res.status,
+          provider,
+          `${baseUrl}${requestPath}`,
+          text,
+        ),
+      )
     }
     throw new Error(`OpenAI-compatible image API ${res.status}: ${text}`)
   }
@@ -259,10 +269,7 @@ async function openAICompatibleSubmit(
   return { url }
 }
 
-async function dlapiSubmit(
-  input: SubmitInput,
-  apiKey: string,
-): Promise<SubmitResult> {
+async function dlapiSubmit(input: SubmitInput, apiKey: string): Promise<SubmitResult> {
   const { model, params } = input
   const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
   const sizePreset = (params.size as string) ?? '1k'
@@ -309,7 +316,10 @@ async function dlapiSubmit(
         }),
       }
 
-  const res = await fetch(endpoint, requestInit)
+  const res = await fetch(endpoint, {
+    ...requestInit,
+    signal: AbortSignal.timeout(60_000),
+  })
   const elapsedMs = Date.now() - startedAt
 
   if (!res.ok) {
@@ -376,12 +386,15 @@ async function dlapiCheckStatus(
   externalTaskId: string,
   apiKey: string,
 ): Promise<CheckResult> {
-  const res = await fetch(`${DLAPI_IMAGE_BASE_URL}/images/generations/${externalTaskId}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
+  const res = await fetch(
+    `${DLAPI_IMAGE_BASE_URL}/images/generations/${externalTaskId}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     },
-  })
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -446,7 +459,11 @@ async function submitWithComflyFallback(
   const sizePreset = (input.params.size as string) ?? '1k'
   const aspectRatio = (input.params.aspectRatio as string) ?? '1:1'
   const referenceImageUrl = readReferenceImageUrl(input.params)
-  const resolvedSize = resolveOpenAICompatibleRequestSize('dlapi', sizePreset, aspectRatio)
+  const resolvedSize = resolveOpenAICompatibleRequestSize(
+    'dlapi',
+    sizePreset,
+    aspectRatio,
+  )
   const endpoint = referenceImageUrl
     ? `${DLAPI_IMAGE_BASE_URL}/images/edits`
     : `${DLAPI_IMAGE_BASE_URL}/images/generations`
@@ -473,7 +490,8 @@ async function submitWithComflyFallback(
       model: input.model,
       hasDedicatedFallbackKey: Boolean(input.fallbackApiKey),
       sizePreset: typeof input.params.size === 'string' ? input.params.size : null,
-      aspectRatio: typeof input.params.aspectRatio === 'string' ? input.params.aspectRatio : null,
+      aspectRatio:
+        typeof input.params.aspectRatio === 'string' ? input.params.aspectRatio : null,
     })
 
     const fallbackModel =

@@ -23,7 +23,7 @@ bucket_name = "nano-banana-uploads"
 [[queues.consumers]]
 queue = "nano-banana-tasks"
 max_batch_size = 10
-max_batch_timeout = 30
+max_batch_timeout = 1
 
 # ─── Workflows 长任务编排 (image_gen 主调度骨架) ───────────
 [[workflows]]
