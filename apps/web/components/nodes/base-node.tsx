@@ -209,7 +209,7 @@ export function BaseNode({
         <div className="border-border flex items-center gap-2 border-b px-3 py-2">
           <div className={cn('h-2 w-2 rounded-full', STATUS_COLORS[status])} />
           {icon && <span className="text-muted-foreground">{icon}</span>}
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">{data.label}</span>
+          <span className="min-w-0 truncate text-sm font-medium">{data.label}</span>
           {headerRight}
         </div>
 
