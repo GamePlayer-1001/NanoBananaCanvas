@@ -10,6 +10,7 @@
 plugin-registry.ts       — NodePluginMeta 节点元数据注册中心 (ports/defaults/category/icon，单一真相源)
 registry.ts              — NODE_TYPES 节点类型→组件映射 (ReactFlow 消费)
 base-node.tsx       — BaseNode 节点基础框架 (从 plugin-registry 读取端口，渲染状态指示/Handle/端口标签/选中样式，并统一提供稳定默认尺寸、内容裁切与边缘缩放)
+text-node.tsx       — TextNode 纯文本输入节点 (单纯的文本输入，通过 Text string 管道输出给下一个节点)
 text-input-node.tsx — TextInputNode 文本输入节点（现收口 `800` 字输入上限，并放宽节点高度/底部留白，让底部字数提示不再紧贴边缘；节点底部会回显当前字数与剩余额度，避免超长提示词把图片主链拖入异常长耗时）
 image-input-node.tsx — ImageInputNode 图片输入节点 (R2 上传 + 固定内容区图片预览 + image-out 输出)
 image-mask-node.tsx  — ImageMaskNode 笔刷蒙版节点 (节点内自包含 ImageUpload 直接落 config.imageUrl + canvas 笔刷/橡皮/撤销/清空 + 防抖将白色蒙版 PNG 上传 R2 写入 config.maskUrl + 单一 image-out 同时承载 `{imageUrl, maskUrl}` 复合负载，下游 image-gen 自动解包；笔刷/橡皮工具切换时光标对应变化)

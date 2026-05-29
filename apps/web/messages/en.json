@@ -1897,6 +1897,7 @@
     "select": "Select",
     "hand": "Hand tool",
     "input": "Input",
+    "text": "Text",
     "groupInputs": "Input",
     "textGen": "Text Gen",
     "imageGen": "Image Gen",
@@ -1918,6 +1919,7 @@
     "groupTools": "Tools",
     "groupGroup": "Group",
     "addInput": "Input",
+    "addText": "Text",
     "addImageMask": "Mask",
     "addTextMerge": "Text Merge",
     "addImageMerge": "Image Merge",
@@ -1935,6 +1937,7 @@
   },
   "nodes": {
     "enterText": "Enter text...",
+    "typeSomething": "Type something...",
     "inputPlaceholder": "Type a prompt, or type \"/\" to select your prompt",
     "inputMedia": "Input Media",
     "textLengthCounter": "{current}/{max} chars",

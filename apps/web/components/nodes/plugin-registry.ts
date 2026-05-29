@@ -90,6 +90,20 @@ register({
   initialWidth: 290,
 })
 
+register({
+  type: 'text',
+  category: 'input',
+  label: 'Text',
+  icon: Type,
+  ports: {
+    inputs: [],
+    outputs: [{ id: 'text-out', label: 'Text string', type: 'string' }],
+  },
+  defaults: { text: '' },
+  toolbar: { labelKey: 'text' },
+  initialWidth: 280,
+})
+
 /* ── Legacy aliases (backward compat for saved workflows) ── */
 
 register({

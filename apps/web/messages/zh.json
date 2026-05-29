@@ -1897,6 +1897,7 @@
     "select": "选择",
     "hand": "拖动画布",
     "input": "输入",
+    "text": "文本",
     "groupInputs": "输入",
     "textGen": "文本生成",
     "imageGen": "图片生成",
@@ -1918,6 +1919,7 @@
     "groupTools": "工具",
     "groupGroup": "分组",
     "addInput": "输入",
+    "addText": "文本",
     "addImageMask": "蒙版",
     "addTextMerge": "文本合并",
     "addImageMerge": "图片合并",
@@ -1934,6 +1936,7 @@
     "noCompatibleNodes": "当前端口没有可直接连线的节点"
   },
   "nodes": {
+    "typeSomething": "输入内容...",
     "enterText": "输入文本...",
     "inputPlaceholder": "输入提示词，或输入 \"/\" 选择预设提示词",
     "inputMedia": "上传媒体",

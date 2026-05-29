@@ -13,6 +13,7 @@ export type CanvasTool =
   | 'select'
   | 'hand'
   | 'input'
+  | 'text'
   | 'text-input'
   | 'image-input'
   | 'image-mask'
