@@ -75,7 +75,7 @@ function SortableMediaThumb({
     <div
       ref={setNodeRef}
       style={style}
-      className="nodrag nowheel group/thumb relative aspect-square w-full cursor-grab overflow-hidden rounded-md border border-border active:cursor-grabbing"
+      className="nodrag nowheel group/thumb relative h-[60px] w-[60px] flex-shrink-0 cursor-grab overflow-hidden rounded-md border border-border active:cursor-grabbing"
       {...attributes}
       {...listeners}
     >
@@ -298,8 +298,8 @@ export function InputNode(props: NodeProps) {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            {/* 4列 grid：每行4个格，缩略图固定，上传按钮占剩余列数 */}
-            <div className="grid grid-cols-4 gap-[6px]">
+            {/* flex-wrap：缩略图固定 60px，节点越宽一行放越多，上传按钮占同行剩余宽度 */}
+            <div className="flex flex-wrap gap-[6px]">
               <SortableContext
                 items={mediaFiles.map((f) => f.id)}
                 strategy={rectSortingStrategy}
@@ -313,15 +313,12 @@ export function InputNode(props: NodeProps) {
                 ))}
               </SortableContext>
 
-              {/* 上传按钮：占当前行剩余的所有列，col-span 由 (4 - count%4) 决定 */}
+              {/* flex-1 min-w-[60px]：同行时占满剩余宽度，独占一行时全宽 */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                style={{
-                  gridColumn: `span ${mediaFiles.length % 4 === 0 ? 4 : 4 - (mediaFiles.length % 4)} / span ${mediaFiles.length % 4 === 0 ? 4 : 4 - (mediaFiles.length % 4)}`,
-                }}
-                className={`flex h-12 w-full items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 transition-colors ${
+                className={`flex h-[60px] flex-1 min-w-[60px] items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 transition-colors ${
                   dragOver
                     ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 text-[var(--brand-500)]'
                     : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/70'
@@ -337,10 +334,7 @@ export function InputNode(props: NodeProps) {
                 ) : (
                   <>
                     <Paperclip size={14} className="shrink-0" />
-                    {/* 剩余列>=2时显示文字，否则只显示图标 */}
-                    {(mediaFiles.length % 4 === 0 || 4 - (mediaFiles.length % 4) >= 2) && (
-                      <span className="min-w-0 truncate text-xs">{t('inputMedia')}</span>
-                    )}
+                    <span className="min-w-0 truncate text-xs">{t('inputMedia')}</span>
                   </>
                 )}
               </button>

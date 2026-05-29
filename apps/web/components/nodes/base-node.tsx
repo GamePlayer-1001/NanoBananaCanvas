@@ -8,8 +8,8 @@
 
 'use client'
 
-import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from 'react'
-import { Handle, NodeResizer, Position, type NodeProps } from '@xyflow/react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from '@xyflow/react'
 import type { WorkflowNodeData, PortDefinition } from '@/types'
 import { cn } from '@/lib/utils'
 import { getNodePorts } from './plugin-registry'
@@ -108,6 +108,7 @@ function PortHandle({
 
 export function BaseNode({
   data,
+  id,
   type,
   width,
   height,
@@ -129,6 +130,20 @@ export function BaseNode({
   const outputPorts = outputs ?? registryPorts.outputs
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [hoverEdge, setHoverEdge] = useState(false)
+  const { updateNode } = useReactFlow()
+
+  /* heightMode=content 时监听容器实际高度变化，同步给 ReactFlow，修复框选截断 */
+  useEffect(() => {
+    if (heightMode !== 'content') return
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height
+      if (h) updateNode(id, { measured: { width: el.offsetWidth, height: h } })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [id, heightMode, updateNode])
 
   const updateResizeHover = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (!resizable) return
