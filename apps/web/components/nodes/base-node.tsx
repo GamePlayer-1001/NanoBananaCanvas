@@ -150,7 +150,8 @@ export function BaseNode({
     setHoverEdge(false)
   }, [])
 
-  const showResizer = resizable && hoverEdge
+  /* 选中即显示缩放手柄（更易发现/拖动）；未选中时 hover 边缘才显示 */
+  const showResizer = resizable && (selected || hoverEdge)
 
   const resolvedWidth = Math.max(typeof width === 'number' && Number.isFinite(width) ? width : minWidth, minWidth)
   const resolvedHeight = typeof height === 'number' ? height : minHeight

@@ -416,6 +416,11 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
     [onEdgesChange],
   )
 
+  /* ── 拖拽结束强制清除对齐辅助线 (修复吸附到位后竖/横虚线残留) ── */
+  const handleNodeDragStop = useCallback(() => {
+    setHelperLines(EMPTY_HELPER_LINES)
+  }, [])
+
   /* ── CANVAS-012: Toolbar drag & drop to create node ── */
   const onDragOver = useCallback((e: DragEvent) => {
     e.preventDefault()
@@ -540,6 +545,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         isValidConnection={validateConnection}
         onInit={onInit}
         onMoveEnd={handleMoveEnd}
+        onNodeDragStop={handleNodeDragStop}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         /* ── 右键菜单事件 ────────────────────────────── */

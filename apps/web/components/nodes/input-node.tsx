@@ -26,7 +26,7 @@ import {
 import {
   SortableContext,
   useSortable,
-  horizontalListSortingStrategy,
+  rectSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -258,25 +258,8 @@ export function InputNode(props: NodeProps) {
     [props.id, data.config, updateNodeData],
   )
 
-  /* ── Determine button label visibility based on remaining inline width ── */
-  const MIN_WIDTH = 290
-  const CONTENT_PADDING = 26 // card border 2px + body padding 24px
-  const THUMB = 48
-  const GAP = 6 // gap-1.5
-  const TEXT_BTN_W = 110 // 容纳 "📎 上传媒体" 完整文案所需的最小按钮宽度（含 padding）
+  /* ── 媒体网格状态 ── */
   const hasMedia = mediaFiles.length > 0
-
-  const rawWidth = typeof props.width === 'number' && Number.isFinite(props.width) ? props.width : MIN_WIDTH
-  const nodeWidth = Math.max(rawWidth, MIN_WIDTH)
-  const contentWidth = nodeWidth - CONTENT_PADDING
-
-  /* 剩余空间不足容纳完整文字按钮 -> 换行整行展示 */
-  let layout: 'inline' | 'newline' = 'inline'
-  if (hasMedia) {
-    const thumbsWidth = mediaFiles.length * THUMB + (mediaFiles.length - 1) * GAP
-    const remaining = contentWidth - thumbsWidth - GAP
-    layout = remaining >= TEXT_BTN_W ? 'inline' : 'newline'
-  }
 
   return (
     <BaseNode
@@ -298,7 +281,7 @@ export function InputNode(props: NodeProps) {
         className="nodrag nowheel border-input bg-background w-full min-h-[96px] grow shrink-0 resize-none rounded-md border px-2 py-1.5 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />
 
-      {/* ── Media strip + upload button ────────────────── */}
+      {/* ── Media grid + upload button ────────────────── */}
       <div
         className="nodrag nowheel flex flex-col gap-1.5"
         onDragOver={(e) => {
@@ -308,9 +291,9 @@ export function InputNode(props: NodeProps) {
         onDragLeave={() => setDragOver(false)}
         onDrop={onMediaDrop}
       >
-        {/* Row: thumbnails + inline button (when not newline) */}
-        <div className="flex items-center gap-1.5">
-          {hasMedia ? (
+        {hasMedia ? (
+          /* 九宫格：缩略图 + 末位方形图标上传按钮，flex-wrap 自动换行 */
+          <div className="flex flex-wrap gap-1.5">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -318,7 +301,7 @@ export function InputNode(props: NodeProps) {
             >
               <SortableContext
                 items={mediaFiles.map((f) => f.id)}
-                strategy={horizontalListSortingStrategy}
+                strategy={rectSortingStrategy}
               >
                 {mediaFiles.map((file) => (
                   <SortableMediaThumb
@@ -329,41 +312,28 @@ export function InputNode(props: NodeProps) {
                 ))}
               </SortableContext>
             </DndContext>
-          ) : null}
 
-          {/* 内联按钮：无媒体时占满整行；有媒体且剩余空间足够 -> flex-1 填满剩余宽度 */}
-          {layout === 'inline' && (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className={`flex h-12 ${
-                hasMedia ? 'min-w-0 flex-1' : 'w-full'
-              } items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-2 py-2 text-xs transition-colors ${
+              className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border-2 border-dashed transition-colors ${
                 dragOver
-                  ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
-                  : 'border-border text-muted-foreground hover:border-foreground/30'
+                  ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 text-[var(--brand-500)]'
+                  : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/70'
               }`}
               title={t('inputMedia')}
               aria-label={t('inputMedia')}
             >
               {uploading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin shrink-0" />
-                  <span>{progress}%</span>
-                </>
+                <Loader2 size={16} className="animate-spin" />
               ) : (
-                <>
-                  <Paperclip size={14} className="shrink-0" />
-                  <span>{t('inputMedia')}</span>
-                </>
+                <Paperclip size={16} />
               )}
             </button>
-          )}
-        </div>
-
-        {/* 缩略图行装不下完整文字按钮 -> 换行整行展示 */}
-        {layout === 'newline' && (
+          </div>
+        ) : (
+          /* 空状态：整行虚线大按钮带文案 */
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
