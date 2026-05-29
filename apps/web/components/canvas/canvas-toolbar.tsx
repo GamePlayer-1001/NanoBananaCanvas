@@ -265,31 +265,23 @@ interface GroupButtonProps {
 
 const GroupButton = forwardRef<HTMLButtonElement, GroupButtonProps>(
   function GroupButton({ entry, isOpen, isActive, onMouseEnter, onMouseLeave, onFocus }, ref) {
-    const t = useTranslations('toolbar')
     const Icon = entry.icon
 
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            ref={ref}
-            variant="ghost"
-            size="icon-sm"
-            className={cn(
-              'rounded-full transition-colors',
-              (isOpen || isActive) && 'bg-[var(--brand-500)] text-white hover:bg-[var(--brand-500)]/90 hover:text-white',
-            )}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            onFocus={onFocus}
-          >
-            <Icon size={16} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={8}>
-          {t(entry.labelKey)}
-        </TooltipContent>
-      </Tooltip>
+      <Button
+        ref={ref}
+        variant="ghost"
+        size="icon-sm"
+        className={cn(
+          'rounded-full transition-colors',
+          (isOpen || isActive) && 'bg-[var(--brand-500)] text-white hover:bg-[var(--brand-500)]/90 hover:text-white',
+        )}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onFocus={onFocus}
+      >
+        <Icon size={16} />
+      </Button>
     )
   },
 )
