@@ -122,8 +122,9 @@ export function AgentPanel({
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const [height, setHeight] = useState(DEFAULT_HEIGHT)
   const [dockedWidth, setDockedWidth] = useState(DOCKED_WIDTH)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [positionInited, setPositionInited] = useState(false)
+  const [position, setPosition] = useState<{ x: number; y: number }>(() =>
+    typeof window === 'undefined' ? { x: 0, y: 0 } : getDefaultPosition(DEFAULT_WIDTH, DEFAULT_HEIGHT),
+  )
 
   const dragRef = useRef<{
     pointerId: number
@@ -142,14 +143,6 @@ export function AgentPanel({
     startPosX: number
     startPosY: number
   } | null>(null)
-
-  /* ── 初始化浮窗位置：屏幕水平居中、垂直居中 ──────────── */
-  useEffect(() => {
-    if (positionInited) return
-    if (typeof window === 'undefined') return
-    setPosition(getDefaultPosition(width, height))
-    setPositionInited(true)
-  }, [height, positionInited, width])
 
   /* ── 写入持久化偏好 ──────────────────────────────────── */
   useEffect(() => {
@@ -381,7 +374,6 @@ export function AgentPanel({
           top: position.y,
           width,
           height,
-          visibility: positionInited ? 'visible' : 'hidden',
         }}
       >
         {/* 4 边 handles */}
