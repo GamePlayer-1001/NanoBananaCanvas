@@ -22,6 +22,16 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type PanelMode = 'floating' | 'docked'
+type ResizeTarget =
+  | 'docked-left'
+  | 'n'
+  | 's'
+  | 'e'
+  | 'w'
+  | 'ne'
+  | 'nw'
+  | 'se'
+  | 'sw'
 
 const STORAGE_KEY_MODE = 'nbc:agent-panel-mode'
 const STORAGE_KEY_OPEN = 'nbc:agent-panel-open'
@@ -33,7 +43,6 @@ const MAX_WIDTH = 630
 const DEFAULT_HEIGHT = 855
 const MIN_HEIGHT = 390
 const MAX_HEIGHT = 960
-const DEFAULT_POSITION = { x: -220, y: 0 }
 
 /* ── 右侧固定模式宽度 ─────────────────────────────────── */
 const DOCKED_WIDTH = 420
@@ -63,30 +72,33 @@ function readStoredOpen(): boolean {
   }
 }
 
-function getPanelBounds(width: number, height: number) {
-  if (typeof window === 'undefined') {
-    return {
-      minX: DEFAULT_POSITION.x,
-      maxX: DEFAULT_POSITION.x,
-      minY: DEFAULT_POSITION.y,
-      maxY: DEFAULT_POSITION.y,
-    }
-  }
-
+function getDefaultPosition(width: number, height: number) {
+  if (typeof window === 'undefined') return { x: 24, y: 24 }
   const margin = 24
   return {
-    minX: -(window.innerWidth - width - margin * 2),
-    maxX: 0,
-    minY: -(window.innerHeight - height - margin * 2),
-    maxY: 0,
+    x: Math.max(margin, window.innerWidth - width - margin),
+    y: Math.max(margin, Math.round((window.innerHeight - height) / 2)),
+  }
+}
+
+function getPanelBounds(width: number, height: number) {
+  if (typeof window === 'undefined') {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+  }
+  const margin = 8
+  return {
+    minX: margin,
+    maxX: Math.max(margin, window.innerWidth - width - margin),
+    minY: margin,
+    maxY: Math.max(margin, window.innerHeight - height - margin),
   }
 }
 
 function clampPosition(position: { x: number; y: number }, width: number, height: number) {
   const bounds = getPanelBounds(width, height)
   return {
-    x: clamp(position.x, Math.min(bounds.minX, bounds.maxX), Math.max(bounds.minX, bounds.maxX)),
-    y: clamp(position.y, Math.min(bounds.minY, bounds.maxY), Math.max(bounds.minY, bounds.maxY)),
+    x: clamp(position.x, bounds.minX, bounds.maxX),
+    y: clamp(position.y, bounds.minY, bounds.maxY),
   }
 }
 
@@ -110,7 +122,8 @@ export function AgentPanel({
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const [height, setHeight] = useState(DEFAULT_HEIGHT)
   const [dockedWidth, setDockedWidth] = useState(DOCKED_WIDTH)
-  const [position, setPosition] = useState(DEFAULT_POSITION)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [positionInited, setPositionInited] = useState(false)
 
   const dragRef = useRef<{
     pointerId: number
@@ -121,12 +134,22 @@ export function AgentPanel({
   } | null>(null)
   const resizeRef = useRef<{
     pointerId: number
-    target: 'left' | 'top' | 'corner' | 'docked-left'
+    target: ResizeTarget
     startX: number
     startY: number
     startWidth: number
     startHeight: number
+    startPosX: number
+    startPosY: number
   } | null>(null)
+
+  /* ── 初始化浮窗位置：屏幕水平居中、垂直居中 ──────────── */
+  useEffect(() => {
+    if (positionInited) return
+    if (typeof window === 'undefined') return
+    setPosition(getDefaultPosition(width, height))
+    setPositionInited(true)
+  }, [height, positionInited, width])
 
   /* ── 写入持久化偏好 ──────────────────────────────────── */
   useEffect(() => {
@@ -166,31 +189,46 @@ export function AgentPanel({
       }
 
       if (resizeRef.current) {
-        if (resizeRef.current.target === 'docked-left') {
-          const delta = resizeRef.current.startX - event.clientX
-          const next = clamp(
-            resizeRef.current.startWidth + delta,
-            DOCKED_MIN_WIDTH,
-            DOCKED_MAX_WIDTH,
-          )
+        const r = resizeRef.current
+
+        if (r.target === 'docked-left') {
+          const delta = r.startX - event.clientX
+          const next = clamp(r.startWidth + delta, DOCKED_MIN_WIDTH, DOCKED_MAX_WIDTH)
           setDockedWidth(next)
           return
         }
 
-        const deltaX = resizeRef.current.startX - event.clientX
-        const deltaY = resizeRef.current.startY - event.clientY
-        const nextWidth =
-          resizeRef.current.target === 'top'
-            ? resizeRef.current.startWidth
-            : clamp(resizeRef.current.startWidth + deltaX, MIN_WIDTH, MAX_WIDTH)
-        const nextHeight =
-          resizeRef.current.target === 'left'
-            ? resizeRef.current.startHeight
-            : clamp(resizeRef.current.startHeight + deltaY, MIN_HEIGHT, MAX_HEIGHT)
+        const dx = event.clientX - r.startX
+        const dy = event.clientY - r.startY
+        const target = r.target
+
+        let nextWidth = r.startWidth
+        let nextHeight = r.startHeight
+        let nextX = r.startPosX
+        let nextY = r.startPosY
+
+        // 横向: e/ne/se 拉东边 → width 加 dx，左边不动
+        if (target === 'e' || target === 'ne' || target === 'se') {
+          nextWidth = clamp(r.startWidth + dx, MIN_WIDTH, MAX_WIDTH)
+        }
+        // 横向: w/nw/sw 拉西边 → width 减 dx，左边跟着鼠标走
+        if (target === 'w' || target === 'nw' || target === 'sw') {
+          nextWidth = clamp(r.startWidth - dx, MIN_WIDTH, MAX_WIDTH)
+          nextX = r.startPosX + (r.startWidth - nextWidth)
+        }
+        // 纵向: s/se/sw 拉南边 → height 加 dy，上边不动
+        if (target === 's' || target === 'se' || target === 'sw') {
+          nextHeight = clamp(r.startHeight + dy, MIN_HEIGHT, MAX_HEIGHT)
+        }
+        // 纵向: n/ne/nw 拉北边 → height 减 dy，上边跟着鼠标走
+        if (target === 'n' || target === 'ne' || target === 'nw') {
+          nextHeight = clamp(r.startHeight - dy, MIN_HEIGHT, MAX_HEIGHT)
+          nextY = r.startPosY + (r.startHeight - nextHeight)
+        }
 
         setWidth(nextWidth)
         setHeight(nextHeight)
-        setPosition((current) => clampPosition(current, nextWidth, nextHeight))
+        setPosition(clampPosition({ x: nextX, y: nextY }, nextWidth, nextHeight))
       }
     }
 
@@ -238,11 +276,9 @@ export function AgentPanel({
     }
   }
 
-  function startResize(
-    event: ReactPointerEvent<HTMLButtonElement>,
-    target: 'left' | 'top' | 'corner' | 'docked-left',
-  ) {
+  function startResize(event: ReactPointerEvent<HTMLButtonElement>, target: ResizeTarget) {
     event.preventDefault()
+    event.stopPropagation()
     resizeRef.current = {
       pointerId: event.pointerId,
       target,
@@ -250,6 +286,8 @@ export function AgentPanel({
       startY: event.clientY,
       startWidth: target === 'docked-left' ? dockedWidth : width,
       startHeight: height,
+      startPosX: position.x,
+      startPosY: position.y,
     }
   }
 
@@ -264,11 +302,11 @@ export function AgentPanel({
               aria-label="Open agent assistant"
               onClick={() => setIsOpen(true)}
               className={cn(
-                'fixed top-4 right-4 z-50 hidden h-7 w-7 items-center justify-center rounded-lg border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
+                'fixed top-4 right-4 z-50 hidden h-4 w-4 items-center justify-center rounded-md border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
                 className,
               )}
             >
-              <MessageCircle size={13} strokeWidth={2} />
+              <MessageCircle size={11} strokeWidth={2} />
             </button>
           </TooltipTrigger>
           <TooltipContent side="left" sideOffset={6}>
@@ -330,40 +368,29 @@ export function AgentPanel({
   return (
     <div
       className={cn(
-        'pointer-events-none absolute right-6 bottom-6 z-40 hidden lg:block',
+        'pointer-events-none fixed inset-0 z-40 hidden lg:block',
         className,
       )}
-      style={{
-        transform: `translate(${position.x}px, ${position.y}px)`,
-      }}
     >
       <div
         data-testid="agent-panel"
         data-agent-panel-mode="floating"
-        className="pointer-events-auto relative flex flex-col overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow,transform] duration-200 motion-reduce:transition-none"
+        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl"
         style={{
-          width: `min(${width}px, calc(100vw - 48px))`,
-          height: `min(${height}px, calc(100vh - 48px))`,
+          left: position.x,
+          top: position.y,
+          width,
+          height,
+          visibility: positionInited ? 'visible' : 'hidden',
         }}
       >
+        {/* 4 边 handles */}
         <button
           type="button"
           data-agent-panel-action="true"
-          aria-label="Resize agent panel width"
-          className="group absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block"
-          onPointerDown={(event) => startResize(event, 'left')}
-        >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-6 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
-          />
-        </button>
-        <button
-          type="button"
-          data-agent-panel-action="true"
-          aria-label="Resize agent panel height"
-          className="group absolute -top-3 inset-x-8 hidden h-6 cursor-ns-resize lg:block"
-          onPointerDown={(event) => startResize(event, 'top')}
+          aria-label="向上调整高度"
+          className="group absolute -top-1.5 left-6 right-6 h-3 cursor-ns-resize"
+          onPointerDown={(event) => startResize(event, 'n')}
         >
           <span
             aria-hidden
@@ -373,13 +400,72 @@ export function AgentPanel({
         <button
           type="button"
           data-agent-panel-action="true"
-          aria-label="Resize agent panel width and height"
-          className="absolute -top-3 -left-3 hidden h-7 w-7 cursor-nwse-resize lg:block"
-          onPointerDown={(event) => startResize(event, 'corner')}
+          aria-label="向下调整高度"
+          className="group absolute -bottom-1.5 left-6 right-6 h-3 cursor-ns-resize"
+          onPointerDown={(event) => startResize(event, 's')}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-6 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
+          />
+        </button>
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="向左调整宽度"
+          className="group absolute -left-1.5 top-6 bottom-6 w-3 cursor-ew-resize"
+          onPointerDown={(event) => startResize(event, 'w')}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-6 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
+          />
+        </button>
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="向右调整宽度"
+          className="group absolute -right-1.5 top-6 bottom-6 w-3 cursor-ew-resize"
+          onPointerDown={(event) => startResize(event, 'e')}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-6 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-transparent transition-colors group-hover:bg-indigo-500/60 group-active:bg-indigo-500"
+          />
+        </button>
+
+        {/* 4 角 handles */}
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="左上角调整"
+          className="absolute -top-1.5 -left-1.5 z-[1] h-4 w-4 cursor-nwse-resize"
+          onPointerDown={(event) => startResize(event, 'nw')}
+        />
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="右上角调整"
+          className="absolute -top-1.5 -right-1.5 z-[1] h-4 w-4 cursor-nesw-resize"
+          onPointerDown={(event) => startResize(event, 'ne')}
+        />
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="左下角调整"
+          className="absolute -bottom-1.5 -left-1.5 z-[1] h-4 w-4 cursor-nesw-resize"
+          onPointerDown={(event) => startResize(event, 'sw')}
+        />
+        <button
+          type="button"
+          data-agent-panel-action="true"
+          aria-label="右下角调整"
+          className="absolute -bottom-1.5 -right-1.5 z-[1] h-4 w-4 cursor-nwse-resize"
+          onPointerDown={(event) => startResize(event, 'se')}
         />
 
         <div
-          className="cursor-grab border-b border-black/6 active:cursor-grabbing"
+          className="cursor-grab rounded-t-[28px] border-b border-black/6 active:cursor-grabbing"
           onPointerDown={startDrag}
         >
           <PanelHeader
@@ -389,12 +475,14 @@ export function AgentPanel({
           />
         </div>
 
-        <PanelBody
-          header={header}
-          conversation={conversation}
-          quickActions={quickActions}
-          composer={composer}
-        />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-[28px]">
+          <PanelBody
+            header={header}
+            conversation={conversation}
+            quickActions={quickActions}
+            composer={composer}
+          />
+        </div>
       </div>
     </div>
   )

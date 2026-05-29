@@ -587,7 +587,6 @@ export default function CanvasPage({
           <div className="relative h-full">
             <Canvas workflowId={id} canEdit={canEdit} />
             <AgentPanel
-              className="w-[400px]"
               header={(
                 <AgentHeader
                   contextLabel={
