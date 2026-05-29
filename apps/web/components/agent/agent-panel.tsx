@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 react 的 ReactNode/useEffect/useRef/useState，依赖 lucide-react 的面板控制图标，
  *          依赖宿主布局传入的 Header / Conversation / Quick Actions / Composer 槽位
- * [OUTPUT]: 对外提供 AgentPanel 组件，作为右下角悬浮 Agent 卡片壳，支持折叠、拖拽与宽度调整
+ * [OUTPUT]: 对外提供 AgentPanel 组件，作为 Agent 卡片壳，支持「悬浮」与「右侧固定」两种展示方式，
+ *          以及右下角对话图标的折叠/唤起入口
  * [POS]: components/agent 的顶层容器，被编辑器页接入，用于承载 Agent 各分区但不持有业务编排逻辑
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -10,27 +11,60 @@
 
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { PanelRightClose, PanelRightOpen, Sparkles } from 'lucide-react'
+import { Minimize2, MessagesSquare, PanelRight, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const DEFAULT_WIDTH = 600
-const MIN_WIDTH = 510
-const MAX_WIDTH = 840
-const DEFAULT_HEIGHT = 1140
-const MIN_HEIGHT = 520
-const MAX_HEIGHT = 1280
+type PanelMode = 'floating' | 'docked'
+
+const STORAGE_KEY_MODE = 'nbc:agent-panel-mode'
+const STORAGE_KEY_OPEN = 'nbc:agent-panel-open'
+
+/* ── 默认尺寸为原来 75% ────────────────────────────────── */
+const DEFAULT_WIDTH = 450
+const MIN_WIDTH = 380
+const MAX_WIDTH = 630
+const DEFAULT_HEIGHT = 855
+const MIN_HEIGHT = 390
+const MAX_HEIGHT = 960
 const DEFAULT_POSITION = { x: -220, y: 0 }
-const COLLAPSED_WIDTH = 260
-const COLLAPSED_HEIGHT = 80
+
+/* ── 右侧固定模式宽度 ─────────────────────────────────── */
+const DOCKED_WIDTH = 420
+const DOCKED_MIN_WIDTH = 360
+const DOCKED_MAX_WIDTH = 560
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
+function readStoredMode(): PanelMode {
+  if (typeof window === 'undefined') return 'floating'
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEY_MODE)
+    return value === 'docked' ? 'docked' : 'floating'
+  } catch {
+    return 'floating'
+  }
+}
+
+function readStoredOpen(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    return window.localStorage.getItem(STORAGE_KEY_OPEN) !== '0'
+  } catch {
+    return true
+  }
+}
+
 function getPanelBounds(width: number, height: number) {
   if (typeof window === 'undefined') {
-    return { minX: DEFAULT_POSITION.x, maxX: DEFAULT_POSITION.x, minY: DEFAULT_POSITION.y, maxY: DEFAULT_POSITION.y }
+    return {
+      minX: DEFAULT_POSITION.x,
+      maxX: DEFAULT_POSITION.x,
+      minY: DEFAULT_POSITION.y,
+      maxY: DEFAULT_POSITION.y,
+    }
   }
 
   const margin = 24
@@ -65,11 +99,13 @@ export function AgentPanel({
   composer,
   className,
 }: AgentPanelProps) {
-  const shellRef = useRef<HTMLDivElement | null>(null)
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [mode, setMode] = useState<PanelMode>(() => readStoredMode())
+  const [isOpen, setIsOpen] = useState<boolean>(() => readStoredOpen())
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const [height, setHeight] = useState(DEFAULT_HEIGHT)
+  const [dockedWidth, setDockedWidth] = useState(DOCKED_WIDTH)
   const [position, setPosition] = useState(DEFAULT_POSITION)
+
   const dragRef = useRef<{
     pointerId: number
     startX: number
@@ -79,18 +115,36 @@ export function AgentPanel({
   } | null>(null)
   const resizeRef = useRef<{
     pointerId: number
-    mode: 'left' | 'top' | 'corner'
+    target: 'left' | 'top' | 'corner' | 'docked-left'
     startX: number
     startY: number
     startWidth: number
     startHeight: number
-    originX: number
-    originY: number
   } | null>(null)
 
+  /* ── 写入持久化偏好 ──────────────────────────────────── */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(STORAGE_KEY_MODE, mode)
+    } catch {
+      /* ignore */
+    }
+  }, [mode])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(STORAGE_KEY_OPEN, isOpen ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [isOpen])
+
+  /* ── 拖拽 / 调整尺寸 ─────────────────────────────────── */
   useEffect(() => {
     function handlePointerMove(event: PointerEvent) {
-      if (dragRef.current) {
+      if (dragRef.current && mode === 'floating') {
         const deltaX = event.clientX - dragRef.current.startX
         const deltaY = event.clientY - dragRef.current.startY
         setPosition(
@@ -99,35 +153,38 @@ export function AgentPanel({
               x: dragRef.current.originX + deltaX,
               y: dragRef.current.originY + deltaY,
             },
-            isCollapsed ? COLLAPSED_WIDTH : width,
-            isCollapsed ? COLLAPSED_HEIGHT : height,
+            width,
+            height,
           ),
         )
       }
 
       if (resizeRef.current) {
+        if (resizeRef.current.target === 'docked-left') {
+          const delta = resizeRef.current.startX - event.clientX
+          const next = clamp(
+            resizeRef.current.startWidth + delta,
+            DOCKED_MIN_WIDTH,
+            DOCKED_MAX_WIDTH,
+          )
+          setDockedWidth(next)
+          return
+        }
+
         const deltaX = resizeRef.current.startX - event.clientX
         const deltaY = resizeRef.current.startY - event.clientY
         const nextWidth =
-          resizeRef.current.mode === 'top'
+          resizeRef.current.target === 'top'
             ? resizeRef.current.startWidth
-            : Math.min(
-                MAX_WIDTH,
-                Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX),
-              )
+            : clamp(resizeRef.current.startWidth + deltaX, MIN_WIDTH, MAX_WIDTH)
         const nextHeight =
-          resizeRef.current.mode === 'left'
+          resizeRef.current.target === 'left'
             ? resizeRef.current.startHeight
-            : Math.min(
-                MAX_HEIGHT,
-                Math.max(MIN_HEIGHT, resizeRef.current.startHeight + deltaY),
-              )
+            : clamp(resizeRef.current.startHeight + deltaY, MIN_HEIGHT, MAX_HEIGHT)
 
         setWidth(nextWidth)
         setHeight(nextHeight)
-        setPosition((current) =>
-          clampPosition(current, nextWidth, nextHeight),
-        )
+        setPosition((current) => clampPosition(current, nextWidth, nextHeight))
       }
     }
 
@@ -147,17 +204,11 @@ export function AgentPanel({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [height, isCollapsed, width])
+  }, [height, mode, width])
 
   useEffect(() => {
     function handleWindowResize() {
-      setPosition((current) =>
-        clampPosition(
-          current,
-          isCollapsed ? COLLAPSED_WIDTH : width,
-          isCollapsed ? COLLAPSED_HEIGHT : height,
-        ),
-      )
+      setPosition((current) => clampPosition(current, width, height))
     }
 
     handleWindowResize()
@@ -166,9 +217,10 @@ export function AgentPanel({
     return () => {
       window.removeEventListener('resize', handleWindowResize)
     }
-  }, [height, isCollapsed, width])
+  }, [height, width])
 
   function startDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (mode !== 'floating') return
     if (!(event.target instanceof HTMLElement)) return
     if (event.target.closest('[data-agent-panel-action="true"]')) return
     dragRef.current = {
@@ -182,27 +234,83 @@ export function AgentPanel({
 
   function startResize(
     event: ReactPointerEvent<HTMLButtonElement>,
-    mode: 'left' | 'top' | 'corner',
+    target: 'left' | 'top' | 'corner' | 'docked-left',
   ) {
     event.preventDefault()
     resizeRef.current = {
       pointerId: event.pointerId,
-      mode,
+      target,
       startX: event.clientX,
       startY: event.clientY,
-      startWidth: width,
+      startWidth: target === 'docked-left' ? dockedWidth : width,
       startHeight: height,
-      originX: position.x,
-      originY: position.y,
     }
   }
 
-  const panelWidth = isCollapsed ? COLLAPSED_WIDTH : width
+  /* ── 折叠：渲染右下角对话图标 ──────────────────────── */
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        aria-label="Open agent assistant"
+        onClick={() => setIsOpen(true)}
+        className={cn(
+          'group fixed right-6 bottom-20 z-50 hidden h-14 w-14 items-center justify-center rounded-full bg-indigo-500 text-white shadow-[0_12px_36px_rgba(79,70,229,0.42)] transition-transform hover:scale-105 hover:bg-indigo-600 lg:flex',
+          className,
+        )}
+      >
+        <MessagesSquare className="h-6 w-6" />
+        <span className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-indigo-500/35 blur-xl transition group-hover:bg-indigo-500/55" />
+      </button>
+    )
+  }
 
+  /* ── 右侧固定展示 ────────────────────────────────────── */
+  if (mode === 'docked') {
+    return (
+      <div
+        className={cn(
+          'pointer-events-none absolute top-0 right-0 bottom-0 z-40 hidden lg:block',
+          className,
+        )}
+      >
+        <div
+          data-testid="agent-panel"
+          data-agent-panel-mode="docked"
+          className="pointer-events-auto relative flex h-full flex-col overflow-hidden border-l border-black/8 bg-white shadow-[-8px_0_30px_rgba(15,23,42,0.06)]"
+          style={{ width: dockedWidth }}
+        >
+          <button
+            type="button"
+            data-agent-panel-action="true"
+            aria-label="Resize agent panel"
+            className="absolute inset-y-0 -left-1.5 z-10 hidden w-3 cursor-ew-resize lg:block"
+            onPointerDown={(event) => startResize(event, 'docked-left')}
+          />
+
+          <div className="border-b border-black/6">
+            <PanelHeader
+              mode={mode}
+              onToggleMode={() => setMode('floating')}
+              onCollapse={() => setIsOpen(false)}
+            />
+          </div>
+
+          <PanelBody
+            header={header}
+            conversation={conversation}
+            quickActions={quickActions}
+            composer={composer}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  /* ── 浮动卡片展示 ────────────────────────────────────── */
   return (
     <div
-      ref={shellRef}
-        className={cn(
+      className={cn(
         'pointer-events-none absolute right-6 bottom-6 z-40 hidden lg:block',
         className,
       )}
@@ -212,114 +320,123 @@ export function AgentPanel({
     >
       <div
         data-testid="agent-panel"
-        className={cn(
-          'pointer-events-auto relative overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow,transform] duration-200 motion-reduce:transition-none',
-        )}
+        data-agent-panel-mode="floating"
+        className="pointer-events-auto relative flex flex-col overflow-hidden rounded-[28px] border border-black/8 bg-white/96 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-[width,height,box-shadow,transform] duration-200 motion-reduce:transition-none"
         style={{
-          width: isCollapsed ? COLLAPSED_WIDTH : `min(${panelWidth}px, calc(100vw - 48px))`,
-          height: isCollapsed ? COLLAPSED_HEIGHT : `min(${height}px, calc(100vh - 48px))`,
+          width: `min(${width}px, calc(100vw - 48px))`,
+          height: `min(${height}px, calc(100vh - 48px))`,
         }}
       >
         <button
           type="button"
           data-agent-panel-action="true"
           aria-label="Resize agent panel width"
-          className={cn(
-            'absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block',
-            isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
-          )}
+          className="absolute inset-y-0 -left-3 hidden w-6 cursor-ew-resize lg:block"
           onPointerDown={(event) => startResize(event, 'left')}
         />
         <button
           type="button"
           data-agent-panel-action="true"
           aria-label="Resize agent panel height"
-          className={cn(
-            'absolute -top-3 inset-x-8 hidden h-6 cursor-ns-resize lg:block',
-            isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
-          )}
+          className="absolute -top-3 inset-x-8 hidden h-6 cursor-ns-resize lg:block"
           onPointerDown={(event) => startResize(event, 'top')}
         />
         <button
           type="button"
           data-agent-panel-action="true"
           aria-label="Resize agent panel width and height"
-          className={cn(
-            'absolute -top-3 -left-3 hidden h-7 w-7 cursor-nwse-resize lg:block',
-            isCollapsed ? 'pointer-events-none opacity-0' : 'opacity-100',
-          )}
+          className="absolute -top-3 -left-3 hidden h-7 w-7 cursor-nwse-resize lg:block"
           onPointerDown={(event) => startResize(event, 'corner')}
         />
 
         <div
-          className={cn(
-            'border-b border-black/6',
-            isCollapsed ? 'px-4 py-3' : 'px-4 py-3',
-          )}
+          className="cursor-grab border-b border-black/6 active:cursor-grabbing"
           onPointerDown={startDrag}
         >
-          {isCollapsed ? (
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">Agent</p>
-                  <p className="truncate text-[11px] text-slate-500">悬浮创作助手</p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                data-agent-panel-action="true"
-                className="shrink-0 rounded-full text-slate-500 hover:text-slate-900"
-                onClick={() => setIsCollapsed(false)}
-              >
-                <PanelRightOpen size={16} />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
-                  <Sparkles size={14} />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">Agent</p>
-                  <p className="truncate text-[11px] text-slate-500">悬浮创作助手</p>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                data-agent-panel-action="true"
-                className="rounded-full text-slate-500 hover:text-slate-900"
-                onClick={() => setIsCollapsed(true)}
-              >
-                <PanelRightClose size={16} />
-              </Button>
-            </div>
-          )}
+          <PanelHeader
+            mode={mode}
+            onToggleMode={() => setMode('docked')}
+            onCollapse={() => setIsOpen(false)}
+          />
         </div>
 
-        {isCollapsed ? null : (
-          <div className="flex h-[calc(100%-73px)] min-h-0 flex-col">
-            <div className="shrink-0 px-4 py-3">
-              {header}
-            </div>
-            <div className="min-h-0 flex-1 px-4">
-              {conversation}
-            </div>
-            <div className="shrink-0 px-4 pb-3">
-              {quickActions}
-            </div>
-            <div className="shrink-0 border-t border-black/6 px-4 py-3">
-              {composer}
-            </div>
-          </div>
-        )}
+        <PanelBody
+          header={header}
+          conversation={conversation}
+          quickActions={quickActions}
+          composer={composer}
+        />
       </div>
+    </div>
+  )
+}
+
+/* ─── Sub Components ─────────────────────────────────── */
+
+interface PanelHeaderProps {
+  mode: PanelMode
+  onToggleMode: () => void
+  onCollapse: () => void
+}
+
+function PanelHeader({ mode, onToggleMode, onCollapse }: PanelHeaderProps) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
+          <Sparkles size={14} />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900">Agent</p>
+          <p className="truncate text-[11px] text-slate-500">
+            {mode === 'docked' ? '固定到右侧' : '悬浮创作助手'}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          data-agent-panel-action="true"
+          aria-label={mode === 'docked' ? '切换为悬浮窗口' : '固定到右侧'}
+          title={mode === 'docked' ? '切换为悬浮窗口' : '固定到右侧'}
+          className="rounded-full text-slate-500 hover:text-slate-900"
+          onClick={onToggleMode}
+        >
+          {mode === 'docked' ? <Minimize2 size={15} /> : <PanelRight size={15} />}
+        </Button>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          data-agent-panel-action="true"
+          aria-label="折叠到右下角"
+          title="折叠到右下角"
+          className="rounded-full text-slate-500 hover:text-slate-900"
+          onClick={onCollapse}
+        >
+          <X size={15} />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+interface PanelBodyProps {
+  header?: ReactNode
+  conversation?: ReactNode
+  quickActions?: ReactNode
+  composer?: ReactNode
+}
+
+function PanelBody({ header, conversation, quickActions, composer }: PanelBodyProps) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 px-4 py-3">{header}</div>
+      <div className="min-h-0 flex-1 px-4">{conversation}</div>
+      <div className="shrink-0 px-4 pb-3">{quickActions}</div>
+      <div className="shrink-0 border-t border-black/6 px-4 py-3">{composer}</div>
     </div>
   )
 }

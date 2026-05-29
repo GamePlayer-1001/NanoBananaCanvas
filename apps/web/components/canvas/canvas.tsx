@@ -621,7 +621,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
         <HelperLines horizontal={helperLines.horizontal} vertical={helperLines.vertical} />
         <MiniMap
           position="bottom-right"
-          className="!bottom-16 !right-2"
+          className="!bottom-20 !right-3"
           pannable
           zoomable
           nodeColor="var(--brand-400)"
