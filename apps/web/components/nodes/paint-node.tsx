@@ -28,6 +28,8 @@ import {
 const DEFAULT_ASPECT: PaintAspectRatio = '1:1'
 const DEFAULT_BRUSH_SIZE = 6
 const DEFAULT_BRUSH_COLOR = '#111827'
+const NODE_MIN_HEIGHT = 420
+const NODE_MIN_WIDTH = 360
 
 function isPaintAspectRatio(value: unknown): value is PaintAspectRatio {
   return PAINT_ASPECT_RATIOS.some((r) => r.id === value)
@@ -59,6 +61,41 @@ export function PaintNode(props: NodeProps) {
     return () => cancelAnimationFrame(rafId)
   }, [imageUrl, props.id, updateNodeInternals])
 
+  /* ── Stable node min size (与 image-mask 节点一致，初始化一次) ── */
+  useEffect(() => {
+    const currentNode = useFlowStore
+      .getState()
+      .nodes.find((node) => node.id === props.id)
+    const currentHeight = currentNode?.height
+    const currentStyleHeight =
+      typeof currentNode?.style?.height === 'number' ? currentNode.style.height : undefined
+    const currentWidth = currentNode?.width
+    const currentStyleWidth =
+      typeof currentNode?.style?.width === 'number' ? currentNode.style.width : undefined
+    const effectiveHeight = currentHeight ?? currentStyleHeight
+    const effectiveWidth = currentWidth ?? currentStyleWidth
+
+    const heightOk =
+      typeof effectiveHeight === 'number' && effectiveHeight >= NODE_MIN_HEIGHT
+    const widthOk = typeof effectiveWidth === 'number' && effectiveWidth >= NODE_MIN_WIDTH
+    if (heightOk && widthOk) return
+
+    const nextStyle = {
+      ...(currentNode?.style ?? {}),
+      height: heightOk ? (effectiveHeight as number) : NODE_MIN_HEIGHT,
+      width: widthOk ? (effectiveWidth as number) : NODE_MIN_WIDTH,
+    }
+
+    useFlowStore.setState((state) => ({
+      nodes: state.nodes.map((node) =>
+        node.id === props.id ? { ...node, style: nextStyle } : node,
+      ),
+    }))
+
+    const rafId = requestAnimationFrame(() => updateNodeInternals(props.id))
+    return () => cancelAnimationFrame(rafId)
+  }, [props.id, updateNodeInternals])
+
   const onSave = useCallback(
     (params: {
       imageUrl: string
@@ -85,7 +122,8 @@ export function PaintNode(props: NodeProps) {
         {...props}
         data={data}
         icon={<Brush size={14} />}
-        minHeight={140}
+        minWidth={NODE_MIN_WIDTH}
+        minHeight={NODE_MIN_HEIGHT}
         bodyClassName="min-h-0"
       >
         <div
