@@ -14,7 +14,6 @@ import { useTranslations } from 'next-intl'
 import { Type } from 'lucide-react'
 import type { WorkflowNodeData } from '@/types'
 import { useFlowStore } from '@/stores/use-flow-store'
-import { TEXT_INPUT_MAX_LENGTH } from '@/lib/billing/workflow-execution-guard'
 import { BaseNode } from './base-node'
 
 /* ─── Component ───────────────────────────────────────── */
@@ -27,14 +26,13 @@ export function TextNode(props: NodeProps) {
   const onChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
       updateNodeData(props.id, {
-        config: { ...data.config, text: e.target.value.slice(0, TEXT_INPUT_MAX_LENGTH) },
+        config: { ...data.config, text: e.target.value },
       })
     },
     [props.id, data.config, updateNodeData],
   )
 
   const textValue = (data.config.text as string) ?? ''
-  const remaining = TEXT_INPUT_MAX_LENGTH - textValue.length
 
   return (
     <BaseNode
@@ -50,13 +48,8 @@ export function TextNode(props: NodeProps) {
         onChange={onChange}
         placeholder={t('typeSomething')}
         rows={4}
-        maxLength={TEXT_INPUT_MAX_LENGTH}
         className="nodrag nowheel border-input bg-background min-h-[112px] w-full resize-none rounded-md border px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--brand-500)] focus:outline-none"
       />
-      <div className="text-muted-foreground text-right text-[11px] leading-none">
-        {t('textLengthCounter', { current: textValue.length, max: TEXT_INPUT_MAX_LENGTH })}
-        {remaining <= 20 ? ` · ${t('textLengthRemaining', { count: remaining })}` : ''}
-      </div>
     </BaseNode>
   )
 }

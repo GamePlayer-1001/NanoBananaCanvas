@@ -82,9 +82,10 @@ export function ImageInputNode(props: NodeProps) {
       data={data}
       icon={<ImagePlus size={14} />}
       minHeight={minNodeHeight}
+      heightMode="content"
       bodyClassName="min-h-0"
     >
-      <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex min-h-0 flex-col gap-2">
         {!hasImage ? (
           <div className="text-muted-foreground text-xs">{t('imageInputHint')}</div>
         ) : null}
@@ -92,7 +93,7 @@ export function ImageInputNode(props: NodeProps) {
           className={
             hasImage
               ? 'min-h-0 flex-1 overflow-hidden rounded-lg'
-              : 'h-[160px] max-h-[160px] min-h-[160px] overflow-hidden rounded-lg'
+              : 'min-h-[160px] overflow-hidden rounded-lg'
           }
         >
           <ImageUpload value={imageUrl} onChange={onChange} className="h-full w-full" />
