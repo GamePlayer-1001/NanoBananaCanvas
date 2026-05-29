@@ -50,10 +50,9 @@ export function ImageInputNode(props: NodeProps) {
       data={data}
       icon={<ImagePlus size={14} />}
       minHeight={140}
-      heightMode="content"
       bodyClassName="min-h-0"
     >
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-full min-h-0 flex-col">
         {!hasImage ? (
           <div className="text-muted-foreground mb-1.5 text-[11px] leading-snug">
             {t('imageInputHint')}
