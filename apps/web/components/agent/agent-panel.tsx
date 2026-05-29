@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 react 的 ReactNode/useEffect/useRef/useState，依赖 lucide-react 的面板控制图标，
  *          依赖宿主布局传入的 Header / Conversation / Quick Actions / Composer 槽位
  * [OUTPUT]: 对外提供 AgentPanel 组件，作为 Agent 卡片壳，支持「悬浮」与「右侧固定」两种展示方式，
- *          以及右下角对话图标的折叠/唤起入口
+ *          以及右上角小方形对话图标按钮的折叠/唤起入口（与画布工具栏风格统一，避免遮挡 MiniMap）
  * [POS]: components/agent 的顶层容器，被编辑器页接入，用于承载 Agent 各分区但不持有业务编排逻辑
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -11,7 +11,13 @@
 
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Minimize2, MessagesSquare, PanelRight, Sparkles, X } from 'lucide-react'
+import { Minimize2, MessageCircle, PanelRight, Sparkles, X } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -250,18 +256,26 @@ export function AgentPanel({
   /* ── 折叠：渲染右下角对话图标 ──────────────────────── */
   if (!isOpen) {
     return (
-      <button
-        type="button"
-        aria-label="Open agent assistant"
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          'group fixed right-6 bottom-20 z-50 hidden h-14 w-14 items-center justify-center rounded-full bg-indigo-500 text-white shadow-[0_12px_36px_rgba(79,70,229,0.42)] transition-transform hover:scale-105 hover:bg-indigo-600 lg:flex',
-          className,
-        )}
-      >
-        <MessagesSquare className="h-6 w-6" />
-        <span className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-indigo-500/35 blur-xl transition group-hover:bg-indigo-500/55" />
-      </button>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Open agent assistant"
+              onClick={() => setIsOpen(true)}
+              className={cn(
+                'fixed top-4 right-4 z-50 hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/95 text-slate-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-slate-900 lg:flex',
+                className,
+              )}
+            >
+              <MessageCircle size={15} strokeWidth={2} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left" sideOffset={6}>
+            打开 Agent 助手
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   }
 
