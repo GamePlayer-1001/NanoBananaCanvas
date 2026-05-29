@@ -15,6 +15,8 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { useUpload } from '@/hooks/use-upload'
+import { validateUpload } from '@/lib/validations/upload'
 import {
   type Connection,
   type HandleType,
@@ -101,13 +103,14 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   const connectingFrom = useRef<PendingConnection | null>(null)
   const t = useTranslations('canvas.shortcutsHint')
   const tCanvas = useTranslations('canvas')
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onReconnect, setViewport, addNode, removeNode } =
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onReconnect, setViewport, addNode, removeNode, updateNodeData } =
     useFlowStore()
   const isExecuting = useExecutionStore((state) => state.isExecuting)
   const activeTool = useCanvasToolStore((s) => s.activeTool)
   const resetTool = useCanvasToolStore((s) => s.resetTool)
   const { menu, openPaneMenu, openNodeMenu, close: closeMenu } = useContextMenu()
   const { screenToFlowPosition } = useReactFlow()
+  const { upload, uploading } = useUpload()
   /* ── 自动保存 (localStorage + 云端双轨) ────────────── */
   useAutoSave(workflowId, canEdit)
 
@@ -428,9 +431,54 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
   }, [])
 
   const onDrop = useCallback(
-    (e: DragEvent) => {
+    async (e: DragEvent) => {
       e.preventDefault()
 
+      /* 优先处理图片文件拖拽 */
+      const files = e.dataTransfer.files
+      if (files && files.length > 0) {
+        const file = files[0]
+        const check = validateUpload(file)
+        
+        if (!check.ok) {
+          toast.error(check.reason)
+          return
+        }
+
+        if (!file.type.startsWith('image/')) {
+          toast.error(tCanvas('onlyImageFilesSupported'))
+          return
+        }
+
+        const position = screenToFlowPosition({
+          x: e.clientX,
+          y: e.clientY,
+        })
+
+        /* 创建 input 节点 */
+        const node = createNode('input', position)
+        addNode(node)
+
+        /* 上传图片并填充到节点 */
+        const result = await upload(file)
+        if (result) {
+          const mediaFile = {
+            id: crypto.randomUUID(),
+            url: result.url,
+            type: 'image' as const,
+            name: file.name,
+          }
+          updateNodeData(node.id, {
+            config: { ...node.data.config, mediaFiles: [mediaFile] },
+          })
+          toast.success(tCanvas('imageUploaded'))
+        } else {
+          toast.error(tCanvas('imageUploadFailed'))
+        }
+        return
+      }
+
+      /* 处理工具栏节点拖拽 */
       const nodeType = e.dataTransfer.getData(DRAG_DATA_TYPE)
       if (!nodeType) return
 
@@ -443,7 +491,7 @@ function CanvasInner({ workflowId, canEdit = true }: CanvasProps) {
       addNode(node)
       resetTool()
     },
-    [screenToFlowPosition, addNode, resetTool],
+    [screenToFlowPosition, addNode, resetTool, upload, updateNodeData, tCanvas],
   )
 
   /* ── 添加节点 (支持自动连接) ────────────────────────── */
