@@ -382,6 +382,175 @@ async function dlapiSubmit(input: SubmitInput, apiKey: string): Promise<SubmitRe
   }
 }
 
+/* ─── Comfly 异步生图 ────────────────────────────── */
+
+/** Comfly 异步提交响应: POST /v1/images/generations?async=true → { task_id } */
+export interface ComflyAsyncSubmitResponse {
+  task_id?: string
+}
+
+/** Comfly 任务状态查询响应: GET /v1/images/tasks/{task_id} */
+export interface ComflyAsyncTaskResponse {
+  status?: 'queued' | 'running' | 'completed' | 'failed'
+  progress?: number
+  data?: Array<{ url?: string; b64_json?: string }>
+  error?: { message?: string; code?: string }
+}
+
+async function comflyAsyncSubmit(
+  input: SubmitInput,
+  apiKey: string,
+): Promise<SubmitResult> {
+  const { model, params } = input
+  const prompt = normalizeImagePromptForApi((params.prompt as string) ?? '')
+  const sizePreset = (params.size as string) ?? '1k'
+  const aspectRatio = (params.aspectRatio as string) ?? '1:1'
+  const referenceImageUrl = readReferenceImageUrl(params)
+  const baseUrl = COMFLY_IMAGE_BASE_URL
+
+  if (referenceImageUrl) {
+    /* 有参考图时走 chat-completions 路径（仍走同步） */
+    const result = await chatCompletionsImageSubmit(input, apiKey, 'comfly')
+    return {
+      externalTaskId: null,
+      initialStatus: 'completed',
+      result: {
+        type: 'url',
+        url: result.url,
+        contentType: inferImageContentType(result.url),
+      },
+    }
+  }
+
+  const size = resolveOpenAICompatibleRequestSize('comfly', sizePreset, aspectRatio)
+  assertOpenAICompatiblePromptSafety(prompt, baseUrl)
+
+  const res = await fetch(`${baseUrl}/images/generations?async=true`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      prompt,
+      size,
+      aspect_ratio: aspectRatio,
+      n: 1,
+    }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    if (statusIsGatewayLikeFailure(res.status)) {
+      throw new Error(
+        buildGatewayFailureMessage(
+          res.status,
+          'comfly',
+          `${baseUrl}/images/generations?async=true`,
+          text,
+        ),
+      )
+    }
+    throw new Error(`Comfly async submit API ${res.status}: ${text}`)
+  }
+
+  const data = await parseJsonResponse<ComflyAsyncSubmitResponse>(
+    res,
+    'Comfly async submit API',
+  )
+  const taskId = data.task_id
+
+  if (!taskId) {
+    throw new Error('Comfly async submit returned no task_id')
+  }
+
+  log.info('Comfly async task submitted', {
+    model,
+    taskId,
+    sizePreset,
+    aspectRatio,
+    hasReferenceImage: false,
+  })
+
+  return {
+    externalTaskId: taskId,
+    initialStatus: 'running',
+  }
+}
+
+async function comflyAsyncCheckStatus(
+  externalTaskId: string,
+  apiKey: string,
+): Promise<CheckResult> {
+  const res = await fetch(`${COMFLY_IMAGE_BASE_URL}/images/tasks/${externalTaskId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Comfly async status API ${res.status}: ${text}`)
+  }
+
+  const data = await parseJsonResponse<ComflyAsyncTaskResponse>(
+    res,
+    'Comfly async status API',
+  )
+
+  if (data.status === 'failed') {
+    return {
+      status: 'failed',
+      progress: 0,
+      error: data.error?.message ?? 'Comfly image generation failed',
+    }
+  }
+
+  if (data.status === 'completed') {
+    const url = extractOpenAICompatibleImageUrl({
+      data: data.data?.map((item) => ({
+        url: item.url,
+        b64_json: item.b64_json,
+      })),
+    })
+
+    if (!url) {
+      return {
+        status: 'failed',
+        progress: 100,
+        error: 'Comfly image generation completed without image payload',
+      }
+    }
+
+    log.info('Comfly async task completed', {
+      externalTaskId,
+      outputKind: url.startsWith('data:') ? 'base64' : 'url',
+    })
+
+    return {
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url,
+        contentType: inferImageContentType(url),
+      },
+    }
+  }
+
+  return {
+    status: 'running',
+    progress:
+      typeof data.progress === 'number'
+        ? Math.max(0, Math.min(99, Math.round(data.progress)))
+        : data.status === 'queued'
+          ? 5
+          : 50,
+  }
+}
+
 async function dlapiCheckStatus(
   externalTaskId: string,
   apiKey: string,
@@ -618,16 +787,7 @@ export class ImageGenProcessor implements TaskProcessor {
           },
         }
       case 'comfly':
-        result = await openAICompatibleSubmit(input, apiKey, this.provider)
-        return {
-          externalTaskId: null,
-          initialStatus: 'completed',
-          result: {
-            type: 'url',
-            url: result.url,
-            contentType: inferImageContentType(result.url),
-          },
-        }
+        return comflyAsyncSubmit(input, apiKey)
       case 'dlapi':
         return submitWithComflyFallback(input, apiKey)
       case 'gemini':
@@ -651,7 +811,12 @@ export class ImageGenProcessor implements TaskProcessor {
       return dlapiCheckStatus(externalTaskId, _apiKey)
     }
 
+    if (this.provider === 'comfly') {
+      return comflyAsyncCheckStatus(externalTaskId, _apiKey)
+    }
+
     void _apiKey
+
     log.debug('Image gen checkStatus (sync)', { provider: this.provider })
     return {
       status: 'completed',
