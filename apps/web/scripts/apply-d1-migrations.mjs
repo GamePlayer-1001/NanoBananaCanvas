@@ -8,13 +8,24 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
+const require = createRequire(import.meta.url)
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const appDir = path.resolve(scriptDir, '..')
 const dbDir = path.join(appDir, 'db')
 const databaseName = 'nano-banana-canvas-db'
 const migrationsTableName = 'schema_migrations'
+
+// 直接定位 wrangler 的 JS 入口，用 node 执行，彻底绕开
+// Windows `.cmd` 解析 (Node 24 spawn EINVAL) 与 Git Bash `npx` ENOENT 两个坑。
+// 一条路径同时覆盖 Windows / Git Bash / Linux CI，无平台分支。
+const wranglerBin = path.join(
+  path.dirname(require.resolve('wrangler/package.json')),
+  'bin',
+  'wrangler.js',
+)
 
 const orderedMigrations = [
   'migration-008-media-runtime.sql',
@@ -63,19 +74,9 @@ function ensureMigrationFilesExist() {
 }
 
 function runWranglerD1Execute(targetFlag, sql) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const args = [
-    'exec',
-    'wrangler',
-    'd1',
-    'execute',
-    databaseName,
-    targetFlag,
-    '--command',
-    sql,
-  ]
+  const args = [wranglerBin, 'd1', 'execute', databaseName, targetFlag, '--command', sql]
 
-  const result = spawnSync(command, args, {
+  const result = spawnSync(process.execPath, args, {
     cwd: appDir,
     encoding: 'utf8',
     stdio: 'pipe',
@@ -98,9 +99,7 @@ function escapeSqlString(value) {
 }
 
 function stripSqlComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*--.*$/gm, '')
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*--.*$/gm, '')
 }
 
 function splitSqlStatements(source) {
