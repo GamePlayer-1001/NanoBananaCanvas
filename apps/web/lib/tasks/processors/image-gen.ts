@@ -35,6 +35,7 @@ import {
   shouldUseOpenRouterChatImageApi,
   statusIsGatewayLikeFailure,
   summarizeResponseBody,
+  toImageDataUrl,
   validateImageSelection,
 } from './image-gen-helpers'
 import type {
@@ -389,12 +390,20 @@ export interface ComflyAsyncSubmitResponse {
   task_id?: string
 }
 
-/** Comfly 任务状态查询响应: GET /v1/images/tasks/{task_id} */
+/** Comfly 任务状态查询响应: GET /v1/images/tasks/{task_id} (真实返回结构，非文档) */
 export interface ComflyAsyncTaskResponse {
-  status?: 'queued' | 'running' | 'completed' | 'failed'
-  progress?: number
-  data?: Array<{ url?: string; b64_json?: string }>
-  error?: { message?: string; code?: string }
+  code?: string
+  message?: string
+  data?: {
+    task_id?: string
+    status?: 'NOT_START' | 'RUNNING' | 'SUCCESS' | 'FAIL'
+    progress?: string
+    fail_reason?: string
+    data?: {
+      url?: string
+      b64_json?: string
+    } | null
+  }
 }
 
 async function comflyAsyncSubmit(
@@ -495,26 +504,35 @@ async function comflyAsyncCheckStatus(
     throw new Error(`Comfly async status API ${res.status}: ${text}`)
   }
 
-  const data = await parseJsonResponse<ComflyAsyncTaskResponse>(
+  const wrapped = await parseJsonResponse<ComflyAsyncTaskResponse>(
     res,
     'Comfly async status API',
   )
 
-  if (data.status === 'failed') {
+  /* Comfly 返回双层包装: { code:'success', data: { status, progress, data } } */
+  const d =
+    wrapped.code === 'success'
+      ? wrapped.data
+      : (wrapped as unknown as ComflyAsyncTaskResponse['data'])
+  const status = d?.status
+  const progressStr = d?.progress ?? '0%'
+  const progressNum = Math.max(
+    0,
+    Math.min(100, Number.parseInt(progressStr.replace('%', ''), 10) || 0),
+  )
+
+  if (status === 'FAIL') {
     return {
       status: 'failed',
       progress: 0,
-      error: data.error?.message ?? 'Comfly image generation failed',
+      error: d?.fail_reason ?? 'Comfly image generation failed',
     }
   }
 
-  if (data.status === 'completed') {
-    const url = extractOpenAICompatibleImageUrl({
-      data: data.data?.map((item) => ({
-        url: item.url,
-        b64_json: item.b64_json,
-      })),
-    })
+  if (status === 'SUCCESS') {
+    /* 结果在 d.data.url 或 d.data.b64_json */
+    const img = d?.data
+    const url = img?.url || img?.b64_json
 
     if (!url) {
       return {
@@ -524,9 +542,11 @@ async function comflyAsyncCheckStatus(
       }
     }
 
+    const finalUrl = img?.b64_json ? toImageDataUrl(img.b64_json) : url
+
     log.info('Comfly async task completed', {
       externalTaskId,
-      outputKind: url.startsWith('data:') ? 'base64' : 'url',
+      outputKind: finalUrl.startsWith('data:') ? 'base64' : 'url',
     })
 
     return {
@@ -534,20 +554,16 @@ async function comflyAsyncCheckStatus(
       progress: 100,
       result: {
         type: 'url',
-        url,
-        contentType: inferImageContentType(url),
+        url: finalUrl,
+        contentType: inferImageContentType(finalUrl),
       },
     }
   }
 
+  /* NOT_START / RUNNING / undefined — 都视为进行中 */
   return {
     status: 'running',
-    progress:
-      typeof data.progress === 'number'
-        ? Math.max(0, Math.min(99, Math.round(data.progress)))
-        : data.status === 'queued'
-          ? 5
-          : 50,
+    progress: status === 'NOT_START' ? 0 : Math.max(5, progressNum),
   }
 }
 
