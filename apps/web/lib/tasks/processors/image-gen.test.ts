@@ -494,9 +494,13 @@ describe('ImageGenProcessor', () => {
   it('preserves auto size for image requests across providers', () => {
     expect(resolveOpenAICompatibleRequestSize('openrouter', 'auto', '16:9')).toBe('auto')
     expect(resolveOpenAICompatibleRequestSize('openai', 'auto', '16:9')).toBe('auto')
-    expect(resolveOpenAICompatibleRequestSize('openai-compatible', 'auto', '16:9')).toBe('auto')
+    expect(resolveOpenAICompatibleRequestSize('openai-compatible', 'auto', '16:9')).toBe(
+      'auto',
+    )
     expect(resolveOpenAICompatibleRequestSize('dlapi', 'auto', '16:9')).toBe('auto')
-    expect(resolveOpenAICompatibleRequestSize('openai-compatible', '1k', '16:9')).toBe('1920x1080')
+    expect(resolveOpenAICompatibleRequestSize('openai-compatible', '1k', '16:9')).toBe(
+      '1920x1080',
+    )
   })
 
   it('submits dlapi image tasks without relying on supplier task ids', async () => {
@@ -1078,16 +1082,14 @@ describe('ImageGenProcessor', () => {
       get: r2GetMock,
     })
 
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-type': 'application/json' }),
-        text: async () =>
-          JSON.stringify({
-            data: [{ url: 'https://example.com/dlapi-edit-relative.png' }],
-          }),
-      } satisfies Partial<Response>)
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () =>
+        JSON.stringify({
+          data: [{ url: 'https://example.com/dlapi-edit-relative.png' }],
+        }),
+    } satisfies Partial<Response>)
     vi.stubGlobal('fetch', fetchMock)
 
     const processor = new ImageGenProcessor('dlapi')
@@ -1112,6 +1114,72 @@ describe('ImageGenProcessor', () => {
         body: expect.any(FormData),
       }),
     )
+  })
+
+  it('checks comfly async task completion and accepts flattened success payloads', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            code: 'success',
+            data: {
+              task_id: 'cf_task_123',
+              status: 'SUCCESS',
+              progress: '100%',
+              url: 'https://example.com/comfly-async.png',
+            },
+          }),
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('comfly')
+    const result = await processor.checkStatus('cf_task_123', 'platform-key')
+
+    expect(result).toEqual({
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url: 'https://example.com/comfly-async.png',
+        contentType: 'image/png',
+      },
+    })
+  })
+
+  it('checks comfly async task completion and accepts array payloads', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            code: 'success',
+            data: {
+              task_id: 'cf_task_456',
+              status: 'SUCCESS',
+              progress: '100%',
+              data: [{ b64_json: 'Y29tZmx5LWFzeW5jLWltYWdl' }],
+            },
+          }),
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('comfly')
+    const result = await processor.checkStatus('cf_task_456', 'platform-key')
+
+    expect(result).toEqual({
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url: 'data:image/png;base64,Y29tZmx5LWFzeW5jLWltYWdl',
+        contentType: 'image/png',
+      },
+    })
   })
 
   it('checks dlapi async task completion and returns image data', async () => {
@@ -1224,7 +1292,9 @@ describe('ImageGenProcessor', () => {
         },
         'test-key',
       ),
-    ).rejects.toThrow(/Long prompts sent to http:\/\/www\.1314mc\.net:3333 are prone to upstream 524 timeouts/)
+    ).rejects.toThrow(
+      /Long prompts sent to http:\/\/www\.1314mc\.net:3333 are prone to upstream 524 timeouts/,
+    )
 
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -1239,9 +1309,9 @@ describe('ImageGenProcessor', () => {
   })
 
   it('normalizes multiline prompts into a single blob string', () => {
-    expect(
-      normalizeImagePromptForApi('第一段\n\n第二段\t第三段   第四段'),
-    ).toBe('第一段 第二段 第三段 第四段')
+    expect(normalizeImagePromptForApi('第一段\n\n第二段\t第三段   第四段')).toBe(
+      '第一段 第二段 第三段 第四段',
+    )
   })
 
   it('fails fast when gemini receives a reference image it cannot actually use', async () => {

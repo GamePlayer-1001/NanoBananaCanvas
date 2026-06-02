@@ -399,10 +399,42 @@ export interface ComflyAsyncTaskResponse {
     status?: 'NOT_START' | 'RUNNING' | 'SUCCESS' | 'FAIL'
     progress?: string
     fail_reason?: string
-    data?: {
+    data?:
+      | {
+          url?: string
+          b64_json?: string
+        }
+      | Array<{
+          url?: string
+          b64_json?: string
+        }>
+      | null
+    url?: string
+    b64_json?: string
+    result?:
+      | {
+          url?: string
+          b64_json?: string
+        }
+      | Array<{
+          url?: string
+          b64_json?: string
+        }>
+      | null
+    output?:
+      | {
+          url?: string
+          b64_json?: string
+        }
+      | Array<{
+          url?: string
+          b64_json?: string
+        }>
+      | null
+    images?: Array<{
       url?: string
       b64_json?: string
-    } | null
+    }> | null
   }
 }
 
@@ -488,6 +520,72 @@ async function comflyAsyncSubmit(
   }
 }
 
+function extractComflyAsyncImageUrl(
+  payload: ComflyAsyncTaskResponse['data'] | undefined,
+): string | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const directUrl = payload.url
+  if (typeof directUrl === 'string' && directUrl.trim()) {
+    return directUrl.trim()
+  }
+
+  const directBase64 = payload.b64_json
+  if (typeof directBase64 === 'string' && directBase64.trim()) {
+    return toImageDataUrl(directBase64.trim())
+  }
+
+  const candidateContainers: unknown[] = [
+    payload.data,
+    payload.result,
+    payload.output,
+    payload.images,
+  ]
+
+  for (const candidate of candidateContainers) {
+    if (!candidate) continue
+
+    if (Array.isArray(candidate)) {
+      const url = extractOpenAICompatibleImageUrl({
+        data: candidate
+          .filter(
+            (item): item is Record<string, unknown> => !!item && typeof item === 'object',
+          )
+          .map((item) => ({
+            url: typeof item.url === 'string' ? item.url : undefined,
+            b64_json: typeof item.b64_json === 'string' ? item.b64_json : undefined,
+          })),
+      })
+      if (url) return url
+      continue
+    }
+
+    if (typeof candidate === 'object') {
+      const typed = candidate as {
+        url?: unknown
+        b64_json?: unknown
+        image_url?: { url?: unknown }
+      }
+
+      if (typeof typed.url === 'string' && typed.url.trim()) {
+        return typed.url.trim()
+      }
+
+      if (typeof typed.b64_json === 'string' && typed.b64_json.trim()) {
+        return toImageDataUrl(typed.b64_json.trim())
+      }
+
+      if (typeof typed.image_url?.url === 'string' && typed.image_url.url.trim()) {
+        return typed.image_url.url.trim()
+      }
+    }
+  }
+
+  return null
+}
+
 async function comflyAsyncCheckStatus(
   externalTaskId: string,
   apiKey: string,
@@ -530,19 +628,20 @@ async function comflyAsyncCheckStatus(
   }
 
   if (status === 'SUCCESS') {
-    /* 结果在 d.data.url 或 d.data.b64_json */
-    const img = d?.data
-    const url = img?.url || img?.b64_json
+    const finalUrl = extractComflyAsyncImageUrl(d)
 
-    if (!url) {
+    if (!finalUrl) {
+      log.warn('Comfly async task completed without usable image payload', {
+        externalTaskId,
+        status,
+        responsePreview: summarizeResponseBody(JSON.stringify(wrapped)),
+      })
       return {
         status: 'failed',
         progress: 100,
         error: 'Comfly image generation completed without image payload',
       }
     }
-
-    const finalUrl = img?.b64_json ? toImageDataUrl(img.b64_json) : url
 
     log.info('Comfly async task completed', {
       externalTaskId,
