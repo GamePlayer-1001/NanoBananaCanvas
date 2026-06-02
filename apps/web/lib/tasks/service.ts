@@ -1301,7 +1301,7 @@ export async function checkTask(
 ): Promise<TaskDetail> {
   log.debug('Task check requested', { taskId, userId })
   /* 读取 D1 当前状态 */
-  const row = await loadTaskRow(db, taskId, userId)
+  let row = await loadTaskRow(db, taskId, userId)
 
   if (!row) {
     throw new TaskError(ErrorCode.TASK_NOT_FOUND, `Task not found: ${taskId}`, { taskId })
@@ -1373,22 +1373,38 @@ export async function checkTask(
 
   if (taskOrchestrator === 'workflow') {
     const observed = await observeWorkflowTaskState(db, row, runtime)
-    if (observed) {
+    if (observed && isTerminal(observed.status)) {
       return observed
     }
 
-    return rowToDetail(row)
+    const refreshedRow = await loadTaskRow(db, taskId, userId)
+    if (refreshedRow) {
+      row = refreshedRow
+    }
+
+    if (isTerminal(row.status)) {
+      return rowToDetail(row)
+    }
+
+    if (!row.external_task_id) {
+      return observed ?? rowToDetail(row)
+    }
   }
 
-  /* 超时检测: 这里只剩 legacy queue / 传统任务路径 */
   const created = new Date(row.created_at).getTime()
-  if (now - created > config.timeoutMs) {
-    await handleTimeout(db, row)
-    return {
-      ...rowToDetail(row),
-      status: 'failed',
-      output: { error: 'Task timed out' },
+  const hasTimedOut = now - created > config.timeoutMs
+
+  if (!row.external_task_id) {
+    if (hasTimedOut) {
+      await handleTimeout(db, row)
+      return {
+        ...rowToDetail(row),
+        status: 'failed',
+        output: { error: 'Task timed out' },
+      }
     }
+
+    return rowToDetail(row)
   }
 
   /* 懒评估: 向 Provider 查询最新状态 */
@@ -1416,10 +1432,6 @@ export async function checkTask(
       row.model_id,
       runtime,
     )
-  }
-
-  if (!row.external_task_id) {
-    return rowToDetail(row)
   }
 
   try {
