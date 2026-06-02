@@ -126,17 +126,16 @@ function createDbMock(
         }
 
         if (sql.includes('UPDATE async_tasks')) {
-          if (
-            taskRow &&
-            sql.includes("SET status = 'running', progress = ?")
-          ) {
+          if (taskRow && sql.includes("SET status = 'running', progress = ?")) {
             return {
               run: vi.fn().mockImplementation(async () => {
                 if (taskRow.status === 'pending' && taskRow.external_task_id == null) {
                   taskRow.status = 'running'
                   taskRow.progress = Number(args[0] ?? 5)
                   taskRow.started_at = String(args[1] ?? new Date().toISOString())
-                  taskRow.updated_at = String(args[3] ?? args[2] ?? new Date().toISOString())
+                  taskRow.updated_at = String(
+                    args[3] ?? args[2] ?? new Date().toISOString(),
+                  )
                   return { meta: { changes: 1 } }
                 }
 
@@ -148,14 +147,26 @@ function createDbMock(
           if (taskRow && sql.includes("status = 'completed'")) {
             return {
               run: vi.fn().mockImplementation(async () => {
-                taskRow.status = 'completed'
-                taskRow.progress = 100
-                taskRow.output_data = String(args[3] ?? null)
-                if (typeof args[7] !== 'undefined') {
-                  taskRow.diagnostics_data = String(args[7] ?? null)
+                const completedRow =
+                  activeRows.find((row) => row.id === args[6] || row.id === args[8]) ??
+                  taskRow
+
+                completedRow.status = 'completed'
+                completedRow.progress = 100
+
+                if (sql.includes('external_task_id = ?')) {
+                  completedRow.output_data = String(args[3] ?? null)
+                  completedRow.completed_at = String(args[4] ?? new Date().toISOString())
+                  completedRow.updated_at = String(args[6] ?? new Date().toISOString())
+                  if (typeof args[7] !== 'undefined') {
+                    completedRow.diagnostics_data = String(args[7] ?? null)
+                  }
+                } else {
+                  completedRow.output_data = String(args[2] ?? null)
+                  completedRow.completed_at = String(args[3] ?? new Date().toISOString())
+                  completedRow.updated_at = String(args[5] ?? new Date().toISOString())
                 }
-                taskRow.completed_at = String(args[4] ?? new Date().toISOString())
-                taskRow.updated_at = String(args[6] ?? new Date().toISOString())
+
                 return { meta: { changes: 1 } }
               }),
             }
@@ -265,7 +276,9 @@ describe('submitTask', () => {
       },
     })
 
-    const insertCall = db.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    const insertCall = db.__calls.find((call) =>
+      call.sql.includes('INSERT INTO async_tasks'),
+    )
     expect(insertCall).toBeDefined()
     expect(insertCall?.args[5]).toBeNull()
     expect(insertCall?.args[8]).toBe('pending')
@@ -419,29 +432,33 @@ describe('submitTask', () => {
 
     const db = createDbMock(0, activeRow)
 
-    const task = await submitTask(db, {
-      userId: 'user-1',
-      taskType: 'image_gen',
-      provider: 'openrouter',
-      modelId: 'openai/dall-e-3',
-      executionMode: 'platform',
-      workflowId: 'workflow-1',
-      nodeId: 'node-1',
-      input: { prompt: 'new prompt' },
-    }, {
-      requireEnv: vi.fn(),
-      getR2: vi.fn().mockResolvedValue(r2Mock),
-      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      getWorkflowStatus: vi.fn().mockResolvedValue({
-        status: 'running',
-      }),
-    })
+    const task = await submitTask(
+      db,
+      {
+        userId: 'user-1',
+        taskType: 'image_gen',
+        provider: 'openrouter',
+        modelId: 'openai/dall-e-3',
+        executionMode: 'platform',
+        workflowId: 'workflow-1',
+        nodeId: 'node-1',
+        input: { prompt: 'new prompt' },
+      },
+      {
+        requireEnv: vi.fn(),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+        getWorkflowStatus: vi.fn().mockResolvedValue({
+          status: 'running',
+        }),
+      },
+    )
 
     expect(task.id).toBe('active-task-1')
     expect(task.status).toBe('pending')
-    expect(
-      db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks')),
-    ).toBe(false)
+    expect(db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks'))).toBe(
+      false,
+    )
   })
 
   it('releases expired active slots before concurrency check so new submissions can continue', async () => {
@@ -511,9 +528,9 @@ describe('submitTask', () => {
           String(call.args[0]).includes('before new submission'),
       ),
     ).toBe(true)
-    expect(
-      db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks')),
-    ).toBe(true)
+    expect(db.__calls.some((call) => call.sql.includes('INSERT INTO async_tasks'))).toBe(
+      true,
+    )
   })
 
   it('completes deferred image tasks in background and updates persistence with internal output url', async () => {
@@ -544,7 +561,9 @@ describe('submitTask', () => {
       input: { prompt: 'test prompt' },
     })
 
-    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    const insertCall = submitDb.__calls.find((call) =>
+      call.sql.includes('INSERT INTO async_tasks'),
+    )
     expect(insertCall).toBeDefined()
 
     const executionSnapshot = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
@@ -583,12 +602,13 @@ describe('submitTask', () => {
 
     const completionUpdate = queuedDb.__calls.find(
       (call) =>
-        call.sql.includes("status = 'completed'") &&
-        call.sql.includes('output_data = ?'),
+        call.sql.includes("status = 'completed'") && call.sql.includes('output_data = ?'),
     )
 
     expect(completionUpdate).toBeDefined()
-    expect(String(completionUpdate?.args[3])).toContain('/api/files/outputs/user-1/task-1.png')
+    expect(String(completionUpdate?.args[3])).toContain(
+      '/api/files/outputs/user-1/task-1.png',
+    )
   })
 
   it('rebuilds queued image tasks from persisted payload snapshots', async () => {
@@ -619,7 +639,9 @@ describe('submitTask', () => {
       input: { prompt: 'test prompt' },
     })
 
-    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    const insertCall = submitDb.__calls.find((call) =>
+      call.sql.includes('INSERT INTO async_tasks'),
+    )
     expect(insertCall).toBeDefined()
 
     const executionSnapshot = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
@@ -657,8 +679,7 @@ describe('submitTask', () => {
 
     const completionUpdate = queuedDb.__calls.find(
       (call) =>
-        call.sql.includes("status = 'completed'") &&
-        call.sql.includes('output_data = ?'),
+        call.sql.includes("status = 'completed'") && call.sql.includes('output_data = ?'),
     )
 
     expect(completionUpdate).toBeDefined()
@@ -767,9 +788,13 @@ describe('submitTask', () => {
     )
 
     const submitCall = submitMock.mock.calls[0]?.[0] as {
-      loadInternalReferenceImageAsset?: (r2Key: string) => Promise<{ filename: string; blob: Blob }>
+      loadInternalReferenceImageAsset?: (
+        r2Key: string,
+      ) => Promise<{ filename: string; blob: Blob }>
     }
-    const loadedAsset = await submitCall.loadInternalReferenceImageAsset?.('uploads/demo/reference.png')
+    const loadedAsset = await submitCall.loadInternalReferenceImageAsset?.(
+      'uploads/demo/reference.png',
+    )
     expect(r2Mock.get).toHaveBeenCalledWith('uploads/demo/reference.png')
     expect(loadedAsset?.filename).toBe('reference.png')
     expect(loadedAsset?.blob.type).toBe('image/png')
@@ -854,19 +879,24 @@ describe('submitTask', () => {
       updated_at: new Date().toISOString(),
     })
 
-    await processTaskDispatch(queuedDb, {
-      taskId,
-      userId: 'user-1',
-    }, {
-      requireEnv: vi.fn().mockRejectedValue(new Error('should not require env')),
-      getR2: vi.fn().mockResolvedValue(r2Mock),
-      getPlatformKey: vi.fn().mockRejectedValue(new Error('should not require platform key')),
-    })
+    await processTaskDispatch(
+      queuedDb,
+      {
+        taskId,
+        userId: 'user-1',
+      },
+      {
+        requireEnv: vi.fn().mockRejectedValue(new Error('should not require env')),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        getPlatformKey: vi
+          .fn()
+          .mockRejectedValue(new Error('should not require platform key')),
+      },
+    )
 
     const completionUpdate = queuedDb.__calls.find(
       (call) =>
-        call.sql.includes("status = 'completed'") &&
-        call.sql.includes('output_data = ?'),
+        call.sql.includes("status = 'completed'") && call.sql.includes('output_data = ?'),
     )
 
     expect(completionUpdate).toBeDefined()
@@ -901,7 +931,9 @@ describe('submitTask', () => {
       input: { prompt: 'test prompt' },
     })
 
-    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    const insertCall = submitDb.__calls.find((call) =>
+      call.sql.includes('INSERT INTO async_tasks'),
+    )
     expect(insertCall).toBeDefined()
 
     const executionSnapshot = String(r2Mock.put.mock.calls[0]?.[1] ?? '{}')
@@ -978,7 +1010,9 @@ describe('submitTask', () => {
       orchestrator: 'workflow',
     })
 
-    const insertCall = submitDb.__calls.find((call) => call.sql.includes('INSERT INTO async_tasks'))
+    const insertCall = submitDb.__calls.find((call) =>
+      call.sql.includes('INSERT INTO async_tasks'),
+    )
     expect(insertCall).toBeDefined()
     expect(task.dispatch?.orchestrator).toBe('workflow')
 
@@ -1201,14 +1235,19 @@ describe('submitTask', () => {
       updated_at: createdAt,
     })
 
-    const detail = await checkTask(pollingDb, 'task-workflow-running-observe-only', 'user-1', {
-      requireEnv: vi.fn(),
-      getR2: vi.fn().mockResolvedValue(r2Mock),
-      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      getWorkflowStatus: vi.fn().mockResolvedValue({
-        status: 'running',
-      }),
-    })
+    const detail = await checkTask(
+      pollingDb,
+      'task-workflow-running-observe-only',
+      'user-1',
+      {
+        requireEnv: vi.fn(),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+        getWorkflowStatus: vi.fn().mockResolvedValue({
+          status: 'running',
+        }),
+      },
+    )
 
     expect(detail.status).toBe('pending')
     expect(
@@ -1219,6 +1258,76 @@ describe('submitTask', () => {
           call.args[2] === 'task-workflow-running-observe-only',
       ),
     ).toBe(true)
+  })
+
+  it('continues provider polling for workflow-managed image tasks after workflow handoff', async () => {
+    const checkStatus = vi.fn().mockResolvedValue({
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url: 'https://example.com/workflow-finished.png',
+        contentType: 'image/png',
+      },
+    })
+
+    vi.mocked(getPlatformKey).mockResolvedValue('platform-key')
+    vi.mocked(getProcessor).mockReturnValue({
+      taskType: 'image_gen',
+      provider: 'comfly',
+      submit: vi.fn(),
+      checkStatus,
+      cancel: vi.fn(),
+    })
+
+    const createdAt = new Date(Date.now() - 5 * 60 * 1_000).toISOString()
+    const pollingDb = createDbMock(0, {
+      id: 'task-workflow-provider-poll',
+      user_id: 'user-1',
+      task_type: 'image_gen',
+      provider: 'comfly',
+      model_id: 'gpt-image-2-all',
+      external_task_id: 'cf_task_123',
+      execution_mode: 'platform',
+      input_data: JSON.stringify({
+        prompt: 'test prompt',
+        __taskRuntime: {
+          orchestrator: 'workflow',
+        },
+      }),
+      output_data: null,
+      status: 'running',
+      progress: 10,
+      retry_count: 0,
+      max_retries: 2,
+      last_checked_at: new Date(Date.now() - 10 * 1000).toISOString(),
+      workflow_id: 'workflow-1',
+      node_id: 'node-1',
+      created_at: createdAt,
+      started_at: createdAt,
+      completed_at: null,
+      updated_at: createdAt,
+    })
+
+    const detail = await checkTask(pollingDb, 'task-workflow-provider-poll', 'user-1', {
+      requireEnv: vi.fn(),
+      getR2: vi.fn().mockResolvedValue(r2Mock),
+      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+      getPlatformSupplierApiKey: vi.fn().mockResolvedValue('platform-key'),
+      getWorkflowStatus: vi.fn().mockResolvedValue({
+        status: 'complete',
+      }),
+    })
+
+    expect(checkStatus).toHaveBeenCalledWith('cf_task_123', 'platform-key')
+    expect(detail.status).toBe('completed')
+    expect(detail.output).toEqual({
+      type: 'url',
+      url: '/api/files/outputs/user-1/task-1.png',
+      contentType: 'image/png',
+      fileName: 'task-workflow-provider-poll.png',
+      r2_key: 'outputs/user-1/task-1.png',
+    })
   })
 
   it('fails workflow tasks that complete without updating d1 state', async () => {
@@ -1254,14 +1363,19 @@ describe('submitTask', () => {
       updated_at: createdAt,
     })
 
-    const detail = await checkTask(pollingDb, 'task-workflow-complete-pending', 'user-1', {
-      requireEnv: vi.fn(),
-      getR2: vi.fn().mockResolvedValue(r2Mock),
-      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      getWorkflowStatus: vi.fn().mockResolvedValue({
-        status: 'complete',
-      }),
-    })
+    const detail = await checkTask(
+      pollingDb,
+      'task-workflow-complete-pending',
+      'user-1',
+      {
+        requireEnv: vi.fn(),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+        getWorkflowStatus: vi.fn().mockResolvedValue({
+          status: 'complete',
+        }),
+      },
+    )
 
     expect(detail.status).toBe('failed')
     expect(detail.output).toEqual({
@@ -1302,14 +1416,19 @@ describe('submitTask', () => {
       updated_at: createdAt,
     })
 
-    const detail = await checkTask(pollingDb, 'task-workflow-complete-running', 'user-1', {
-      requireEnv: vi.fn(),
-      getR2: vi.fn().mockResolvedValue(r2Mock),
-      getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
-      getWorkflowStatus: vi.fn().mockResolvedValue({
-        status: 'complete',
-      }),
-    })
+    const detail = await checkTask(
+      pollingDb,
+      'task-workflow-complete-running',
+      'user-1',
+      {
+        requireEnv: vi.fn(),
+        getR2: vi.fn().mockResolvedValue(r2Mock),
+        getPlatformKey: vi.fn().mockResolvedValue('platform-key'),
+        getWorkflowStatus: vi.fn().mockResolvedValue({
+          status: 'complete',
+        }),
+      },
+    )
 
     expect(detail.status).toBe('failed')
     expect(detail.output).toEqual({
