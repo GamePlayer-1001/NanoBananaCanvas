@@ -20,8 +20,6 @@ import type { NodeCapability } from '@/lib/ai-node-config'
 import type { PlatformSupplierId } from '@/lib/platform-runtime'
 import type { UserModelRuntimeConfig } from '@/lib/user-model-config'
 
-import type { TaskOutput } from './processors'
-
 /* ─── D1 Row Shape ──────────────────────────────────── */
 
 export interface TaskRow {

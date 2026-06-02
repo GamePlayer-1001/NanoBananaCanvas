@@ -16,7 +16,14 @@
 
 import { use, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { CheckCircle2, ChevronDown, History, Loader2, Sparkles, XCircle } from 'lucide-react'
+import {
+  CheckCircle2,
+  ChevronDown,
+  History,
+  Loader2,
+  Sparkles,
+  XCircle,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ReactFlowProvider } from '@xyflow/react'
 import { AgentComposer } from '@/components/agent/agent-composer'
@@ -128,12 +135,14 @@ export default function CanvasPage({
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const template = useWorkflowMetadataStore((state) => state.template)
   const auditTrail = useWorkflowMetadataStore((state) => state.auditTrail)
-  const nodeCount = useFlowStore((state) => state.nodes.length)
-  const edgeCount = useFlowStore((state) => state.edges.length)
+  const nodes = useFlowStore((state) => state.nodes)
+  const edges = useFlowStore((state) => state.edges)
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null)
   const [isChangeLogOpen, setIsChangeLogOpen] = useState(false)
   const [changeLogItems, setChangeLogItems] = useState<string[]>([])
-  const [composerExecutionMode, setComposerExecutionMode] = useState<'platform' | 'user_key'>('platform')
+  const [composerExecutionMode, setComposerExecutionMode] = useState<
+    'platform' | 'user_key'
+  >('platform')
   const [composerModel, setComposerModel] = useState<string>('instant')
   const [historyItems, setHistoryItems] = useState<AgentHistoryItem[]>([])
   const [activeHistoryItemId, setActiveHistoryItemId] = useState<string | null>(null)
@@ -141,21 +150,12 @@ export default function CanvasPage({
     typeof (data as Record<string, unknown> | undefined)?.name === 'string'
       ? String((data as Record<string, unknown>).name)
       : undefined
-  const {
-    sendMessage,
-    isSubmitting,
-    isApplying,
-    regeneratePrompt,
-  } = useAgentSession({
+  const { sendMessage, isSubmitting, isApplying, regeneratePrompt } = useAgentSession({
     workflowId: id,
     workflowName,
     locale,
   })
-  const {
-    executionLabel,
-    activeTaskLabel,
-    terminalEvents,
-  } = useAgentTaskSummary({
+  const { executionLabel, activeTaskLabel, terminalEvents } = useAgentTaskSummary({
     workflowId: id,
   })
   const { getConfigsByCapability } = useModelConfigs()
@@ -164,10 +164,12 @@ export default function CanvasPage({
       summarizeCanvas({
         workflowId: id,
         workflowName,
+        nodes,
+        edges,
         template: template ?? undefined,
         auditTrail,
       }),
-    [auditTrail, edgeCount, id, nodeCount, template, workflowName],
+    [auditTrail, edges, id, nodes, template, workflowName],
   )
   const platformModelOptions = useMemo(() => getAgentPlatformModelOptions(), [])
   const modelOptions = useMemo(() => {
@@ -215,7 +217,9 @@ export default function CanvasPage({
     // 把进入页面时已经存在的执行/任务摘要当作基线，避免旧状态被重新灌回新会话。
     lastExecutionLabelRef.current = executionLabel
     lastActiveTaskLabelRef.current = activeTaskLabel
-    emittedTerminalTaskIdsRef.current = new Set(terminalEvents.map((event) => event.taskId))
+    emittedTerminalTaskIdsRef.current = new Set(
+      terminalEvents.map((event) => event.taskId),
+    )
   }, [activeTaskLabel, executionLabel, id, resetSession, terminalEvents])
 
   useEffect(() => {
@@ -228,7 +232,11 @@ export default function CanvasPage({
     void fetchLatestAgentReplay(id)
       .then((payload) => {
         if (cancelled) return
-        const replay = (payload as { data?: { replay?: { replaySnapshot?: { changeSummary?: string } } } }).data?.replay
+        const replay = (
+          payload as {
+            data?: { replay?: { replaySnapshot?: { changeSummary?: string } } }
+          }
+        ).data?.replay
         const summary = replay?.replaySnapshot?.changeSummary
         setChangeLogItems(summary ? [summary] : [])
       })
@@ -317,7 +325,11 @@ export default function CanvasPage({
           }
         }
 
-        if (message.role === 'user' || message.role === 'assistant' || message.role === 'diagnosis') {
+        if (
+          message.role === 'user' ||
+          message.role === 'assistant' ||
+          message.role === 'diagnosis'
+        ) {
           return {
             id: message.id,
             type: 'message' as const,
@@ -328,15 +340,11 @@ export default function CanvasPage({
           }
         }
 
-        throw new Error(`Unhandled agent message role: ${String((message as { role?: string }).role)}`)
+        throw new Error(
+          `Unhandled agent message role: ${String((message as { role?: string }).role)}`,
+        )
       }),
-    [
-      expandedPromptId,
-      messages,
-      pendingPlan,
-      status,
-      tAgent,
-    ],
+    [expandedPromptId, messages, pendingPlan, status, tAgent],
   )
 
   const quickActions = [
@@ -357,7 +365,11 @@ export default function CanvasPage({
       : []),
   ]
   const heroActions = [
-    { id: 'hero-workflow', label: tAgent('heroWorkflowCommand'), accent: 'hero' as const },
+    {
+      id: 'hero-workflow',
+      label: tAgent('heroWorkflowCommand'),
+      accent: 'hero' as const,
+    },
     { id: 'hero-prompt', label: tAgent('heroPromptCommand'), accent: 'hero' as const },
     { id: 'hero-chat', label: tAgent('heroChatMode'), accent: 'hero' as const },
   ]
@@ -515,7 +527,7 @@ export default function CanvasPage({
           <ChevronDown size={14} />
         </Button>
       </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[320px] rounded-2xl p-2">
+      <DropdownMenuContent align="end" className="w-xs rounded-2xl p-2">
         <DropdownMenuLabel className="px-2 text-xs text-slate-500">
           {tAgent('historyMenuDescription')}
         </DropdownMenuLabel>
@@ -590,7 +602,7 @@ export default function CanvasPage({
           <div className="relative h-full">
             <Canvas workflowId={id} canEdit={canEdit} />
             <AgentPanel
-              header={(
+              header={
                 <AgentHeader
                   contextLabel={
                     activeHistoryItem
@@ -602,8 +614,8 @@ export default function CanvasPage({
                   historyControl={historyControl}
                   showIdentity={false}
                 />
-              )}
-              conversation={(
+              }
+              conversation={
                 <AgentConversation
                   items={
                     activeHistoryItem
@@ -611,7 +623,7 @@ export default function CanvasPage({
                       : conversationItems
                   }
                   emptyState={tAgent('emptyState')}
-                  hero={(
+                  hero={
                     <div className="flex h-full min-h-[320px] w-full items-center justify-center px-8 text-center">
                       <div className="space-y-0">
                         <h3 className="text-[32px] leading-tight font-semibold tracking-[-0.03em] text-slate-950">
@@ -619,18 +631,22 @@ export default function CanvasPage({
                         </h3>
                       </div>
                     </div>
-                  )}
+                  }
                   onPromptRegenerate={(payloadId) => void regeneratePrompt(payloadId)}
                   onPromptManualEdit={(payloadId) => {
                     setExpandedPromptId(payloadId ?? null)
                   }}
                   onPromptToggleExpand={(payloadId) =>
-                    setExpandedPromptId((current) => (current === payloadId ? null : payloadId ?? null))
+                    setExpandedPromptId((current) =>
+                      current === payloadId ? null : (payloadId ?? null),
+                    )
                   }
-                  onPromptStyleSelect={(payloadId, styleLabel) => void regeneratePrompt(payloadId, styleLabel)}
+                  onPromptStyleSelect={(payloadId, styleLabel) =>
+                    void regeneratePrompt(payloadId, styleLabel)
+                  }
                 />
-              )}
-              quickActions={(
+              }
+              quickActions={
                 <AgentQuickActions
                   title={
                     !activeHistoryItem && messages.length > 0
@@ -642,10 +658,10 @@ export default function CanvasPage({
                     activeHistoryItem
                       ? []
                       : pendingPlan
-                      ? []
-                      : messages.length === 0
-                        ? heroActions
-                        : quickActions
+                        ? []
+                        : messages.length === 0
+                          ? heroActions
+                          : quickActions
                   }
                   onSelect={(actionId) => {
                     const actionMap: Record<string, string> = {
@@ -677,20 +693,24 @@ export default function CanvasPage({
                       {
                         executionMode: composerExecutionMode,
                         modelId:
-                          composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
+                          composerExecutionMode === 'platform'
+                            ? resolvedComposerModel
+                            : undefined,
                         provider:
                           composerExecutionMode === 'platform'
                             ? resolvedPlatformOption?.provider
                             : undefined,
                         configId:
-                          composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
+                          composerExecutionMode === 'user_key'
+                            ? resolvedComposerModel
+                            : undefined,
                       },
                       [],
                     )
                   }}
                 />
-              )}
-              composer={(
+              }
+              composer={
                 <AgentComposer
                   disabled={isSubmitting || isApplying || Boolean(activeHistoryItem)}
                   modelOptions={modelOptions}
@@ -702,10 +722,10 @@ export default function CanvasPage({
                     isApplying
                       ? tAgent('hintApplying')
                       : isSubmitting
-                      ? tAgent('hintSubmitting')
-                      : activeHistoryItem
-                      ? tAgent('historyViewingHint')
-                      : tAgent('hintIdle')
+                        ? tAgent('hintSubmitting')
+                        : activeHistoryItem
+                          ? tAgent('historyViewingHint')
+                          : tAgent('hintIdle')
                   }
                   submitLabel={t('run')}
                   onSubmit={(value, attachments) =>
@@ -714,19 +734,23 @@ export default function CanvasPage({
                       {
                         executionMode: composerExecutionMode,
                         modelId:
-                          composerExecutionMode === 'platform' ? resolvedComposerModel : undefined,
+                          composerExecutionMode === 'platform'
+                            ? resolvedComposerModel
+                            : undefined,
                         provider:
                           composerExecutionMode === 'platform'
                             ? resolvedPlatformOption?.provider
                             : undefined,
                         configId:
-                          composerExecutionMode === 'user_key' ? resolvedComposerModel : undefined,
+                          composerExecutionMode === 'user_key'
+                            ? resolvedComposerModel
+                            : undefined,
                       },
                       attachments,
                     )
                   }
                 />
-              )}
+              }
             />
           </div>
           <AgentChangeLogSheet
@@ -743,10 +767,7 @@ export default function CanvasPage({
 }
 
 function toConversationRole(
-  message: Extract<
-    AgentMessage,
-    { role: 'user' | 'assistant' | 'diagnosis' }
-  >,
+  message: Extract<AgentMessage, { role: 'user' | 'assistant' | 'diagnosis' }>,
 ): 'user' | 'assistant' | 'diagnosis' {
   return message.role
 }
@@ -765,7 +786,9 @@ function readAgentHistory(workflowId: string): AgentHistoryItem[] {
     const parsed = JSON.parse(raw) as AgentHistoryItem[]
     const now = Date.now()
     const filtered = parsed
-      .filter((item) => now - new Date(item.createdAt).getTime() <= AGENT_HISTORY_MAX_AGE_MS)
+      .filter(
+        (item) => now - new Date(item.createdAt).getTime() <= AGENT_HISTORY_MAX_AGE_MS,
+      )
       .filter((item) => item.workflowId === workflowId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
@@ -783,7 +806,10 @@ function writeAgentHistory(nextItem: AgentHistoryItem): AgentHistoryItem[] {
   const existing = readAllAgentHistory()
   const deduped = existing.filter((item) => item.id !== nextItem.id)
   const nextItems = [nextItem, ...deduped]
-    .filter((item) => Date.now() - new Date(item.createdAt).getTime() <= AGENT_HISTORY_MAX_AGE_MS)
+    .filter(
+      (item) =>
+        Date.now() - new Date(item.createdAt).getTime() <= AGENT_HISTORY_MAX_AGE_MS,
+    )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   const byWorkflow = new Map<string, AgentHistoryItem[]>()
@@ -824,7 +850,10 @@ function buildAgentHistorySnapshot(input: {
   status: string
 }): AgentHistoryItem | null {
   const meaningfulMessages = input.messages.filter(
-    (message) => message.role === 'user' || message.role === 'assistant' || message.role === 'diagnosis',
+    (message) =>
+      message.role === 'user' ||
+      message.role === 'assistant' ||
+      message.role === 'diagnosis',
   )
 
   const firstUserMessage = meaningfulMessages.find((message) => message.role === 'user')
@@ -886,4 +915,3 @@ function formatHistoryTimestamp(value: string) {
     minute: '2-digit',
   })
 }
-

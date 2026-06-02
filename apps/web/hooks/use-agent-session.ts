@@ -45,7 +45,6 @@ import {
   fillTextInputNode,
   formatNodeLabel,
   inferPromptStyleDirection,
-  isRecord,
   looksLikeExplainSelectionQuestion,
   looksLikeNodeScopedCollaboration,
   mergeNodeImageIntoInitialData,
@@ -80,14 +79,18 @@ export function useAgentSession({
   const appendMessage = useAgentStore((state) => state.appendMessage)
   const setStatus = useAgentStore((state) => state.setStatus)
   const setPendingPlan = useAgentStore((state) => state.setPendingPlan)
-  const setPendingPlanAlternatives = useAgentStore((state) => state.setPendingPlanAlternatives)
+  const setPendingPlanAlternatives = useAgentStore(
+    (state) => state.setPendingPlanAlternatives,
+  )
   const clearPendingPlan = useAgentStore((state) => state.clearPendingPlan)
   const setErrorMessage = useAgentStore((state) => state.setErrorMessage)
   const setLastAppliedPlanId = useAgentStore((state) => state.setLastAppliedPlanId)
   const setPromptConfirmation = useAgentStore((state) => state.setPromptConfirmation)
   const clearPromptConfirmation = useAgentStore((state) => state.clearPromptConfirmation)
   const selectionContext = useAgentStore((state) => state.selectionContext)
-  const rememberConversationTurn = useAgentStore((state) => state.rememberConversationTurn)
+  const rememberConversationTurn = useAgentStore(
+    (state) => state.rememberConversationTurn,
+  )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
@@ -211,8 +214,7 @@ export function useAgentSession({
         auditTrail,
       })
       const preferLightweightCreationFlow =
-        createLikeMessage &&
-        (mode === 'create' || canvasSummary.nodeCount === 0)
+        createLikeMessage && (mode === 'create' || canvasSummary.nodeCount === 0)
 
       if (!preferLightweightCreationFlow && createLikeMessage) {
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.understanding))
@@ -323,7 +325,11 @@ export function useAgentSession({
             planId: nextPlan.id,
             createdAt: new Date().toISOString(),
           })
-          setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
+          setStatus(
+            nextPlan.requiresConfirmation
+              ? 'awaiting-workflow-confirmation'
+              : 'patch-ready',
+          )
         } else {
           setStatus('idle')
         }
@@ -382,7 +388,9 @@ export function useAgentSession({
             summary: diagnosis.summary,
             reasons: [
               diagnosis.optimizationProposal?.cause ?? diagnosis.rootCause,
-              diagnosis.optimizationProposal?.risk ?? diagnosis.riskSummary ?? diagnosis.repairSuggestion,
+              diagnosis.optimizationProposal?.risk ??
+                diagnosis.riskSummary ??
+                diagnosis.repairSuggestion,
             ],
             requiresConfirmation: diagnosis.requiresConfirmation,
             operations: diagnosis.suggestedOperations,
@@ -395,7 +403,11 @@ export function useAgentSession({
             planId: nextPlan.id,
             createdAt: new Date().toISOString(),
           })
-          setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
+          setStatus(
+            nextPlan.requiresConfirmation
+              ? 'awaiting-workflow-confirmation'
+              : 'patch-ready',
+          )
         } else {
           setStatus('idle')
         }
@@ -453,7 +465,8 @@ export function useAgentSession({
         attachments,
       })
       const plan = 'plan' in planned ? planned.plan : planned
-      const alternatives = 'alternatives' in planned && planned.alternatives ? planned.alternatives : []
+      const alternatives =
+        'alternatives' in planned && planned.alternatives ? planned.alternatives : []
 
       if (!preferLightweightCreationFlow) {
         appendProcessMessage(tAgent(AGENT_PROCESS_MESSAGE_KEYS.validating))
@@ -466,7 +479,8 @@ export function useAgentSession({
 
       const nextPlan = {
         ...plan,
-        requiresConfirmation: plan.requiresConfirmation || validation.requiresConfirmation,
+        requiresConfirmation:
+          plan.requiresConfirmation || validation.requiresConfirmation,
       }
       const aiPlanSummary = await runAssistantModel(
         assistantRuntime,
@@ -591,7 +605,9 @@ export function useAgentSession({
         return
       }
 
-      setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
+      setStatus(
+        nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready',
+      )
     } catch (error) {
       const message =
         error instanceof Error && error.message
@@ -743,7 +759,7 @@ export function useAgentSession({
     if (looksLikeNodeScopedCollaboration(input.userMessage, input.canvasSummary)) {
       const nodeScopedReply =
         buildNodeScopedReply(input.userMessage, input.canvasSummary) ??
-        ((await runAssistantModel(
+        (await runAssistantModel(
           input.assistantRuntime,
           [
             '你现在处于 Nano Banana Canvas 的节点协作模式。',
@@ -762,7 +778,7 @@ export function useAgentSession({
             .filter(Boolean)
             .join('\n'),
         )) ??
-          '我先只围绕当前选中节点和你一起看，不动图。你可以继续问我这个节点该怎么调、为什么这么接、或者这一步更适合写什么。')
+        '我先只围绕当前选中节点和你一起看，不动图。你可以继续问我这个节点该怎么调、为什么这么接、或者这一步更适合写什么。'
 
       appendMessage({
         id: crypto.randomUUID(),
@@ -874,9 +890,7 @@ export function useAgentSession({
 
       if (!result.ok) {
         throw new Error(
-          result.rolledBack
-            ? `${result.summary} 已回滚到修改前状态。`
-            : result.summary,
+          result.rolledBack ? `${result.summary} 已回滚到修改前状态。` : result.summary,
         )
       }
 
@@ -1102,7 +1116,11 @@ export function useAgentSession({
     const operations = plan.operations
       .filter((operation) => operation.type !== 'request_prompt_confirmation')
       .filter((operation) => {
-        if (operation.type === 'add_node' && operation.nodeId && appliedNodeIds.has(operation.nodeId)) {
+        if (
+          operation.type === 'add_node' &&
+          operation.nodeId &&
+          appliedNodeIds.has(operation.nodeId)
+        ) {
           return false
         }
 
@@ -1117,14 +1135,14 @@ export function useAgentSession({
         return true
       })
       .map((operation) => {
-        if (
-          operation.type === 'add_node' &&
-          operation.nodeId === payload.targetNodeId
-        ) {
+        if (operation.type === 'add_node' && operation.nodeId === payload.targetNodeId) {
           hasResolvedTarget = true
           return {
             ...operation,
-            initialData: mergeNodeTextIntoInitialData(operation.initialData, executionPrompt),
+            initialData: mergeNodeTextIntoInitialData(
+              operation.initialData,
+              executionPrompt,
+            ),
           }
         }
 
@@ -1135,7 +1153,10 @@ export function useAgentSession({
         ) {
           return {
             ...operation,
-            initialData: mergeNodeImageIntoInitialData(operation.initialData, attachedImageUrl),
+            initialData: mergeNodeImageIntoInitialData(
+              operation.initialData,
+              attachedImageUrl,
+            ),
           }
         }
 
@@ -1170,65 +1191,67 @@ export function useAgentSession({
     }
   }
 
-function resolvePromptTargetNodeId(nodeId?: string) {
-  if (!nodeId) return null
+  function resolvePromptTargetNodeId(nodeId?: string) {
+    if (!nodeId) return null
 
-  const currentNodes = useFlowStore.getState().nodes
-  if (currentNodes.some((node) => node.id === nodeId)) {
+    const currentNodes = useFlowStore.getState().nodes
+    if (currentNodes.some((node) => node.id === nodeId)) {
       return nodeId
     }
 
-  return null
-}
-
-function findConnectedImageInputNodeId(targetNodeId: string) {
-  const { nodes, edges } = useFlowStore.getState()
-  const targetNode = nodes.find((node) => node.id === targetNodeId)
-  if (!targetNode) return null
-
-  const generationNodeId =
-    targetNode.type === 'image-gen'
-      ? targetNode.id
-      : edges.find(
-          (edge) =>
-            edge.source === targetNodeId &&
-            normalizeHandleId(edge.targetHandle) === 'prompt-in',
-        )?.target
-
-  if (!generationNodeId) return null
-
-  const incomingImageEdge = edges.find(
-    (edge) =>
-      edge.target === generationNodeId &&
-      normalizeHandleId(edge.targetHandle) === 'image-in',
-  )
-
-  if (!incomingImageEdge) return null
-
-  const sourceNode = nodes.find((node) => node.id === incomingImageEdge.source)
-  if (!sourceNode || sourceNode.type !== 'image-input') {
     return null
   }
 
-  return sourceNode.id
-}
+  function findConnectedImageInputNodeId(targetNodeId: string) {
+    const { nodes, edges } = useFlowStore.getState()
+    const targetNode = nodes.find((node) => node.id === targetNodeId)
+    if (!targetNode) return null
 
-function resolveExecutionStartNodeId(targetNodeId: string) {
-  const { nodes } = useFlowStore.getState()
-  const targetNode = nodes.find((node) => node.id === targetNodeId)
-  if (!targetNode) {
-    return targetNodeId
+    const generationNodeId =
+      targetNode.type === 'image-gen'
+        ? targetNode.id
+        : edges.find(
+            (edge) =>
+              edge.source === targetNodeId &&
+              normalizeHandleId(edge.targetHandle) === 'prompt-in',
+          )?.target
+
+    if (!generationNodeId) return null
+
+    const incomingImageEdge = edges.find(
+      (edge) =>
+        edge.target === generationNodeId &&
+        normalizeHandleId(edge.targetHandle) === 'image-in',
+    )
+
+    if (!incomingImageEdge) return null
+
+    const sourceNode = nodes.find((node) => node.id === incomingImageEdge.source)
+    if (!sourceNode || sourceNode.type !== 'image-input') {
+      return null
+    }
+
+    return sourceNode.id
   }
 
-  return targetNodeId
-}
+  function resolveExecutionStartNodeId(targetNodeId: string) {
+    const { nodes } = useFlowStore.getState()
+    const targetNode = nodes.find((node) => node.id === targetNodeId)
+    if (!targetNode) {
+      return targetNodeId
+    }
+
+    return targetNodeId
+  }
 
   function selectPendingPlanVariant(planId: string) {
     const nextPlan = pendingPlanAlternatives.find((plan) => plan.id === planId)
     if (!nextPlan) return
     setPendingPlan(nextPlan)
     setPromptConfirmation(nextPlan.promptConfirmation ?? null)
-    setStatus(nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready')
+    setStatus(
+      nextPlan.requiresConfirmation ? 'awaiting-workflow-confirmation' : 'patch-ready',
+    )
     void safeRecordAudit({
       eventType: 'plan_selected',
       mode: nextPlan.mode,
@@ -1281,15 +1304,16 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
       return true
     }
 
-    if (latestStatus === 'awaiting-prompt-confirmation' && latestPendingPlan?.promptConfirmation) {
+    if (
+      latestStatus === 'awaiting-prompt-confirmation' &&
+      latestPendingPlan?.promptConfirmation
+    ) {
       await confirmPromptAndRun(latestPendingPlan.promptConfirmation.id)
       return true
     }
 
     if (latestStatus === 'awaiting-prompt-confirmation' && latestPromptConfirmation) {
-      await confirmPromptAndRun(
-        latestPromptConfirmation.id,
-      )
+      await confirmPromptAndRun(latestPromptConfirmation.id)
       return true
     }
 
@@ -1307,5 +1331,4 @@ function resolveExecutionStartNodeId(targetNodeId: string) {
     regeneratePrompt,
     confirmPromptAndRun,
   }
-
 }

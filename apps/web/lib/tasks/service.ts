@@ -19,10 +19,7 @@ import type {
   TaskQueueMessage,
 } from '@nano-banana/shared'
 
-import {
-  confirmFrozenCredits,
-  freezeCredits,
-} from '@/lib/billing/ledger'
+import { confirmFrozenCredits, freezeCredits } from '@/lib/billing/ledger'
 import { requireEnv } from '@/lib/env'
 import { ErrorCode, TaskError } from '@/lib/errors'
 import {
@@ -57,13 +54,11 @@ import { persistTaskOutput } from './service-output'
 import type {
   DeleteTasksResult,
   ListTasksResult,
-  PageInfo,
   PersistedDataUrlDescriptor,
   PersistedTaskRuntimeMeta,
   SubmitTaskParams,
   SubmitTaskResult,
   TaskDetail,
-  TaskDiagnostics,
   TaskExecutionDispatch,
   TaskExecutionRequest,
   TaskExecutionSnapshot,
@@ -154,7 +149,9 @@ function sanitizeValueForPersistence(value: unknown): unknown {
   return value
 }
 
-function sanitizeTaskInputForPersistence(input: Record<string, unknown>): Record<string, unknown> {
+function sanitizeTaskInputForPersistence(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   return sanitizeValueForPersistence(input) as Record<string, unknown>
 }
 
@@ -172,7 +169,9 @@ function withPersistedTaskRuntimeMeta(
   }
 }
 
-function stripPersistedTaskRuntimeMeta(input: Record<string, unknown>): Record<string, unknown> {
+function stripPersistedTaskRuntimeMeta(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   if (!('__taskRuntime' in input)) {
     return input
   }
@@ -182,7 +181,9 @@ function stripPersistedTaskRuntimeMeta(input: Record<string, unknown>): Record<s
   return rest
 }
 
-function readPersistedTaskRuntimeMeta(input: Record<string, unknown>): PersistedTaskRuntimeMeta | null {
+function readPersistedTaskRuntimeMeta(
+  input: Record<string, unknown>,
+): PersistedTaskRuntimeMeta | null {
   const raw = input.__taskRuntime
   if (!raw || typeof raw !== 'object') {
     return null
@@ -234,9 +235,7 @@ function normalizeTaskOrchestrator(
   return orchestrator === 'workflow' ? 'workflow' : 'legacy_queue'
 }
 
-function isWorkflowRunningLikeStatus(
-  status: WorkflowRuntimeStatus['status'],
-): boolean {
+function isWorkflowRunningLikeStatus(status: WorkflowRuntimeStatus['status']): boolean {
   return (
     status === 'running' ||
     status === 'waiting' ||
@@ -310,8 +309,7 @@ async function observeWorkflowTaskState(
 
   if (workflowStatus.status === 'errored' || workflowStatus.status === 'terminated') {
     const errorMessage =
-      workflowStatus.error?.message ??
-      `Workflow instance ${workflowStatus.status}`
+      workflowStatus.error?.message ?? `Workflow instance ${workflowStatus.status}`
     return handleFailure(db, row, errorMessage)
   }
 
@@ -320,11 +318,7 @@ async function observeWorkflowTaskState(
     (row.status === 'pending' || row.status === 'running') &&
     !row.external_task_id
   ) {
-    return handleFailure(
-      db,
-      row,
-      'Workflow completed without updating task state',
-    )
+    return handleFailure(db, row, 'Workflow completed without updating task state')
   }
 
   if (row.status === 'pending' && isWorkflowRunningLikeStatus(workflowStatus.status)) {
@@ -380,10 +374,7 @@ function toTaskProviderError(
 
 /* ─── 1. Concurrency Check ──────────────────────────── */
 
-export async function checkConcurrency(
-  db: D1Database,
-  userId: string,
-): Promise<void> {
+export async function checkConcurrency(db: D1Database, userId: string): Promise<void> {
   const result = await db
     .prepare(
       `SELECT COUNT(*) as cnt FROM async_tasks
@@ -730,7 +721,8 @@ export async function submitTask(
         },
         apiKey,
       )
-      persistedProvider = submitResult.providerOverride ?? requestProvider ?? resolvedProvider
+      persistedProvider =
+        submitResult.providerOverride ?? requestProvider ?? resolvedProvider
       persistedModelId = submitResult.modelOverride ?? resolvedModelId
 
       if (submitResult.initialStatus === 'completed') {
@@ -738,7 +730,12 @@ export async function submitTask(
           throw new Error('Synchronous task provider completed without output')
         }
 
-        persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
+        persistedOutput = await persistTaskOutput(
+          taskId,
+          userId,
+          submitResult.result,
+          runtime,
+        )
       }
     } else {
       persistedRuntimeMeta = {
@@ -810,7 +807,8 @@ export async function submitTask(
     withPersistedTaskRuntimeMeta(resolvedInput, persistedRuntimeMeta),
   )
   const initialProgress = initialStatus === 'completed' ? 100 : 0
-  const startedAt = initialStatus === 'running' || initialStatus === 'completed' ? now : null
+  const startedAt =
+    initialStatus === 'running' || initialStatus === 'completed' ? now : null
   const completedAt = initialStatus === 'completed' ? now : null
 
   try {
@@ -825,16 +823,33 @@ export async function submitTask(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
-        taskId, userId, taskType, persistedProvider, persistedModelId,
-        submitResult?.externalTaskId ?? null, executionMode, JSON.stringify(persistedInput),
-        initialStatus, initialProgress,
-        config.maxRetries, workflowId ?? null, nodeId ?? null,
-        now, startedAt, completedAt, persistedOutput ? JSON.stringify(persistedOutput) : null, now,
+        taskId,
+        userId,
+        taskType,
+        persistedProvider,
+        persistedModelId,
+        submitResult?.externalTaskId ?? null,
+        executionMode,
+        JSON.stringify(persistedInput),
+        initialStatus,
+        initialProgress,
+        config.maxRetries,
+        workflowId ?? null,
+        nodeId ?? null,
+        now,
+        startedAt,
+        completedAt,
+        persistedOutput ? JSON.stringify(persistedOutput) : null,
+        now,
         submitResult?.diagnostics ? JSON.stringify(submitResult.diagnostics) : null,
       )
       .run()
 
-    if (executionMode === 'platform' && initialStatus === 'completed' && persistedOutput) {
+    if (
+      executionMode === 'platform' &&
+      initialStatus === 'completed' &&
+      persistedOutput
+    ) {
       if (taskType === 'image_gen') {
         await settleCompletedPlatformImageTask({
           db,
@@ -905,10 +920,9 @@ export async function submitTask(
     createdAt: now,
     startedAt,
     completedAt,
-    dispatch:
-      shouldDeferTaskExecution(taskType)
-        ? buildTaskDispatch(taskId, userId, taskOrchestrator)
-        : undefined,
+    dispatch: shouldDeferTaskExecution(taskType)
+      ? buildTaskDispatch(taskId, userId, taskOrchestrator)
+      : undefined,
   }
 }
 
@@ -919,15 +933,11 @@ async function persistTaskExecutionSnapshot(
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<void> {
   const r2 = await runtime.getR2()
-  await r2.put(
-    buildTaskExecutionSnapshotKey(userId, taskId),
-    JSON.stringify(payload),
-    {
-      httpMetadata: {
-        contentType: 'application/json',
-      },
+  await r2.put(buildTaskExecutionSnapshotKey(userId, taskId), JSON.stringify(payload), {
+    httpMetadata: {
+      contentType: 'application/json',
     },
-  )
+  })
 }
 
 async function readTaskExecutionSnapshot(
@@ -985,9 +995,14 @@ export async function processTaskDispatch(
   try {
     const persistedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
     const runtimeMeta = readPersistedTaskRuntimeMeta(persistedInput)
-    const executionSnapshot = await readTaskExecutionSnapshot(row.id, row.user_id, runtime)
+    const executionSnapshot = await readTaskExecutionSnapshot(
+      row.id,
+      row.user_id,
+      runtime,
+    )
 
-    let runtimeConfig: UserModelRuntimeConfig | null = executionSnapshot.runtimeConfig ?? null
+    let runtimeConfig: UserModelRuntimeConfig | null =
+      executionSnapshot.runtimeConfig ?? null
     let apiKey = executionSnapshot.apiKey ?? ''
 
     if (!apiKey) {
@@ -1152,7 +1167,12 @@ async function executeTaskRequest(
         throw new Error('Task execution provider completed without output')
       }
 
-      const persistedOutput = await persistTaskOutput(taskId, userId, submitResult.result, runtime)
+      const persistedOutput = await persistTaskOutput(
+        taskId,
+        userId,
+        submitResult.result,
+        runtime,
+      )
       const completedAt = new Date().toISOString()
 
       if (executionMode === 'platform') {
@@ -1200,7 +1220,11 @@ async function executeTaskRequest(
         .run()
 
       await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
-      log.info('Task execution completed', { taskId, taskType, provider: requestProvider })
+      log.info('Task execution completed', {
+        taskId,
+        taskType,
+        provider: requestProvider,
+      })
       return
     }
 
@@ -1268,13 +1292,7 @@ async function executeTaskRequest(
          SET status = 'failed', output_data = ?, completed_at = ?, updated_at = ?
          WHERE id = ? AND user_id = ?`,
       )
-      .bind(
-        JSON.stringify({ error: errorMessage }),
-        failedAt,
-        failedAt,
-        taskId,
-        userId,
-      )
+      .bind(JSON.stringify({ error: errorMessage }), failedAt, failedAt, taskId, userId)
       .run()
 
     await deleteTaskExecutionSnapshot(taskId, userId, runtime).catch(() => undefined)
@@ -1410,12 +1428,7 @@ export async function checkTask(
         : runtimeConfig.apiKey
     processorProvider = runtimeConfig.providerId
   } else if (row.execution_mode === 'platform' && row.external_task_id) {
-    apiKey = await getTaskPlatformKey(
-      row.provider,
-      row.task_type,
-      row.model_id,
-      runtime,
-    )
+    apiKey = await getTaskPlatformKey(row.provider, row.task_type, row.model_id, runtime)
   }
 
   if (!row.external_task_id) {
@@ -1431,7 +1444,12 @@ export async function checkTask(
     if (check.status === 'completed' && check.result) {
       persistedProvider = check.providerOverride ?? processorProvider
       persistedModelId = check.modelOverride ?? row.model_id
-      const persistedOutput = await persistTaskOutput(taskId, userId, check.result, runtime)
+      const persistedOutput = await persistTaskOutput(
+        taskId,
+        userId,
+        check.result,
+        runtime,
+      )
 
       if (row.execution_mode === 'platform') {
         const parsedInput = JSON.parse(row.input_data || '{}') as Record<string, unknown>
@@ -1625,7 +1643,12 @@ export async function cancelTask(
 export async function listTasks(
   db: D1Database,
   userId: string,
-  filters: { status?: AsyncTaskStatus; taskType?: AsyncTaskType; page: number; limit: number },
+  filters: {
+    status?: AsyncTaskStatus
+    taskType?: AsyncTaskType
+    page: number
+    limit: number
+  },
 ): Promise<ListTasksResult> {
   const conditions = ['user_id = ?']
   const binds: (string | number)[] = [userId]
@@ -1686,7 +1709,9 @@ export async function deleteTasks(
   taskIds: string[],
   runtime: TaskServiceRuntime = defaultTaskRuntime,
 ): Promise<DeleteTasksResult> {
-  const uniqueTaskIds = Array.from(new Set(taskIds.map((id) => id.trim()).filter(Boolean)))
+  const uniqueTaskIds = Array.from(
+    new Set(taskIds.map((id) => id.trim()).filter(Boolean)),
+  )
 
   if (!uniqueTaskIds.length) {
     return { deletedIds: [] }

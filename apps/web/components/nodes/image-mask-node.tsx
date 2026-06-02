@@ -71,7 +71,6 @@ function buildEraserCursor(): string {
 export function ImageMaskNode(props: NodeProps) {
   const data = props.data as WorkflowNodeData
   const updateNodeData = useFlowStore((s) => s.updateNodeData)
-  const nodes = useFlowStore((s) => s.nodes)
   const updateNodeInternals = useUpdateNodeInternals()
   const t = useTranslations('nodes')
   const { upload, uploading } = useUpload()
@@ -159,12 +158,12 @@ export function ImageMaskNode(props: NodeProps) {
 
   /* ── Stable node min size (initialize once via getState; do NOT depend on `nodes`) ── */
   useEffect(() => {
-    const currentNode = useFlowStore
-      .getState()
-      .nodes.find((node) => node.id === props.id)
+    const currentNode = useFlowStore.getState().nodes.find((node) => node.id === props.id)
     const currentHeight = currentNode?.height
     const currentStyleHeight =
-      typeof currentNode?.style?.height === 'number' ? currentNode.style.height : undefined
+      typeof currentNode?.style?.height === 'number'
+        ? currentNode.style.height
+        : undefined
     const currentWidth = currentNode?.width
     const currentStyleWidth =
       typeof currentNode?.style?.width === 'number' ? currentNode.style.width : undefined
@@ -360,7 +359,7 @@ export function ImageMaskNode(props: NodeProps) {
             onPointerCancel={onPointerUp}
             style={cursorStyle}
             className={cn(
-              'nodrag nowheel relative min-h-0 flex-1 select-none overflow-hidden rounded-lg border',
+              'nodrag nowheel relative min-h-0 flex-1 overflow-hidden rounded-lg border select-none',
             )}
           >
             <img
@@ -383,13 +382,13 @@ export function ImageMaskNode(props: NodeProps) {
                 e.stopPropagation()
                 onImageChange(undefined)
               }}
-              className="absolute right-1.5 top-1.5 rounded-full bg-black/55 px-2 py-1 text-[10px] text-white transition-colors hover:bg-black/75"
+              className="absolute top-1.5 right-1.5 rounded-full bg-black/55 px-2 py-1 text-[10px] text-white transition-colors hover:bg-black/75"
             >
               {t('imageMaskReplace')}
             </button>
 
             {uploading ? (
-              <div className="bg-background/70 absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]">
+              <div className="bg-background/70 absolute top-1.5 left-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]">
                 <Loader2 size={10} className="animate-spin" />
                 <span>{t('imageMaskUploading')}</span>
               </div>

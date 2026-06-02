@@ -7,10 +7,7 @@
 
 import { BillingError, ErrorCode } from '@/lib/errors'
 import { nanoid } from '@/lib/nanoid'
-import {
-  assertCreditBalanceWritable,
-  assertDailySigninWritable,
-} from './capabilities'
+import { assertCreditBalanceWritable, assertDailySigninWritable } from './capabilities'
 import { SIGNIN_TRIAL_CREDITS } from './workflow-pricing'
 import {
   allocateCredits,
@@ -32,7 +29,6 @@ import type {
   CreditFinalizeResult,
   CreditFreezeResult,
   CreditLedgerSummary,
-  CreditPoolBreakdown,
   CreditTransactionStatement,
   LedgerOperationType,
   LedgerRuntimeOptions,
@@ -243,7 +239,10 @@ async function finalizeFrozenCredits(
   const requestedCredits = clampCredits(input.requestedCredits ?? summary.remaining.total)
   const remaining =
     requestedCredits > 0
-      ? allocateCreditsFromBreakdown(summary.remaining, Math.min(requestedCredits, summary.remaining.total))
+      ? allocateCreditsFromBreakdown(
+          summary.remaining,
+          Math.min(requestedCredits, summary.remaining.total),
+        )
       : createBreakdown(0, 0, 0)
 
   if (remaining.total === 0) {
@@ -259,9 +258,13 @@ async function finalizeFrozenCredits(
 
   const nextFrozenCredits = Math.max(0, balance.frozen_credits - remaining.total)
   const nextTrialBalance =
-    operation === 'refund' ? balance.trial_balance + remaining.trial : balance.trial_balance
+    operation === 'refund'
+      ? balance.trial_balance + remaining.trial
+      : balance.trial_balance
   const nextMonthlyBalance =
-    operation === 'refund' ? balance.monthly_balance + remaining.monthly : balance.monthly_balance
+    operation === 'refund'
+      ? balance.monthly_balance + remaining.monthly
+      : balance.monthly_balance
   const nextPermanentBalance =
     operation === 'refund'
       ? balance.permanent_balance + remaining.permanent

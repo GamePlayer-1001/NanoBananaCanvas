@@ -14,8 +14,6 @@ import { createLogger } from '@/lib/logger'
 import { BASE_URL } from '@/lib/seo'
 import { extractR2KeyFromFileUrl } from '@/lib/storage'
 
-import type { SubmitInput } from './types'
-
 export const log = createLogger('processor:image-gen')
 export const OPENROUTER_IMAGE_BASE_URL = 'https://openrouter.ai/api/v1'
 export const OPENAI_IMAGE_BASE_URL = 'https://api.openai.com/v1'
@@ -210,7 +208,9 @@ function extractImageUrlFromText(text: string): string | null {
   return null
 }
 
-export function readReferenceImageUrl(params: Record<string, unknown>): string | undefined {
+export function readReferenceImageUrl(
+  params: Record<string, unknown>,
+): string | undefined {
   const raw = params.imageUrl
   if (typeof raw !== 'string') {
     return undefined
@@ -262,11 +262,11 @@ export function readMaskImageUrl(params: Record<string, unknown>): string | unde
   return value
 }
 
-export function readImageCapabilities(params: Record<string, unknown>): ImageModelCapabilities | undefined {
+export function readImageCapabilities(
+  params: Record<string, unknown>,
+): ImageModelCapabilities | undefined {
   const raw = params.imageCapabilities
-  return raw && typeof raw === 'object'
-    ? (raw as ImageModelCapabilities)
-    : undefined
+  return raw && typeof raw === 'object' ? (raw as ImageModelCapabilities) : undefined
 }
 
 export function inferExtensionFromMimeType(mimeType: string | null): string {
@@ -329,7 +329,8 @@ export async function fetchReferenceImageAsset(
 ): Promise<{ blob: Blob; filename: string }> {
   const internalR2Key = resolveInternalReferenceImageR2Key(imageUrl)
   if (internalR2Key) {
-    const loader = loadInternalReferenceImageAsset ?? loadInternalReferenceImageAssetViaWebRuntime
+    const loader =
+      loadInternalReferenceImageAsset ?? loadInternalReferenceImageAssetViaWebRuntime
     return loader(internalR2Key)
   }
 
@@ -398,7 +399,8 @@ export function summarizeBaseUrl(baseUrl: string): string {
 }
 
 export function isRetriableImageProviderError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
   return (
     message.includes('524') ||
     message.includes('522') ||
@@ -430,7 +432,8 @@ export function buildGatewayFailureMessage(
 }
 
 export function isDlapiAsyncProtocolError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
   return (
     message.includes('dlapi async image protocol') ||
     message.includes('dlapi image api returned no task id')
@@ -438,10 +441,13 @@ export function isDlapiAsyncProtocolError(error: unknown): boolean {
 }
 
 export function isDlapiDirectResponseError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
   return (
     message.includes('dlapi image api') ||
-    message.includes('check that baseurl points to an openai-compatible image endpoint') ||
+    message.includes(
+      'check that baseurl points to an openai-compatible image endpoint',
+    ) ||
     message.includes('returned neither url nor b64_json image data') ||
     message.includes('returned invalid json') ||
     message.includes('returned non-json content')
@@ -449,7 +455,8 @@ export function isDlapiDirectResponseError(error: unknown): boolean {
 }
 
 export function isDlapiAuthError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
   return (
     message.includes('dlapi image api 401') ||
     (message.includes('invalid token') && message.includes('dlapi')) ||
@@ -466,15 +473,20 @@ export function buildDlapiAuthFallbackFailureMessage(error: unknown): string {
   )
 }
 
-export function inferDlapiFailureKind(error: unknown): DlapiFailureDiagnostics['failureKind'] {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+export function inferDlapiFailureKind(
+  error: unknown,
+): DlapiFailureDiagnostics['failureKind'] {
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
 
   if (isRetriableImageProviderError(error)) return 'gateway'
   if (isDlapiAuthError(error)) return 'auth'
-  if (message.includes('returned neither url nor b64_json image data')) return 'empty_payload'
+  if (message.includes('returned neither url nor b64_json image data'))
+    return 'empty_payload'
   if (message.includes('returned non-json content')) return 'non_json'
   if (message.includes('returned invalid json')) return 'invalid_json'
-  if (isDlapiDirectResponseError(error) || isDlapiAsyncProtocolError(error)) return 'direct_response'
+  if (isDlapiDirectResponseError(error) || isDlapiAsyncProtocolError(error))
+    return 'direct_response'
   return 'other'
 }
 
@@ -503,7 +515,9 @@ export function extractDlapiResponsePreview(error: unknown): string | undefined 
   }
 
   const gatewayBodyMatch =
-    /\bOpenAI-compatible image API \d{3} from .*?:\s*(.+?)\.\s+This usually means/i.exec(message)
+    /\bOpenAI-compatible image API \d{3} from .*?:\s*(.+?)\.\s+This usually means/i.exec(
+      message,
+    )
   if (gatewayBodyMatch?.[1]) {
     return summarizeResponseBody(gatewayBodyMatch[1])
   }
@@ -518,7 +532,11 @@ export function measurePromptSize(prompt: string): { chars: number; bytes: numbe
   }
 }
 
-export function buildPromptTooLongMessage(baseUrl: string, chars: number, bytes: number): string {
+export function buildPromptTooLongMessage(
+  baseUrl: string,
+  chars: number,
+  bytes: number,
+): string {
   const endpoint = summarizeBaseUrl(baseUrl)
   return (
     `OpenAI-compatible image prompt is too large for the current gateway safety guard ` +
@@ -533,7 +551,10 @@ export function normalizeImagePromptForApi(prompt: string): string {
   return prompt.replace(/\s+/g, ' ').trim()
 }
 
-export function assertOpenAICompatiblePromptSafety(prompt: string, baseUrl: string): void {
+export function assertOpenAICompatiblePromptSafety(
+  prompt: string,
+  baseUrl: string,
+): void {
   const { chars, bytes } = measurePromptSize(prompt)
   if (
     chars <= OPENAI_COMPATIBLE_IMAGE_PROMPT_MAX_CHARS &&
@@ -557,7 +578,10 @@ export function resolveOpenAICompatibleRequestSize(
   return resolveImageGenerationSize(sizePreset, aspectRatio)
 }
 
-export function shouldUseOpenRouterChatImageApi(provider: string, model: string): boolean {
+export function shouldUseOpenRouterChatImageApi(
+  provider: string,
+  model: string,
+): boolean {
   return provider === 'openrouter' && /^openai\/gpt-.*image/i.test(model)
 }
 

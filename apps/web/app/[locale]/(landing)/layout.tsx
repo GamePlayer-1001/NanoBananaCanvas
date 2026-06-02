@@ -11,7 +11,7 @@ import { LandingNav } from '@/components/layout/landing-nav'
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="landing-dark min-h-screen bg-[var(--landing-bg)] text-[var(--landing-text)]">
+    <div className="landing-dark min-h-screen bg-(--landing-bg) text-(--landing-text)">
       <LandingAnnouncement />
       <LandingNav />
       {children}
