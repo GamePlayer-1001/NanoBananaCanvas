@@ -84,7 +84,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
-- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (CI 复用 pnpm/Turbo/Playwright 缓存并产出 OpenNext artifact；Deploy job 直接复用 artifact 发布 Web + Worker，D1 迁移/Queue 创建/Worker Secret 同步在 Cloudflare token 权限不足时会告警降级并继续复用线上既有资源，Worker Secret 写入遇到 Cloudflare 限流时会先重试再降级保留线上值，最后再由 wrangler 发布 Web 与 API Worker)
+- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (CI 复用 pnpm/Turbo/Playwright 缓存并产出 OpenNext artifact；Deploy job 直接复用 artifact 发布 Web + Worker，D1 迁移/Queue 创建/Worker Secret 同步在 Cloudflare token 权限不足时会告警降级并继续复用线上既有资源，Worker Secret 写入遇到 Cloudflare 限流时会先重试再降级保留线上值，Web/API Worker 正式发布遇到 Cloudflare API 限流时也会自动重试，最后再由 wrangler 发布 Web 与 API Worker)
 - **域名**: nanobananacanvas.com → Cloudflare Workers (wrangler routes)
 - **监控**: Cloudflare Analytics (零成本, Workers 内置)
 
