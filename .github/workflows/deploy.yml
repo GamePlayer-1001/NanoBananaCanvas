@@ -178,30 +178,46 @@ jobs:
           sync_secret() {
             local secret_name="$1"
             local secret_value="$2"
+            local attempt=1
+            local max_attempts=3
 
-            set +e
-            output=$(printf '%s' "$secret_value" | pnpm dlx wrangler@4 secret put "$secret_name" 2>&1)
-            status=$?
-            set -e
-            echo "$output"
+            while [ $attempt -le $max_attempts ]; do
+              set +e
+              output=$(printf '%s' "$secret_value" | pnpm dlx wrangler@4 secret put "$secret_name" 2>&1)
+              status=$?
+              set -e
+              echo "$output"
 
-            if [ $status -eq 0 ]; then
-              return 0
-            fi
+              if [ $status -eq 0 ]; then
+                return 0
+              fi
 
-            if echo "$output" | grep -Eqi "Authentication error|code: 10000|code: 10502|not authorized to access this service"; then
-              echo "::warning title=Skipped Web Worker secret sync::Cloudflare token lacks Workers secret write permission while syncing ${secret_name}. Existing production secrets were left unchanged where writes were denied, so deploy will continue. Rotate CLOUDFLARE_API_TOKEN to restore strict secret synchronization."
-              return 10
-            fi
+              if echo "$output" | grep -Eqi "Authentication error|code: 10000|code: 10502|code: 9109|not authorized to access this service"; then
+                echo "::warning title=Skipped Web Worker secret sync::Cloudflare token lacks Workers secret write permission while syncing ${secret_name}. Existing production secrets were left unchanged where writes were denied, so deploy will continue. Rotate CLOUDFLARE_API_TOKEN to restore strict secret synchronization."
+                return 10
+              fi
 
-            return $status
+              if echo "$output" | grep -Eqi "Rate limited|code: 10429"; then
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "::warning title=Retrying Web Worker secret sync::Cloudflare rate limited ${secret_name} sync (attempt ${attempt}/${max_attempts}). Retrying in 5 seconds before falling back to the existing production secret."
+                  sleep 5
+                  attempt=$((attempt + 1))
+                  continue
+                fi
+
+                echo "::warning title=Skipped Web Worker secret sync::Cloudflare rate limited ${secret_name} sync after ${max_attempts} attempts. Existing production secrets were left unchanged, so deploy will continue. Re-run the workflow or reduce deploy frequency to restore strict secret synchronization."
+                return 11
+              fi
+
+              return $status
+            done
           }
 
           set +e
           sync_secret COMFLY_API_KEY "$COMFLY_API_KEY"
           status=$?
           set -e
-          if [ $status -eq 10 ]; then
+          if [ $status -eq 10 ] || [ $status -eq 11 ]; then
             exit 0
           fi
           if [ $status -ne 0 ]; then
@@ -212,7 +228,7 @@ jobs:
           sync_secret DLAPI_API_KEY "$DLAPI_API_KEY"
           status=$?
           set -e
-          if [ $status -eq 10 ]; then
+          if [ $status -eq 10 ] || [ $status -eq 11 ]; then
             exit 0
           fi
           if [ $status -ne 0 ]; then
@@ -249,30 +265,46 @@ jobs:
           sync_secret() {
             local secret_name="$1"
             local secret_value="$2"
+            local attempt=1
+            local max_attempts=3
 
-            set +e
-            output=$(printf '%s' "$secret_value" | pnpm dlx wrangler@4 secret put "$secret_name" 2>&1)
-            status=$?
-            set -e
-            echo "$output"
+            while [ $attempt -le $max_attempts ]; do
+              set +e
+              output=$(printf '%s' "$secret_value" | pnpm dlx wrangler@4 secret put "$secret_name" 2>&1)
+              status=$?
+              set -e
+              echo "$output"
 
-            if [ $status -eq 0 ]; then
-              return 0
-            fi
+              if [ $status -eq 0 ]; then
+                return 0
+              fi
 
-            if echo "$output" | grep -Eqi "Authentication error|code: 10000|code: 10502|not authorized to access this service"; then
-              echo "::warning title=Skipped API Worker secret sync::Cloudflare token lacks Workers secret write permission while syncing ${secret_name}. Existing production secrets were left unchanged where writes were denied, so deploy will continue. Rotate CLOUDFLARE_API_TOKEN to restore strict secret synchronization."
-              return 10
-            fi
+              if echo "$output" | grep -Eqi "Authentication error|code: 10000|code: 10502|code: 9109|not authorized to access this service"; then
+                echo "::warning title=Skipped API Worker secret sync::Cloudflare token lacks Workers secret write permission while syncing ${secret_name}. Existing production secrets were left unchanged where writes were denied, so deploy will continue. Rotate CLOUDFLARE_API_TOKEN to restore strict secret synchronization."
+                return 10
+              fi
 
-            return $status
+              if echo "$output" | grep -Eqi "Rate limited|code: 10429"; then
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "::warning title=Retrying API Worker secret sync::Cloudflare rate limited ${secret_name} sync (attempt ${attempt}/${max_attempts}). Retrying in 5 seconds before falling back to the existing production secret."
+                  sleep 5
+                  attempt=$((attempt + 1))
+                  continue
+                fi
+
+                echo "::warning title=Skipped API Worker secret sync::Cloudflare rate limited ${secret_name} sync after ${max_attempts} attempts. Existing production secrets were left unchanged, so deploy will continue. Re-run the workflow or reduce deploy frequency to restore strict secret synchronization."
+                return 11
+              fi
+
+              return $status
+            done
           }
 
           set +e
           sync_secret COMFLY_API_KEY "$COMFLY_API_KEY"
           status=$?
           set -e
-          if [ $status -eq 10 ]; then
+          if [ $status -eq 10 ] || [ $status -eq 11 ]; then
             exit 0
           fi
           if [ $status -ne 0 ]; then
@@ -283,7 +315,7 @@ jobs:
           sync_secret DLAPI_API_KEY "$DLAPI_API_KEY"
           status=$?
           set -e
-          if [ $status -eq 10 ]; then
+          if [ $status -eq 10 ] || [ $status -eq 11 ]; then
             exit 0
           fi
           if [ $status -ne 0 ]; then
