@@ -523,67 +523,120 @@ async function comflyAsyncSubmit(
 function extractComflyAsyncImageUrl(
   payload: ComflyAsyncTaskResponse['data'] | undefined,
 ): string | null {
-  if (!payload || typeof payload !== 'object') {
+  const visited = new Set<object>()
+
+  function visit(candidate: unknown): string | null {
+    if (!candidate) {
+      return null
+    }
+
+    if (typeof candidate === 'string') {
+      const value = candidate.trim()
+      if (!value) {
+        return null
+      }
+
+      if (value.startsWith('data:image/')) {
+        return value
+      }
+
+      const markdownImageMatch = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/i.exec(value)
+      if (markdownImageMatch?.[1]) {
+        return markdownImageMatch[1].trim()
+      }
+
+      if (/^https?:\/\//i.test(value)) {
+        return value
+      }
+
+      return null
+    }
+
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) {
+        const resolved = visit(item)
+        if (resolved) {
+          return resolved
+        }
+      }
+      return null
+    }
+
+    if (typeof candidate !== 'object') {
+      return null
+    }
+
+    if (visited.has(candidate)) {
+      return null
+    }
+    visited.add(candidate)
+
+    const record = candidate as Record<string, unknown>
+
+    if (typeof record.url === 'string' && record.url.trim()) {
+      return record.url.trim()
+    }
+
+    if (typeof record.b64_json === 'string' && record.b64_json.trim()) {
+      return toImageDataUrl(record.b64_json.trim())
+    }
+
+    if (typeof record.image_url === 'string' && record.image_url.trim()) {
+      return record.image_url.trim()
+    }
+
+    if (
+      record.image_url &&
+      typeof record.image_url === 'object' &&
+      typeof (record.image_url as { url?: unknown }).url === 'string' &&
+      (record.image_url as { url: string }).url.trim()
+    ) {
+      return (record.image_url as { url: string }).url.trim()
+    }
+
+    const preferredNestedKeys = [
+      'data',
+      'result',
+      'output',
+      'images',
+      'image',
+      'payload',
+      'content',
+      'response',
+      'items',
+    ]
+
+    for (const key of preferredNestedKeys) {
+      const resolved = visit(record[key])
+      if (resolved) {
+        return resolved
+      }
+    }
+
+    const skipKeys = new Set([
+      'task_id',
+      'status',
+      'progress',
+      'fail_reason',
+      'message',
+      'prompt',
+      'revised_prompt',
+    ])
+
+    for (const [key, value] of Object.entries(record)) {
+      if (skipKeys.has(key)) {
+        continue
+      }
+      const resolved = visit(value)
+      if (resolved) {
+        return resolved
+      }
+    }
+
     return null
   }
 
-  const directUrl = payload.url
-  if (typeof directUrl === 'string' && directUrl.trim()) {
-    return directUrl.trim()
-  }
-
-  const directBase64 = payload.b64_json
-  if (typeof directBase64 === 'string' && directBase64.trim()) {
-    return toImageDataUrl(directBase64.trim())
-  }
-
-  const candidateContainers: unknown[] = [
-    payload.data,
-    payload.result,
-    payload.output,
-    payload.images,
-  ]
-
-  for (const candidate of candidateContainers) {
-    if (!candidate) continue
-
-    if (Array.isArray(candidate)) {
-      const url = extractOpenAICompatibleImageUrl({
-        data: candidate
-          .filter(
-            (item): item is Record<string, unknown> => !!item && typeof item === 'object',
-          )
-          .map((item) => ({
-            url: typeof item.url === 'string' ? item.url : undefined,
-            b64_json: typeof item.b64_json === 'string' ? item.b64_json : undefined,
-          })),
-      })
-      if (url) return url
-      continue
-    }
-
-    if (typeof candidate === 'object') {
-      const typed = candidate as {
-        url?: unknown
-        b64_json?: unknown
-        image_url?: { url?: unknown }
-      }
-
-      if (typeof typed.url === 'string' && typed.url.trim()) {
-        return typed.url.trim()
-      }
-
-      if (typeof typed.b64_json === 'string' && typed.b64_json.trim()) {
-        return toImageDataUrl(typed.b64_json.trim())
-      }
-
-      if (typeof typed.image_url?.url === 'string' && typed.image_url.url.trim()) {
-        return typed.image_url.url.trim()
-      }
-    }
-  }
-
-  return null
+  return visit(payload)
 }
 
 async function comflyAsyncCheckStatus(

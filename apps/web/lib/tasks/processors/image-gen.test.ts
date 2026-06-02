@@ -1182,6 +1182,43 @@ describe('ImageGenProcessor', () => {
     })
   })
 
+  it('checks comfly async task completion and accepts nested output payloads', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () =>
+          JSON.stringify({
+            code: 'success',
+            data: {
+              task_id: 'cf_task_789',
+              status: 'SUCCESS',
+              progress: '100%',
+              output: {
+                image_url: {
+                  url: 'https://example.com/comfly-nested.png',
+                },
+              },
+            },
+          }),
+      } satisfies Partial<Response>),
+    )
+
+    const processor = new ImageGenProcessor('comfly')
+    const result = await processor.checkStatus('cf_task_789', 'platform-key')
+
+    expect(result).toEqual({
+      status: 'completed',
+      progress: 100,
+      result: {
+        type: 'url',
+        url: 'https://example.com/comfly-nested.png',
+        contentType: 'image/png',
+      },
+    })
+  })
+
   it('checks dlapi async task completion and returns image data', async () => {
     vi.stubGlobal(
       'fetch',
