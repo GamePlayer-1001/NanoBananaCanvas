@@ -15,25 +15,25 @@ e2e/                 — Playwright E2E 测试
 
 ## 技术栈
 
-| 层     | 技术                                              |
-| ------ | ------------------------------------------------- |
-| 框架   | Next.js 16.1.6 (App Router + Turbopack)           |
-| UI     | React 19 + shadcn/ui (Lux 主题) + Tailwind CSS v4 |
-| 画布   | @xyflow/react v12 (ReactFlow)                     |
-| 状态   | Zustand v5 (客户端) + TanStack Query v5 (服务端)  |
-| 表单   | React Hook Form + Zod v4                          |
-| API    | Next.js Route Handlers (38 端点, 全部在 apps/web) |
-| 异步任务 | D1 状态机 + Cloudflare Workflow/Queue 双轨编排 + Worker 分发桥 + 客户端轮询 |
-| 定时任务 | Cloudflare Worker Cron (*/10 * * * *)            |
-| 数据库 | Cloudflare D1 (SQLite, 17 张表)                   |
-| 缓存   | Cloudflare KV (限流/轻量运行时缓存)               |
-| 存储   | Cloudflare R2                                     |
-| 认证   | Clerk 会话桥接已接回运行时，账户级资源绑定继续收口中 |
-| 支付   | Stripe 商业化主链与真实执行扣费链均已接回运行时；生产接线、正式部署与手测仍待完成 |
-| i18n   | next-intl (P1 接入)                               |
-| 部署   | @opennextjs/cloudflare → Cloudflare Workers        |
-| CI/CD  | GitHub Actions → wrangler deploy                   |
-| 测试   | Vitest (单元) + Playwright (E2E)                  |
+| 层       | 技术                                                                              |
+| -------- | --------------------------------------------------------------------------------- |
+| 框架     | Next.js 16.1.6 (App Router + Turbopack)                                           |
+| UI       | React 19 + shadcn/ui (Lux 主题) + Tailwind CSS v4                                 |
+| 画布     | @xyflow/react v12 (ReactFlow)                                                     |
+| 状态     | Zustand v5 (客户端) + TanStack Query v5 (服务端)                                  |
+| 表单     | React Hook Form + Zod v4                                                          |
+| API      | Next.js Route Handlers (38 端点, 全部在 apps/web)                                 |
+| 异步任务 | D1 状态机 + Cloudflare Workflow/Queue 双轨编排 + Worker 分发桥 + 客户端轮询       |
+| 定时任务 | Cloudflare Worker Cron (_/10 _ \* \* \*)                                          |
+| 数据库   | Cloudflare D1 (SQLite, 17 张表)                                                   |
+| 缓存     | Cloudflare KV (限流/轻量运行时缓存)                                               |
+| 存储     | Cloudflare R2                                                                     |
+| 认证     | Clerk 会话桥接已接回运行时，账户级资源绑定继续收口中                              |
+| 支付     | Stripe 商业化主链与真实执行扣费链均已接回运行时；生产接线、正式部署与手测仍待完成 |
+| i18n     | next-intl (P1 接入)                                                               |
+| 部署     | @opennextjs/cloudflare → Cloudflare Workers                                       |
+| CI/CD    | GitHub Actions → wrangler deploy                                                  |
+| 测试     | Vitest (单元) + Playwright (E2E)                                                  |
 
 ## 开发命令
 
@@ -84,7 +84,7 @@ pnpm format:check     # Prettier 检查 (CI 用)
 - **品牌色**: Indigo-500 (#6366F1)
 - **文档**: GEB 分形文档系统 (L1/L2/L3 三层)
 - **文件头部**: 所有业务文件必须有 L3 `[INPUT]/[OUTPUT]/[POS]/[PROTOCOL]` 注释
-- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (CI 复用 pnpm/Turbo/Playwright 缓存并产出 OpenNext artifact；Deploy job 直接复用 artifact 发布 Web + Worker，Queue 消费者与生产者绑定随 wrangler 配置一并发布)
+- **CI/CD**: push main → GitHub Actions 自动构建 + 部署 (CI 复用 pnpm/Turbo/Playwright 缓存并产出 OpenNext artifact；Deploy job 直接复用 artifact 发布 Web + Worker，D1 迁移/Queue 创建/Worker Secret 同步在 Cloudflare token 权限不足时会告警降级并继续复用线上既有资源，再由 wrangler 发布 Web 与 API Worker)
 - **域名**: nanobananacanvas.com → Cloudflare Workers (wrangler routes)
 - **监控**: Cloudflare Analytics (零成本, Workers 内置)
 

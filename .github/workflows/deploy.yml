@@ -1,3 +1,7 @@
+# [INPUT]: 依赖 GitHub Actions、pnpm workspace、OpenNext 构建产物、Cloudflare Wrangler 与仓库 vars/secrets
+# [OUTPUT]: 对外提供 main push 的 CI/CD 流水线，执行 lint/test/build、同步平台 secrets、部署 Web Worker 与 API Worker
+# [POS]: .github/workflows 的生产发布主链，负责把 monorepo 代码经 GitHub Actions 发布到 Cloudflare
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 # ============================================
 # Nano Banana Canvas — CI/CD Pipeline
 # GitHub Actions → Cloudflare Workers + Assets
@@ -171,8 +175,49 @@ jobs:
             exit 1
           fi
 
-          printf '%s' "$COMFLY_API_KEY" | pnpm dlx wrangler@4 secret put COMFLY_API_KEY
-          printf '%s' "$DLAPI_API_KEY" | pnpm dlx wrangler@4 secret put DLAPI_API_KEY
+          sync_secret() {
+            local secret_name="$1"
+            local secret_value="$2"
+
+            set +e
+            output=$(printf '%s' "$secret_value" | pnpm dlx wrangler@4 secret put "$secret_name" 2>&1)
+            status=$?
+            set -e
+            echo "$output"
+
+            if [ $status -eq 0 ]; then
+              return 0
+            fi
+
+            if echo "$output" | grep -Eqi "Authentication error|code: 10000|code: 10502|not authorized to access this service"; then
+              echo "::warning title=Skipped Web Worker secret sync::Cloudflare token lacks Workers secret write permission while syncing ${secret_name}. Existing production secrets were left unchanged where writes were denied, so deploy will continue. Rotate CLOUDFLARE_API_TOKEN to restore strict secret synchronization."
+              return 10
+            fi
+
+            return $status
+          }
+
+          set +e
+          sync_secret COMFLY_API_KEY "$COMFLY_API_KEY"
+          status=$?
+          set -e
+          if [ $status -eq 10 ]; then
+            exit 0
+          fi
+          if [ $status -ne 0 ]; then
+            exit $status
+          fi
+
+          set +e
+          sync_secret DLAPI_API_KEY "$DLAPI_API_KEY"
+          status=$?
+          set -e
+          if [ $status -eq 10 ]; then
+            exit 0
+          fi
+          if [ $status -ne 0 ]; then
+            exit $status
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -201,8 +246,49 @@ jobs:
             exit 1
           fi
 
-          printf '%s' "$COMFLY_API_KEY" | pnpm dlx wrangler@4 secret put COMFLY_API_KEY
-          printf '%s' "$DLAPI_API_KEY" | pnpm dlx wrangler@4 secret put DLAPI_API_KEY
+          sync_secret() {
+            local secret_name="$1"
+            local secret_value="$2"
+
+            set +e
+            output=$(printf '%s' "$secret_value" | pnpm dlx wrangler@4 secret put "$secret_name" 2>&1)
+            status=$?
+            set -e
+            echo "$output"
+
+            if [ $status -eq 0 ]; then
+              return 0
+            fi
+
+            if echo "$output" | grep -Eqi "Authentication error|code: 10000|code: 10502|not authorized to access this service"; then
+              echo "::warning title=Skipped API Worker secret sync::Cloudflare token lacks Workers secret write permission while syncing ${secret_name}. Existing production secrets were left unchanged where writes were denied, so deploy will continue. Rotate CLOUDFLARE_API_TOKEN to restore strict secret synchronization."
+              return 10
+            fi
+
+            return $status
+          }
+
+          set +e
+          sync_secret COMFLY_API_KEY "$COMFLY_API_KEY"
+          status=$?
+          set -e
+          if [ $status -eq 10 ]; then
+            exit 0
+          fi
+          if [ $status -ne 0 ]; then
+            exit $status
+          fi
+
+          set +e
+          sync_secret DLAPI_API_KEY "$DLAPI_API_KEY"
+          status=$?
+          set -e
+          if [ $status -eq 10 ]; then
+            exit 0
+          fi
+          if [ $status -ne 0 ]; then
+            exit $status
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
